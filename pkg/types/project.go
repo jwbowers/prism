@@ -26,8 +26,14 @@ type Project struct {
 	// Members are additional project members with access
 	Members []ProjectMember `json:"members"`
 
-	// Budget contains the project budget configuration
+	// Budget contains the project budget configuration (DEPRECATED in v0.5.10)
+	// Use ProjectBudgetAllocation system instead
 	Budget *ProjectBudget `json:"budget,omitempty"`
+
+	// DefaultAllocationID is the default funding source for this project (v0.5.10+)
+	// When users launch resources under this project without specifying --funding,
+	// this allocation is automatically used
+	DefaultAllocationID *string `json:"default_allocation_id,omitempty"`
 
 	// Tags for project organization and reporting
 	Tags map[string]string `json:"tags,omitempty"`
@@ -305,4 +311,150 @@ type ProjectResourceUsage struct {
 
 	// LastUpdated is when these metrics were last calculated
 	LastUpdated time.Time `json:"last_updated"`
+}
+
+// ============================================================================
+// v0.5.10: Multi-Budget System (Issue #97)
+// ============================================================================
+//
+// The types below implement the many-to-many budget system introduced in
+// v0.5.10, enabling:
+//   - 1 budget → N projects (single grant funding multiple projects)
+//   - N budgets → 1 project (multi-source funding)
+//
+// Migration Note: The embedded `Project.Budget *ProjectBudget` field is
+// deprecated in favor of the new ProjectBudgetAllocation system.
+
+// Budget represents a standalone budget pool that can be allocated to multiple projects.
+//
+// Examples:
+//   - "NSF Grant CISE-2024-12345" ($50,000)
+//   - "CS Department Q1 2026" ($100,000)
+//   - "AWS Research Credits" ($5,000)
+type Budget struct {
+	// ID is the unique budget identifier
+	ID string `json:"id"`
+
+	// Name is the budget name (e.g., "NSF Grant CISE-2024-12345")
+	Name string `json:"name"`
+
+	// Description provides budget details
+	Description string `json:"description"`
+
+	// TotalAmount is the total budget pool in USD
+	TotalAmount float64 `json:"total_amount"`
+
+	// AllocatedAmount is the sum of all project allocations from this budget
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// SpentAmount is the actual amount spent across all allocations
+	SpentAmount float64 `json:"spent_amount"`
+
+	// Period defines the budget period
+	Period BudgetPeriod `json:"period"`
+
+	// StartDate is when the budget period began
+	StartDate time.Time `json:"start_date"`
+
+	// EndDate is when the budget period ends (optional for ongoing budgets)
+	EndDate *time.Time `json:"end_date,omitempty"`
+
+	// AlertThreshold is the global alert percentage (0.0-1.0)
+	AlertThreshold float64 `json:"alert_threshold"`
+
+	// CreatedBy is the user who created the budget
+	CreatedBy string `json:"created_by"`
+
+	// CreatedAt is when the budget was created
+	CreatedAt time.Time `json:"created_at"`
+
+	// UpdatedAt is when the budget was last modified
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Tags for budget organization
+	Tags map[string]string `json:"tags,omitempty"`
+}
+
+// ProjectBudgetAllocation represents the many-to-many relationship between
+// budgets and projects, tracking how much of a budget is allocated to each project.
+//
+// Examples:
+//   - NSF Grant ($50k) → Climate Project ($20k allocation)
+//   - Department Budget ($100k) → Lab Project A ($40k), Lab Project B ($30k)
+//   - Climate Project ← NSF ($20k) + MIT Matching ($5k) + AWS ($2k) = $27k total
+type ProjectBudgetAllocation struct {
+	// ID is the unique allocation identifier
+	ID string `json:"id"`
+
+	// BudgetID is the parent budget pool
+	BudgetID string `json:"budget_id"`
+
+	// ProjectID is the project receiving the allocation
+	ProjectID string `json:"project_id"`
+
+	// AllocatedAmount is how much of the budget is allocated to this project
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// SpentAmount is how much has been spent from this allocation (cached)
+	SpentAmount float64 `json:"spent_amount"`
+
+	// AlertThreshold is an optional project-specific alert threshold (overrides budget default)
+	AlertThreshold *float64 `json:"alert_threshold,omitempty"`
+
+	// BackupAllocationID is an optional backup funding source for exhaustion (#234)
+	BackupAllocationID *string `json:"backup_allocation_id,omitempty"`
+
+	// Notes provide context for this allocation
+	Notes string `json:"notes,omitempty"`
+
+	// AllocatedAt is when this allocation was created
+	AllocatedAt time.Time `json:"allocated_at"`
+
+	// AllocatedBy is the user who created the allocation
+	AllocatedBy string `json:"allocated_by"`
+
+	// UpdatedAt is when the allocation was last modified
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// BudgetSummary provides a high-level view of a budget pool.
+type BudgetSummary struct {
+	// Budget is the budget details
+	Budget Budget `json:"budget"`
+
+	// Allocations is the list of project allocations
+	Allocations []ProjectBudgetAllocation `json:"allocations"`
+
+	// ProjectNames maps project IDs to names for display
+	ProjectNames map[string]string `json:"project_names"`
+
+	// RemainingAmount is unallocated budget (TotalAmount - AllocatedAmount)
+	RemainingAmount float64 `json:"remaining_amount"`
+
+	// UtilizationRate is the percentage of allocated funds actually spent
+	UtilizationRate float64 `json:"utilization_rate"`
+}
+
+// ProjectFundingSummary provides a view of all funding sources for a project.
+type ProjectFundingSummary struct {
+	// ProjectID is the project identifier
+	ProjectID string `json:"project_id"`
+
+	// ProjectName is the project name
+	ProjectName string `json:"project_name"`
+
+	// Allocations is the list of budget allocations funding this project
+	Allocations []ProjectBudgetAllocation `json:"allocations"`
+
+	// BudgetNames maps budget IDs to names for display
+	BudgetNames map[string]string `json:"budget_names"`
+
+	// TotalAllocated is the sum of all allocations to this project
+	TotalAllocated float64 `json:"total_allocated"`
+
+	// TotalSpent is the sum of spending across all allocations
+	TotalSpent float64 `json:"total_spent"`
+
+	// DefaultAllocationID is the project's default funding source
+	DefaultAllocationID *string `json:"default_allocation_id,omitempty"`
 }
