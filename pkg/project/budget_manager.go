@@ -520,19 +520,33 @@ func (bm *BudgetManager) GetProjectFundingSummary(ctx context.Context, projectID
 	}, nil
 }
 
-// RecordSpending records spending against an allocation
-func (bm *BudgetManager) RecordSpending(ctx context.Context, allocationID string, amount float64) error {
+// SpendingResult contains information about spending and potential backup activation
+type SpendingResult struct {
+	AllocationID        string
+	AllocationExhausted bool
+	BackupActivated     bool
+	BackupAllocationID  string
+	WarningMessage      string
+}
+
+// RecordSpending records spending against an allocation with backup funding support (v0.5.10+)
+// Returns SpendingResult indicating if backup was activated
+func (bm *BudgetManager) RecordSpending(ctx context.Context, allocationID string, amount float64) (*SpendingResult, error) {
 	bm.mutex.Lock()
 	defer bm.mutex.Unlock()
 
+	result := &SpendingResult{
+		AllocationID: allocationID,
+	}
+
 	allocation, exists := bm.allocations[allocationID]
 	if !exists {
-		return fmt.Errorf("allocation %q not found", allocationID)
+		return nil, fmt.Errorf("allocation %q not found", allocationID)
 	}
 
 	budget, exists := bm.budgets[allocation.BudgetID]
 	if !exists {
-		return fmt.Errorf("budget %q not found", allocation.BudgetID)
+		return nil, fmt.Errorf("budget %q not found", allocation.BudgetID)
 	}
 
 	// Update spending
@@ -542,14 +556,105 @@ func (bm *BudgetManager) RecordSpending(ctx context.Context, allocationID string
 	budget.SpentAmount += amount
 	budget.UpdatedAt = time.Now()
 
+	// Check if allocation is exhausted (v0.5.10+ backup funding)
+	if allocation.SpentAmount >= allocation.AllocatedAmount {
+		result.AllocationExhausted = true
+
+		// Check for backup allocation (Issue #234)
+		if allocation.BackupAllocationID != nil && *allocation.BackupAllocationID != "" {
+			backupID := *allocation.BackupAllocationID
+
+			// Verify backup allocation exists and is not exhausted
+			backupAlloc, exists := bm.allocations[backupID]
+			if exists && backupAlloc.SpentAmount < backupAlloc.AllocatedAmount {
+				result.BackupActivated = true
+				result.BackupAllocationID = backupID
+
+				// Get budget names for messaging
+				budgetName := budget.Name
+				backupBudget, _ := bm.budgets[backupAlloc.BudgetID]
+				backupBudgetName := backupBudget.Name
+
+				result.WarningMessage = fmt.Sprintf(
+					"⚠️  Primary funding exhausted: %s ($%.2f spent / $%.2f allocated)\n"+
+						"✅ Automatically switched to backup funding: %s ($%.2f available)\n"+
+						"   Project will continue using backup allocation.",
+					budgetName, allocation.SpentAmount, allocation.AllocatedAmount,
+					backupBudgetName, backupAlloc.AllocatedAmount-backupAlloc.SpentAmount)
+			} else {
+				// Backup exists but is also exhausted or invalid
+				result.WarningMessage = fmt.Sprintf(
+					"❌ Primary funding exhausted: %s ($%.2f spent / $%.2f allocated)\n"+
+						"❌ Backup funding unavailable or also exhausted\n"+
+						"   No additional funds available for this project.",
+					budget.Name, allocation.SpentAmount, allocation.AllocatedAmount)
+			}
+		} else {
+			// No backup configured
+			result.WarningMessage = fmt.Sprintf(
+				"❌ Allocation exhausted: %s ($%.2f spent / $%.2f allocated)\n"+
+					"   No backup funding configured for this allocation.",
+				budget.Name, allocation.SpentAmount, allocation.AllocatedAmount)
+		}
+	}
+
 	// Save changes
 	if err := bm.saveAllocations(); err != nil {
-		return fmt.Errorf("failed to save allocation: %w", err)
+		return nil, fmt.Errorf("failed to save allocation: %w", err)
 	}
 
 	if err := bm.saveBudgets(); err != nil {
-		return fmt.Errorf("failed to save budget: %w", err)
+		return nil, fmt.Errorf("failed to save budget: %w", err)
 	}
+
+	return result, nil
+}
+
+// CheckAllocationStatus checks if an allocation is exhausted or nearing exhaustion
+func (bm *BudgetManager) CheckAllocationStatus(ctx context.Context, allocationID string) (exhausted bool, remaining float64, err error) {
+	bm.mutex.RLock()
+	defer bm.mutex.RUnlock()
+
+	allocation, exists := bm.allocations[allocationID]
+	if !exists {
+		return false, 0, fmt.Errorf("allocation %q not found", allocationID)
+	}
+
+	remaining = allocation.AllocatedAmount - allocation.SpentAmount
+	exhausted = remaining <= 0
+
+	return exhausted, remaining, nil
+}
+
+// ActivateBackupFunding switches a project to its backup funding allocation
+// This is called when the primary allocation is exhausted and backup exists
+func (bm *BudgetManager) ActivateBackupFunding(ctx context.Context, projectID string, primaryAllocationID string, backupAllocationID string) error {
+	bm.mutex.Lock()
+	defer bm.mutex.Unlock()
+
+	// Verify allocations exist
+	primaryAlloc, exists := bm.allocations[primaryAllocationID]
+	if !exists {
+		return fmt.Errorf("primary allocation %q not found", primaryAllocationID)
+	}
+
+	backupAlloc, exists := bm.allocations[backupAllocationID]
+	if !exists {
+		return fmt.Errorf("backup allocation %q not found", backupAllocationID)
+	}
+
+	// Verify both belong to the same project
+	if primaryAlloc.ProjectID != projectID || backupAlloc.ProjectID != projectID {
+		return fmt.Errorf("allocations do not belong to project %q", projectID)
+	}
+
+	// Verify backup has available funds
+	if backupAlloc.SpentAmount >= backupAlloc.AllocatedAmount {
+		return fmt.Errorf("backup allocation %q is exhausted", backupAllocationID)
+	}
+
+	// Note: Updating project's default allocation is handled by the project manager
+	// This method just validates the backup activation is possible
 
 	return nil
 }

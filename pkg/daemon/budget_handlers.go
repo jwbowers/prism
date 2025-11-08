@@ -208,15 +208,28 @@ func (s *Server) handleAllocationByID(w http.ResponseWriter, r *http.Request) {
 
 	allocationID := parts[0]
 
-	switch r.Method {
-	case http.MethodGet:
-		s.handleGetAllocation(w, r, allocationID)
-	case http.MethodPut:
-		s.handleUpdateAllocation(w, r, allocationID)
-	case http.MethodDelete:
-		s.handleDeleteAllocation(w, r, allocationID)
+	if len(parts) == 1 {
+		// Direct allocation operations
+		switch r.Method {
+		case http.MethodGet:
+			s.handleGetAllocation(w, r, allocationID)
+		case http.MethodPut:
+			s.handleUpdateAllocation(w, r, allocationID)
+		case http.MethodDelete:
+			s.handleDeleteAllocation(w, r, allocationID)
+		default:
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		}
+		return
+	}
+
+	// Sub-operations
+	operation := parts[1]
+	switch operation {
+	case "status":
+		s.handleAllocationStatus(w, r, allocationID)
 	default:
-		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		s.writeError(w, http.StatusNotFound, "Unknown allocation operation")
 	}
 }
 
@@ -331,25 +344,91 @@ func (s *Server) handleSetDefaultAllocation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Verify allocation exists and belongs to this project
-	if req.AllocationID != nil {
-		allocation, err := s.budgetManager.GetAllocation(context.Background(), *req.AllocationID)
-		if err != nil {
-			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Allocation not found: %v", err))
+	ctx := context.Background()
+
+	// If clearing the default allocation
+	if req.AllocationID == nil {
+		if err := s.projectManager.ClearDefaultAllocation(ctx, projectID); err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to clear default allocation: %v", err))
 			return
 		}
-		if allocation.ProjectID != projectID {
-			s.writeError(w, http.StatusBadRequest, "Allocation does not belong to this project")
-			return
+
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"project_id":    projectID,
+			"allocation_id": nil,
+			"message":       "Default allocation cleared successfully",
+		})
+		return
+	}
+
+	// Verify allocation exists and belongs to this project
+	allocationID := *req.AllocationID
+	allocation, err := s.budgetManager.GetAllocation(ctx, allocationID)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Allocation not found: %v", err))
+		return
+	}
+	if allocation.ProjectID != projectID {
+		s.writeError(w, http.StatusBadRequest, "Allocation does not belong to this project")
+		return
+	}
+
+	// Set the default allocation
+	if err := s.projectManager.SetDefaultAllocation(ctx, projectID, allocationID); err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to set default allocation: %v", err))
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"project_id":    projectID,
+		"allocation_id": allocationID,
+		"message":       "Default allocation set successfully",
+	})
+}
+
+// handleAllocationStatus checks the status of an allocation (v0.5.10+ Issue #234)
+func (s *Server) handleAllocationStatus(w http.ResponseWriter, r *http.Request, allocationID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := context.Background()
+
+	exhausted, remaining, err := s.budgetManager.CheckAllocationStatus(ctx, allocationID)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Allocation not found: %v", err))
+		return
+	}
+
+	allocation, err := s.budgetManager.GetAllocation(ctx, allocationID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get allocation: %v", err))
+		return
+	}
+
+	// Get backup allocation info if configured
+	var backupInfo map[string]interface{}
+	if allocation.BackupAllocationID != nil && *allocation.BackupAllocationID != "" {
+		backupAlloc, err := s.budgetManager.GetAllocation(ctx, *allocation.BackupAllocationID)
+		if err == nil {
+			backupExhausted, backupRemaining, _ := s.budgetManager.CheckAllocationStatus(ctx, *allocation.BackupAllocationID)
+			backupInfo = map[string]interface{}{
+				"backup_allocation_id": *allocation.BackupAllocationID,
+				"backup_exhausted":     backupExhausted,
+				"backup_remaining":     backupRemaining,
+				"backup_allocated":     backupAlloc.AllocatedAmount,
+				"backup_spent":         backupAlloc.SpentAmount,
+			}
 		}
 	}
 
-	// Update project with default allocation
-	// Note: This would require adding a method to project.Manager to set DefaultAllocationID
-	// For now, we'll return a placeholder response
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"project_id":    projectID,
-		"allocation_id": req.AllocationID,
-		"message":       "Default allocation set successfully",
+		"allocation_id": allocationID,
+		"exhausted":     exhausted,
+		"remaining":     remaining,
+		"allocated":     allocation.AllocatedAmount,
+		"spent":         allocation.SpentAmount,
+		"backup":        backupInfo,
 	})
 }

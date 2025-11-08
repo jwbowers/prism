@@ -633,3 +633,47 @@ func (m *Manager) IsLaunchPrevented(ctx context.Context, projectID string) (bool
 
 	return project.LaunchPrevented, nil
 }
+
+// SetDefaultAllocation sets the default funding allocation for a project (v0.5.10+)
+func (m *Manager) SetDefaultAllocation(ctx context.Context, projectID string, allocationID string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project not found: %s", projectID)
+	}
+
+	// Set the default allocation
+	project.DefaultAllocationID = &allocationID
+	project.UpdatedAt = time.Now()
+
+	// Save projects to disk
+	if err := m.saveProjects(); err != nil {
+		return fmt.Errorf("failed to save project: %w", err)
+	}
+
+	return nil
+}
+
+// ClearDefaultAllocation clears the default funding allocation for a project (v0.5.10+)
+func (m *Manager) ClearDefaultAllocation(ctx context.Context, projectID string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project not found: %s", projectID)
+	}
+
+	// Clear the default allocation
+	project.DefaultAllocationID = nil
+	project.UpdatedAt = time.Now()
+
+	// Save projects to disk
+	if err := m.saveProjects(); err != nil {
+		return fmt.Errorf("failed to save project: %w", err)
+	}
+
+	return nil
+}
