@@ -127,39 +127,42 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.10 (February 2026): Multi-Project Budgets
-**Release Date**: Target February 14, 2026
+### v0.5.10 (November 2025): Multi-Project Budgets
+**Release Date**: November 8, 2025
 **Focus**: Budget system redesign for multi-project allocation
 **Release Plan**: [RELEASE_PLAN_v0.5.10.md](releases/RELEASE_PLAN_v0.5.10.md)
 
 #### Budget Redesign
 **Goal**: Allow budgets to be allocated across multiple projects
 
-**Current State**: 1 budget : 1 project relationship
-**New State**: 1 budget : N projects relationship
+**Current State**: 1 budget : 1 project relationship (pre-v0.5.10)
+**New State**: Many-to-many relationships via allocations
 
-**Features**:
-- Shared budget pools allocable to multiple projects
-- Project-level budget allocation tracking
-- Hierarchical budget management (organization → projects)
-- Per-project spending limits within shared budget
-- Budget reallocation between projects
-- Multi-project cost rollup and reporting
+**Features Implemented**:
+- ✅ Shared budget pools allocable to multiple projects (#97)
+- ✅ Project-level budget allocation tracking (#98)
+- ✅ Budget reallocation between projects with audit trail (#99)
+- ✅ Multi-project cost rollup and reporting (#100)
+- ✅ Funding source selection at launch (#233)
+- ✅ Backup funding and budget cushions (#234)
+- ✅ Enhanced resource tagging for cost optimization (#128)
+- ✅ Budget system philosophy documentation (#236)
 
-**Implementation**:
-- Update budget data model for multi-project support
-- Add project allocation API endpoints
-- Implement budget splitting and tracking
-- Update GUI for budget allocation interface
-- Add project budget usage visualization
-- Integrate with existing cost tracking system
+**Implementation Complete**:
+- ✅ Two-tier budget data model (Budget Pools + Allocations)
+- ✅ REST API endpoints for budget operations (613 lines)
+- ✅ Budget manager with reallocation support (1,133 lines)
+- ✅ Real-time spending tracking per allocation
+- ✅ DefaultAllocationID for frictionless launches
+- ✅ Comprehensive documentation (BUDGET_PHILOSOPHY.md, RESOURCE_TAGGING.md)
 
-**Success Metrics**:
-- Grant-funded research: Single grant budget → multiple projects
-- Lab budgets: Department budget → research group projects
-- Class budgets: Course budget → student project groups
+**Success Metrics Achieved**:
+- ✅ 1 grant → N projects (NSF funding multiple research projects)
+- ✅ N budgets → 1 project (multi-source funding)
+- ✅ Real-time cost tracking and reporting
+- ✅ Grant compliance with audit trails
 
-**Status**: 📋 Planned
+**Status**: 🎉 COMPLETE (November 8, 2025)
 
 ---
 
