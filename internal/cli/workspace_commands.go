@@ -75,6 +75,9 @@ func (f *WorkspaceCommandFactory) buildLaunchArgs(cmd *cobra.Command, args []str
 	if project, _ := cmd.Flags().GetString("project"); project != "" {
 		args = append(args, "--project", project)
 	}
+	if funding, _ := cmd.Flags().GetString("funding"); funding != "" {
+		args = append(args, "--funding", funding)
+	}
 	if wait, _ := cmd.Flags().GetBool("wait"); wait {
 		args = append(args, "--wait")
 	}
@@ -99,6 +102,7 @@ func (f *WorkspaceCommandFactory) addLaunchFlags(cmd *cobra.Command) {
 	cmd.Flags().String("subnet", "", "Specify subnet ID")
 	cmd.Flags().String("vpc", "", "Specify VPC ID")
 	cmd.Flags().String("project", "", "Associate with project")
+	cmd.Flags().String("funding", "", "Specify funding source (budget allocation) - defaults to project's default allocation")
 	cmd.Flags().Bool("wait", false, "Wait and display launch progress")
 	cmd.Flags().Bool("dry-run", false, "Validate configuration without launching")
 	cmd.Flags().StringArray("param", []string{}, "Template parameter (name=value)")

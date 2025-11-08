@@ -159,6 +159,13 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		return // Error response already written by validateLaunchRequest
 	}
 
+	// Resolve funding allocation (v0.5.10+)
+	if req.ProjectID != "" {
+		if err := s.resolveFundingAllocation(&req, w); err != nil {
+			return // Error response already written by resolveFundingAllocation
+		}
+	}
+
 	// Check budget hard cap if this launch is associated with a project
 	if s.isLaunchBlockedByBudget(&req, w) {
 		return // Error response already written by isLaunchBlockedByBudget
@@ -1077,4 +1084,98 @@ func (s *Server) isLaunchBlockedByBudget(req *types.LaunchRequest, w http.Respon
 
 	s.writeError(w, http.StatusForbidden, errorMsg)
 	return true
+}
+
+// resolveFundingAllocation resolves the funding allocation for a launch request (v0.5.10+)
+// Priority: 1) Explicit --funding flag, 2) Project's default allocation, 3) Error if neither
+func (s *Server) resolveFundingAllocation(req *types.LaunchRequest, w http.ResponseWriter) error {
+	ctx := context.Background()
+
+	// If funding allocation is already specified, validate it
+	if req.FundingAllocationID != "" {
+		// Verify allocation exists and belongs to this project
+		allocation, err := s.budgetManager.GetAllocation(ctx, req.FundingAllocationID)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid funding allocation: %v", err))
+			return fmt.Errorf("invalid funding allocation")
+		}
+
+		// Verify allocation belongs to the project
+		if allocation.ProjectID != req.ProjectID {
+			s.writeError(w, http.StatusBadRequest,
+				fmt.Sprintf("Funding allocation %q does not belong to project %q", req.FundingAllocationID, req.ProjectID))
+			return fmt.Errorf("allocation project mismatch")
+		}
+
+		// Allocation is valid, continue
+		return nil
+	}
+
+	// No explicit funding specified - use project's default allocation
+	project, err := s.projectManager.GetProject(ctx, req.ProjectID)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to get project: %v", err))
+		return fmt.Errorf("project not found")
+	}
+
+	// Check if project has a default allocation
+	if project.DefaultAllocationID == nil || *project.DefaultAllocationID == "" {
+		// No default allocation - check if project has any allocations
+		allocations, err := s.budgetManager.GetProjectAllocations(ctx, req.ProjectID)
+		if err != nil || len(allocations) == 0 {
+			s.writeError(w, http.StatusBadRequest,
+				fmt.Sprintf("Project %q has no budget allocations. Please:\n"+
+					"  1. Create a budget: prism budget create <name> <amount>\n"+
+					"  2. Allocate to project: prism budget allocate <budget-name> --project %s --amount <amount>\n"+
+					"  3. Set as default: prism project set-default-funding %s <allocation-id>\n"+
+					"Or specify funding explicitly: --funding <allocation-id>",
+					req.ProjectID, req.ProjectID, req.ProjectID))
+			return fmt.Errorf("no project allocations")
+		}
+
+		// Project has allocations but no default - require explicit selection
+		allocationNames := []string{}
+		for _, alloc := range allocations {
+			if budget, err := s.budgetManager.GetBudget(ctx, alloc.BudgetID); err == nil {
+				allocationNames = append(allocationNames, fmt.Sprintf("%s (ID: %s, $%.2f allocated)",
+					budget.Name, alloc.ID, alloc.AllocatedAmount))
+			}
+		}
+
+		s.writeError(w, http.StatusBadRequest,
+			fmt.Sprintf("Project %q has multiple funding sources but no default set.\n\n"+
+				"Available allocations:\n  %s\n\n"+
+				"Please either:\n"+
+				"  1. Set default: prism project set-default-funding %s <allocation-id>\n"+
+				"  2. Specify funding: --funding <allocation-id>",
+				req.ProjectID,
+				strings.Join(allocationNames, "\n  "),
+				req.ProjectID))
+		return fmt.Errorf("no default allocation")
+	}
+
+	// Use project's default allocation
+	defaultAllocationID := *project.DefaultAllocationID
+
+	// Verify default allocation still exists
+	allocation, err := s.budgetManager.GetAllocation(ctx, defaultAllocationID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError,
+			fmt.Sprintf("Project's default allocation %q not found. "+
+				"Please update default allocation or specify --funding explicitly", defaultAllocationID))
+		return fmt.Errorf("default allocation not found")
+	}
+
+	// Verify allocation belongs to this project (defensive check)
+	if allocation.ProjectID != req.ProjectID {
+		s.writeError(w, http.StatusInternalServerError,
+			fmt.Sprintf("Project's default allocation %q does not belong to this project (data integrity issue)",
+				defaultAllocationID))
+		return fmt.Errorf("allocation integrity error")
+	}
+
+	// Set the resolved allocation ID in the request
+	req.FundingAllocationID = defaultAllocationID
+
+	return nil
 }

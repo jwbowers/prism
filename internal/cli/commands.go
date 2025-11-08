@@ -36,6 +36,7 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&SubnetCommand{})
 	dispatcher.RegisterCommand(&VpcCommand{})
 	dispatcher.RegisterCommand(&ProjectCommand{})
+	dispatcher.RegisterCommand(&FundingCommand{})
 	dispatcher.RegisterCommand(&PackageManagerCommand{})
 	dispatcher.RegisterCommand(&SpotCommand{})
 	dispatcher.RegisterCommand(&IdlePolicyCommand{})
@@ -185,6 +186,21 @@ func (p *ProjectCommand) Execute(req *types.LaunchRequest, args []string, index 
 		return index, fmt.Errorf("--project requires a value")
 	}
 	req.ProjectID = args[index+1]
+	return index + 1, nil
+}
+
+// FundingCommand handles --funding flag (v0.5.10+)
+type FundingCommand struct{}
+
+func (f *FundingCommand) CanHandle(arg string) bool {
+	return arg == "--funding"
+}
+
+func (f *FundingCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	if index+1 >= len(args) {
+		return index, fmt.Errorf("--funding requires a value (budget allocation ID or name)")
+	}
+	req.FundingAllocationID = args[index+1]
 	return index + 1, nil
 }
 
