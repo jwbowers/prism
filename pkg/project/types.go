@@ -21,8 +21,9 @@ type CreateProjectRequest struct {
 	// Tags for project organization
 	Tags map[string]string `json:"tags,omitempty"`
 
-	// Budget contains optional budget configuration
-	Budget *CreateBudgetRequest `json:"budget,omitempty"`
+	// Budget contains optional budget configuration (DEPRECATED in v0.5.10)
+	// Use Budget/Allocation system instead
+	Budget *CreateProjectBudgetRequest `json:"budget,omitempty"`
 }
 
 // Validate validates the create project request
@@ -48,8 +49,9 @@ func (r *CreateProjectRequest) Validate() error {
 	return nil
 }
 
-// CreateBudgetRequest represents a request to create a project budget
-type CreateBudgetRequest struct {
+// CreateProjectBudgetRequest represents a request to create a project budget (DEPRECATED in v0.5.10)
+// Use CreateBudgetRequest + CreateAllocationRequest instead
+type CreateProjectBudgetRequest struct {
 	// TotalBudget is the total project budget in USD
 	TotalBudget float64 `json:"total_budget"`
 
@@ -72,8 +74,8 @@ type CreateBudgetRequest struct {
 	EndDate *time.Time `json:"end_date,omitempty"`
 }
 
-// Validate validates the create budget request
-func (r *CreateBudgetRequest) Validate() error {
+// Validate validates the create project budget request (DEPRECATED in v0.5.10)
+func (r *CreateProjectBudgetRequest) Validate() error {
 	if r.TotalBudget <= 0 {
 		return fmt.Errorf("total budget must be greater than 0")
 	}
@@ -384,4 +386,152 @@ func (r *UpdateMemberRequest) Validate() error {
 	}
 
 	return nil
+}
+
+// ============================================================================
+// v0.5.10: Multi-Budget System Request Types
+// ============================================================================
+
+// CreateBudgetRequest represents a request to create a budget pool (v0.5.10+)
+type CreateBudgetRequest struct {
+	// Name is the budget name (e.g., "NSF Grant CISE-2024-12345")
+	Name string `json:"name"`
+
+	// Description provides budget details
+	Description string `json:"description"`
+
+	// TotalAmount is the total budget pool in USD
+	TotalAmount float64 `json:"total_amount"`
+
+	// Period defines the budget period
+	Period types.BudgetPeriod `json:"period"`
+
+	// StartDate is when the budget period began
+	StartDate time.Time `json:"start_date"`
+
+	// EndDate is when the budget period ends (optional for ongoing budgets)
+	EndDate *time.Time `json:"end_date,omitempty"`
+
+	// AlertThreshold is the global alert percentage (0.0-1.0)
+	AlertThreshold float64 `json:"alert_threshold"`
+
+	// CreatedBy is the user who created the budget
+	CreatedBy string `json:"created_by"`
+
+	// Tags for budget organization
+	Tags map[string]string `json:"tags,omitempty"`
+}
+
+// Validate validates the create budget request
+func (r *CreateBudgetRequest) Validate() error {
+	if r.Name == "" {
+		return fmt.Errorf("budget name is required")
+	}
+
+	if len(r.Name) > 100 {
+		return fmt.Errorf("budget name cannot exceed 100 characters")
+	}
+
+	if r.TotalAmount <= 0 {
+		return fmt.Errorf("total amount must be greater than 0")
+	}
+
+	if r.AlertThreshold < 0 || r.AlertThreshold > 1 {
+		return fmt.Errorf("alert threshold must be between 0.0 and 1.0")
+	}
+
+	if r.Period == "" {
+		return fmt.Errorf("budget period is required")
+	}
+
+	if r.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+
+	return nil
+}
+
+// UpdateBudgetRequest represents a request to update a budget
+type UpdateBudgetRequest struct {
+	// Name is the new budget name (optional)
+	Name *string `json:"name,omitempty"`
+
+	// Description is the new budget description (optional)
+	Description *string `json:"description,omitempty"`
+
+	// TotalAmount is the new total amount (optional)
+	TotalAmount *float64 `json:"total_amount,omitempty"`
+
+	// AlertThreshold is the new alert threshold (optional)
+	AlertThreshold *float64 `json:"alert_threshold,omitempty"`
+
+	// EndDate is the new end date (optional)
+	EndDate *time.Time `json:"end_date,omitempty"`
+
+	// Tags are the new budget tags (optional)
+	Tags map[string]string `json:"tags,omitempty"`
+}
+
+// CreateAllocationRequest represents a request to allocate budget to a project
+type CreateAllocationRequest struct {
+	// BudgetID is the parent budget pool
+	BudgetID string `json:"budget_id"`
+
+	// ProjectID is the project receiving the allocation
+	ProjectID string `json:"project_id"`
+
+	// AllocatedAmount is how much of the budget to allocate to this project
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// AlertThreshold is an optional project-specific alert threshold (overrides budget default)
+	AlertThreshold *float64 `json:"alert_threshold,omitempty"`
+
+	// BackupAllocationID is an optional backup funding source for exhaustion (#234)
+	BackupAllocationID *string `json:"backup_allocation_id,omitempty"`
+
+	// Notes provide context for this allocation
+	Notes string `json:"notes,omitempty"`
+
+	// AllocatedBy is the user who created the allocation
+	AllocatedBy string `json:"allocated_by"`
+}
+
+// Validate validates the create allocation request
+func (r *CreateAllocationRequest) Validate() error {
+	if r.BudgetID == "" {
+		return fmt.Errorf("budget_id is required")
+	}
+
+	if r.ProjectID == "" {
+		return fmt.Errorf("project_id is required")
+	}
+
+	if r.AllocatedAmount <= 0 {
+		return fmt.Errorf("allocated amount must be greater than 0")
+	}
+
+	if r.AlertThreshold != nil && (*r.AlertThreshold < 0 || *r.AlertThreshold > 1) {
+		return fmt.Errorf("alert threshold must be between 0.0 and 1.0")
+	}
+
+	if r.AllocatedBy == "" {
+		return fmt.Errorf("allocated_by is required")
+	}
+
+	return nil
+}
+
+// UpdateAllocationRequest represents a request to update an allocation
+type UpdateAllocationRequest struct {
+	// AllocatedAmount is the new allocated amount (optional)
+	AllocatedAmount *float64 `json:"allocated_amount,omitempty"`
+
+	// AlertThreshold is the new alert threshold (optional)
+	AlertThreshold *float64 `json:"alert_threshold,omitempty"`
+
+	// BackupAllocationID is the new backup allocation (optional)
+	BackupAllocationID *string `json:"backup_allocation_id,omitempty"`
+
+	// Notes are the new notes (optional)
+	Notes *string `json:"notes,omitempty"`
 }

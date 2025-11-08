@@ -36,6 +36,7 @@ type Server struct {
 	versionManager  *APIVersionManager
 	awsManager      *aws.Manager
 	projectManager  *project.Manager
+	budgetManager   *project.BudgetManager
 	securityManager *security.SecurityManager
 	policyService   *policy.Service
 	processManager  ProcessManager
@@ -142,6 +143,12 @@ func NewServer(port string) (*Server, error) {
 	projectManager, err := project.NewManager()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize project manager: %w", err)
+	}
+
+	// Initialize budget manager (v0.5.10 multi-budget system)
+	budgetManager, err := project.NewBudgetManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize budget manager: %w", err)
 	}
 
 	// Initialize cost optimization components
@@ -257,6 +264,7 @@ func NewServer(port string) (*Server, error) {
 		versionManager:      versionManager,
 		awsManager:          awsManager,
 		projectManager:      projectManager,
+		budgetManager:       budgetManager,
 		securityManager:     securityManager,
 		policyService:       policyService,
 		processManager:      processManager,
@@ -663,6 +671,14 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// Project management operations
 	mux.HandleFunc("/api/v1/projects", applyMiddleware(s.handleProjectOperations))
 	mux.HandleFunc("/api/v1/projects/", applyMiddleware(s.handleProjectByID))
+
+	// Budget management operations (v0.5.10 multi-budget system)
+	mux.HandleFunc("/api/v1/budgets", applyMiddleware(s.handleBudgetOperations))
+	mux.HandleFunc("/api/v1/budgets/", applyMiddleware(s.handleBudgetByID))
+
+	// Allocation management operations (v0.5.10 multi-budget system)
+	mux.HandleFunc("/api/v1/allocations", applyMiddleware(s.handleAllocationOperations))
+	mux.HandleFunc("/api/v1/allocations/", applyMiddleware(s.handleAllocationByID))
 
 	// Security management endpoints (Phase 4: Security integration)
 	mux.HandleFunc("/api/v1/security/status", applyMiddleware(s.handleSecurityStatus))

@@ -1070,7 +1070,7 @@ func (a *App) projectCreate(args []string) error {
 			if err != nil {
 				return fmt.Errorf("invalid budget amount: %s", args[i+1])
 			}
-			req.Budget = &project.CreateBudgetRequest{
+			req.Budget = &project.CreateProjectBudgetRequest{
 				TotalBudget: budgetAmount,
 			}
 			i++

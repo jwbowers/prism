@@ -67,6 +67,10 @@ func (s *Server) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 		s.handlePreventLaunches(w, r, projectID)
 	case "allow-launches":
 		s.handleAllowLaunches(w, r, projectID)
+	case "funding":
+		s.handleProjectFunding(w, r, projectID)
+	case "default-allocation":
+		s.handleSetDefaultAllocation(w, r, projectID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
 	}
