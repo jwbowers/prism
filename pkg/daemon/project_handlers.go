@@ -71,6 +71,9 @@ func (s *Server) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 		s.handleProjectFunding(w, r, projectID)
 	case "default-allocation":
 		s.handleSetDefaultAllocation(w, r, projectID)
+	case "invitations":
+		// Delegate to invitation handler (v0.5.11)
+		s.handleInvitationOperations(w, r)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
 	}

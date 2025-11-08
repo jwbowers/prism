@@ -880,6 +880,157 @@ func (s *PrismService) RegisterConnectionCallback(id string, callback func(*Conn
 	}
 }
 
+// Invitation System Methods (v0.5.11+)
+
+// CachedInvitation represents an invitation stored in local cache
+type CachedInvitation struct {
+	Token        string    `json:"token"`
+	InvitationID string    `json:"invitation_id"`
+	ProjectID    string    `json:"project_id"`
+	ProjectName  string    `json:"project_name"`
+	Email        string    `json:"email"`
+	Role         string    `json:"role"`
+	InvitedBy    string    `json:"invited_by"`
+	InvitedAt    time.Time `json:"invited_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	Status       string    `json:"status"`
+	Message      string    `json:"message,omitempty"`
+	AddedAt      time.Time `json:"added_at"`
+}
+
+// GetInvitationByToken retrieves invitation details from daemon
+func (s *PrismService) GetInvitationByToken(ctx context.Context, token string) (map[string]any, error) {
+	url := fmt.Sprintf("%s/api/v1/invitations/%s", s.daemonURL, token)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	s.addAPIKeyHeader(req)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get invitation: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("daemon returned error status: %d", resp.StatusCode)
+	}
+
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode invitation: %w", err)
+	}
+
+	return result, nil
+}
+
+// AcceptInvitation accepts an invitation via daemon API
+func (s *PrismService) AcceptInvitation(ctx context.Context, token string) error {
+	url := fmt.Sprintf("%s/api/v1/invitations/%s/accept", s.daemonURL, token)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	s.addAPIKeyHeader(req)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to accept invitation: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("daemon returned error status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// DeclineInvitation declines an invitation via daemon API
+func (s *PrismService) DeclineInvitation(ctx context.Context, token string, reason string) error {
+	url := fmt.Sprintf("%s/api/v1/invitations/%s/decline", s.daemonURL, token)
+
+	var reqBody map[string]string
+	if reason != "" {
+		reqBody = map[string]string{"reason": reason}
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(jsonData)))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	s.addAPIKeyHeader(req)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to decline invitation: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("daemon returned error status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// SendInvitation sends a project invitation via daemon API
+func (s *PrismService) SendInvitation(ctx context.Context, projectID string, email string, role string, message string, expiresAt *time.Time) (map[string]any, error) {
+	url := fmt.Sprintf("%s/api/v1/projects/%s/invitations", s.daemonURL, projectID)
+
+	reqData := map[string]any{
+		"email":   email,
+		"role":    role,
+		"message": message,
+	}
+	if expiresAt != nil {
+		reqData["expires_at"] = expiresAt.Format(time.RFC3339)
+	}
+
+	jsonData, err := json.Marshal(reqData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(jsonData)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	s.addAPIKeyHeader(req)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send invitation: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("daemon returned error status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return result, nil
+}
+
 // addAPIKeyHeader adds API key authentication header if available
 func (s *PrismService) addAPIKeyHeader(req *http.Request) {
 	if s.apiKey != "" {

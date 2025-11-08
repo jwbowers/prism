@@ -105,6 +105,21 @@ type PrismAPI interface {
 	PreventProjectLaunches(context.Context, string) (map[string]interface{}, error)
 	AllowProjectLaunches(context.Context, string) (map[string]interface{}, error)
 
+	// Invitation operations (v0.5.11)
+	GetInvitationByToken(context.Context, string) (*GetInvitationResponse, error)
+	AcceptInvitation(context.Context, string) (*InvitationActionResponse, error)
+	DeclineInvitation(context.Context, string, string) (*InvitationActionResponse, error)
+	SendInvitation(context.Context, string, SendInvitationRequest) (*SendInvitationResponse, error)
+	SendBulkInvitation(context.Context, string, *types.BulkInvitationRequest) (*types.BulkInvitationResponse, error)
+
+	// Shared token operations (v0.5.13)
+	CreateSharedToken(context.Context, string, *types.CreateSharedTokenRequest) (*types.SharedInvitationToken, error)
+	RedeemSharedToken(context.Context, *types.RedeemSharedTokenRequest) (*types.RedeemSharedTokenResponse, error)
+	GetSharedToken(context.Context, string) (*types.SharedInvitationToken, error)
+	ListSharedTokens(context.Context, string) ([]*types.SharedInvitationToken, error)
+	ExtendSharedToken(context.Context, string, int) error
+	RevokeSharedToken(context.Context, string) error
+
 	// Policy management operations (Phase 5A.5)
 	GetPolicyStatus(context.Context) (*PolicyStatusResponse, error)
 	ListPolicySets(context.Context) (*PolicySetsResponse, error)
@@ -296,4 +311,34 @@ type PolicyCheckResponse struct {
 	Reason          string   `json:"reason"`
 	MatchedPolicies []string `json:"matched_policies,omitempty"`
 	Suggestions     []string `json:"suggestions,omitempty"`
+}
+
+// Invitation operation types (v0.5.11)
+
+// GetInvitationResponse represents the response from GetInvitationByToken
+type GetInvitationResponse struct {
+	Invitation *types.Invitation `json:"invitation"`
+	Project    *types.Project    `json:"project"`
+}
+
+// InvitationActionResponse represents the response from accept/decline operations
+type InvitationActionResponse struct {
+	Invitation *types.Invitation `json:"invitation"`
+	Project    *types.Project    `json:"project,omitempty"`
+	Message    string            `json:"message"`
+}
+
+// SendInvitationRequest represents a request to send an invitation
+type SendInvitationRequest struct {
+	Email     string            `json:"email"`
+	Role      types.ProjectRole `json:"role"`
+	Message   string            `json:"message,omitempty"`
+	ExpiresAt *time.Time        `json:"expires_at,omitempty"`
+}
+
+// SendInvitationResponse represents the response from sending an invitation
+type SendInvitationResponse struct {
+	Invitation *types.Invitation `json:"invitation"`
+	Project    *types.Project    `json:"project"`
+	Message    string            `json:"message"`
 }

@@ -316,8 +316,23 @@ interface IdleSchedule {
   status: string;
 }
 
+interface CachedInvitation {
+  token: string;
+  invitation_id: string;
+  project_id: string;
+  project_name: string;
+  email: string;
+  role: string;
+  invited_by: string;
+  invited_at: string;
+  expires_at: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired' | 'revoked';
+  message?: string;
+  added_at: string;
+}
+
 interface AppState {
-  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs' | 'settings' | 'terminal' | 'webview';
+  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
   templates: Record<string, Template>;
   instances: Instance[];
@@ -337,6 +352,7 @@ interface AppState {
   marketplaceCategories: MarketplaceCategory[];
   idlePolicies: IdlePolicy[];
   idleSchedules: IdleSchedule[];
+  invitations: CachedInvitation[];
   selectedTemplate: Template | null;
   selectedProject: Project | null;
   selectedTerminalInstance: string;
@@ -751,6 +767,53 @@ class SafePrismAPI {
     });
   }
 
+  // Invitation Management APIs (v0.5.11+)
+  async getInvitationByToken(token: string): Promise<any> {
+    try {
+      const data = await this.safeRequest(`/api/v1/invitations/${token}`);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch invitation:', error);
+      throw error;
+    }
+  }
+
+  async acceptInvitation(token: string): Promise<void> {
+    try {
+      await this.safeRequest(`/api/v1/invitations/${token}/accept`, 'POST');
+    } catch (error) {
+      console.error('Failed to accept invitation:', error);
+      throw error;
+    }
+  }
+
+  async declineInvitation(token: string, reason?: string): Promise<void> {
+    try {
+      const body = reason ? { reason } : undefined;
+      await this.safeRequest(`/api/v1/invitations/${token}/decline`, 'POST', body);
+    } catch (error) {
+      console.error('Failed to decline invitation:', error);
+      throw error;
+    }
+  }
+
+  async sendInvitation(projectId: string, email: string, role: string, message?: string, expiresAt?: string): Promise<any> {
+    try {
+      const body: any = {
+        email,
+        role,
+      };
+      if (message) body.message = message;
+      if (expiresAt) body.expires_at = expiresAt;
+
+      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
+      return data;
+    } catch (error) {
+      console.error('Failed to send invitation:', error);
+      throw error;
+    }
+  }
+
   // AMI Management APIs
   async getAMIs(): Promise<AMI[]> {
     try {
@@ -1068,6 +1131,7 @@ export default function PrismApp() {
     marketplaceCategories: [],
     idlePolicies: [],
     idleSchedules: [],
+    invitations: [],
     selectedTemplate: null,
     selectedProject: null,
     selectedTerminalInstance: '',
@@ -3447,6 +3511,385 @@ export default function PrismApp() {
       </Container>
     </SpaceBetween>
   );
+
+  // Invitation Management View (v0.5.11)
+  const InvitationView = () => {
+    const [newToken, setNewToken] = useState('');
+    const [addingInvitation, setAddingInvitation] = useState(false);
+    const [actionModalVisible, setActionModalVisible] = useState(false);
+    const [actionModalConfig, setActionModalConfig] = useState<{
+      type: 'accept' | 'decline' | null;
+      invitation: CachedInvitation | null;
+      reason: string;
+    }>({
+      type: null,
+      invitation: null,
+      reason: ''
+    });
+
+    // Handle adding a new invitation
+    const handleAddInvitation = async () => {
+      if (!newToken.trim()) {
+        addNotification('error', 'Token Required', 'Please enter an invitation token');
+        return;
+      }
+
+      setAddingInvitation(true);
+      try {
+        // Fetch invitation details from daemon
+        const invitationData = await api.getInvitationByToken(newToken.trim());
+
+        // Extract invitation and project info
+        const invitation = invitationData.invitation;
+        const project = invitationData.project;
+
+        // Create cached invitation object
+        const cachedInvitation: CachedInvitation = {
+          token: newToken.trim(),
+          invitation_id: invitation.id,
+          project_id: invitation.project_id,
+          project_name: project.name,
+          email: invitation.email,
+          role: invitation.role,
+          invited_by: invitation.invited_by,
+          invited_at: invitation.invited_at,
+          expires_at: invitation.expires_at,
+          status: invitation.status,
+          message: invitation.message,
+          added_at: new Date().toISOString()
+        };
+
+        // Add to state
+        setState(prev => ({
+          ...prev,
+          invitations: [...prev.invitations, cachedInvitation]
+        }));
+
+        addNotification('success', 'Invitation Added', `Added invitation to ${project.name}`);
+        setNewToken('');
+      } catch (error) {
+        console.error('Failed to add invitation:', error);
+        addNotification('error', 'Failed to Add', String(error));
+      } finally {
+        setAddingInvitation(false);
+      }
+    };
+
+    // Handle accepting invitation
+    const handleAcceptInvitation = async (invitation: CachedInvitation) => {
+      try {
+        await api.acceptInvitation(invitation.token);
+
+        // Update status in state
+        setState(prev => ({
+          ...prev,
+          invitations: prev.invitations.map(inv =>
+            inv.invitation_id === invitation.invitation_id
+              ? { ...inv, status: 'accepted' }
+              : inv
+          )
+        }));
+
+        addNotification('success', 'Invitation Accepted', `You now have access to ${invitation.project_name}`);
+        setActionModalVisible(false);
+      } catch (error) {
+        console.error('Failed to accept invitation:', error);
+        addNotification('error', 'Failed to Accept', String(error));
+      }
+    };
+
+    // Handle declining invitation
+    const handleDeclineInvitation = async (invitation: CachedInvitation, reason: string) => {
+      try {
+        await api.declineInvitation(invitation.token, reason);
+
+        // Update status in state
+        setState(prev => ({
+          ...prev,
+          invitations: prev.invitations.map(inv =>
+            inv.invitation_id === invitation.invitation_id
+              ? { ...inv, status: 'declined' }
+              : inv
+          )
+        }));
+
+        addNotification('success', 'Invitation Declined', `Declined invitation to ${invitation.project_name}`);
+        setActionModalVisible(false);
+      } catch (error) {
+        console.error('Failed to decline invitation:', error);
+        addNotification('error', 'Failed to Decline', String(error));
+      }
+    };
+
+    // Handle removing invitation from cache
+    const handleRemoveInvitation = (invitationId: string) => {
+      setState(prev => ({
+        ...prev,
+        invitations: prev.invitations.filter(inv => inv.invitation_id !== invitationId)
+      }));
+      addNotification('info', 'Invitation Removed', 'Invitation removed from local cache');
+    };
+
+    // Format time remaining
+    const formatTimeRemaining = (expiresAt: string) => {
+      const now = new Date();
+      const expires = new Date(expiresAt);
+      const diff = expires.getTime() - now.getTime();
+
+      if (diff < 0) {
+        return 'Expired';
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+      if (days > 0) {
+        return `${days} day${days !== 1 ? 's' : ''} remaining`;
+      }
+      return `${hours} hour${hours !== 1 ? 's' : ''} remaining`;
+    };
+
+    // Get status indicator
+    const getStatusIndicator = (status: string) => {
+      switch (status) {
+        case 'pending':
+          return <StatusIndicator type="pending">Pending</StatusIndicator>;
+        case 'accepted':
+          return <StatusIndicator type="success">Accepted</StatusIndicator>;
+        case 'declined':
+          return <StatusIndicator type="stopped">Declined</StatusIndicator>;
+        case 'expired':
+          return <StatusIndicator type="error">Expired</StatusIndicator>;
+        default:
+          return <StatusIndicator>{status}</StatusIndicator>;
+      }
+    };
+
+    const pendingCount = state.invitations.filter(i => i.status === 'pending').length;
+    const acceptedCount = state.invitations.filter(i => i.status === 'accepted').length;
+
+    return (
+      <>
+        <SpaceBetween size="l">
+          <Header
+            variant="h1"
+            description="Manage project invitations and collaborate with research teams"
+            counter={`(${state.invitations.length} total, ${pendingCount} pending)`}
+          >
+            Invitations
+          </Header>
+
+          {/* Add Invitation Token */}
+          <Container header={<Header variant="h2">Add Invitation</Header>}>
+            <SpaceBetween size="m">
+              <FormField
+                label="Invitation Token"
+                description="Paste the invitation token you received via email or Slack"
+              >
+                <Input
+                  value={newToken}
+                  onChange={({ detail }) => setNewToken(detail.value)}
+                  placeholder="eyJhbGciOiJIUzI1NiIs..."
+                  disabled={addingInvitation}
+                />
+              </FormField>
+              <Button
+                variant="primary"
+                onClick={handleAddInvitation}
+                loading={addingInvitation}
+                disabled={!newToken.trim()}
+              >
+                Add Invitation
+              </Button>
+            </SpaceBetween>
+          </Container>
+
+          {/* Summary Stats */}
+          <ColumnLayout columns={3} variant="text-grid">
+            <Container header={<Header variant="h3">Total</Header>}>
+              <Box fontSize="display-l" fontWeight="bold">
+                {state.invitations.length}
+              </Box>
+            </Container>
+            <Container header={<Header variant="h3">Pending</Header>}>
+              <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
+                {pendingCount}
+              </Box>
+            </Container>
+            <Container header={<Header variant="h3">Accepted</Header>}>
+              <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
+                {acceptedCount}
+              </Box>
+            </Container>
+          </ColumnLayout>
+
+          {/* Invitations Table */}
+          <Table
+            columnDefinitions={[
+              {
+                id: 'project',
+                header: 'Project',
+                cell: (item: CachedInvitation) => item.project_name
+              },
+              {
+                id: 'role',
+                header: 'Role',
+                cell: (item: CachedInvitation) => (
+                  <Badge color={item.role === 'owner' ? 'red' : item.role === 'admin' ? 'blue' : 'grey'}>
+                    {item.role}
+                  </Badge>
+                )
+              },
+              {
+                id: 'invited_by',
+                header: 'Invited By',
+                cell: (item: CachedInvitation) => item.invited_by
+              },
+              {
+                id: 'expires',
+                header: 'Expiration',
+                cell: (item: CachedInvitation) => (
+                  <Box>
+                    <div>{new Date(item.expires_at).toLocaleDateString()}</div>
+                    <Box variant="small" color="text-body-secondary">
+                      {formatTimeRemaining(item.expires_at)}
+                    </Box>
+                  </Box>
+                )
+              },
+              {
+                id: 'status',
+                header: 'Status',
+                cell: (item: CachedInvitation) => getStatusIndicator(item.status)
+              },
+              {
+                id: 'actions',
+                header: 'Actions',
+                cell: (item: CachedInvitation) => (
+                  <SpaceBetween direction="horizontal" size="xs">
+                    {item.status === 'pending' && (
+                      <>
+                        <Button
+                          variant="primary"
+                          onClick={() => {
+                            setActionModalConfig({
+                              type: 'accept',
+                              invitation: item,
+                              reason: ''
+                            });
+                            setActionModalVisible(true);
+                          }}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setActionModalConfig({
+                              type: 'decline',
+                              invitation: item,
+                              reason: ''
+                            });
+                            setActionModalVisible(true);
+                          }}
+                        >
+                          Decline
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      variant="icon"
+                      iconName="remove"
+                      onClick={() => handleRemoveInvitation(item.invitation_id)}
+                    />
+                  </SpaceBetween>
+                )
+              }
+            ]}
+            items={state.invitations}
+            empty={
+              <Box textAlign="center" color="inherit">
+                <SpaceBetween size="m">
+                  <b>No invitations</b>
+                  <Box variant="p" color="inherit">
+                    Add an invitation token above to get started
+                  </Box>
+                </SpaceBetween>
+              </Box>
+            }
+            header={
+              <Header
+                variant="h2"
+                description="Your project invitations"
+                counter={`(${state.invitations.length})`}
+              >
+                My Invitations
+              </Header>
+            }
+          />
+        </SpaceBetween>
+
+        {/* Action Modal */}
+        <Modal
+          visible={actionModalVisible}
+          onDismiss={() => setActionModalVisible(false)}
+          header={actionModalConfig.type === 'accept' ? 'Accept Invitation' : 'Decline Invitation'}
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button onClick={() => setActionModalVisible(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant={actionModalConfig.type === 'accept' ? 'primary' : 'normal'}
+                  onClick={() => {
+                    if (actionModalConfig.invitation) {
+                      if (actionModalConfig.type === 'accept') {
+                        handleAcceptInvitation(actionModalConfig.invitation);
+                      } else {
+                        handleDeclineInvitation(actionModalConfig.invitation, actionModalConfig.reason);
+                      }
+                    }
+                  }}
+                >
+                  {actionModalConfig.type === 'accept' ? 'Accept' : 'Decline'}
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          {actionModalConfig.invitation && (
+            <SpaceBetween size="m">
+              {actionModalConfig.type === 'accept' ? (
+                <>
+                  <Box>
+                    Are you sure you want to accept the invitation to join <strong>{actionModalConfig.invitation.project_name}</strong> as a <strong>{actionModalConfig.invitation.role}</strong>?
+                  </Box>
+                  {actionModalConfig.invitation.message && (
+                    <Alert type="info" header="Message from inviter">
+                      {actionModalConfig.invitation.message}
+                    </Alert>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Box>
+                    Are you sure you want to decline the invitation to <strong>{actionModalConfig.invitation.project_name}</strong>?
+                  </Box>
+                  <FormField label="Reason (optional)" description="Provide a reason for declining">
+                    <Input
+                      value={actionModalConfig.reason}
+                      onChange={({ detail }) => setActionModalConfig(prev => ({ ...prev, reason: detail.value }))}
+                      placeholder="Not interested in this project"
+                    />
+                  </FormField>
+                </>
+              )}
+            </SpaceBetween>
+          )}
+        </Modal>
+      </>
+    );
+  };
 
   // Project Detail View with Integrated Budget
   const ProjectDetailView = () => {
@@ -6636,6 +7079,13 @@ export default function PrismApp() {
                 text: "Projects",
                 href: "/projects"
               },
+              {
+                type: "link",
+                text: "Invitations",
+                href: "/invitations",
+                info: state.invitations.filter(i => i.status === 'pending').length > 0 ?
+                      <Badge color="blue">{state.invitations.filter(i => i.status === 'pending').length}</Badge> : undefined
+              },
               { type: "divider" },
               {
                 type: "link",
@@ -6706,6 +7156,7 @@ export default function PrismApp() {
             {state.activeView === 'storage' && <StorageManagementView />}
             {state.activeView === 'projects' && <ProjectManagementView />}
             {state.activeView === 'project-detail' && <ProjectDetailView />}
+            {state.activeView === 'invitations' && <InvitationView />}
             {state.activeView === 'users' && <UserManagementView />}
             {state.activeView === 'ami' && <AMIManagementView />}
             {state.activeView === 'rightsizing' && <RightsizingView />}

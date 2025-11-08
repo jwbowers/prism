@@ -406,6 +406,10 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	projectCobra := NewProjectCobraCommands(r.app)
 	rootCmd.AddCommand(projectCobra.CreateProjectCommand())
 
+	// Invitation commands (v0.5.11 user invitation system)
+	invitationCobra := NewInvitationCobraCommands(r.app)
+	rootCmd.AddCommand(invitationCobra.CreateInvitationCommand())
+
 	// Budget commands (comprehensive financial management)
 	budgetCommands := NewBudgetCommands(r.app)
 	rootCmd.AddCommand(budgetCommands.CreateBudgetCommand())

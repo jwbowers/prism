@@ -143,18 +143,49 @@ prism delete temp-setup
 ```
 
 #### Week 3: Add Students Before Semester
-```bash
-# Bulk import from Canvas/university system
-prism project member import "CS229-Fall2024" \
-  --csv students.csv \
-  --role member \
-  --default-budget 24
 
+**✅ NEW (v0.5.12+): Bulk Invitations**
+
+```bash
+# Export student roster from Canvas/university system to CSV
 # students.csv format:
-# email,name,section
-# emily.chen@university.edu,Emily Chen,Section A
-# david.kim@university.edu,David Kim,Section B
-# ...
+# email,role,message
+# emily.chen@university.edu,member,Welcome to CS 229!
+# david.kim@university.edu,member,Welcome to CS 229!
+# sophie.martinez@university.edu,member,Welcome to CS 229!
+# ... (47 more students)
+
+# Send bulk invitations (v0.5.12+)
+prism project invitations bulk "CS229-Fall2024" \
+  --file students.csv \
+  --message "Welcome to CS 229! Please accept this invitation to access your course workspace." \
+  --expires-in 14d
+
+# Output:
+# 📬 Bulk Invitation Summary
+#
+# Total:   50 invitations
+# ✅ Sent:    50 (100%)
+# ⏭️  Skipped: 0 (0%)
+# ❌ Failed:  0 (0%)
+#
+# All students will receive email invitations with:
+# - Project: CS229-Fall2024
+# - Role: member
+# - Budget: $24.00 per student
+# - Expires: 14 days (deadline to accept)
+#
+# 💡 Tip: Students who don't accept within 14 days will need a resend:
+#    prism project invitations resend <invitation-id>
+```
+
+**Alternative: Quick inline invite** (small groups):
+```bash
+# For TAs or small group additions
+prism project invitations bulk "CS229-Fall2024" \
+  --emails "alex.thompson@university.edu, priya.sharma@university.edu, kevin.wong@university.edu" \
+  --role admin \
+  --message "You've been added as a TA for CS 229!"
 ```
 
 ---

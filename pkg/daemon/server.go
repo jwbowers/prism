@@ -16,6 +16,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/connection"
 	"github.com/scttfrdmn/prism/pkg/cost"
+	"github.com/scttfrdmn/prism/pkg/invitation"
 	"github.com/scttfrdmn/prism/pkg/marketplace"
 	"github.com/scttfrdmn/prism/pkg/monitoring"
 	"github.com/scttfrdmn/prism/pkg/policy"
@@ -27,19 +28,21 @@ import (
 
 // Server represents the Prism daemon server
 type Server struct {
-	config          *Config
-	port            string
-	httpServer      *http.Server
-	stateManager    *state.Manager
-	userManager     *UserManager
-	statusTracker   *StatusTracker
-	versionManager  *APIVersionManager
-	awsManager      *aws.Manager
-	projectManager  *project.Manager
-	budgetManager   *project.BudgetManager
-	securityManager *security.SecurityManager
-	policyService   *policy.Service
-	processManager  ProcessManager
+	config             *Config
+	port               string
+	httpServer         *http.Server
+	stateManager       *state.Manager
+	userManager        *UserManager
+	statusTracker      *StatusTracker
+	versionManager     *APIVersionManager
+	awsManager         *aws.Manager
+	projectManager     *project.Manager
+	budgetManager      *project.BudgetManager
+	invitationManager  *invitation.Manager
+	sharedTokenManager *invitation.SharedTokenManager
+	securityManager    *security.SecurityManager
+	policyService      *policy.Service
+	processManager     ProcessManager
 
 	// Connection reliability components
 	performanceMonitor *monitoring.PerformanceMonitor
@@ -150,6 +153,15 @@ func NewServer(port string) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize budget manager: %w", err)
 	}
+
+	// Initialize invitation manager (v0.5.11 user invitation system)
+	invitationManager, err := invitation.NewManager(nil) // nil EmailSender for now, will be added later
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize invitation manager: %w", err)
+	}
+
+	// Initialize shared token manager (v0.5.13 shared token system)
+	sharedTokenManager := invitation.NewSharedTokenManager()
 
 	// Initialize cost optimization components
 	budgetTracker, err := project.NewBudgetTracker()
@@ -265,6 +277,8 @@ func NewServer(port string) (*Server, error) {
 		awsManager:          awsManager,
 		projectManager:      projectManager,
 		budgetManager:       budgetManager,
+		invitationManager:   invitationManager,
+		sharedTokenManager:  sharedTokenManager,
 		securityManager:     securityManager,
 		policyService:       policyService,
 		processManager:      processManager,
@@ -686,6 +700,10 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// Cost rollup and reporting operations (v0.5.10 Issue #100)
 	mux.HandleFunc("/api/v1/reports/rollup", applyMiddleware(s.handleBudgetRollupReport))
 	mux.HandleFunc("/api/v1/reports/projects", applyMiddleware(s.handleProjectCostRollup))
+
+	// Invitation management operations (v0.5.11 user invitation system)
+	// Note: Project invitation routes handled by handleProjectByID
+	mux.HandleFunc("/api/v1/invitations/", applyMiddleware(s.handleInvitationOperations))
 
 	// Security management endpoints (Phase 4: Security integration)
 	mux.HandleFunc("/api/v1/security/status", applyMiddleware(s.handleSecurityStatus))

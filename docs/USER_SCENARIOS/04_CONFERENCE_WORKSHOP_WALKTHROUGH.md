@@ -55,36 +55,85 @@ prism project create neurips-dl-workshop \
   --budget 200 \
   --description "NeurIPS 2025: Deep Learning Workshop" \
   --alert-threshold 80
-
-# Generate batch invitations for 60 participants
-cat > workshop_participants.csv << EOF
-Name,Type,ValidDays,CanInvite,Transferable,DeviceBound,MaxDevices
-Participant_01,read_only,7,no,no,yes,2
-Participant_02,read_only,7,no,no,yes,2
-Participant_03,read_only,7,no,no,yes,2
-[... 57 more participants ...]
-EOF
-
-# Create invitations with basic policy restrictions
-prism profiles invitations batch-create \
-  --csv-file workshop_participants.csv \
-  --output-file invitation_codes.csv \
-  --include-encoded
 ```
 
-**Current capabilities**:
-- ✅ Batch invitation generation (60 participants in seconds)
-- ✅ Time-boxed access (7-day expiration)
-- ✅ **Access extension**: Can extend for additional day(s) so participants can continue working
-- ✅ Device binding (prevents casual sharing)
-- ✅ Budget allocation ($200 total)
-- ✅ Basic policy restrictions (template whitelist)
+**✅ NEW (v0.5.13+): Shared Token Access** (Issue #241 - Ideal for workshops)
 
-💡 **Workshop Extension Example**: After 3-hour workshop ends, Alex can extend access for 24 hours:
 ```bash
-prism profiles invitations extend neurips-workshop --add-days 1
-# All 60 participants get automatic 24-hour extension
+# Generate single shared token for all 60 participants
+prism project invitations shared create neurips-dl-workshop \
+  --name "NeurIPS Workshop Access" \
+  --role member \
+  --redemption-limit 60 \
+  --expires-in 7d \
+  --message "Welcome to the NeurIPS Deep Learning Workshop!"
+
+# Output:
+# 🎫 Shared Invitation Token Generated
+#
+#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    Project: neurips-dl-workshop
+#    Role: member
+#    Redemptions: 0 / 60
+#
+#    Share this token with all participants:
+#    📧 Email: Include WORKSHOP-NEURIPS-2025-A4F2 in registration emails
+#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2025-A4F2
+#    💡 This single token works for all 60 participants (first-come-first-served)
+
+# Alex includes this token in workshop registration confirmation emails
+# OR displays it as QR code at workshop registration desk (QR generation coming soon)
+```
+
+**Shared Token Benefits**:
+- ✅ **Single token** for all participants (vs 60 individual tokens)
+- ✅ **Walk-in friendly**: Display token at registration desk
+- ✅ **No pre-registration**: Participants don't need to provide emails ahead of time
+- ✅ **First-come-first-served**: 60 redemptions then token becomes invalid
+- ✅ **Atomic redemption**: Thread-safe counter prevents over-redemption
+- 🔄 **QR code support**: Print token as QR code for easy mobile access (coming soon)
+
+💡 **Monitor Token Usage**:
+```bash
+# Check redemption status
+prism project invitations shared show WORKSHOP-NEURIPS-2025-A4F2
+
+# Output:
+# 🎫 Shared Token Information
+#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    Name: NeurIPS Workshop Access
+#    Redemptions:
+#    • Used: 42 / 60 (70%)
+#    • Remaining: 18
+#    Status: active
+#    Expires: Dec 9, 2025
+```
+
+💡 **Workshop Extension**: After 3-hour workshop ends, extend token expiration:
+```bash
+prism project invitations shared extend WORKSHOP-NEURIPS-2025-A4F2 --add-days 1
+# All 42 redeemed participants get automatic 24-hour extension
 # Great for: Homework completion, extended tutorials, follow-up work
+
+# Output:
+# ✅ Token expiration extended
+#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    New expiration: Dec 10, 2025
+#    💡 All 42 redeemed participants automatically get the extension
+```
+
+**Alternative: Bulk Invitations** (if you have participant emails ahead of time):
+
+```bash
+# Generate individual invitations for 60 participants
+prism project invitations bulk neurips-dl-workshop \
+  --file workshop_participants.txt \
+  --role member \
+  --expires-in 7d
+
+# 📬 Bulk Invitation Summary
+# Total:   60 invitations
+# ✅ Sent:    60 (100%)
 ```
 
 **Quick Start Wizard** (Rapid 50-participant onboarding):
@@ -328,7 +377,7 @@ prism workshop export-all neurips-dl-workshop \
 
 ## 🎯 Ideal Future State: Complete Workshop Walkthrough
 
-### Week Before Workshop: Setup with Auto-Terminate
+### Week Before Workshop: Setup with Shared Token & Auto-Terminate
 
 ```bash
 # Create workshop project with aggressive cost controls
@@ -338,40 +387,47 @@ prism project create neurips-dl-workshop \
   --alert-threshold 50,75,90 \
   --description "NeurIPS 2025 Workshop: Deep Learning with PyTorch"
 
-# Create policy-restricted invitations
-prism profiles invitations batch-create-workshop \
-  --csv-file participants.csv \
+# Generate shared token with policy restrictions (v0.5.13+)
+prism project invitations shared neurips-dl-workshop \
+  --name "NeurIPS Workshop Access" \
+  --role member \
+  --redemption-limit 60 \
+  --expires-in 7d \
   --template-whitelist "PyTorch Machine Learning" \
   --max-instance-type "t3.medium" \
-  --max-hourly-cost 0.10 \
-  --valid-days 7 \
   --auto-terminate-hours 6 \
-  --output-file invitation_codes.csv
+  --message "Welcome to the NeurIPS Deep Learning Workshop!"
 
 # Prism output:
-# 📧 Generated 60 workshop invitations
-#    - Valid for 7 days (expires Dec 9, 2025)
-#    - Template restricted: "PyTorch Machine Learning" only
+# 🎫 Shared Invitation Token Generated
+#
+#    Token: WORKSHOP-NEURIPS-2025
+#    Project: neurips-dl-workshop
+#    Role: member
+#    Redemptions: 0 / 60 (first-come-first-served)
+#    Expires: 7 days (Dec 9, 2025)
+#
+#    Policy restrictions:
+#    - Template whitelist: "PyTorch Machine Learning" only
 #    - Max instance: t3.medium ($0.0416/hr)
 #    - Auto-terminate: 6 hours after launch
 #    - Device limit: 2 devices per participant
 #
 # 📊 Projected costs:
 #    - Per participant: $3.20 (6 hours × $0.0416/hr × 1.3 buffer)
-#    - Total if all 60 launch: $192.00 ✅ (within $200 budget)
+#    - Total if all 60 redeem: $192.00 ✅ (within $200 budget)
 #
-# ✅ Invitations saved to: invitation_codes.csv
+#    💡 This single token works for all 60 participants!
+#
+#    Share via:
+#    📧 Email: Include WORKSHOP-NEURIPS-2025 in registration emails
+#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2025
+#    📱 QR Code: Display at workshop registration desk
 #
 # Next steps:
-#   1. Email invitation codes to participants
-#   2. Enable early access (optional): prism workshop early-access enable
-#   3. Monitor signups: prism workshop participants neurips-dl-workshop
-
-# Email invitation codes to participants
-prism workshop email-invitations \
-  --csv-file invitation_codes.csv \
-  --template workshop_welcome.html \
-  --subject "NeurIPS 2025: Deep Learning Workshop Access"
+#   1. Email token to all registered participants
+#   2. Print QR code for walk-ins at registration
+#   3. Monitor redemptions: prism project invitations stats neurips-dl-workshop
 ```
 
 ### Day Before Workshop: Early Access Testing
@@ -384,29 +440,35 @@ prism workshop early-access neurips-dl-workshop \
   --test-mode
 
 # Participants who test early (optional for them):
-participant$ prism profiles invitations accept <CODE> neurips-workshop
+participant$ prism invitation accept WORKSHOP-NEURIPS-2025
+# ✅ Invitation accepted! You've joined: neurips-dl-workshop
+# 🎓 Role: member
+# ⏰ Access expires: Dec 9, 2025 (7 days)
+
 participant$ prism launch "PyTorch Machine Learning" test-env --hours 2
 # (Automatically terminates after 2 hours)
 
-# Alex monitors early access
-prism workshop participants neurips-dl-workshop
+# Alex monitors shared token redemptions
+prism project invitations stats neurips-dl-workshop
 
 # Output:
-# 📊 Early Access Status (24 hours before workshop)
+# 📊 Invitation Stats: neurips-dl-workshop
 #
-# Accepted Invitations: 58 / 60 (97%)
-# Tested Environment:   15 / 58 (26%)
+# Shared Token: WORKSHOP-NEURIPS-2025
+# Redemptions: 15 / 60 (25%)
+# Time remaining: 6 days (expires Dec 9)
 #
-# ✅ Ready: 15 participants (tested successfully)
-# 🟡 Accepted but not tested: 43 participants
-# ❌ Not yet accepted: 2 participants
-#    - Participant_23: Invitation sent, not accepted
-#    - Participant_47: Invitation sent, not accepted
+# ✅ Redeemed: 15 participants
+# ⏳ Unused redemptions: 45 remaining
 #
-# 💰 Early access cost: $3.20 (15 participants × $0.21/test)
-# 📧 Reminder emails:
-#    - Send reminder to 43 accepted-not-tested? [Y/n]: y
-#    - Send urgent reminder to 2 not-accepted? [Y/n]: y
+# Early test launches: 12 participants (3 redeemed but haven't launched)
+#
+# 💰 Early access cost: $3.20 (12 test launches × $0.27/2hrs)
+#
+# 💡 Tip: Send reminder email with token to increase early testing:
+#    "Remember to test your workshop environment!
+#     Access code: WORKSHOP-NEURIPS-2025
+#     Instructions: https://prism.dev/join/WORKSHOP-NEURIPS-2025"
 ```
 
 ### Workshop Day: Smooth Execution

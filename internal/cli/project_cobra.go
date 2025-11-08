@@ -35,6 +35,8 @@ with team members.`,
 		pc.createBudgetCommand(),
 		pc.createInstancesCommand(),
 		pc.createTemplatesCommand(),
+		pc.createInviteCommand(),
+		pc.createInvitationsCommand(),
 	)
 
 	return cmd

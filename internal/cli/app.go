@@ -1042,6 +1042,10 @@ func (a *App) Project(args []string) error {
 		return a.projectTemplates(projectArgs)
 	case "members":
 		return a.projectMembers(projectArgs)
+	case "invite":
+		return a.projectInvite(projectArgs)
+	case "invitations":
+		return a.projectInvitations(projectArgs)
 	case "delete":
 		return a.projectDelete(projectArgs)
 	default:
