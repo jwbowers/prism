@@ -979,6 +979,156 @@ func (bm *BudgetManager) GetBudgetReallocationHistory(ctx context.Context, budge
 	return results, nil
 }
 
+// ============================================================================
+// Multi-Project Cost Rollup and Reporting (v0.5.10+ Issue #100)
+// ============================================================================
+
+// GenerateBudgetRollupReport generates a comprehensive rollup report across all budgets (v0.5.10+ Issue #100)
+func (bm *BudgetManager) GenerateBudgetRollupReport(ctx context.Context) (*BudgetRollupReport, error) {
+	bm.mutex.RLock()
+	defer bm.mutex.RUnlock()
+
+	report := &BudgetRollupReport{
+		ReportID:        uuid.New().String(),
+		GeneratedAt:     time.Now(),
+		BudgetSummaries: make([]BudgetSummaryReport, 0),
+	}
+
+	projectsMap := make(map[string]bool)
+
+	// Generate summary for each budget
+	for _, budget := range bm.budgets {
+		summary := bm.generateBudgetSummary(budget)
+		report.BudgetSummaries = append(report.BudgetSummaries, summary)
+
+		// Track unique projects
+		for _, proj := range summary.Projects {
+			projectsMap[proj.ProjectID] = true
+		}
+
+		// Aggregate totals
+		report.TotalAllocated += budget.AllocatedAmount
+		report.TotalSpent += budget.SpentAmount
+	}
+
+	report.TotalBudgets = len(bm.budgets)
+	report.TotalRemaining = report.TotalAllocated - report.TotalSpent
+	if report.TotalAllocated > 0 {
+		report.OverallUtilization = report.TotalSpent / report.TotalAllocated
+	}
+	report.ProjectCount = len(projectsMap)
+
+	return report, nil
+}
+
+// generateBudgetSummary creates a detailed summary for a single budget
+func (bm *BudgetManager) generateBudgetSummary(budget *types.Budget) BudgetSummaryReport {
+	summary := BudgetSummaryReport{
+		BudgetID:        budget.ID,
+		BudgetName:      budget.Name,
+		Period:          string(budget.Period),
+		TotalAmount:     budget.TotalAmount,
+		AllocatedAmount: budget.AllocatedAmount,
+		SpentAmount:     budget.SpentAmount,
+		RemainingAmount: budget.TotalAmount - budget.AllocatedAmount,
+		Projects:        make([]ProjectCostSummary, 0),
+	}
+
+	if budget.AllocatedAmount > 0 {
+		summary.Utilization = budget.SpentAmount / budget.AllocatedAmount
+	}
+
+	// Get allocations for this budget
+	allocations := bm.budgetAllocations[budget.ID]
+	summary.AllocationCount = len(allocations)
+
+	// Group allocations by project
+	projectAllocations := make(map[string][]*types.ProjectBudgetAllocation)
+	for _, alloc := range allocations {
+		projectAllocations[alloc.ProjectID] = append(projectAllocations[alloc.ProjectID], alloc)
+	}
+
+	summary.ProjectCount = len(projectAllocations)
+
+	// Generate project summaries
+	for projectID, projAllocs := range projectAllocations {
+		projectSummary := bm.generateProjectCostSummary(projectID, projAllocs)
+		summary.Projects = append(summary.Projects, projectSummary)
+	}
+
+	return summary
+}
+
+// generateProjectCostSummary creates a cost summary for a project
+func (bm *BudgetManager) generateProjectCostSummary(projectID string, allocations []*types.ProjectBudgetAllocation) ProjectCostSummary {
+	summary := ProjectCostSummary{
+		ProjectID:      projectID,
+		ProjectName:    projectID, // Will be populated by caller if project manager available
+		FundingSources: make([]AllocationSummary, 0),
+	}
+
+	for _, alloc := range allocations {
+		allocSummary := AllocationSummary{
+			AllocationID:    alloc.ID,
+			BudgetID:        alloc.BudgetID,
+			BudgetName:      bm.budgets[alloc.BudgetID].Name,
+			AllocatedAmount: alloc.AllocatedAmount,
+			SpentAmount:     alloc.SpentAmount,
+			RemainingAmount: alloc.AllocatedAmount - alloc.SpentAmount,
+			HasBackup:       alloc.BackupAllocationID != nil && *alloc.BackupAllocationID != "",
+		}
+
+		if alloc.AllocatedAmount > 0 {
+			allocSummary.Utilization = alloc.SpentAmount / alloc.AllocatedAmount
+		}
+
+		summary.FundingSources = append(summary.FundingSources, allocSummary)
+		summary.TotalAllocated += alloc.AllocatedAmount
+		summary.TotalSpent += alloc.SpentAmount
+	}
+
+	summary.TotalRemaining = summary.TotalAllocated - summary.TotalSpent
+	if summary.TotalAllocated > 0 {
+		summary.Utilization = summary.TotalSpent / summary.TotalAllocated
+	}
+
+	return summary
+}
+
+// GetBudgetSummaryReport generates a detailed summary for a specific budget (v0.5.10+ Issue #100)
+func (bm *BudgetManager) GetBudgetSummaryReport(ctx context.Context, budgetID string) (*BudgetSummaryReport, error) {
+	bm.mutex.RLock()
+	defer bm.mutex.RUnlock()
+
+	budget, exists := bm.budgets[budgetID]
+	if !exists {
+		return nil, fmt.Errorf("budget %q not found", budgetID)
+	}
+
+	summary := bm.generateBudgetSummary(budget)
+	return &summary, nil
+}
+
+// GetProjectCostRollup generates cost rollup for specific projects (v0.5.10+ Issue #100)
+func (bm *BudgetManager) GetProjectCostRollup(ctx context.Context, projectIDs []string) ([]ProjectCostSummary, error) {
+	bm.mutex.RLock()
+	defer bm.mutex.RUnlock()
+
+	summaries := make([]ProjectCostSummary, 0, len(projectIDs))
+
+	for _, projectID := range projectIDs {
+		allocations := bm.projectAllocations[projectID]
+		if len(allocations) == 0 {
+			continue // Skip projects with no allocations
+		}
+
+		summary := bm.generateProjectCostSummary(projectID, allocations)
+		summaries = append(summaries, summary)
+	}
+
+	return summaries, nil
+}
+
 // Close cleanly shuts down the budget manager
 func (bm *BudgetManager) Close() error {
 	bm.mutex.Lock()

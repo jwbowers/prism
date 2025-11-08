@@ -57,6 +57,8 @@ func (s *Server) handleBudgetByID(w http.ResponseWriter, r *http.Request) {
 		s.handleBudgetAllocations(w, r, budgetID)
 	case "reallocations":
 		s.handleBudgetReallocationHistory(w, r, budgetID)
+	case "report":
+		s.handleBudgetSummaryReport(w, r, budgetID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown budget operation")
 	}
@@ -506,5 +508,106 @@ func (s *Server) handleAllocationReallocationHistory(w http.ResponseWriter, r *h
 		"allocation_id": allocationID,
 		"reallocations": records,
 		"count":         len(records),
+	})
+}
+
+// ============================================================================
+// Cost Rollup and Reporting Endpoints (v0.5.10+ Issue #100)
+// ============================================================================
+
+// handleBudgetRollupReport generates a comprehensive rollup report (v0.5.10+ Issue #100)
+func (s *Server) handleBudgetRollupReport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	report, err := s.budgetManager.GenerateBudgetRollupReport(context.Background())
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to generate rollup report: %v", err))
+		return
+	}
+
+	// Populate project names if project manager is available
+	if s.projectManager != nil {
+		for i := range report.BudgetSummaries {
+			for j := range report.BudgetSummaries[i].Projects {
+				proj := &report.BudgetSummaries[i].Projects[j]
+				if project, err := s.projectManager.GetProject(context.Background(), proj.ProjectID); err == nil {
+					proj.ProjectName = project.Name
+				}
+			}
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(report)
+}
+
+// handleBudgetSummaryReport generates a detailed summary for a specific budget (v0.5.10+ Issue #100)
+func (s *Server) handleBudgetSummaryReport(w http.ResponseWriter, r *http.Request, budgetID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	summary, err := s.budgetManager.GetBudgetSummaryReport(context.Background(), budgetID)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Failed to get budget summary: %v", err))
+		return
+	}
+
+	// Populate project names if project manager is available
+	if s.projectManager != nil {
+		for i := range summary.Projects {
+			proj := &summary.Projects[i]
+			if project, err := s.projectManager.GetProject(context.Background(), proj.ProjectID); err == nil {
+				proj.ProjectName = project.Name
+			}
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(summary)
+}
+
+// handleProjectCostRollup generates cost rollup for specific projects (v0.5.10+ Issue #100)
+func (s *Server) handleProjectCostRollup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req struct {
+		ProjectIDs []string `json:"project_ids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid request: %v", err))
+		return
+	}
+
+	if len(req.ProjectIDs) == 0 {
+		s.writeError(w, http.StatusBadRequest, "project_ids is required")
+		return
+	}
+
+	summaries, err := s.budgetManager.GetProjectCostRollup(context.Background(), req.ProjectIDs)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to generate project cost rollup: %v", err))
+		return
+	}
+
+	// Populate project names if project manager is available
+	if s.projectManager != nil {
+		for i := range summaries {
+			proj := &summaries[i]
+			if project, err := s.projectManager.GetProject(context.Background(), proj.ProjectID); err == nil {
+				proj.ProjectName = project.Name
+			}
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"projects": summaries,
+		"count":    len(summaries),
 	})
 }

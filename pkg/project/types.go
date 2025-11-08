@@ -616,3 +616,124 @@ type ReallocationRecord struct {
 	// Timestamp is when the reallocation occurred
 	Timestamp time.Time `json:"timestamp"`
 }
+
+// ============================================================================
+// v0.5.10: Multi-Project Cost Rollup and Reporting Types (Issue #100)
+// ============================================================================
+
+// BudgetRollupReport provides aggregated cost and budget information (v0.5.10+ Issue #100)
+type BudgetRollupReport struct {
+	// ReportID is a unique identifier for this report
+	ReportID string `json:"report_id"`
+
+	// GeneratedAt is when this report was generated
+	GeneratedAt time.Time `json:"generated_at"`
+
+	// BudgetSummaries provides per-budget rollup information
+	BudgetSummaries []BudgetSummaryReport `json:"budget_summaries"`
+
+	// TotalBudgets is the total number of budgets in the report
+	TotalBudgets int `json:"total_budgets"`
+
+	// TotalAllocated is the sum of all budget allocations
+	TotalAllocated float64 `json:"total_allocated"`
+
+	// TotalSpent is the sum of all spending across all budgets
+	TotalSpent float64 `json:"total_spent"`
+
+	// TotalRemaining is the total remaining across all budgets
+	TotalRemaining float64 `json:"total_remaining"`
+
+	// OverallUtilization is the percentage of total budget utilized (0.0-1.0)
+	OverallUtilization float64 `json:"overall_utilization"`
+
+	// ProjectCount is the total number of projects funded
+	ProjectCount int `json:"project_count"`
+}
+
+// BudgetSummaryReport provides detailed budget information (v0.5.10+ Issue #100)
+type BudgetSummaryReport struct {
+	// BudgetID is the budget identifier
+	BudgetID string `json:"budget_id"`
+
+	// BudgetName is the budget name
+	BudgetName string `json:"budget_name"`
+
+	// Period is the budget period
+	Period string `json:"period"`
+
+	// TotalAmount is the total budget amount
+	TotalAmount float64 `json:"total_amount"`
+
+	// AllocatedAmount is how much has been allocated to projects
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// SpentAmount is how much has been spent
+	SpentAmount float64 `json:"spent_amount"`
+
+	// RemainingAmount is the remaining unspent budget
+	RemainingAmount float64 `json:"remaining_amount"`
+
+	// Utilization is the percentage of budget utilized (0.0-1.0)
+	Utilization float64 `json:"utilization"`
+
+	// ProjectCount is the number of projects funded by this budget
+	ProjectCount int `json:"project_count"`
+
+	// AllocationCount is the number of allocations from this budget
+	AllocationCount int `json:"allocation_count"`
+
+	// Projects provides per-project information
+	Projects []ProjectCostSummary `json:"projects"`
+}
+
+// ProjectCostSummary provides project-level cost information (v0.5.10+ Issue #100)
+type ProjectCostSummary struct {
+	// ProjectID is the project identifier
+	ProjectID string `json:"project_id"`
+
+	// ProjectName is the project name
+	ProjectName string `json:"project_name"`
+
+	// FundingSources lists all funding allocations for this project
+	FundingSources []AllocationSummary `json:"funding_sources"`
+
+	// TotalAllocated is the total allocated to this project across all sources
+	TotalAllocated float64 `json:"total_allocated"`
+
+	// TotalSpent is the total spent by this project
+	TotalSpent float64 `json:"total_spent"`
+
+	// TotalRemaining is the remaining budget for this project
+	TotalRemaining float64 `json:"total_remaining"`
+
+	// Utilization is the percentage of allocated budget spent (0.0-1.0)
+	Utilization float64 `json:"utilization"`
+}
+
+// AllocationSummary provides allocation-level information (v0.5.10+ Issue #100)
+type AllocationSummary struct {
+	// AllocationID is the allocation identifier
+	AllocationID string `json:"allocation_id"`
+
+	// BudgetID is the parent budget identifier
+	BudgetID string `json:"budget_id"`
+
+	// BudgetName is the parent budget name
+	BudgetName string `json:"budget_name"`
+
+	// AllocatedAmount is how much was allocated
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// SpentAmount is how much has been spent
+	SpentAmount float64 `json:"spent_amount"`
+
+	// RemainingAmount is the remaining allocation
+	RemainingAmount float64 `json:"remaining_amount"`
+
+	// Utilization is the percentage of allocation spent (0.0-1.0)
+	Utilization float64 `json:"utilization"`
+
+	// HasBackup indicates if backup funding is configured
+	HasBackup bool `json:"has_backup"`
+}
