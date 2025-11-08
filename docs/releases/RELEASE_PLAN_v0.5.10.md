@@ -6,15 +6,19 @@
 ## 🎯 Release Goals
 
 ### Primary Objective
-Redesign the budget system to allow a single budget to be allocated across multiple projects, enabling realistic grant-funded research workflows.
+Redesign the budget system to support many-to-many relationships between budgets and projects, enabling realistic research funding workflows.
 
 **Current State**: 1 budget : 1 project (rigid, doesn't match research reality)
-**New State**: 1 budget : N projects (flexible, matches grant funding model)
+**New State**: Many-to-many (flexible, matches real funding models)
+
+**Supported Scenarios**:
+- ✅ **1 budget → N projects**: Single NSF grant funding 3-5 related projects
+- ✅ **N budgets → 1 project**: Multi-source funding (NSF + department + AWS credits)
 
 ### Success Metrics
 - Grant-funded research: Single NSF grant → 3-5 related projects
 - Lab budgets: Department budget → 10+ research group projects
-- Class budgets: Course budget → 30+ student project groups
+- Multi-source projects: 2-3 funding sources per major project
 - Budget reallocation: Move funds between projects within 60 seconds
 
 ---
@@ -118,6 +122,120 @@ GET    /api/v1/projects/{id}/budget          # Get project's budget allocation
 - [ ] Add allocation API endpoints in `pkg/daemon/project_handlers.go`
 - [ ] Update cost calculation to aggregate by allocation
 - [ ] Add budget pool summary (allocated, spent, remaining)
+
+---
+
+### 1.5. Multi-Budget Projects & Spending Attribution
+**Priority**: P0 (Core requirement)
+**Effort**: Medium (2-3 days)
+**Impact**: Critical (Enables multi-source funding)
+
+The many-to-many design naturally supports **multiple budgets funding a single project**:
+
+**Example**:
+```
+Project: "Climate Model Development"
+├─ NSF Grant CISE-2024-12345: $20,000 allocated
+├─ CS Department Q1 2026: $5,000 allocated
+└─ AWS Research Credits: $2,000 allocated
+   Total funding: $27,000
+```
+
+**Common Use Cases**:
+- Multi-source funding: NSF grant + department matching funds
+- Grant transitions: Old grant winding down, new grant starting
+- Shared infrastructure: Multiple PIs funding shared compute cluster
+- Institutional matches: Grant requires university matching (tracked separately)
+- Mixed funding: Grant money + research credits + donations
+
+#### Spending Attribution (v0.5.10)
+
+**Decision**: User selects funding source at resource launch time
+
+When launching a workspace/volume:
+```
+Launch Workspace
+├─ Template: Python ML
+├─ Size: L (t3.xlarge)
+├─ Estimated: $0.17/hour
+└─ 💰 Funding Source: [Dropdown]
+    ├─ NSF Grant CISE-2024-12345 ($14,000 remaining)
+    ├─ CS Department Q1 2026 ($3,000 remaining)
+    └─ AWS Research Credits ($1,500 remaining)
+```
+
+**Implementation**:
+- Add `funding_allocation_id` to workspace/volume launch
+- Track spending per allocation ID
+- Display available funding sources with remaining balances
+- Default to first allocation with available funds
+
+**Future Roadmap** (v0.6.0+):
+- [ ] **Automatic proportional split** across allocations (policy-driven)
+- [ ] **Waterfall spending** (exhaust Budget A, then Budget B) (policy-driven)
+- [ ] **Policy-based attribution rules** (e.g., "GPU workloads use NSF, CPU uses department")
+
+#### Alert Strategy
+
+**Design Principle**: Prism is for research compute management, not PI grant management.
+
+**Alerts trigger based on resource consumption, not budget-wide status**:
+- ✅ Alert when a **workspace** nears its allocation threshold
+- ✅ Alert when a **project's resources** collectively near allocation
+- ❌ Don't alert PIs about overall grant spending (that's their grants office)
+
+**Alert Levels**:
+1. **Per-Allocation Alerts**: "Project X using NSF Grant is at 80% ($16k spent / $20k allocated)"
+2. **Per-Resource Alerts**: "Workspace 'ml-training' has consumed $800 of its $1,000 budget"
+3. **Cross-Budget Alerts**: "Project X total spending at 85% across all funding sources"
+
+**Budget Visibility**: Users only see budgets they have access to based on project roles.
+
+#### Budget Exhaustion & Emergency Funding
+
+**Budget Cushion System** (v0.5.10):
+
+When a primary allocation is exhausted:
+
+1. **Backup Funding Source** (if configured):
+   ```
+   Primary: NSF Grant ($20k allocated, $20k spent) ❌ EXHAUSTED
+   Backup: Department Emergency Fund ($2k available) ✅ ACTIVE
+   ```
+   - Automatically switch to backup funding
+   - Notify user of switch
+   - Log exhaustion event for audit
+
+2. **No Backup** (default behavior):
+   - Stop new launches from this allocation
+   - Hibernate running workspaces using this allocation
+   - Restrict access until budget resolved
+   - Email project owner and admins
+   - Display clear "Budget Exhausted" message
+
+**Implementation**:
+- Add `backup_allocation_id` to ProjectBudgetAllocation
+- Pre-launch validation: Check funding source has available balance
+- Real-time exhaustion detection during cost tracking
+- Automated hibernation for resources using exhausted allocation
+- Audit trail for budget switches and exhaustion events
+
+**Future Enhancements** (v0.6.0+):
+- [ ] Per-user budget cushions (faculty vs students)
+- [ ] Temporary over-budget allowance with approval workflow
+- [ ] Automatic budget extension requests
+
+**Implementation Tasks**:
+- [ ] Add `funding_allocation_id` to instance/volume tables
+- [ ] Update launch API to accept allocation selection
+- [ ] Implement pre-launch balance validation
+- [ ] Add allocation exhaustion detection
+- [ ] Implement backup funding switch logic
+- [ ] Create resource hibernation on exhaustion
+- [ ] Add backup_allocation_id to allocation schema
+- [ ] Build funding source selector component
+- [ ] Add exhaustion notification system
+- [ ] Create audit trail for budget events
 
 ---
 
@@ -459,13 +577,49 @@ COMMIT;
 6. Hibernate/stop student workspaces approaching limits
 7. Generate per-student spending report for grading
 
+#### Multi-Source Funding (N Budgets → 1 Project)
+**Scenario**: Major research project funded by multiple sources
+
+1. Create project "Climate Simulation Infrastructure"
+2. Create budget "NSF Grant CISE-2024-12345" ($50,000)
+   - Allocate $50k to Climate Simulation project
+3. Create budget "CS Department Matching" ($10,000)
+   - Allocate $10k to Climate Simulation project
+4. Create budget "AWS Research Credits" ($5,000)
+   - Allocate $5k to Climate Simulation project
+5. **Launch workspace with funding selection**:
+   - Template: "GPU Compute Cluster"
+   - Size: p3.8xlarge (GPU intensive)
+   - Select funding: **NSF Grant** (GPU work funded by grant)
+6. **Launch storage with different funding**:
+   - Size: 500GB EFS
+   - Select funding: **Department Matching** (storage from matching funds)
+7. Monitor spending per funding source:
+   - NSF Grant: $32k spent (64% - GPU workspaces)
+   - Department: $8k spent (80% - storage and support)
+   - AWS Credits: $2k spent (40% - development/testing)
+8. **Exhaustion scenario**: NSF Grant reaches $50k
+   - Backup funding: Department Emergency (if configured)
+   - Otherwise: Hibernate GPU workspaces, notify PI
+9. Generate multi-source report for grant closeout
+
+**Key Features Tested**:
+- Multiple budget allocations to single project
+- Funding source selection at launch
+- Per-allocation spending tracking
+- Budget exhaustion with backup funding
+- Cross-budget project reporting
+
 ---
 
 ## 📚 Documentation Updates
 
 ### New Documentation
 - [ ] Multi-project budget guide
+- [ ] Multi-source funding guide (N budgets → 1 project)
 - [ ] Budget allocation best practices
+- [ ] Funding source selection at launch
+- [ ] Budget cushion and backup funding setup
 - [ ] Grant reporting workflow
 - [ ] Budget reallocation tutorial
 
