@@ -296,7 +296,7 @@ Deleting volume vol-xyz...
 Estimated monthly savings: $243.84
 ```
 
-**3. Automated Cleanup (For CI/CD)**
+**3. Automated Cleanup (For Scheduled Jobs)**
 ```bash
 DRY_RUN=false FORCE=true ./scripts/cleanup_untagged_resources.sh
 ```
@@ -328,46 +328,60 @@ fi
 - `1`: Error (AWS CLI issues, permissions, etc.)
 - `2`: Zombies found (dry run only)
 
-### Scheduled Cleanup
+### Scheduled Cleanup (Institutional Automation)
 
-#### Weekly Scan (Cron Job)
+#### Weekly Scan (Cron Job on Linux/macOS Server)
 
-Add to crontab:
+Add to crontab on your institutional server:
 ```bash
 # Every Monday at 9 AM: Scan for zombies and send email if found
 0 9 * * 1 /path/to/prism/scripts/cleanup_untagged_resources.sh > /tmp/zombie-report.txt 2>&1 || mail -s "Zombie Resources Detected" admin@university.edu < /tmp/zombie-report.txt
 ```
 
-#### GitHub Actions (CI/CD)
+#### Windows Task Scheduler (Windows Server)
 
-```yaml
-name: Weekly Zombie Scan
-on:
-  schedule:
-    - cron: '0 9 * * 1'  # Every Monday 9 AM
-  workflow_dispatch:      # Manual trigger
+Create a scheduled task to run PowerShell wrapper:
 
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+**PowerShell Wrapper** (`zombie-scan.ps1`):
+```powershell
+# Run bash script via WSL or Git Bash
+$env:AWS_PROFILE = "research"
+$env:AWS_REGION = "us-east-1"
 
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+# If using WSL
+wsl bash /path/to/prism/scripts/cleanup_untagged_resources.sh
 
-      - name: Scan for zombies
-        run: |
-          ./scripts/cleanup_untagged_resources.sh
-          EXIT_CODE=$?
-          if [ $EXIT_CODE -eq 2 ]; then
-            echo "::warning::Zombie resources detected! Review the output."
-          fi
+# Or if using Git Bash
+# & "C:\Program Files\Git\bin\bash.exe" /path/to/prism/scripts/cleanup_untagged_resources.sh
+
+# Send email if zombies found
+if ($LASTEXITCODE -eq 2) {
+    Send-MailMessage -To "admin@university.edu" `
+        -From "prism@university.edu" `
+        -Subject "Zombie Resources Detected" `
+        -Body "Zombie AWS resources detected. Check server logs." `
+        -SmtpServer "smtp.university.edu"
+}
 ```
+
+**Schedule in Task Scheduler**:
+- Trigger: Weekly, Monday 9:00 AM
+- Action: Run PowerShell script
+- Run as: Service account with AWS credentials
+
+#### Native Prism Daemon Monitoring (Coming Soon - Issue #237)
+
+**Future**: Prism daemon will include native zombie detection:
+```bash
+# Configure automatic scanning
+prism admin zombies config --scan-interval 24h --alert-email admin@university.edu
+
+# Daemon will automatically scan and alert
+# Cross-platform (Windows, macOS, Linux)
+# No need for cron or Task Scheduler
+```
+
+See [Issue #237](https://github.com/scttfrdmn/prism/issues/237) for native zombie detection roadmap.
 
 ## Best Practices
 
