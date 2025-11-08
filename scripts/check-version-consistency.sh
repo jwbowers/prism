@@ -93,7 +93,7 @@ if [ -f "bin/cws-gui" ]; then
     fi
 
     if [ -n "$GUI_PKG_JSON" ]; then
-        PKG_VERSION=$(grep '"version"' "$GUI_PKG_JSON" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        PKG_VERSION=$(grep '"version"' "$GUI_PKG_JSON" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?' | head -1)
         if [ "$PKG_VERSION" = "$CODE_VERSION" ]; then
             echo -e "  ${GREEN}✓${NC} GUI (cws-gui): v$PKG_VERSION (from package.json)"
         else
