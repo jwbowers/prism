@@ -150,25 +150,39 @@ Project: "Climate Model Development"
 
 #### Spending Attribution (v0.5.10)
 
-**Decision**: User selects funding source at resource launch time
+**Design Principle**: PIs/project owners control funding, not students/researchers.
 
-When launching a workspace/volume:
+**Two-Tier Approach**:
+
+**1. Default Project Funding (Primary Workflow)**
+- Project owners set **default funding allocation** when creating/configuring project
+- Students/researchers launch workspaces under the project → automatic funding attribution
+- No funding decisions required from end users
+- Example: "All workspaces in 'ML Research' project use NSF Grant by default"
+
+**2. Manual Override (Power User)**
+- Project owners/admins can override funding at launch with `--funding` flag
+- Useful for multi-source projects where different resources use different budgets
+- Example: `prism launch gpu-ml training --project ml-research --funding "AWS Credits"`
+
+**Launch Behavior**:
 ```
-Launch Workspace
-├─ Template: Python ML
-├─ Size: L (t3.xlarge)
-├─ Estimated: $0.17/hour
-└─ 💰 Funding Source: [Dropdown]
-    ├─ NSF Grant CISE-2024-12345 ($14,000 remaining)
-    ├─ CS Department Q1 2026 ($3,000 remaining)
-    └─ AWS Research Credits ($1,500 remaining)
+# Student/researcher (simple)
+prism launch python-ml my-workspace --project ml-research
+# ↳ Automatically uses project's default funding allocation
+
+# Project owner (override)
+prism launch python-ml my-workspace --project ml-research --funding "Department Matching"
+# ↳ Uses specified allocation instead of default
 ```
 
 **Implementation**:
-- Add `funding_allocation_id` to workspace/volume launch
+- Add `default_allocation_id` to projects table
+- Project launch automatically uses default allocation if not specified
+- Add `funding_allocation_id` to workspace/volume launch API
 - Track spending per allocation ID
-- Display available funding sources with remaining balances
-- Default to first allocation with available funds
+- CLI: `--funding` flag optional (defaults to project's default)
+- GUI: Funding selector hidden for regular users, shown for project owners
 
 **Future Roadmap** (v0.6.0+):
 - [ ] **Automatic proportional split** across allocations (policy-driven)

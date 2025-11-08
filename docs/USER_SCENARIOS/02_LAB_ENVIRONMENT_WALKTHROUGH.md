@@ -283,6 +283,77 @@ prism project list --tree
 - **Automated Alerts**: Email notifications when students reach 75% budget consumption (prevent overruns)
 - **Grant Compliance**: Monthly cost reports by grant code for NIH/NSF financial reporting requirements
 
+#### Scenario: Dr. Smith Sets Up Project Funding (v0.5.10+)
+
+**Design Principle**: PIs control funding, students just launch workspaces.
+
+**Step 1: Dr. Smith Creates Project with Default Funding**
+```bash
+# Dr. Smith creates NIH R01 project
+prism project create "NIH-R01-2023" \
+  --description "RNA-seq pipeline development" \
+  --default-funding "NIH Grant R01-AI123456"
+
+# Project now automatically uses NIH funding for all launches
+# Students don't need to worry about which budget pays for what
+```
+
+**Step 2: Students Launch Workspaces (Zero Funding Complexity)**
+```bash
+# James Wilson (PhD student) launches his workspace
+prism launch bioinformatics my-rnaseq --project NIH-R01-2023
+# ↳ Automatically charged to NIH Grant R01-AI123456
+# ↳ James never sees funding options - just works!
+
+# Maria Garcia launches hers
+prism launch python-ml protein-folding --project NSF-2024-ML
+# ↳ Automatically charged to NSF Grant DBI-2024-456
+# ↳ Maria focuses on research, not accounting
+```
+
+**Step 3: Dr. Smith Overrides When Needed**
+```bash
+# Shared GPU cluster funded differently
+prism launch gpu-cluster shared-gpu \
+  --project NIH-R01-2023 \
+  --funding "Department Equipment Fund"
+# ↳ Override: Use department fund instead of NIH grant
+```
+
+**Multi-Source Funding Example** (v0.5.10+):
+```bash
+# Dr. Smith's large collaboration project funded by multiple sources
+prism project create "Climate-Sim-Infrastructure" \
+  --description "Multi-institution climate modeling" \
+  --default-funding "NSF Grant CISE-2024-12345"
+
+# Allocate budgets to project
+prism budget allocate "NSF Grant CISE-2024-12345" \
+  --project Climate-Sim-Infrastructure --amount 50000
+
+prism budget allocate "MIT Matching Funds" \
+  --project Climate-Sim-Infrastructure --amount 10000
+
+prism budget allocate "AWS Research Credits" \
+  --project Climate-Sim-Infrastructure --amount 5000
+
+# Students/postdocs launch workspaces
+prism launch python-ml climate-model-1 --project Climate-Sim-Infrastructure
+# ↳ Uses default: NSF Grant (50k)
+
+# Dr. Smith uses department matching for storage
+prism volume create shared-data 500GB \
+  --project Climate-Sim-Infrastructure \
+  --funding "MIT Matching Funds"
+# ↳ Override: Storage from matching funds, not NSF grant
+```
+
+**Benefits**:
+- **Students focus on research**, not accounting
+- **PIs maintain control** over which grant funds what
+- **Automatic attribution** = fewer errors
+- **Override available** when needed (power users)
+
 ---
 
 ## ⚠️ Current Pain Points: What Doesn't Work
