@@ -1,8 +1,8 @@
 # Prism Development Roadmap
 
-**Current Version**: v0.5.7 (Released)
-**Next Version**: v0.5.8 (Feature Complete - Testing Phase)
-**Last Updated**: October 27, 2025
+**Current Version**: v0.5.9 (Released)
+**Next Version**: v0.5.10 (Planned - February 2026)
+**Last Updated**: November 7, 2025
 **Status**: Active Development
 
 This roadmap outlines planned features and enhancements for Prism. All items are tracked in [GitHub Issues](https://github.com/scttfrdmn/prism/issues) and the [Prism Development Project](https://github.com/scttfrdmn/prism/projects).
@@ -86,30 +86,44 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.9 (January 2026): Navigation Restructure
-**Release Date**: Target January 3, 2026
+### v0.5.9 (November 2025): Navigation Restructure ✅
+**Release Date**: November 7, 2025
 **Focus**: Reduce navigation complexity from 14 to 6 items
 **Release Plan**: [RELEASE_PLAN_v0.5.9.md](releases/RELEASE_PLAN_v0.5.9.md)
+**Release Notes**: [RELEASE_NOTES_v0.5.9.md](releases/RELEASE_NOTES_v0.5.9.md)
 
 #### Navigation Features
 **Milestones**: [Phase 5.0.2: Info Architecture](https://github.com/scttfrdmn/prism/milestone/3)
 
-- [#14](https://github.com/scttfrdmn/prism/issues/14) - Merge Terminal/WebView into Workspaces
-- [#16](https://github.com/scttfrdmn/prism/issues/16) - Collapse Advanced Features under Settings
-- [#18](https://github.com/scttfrdmn/prism/issues/18) - Unified Storage UI (EFS + EBS)
+- ✅ [#14](https://github.com/scttfrdmn/prism/issues/14) - Merge Terminal/WebView into Workspaces
+- ✅ [#16](https://github.com/scttfrdmn/prism/issues/16) - Collapse Advanced Features under Settings
+- ✅ [#18](https://github.com/scttfrdmn/prism/issues/18) - Unified Storage UI (EFS + EBS)
 - ~~[#19](https://github.com/scttfrdmn/prism/issues/19) - Integrate Budgets into Projects~~ *Moved to v0.5.10*
 
-#### Success Metrics
-- 🧭 Navigation complexity: 14 → 6 top-level items
-- ⏱️ Time to find features: <10 seconds
-- 😃 User confusion: Further 30% reduction
-- 📱 Advanced feature discoverability: >95%
+#### Contributor Documentation
+**Focus**: Establish contribution guidelines and community standards
 
-**Implementation Schedule**: 2 weeks (Dec 16-27, 2025)
-- Week 1: Terminal/WebView merge + Unified Storage
-- Week 2: Settings restructure + testing
+- ✅ **CONTRIBUTING.md**: Comprehensive contribution guide
+  - Issue-first workflow (no PRs without `help wanted`)
+  - Scope control (no PR scope expansion)
+  - Core protection (`core` label for maintainers only)
+  - Multi-modal parity requirements (CLI/TUI/GUI)
+  - Testing and security requirements
+  - Plugin development pathway ([#230](https://github.com/scttfrdmn/prism/issues/230))
+  - Apache 2.0 license compliance
 
-**Status**: 📋 Planned
+- ✅ **CODE_OF_CONDUCT.md**: Community standards
+  - Contributor Covenant 2.0
+  - Enforcement guidelines
+  - Reporting procedures
+
+#### Success Metrics ✅
+- ✅ 🧭 Navigation complexity: 14 → 6 top-level items
+- ✅ ⏱️ Time to find features: <10 seconds
+- ✅ 😃 User confusion: Further 30% reduction
+- ✅ 📱 Advanced feature discoverability: >95% (hierarchical navigation)
+
+**Status**: 🎉 RELEASED (November 7, 2025)
 
 ---
 
@@ -230,6 +244,7 @@ Focus (4 weeks):
 - Performance and responsiveness improvements
 - Documentation and help system updates
 - Code quality and technical debt cleanup
+- **Template Request Feature** ([#229](https://github.com/scttfrdmn/prism/issues/229)): User suggestion box for requesting new templates
 
 Success Metrics:
 - Time to first workspace: Still <30 seconds
@@ -237,11 +252,194 @@ Success Metrics:
 - Feature discoverability: >95%
 - Workflow completion: >90% success rate
 
-### v0.6.0 (Q3 2026): Enterprise Authentication
-**Release Date**: Target June 2026
-**Focus**: Enterprise-ready authentication for institutional deployments
+### v0.5.14 (June-July 2026): Web-Based Research Tools
+**Release Date**: Target June-July 2026
+**Focus**: High-impact web-based research applications from Lens project
+**Status**: 📋 Planned
 
-#### Enterprise Authentication
+#### Rationale
+Quick wins with high researcher impact. All applications are web-based (no Nice DCV complexity), leverage existing template provisioning system, and address critical research workflows identified in the Lens project.
+
+#### Features (4 weeks)
+
+##### 1. 🐍 Streamlit Template ([#211](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**What**: Interactive Python dashboards and data applications
+
+**Use Cases**:
+- Turn Jupyter notebooks into interactive web apps
+- Build ML model demos with sliders and inputs
+- Create teaching materials with interactive visualizations
+- Rapid prototyping of data exploration tools
+
+**Technical Details**:
+- Port: 8501 (default, configurable)
+- Install: `pip install streamlit`
+- Launch: `streamlit run app.py`
+- Memory: 256MB-512MB + app requirements
+- Complexity: LOW
+
+**Target Users**: Python/Jupyter users, data scientists, ML researchers, educators
+
+**Template Configuration**:
+```yaml
+name: "Streamlit Interactive Apps"
+connection_type: "web"
+port: 8501
+packages:
+  python:
+    - streamlit
+    - pandas
+    - plotly
+    - altair
+```
+
+##### 2. 🧹 OpenRefine Template ([#212](https://github.com/scttfrdmn/prism/issues/212))
+**Priority**: ⭐⭐⭐⭐ HIGH
+
+**What**: Data cleaning and transformation with GUI interface
+
+**Use Cases**:
+- Clean messy survey data
+- Transform scraped/collected data
+- Reconcile data against external sources
+- Prepare data before analysis in Jupyter/R
+
+**Technical Details**:
+- Port: 3333
+- Install: Java JAR or Docker
+- Memory: 512MB-1GB
+- Complexity: MEDIUM
+
+**Target Users**: Social scientists, digital humanities researchers, non-programmers with messy data
+
+**Template Configuration**:
+```yaml
+name: "OpenRefine Data Cleaning"
+connection_type: "web"
+port: 3333
+packages:
+  system:
+    - openjdk-11-jre
+```
+
+##### 3. 📊 Shiny Server Template ([#213](https://github.com/scttfrdmn/prism/issues/213))
+**Priority**: ⭐⭐⭐⭐ HIGH
+
+**What**: Publish interactive R applications and dashboards
+
+**Use Cases**:
+- Share R analysis as interactive web apps
+- Create dashboards for research results
+- Build data exploration tools
+- Publish reproducible research
+
+**Technical Details**:
+- Port: 3838
+- Install: R package + shiny-server binary
+- Memory: 512MB base + per-app memory
+- Complexity: MEDIUM
+- Natural companion to existing RStudio template
+
+**Target Users**: R users, bioinformatics researchers, statisticians
+
+**Template Configuration**:
+```yaml
+name: "Shiny Server"
+connection_type: "web"
+port: 3838
+inherits: ["RStudio Server"]
+packages:
+  r:
+    - shiny
+    - shinydashboard
+    - plotly
+```
+
+##### 4. 🏷️ Label Studio Template ([#214](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐ MEDIUM-HIGH
+
+**What**: Data labeling and annotation platform for ML
+
+**Use Cases**:
+- Label images for computer vision research
+- Annotate text for NLP research
+- Code qualitative data (interviews, documents)
+- Create training datasets for ML
+- Collaborative annotation with research assistants
+
+**Technical Details**:
+- Port: 8090 (changed from 8080 to avoid conflicts)
+- Install: `pip install label-studio`
+- Database: SQLite or PostgreSQL
+- Memory: 512MB-1GB
+- Complexity: MEDIUM
+
+**Target Users**: ML/AI researchers, qualitative researchers, NLP researchers
+
+**Template Configuration**:
+```yaml
+name: "Label Studio Annotation"
+connection_type: "web"
+port: 8090
+packages:
+  python:
+    - label-studio
+    - label-studio-tools
+```
+
+##### 5. 📊 Datasette Template ([#215](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐ MEDIUM
+
+**What**: Instant JSON API and web interface for datasets
+
+**Use Cases**:
+- Publish research datasets alongside papers
+- Explore CSV/Excel files without coding
+- Share data with collaborators
+- Create queryable data repositories
+
+**Technical Details**:
+- Port: 8001
+- Install: `pip install datasette`
+- Memory: 128MB-256MB + dataset size
+- Complexity: LOW
+- Very lightweight, quick win
+
+**Target Users**: All researchers (universal data need), data librarians
+
+**Template Configuration**:
+```yaml
+name: "Datasette Data Publishing"
+connection_type: "web"
+port: 8001
+packages:
+  python:
+    - datasette
+    - datasette-cluster-map
+```
+
+#### Success Metrics
+- 5 new web-based research tool templates
+- All templates launch in <5 minutes
+- Leverage existing template provisioning system
+- Zero Nice DCV infrastructure dependency
+- High researcher satisfaction (streamlit especially)
+
+#### Implementation Notes
+- Reference: Lens project's FUTURE_APPS.md for usage patterns
+- All web-based tools follow existing Jupyter/RStudio pattern
+- SSM port forwarding for secure access
+- Auto-open browser on connect
+- Templates support research user provisioning
+
+### v0.6.0 (August 2026): Enterprise Authentication & AWS Research Services
+**Release Date**: Target August 2026
+**Focus**: Enterprise authentication + Web access to AWS research services
+**Status**: 📋 Planned
+
+#### Part 1: Enterprise Authentication
 - OAuth/OIDC integration (Google, Microsoft, institutional SSO)
 - LDAP/Active Directory support
 - SAML support for enterprise SSO
@@ -322,7 +520,7 @@ Recommendations:
 ```
 
 #### 4. 🔐 Multi-User Authentication (Phase 1)
-**Status**: Planned  
+**Status**: Planned
 **Why**: Institutional deployments need proper authentication
 
 **Features**:
@@ -331,7 +529,446 @@ Recommendations:
 - Token validation and session management
 - Role-based access control (RBAC) foundation
 
-### v0.6.1 (Q2 2026): TUI Completeness & Advanced Features
+#### Part 2: AWS Research Services Integration
+
+**Previous Status**: Marked as "STRATEGIC" - now with concrete implementation plan
+
+**What**: Direct web access to AWS native research services from Prism
+
+**Why**: Researchers want unified access to both EC2 workspaces AND AWS research services (SageMaker, EMR, Braket) without switching tools.
+
+##### 5. 🧪 AWS Service Registry & Integration ([#224](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**Features**:
+- Service catalog: SageMaker Studio/Lab, EMR Studio, Braket, CloudShell
+- Service metadata (URLs, regions, prerequisites, cost info)
+- IAM role validation for service access
+- Service health and availability checking
+
+##### 6. 🤖 SageMaker Studio/Lab Integration ([#225](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**What**: Launch and access SageMaker Studio from Prism
+
+**Features**:
+- Direct browser launch to SageMaker Studio
+- SageMaker Studio Lab (free tier) integration
+- Notebook lifecycle management
+- Integration with Prism projects/budgets
+- Cost tracking for SageMaker compute (notebooks, training, inference)
+
+**CLI Example**:
+```bash
+# Launch SageMaker Studio
+prism service launch sagemaker-studio --project ml-research
+
+# Open in browser
+prism service open sagemaker-studio
+
+# Check status
+prism service list
+```
+
+**GUI**:
+- "Launch SageMaker Studio" button in Services tab
+- Auto-open browser to SageMaker console
+- Cost tracking in project dashboard
+
+##### 7. 📊 EMR Studio Integration ([#226](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐ HIGH
+
+**What**: Big data analytics with EMR Studio
+
+**Features**:
+- Launch EMR Studio from Prism
+- Cluster management and lifecycle
+- Spark notebook access
+- Integration with EFS storage
+- Cost tracking for EMR clusters
+
+**Use Cases**:
+- Large-scale data processing
+- Spark-based machine learning
+- Distributed computing research
+
+##### 8. ⚛️ Amazon Braket Integration ([#227](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐ MEDIUM
+
+**What**: Quantum computing research access
+
+**Features**:
+- Launch Braket workspace from Prism
+- Circuit builder interface access
+- QPU (quantum processing unit) cost tracking
+- Educational materials integration
+
+**Use Cases**:
+- Quantum algorithm research
+- Quantum computing education
+- Experimental quantum applications
+
+##### 9. 🖥️ Unified Service Dashboard ([#228](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**What**: Single pane of glass for EC2 + AWS services
+
+**GUI Features**:
+- Services tab alongside Workspaces, Templates, Storage
+- Service cards with status indicators
+- "Launch" buttons for each service
+- "Open in Browser" for active services
+- Cost summary: EC2 + AWS services combined
+
+**CLI Features**:
+```bash
+prism service launch sagemaker-studio
+prism service launch emr-studio
+prism service launch braket
+prism service list
+prism service open <service-name>
+prism service stop <service-name>
+prism service costs --project ml-research
+```
+
+#### Success Metrics (AWS Services)
+- Launch AWS services from Prism GUI/CLI
+- Browser auto-open to service URLs
+- Cost tracking integrated into projects
+- Single workflow: users don't switch between Prism and AWS Console
+- SageMaker cost attribution to Prism projects
+
+#### Implementation Notes (AWS Services)
+- AWS service authentication via IAM roles
+- Service quotas and availability checking
+- Cost tracking API integration (AWS Cost Explorer)
+- Service-specific prerequisites validation
+- Documentation for each service integration
+
+### v0.6.1 (September-October 2026): Nice DCV Foundation
+**Release Date**: Target September-October 2026
+**Focus**: Desktop application infrastructure using Nice DCV
+**Status**: 📋 Planned
+
+#### Rationale
+Establish Nice DCV foundation for desktop GUI applications (MATLAB, QGIS, etc.). Learn from Lens project's working DCV implementation.
+
+#### Features (3-4 weeks)
+
+##### 1. 📱 DCV Template System Extension ([#216](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**What**: Extend template system to support desktop applications
+
+**Features**:
+- New template type: `connection_type: "desktop"`
+- DCV-specific configuration options
+- AMI selection logic (Desktop vs Server images)
+- GPU support detection and configuration
+
+**Template Schema Extension**:
+```yaml
+connection_type: "desktop"  # New type: "web" | "desktop" | "ssh"
+desktop:
+  environment: "xfce"  # or "mate", "gnome"
+  dcv_port: 8443
+  gpu_required: false
+  gpu_drivers: ["nvidia", "amd"]
+```
+
+##### 2. 🖥️ DCV Server Provisioning ([#217](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**What**: Automated DCV server installation and configuration
+
+**Features**:
+- Cloud-init scripts for DCV installation
+- XFCE/MATE desktop environment setup (lighter than GNOME)
+- GPU driver installation (optional, for visualization workloads)
+- X11 display server configuration
+- Port 8443 (HTTPS/WebSocket) configuration
+- Session lifecycle management
+
+**Technical Details**:
+- Base: Ubuntu 22.04 Desktop
+- DCV Version: 2023.0+
+- Desktop: MATE (preferred - lightweight) or XFCE
+- Launch time: 5-10 minutes (vs 2-5 for web apps)
+- Resource requirements: 4-8 vCPU, 16-32GB RAM minimum
+
+**Reference**: Lens `apps/dcv-desktop/internal/config/userdata.go`
+
+##### 3. 🔗 DCV Connection Management ([#218](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**What**: Browser-based access to DCV desktops
+
+**Features**:
+- SSM port forwarding to DCV port 8443
+- Browser auto-open to `https://localhost:8443`
+- Credential management and display (username/password)
+- Session status monitoring
+- Reconnection handling
+
+**CLI Example**:
+```bash
+# Launch desktop workspace
+prism launch generic-desktop my-desktop
+
+# Connect (auto-opens browser)
+prism connect my-desktop
+
+# DCV web client appears in browser
+# Full desktop environment with applications
+```
+
+**Reference**: Lens `apps/dcv-desktop/internal/cli/connect.go`
+
+##### 4. 🖥️ Generic Desktop Template ([#219](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐ HIGH
+
+**What**: Base desktop template for testing and generic use
+
+**Features**:
+- Ubuntu 22.04 Desktop + Nice DCV
+- MATE desktop environment
+- Basic desktop tools (Firefox, file manager, terminal)
+- No specialized applications
+- Base for application-specific templates
+
+**Template Configuration**:
+```yaml
+name: "Generic Ubuntu Desktop"
+slug: "generic-desktop"
+connection_type: "desktop"
+base: "ubuntu-22.04-desktop"
+desktop:
+  environment: "mate"
+  dcv_port: 8443
+  gpu_required: false
+instance_types:
+  default: "t3.xlarge"  # 4 vCPU, 16GB RAM
+packages:
+  system:
+    - ubuntu-mate-desktop
+    - nice-dcv-server
+    - firefox
+    - vim
+```
+
+#### Success Metrics (DCV Foundation)
+- DCV working with SSM port forwarding
+- Generic desktop launches in <10 minutes
+- Browser access to remote desktop functional
+- GPU support validated on g4dn instances
+- Desktop performance acceptable for GUI interaction
+- Foundation ready for application-specific templates
+
+#### Implementation Notes (DCV Foundation)
+- Study Lens's working implementation thoroughly
+- Test on both CPU and GPU instance types
+- Document performance characteristics
+- Create troubleshooting guide
+- Validate security (no exposed ports, SSM-only access)
+
+### v0.6.2 (November-December 2026): Desktop GUI Applications
+**Release Date**: Target November-December 2026
+**Focus**: Desktop applications using DCV foundation from v0.6.1
+**Status**: 📋 Planned
+
+#### Rationale
+With DCV infrastructure in place, add high-value desktop GUI applications for research computing.
+
+#### Features (4-5 weeks)
+
+##### 1. 🧮 MATLAB Template ([#220](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐⭐ CRITICAL
+
+**What**: MATLAB numerical computing environment
+
+**Why**: Extremely common in academia (engineering, physics, mathematics)
+
+**Use Cases**:
+- Numerical analysis and simulation
+- Signal processing research
+- Engineering simulations
+- Control systems research
+- Legacy .m file execution
+
+**Technical Details**:
+- DCV desktop required (GUI-heavy application)
+- License: BYOL (license server), Cloud-Based (online activation), or AWS Marketplace AMI
+- Memory: 16-32GB RAM recommended
+- GPU: Optional for Simulink visualizations
+- Instance: t3.xlarge (basic) or g4dn.xlarge (GPU)
+
+**Template Configuration**:
+```yaml
+name: "MATLAB Workstation"
+slug: "matlab"
+connection_type: "desktop"
+inherits: ["Generic Ubuntu Desktop"]
+desktop:
+  environment: "mate"
+  gpu_required: false  # optional
+license:
+  type: "byol"
+  license_server: "{{ user_config.matlab_license_server }}"
+ami:
+  marketplace_product: "matlab-r2024a"  # or custom AMI
+```
+
+**Disciplines**: Engineering, physics, mathematics, computational science
+
+##### 2. 🗺️ QGIS Templates ([#221](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐⭐ HIGH
+
+**What**: Geographic Information System for spatial analysis
+
+**Why**: Standard tool for geography, environmental science, urban planning
+
+**Use Cases**:
+- GIS analysis and mapping
+- Spatial data visualization
+- Remote sensing (satellite imagery)
+- Terrain modeling
+- Urban planning analysis
+
+**Technical Details**:
+- DCV desktop required
+- 3 environments: basic-gis, advanced-gis, remote-sensing
+- GPU: Recommended for large rasters and 3D visualization
+- Reference: Lens has complete QGIS implementation
+
+**Environment 1: Basic GIS**
+```yaml
+name: "QGIS Basic"
+slug: "qgis-basic"
+connection_type: "desktop"
+inherits: ["Generic Ubuntu Desktop"]
+instance_types:
+  default: "t3.xlarge"  # 4 vCPU, 16GB RAM
+packages:
+  system:
+    - qgis
+    - qgis-plugin-grass
+cost_estimate: "$0.17/hour"
+```
+
+**Environment 2: Advanced GIS**
+```yaml
+name: "QGIS Advanced"
+slug: "qgis-advanced"
+connection_type: "desktop"
+instance_types:
+  default: "t3.xlarge"
+packages:
+  system:
+    - qgis
+    - grass
+    - saga
+    - postgis
+```
+
+**Environment 3: Remote Sensing**
+```yaml
+name: "QGIS Remote Sensing"
+slug: "qgis-remote-sensing"
+connection_type: "desktop"
+instance_types:
+  default: "g4dn.xlarge"  # GPU for large rasters
+desktop:
+  gpu_required: true
+packages:
+  system:
+    - qgis
+    - orfeo-toolbox
+    - snap-esa
+cost_estimate: "$0.53/hour"
+```
+
+**Reference**: Complete Lens implementation in `apps/qgis/`
+
+**Disciplines**: Geography, environmental science, urban planning, archaeology
+
+##### 3. 🔬 Mathematica Template ([#222](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐ MEDIUM-HIGH
+
+**What**: Wolfram Mathematica symbolic computation
+
+**Use Cases**:
+- Symbolic mathematics
+- Algorithm development
+- Scientific visualization
+- Computational modeling
+
+**Technical Details**:
+- DCV desktop required
+- License: Cloud-Based (online activation), BYOL, or AWS Marketplace
+- Memory: 16-32GB RAM
+- Instance: t3.xlarge
+
+**Disciplines**: Mathematics, physics, engineering, computer science
+
+##### 4. 📊 Stata Template ([#223](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐ MEDIUM-HIGH
+
+**What**: Statistical analysis software
+
+**Use Cases**:
+- Statistical analysis
+- Econometrics
+- Survey data analysis
+- Panel data research
+
+**Technical Details**:
+- DCV desktop required
+- License: BYOL
+- Memory: 8-16GB RAM
+- Instance: t3.large
+
+**Disciplines**: Economics, social science, public health, political science
+
+##### 5. 🌍 ArcGIS Desktop Template (Optional) ([#211](https://github.com/scttfrdmn/prism/issues/214))
+**Priority**: ⭐⭐⭐ MEDIUM
+
+**What**: Commercial GIS software (Esri)
+
+**Use Cases**:
+- Professional GIS analysis (alternative to QGIS)
+- Esri ecosystem integration
+- Enterprise GIS workflows
+
+**Technical Details**:
+- DCV desktop required
+- License: BYOL or AWS Marketplace
+- Windows Server required (different from Linux templates)
+- Instance: t3.xlarge or larger
+
+**Note**: Only implement if demand justifies (QGIS covers most GIS needs)
+
+**Disciplines**: Geography, urban planning (enterprise users)
+
+#### Success Metrics (Desktop Applications)
+- Commercial license integration (Cloud-Based, BYOL, Marketplace) working
+- MATLAB and QGIS templates validated with real users
+- DCV performance acceptable for GUI interaction
+- Cost transparency (GPU vs non-GPU instances)
+- Clear documentation for all three license setup methods
+- All templates support research user provisioning
+
+#### Implementation Notes (Desktop Applications)
+- Test each application thoroughly on DCV
+- Document all three license setup procedures:
+  - Cloud-Based: Online activation (simplest for end users)
+  - BYOL: License server configuration (institutional deployments)
+  - AWS Marketplace: Pre-configured AMI approach
+- Provide cost comparison (desktop vs web apps)
+- Create troubleshooting guides
+- Validate GPU acceleration where applicable
+- Document instance sizing recommendations
+
+### v0.6.3 (Q1 2027): TUI Completeness & Advanced Features
 
 #### Auto-Update Phase 2: Assisted Updates
 - Platform detection (Homebrew, apt, manual install)
@@ -510,6 +1147,7 @@ Reliable auto-launch requires daemon to be running OR AWS Lambda function:
 | Persona Validation | 📋 Planned | [#27](https://github.com/scttfrdmn/prism/milestone/27) | [#111](https://github.com/scttfrdmn/prism/issues/111) |
 | Quick Wins | 📋 Planned | [#27](https://github.com/scttfrdmn/prism/milestone/27) | [#112](https://github.com/scttfrdmn/prism/issues/112) |
 | Performance Improvements | 📋 Planned | [#27](https://github.com/scttfrdmn/prism/milestone/27) | [#113](https://github.com/scttfrdmn/prism/issues/113) |
+| Template Request Feature | 📋 Planned | [#27](https://github.com/scttfrdmn/prism/milestone/27) | [#229](https://github.com/scttfrdmn/prism/issues/229) |
 
 ### v0.8.0 (October 2026): Cross-Account & Compliance Foundation
 **Release Date**: Target October 31, 2026

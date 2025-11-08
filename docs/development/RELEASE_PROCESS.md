@@ -348,7 +348,7 @@ cd homebrew-prism
 Update `prism.rb` with the new version and checksums:
 
 ```ruby
-class Cloudworkstation < Formula
+class Prism < Formula
   desc "Academic research computing platform - Launch cloud research environments"
   homepage "https://github.com/scttfrdmn/prism"
   license "MIT"

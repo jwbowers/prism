@@ -145,7 +145,7 @@ export AWS_PROFILE=aws
 export AWS_REGION=us-west-2
 
 # Optional: Set development mode to avoid keychain prompts
-export CLOUDWORKSTATION_DEV=true
+export PRISM_DEV=true
 ```
 
 Then restart your terminal or run `source ~/.zshrc`.
@@ -271,7 +271,7 @@ Enable verbose logging to see what Prism is doing:
 ```bash
 # Set debug environment variables
 export AWS_PROFILE=aws
-export CLOUDWORKSTATION_DEBUG=true
+export PRISM_DEBUG=true
 
 # Run commands with detailed output
 prism templates list
@@ -343,7 +343,7 @@ aws configure --profile aws
 # 2. Set environment variables
 export AWS_PROFILE=aws
 export AWS_REGION=us-west-2
-export CLOUDWORKSTATION_DEV=true
+export PRISM_DEV=true
 
 # 3. Make permanent
 echo 'export AWS_PROFILE=aws' >> ~/.zshrc

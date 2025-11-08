@@ -30,7 +30,7 @@ aws configure --profile aws  # Use your preferred profile name
 # For alternative methods and detailed setup, see AWS_SETUP_GUIDE.md
 
 # Set development mode BEFORE starting daemon (avoids keychain prompts)
-export CLOUDWORKSTATION_DEV=true
+export PRISM_DEV=true
 
 # Start daemon for profile management
 prism daemon start
@@ -357,7 +357,7 @@ prism daemon stop
   prism profiles add personal my-research --aws-profile aws --region us-west-2
   prism profiles switch aws      # Activate Prism profile
   ```
-- **Development Mode**: `export CLOUDWORKSTATION_DEV=true` for smooth keychain experience
+- **Development Mode**: `export PRISM_DEV=true` for smooth keychain experience
 - **Network**: Internet access for AWS API calls and package downloads
 
 ## Recovery Commands (if demo issues arise):

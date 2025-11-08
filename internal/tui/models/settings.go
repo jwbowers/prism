@@ -119,7 +119,9 @@ func (m SettingsModel) View() string {
 	// TUI Controls
 	tuiInfo := "\nTUI Navigation:\n"
 	tuiInfo += "  1: Dashboard    2: Instances    3: Templates\n"
-	tuiInfo += "  4: Storage      5: Settings     6: Profiles\n"
+	tuiInfo += "  4: Storage      5: Projects     6: Budget\n"
+	tuiInfo += "  7: Users        8: Settings     9: Profiles\n"
+	tuiInfo += "  a: Advanced Settings (AMI, Rightsizing, Idle, Policy, Marketplace, Logs)\n"
 	tuiInfo += "  q: Quit         r: Refresh\n"
 
 	// Error display

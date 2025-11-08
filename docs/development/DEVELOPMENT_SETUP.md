@@ -8,7 +8,7 @@ Prism automatically detects development/testing contexts and uses secure file st
 ### **Automatic Detection:**
 Development mode is automatically enabled when:
 - `GO_ENV=test` is set
-- `CLOUDWORKSTATION_DEV=true` is set  
+- `PRISM_DEV=true` is set  
 - Running tests (`go test`)
 - Running from temporary directories
 - Running binaries with "test" in the path
@@ -16,13 +16,13 @@ Development mode is automatically enabled when:
 ### **Manual Control:**
 ```bash
 # Force development mode (avoids keychain prompts)
-export CLOUDWORKSTATION_DEV=true
+export PRISM_DEV=true
 
 # Run tests without keychain prompts
 make test
 
 # Force production mode (uses keychain)
-unset CLOUDWORKSTATION_DEV
+unset PRISM_DEV
 
 # Test production keychain integration
 prism daemon start
@@ -40,7 +40,7 @@ go run ./cmd/cws templates
 go run ./cmd/cws --help
 
 # Force production behavior for testing
-unset CLOUDWORKSTATION_DEV
+unset PRISM_DEV
 ./bin/cws daemon start  # Will use keychain
 ```
 

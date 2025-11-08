@@ -92,8 +92,8 @@ func runAbout() {
 	// License and Copyright
 	fmt.Println("📄 License")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("   Copyright © 2025 Prism Project")
-	fmt.Println("   Licensed under the MIT License")
+	fmt.Println("   Copyright © 2024-2025 Scott Friedman and Prism Contributors")
+	fmt.Println("   Licensed under the Apache License, Version 2.0")
 	fmt.Println()
 
 	// Quick Help

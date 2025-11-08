@@ -24,7 +24,7 @@
 # Add to Formula/prism.rb
 service do
   run [opt_bin/"cwsd"]
-  environment_variables CLOUDWORKSTATION_DEV: var/"log/prism.log"
+  environment_variables PRISM_DEV: var/"log/prism.log"
   log_path var/"log/prism.log"
   error_log_path var/"log/prism-error.log"
   keep_alive { crashed: true }
@@ -117,8 +117,8 @@ else
 fi
 
 # Auto-detect development mode
-if [[ -f .env ]] && grep -q "CLOUDWORKSTATION_DEV=true" .env; then
-    export CLOUDWORKSTATION_DEV=true
+if [[ -f .env ]] && grep -q "PRISM_DEV=true" .env; then
+    export PRISM_DEV=true
 fi
 
 # Function definitions...

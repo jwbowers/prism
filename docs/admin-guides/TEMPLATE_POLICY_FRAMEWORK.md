@@ -22,7 +22,7 @@ The Template Policy Framework provides institutional control over template acces
 │                                                             │
 ├─────────────────────────────────────────────────────────────┤
 │                   Open Source Core                         │
-│  (Base Prism - MIT Licensed)                    │
+│  (Base Prism - Apache 2.0 Licensed)             │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  Profile System + Basic Invitations                        │
@@ -240,7 +240,7 @@ prism launch external-gpu-template my-project
 
 ## Open Source vs Enterprise Separation
 
-### Open Source Core (MIT License)
+### Open Source Core (Apache License 2.0)
 - Basic profile system
 - Simple invitation system with **basic template restrictions**
 - Template whitelist/blacklist per invitation

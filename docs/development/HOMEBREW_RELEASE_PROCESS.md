@@ -70,7 +70,7 @@ shasum -a 256 /tmp/release-archives/prism-darwin-amd64.tar.gz
 Edit `/Users/scttfrdmn/src/prism/Formula/prism.rb`:
 
 ```ruby
-class Cloudworkstation < Formula
+class Prism < Formula
   desc "Enterprise research management platform - Launch cloud research environments in seconds"
   homepage "https://github.com/scttfrdmn/prism"
   license "MIT"

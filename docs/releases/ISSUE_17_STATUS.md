@@ -305,8 +305,8 @@ Part of v0.5.8 Quick Start Experience"
 
 ## 📁 Files Modified
 
-1. `/Users/scttfrdmn/src/cloudworkstation/internal/cli/init_cobra.go` (NEW)
-2. `/Users/scttfrdmn/src/cloudworkstation/internal/cli/root_command.go` (MODIFIED)
+1. `/Users/scttfrdmn/src/prism/internal/cli/init_cobra.go` (NEW)
+2. `/Users/scttfrdmn/src/prism/internal/cli/root_command.go` (MODIFIED)
 
 ---
 

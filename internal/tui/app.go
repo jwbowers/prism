@@ -84,6 +84,8 @@ type AppModel struct {
 	profilesModel    models.ProfilesModel
 	width            int
 	height           int
+	inSubmenu        bool   // Whether we're currently in a submenu
+	submenuParent    PageID // The page that opened the submenu
 }
 
 // NewApp creates a new TUI application
@@ -252,14 +254,61 @@ func (h *PageNavigationHandler) CanHandle(msg tea.Msg) bool {
 		return false
 	}
 	key := keyMsg.String()
-	return key == "1" || key == "2" || key == "3" || key == "4" || key == "5" || key == "6" || key == "7" || key == "8" || key == "9" || key == "0" || key == "m" || key == "i" || key == "a" || key == "r" || key == "l" || key == "d"
+	return key == "1" || key == "2" || key == "3" || key == "4" || key == "5" || key == "6" || key == "7" || key == "8" || key == "9" || key == "0" || key == "m" || key == "i" || key == "a" || key == "r" || key == "l" || key == "d" || key == "esc"
 }
 
 func (h *PageNavigationHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea.Cmd) {
 	keyMsg := msg.(tea.KeyMsg)
 	var cmds []tea.Cmd
+	key := keyMsg.String()
 
-	switch keyMsg.String() {
+	// Handle ESC - exit submenu if we're in one
+	if key == "esc" && m.inSubmenu {
+		m.inSubmenu = false
+		m.currentPage = m.submenuParent
+		return m, cmds
+	}
+
+	// If we're in the advanced submenu, handle submenu navigation
+	if m.inSubmenu && m.submenuParent == SettingsPage {
+		switch key {
+		case "1":
+			m.currentPage = AMIPage
+			m.inSubmenu = false
+			cmds = append(cmds, m.amiModel.Init())
+		case "2":
+			m.currentPage = RightsizingPage
+			m.inSubmenu = false
+			cmds = append(cmds, m.rightsizingModel.Init())
+		case "3":
+			m.currentPage = IdlePage
+			m.inSubmenu = false
+			cmds = append(cmds, m.idleModel.Init())
+		case "4":
+			m.currentPage = PolicyPage
+			m.inSubmenu = false
+			cmds = append(cmds, m.policyModel.Init())
+		case "5":
+			m.currentPage = MarketplacePage
+			m.inSubmenu = false
+			cmds = append(cmds, m.marketplaceModel.Init())
+		case "6":
+			m.currentPage = LogsPage
+			m.inSubmenu = false
+			cmds = append(cmds, m.logsModel.Init())
+		}
+		return m, cmds
+	}
+
+	// Handle 'a' key on Settings page - enter advanced submenu
+	if key == "a" && m.currentPage == SettingsPage && !m.inSubmenu {
+		m.inSubmenu = true
+		m.submenuParent = SettingsPage
+		return m, cmds
+	}
+
+	// Normal page navigation (not in submenu)
+	switch key {
 	case "1":
 		m.currentPage = DashboardPage
 	case "2":
@@ -281,30 +330,9 @@ func (h *PageNavigationHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea
 		m.currentPage = UsersPage
 		cmds = append(cmds, m.usersModel.Init())
 	case "8":
-		m.currentPage = PolicyPage
-		cmds = append(cmds, m.policyModel.Init())
-	case "m":
-		m.currentPage = MarketplacePage
-		cmds = append(cmds, m.marketplaceModel.Init())
-	case "i":
-		m.currentPage = IdlePage
-		cmds = append(cmds, m.idleModel.Init())
-	case "a":
-		m.currentPage = AMIPage
-		cmds = append(cmds, m.amiModel.Init())
-	case "r":
-		m.currentPage = RightsizingPage
-		cmds = append(cmds, m.rightsizingModel.Init())
-	case "l":
-		m.currentPage = LogsPage
-		cmds = append(cmds, m.logsModel.Init())
-	case "d":
-		m.currentPage = DaemonPage
-		cmds = append(cmds, m.daemonModel.Init())
-	case "9":
 		m.currentPage = SettingsPage
 		cmds = append(cmds, m.settingsModel.Init())
-	case "0":
+	case "9":
 		m.currentPage = ProfilesPage
 		m.profilesModel.SetSize(m.width, m.height)
 		cmds = append(cmds, func() tea.Msg { return models.ProfileInitMsg{} })
@@ -438,43 +466,64 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the application
 func (m AppModel) View() string {
-	// Render current page based on active page
+	// Get base view
+	var baseView string
 	switch m.currentPage {
 	case DashboardPage:
-		return m.dashboardModel.View()
+		baseView = m.dashboardModel.View()
 	case InstancesPage:
-		return m.instancesModel.View()
+		baseView = m.instancesModel.View()
 	case TemplatesPage:
-		return m.templatesModel.View()
+		baseView = m.templatesModel.View()
 	case StoragePage:
-		return m.storageModel.View()
+		baseView = m.storageModel.View()
 	case ProjectsPage:
-		return m.projectsModel.View()
+		baseView = m.projectsModel.View()
 	case BudgetPage:
-		return m.budgetModel.View()
+		baseView = m.budgetModel.View()
 	case UsersPage:
-		return m.usersModel.View()
+		baseView = m.usersModel.View()
 	case PolicyPage:
-		return m.policyModel.View()
+		baseView = m.policyModel.View()
 	case MarketplacePage:
-		return m.marketplaceModel.View()
+		baseView = m.marketplaceModel.View()
 	case IdlePage:
-		return m.idleModel.View()
+		baseView = m.idleModel.View()
 	case AMIPage:
-		return m.amiModel.View()
+		baseView = m.amiModel.View()
 	case RightsizingPage:
-		return m.rightsizingModel.View()
+		baseView = m.rightsizingModel.View()
 	case LogsPage:
-		return m.logsModel.View()
+		baseView = m.logsModel.View()
 	case DaemonPage:
-		return m.daemonModel.View()
+		baseView = m.daemonModel.View()
 	case SettingsPage:
-		return m.settingsModel.View()
+		baseView = m.settingsModel.View()
 	case ProfilesPage:
-		return m.profilesModel.View()
+		baseView = m.profilesModel.View()
 	default:
-		return fmt.Sprintf("Prism v%s\n\nUnknown page", version.GetVersion())
+		baseView = fmt.Sprintf("Prism v%s\n\nUnknown page", version.GetVersion())
 	}
+
+	// If we're in the advanced submenu, overlay the submenu
+	if m.inSubmenu && m.submenuParent == SettingsPage {
+		submenuOverlay := "\n\n" +
+			"╔═══════════════════════════════════════════════════════════╗\n" +
+			"║                    ADVANCED SETTINGS                      ║\n" +
+			"╠═══════════════════════════════════════════════════════════╣\n" +
+			"║  [1] AMI Management         - Custom image management     ║\n" +
+			"║  [2] Rightsizing            - Instance optimization       ║\n" +
+			"║  [3] Idle Detection         - Hibernation policies        ║\n" +
+			"║  [4] Policy Framework       - Access control & governance ║\n" +
+			"║  [5] Template Marketplace   - Community templates         ║\n" +
+			"║  [6] Logs Viewer            - System logs and diagnostics ║\n" +
+			"╠═══════════════════════════════════════════════════════════╣\n" +
+			"║  Press number to navigate • ESC to return to Settings     ║\n" +
+			"╚═══════════════════════════════════════════════════════════╝\n"
+		return baseView + submenuOverlay
+	}
+
+	return baseView
 }
 
 // loadAPIKeyFromState attempts to load the API key from daemon state

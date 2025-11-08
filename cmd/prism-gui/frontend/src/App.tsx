@@ -1882,6 +1882,23 @@ export default function PrismApp() {
           navigator.clipboard.writeText(connectionInfo);
           actionMessage = `Connection command copied to clipboard: ${connectionInfo}`;
           break;
+        case 'terminal':
+          // Open terminal view with this instance pre-selected
+          setState(prev => ({
+            ...prev,
+            activeView: 'terminal',
+            selectedTerminalInstance: instance.name,
+            loading: false
+          }));
+          return; // Don't continue with normal flow
+        case 'webservice':
+          // Open webview view (user will select specific service)
+          setState(prev => ({
+            ...prev,
+            activeView: 'webview',
+            loading: false
+          }));
+          return; // Don't continue with normal flow
         case 'delete':
           // Show confirmation modal instead of deleting immediately
           setState(prev => ({ ...prev, loading: false }));
@@ -2264,6 +2281,8 @@ export default function PrismApp() {
                   expandToViewport
                   items={[
                     { text: 'Connect', id: 'connect', disabled: item.state !== 'running' },
+                    { text: 'Open Terminal', id: 'terminal', disabled: item.state !== 'running', iconName: 'console' },
+                    { text: 'Open Web Service', id: 'webservice', disabled: item.state !== 'running' || !item.web_services || item.web_services.length === 0, iconName: 'external' },
                     { text: 'Stop', id: 'stop', disabled: item.state !== 'running' },
                     { text: 'Start', id: 'start', disabled: item.state === 'running' },
                     { text: 'Hibernate', id: 'hibernate', disabled: item.state !== 'running' },
@@ -6605,20 +6624,6 @@ export default function PrismApp() {
                       <Badge color={state.instances.some(i => i.state === 'running') ? 'green' : 'grey'}>
                         {state.instances.length}
                       </Badge> : undefined
-              },
-              {
-                type: "link",
-                text: "Terminal",
-                href: "/terminal",
-                info: state.instances.filter(i => i.state === 'running').length > 0 ?
-                      <Badge color="green">SSH</Badge> : undefined
-              },
-              {
-                type: "link",
-                text: "Web Services",
-                href: "/webview",
-                info: state.instances.filter(i => i.state === 'running' && i.web_services && i.web_services.length > 0).length > 0 ?
-                      <Badge color="blue">Available</Badge> : undefined
               },
               { type: "divider" },
               {

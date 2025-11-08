@@ -37,7 +37,7 @@
 
 ### **New Formula Structure**:
 ```ruby
-class Cloudworkstation < Formula
+class Prism < Formula
   desc "Enterprise research management platform - Launch cloud research environments in seconds"
   # Development/Beta release - includes latest enterprise features
   revision 1

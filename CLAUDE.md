@@ -481,6 +481,124 @@ prism launch "Rocky Linux 9 + Conda Stack" my-project --with spack
 - **Clear Relationships**: Explicit parent-child dependencies
 - **Flexible Override**: Change any aspect while preserving inheritance
 
+### Desktop Applications (Nice DCV)
+
+**✅ PLANNED: Desktop Application Support via Nice DCV** (v0.6.1-v0.6.2)
+
+Prism will support desktop GUI applications (MATLAB, QGIS, Mathematica, etc.) using AWS Nice DCV for browser-based remote desktop access.
+
+#### Web vs Desktop Applications
+
+**Web-Based Templates** (Current - Jupyter, RStudio, VSCode, Streamlit):
+- Applications serve HTTP directly
+- No desktop environment needed
+- Launch time: 2-5 minutes
+- Resources: 2-4 vCPU, 8-16GB RAM
+- Cost: $0.08-0.17/hour
+
+**Desktop Templates** (v0.6.1+ - MATLAB, QGIS, Mathematica):
+- Applications require GUI desktop
+- Nice DCV provides browser-based desktop
+- Launch time: 5-10 minutes
+- Resources: 4-8 vCPU, 16-32GB RAM
+- Cost: $0.17-0.53/hour (GPU optional)
+
+#### Template Configuration Pattern
+
+```yaml
+# Web-based template (existing)
+name: "Jupyter Notebook"
+connection_type: "web"
+ports:
+  - 8888
+
+# Desktop template (v0.6.1+)
+name: "MATLAB Workstation"
+connection_type: "desktop"
+desktop:
+  environment: "mate"  # Lightweight desktop
+  dcv_port: 8443
+  gpu_required: false
+ports:
+  - 8443  # DCV remote desktop
+```
+
+#### Connection Flow
+
+```bash
+# Web apps (existing)
+prism launch jupyter my-notebook
+prism connect my-notebook
+# → Browser opens to Jupyter at https://localhost:8888
+
+# Desktop apps (v0.6.1+)
+prism launch matlab my-matlab
+prism connect my-matlab
+# → Browser opens to DCV desktop at https://localhost:8443
+# → Full MATLAB GUI appears in browser
+```
+
+#### Reference Implementation: Lens Project
+
+The [Lens project](https://github.com/scttfrdmn/lens) has a **complete working Nice DCV implementation** that Prism will learn from:
+
+**Key Lens Components**:
+- `apps/dcv-desktop/` - Complete DCV infrastructure
+- `apps/qgis/` - Production QGIS desktop templates (3 environments)
+- `DESKTOP_APPS.md` - Architectural documentation
+- **Cloud-init scripts**: Automated DCV server installation
+- **Connection management**: SSM port forwarding + browser auto-open
+- **Credential handling**: Secure password generation and display
+
+**What Prism Will Adopt from Lens**:
+1. **Automated DCV Provisioning**: Cloud-init scripts for DCV installation
+2. **Desktop Environment**: MATE desktop (lightweight, performant)
+3. **Connection Pattern**: SSM port forwarding to DCV port 8443
+4. **Security Model**: No exposed ports, SSM-only access
+5. **Application Patterns**: QGIS multi-environment approach (basic, advanced, GPU)
+
+#### Architecture Documentation
+
+**Comprehensive Guide**: [docs/architecture/NICE_DCV_ARCHITECTURE.md](docs/architecture/NICE_DCV_ARCHITECTURE.md)
+
+This document covers:
+- DCV vs alternatives comparison
+- Technical requirements (AMIs, desktop environments, instance sizing)
+- Complete Lens learnings summary
+- Implementation plan for Prism (4 phases)
+- Security considerations
+- Performance characteristics
+- Future enhancements
+
+#### Planned Desktop Templates (v0.6.2)
+
+**High Priority**:
+- **MATLAB** (#220): Numerical computing (engineering, physics, mathematics)
+- **QGIS** (#221): Geographic Information System (3 environments: basic, advanced, remote-sensing)
+
+**Medium Priority**:
+- **Mathematica** (#222): Symbolic computation
+- **Stata** (#223): Statistical analysis
+
+**Commercial License Strategy**:
+- **Cloud-Based Licenses**: Online activation (MATLAB, Mathematica support this)
+- **BYOL** (Bring Your Own License): Users provide license server configuration
+- **AWS Marketplace**: Pre-configured AMIs with integrated licensing
+- Template system supports all three approaches
+
+#### Implementation Timeline
+
+- **v0.6.1 (Sep-Oct 2026)**: DCV foundation (#216-#219)
+  - Template system extension for `connection_type: "desktop"`
+  - DCV server provisioning via cloud-init
+  - DCV connection management
+  - Generic desktop template
+
+- **v0.6.2 (Nov-Dec 2026)**: Desktop applications (#220-#223)
+  - MATLAB template (CRITICAL priority)
+  - QGIS templates (3 environments)
+  - Mathematica and Stata templates
+
 ### State Management
 Enhanced state management with profile integration:
 ```json

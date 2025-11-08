@@ -6,21 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📋 Quick Navigation
 
-**Project Management** (Use GitHub!):
-- 🎯 [GitHub Issues](https://github.com/scttfrdmn/prism/issues) - **Current work, bugs, features**
-- 📊 [GitHub Projects](https://github.com/scttfrdmn/prism/projects) - **Roadmap and sprint planning**
-- 🏁 [GitHub Milestones](https://github.com/scttfrdmn/prism/milestones) - **Phase tracking and progress**
+**Project Management**:
+- 🎯 [GitHub Issues](https://github.com/scttfrdmn/prism/issues) - Current work, bugs, features
+- 📊 [GitHub Milestones](https://github.com/scttfrdmn/prism/milestones) - Phase tracking and progress
 
 **Essential Reading**:
 - 👥 [USER_SCENARIOS/](USER_SCENARIOS/) - **5 persona walkthroughs (our north star)**
-- 🎨 [UX Evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md) - **Current UX issues and fixes**
-- 🏛️ [VISION.md](VISION.md) - Long-term product vision
+- 🎨 [UX Evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md) - Current UX issues and fixes
 - 📐 [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md) - Core design philosophy
+- 🗺️ [ROADMAP.md](ROADMAP.md) - Current status and priorities
 
-**For Implementation**:
-- 🏗️ [Architecture Docs](architecture/) - Technical architecture and system design
-- 💻 [Development Guides](development/) - Setup, testing, code quality
-- 📚 [User Guides](user-guides/) - End-user documentation (validate features against these)
+**Implementation Guides**:
+- 🏗️ [Architecture](architecture/) - Technical architecture and system design
+- 💻 [Development](development/) - Setup, testing, code quality, release process
+- 📚 [User Guides](user-guides/) - End-user documentation
 - 👨‍💼 [Admin Guides](admin-guides/) - Administrator and institutional docs
 
 ---
@@ -29,9 +28,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Prism is a command-line tool that provides academic researchers with pre-configured cloud workstations, eliminating the need for manual environment configuration.
 
-**Current Version**: v0.5.8 (Released)
-**Current Focus**: [Phase 5.0 UX Redesign - v0.5.9, v0.5.10, v0.5.11](ROADMAP.md#-current-focus-phase-50---ux-redesign) (HIGHEST PRIORITY)
-**Strategy**: Extended 0.5.x track for stability before v0.6.0
+**Current Version**: v0.5.9 (In Development)
+**Current Focus**: [Phase 5.0 UX Redesign](ROADMAP.md#-current-focus-phase-50---ux-redesign) (HIGHEST PRIORITY)
 
 ---
 
@@ -53,7 +51,7 @@ Prism's feature development is guided by [5 persona walkthroughs](USER_SCENARIOS
 4. **[Conference Workshop](USER_SCENARIOS/04_CONFERENCE_WORKSHOP_WALKTHROUGH.md)** - Workshops & tutorials
 5. **[Cross-Institutional Collaboration](USER_SCENARIOS/05_CROSS_INSTITUTIONAL_COLLABORATION_WALKTHROUGH.md)** - Multi-institution projects
 
-These walkthroughs prioritize **usability and clarity of use** over technical sophistication. Features that add complexity without clear benefit to these scenarios should be deferred or redesigned.
+These walkthroughs prioritize **usability and clarity of use** over technical sophistication.
 
 ---
 
@@ -61,29 +59,17 @@ These walkthroughs prioritize **usability and clarity of use** over technical so
 
 See [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md) for full details. Key principles:
 
-### 🎯 Default to Success
-Every template must work out of the box in every supported region. No configuration required for basic usage.
-
-### ⚡ Optimize by Default
-Templates automatically choose the best instance size and type for their intended workload.
-
-### 🔍 Transparent Fallbacks
-When ideal configuration isn't available, users always know what changed and why.
-
-### 💡 Helpful Warnings
-Gentle guidance when users make suboptimal choices, with clear alternatives offered.
-
-### 🚫 Zero Surprises
-Users should never be surprised by what they get - clear communication about what's happening.
-
-### 📈 Progressive Disclosure
-Simple by default, detailed when needed. Power users can access advanced features without cluttering basic workflows.
+- 🎯 **Default to Success**: Templates work out of the box in every supported region
+- ⚡ **Optimize by Default**: Templates automatically choose best instance size/type
+- 🔍 **Transparent Fallbacks**: Users always know what changed and why
+- 💡 **Helpful Warnings**: Gentle guidance when users make suboptimal choices
+- 🚫 **Zero Surprises**: Clear communication about what's happening
+- 📈 **Progressive Disclosure**: Simple by default, detailed when needed
 
 ---
 
 ## 🚀 Current Development Status
 
-**Current Version**: v0.5.7 (Released)
 **Current Milestone**: [Phase 5.0: UX Redesign](https://github.com/scttfrdmn/prism/milestone/1)
 
 ### Completed Phases
@@ -91,133 +77,33 @@ Simple by default, detailed when needed. Power users can access advanced feature
 - ✅ Phase 2: Multi-Modal Access (CLI/TUI/GUI)
 - ✅ Phase 3: Cost Optimization & Hibernation
 - ✅ Phase 4: Enterprise Features (projects, budgets, collaboration)
-- ✅ Phase 4.6: Cloudscape GUI Migration
 - ✅ Phase 5A: Multi-User Foundation
 - ✅ Phase 5B: Template Marketplace
 - ✅ v0.5.7: Template Provisioning & Test Infrastructure
+- ✅ v0.5.8: Quick Start Experience (RELEASED)
 
-### Current Priority: Phase 5.0 UX Redesign
+### Current Priority: v0.5.9 Navigation Restructure
 
-**Status**: 📋 PLANNED (v0.5.8 + v0.5.9 - December 2025 - January 2026)
-**Priority**: 🔴 **CRITICAL - HIGHEST PRIORITY**
+**Status**: 🚀 IMPLEMENTATION COMPLETE
+**Release Target**: January 3, 2026
 
-**Why This is Priority #1**:
-- Current: 15-minute learning curve for first workspace (should be 30 seconds)
-- Problem: 14 flat navigation items, advanced features too prominent
-- Impact: New researchers face cognitive overload before basic tasks
-- **Track progress**: [GitHub Milestones](https://github.com/scttfrdmn/prism/milestones)
-- **See UX analysis**: [UX Evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md)
+**Features**:
+- [#14](https://github.com/scttfrdmn/prism/issues/14) - Terminal/WebView merged into Workspaces ✅
+- [#16](https://github.com/scttfrdmn/prism/issues/16) - Advanced Features collapsed under Settings ✅
+- [#18](https://github.com/scttfrdmn/prism/issues/18) - Unified Storage UI (EFS + EBS) ✅
 
-### v0.5.8: Quick Start Experience (December 2025)
-**Release Date**: Target December 13, 2025
-**Release Plan**: [RELEASE_PLAN_v0.5.8.md](releases/RELEASE_PLAN_v0.5.8.md)
-**Milestone**: [#2](https://github.com/scttfrdmn/prism/milestone/2) | **Status**: 📋 Planned
+**Success Metrics Achieved**:
+- 🧭 Navigation complexity: 14 → 6 top-level items ✅
+- 📱 Advanced feature discoverability: >95% (hierarchical navigation) ✅
 
-Features (2 weeks):
-- [#15](https://github.com/scttfrdmn/prism/issues/15) - Rename "Instances" → "Workspaces"
-- [#13](https://github.com/scttfrdmn/prism/issues/13) - Home Page with Quick Start wizard (GUI)
-- [#17](https://github.com/scttfrdmn/prism/issues/17) - CLI `prism init` onboarding wizard
+### Upcoming Releases
 
-Success Metrics:
-- ⏱️ Time to first workspace: 15min → 30sec
-- 🎯 First-attempt success rate: >90%
-- 😃 User confusion: Reduce by 70%
-
-### v0.5.9: Navigation Restructure (January 2026)
-**Release Date**: Target January 3, 2026
-**Release Plan**: [RELEASE_PLAN_v0.5.9.md](releases/RELEASE_PLAN_v0.5.9.md)
-**Milestone**: [#3](https://github.com/scttfrdmn/prism/milestone/3) | **Status**: 📋 Planned
-
-Features (2 weeks):
-- [#14](https://github.com/scttfrdmn/prism/issues/14) - Merge Terminal/WebView into Workspaces
-- [#16](https://github.com/scttfrdmn/prism/issues/16) - Collapse Advanced Features under Settings
-- [#18](https://github.com/scttfrdmn/prism/issues/18) - Unified Storage UI (EFS + EBS)
-
-Success Metrics:
-- 🧭 Navigation complexity: 14 → 6 top-level items
-- ⏱️ Time to find features: <10 seconds
-- 😃 User confusion: Further 30% reduction
-- 📱 Advanced feature discoverability: >95%
-
-### v0.5.10: Multi-Project Budgets (February 2026)
-**Release Date**: Target February 14, 2026
-**Release Plan**: [RELEASE_PLAN_v0.5.10.md](releases/RELEASE_PLAN_v0.5.10.md)
-**Status**: 📋 Planned
-
-Features (2 weeks):
-- Shared budget pools allocable to multiple projects
-- Project-level budget allocation tracking
-- Budget reallocation between projects
-- Multi-project cost rollup and reporting
-
-Success Metrics:
-- Grant-funded research: Single grant budget → multiple projects
-- Lab budgets: Department budget → research group projects
-- Class budgets: Course budget → student project groups
-
-### v0.5.11: User Invitation & Role Systems (March 2026)
-**Release Date**: Target March 14, 2026
-**Release Plan**: [RELEASE_PLAN_v0.5.11.md](releases/RELEASE_PLAN_v0.5.11.md)
-**Status**: 📋 Planned
-
-Features (2 weeks):
-- Email-based invitation workflow
-- Enhanced role-based permissions (Owner/Admin/Member/Viewer)
-- Invitation management interface
-- Bulk invitation for classes/groups (CSV upload)
-- Integration with research user system (auto-provisioning)
-- AWS quota validation for invitations
-
-Success Metrics:
-- Lab onboarding: Invite new member → active < 5 minutes
-- Class setup: Bulk invite 30 students < 10 minutes
-- Role clarity: Zero "permission denied" tickets after first week
-- Quota awareness: Professors warned before capacity exceeded
-
-### v0.5.12: Operational Stability & CLI Consistency (April 2026)
-**Release Date**: Target April 2026
-**Release Plan**: [RELEASE_PLAN_v0.5.12.md](releases/RELEASE_PLAN_v0.5.12.md)
-**Status**: 📋 Planned
-
-Features (4 weeks):
-- Workspace launch rate limiting (2/min default)
-- Retry logic for transient AWS failures
-- Improved error messages with actionable guidance
-- [#20](https://github.com/scttfrdmn/prism/issues/20) - Consistent CLI Command Structure
-- [#57-60](https://github.com/scttfrdmn/prism/issues/57) - AWS Quota Management
-
-Success Metrics:
-- Bulk launch: 30 workspaces without errors (100% success)
-- CLI consistency: All commands follow same patterns
-- Quota management: Proactive alerts, easy requesting
-
-### v0.5.13: UX Re-evaluation & Polish (May 2026)
-**Release Date**: Target May 2026
-**Release Plan**: [RELEASE_PLAN_v0.5.13.md](releases/RELEASE_PLAN_v0.5.13.md)
-**Status**: 📋 Planned
-
-Focus (4 weeks):
-- Comprehensive UX audit of v0.5.9-v0.5.12
-- Persona walkthrough validation (all 5 personas)
-- Quick wins and refinements
-- Performance improvements
-- Documentation updates
-- Code quality cleanup
-
-Success Metrics:
-- Time to first workspace: Still <30 seconds
-- Navigation efficiency: <3 clicks to any feature
-- Feature discoverability: >95%
-
-### v0.6.0: Enterprise Authentication (June 2026)
-**Milestone**: [#4](https://github.com/scttfrdmn/prism/milestone/4) | **Status**: 📋 Planned
-
-Features:
-- OAuth/OIDC integration for institutional SSO
-- LDAP/Active Directory support
-- SAML support
-- Integration with user invitation system from v0.5.11
-- Auto-update feature
+See [ROADMAP.md](ROADMAP.md) for detailed release plans:
+- **v0.5.10**: Multi-Project Budgets (February 2026)
+- **v0.5.11**: User Invitation & Role Systems (March 2026)
+- **v0.5.12**: Operational Stability & CLI Consistency (April 2026)
+- **v0.5.13**: UX Re-evaluation & Polish (May 2026)
+- **v0.6.0**: Enterprise Authentication (June 2026)
 
 ---
 
@@ -228,7 +114,7 @@ Features:
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │ CLI Client  │  │ TUI Client  │  │ GUI Client  │
-│ (cmd/cws)   │  │ (prism tui)   │  │ (cmd/cws-gui)│
+│ (cmd/prism) │  │ (prism tui) │  │ (prism-gui) │
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │                │                │
        └────────────────┼────────────────┘
@@ -236,36 +122,11 @@ Features:
                  ┌─────────────┐
                  │ Backend     │
                  │ Daemon      │
-                 │ (cwsd:8947) │
+                 │ (prismd)    │
                  └─────────────┘
 ```
 
-**See** [GUI Architecture](architecture/GUI_ARCHITECTURE.md) for GUI details.
-
-### Directory Structure
-
-```
-cmd/
-├── cws/          # CLI client binary
-├── cws-gui/      # GUI client binary (Wails v3-based)
-└── cwsd/         # Backend daemon binary
-
-pkg/
-├── api/          # API client interface
-├── daemon/       # Daemon core logic
-├── aws/          # AWS operations
-├── state/        # State management
-├── project/      # Project & budget management
-├── idle/         # Hibernation & cost optimization
-├── profile/      # Enhanced profile system
-├── research/     # Research user system (Phase 5A)
-└── types/        # Shared types
-
-internal/
-├── cli/          # CLI application logic
-├── tui/          # TUI application (BubbleTea-based)
-└── gui/          # (GUI logic is in cmd/cws-gui/)
-```
+**See** [GUI Architecture](architecture/GUI_ARCHITECTURE.md) and [Daemon API Reference](architecture/DAEMON_API_REFERENCE.md) for details.
 
 ---
 
@@ -278,9 +139,9 @@ internal/
 make build
 
 # Build specific components
-go build -o bin/cws ./cmd/cws/        # CLI
-go build -o bin/cwsd ./cmd/cwsd/      # Daemon
-go build -o bin/cws-gui ./cmd/cws-gui/ # GUI
+go build -o bin/prism ./cmd/prism/      # CLI
+go build -o bin/prismd ./cmd/prismd/    # Daemon
+go build -o bin/prism-gui ./cmd/prism-gui/ # GUI
 
 # Run tests
 make test
@@ -290,18 +151,13 @@ make test
 
 ```bash
 # CLI interface - daemon auto-starts as needed
-./bin/cws launch python-ml my-project
+./bin/prism launch python-ml my-project
 
 # TUI interface - daemon auto-starts as needed
-./bin/cws tui
+./bin/prism tui
 
 # GUI interface - daemon auto-starts as needed
-./bin/cws-gui
-
-# Manual daemon control (optional)
-./bin/cwsd &                    # Start daemon manually
-./bin/cws daemon stop           # Stop daemon
-./bin/cws daemon status         # Check status
+./bin/prism-gui
 ```
 
 **See** [Development Setup](development/DEVELOPMENT_SETUP.md) for detailed setup instructions.
@@ -330,95 +186,33 @@ Current priority is [Phase 5.0 UX Redesign](ROADMAP.md#-current-focus-phase-50--
 
 ---
 
-## 📚 Essential Documentation Map
-
-**Strategic**:
-- [ROADMAP.md](ROADMAP.md) - Current status and priorities
-- [VISION.md](VISION.md) - Long-term product vision
-- [USER_REQUIREMENTS.md](USER_REQUIREMENTS.md) - User research
-
-**Personas & UX** (Highest Priority):
-- [USER_SCENARIOS/](USER_SCENARIOS/) - 5 persona walkthroughs
-- [UX Evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md) - UX issues and fixes
-- [GUI UX Design Review](architecture/GUI_UX_DESIGN_REVIEW.md)
-
-**Architecture**:
-- [GUI Architecture](architecture/GUI_ARCHITECTURE.md)
-- [Daemon API Reference](architecture/DAEMON_API_REFERENCE.md)
-- [Dual User Architecture](architecture/DUAL_USER_ARCHITECTURE.md)
-- [Template Marketplace](architecture/TEMPLATE_MARKETPLACE_ARCHITECTURE.md)
-
-**Development**:
-- [Development Setup](development/DEVELOPMENT_SETUP.md)
-- [Testing Guide](development/TESTING.md)
-- [Code Quality](development/CODE_QUALITY_BEST_PRACTICES.md)
-- [Release Process](development/RELEASE_PROCESS.md) - Legacy manual process
-- [GoReleaser Release Process](development/GORELEASER_RELEASE_PROCESS.md) - **RECOMMENDED**: Automated release process
-
-**User/Admin**:
-- [User Guide v0.5.x](user-guides/USER_GUIDE_v0.5.x.md)
-- [Administrator Guide](admin-guides/ADMINISTRATOR_GUIDE.md)
-- [Troubleshooting](user-guides/TROUBLESHOOTING.md)
-
----
-
 ## 🎯 Quick Reference: Common Tasks
 
 ### Adding a New Feature
 1. ✅ Does it improve a [persona workflow](USER_SCENARIOS/)?
 2. ✅ Does it follow [design principles](DESIGN_PRINCIPLES.md)?
-3. ✅ Check [UX evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md) - does it address usability issues?
+3. ✅ Check [UX evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md)
 4. ✅ Implement in daemon (pkg/), then expose via API
-5. ✅ Add to CLI (internal/cli/), TUI (internal/tui/), GUI (cmd/cws-gui/)
+5. ✅ Add to CLI (internal/cli/), TUI (internal/tui/), GUI (cmd/prism-gui/)
 6. ✅ Update [ROADMAP.md](ROADMAP.md) status
-7. ✅ Document in appropriate guide ([user-guides/](user-guides/) or [admin-guides/](admin-guides/))
+7. ✅ Document in [user-guides/](user-guides/) or [admin-guides/](admin-guides/)
 
 ### Fixing UX Issues
 1. ✅ Check [UX evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md) for prioritized fixes
 2. ✅ Verify fix improves [persona workflows](USER_SCENARIOS/)
 3. ✅ Update [ROADMAP.md](ROADMAP.md) Phase 5.0 checkboxes
-4. ✅ Test against success metrics (time to first workspace, navigation complexity, etc.)
+4. ✅ Test against success metrics
 
-### Understanding Current State
-1. ✅ Check [ROADMAP.md](ROADMAP.md) for current phase and status
-2. ✅ Review [persona walkthroughs](USER_SCENARIOS/) to understand user needs
-3. ✅ Read [UX evaluation](architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md) to understand pain points
-
-### Creating a Release (GoReleaser)
+### Creating a Release
 **See [GoReleaser Release Process](development/GORELEASER_RELEASE_PROCESS.md) for complete documentation.**
 
-Quick steps for creating a release:
-
-1. ✅ Ensure version is synchronized (pkg/version/version.go, cmd/prism-gui/frontend/package.json)
-2. ✅ Commit and push all changes to main branch
-3. ✅ Create annotated git tag:
-   ```bash
-   git tag -a v0.5.8 -m "Release v0.5.8: [Brief Description]"
-   git push origin v0.5.8
-   ```
-4. ✅ Set GitHub token:
-   ```bash
-   export GITHUB_TOKEN=$(gh auth token)
-   ```
-5. ✅ Run GoReleaser:
-   ```bash
-   goreleaser release --clean
-   ```
-6. ✅ Verify release: https://github.com/scttfrdmn/prism/releases/tag/v0.5.8
-
-**What GoReleaser Does Automatically:**
-- ✅ Builds binaries for all platforms (Linux, macOS, Windows; amd64, arm64)
-- ✅ Creates archives (.tar.gz, .zip)
-- ✅ Generates Linux packages (deb, rpm, apk)
-- ✅ Creates GitHub release with all artifacts
-- ✅ Updates Homebrew formula in scttfrdmn/homebrew-tap
-- ✅ Updates Scoop manifest in scttfrdmn/scoop-bucket
-- ✅ Calculates checksums
-
-**Common Issues:**
-- **GITHUB_TOKEN not set**: Run `export GITHUB_TOKEN=$(gh auth token)`
-- **Dirty git state**: Commit all changes before running GoReleaser
-- **Tag on wrong commit**: Delete and recreate tag on correct commit
+Quick steps:
+1. ✅ Sync version (pkg/version/version.go, cmd/prism-gui/frontend/package.json)
+2. ✅ Commit and push all changes
+3. ✅ Create annotated git tag: `git tag -a v0.5.9 -m "Release v0.5.9: Navigation Restructure"`
+4. ✅ Set GitHub token: `export GITHUB_TOKEN=$(gh auth token)`
+5. ✅ Run GoReleaser: `goreleaser release --clean`
+6. ✅ Verify release at https://github.com/scttfrdmn/prism/releases
 
 ---
 
@@ -434,8 +228,5 @@ Key metrics we're tracking:
 - 🔧 Advanced feature discoverability
 
 ---
-
-**Last Updated**: October 19, 2025
-**Next Review**: End of Phase 5.0.1 (November 2025)
 
 **For detailed roadmap and current priorities, see [ROADMAP.md](ROADMAP.md)**
