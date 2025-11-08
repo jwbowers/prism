@@ -61,8 +61,8 @@ check_binary_version() {
     local name=$2
 
     if [ -f "$binary" ]; then
-        # Run binary with --version and extract version
-        BIN_VERSION=$($binary --version 2>&1 | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | sed 's/v//')
+        # Run binary with --version and extract version (supports suffixes like -dev, -alpha, -beta)
+        BIN_VERSION=$($binary --version 2>&1 | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?' | sed 's/v//')
 
         if [ -z "$BIN_VERSION" ]; then
             echo -e "  ${RED}✗${NC} $name: Could not extract version"
