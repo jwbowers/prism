@@ -1,5 +1,7 @@
 # Budget Banking Philosophy
 
+> **Note**: This document covers the **temporal** aspect of Prism's budget system (surplus/deficit tracking over time). For the **organizational** aspect (how budgets are structured across projects and funding sources), see [BUDGET_PHILOSOPHY.md](BUDGET_PHILOSOPHY.md).
+
 ## The Core Value Proposition
 
 **Prism's budget banking system is the killer feature that makes cloud computing viable for academic research.**

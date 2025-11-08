@@ -258,6 +258,9 @@ prism doctor                      # System health check
 **Guides:**
 - [AWS Setup Guide](AWS_SETUP_GUIDE.md) - AWS account and credential configuration
 - [Installation Guide](INSTALL.md) - Comprehensive installation instructions
+- [Budget System Philosophy](docs/BUDGET_PHILOSOPHY.md) - Multi-budget system design and conceptual model (v0.5.10+)
+- [Budget Banking Philosophy](docs/BUDGET_BANKING_PHILOSOPHY.md) - Surplus tracking and burst budgeting
+- [Resource Tagging](docs/RESOURCE_TAGGING.md) - Cost optimization and zombie resource cleanup
 - [Security & Compliance](docs/admin-guides/SECURITY_COMPLIANCE_ROADMAP.md) - NIST 800-171, HIPAA, GDPR, FISMA compliance
 - [Changelog](CHANGELOG.md) - Version history and release notes
 
