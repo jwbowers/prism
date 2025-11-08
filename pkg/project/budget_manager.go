@@ -20,14 +20,17 @@ import (
 
 // BudgetManager handles budget pools and project allocations
 type BudgetManager struct {
-	budgetsPath     string
-	allocationsPath string
-	mutex           sync.RWMutex
-	budgets         map[string]*types.Budget                  // budget_id → Budget
-	allocations     map[string]*types.ProjectBudgetAllocation // allocation_id → Allocation
+	budgetsPath       string
+	allocationsPath   string
+	reallocationsPath string
+	mutex             sync.RWMutex
+	budgets           map[string]*types.Budget                  // budget_id → Budget
+	allocations       map[string]*types.ProjectBudgetAllocation // allocation_id → Allocation
+	reallocations     map[string]*ReallocationRecord            // reallocation_id → Record
 	// Index for efficient lookups
-	projectAllocations map[string][]*types.ProjectBudgetAllocation // project_id → [Allocations]
-	budgetAllocations  map[string][]*types.ProjectBudgetAllocation // budget_id → [Allocations]
+	projectAllocations      map[string][]*types.ProjectBudgetAllocation // project_id → [Allocations]
+	budgetAllocations       map[string][]*types.ProjectBudgetAllocation // budget_id → [Allocations]
+	allocationReallocations map[string][]*ReallocationRecord            // allocation_id → [Reallocations]
 }
 
 // NewBudgetManager creates a new budget manager
@@ -44,14 +47,18 @@ func NewBudgetManager() (*BudgetManager, error) {
 
 	budgetsPath := filepath.Join(stateDir, "budgets.json")
 	allocationsPath := filepath.Join(stateDir, "budget_allocations.json")
+	reallocationsPath := filepath.Join(stateDir, "budget_reallocations.json")
 
 	manager := &BudgetManager{
-		budgetsPath:        budgetsPath,
-		allocationsPath:    allocationsPath,
-		budgets:            make(map[string]*types.Budget),
-		allocations:        make(map[string]*types.ProjectBudgetAllocation),
-		projectAllocations: make(map[string][]*types.ProjectBudgetAllocation),
-		budgetAllocations:  make(map[string][]*types.ProjectBudgetAllocation),
+		budgetsPath:             budgetsPath,
+		allocationsPath:         allocationsPath,
+		reallocationsPath:       reallocationsPath,
+		budgets:                 make(map[string]*types.Budget),
+		allocations:             make(map[string]*types.ProjectBudgetAllocation),
+		reallocations:           make(map[string]*ReallocationRecord),
+		projectAllocations:      make(map[string][]*types.ProjectBudgetAllocation),
+		budgetAllocations:       make(map[string][]*types.ProjectBudgetAllocation),
+		allocationReallocations: make(map[string][]*ReallocationRecord),
 	}
 
 	// Load existing data
@@ -61,6 +68,10 @@ func NewBudgetManager() (*BudgetManager, error) {
 
 	if err := manager.loadAllocations(); err != nil {
 		return nil, fmt.Errorf("failed to load allocations: %w", err)
+	}
+
+	if err := manager.loadReallocations(); err != nil {
+		return nil, fmt.Errorf("failed to load reallocations: %w", err)
 	}
 
 	// Build indexes
@@ -747,11 +758,225 @@ func (bm *BudgetManager) saveAllocations() error {
 func (bm *BudgetManager) rebuildIndexes() {
 	bm.projectAllocations = make(map[string][]*types.ProjectBudgetAllocation)
 	bm.budgetAllocations = make(map[string][]*types.ProjectBudgetAllocation)
+	bm.allocationReallocations = make(map[string][]*ReallocationRecord)
 
 	for _, allocation := range bm.allocations {
 		bm.projectAllocations[allocation.ProjectID] = append(bm.projectAllocations[allocation.ProjectID], allocation)
 		bm.budgetAllocations[allocation.BudgetID] = append(bm.budgetAllocations[allocation.BudgetID], allocation)
 	}
+
+	for _, reallocation := range bm.reallocations {
+		bm.allocationReallocations[reallocation.SourceAllocationID] = append(bm.allocationReallocations[reallocation.SourceAllocationID], reallocation)
+		bm.allocationReallocations[reallocation.DestinationAllocationID] = append(bm.allocationReallocations[reallocation.DestinationAllocationID], reallocation)
+	}
+}
+
+// loadReallocations loads reallocation history from disk
+func (bm *BudgetManager) loadReallocations() error {
+	// Check if reallocations file exists
+	if _, err := os.Stat(bm.reallocationsPath); os.IsNotExist(err) {
+		// No reallocations file exists yet, start with empty map
+		return nil
+	}
+
+	data, err := os.ReadFile(bm.reallocationsPath)
+	if err != nil {
+		return fmt.Errorf("failed to read reallocations file: %w", err)
+	}
+
+	var reallocations map[string]*ReallocationRecord
+	if err := json.Unmarshal(data, &reallocations); err != nil {
+		return fmt.Errorf("failed to parse reallocations file: %w", err)
+	}
+
+	bm.reallocations = reallocations
+	return nil
+}
+
+// saveReallocations saves reallocation history to disk
+func (bm *BudgetManager) saveReallocations() error {
+	data, err := json.MarshalIndent(bm.reallocations, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal reallocations: %w", err)
+	}
+
+	// Write to temporary file first, then rename for atomicity
+	tempPath := bm.reallocationsPath + ".tmp"
+	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write temporary reallocations file: %w", err)
+	}
+
+	if err := os.Rename(tempPath, bm.reallocationsPath); err != nil {
+		return fmt.Errorf("failed to rename reallocations file: %w", err)
+	}
+
+	return nil
+}
+
+// ReallocateFunds moves funds between allocations atomically (v0.5.10+ Issue #99)
+func (bm *BudgetManager) ReallocateFunds(ctx context.Context, req *ReallocateFundsRequest) (*ReallocationRecord, error) {
+	bm.mutex.Lock()
+	defer bm.mutex.Unlock()
+
+	// Validate request
+	if err := req.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid reallocation request: %w", err)
+	}
+
+	// Get source and destination allocations
+	sourceAlloc, exists := bm.allocations[req.SourceAllocationID]
+	if !exists {
+		return nil, fmt.Errorf("source allocation %q not found", req.SourceAllocationID)
+	}
+
+	destAlloc, exists := bm.allocations[req.DestinationAllocationID]
+	if !exists {
+		return nil, fmt.Errorf("destination allocation %q not found", req.DestinationAllocationID)
+	}
+
+	// Get source and destination budgets
+	sourceBudget, exists := bm.budgets[sourceAlloc.BudgetID]
+	if !exists {
+		return nil, fmt.Errorf("source budget %q not found", sourceAlloc.BudgetID)
+	}
+
+	destBudget, exists := bm.budgets[destAlloc.BudgetID]
+	if !exists {
+		return nil, fmt.Errorf("destination budget %q not found", destAlloc.BudgetID)
+	}
+
+	// Validate reallocation amount
+	availableInSource := sourceAlloc.AllocatedAmount - sourceAlloc.SpentAmount
+	if req.Amount > availableInSource {
+		return nil, fmt.Errorf("insufficient unspent funds in source allocation: $%.2f available, $%.2f requested",
+			availableInSource, req.Amount)
+	}
+
+	// For cross-budget reallocations, check destination budget has capacity
+	if sourceAlloc.BudgetID != destAlloc.BudgetID {
+		availableInDestBudget := destBudget.TotalAmount - destBudget.AllocatedAmount
+		if req.Amount > availableInDestBudget {
+			return nil, fmt.Errorf("insufficient capacity in destination budget: $%.2f available, $%.2f requested",
+				availableInDestBudget, req.Amount)
+		}
+	}
+
+	// Create reallocation record
+	record := &ReallocationRecord{
+		ID:                      uuid.New().String(),
+		SourceAllocationID:      req.SourceAllocationID,
+		DestinationAllocationID: req.DestinationAllocationID,
+		SourceBudgetID:          sourceAlloc.BudgetID,
+		DestinationBudgetID:     destAlloc.BudgetID,
+		Amount:                  req.Amount,
+		Reason:                  req.Reason,
+		PerformedBy:             req.PerformedBy,
+		Timestamp:               time.Now(),
+	}
+
+	// Perform the reallocation atomically
+	sourceAlloc.AllocatedAmount -= req.Amount
+	destAlloc.AllocatedAmount += req.Amount
+
+	// Update budget allocated amounts if cross-budget
+	if sourceAlloc.BudgetID != destAlloc.BudgetID {
+		sourceBudget.AllocatedAmount -= req.Amount
+		destBudget.AllocatedAmount += req.Amount
+		sourceBudget.UpdatedAt = time.Now()
+		destBudget.UpdatedAt = time.Now()
+	}
+
+	sourceAlloc.UpdatedAt = time.Now()
+	destAlloc.UpdatedAt = time.Now()
+
+	// Store reallocation record
+	bm.reallocations[record.ID] = record
+	bm.rebuildIndexes()
+
+	// Save all changes
+	if err := bm.saveAllocations(); err != nil {
+		// Rollback changes
+		sourceAlloc.AllocatedAmount += req.Amount
+		destAlloc.AllocatedAmount -= req.Amount
+		if sourceAlloc.BudgetID != destAlloc.BudgetID {
+			sourceBudget.AllocatedAmount += req.Amount
+			destBudget.AllocatedAmount -= req.Amount
+		}
+		delete(bm.reallocations, record.ID)
+		bm.rebuildIndexes()
+		return nil, fmt.Errorf("failed to save allocations: %w", err)
+	}
+
+	if err := bm.saveBudgets(); err != nil {
+		// Rollback changes
+		sourceAlloc.AllocatedAmount += req.Amount
+		destAlloc.AllocatedAmount -= req.Amount
+		if sourceAlloc.BudgetID != destAlloc.BudgetID {
+			sourceBudget.AllocatedAmount += req.Amount
+			destBudget.AllocatedAmount -= req.Amount
+		}
+		delete(bm.reallocations, record.ID)
+		bm.rebuildIndexes()
+		return nil, fmt.Errorf("failed to save budgets: %w", err)
+	}
+
+	if err := bm.saveReallocations(); err != nil {
+		// Rollback changes
+		sourceAlloc.AllocatedAmount += req.Amount
+		destAlloc.AllocatedAmount -= req.Amount
+		if sourceAlloc.BudgetID != destAlloc.BudgetID {
+			sourceBudget.AllocatedAmount += req.Amount
+			destBudget.AllocatedAmount -= req.Amount
+		}
+		delete(bm.reallocations, record.ID)
+		bm.rebuildIndexes()
+		return nil, fmt.Errorf("failed to save reallocation record: %w", err)
+	}
+
+	recordCopy := *record
+	return &recordCopy, nil
+}
+
+// GetReallocationHistory retrieves reallocation history for a specific allocation (v0.5.10+ Issue #99)
+func (bm *BudgetManager) GetReallocationHistory(ctx context.Context, allocationID string) ([]*ReallocationRecord, error) {
+	bm.mutex.RLock()
+	defer bm.mutex.RUnlock()
+
+	// Verify allocation exists
+	if _, exists := bm.allocations[allocationID]; !exists {
+		return nil, fmt.Errorf("allocation %q not found", allocationID)
+	}
+
+	records := bm.allocationReallocations[allocationID]
+	results := make([]*ReallocationRecord, len(records))
+	for i, record := range records {
+		recordCopy := *record
+		results[i] = &recordCopy
+	}
+
+	return results, nil
+}
+
+// GetBudgetReallocationHistory retrieves all reallocations for a budget (v0.5.10+ Issue #99)
+func (bm *BudgetManager) GetBudgetReallocationHistory(ctx context.Context, budgetID string) ([]*ReallocationRecord, error) {
+	bm.mutex.RLock()
+	defer bm.mutex.RUnlock()
+
+	// Verify budget exists
+	if _, exists := bm.budgets[budgetID]; !exists {
+		return nil, fmt.Errorf("budget %q not found", budgetID)
+	}
+
+	// Collect all reallocations involving this budget
+	var results []*ReallocationRecord
+	for _, record := range bm.reallocations {
+		if record.SourceBudgetID == budgetID || record.DestinationBudgetID == budgetID {
+			recordCopy := *record
+			results = append(results, &recordCopy)
+		}
+	}
+
+	return results, nil
 }
 
 // Close cleanly shuts down the budget manager

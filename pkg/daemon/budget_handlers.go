@@ -55,6 +55,8 @@ func (s *Server) handleBudgetByID(w http.ResponseWriter, r *http.Request) {
 		s.handleBudgetSummary(w, r, budgetID)
 	case "allocations":
 		s.handleBudgetAllocations(w, r, budgetID)
+	case "reallocations":
+		s.handleBudgetReallocationHistory(w, r, budgetID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown budget operation")
 	}
@@ -228,6 +230,8 @@ func (s *Server) handleAllocationByID(w http.ResponseWriter, r *http.Request) {
 	switch operation {
 	case "status":
 		s.handleAllocationStatus(w, r, allocationID)
+	case "reallocations":
+		s.handleAllocationReallocationHistory(w, r, allocationID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown allocation operation")
 	}
@@ -430,5 +434,77 @@ func (s *Server) handleAllocationStatus(w http.ResponseWriter, r *http.Request, 
 		"allocated":     allocation.AllocatedAmount,
 		"spent":         allocation.SpentAmount,
 		"backup":        backupInfo,
+	})
+}
+
+// ============================================================================
+// Reallocation Endpoints (v0.5.10+ Issue #99)
+// ============================================================================
+
+// handleReallocationOperations routes reallocation-related requests (v0.5.10+ Issue #99)
+func (s *Server) handleReallocationOperations(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		s.handleCreateReallocation(w, r)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleCreateReallocation creates a new funds reallocation (v0.5.10+ Issue #99)
+func (s *Server) handleCreateReallocation(w http.ResponseWriter, r *http.Request) {
+	var req project.ReallocateFundsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid request: %v", err))
+		return
+	}
+
+	record, err := s.budgetManager.ReallocateFunds(context.Background(), &req)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to reallocate funds: %v", err))
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(record)
+}
+
+// handleBudgetReallocationHistory retrieves reallocation history for a budget (v0.5.10+ Issue #99)
+func (s *Server) handleBudgetReallocationHistory(w http.ResponseWriter, r *http.Request, budgetID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	records, err := s.budgetManager.GetBudgetReallocationHistory(context.Background(), budgetID)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Failed to get budget reallocation history: %v", err))
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"budget_id":     budgetID,
+		"reallocations": records,
+		"count":         len(records),
+	})
+}
+
+// handleAllocationReallocationHistory retrieves reallocation history for an allocation (v0.5.10+ Issue #99)
+func (s *Server) handleAllocationReallocationHistory(w http.ResponseWriter, r *http.Request, allocationID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	records, err := s.budgetManager.GetReallocationHistory(context.Background(), allocationID)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Failed to get allocation reallocation history: %v", err))
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"allocation_id": allocationID,
+		"reallocations": records,
+		"count":         len(records),
 	})
 }

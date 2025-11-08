@@ -680,6 +680,9 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/allocations", applyMiddleware(s.handleAllocationOperations))
 	mux.HandleFunc("/api/v1/allocations/", applyMiddleware(s.handleAllocationByID))
 
+	// Reallocation operations (v0.5.10 Issue #99)
+	mux.HandleFunc("/api/v1/reallocations", applyMiddleware(s.handleReallocationOperations))
+
 	// Security management endpoints (Phase 4: Security integration)
 	mux.HandleFunc("/api/v1/security/status", applyMiddleware(s.handleSecurityStatus))
 	mux.HandleFunc("/api/v1/security/health", applyMiddleware(s.handleSecurityHealth))

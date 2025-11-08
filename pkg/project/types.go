@@ -535,3 +535,84 @@ type UpdateAllocationRequest struct {
 	// Notes are the new notes (optional)
 	Notes *string `json:"notes,omitempty"`
 }
+
+// ReallocateFundsRequest represents a request to reallocate funds between allocations (v0.5.10+ Issue #99)
+type ReallocateFundsRequest struct {
+	// SourceAllocationID is where funds are moved from
+	SourceAllocationID string `json:"source_allocation_id"`
+
+	// DestinationAllocationID is where funds are moved to
+	DestinationAllocationID string `json:"destination_allocation_id"`
+
+	// Amount is how much to reallocate (USD)
+	Amount float64 `json:"amount"`
+
+	// Reason explains why the reallocation is being made (required for audit)
+	Reason string `json:"reason"`
+
+	// PerformedBy is the user making the reallocation
+	PerformedBy string `json:"performed_by"`
+}
+
+// Validate validates the reallocate funds request
+func (r *ReallocateFundsRequest) Validate() error {
+	if r.SourceAllocationID == "" {
+		return fmt.Errorf("source_allocation_id is required")
+	}
+
+	if r.DestinationAllocationID == "" {
+		return fmt.Errorf("destination_allocation_id is required")
+	}
+
+	if r.SourceAllocationID == r.DestinationAllocationID {
+		return fmt.Errorf("source and destination allocations cannot be the same")
+	}
+
+	if r.Amount <= 0 {
+		return fmt.Errorf("reallocation amount must be greater than 0")
+	}
+
+	if r.Reason == "" {
+		return fmt.Errorf("reason is required for audit trail")
+	}
+
+	if len(r.Reason) > 500 {
+		return fmt.Errorf("reason cannot exceed 500 characters")
+	}
+
+	if r.PerformedBy == "" {
+		return fmt.Errorf("performed_by is required")
+	}
+
+	return nil
+}
+
+// ReallocationRecord tracks a funds reallocation for audit purposes (v0.5.10+ Issue #99)
+type ReallocationRecord struct {
+	// ID is the unique reallocation identifier
+	ID string `json:"id"`
+
+	// SourceAllocationID is where funds were moved from
+	SourceAllocationID string `json:"source_allocation_id"`
+
+	// DestinationAllocationID is where funds were moved to
+	DestinationAllocationID string `json:"destination_allocation_id"`
+
+	// SourceBudgetID is the source budget (for cross-budget tracking)
+	SourceBudgetID string `json:"source_budget_id"`
+
+	// DestinationBudgetID is the destination budget (for cross-budget tracking)
+	DestinationBudgetID string `json:"destination_budget_id"`
+
+	// Amount is how much was reallocated (USD)
+	Amount float64 `json:"amount"`
+
+	// Reason explains why the reallocation was made
+	Reason string `json:"reason"`
+
+	// PerformedBy is the user who made the reallocation
+	PerformedBy string `json:"performed_by"`
+
+	// Timestamp is when the reallocation occurred
+	Timestamp time.Time `json:"timestamp"`
+}
