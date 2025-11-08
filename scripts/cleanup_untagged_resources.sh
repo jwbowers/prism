@@ -1,40 +1,72 @@
-#!/bin/bash
-# Prism Zombie Resource Cleanup Script
-# Identifies and optionally terminates AWS resources NOT tagged with Prism=true
+#!/usr/bin/env bash
+#
+# Prism Zombie Resource Cleanup Script (Issue #128)
+#
+# Identifies and optionally terminates AWS resources WITHOUT prism:managed tags.
+# This prevents runaway costs from forgotten/orphaned instances.
+#
+# Usage:
+#   ./cleanup_untagged_resources.sh              # Dry run (safe, no deletions)
+#   DRY_RUN=false ./cleanup_untagged_resources.sh  # Interactive cleanup
+#   DRY_RUN=false FORCE=true ./cleanup_untagged_resources.sh  # Automated cleanup
+#
+# Exit codes:
+#   0 - Success (no zombies found or cleanup successful)
+#   1 - Error (AWS CLI not found, permission issues, etc.)
+#   2 - Zombies found (dry run only)
 
-set -e
+set -euo pipefail
 
+# Configuration
 AWS_PROFILE="${AWS_PROFILE:-aws}"
 DRY_RUN="${DRY_RUN:-true}"
 FORCE="${FORCE:-false}"
+AWS_REGION="${AWS_REGION:-}"
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo "============================================"
-echo "Prism Zombie Resource Cleanup"
+echo "Prism Zombie Resource Cleanup (Issue #128)"
 echo "============================================"
 echo "AWS Profile: $AWS_PROFILE"
 echo "Dry Run: $DRY_RUN"
+if [[ -n "$AWS_REGION" ]]; then
+    echo "Region: $AWS_REGION"
+fi
 echo ""
 
-# Function to check if instance has Prism tag
+# Function to check if instance has prism:managed tag (new namespaced tag)
 is_prism_managed() {
     local instance_id=$1
-    local tags=$(aws ec2 describe-tags \
+
+    # Check for new namespaced tag first (prism:managed)
+    local new_tag=$(aws ec2 describe-tags \
+        --filters "Name=resource-id,Values=$instance_id" "Name=key,Values=prism:managed" \
+        --query 'Tags[0].Value' \
+        --output text \
+        --profile "$AWS_PROFILE" ${AWS_REGION:+--region "$AWS_REGION"} 2>/dev/null)
+
+    if [[ "$new_tag" == "true" ]]; then
+        return 0  # Is Prism-managed (new tag)
+    fi
+
+    # Fallback to legacy tag for backwards compatibility (Prism)
+    local legacy_tag=$(aws ec2 describe-tags \
         --filters "Name=resource-id,Values=$instance_id" "Name=key,Values=Prism" \
         --query 'Tags[0].Value' \
         --output text \
-        --profile "$AWS_PROFILE" 2>/dev/null)
+        --profile "$AWS_PROFILE" ${AWS_REGION:+--region "$AWS_REGION"} 2>/dev/null)
 
-    if [[ "$tags" == "true" ]]; then
-        return 0  # Is Prism-managed
-    else
-        return 1  # Not Prism-managed
+    if [[ "$legacy_tag" == "true" ]]; then
+        return 0  # Is Prism-managed (legacy tag)
     fi
+
+    return 1  # Not Prism-managed
 }
 
 # Find all running/stopped instances
@@ -43,7 +75,7 @@ instances=$(aws ec2 describe-instances \
     --filters "Name=instance-state-name,Values=running,stopped,pending" \
     --query 'Reservations[*].Instances[*].[InstanceId,State.Name,InstanceType,LaunchTime,Tags[?Key==`Name`].Value|[0]]' \
     --output text \
-    --profile "$AWS_PROFILE")
+    --profile "$AWS_PROFILE" ${AWS_REGION:+--region "$AWS_REGION"})
 
 zombie_instances=()
 prism_instances=()
@@ -72,7 +104,7 @@ volumes=$(aws ec2 describe-volumes \
     --filters "Name=status,Values=available" \
     --query 'Volumes[*].[VolumeId,Size,CreateTime]' \
     --output text \
-    --profile "$AWS_PROFILE")
+    --profile "$AWS_PROFILE" ${AWS_REGION:+--region "$AWS_REGION"})
 
 zombie_volumes=()
 while IFS=$'\t' read -r volume_id size create_time; do
@@ -141,14 +173,14 @@ if [[ ${#zombie_instances[@]} -gt 0 ]] || [[ ${#zombie_volumes[@]} -gt 0 ]]; the
         for zombie in "${zombie_instances[@]}"; do
             IFS='|' read -r id state type launch_time name <<< "$zombie"
             echo "Terminating $id..."
-            aws ec2 terminate-instances --instance-ids "$id" --profile "$AWS_PROFILE"
+            aws ec2 terminate-instances --instance-ids "$id" --profile "$AWS_PROFILE" ${AWS_REGION:+--region "$AWS_REGION"}
         done
 
         # Delete zombie volumes
         for zombie in "${zombie_volumes[@]}"; do
             IFS='|' read -r id size create_time <<< "$zombie"
             echo "Deleting volume $id..."
-            aws ec2 delete-volume --volume-id "$id" --profile "$AWS_PROFILE"
+            aws ec2 delete-volume --volume-id "$id" --profile "$AWS_PROFILE" ${AWS_REGION:+--region "$AWS_REGION"}
         done
 
         echo -e "${GREEN}✓ Cleanup complete!${NC}"

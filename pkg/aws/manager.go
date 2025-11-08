@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/state"
 	"github.com/scttfrdmn/prism/pkg/templates"
 	ctypes "github.com/scttfrdmn/prism/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/version"
 )
 
 // AWS instance state constants
@@ -342,6 +344,65 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 	minCount := int32(1)
 	maxCount := int32(1)
 
+	// Get current user for lifecycle tracking
+	currentUser := "unknown"
+	if u, err := user.Current(); err == nil {
+		currentUser = u.Username
+	}
+
+	// Build enhanced tag list (Issue #128: Enhanced Resource Tagging)
+	tags := []ec2types.Tag{
+		// User-facing identification
+		{Key: aws.String("Name"), Value: &req.Name},
+
+		// Prism identification (namespaced for AWS best practices)
+		{Key: aws.String("prism:managed"), Value: aws.String("true")},
+		{Key: aws.String("prism:version"), Value: aws.String(version.Version)},
+		{Key: aws.String("prism:instance-id"), Value: &req.Name},
+
+		// Workload information
+		{Key: aws.String("prism:template"), Value: &req.Template},
+		{Key: aws.String("prism:package-manager"), Value: &req.PackageManager},
+		{Key: aws.String("prism:primary-user"), Value: aws.String(primaryUsername)},
+
+		// Lifecycle tracking (Issue #128: Zombie resource detection)
+		{Key: aws.String("prism:launched-at"), Value: aws.String(time.Now().Format(time.RFC3339))},
+		{Key: aws.String("prism:launched-by"), Value: aws.String(currentUser)},
+
+		// AWS Cost Explorer integration tags (Issue #128: Cost allocation)
+		{Key: aws.String("Application"), Value: aws.String("Prism")},
+		{Key: aws.String("Environment"), Value: aws.String("research")},
+
+		// Legacy tags (maintained for backwards compatibility)
+		{Key: aws.String("Prism"), Value: aws.String("true")},
+		{Key: aws.String("LaunchedBy"), Value: aws.String("Prism")},
+		{Key: aws.String("Template"), Value: &req.Template},
+		{Key: aws.String("PackageManager"), Value: &req.PackageManager},
+		{Key: aws.String("PrimaryUser"), Value: aws.String(primaryUsername)},
+	}
+
+	// Add project tags if project is specified (Issue #128: Project/budget tracking)
+	if req.ProjectID != "" {
+		tags = append(tags,
+			ec2types.Tag{Key: aws.String("prism:project-id"), Value: &req.ProjectID},
+			ec2types.Tag{Key: aws.String("CostCenter"), Value: &req.ProjectID}, // AWS Cost Explorer
+		)
+	}
+
+	// Add funding allocation if specified (v0.5.10: Budget tracking)
+	if req.FundingAllocationID != "" {
+		tags = append(tags,
+			ec2types.Tag{Key: aws.String("prism:funding-allocation-id"), Value: &req.FundingAllocationID},
+		)
+	}
+
+	// Add research user if specified (Phase 5A: Multi-user support)
+	if req.ResearchUser != "" {
+		tags = append(tags,
+			ec2types.Tag{Key: aws.String("prism:research-user"), Value: &req.ResearchUser},
+		)
+	}
+
 	runInput := &ec2.RunInstancesInput{
 		ImageId:          &ami,
 		InstanceType:     ec2types.InstanceType(instanceType),
@@ -355,14 +416,7 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 		TagSpecifications: []ec2types.TagSpecification{
 			{
 				ResourceType: ec2types.ResourceTypeInstance,
-				Tags: []ec2types.Tag{
-					{Key: aws.String("Name"), Value: &req.Name},
-					{Key: aws.String("Prism"), Value: aws.String("true")},
-					{Key: aws.String("LaunchedBy"), Value: aws.String("Prism")},
-					{Key: aws.String("Template"), Value: &req.Template},
-					{Key: aws.String("PackageManager"), Value: &req.PackageManager},
-					{Key: aws.String("PrimaryUser"), Value: aws.String(primaryUsername)},
-				},
+				Tags:         tags,
 			},
 		},
 	}
