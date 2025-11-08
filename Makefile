@@ -1,7 +1,8 @@
-# CloudWorkstation Makefile
-# Builds both daemon and CLI client
+# Prism Makefile
+# Builds daemon, CLI client, and GUI
 
-VERSION := 0.5.8
+# Extract version from source code (single source of truth)
+VERSION := $(shell grep '^\tVersion = ' pkg/version/version.go | head -1 | sed 's/.*"\(.*\)".*/\1/')
 BUILD_TIME := $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
