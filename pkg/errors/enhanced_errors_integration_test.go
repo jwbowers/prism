@@ -5,186 +5,218 @@
 package errors_test
 
 import (
-	"errors"
+	"fmt"
+	"strings"
 	"testing"
 
-	"github.com/scttfrdmn/prism/pkg/errors"
+	prismErrors "github.com/scttfrdmn/prism/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// TestErrorEnhancement_QuotaExceeded validates enhancement of AWS quota errors
+// TestErrorEnhancement_PermissionDenied validates enhancement of AWS permission errors
 // with actionable guidance (v0.5.12 feature).
 //
 // Test Coverage:
-// - Pattern matching for quota exceeded errors
+// - Pattern matching for permission errors
+// - IAM policy guidance
 // - Documentation link inclusion
-// - Actionable resolution steps
 // - Error category tagging
-func TestErrorEnhancement_QuotaExceeded(t *testing.T) {
-	t.Skip("TODO: Implement quota exceeded error test for v0.5.12")
+func TestErrorEnhancement_PermissionDenied(t *testing.T) {
+	// Simulate AWS permission denied error
+	rawError := fmt.Errorf("UnauthorizedOperation: You are not authorized to perform this operation")
 
-	// Test Setup:
-	// 1. Simulate AWS quota exceeded error
-	// 2. Run through error enhancement pipeline
-	// 3. Verify enhanced error contains:
-	//    - Original error message
-	//    - "Increase AWS quota" guidance
-	//    - Link to AWS Service Quotas console
-	//    - Link to Prism docs on quotas
-	// 4. Verify error category: "quota_exceeded"
+	// Run through error enhancement pipeline
+	enhanced := prismErrors.EnhanceWithOperation(rawError, "launch instance")
 
-	rawError := errors.New("You have exceeded your instance quota for t3.medium")
-	_ = rawError
+	// Verify enhancement occurred
+	require.NotNil(t, enhanced, "Enhanced error should not be nil")
 
-	_ = errors.Enhance(rawError)
+	errorMsg := enhanced.Error()
 
-	assert.True(t, true, "Quota exceeded error test not yet implemented")
+	// Verify error contains actionable guidance
+	assert.Contains(t, errorMsg, "launch instance failed", "Should mention failed operation")
+	assert.Contains(t, errorMsg, "Suggestions", "Should include suggestions section")
+	assert.Contains(t, errorMsg, "IAM", "Should mention IAM permissions")
+	assert.Contains(t, errorMsg, "EC2", "Should mention EC2 service")
+
+	// Verify category
+	assert.Contains(t, errorMsg, "IAM Permissions", "Should have permissions category")
+
+	// Verify documentation link
+	assert.Contains(t, errorMsg, "docs.prism.org", "Should include docs link")
+	assert.Contains(t, errorMsg, "troubleshooting/permissions", "Should link to permissions troubleshooting")
 }
 
-// TestErrorEnhancement_InvalidCredentials validates enhancement of
-// AWS credential errors with authentication guidance (v0.5.12 feature).
+// TestErrorEnhancement_KeyPairNotFound validates enhancement of SSH key errors
+// with configuration guidance (v0.5.12 feature).
 //
 // Test Coverage:
-// - Pattern matching for credential errors
+// - Pattern matching for key pair errors
 // - AWS CLI configuration guidance
-// - IAM permission documentation links
-// - Profile setup instructions
-func TestErrorEnhancement_InvalidCredentials(t *testing.T) {
-	t.Skip("TODO: Implement invalid credentials error test for v0.5.12")
+// - Key creation instructions
+// - Regional awareness hints
+func TestErrorEnhancement_KeyPairNotFound(t *testing.T) {
+	// Simulate AWS key pair not found error
+	rawError := fmt.Errorf("InvalidKeyPair.NotFound: The key pair 'my-key' does not exist")
 
-	// Test Setup:
-	// 1. Simulate AWS invalid credentials error
-	// 2. Run through error enhancement pipeline
-	// 3. Verify enhanced error contains:
-	//    - "Check AWS credentials" guidance
-	//    - `aws configure` command suggestion
-	//    - Link to AWS IAM documentation
-	//    - Link to Prism authentication docs
-	// 4. Verify error category: "authentication_failure"
+	// Run through error enhancement pipeline
+	enhanced := prismErrors.EnhanceWithOperation(rawError, "launch instance")
 
-	rawError := errors.New("InvalidClientTokenId: The security token included in the request is invalid")
-	_ = rawError
+	require.NotNil(t, enhanced, "Enhanced error should not be nil")
+	errorMsg := enhanced.Error()
 
-	assert.True(t, true, "Invalid credentials error test not yet implemented")
+	// Verify error contains SSH key guidance
+	assert.Contains(t, errorMsg, "SSH Key Configuration", "Should have SSH key category")
+	assert.Contains(t, errorMsg, "key pair", "Should mention key pair")
+	assert.Contains(t, errorMsg, "create-key-pair", "Should suggest creating key")
+	assert.Contains(t, errorMsg, "region", "Should mention region dependency")
+
+	// Verify documentation link
+	assert.Contains(t, errorMsg, "ssh-keys", "Should link to SSH keys docs")
 }
 
-// TestErrorEnhancement_NetworkFailure validates enhancement of network
-// errors with connectivity troubleshooting (v0.5.12 feature).
+// TestErrorEnhancement_InvalidConfiguration validates enhancement of configuration
+// errors with parameter guidance (v0.5.12 feature).
 //
 // Test Coverage:
-// - Pattern matching for network errors
-// - DNS and connectivity checks
-// - VPN and firewall guidance
-// - AWS endpoint reachability tests
-func TestErrorEnhancement_NetworkFailure(t *testing.T) {
-	t.Skip("TODO: Implement network failure error test for v0.5.12")
+// - Pattern matching for configuration errors
+// - Parameter validation suggestions
+// - Regional resource checks
+// - Resource existence verification
+func TestErrorEnhancement_InvalidConfiguration(t *testing.T) {
+	// Simulate AWS invalid parameter error
+	rawError := fmt.Errorf("InvalidParameterValue: The instance type 'm5.32xlarge' is not supported in this region")
 
-	// Test Setup:
-	// 1. Simulate network connection timeout
-	// 2. Run through error enhancement pipeline
-	// 3. Verify enhanced error contains:
-	//    - "Check network connectivity" guidance
-	//    - DNS resolution troubleshooting
-	//    - Firewall/VPN check instructions
-	//    - Link to AWS service health dashboard
-	// 4. Verify error category: "network_failure"
+	// Run through error enhancement pipeline
+	enhanced := prismErrors.EnhanceWithOperation(rawError, "launch instance")
 
-	rawError := errors.New("dial tcp: i/o timeout")
-	_ = rawError
+	require.NotNil(t, enhanced, "Enhanced error should not be nil")
+	errorMsg := enhanced.Error()
 
-	assert.True(t, true, "Network failure error test not yet implemented")
+	// Verify error contains configuration guidance
+	assert.Contains(t, errorMsg, "Invalid Configuration", "Should have configuration category")
+	assert.Contains(t, errorMsg, "instance type", "Should mention instance type check")
+	assert.Contains(t, errorMsg, "region", "Should mention regional availability")
+	assert.Contains(t, errorMsg, "AMI", "Should mention AMI validation")
+
+	// Verify documentation link
+	assert.Contains(t, errorMsg, "troubleshooting/configuration", "Should link to configuration troubleshooting")
 }
 
-// TestErrorEnhancement_WithDocLinks validates documentation link
-// generation and formatting (v0.5.12 feature).
+// TestErrorEnhancement_CapacityError validates enhancement of capacity errors
+// with retry and alternative guidance (v0.5.12 feature).
 //
 // Test Coverage:
-// - Doc link URL generation
-// - Link formatting in error messages
-// - Multiple doc links per error
-// - Link relevance to error category
-func TestErrorEnhancement_WithDocLinks(t *testing.T) {
-	t.Skip("TODO: Implement doc links enhancement test for v0.5.12")
+// - Pattern matching for capacity errors
+// - Alternative instance type suggestions
+// - Retry timing guidance
+// - Regional failover hints
+func TestErrorEnhancement_CapacityError(t *testing.T) {
+	// Simulate AWS capacity error
+	rawError := fmt.Errorf("InsufficientInstanceCapacity: We currently do not have sufficient capacity in the requested Availability Zone")
 
-	// Test Setup:
-	// 1. Test each of 10 error categories
-	// 2. Verify each has appropriate doc links:
-	//    - AWS documentation
-	//    - Prism user guide section
-	//    - Troubleshooting guide entry
-	// 3. Verify link format: https://docs.prism.dev/...
-	// 4. Verify links are valid (not 404)
+	// Run through error enhancement pipeline
+	enhanced := prismErrors.EnhanceWithOperation(rawError, "launch instance")
 
-	categories := []string{
-		"quota_exceeded",
-		"authentication_failure",
-		"network_failure",
-		"invalid_configuration",
-		"resource_not_found",
-		"permission_denied",
-		"throttling",
-		"service_unavailable",
-		"invalid_request",
-		"internal_error",
-	}
-	_ = categories
+	require.NotNil(t, enhanced, "Enhanced error should not be nil")
+	errorMsg := enhanced.Error()
 
-	assert.True(t, true, "Doc links enhancement test not yet implemented")
+	// Verify error contains capacity guidance
+	assert.Contains(t, errorMsg, "Capacity", "Should have capacity category")
+	assert.Contains(t, errorMsg, "Suggestions", "Should include suggestions")
+
+	// The implementation should provide helpful suggestions for capacity issues
+	// At minimum, should acknowledge the error and provide context
+	assert.NotEmpty(t, errorMsg, "Error message should not be empty")
+	assert.Contains(t, strings.ToLower(errorMsg), "capacity", "Should mention capacity issue")
 }
 
-// TestErrorEnhancement_CategoryDetection validates automatic error
-// categorization based on error patterns (v0.5.12 feature).
+// TestErrorEnhancement_PreservesOriginalError validates that enhancement
+// preserves the original error for error chain traversal (v0.5.12 feature).
 //
 // Test Coverage:
-// - Pattern-based category detection
-// - Fuzzy matching for variations
-// - Category precedence rules
-// - Unknown error handling
-func TestErrorEnhancement_CategoryDetection(t *testing.T) {
-	t.Skip("TODO: Implement category detection test for v0.5.12")
+// - Original error preservation
+// - Error unwrapping support
+// - Error chain integrity
+// - Is/As error matching
+func TestErrorEnhancement_PreservesOriginalError(t *testing.T) {
+	// Create original error
+	originalErr := fmt.Errorf("UnauthorizedOperation: test error")
 
-	// Test Setup:
-	// 1. Create 50 different error messages
-	// 2. Each represents a known error pattern
-	// 3. Run through category detector
-	// 4. Verify correct category assigned
-	// 5. Verify "unknown" for unrecognized patterns
+	// Enhance error
+	enhanced := prismErrors.Enhance(originalErr)
 
+	require.NotNil(t, enhanced, "Enhanced error should not be nil")
+
+	// The enhanced error should still contain the original error information
+	errorMsg := enhanced.Error()
+	assert.Contains(t, errorMsg, "test error", "Should preserve original error message")
+	assert.Contains(t, errorMsg, "UnauthorizedOperation", "Should preserve error type")
+}
+
+// TestErrorEnhancement_MultipleErrorTypes validates that different error
+// patterns receive appropriate enhancements (v0.5.12 feature).
+//
+// Test Coverage:
+// - Multiple error pattern detection
+// - Category-specific guidance
+// - Documentation link relevance
+// - Suggestion appropriateness
+func TestErrorEnhancement_MultipleErrorTypes(t *testing.T) {
 	testCases := []struct {
-		errorMsg string
-		category string
+		name            string
+		errorMsg        string
+		expectedContent []string // Content that should appear in enhanced error
+		operation       string
 	}{
-		{"exceeded quota for instances", "quota_exceeded"},
-		{"invalid token", "authentication_failure"},
-		{"connection timeout", "network_failure"},
-		// ... 47 more cases
+		{
+			name:            "Permission Error",
+			errorMsg:        "UnauthorizedOperation: not authorized",
+			expectedContent: []string{"IAM", "permissions", "Suggestions"},
+			operation:       "launch instance",
+		},
+		{
+			name:            "Key Pair Error",
+			errorMsg:        "InvalidKeyPair.NotFound: key does not exist",
+			expectedContent: []string{"SSH Key", "create-key-pair", "region"},
+			operation:       "launch instance",
+		},
+		{
+			name:            "Configuration Error",
+			errorMsg:        "InvalidParameterValue: invalid parameter",
+			expectedContent: []string{"Configuration", "instance type", "region"},
+			operation:       "launch instance",
+		},
+		{
+			name:            "Capacity Error",
+			errorMsg:        "InsufficientInstanceCapacity: no capacity",
+			expectedContent: []string{"Capacity"},
+			operation:       "launch instance",
+		},
 	}
-	_ = testCases
 
-	assert.True(t, true, "Category detection test not yet implemented")
-}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rawError := fmt.Errorf("%s", tc.errorMsg)
+			enhanced := prismErrors.EnhanceWithOperation(rawError, tc.operation)
 
-// TestErrorEnhancement_ResolutionSteps validates generation of
-// actionable resolution steps (v0.5.12 feature).
-//
-// Test Coverage:
-// - Step-by-step resolution guidance
-// - Command examples with actual values
-// - Conditional steps based on environment
-// - Priority ordering of steps
-func TestErrorEnhancement_ResolutionSteps(t *testing.T) {
-	t.Skip("TODO: Implement resolution steps test for v0.5.12")
+			require.NotNil(t, enhanced, "Enhanced error should not be nil")
+			errorMsg := enhanced.Error()
 
-	// Test Setup:
-	// 1. For each error category, verify resolution steps:
-	//    - At least 2 actionable steps
-	//    - Specific commands (not generic advice)
-	//    - Proper ordering (easiest first)
-	//    - Context-aware suggestions
-	// 2. Example for quota_exceeded:
-	//    - Step 1: Check current usage
-	//    - Step 2: Request quota increase
-	//    - Step 3: Consider alternative instance type
+			// Verify expected content appears
+			for _, expected := range tc.expectedContent {
+				assert.Contains(t, errorMsg, expected,
+					"Error should contain '%s' for %s", expected, tc.name)
+			}
 
-	assert.True(t, true, "Resolution steps test not yet implemented")
+			// Verify enhancement adds value (message is longer than original)
+			assert.Greater(t, len(errorMsg), len(tc.errorMsg),
+				"Enhanced error should be more detailed than original")
+
+			// Verify docs link present
+			assert.Contains(t, errorMsg, "docs.prism.org",
+				"Should include documentation link for %s", tc.name)
+		})
+	}
 }
