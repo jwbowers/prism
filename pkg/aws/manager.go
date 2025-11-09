@@ -598,10 +598,17 @@ func (l *InstanceLauncher) createDryRunInstance(req ctypes.LaunchRequest, hourly
 
 // executeInstanceLaunch performs the actual EC2 instance launch
 func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *ec2.RunInstancesInput) (*ec2types.Instance, error) {
-	// Launch the instance (IAM profile readiness is verified during profile creation)
-	result, err := l.manager.ec2.RunInstances(ctx, runInput)
+	// Launch the instance with retry logic for transient failures (v0.5.12)
+	var result *ec2.RunInstancesOutput
+
+	err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		var runErr error
+		result, runErr = l.manager.ec2.RunInstances(ctx, runInput)
+		return runErr
+	})
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to launch instance: %w", err)
+		return nil, fmt.Errorf("failed to launch instance after retries: %w", err)
 	}
 
 	if len(result.Instances) == 0 {
@@ -886,13 +893,16 @@ func (m *Manager) StartInstance(name string) error {
 	// Get regional EC2 client
 	regionalClient := m.getRegionalEC2Client(region)
 
-	// Start the instance
+	// Start the instance with retry logic for transient failures (v0.5.12)
 	ctx := context.Background()
-	_, err = regionalClient.StartInstances(ctx, &ec2.StartInstancesInput{
-		InstanceIds: []string{instanceID},
+	err = WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		_, startErr := regionalClient.StartInstances(ctx, &ec2.StartInstancesInput{
+			InstanceIds: []string{instanceID},
+		})
+		return startErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to start instance: %w", err)
+		return fmt.Errorf("failed to start instance after retries: %w", err)
 	}
 
 	return nil
@@ -916,12 +926,15 @@ func (m *Manager) StopInstance(name string) error {
 	regionalClient := m.getRegionalEC2Client(region)
 
 	ctx := context.Background()
-	// Stop the instance
-	_, err = regionalClient.StopInstances(ctx, &ec2.StopInstancesInput{
-		InstanceIds: []string{instanceID},
+	// Stop the instance with retry logic for transient failures (v0.5.12)
+	err = WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		_, stopErr := regionalClient.StopInstances(ctx, &ec2.StopInstancesInput{
+			InstanceIds: []string{instanceID},
+		})
+		return stopErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to stop instance: %w", err)
+		return fmt.Errorf("failed to stop instance after retries: %w", err)
 	}
 
 	return nil
@@ -2509,18 +2522,23 @@ func (m *Manager) ListInstances() ([]ctypes.Instance, error) {
 			regionalClient = ec2.NewFromConfig(regionalCfg)
 		}
 
-		// Query instances in this region
-		result, err := regionalClient.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-			Filters: []ec2types.Filter{
-				{
-					Name:   aws.String("tag:Prism"),
-					Values: []string{"true"},
+		// Query instances in this region with retry logic (v0.5.12)
+		var result *ec2.DescribeInstancesOutput
+		err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+			var describeErr error
+			result, describeErr = regionalClient.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+				Filters: []ec2types.Filter{
+					{
+						Name:   aws.String("tag:Prism"),
+						Values: []string{"true"},
+					},
+					{
+						Name:   aws.String("instance-state-name"),
+						Values: []string{"pending", instanceStateRunning, "shutting-down", "stopping", instanceStateStopped, "terminating", "terminated"},
+					},
 				},
-				{
-					Name:   aws.String("instance-state-name"),
-					Values: []string{"pending", instanceStateRunning, "shutting-down", "stopping", instanceStateStopped, "terminating", "terminated"},
-				},
-			},
+			})
+			return describeErr
 		})
 		if err != nil {
 			// Log error but continue with other regions
