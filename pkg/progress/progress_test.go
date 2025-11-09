@@ -69,6 +69,8 @@ func TestNewLaunchProgressReporter(t *testing.T) {
 		"template_resolution",
 		"ami_discovery",
 		"instance_launch",
+		"instance_ready",
+		"ssh_ready",
 		"software_installation",
 		"service_startup",
 		"finalization",

@@ -6,6 +6,7 @@
 package research
 
 import (
+	"sync"
 	"time"
 )
 
@@ -125,6 +126,9 @@ type ResearchUserManager struct {
 
 	// Storage
 	configPath string // Where research user configs are stored
+
+	// Concurrency control
+	mu sync.RWMutex // Protects file operations
 }
 
 // ProfileManager interface for integration with existing profile system

@@ -16,7 +16,18 @@ import (
 // 4. Test hibernation cycle (stop → start)
 // 5. Verify cost tracking and hibernation savings
 // 6. Cleanup
+//
+// IMPORTANT: This test launches real AWS instances and requires:
+// - Valid AWS credentials configured
+// - Appropriate AWS permissions (EC2, IAM, VPC)
+// - Test timeout of at least 10 minutes: go test -timeout 10m
+// - Use -short flag to skip: go test -short
 func TestSoloResearcherPersona(t *testing.T) {
+	// Skip if running in short mode (use: go test -short)
+	if testing.Short() {
+		t.Skip("Skipping AWS integration test in short mode (use -short to skip)")
+	}
+
 	ctx := NewTestContext(t)
 	defer ctx.Cleanup()
 
