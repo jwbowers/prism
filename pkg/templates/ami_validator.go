@@ -373,10 +373,10 @@ func (v *AMIConfigValidator) validateTemplateAMIStrategy(template *Template) []T
 }
 
 func (v *AMIConfigValidator) hasResolutionMethod(config *AMIConfig) bool {
-	return (config.AMIMappings != nil && len(config.AMIMappings) > 0) ||
+	return len(config.AMIMappings) > 0 ||
 		config.AMISearch != nil ||
 		config.MarketplaceSearch != nil ||
-		(config.AMIs != nil && len(config.AMIs) > 0)
+		len(config.AMIs) > 0
 }
 
 func (v *AMIConfigValidator) validatePackageManagerCompatibility(template *Template) []TemplateValidationError {

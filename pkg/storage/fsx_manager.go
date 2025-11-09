@@ -253,7 +253,7 @@ func (m *FSxManager) createOpenZFSFilesystem(ctx context.Context, req StorageReq
 func (m *FSxManager) createWindowsFilesystem(ctx context.Context, req StorageRequest) (*StorageInfo, error) {
 	// Windows configuration requires Active Directory integration
 	if req.FSxConfig.WindowsConfig == nil || req.FSxConfig.WindowsConfig.ActiveDirectoryId == "" {
-		return nil, fmt.Errorf("Active Directory ID is required for Windows File Server")
+		return nil, fmt.Errorf("active Directory ID is required for Windows File Server")
 	}
 
 	windowsConfig := &fsxTypes.CreateFileSystemWindowsConfiguration{

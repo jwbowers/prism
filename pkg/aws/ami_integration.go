@@ -467,7 +467,7 @@ func (m *Manager) PublishAMIToCommunity(amiID string, public bool, tags map[stri
 	}
 
 	// 2. Add community tags for discoverability
-	if tags != nil && len(tags) > 0 {
+	if len(tags) > 0 {
 		// Add Prism community tag
 		tags["Prism-Community"] = "published"
 

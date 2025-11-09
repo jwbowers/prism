@@ -139,7 +139,7 @@ func (rp *ResearchUserProvisioner) checkUserExistence(client *ssh.Client, userna
 	// Create base status with user existence confirmed
 	status := &ResearchUserStatus{
 		Username:      username,
-		SSHAccessible: strings.Contains(output, fmt.Sprintf("uid=")),
+		SSHAccessible: strings.Contains(output, "uid="),
 	}
 
 	return status, nil

@@ -233,7 +233,7 @@ func (m *ManagerEnhanced) AddProfile(profile Profile) error {
 
 	// Check for duplicate profile name
 	if _, exists := m.profiles.Profiles[id]; exists {
-		return fmt.Errorf("Prism profile named '%s' already exists. Choose a different name or use 'cws profiles list' to see existing profiles", profile.Name)
+		return fmt.Errorf("profile named '%s' already exists; choose a different name or use 'cws profiles list' to see existing profiles", profile.Name)
 	}
 
 	// Initialize created time

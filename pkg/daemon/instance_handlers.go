@@ -1086,21 +1086,21 @@ func (s *Server) isLaunchBlockedByBudget(req *types.LaunchRequest, w http.Respon
 
 	// Build detailed error message with budget information
 	errorMsg := fmt.Sprintf("Instance launch blocked: Project '%s' budget hard cap reached.\n\n", req.ProjectID)
-	errorMsg += fmt.Sprintf("Budget Status:\n")
+	errorMsg += "Budget Status:\n"
 	errorMsg += fmt.Sprintf("  Total Budget: $%.2f\n", budgetStatus.TotalBudget)
 	errorMsg += fmt.Sprintf("  Spent: $%.2f (%.1f%%)\n", budgetStatus.SpentAmount, budgetStatus.SpentPercentage*100)
 	errorMsg += fmt.Sprintf("  Remaining: $%.2f\n", budgetStatus.RemainingBudget)
 
 	if len(budgetStatus.TriggeredActions) > 0 {
-		errorMsg += fmt.Sprintf("\nTriggered Actions:\n")
+		errorMsg += "\nTriggered Actions:\n"
 		for _, action := range budgetStatus.TriggeredActions {
 			errorMsg += fmt.Sprintf("  - %s\n", action)
 		}
 	}
 
-	errorMsg += fmt.Sprintf("\nTo continue launching instances:\n")
-	errorMsg += fmt.Sprintf("  1. Contact project owner to increase the budget\n")
-	errorMsg += fmt.Sprintf("  2. Stop or hibernate running instances to reduce costs\n")
+	errorMsg += "\nTo continue launching instances:\n"
+	errorMsg += "  1. Contact project owner to increase the budget\n"
+	errorMsg += "  2. Stop or hibernate running instances to reduce costs\n"
 	errorMsg += fmt.Sprintf("  3. Clear the hard cap temporarily with: prism project allow-launches %s\n", req.ProjectID)
 
 	s.writeError(w, http.StatusForbidden, errorMsg)

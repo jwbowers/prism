@@ -232,7 +232,7 @@ func ValidateRoles(entries []types.BulkInvitationEntry) error {
 func FormatSummary(response *types.BulkInvitationResponse) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("📬 Bulk Invitation Summary\n\n"))
+	sb.WriteString("📬 Bulk Invitation Summary\n\n")
 	sb.WriteString(fmt.Sprintf("Total:   %d invitations\n", response.Summary.Total))
 	sb.WriteString(fmt.Sprintf("✅ Sent:    %d (%d%%)\n", response.Summary.Sent, percentage(response.Summary.Sent, response.Summary.Total)))
 	sb.WriteString(fmt.Sprintf("⏭️  Skipped: %d (%d%%)\n", response.Summary.Skipped, percentage(response.Summary.Skipped, response.Summary.Total)))

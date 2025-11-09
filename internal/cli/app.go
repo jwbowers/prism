@@ -303,7 +303,7 @@ func (a *App) Launch(args []string) error {
 	// Check if this is a package-based template (no AMI = needs package installation)
 	if !shouldMonitor {
 		templateInfo, err := a.apiClient.GetTemplate(a.ctx, req.Template)
-		if err == nil && (templateInfo.AMI == nil || len(templateInfo.AMI) == 0) {
+		if err == nil && len(templateInfo.AMI) == 0 {
 			// Package-based template - always monitor progress
 			shouldMonitor = true
 			fmt.Printf("\n💡 Package installation will take 5-10 minutes. Monitoring progress...\n")

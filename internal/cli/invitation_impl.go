@@ -427,7 +427,7 @@ func (a *App) invitationDecline(args []string) error {
 		return fmt.Errorf("⚠️  Invitation already accepted\n\n"+
 			"   Project: %s\n"+
 			"   You already have access to this project.\n"+
-			"   To leave the project, contact the project owner.",
+			"   To leave the project, contact the project owner",
 			projectName)
 	}
 
