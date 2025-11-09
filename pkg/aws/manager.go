@@ -608,7 +608,8 @@ func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to launch instance after retries: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return nil, EnhanceError(err, "Launch instance")
 	}
 
 	if len(result.Instances) == 0 {
@@ -902,7 +903,8 @@ func (m *Manager) StartInstance(name string) error {
 		return startErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to start instance after retries: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return EnhanceError(err, "Start instance")
 	}
 
 	return nil
@@ -934,7 +936,8 @@ func (m *Manager) StopInstance(name string) error {
 		return stopErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to stop instance after retries: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return EnhanceError(err, "Stop instance")
 	}
 
 	return nil
