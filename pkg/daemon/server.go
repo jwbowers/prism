@@ -60,6 +60,7 @@ type Server struct {
 	// Cost optimization components
 	budgetTracker *project.BudgetTracker
 	alertManager  *cost.AlertManager
+	rateLimiter   *RateLimiter // Launch rate limiting (v0.5.12)
 
 	// Template marketplace components
 	marketplaceRegistry *marketplace.Registry
@@ -209,6 +210,11 @@ func NewServer(port string) (*Server, error) {
 	alertManager := cost.NewAlertManager(costDataProvider)
 	alertManager.CreateDefaultRules()
 
+	// Initialize launch rate limiter (v0.5.12)
+	// Default: 2 launches per minute to prevent accidental cost overruns
+	rateLimiter := NewRateLimiter(2, time.Minute)
+	log.Printf("Launch rate limiter initialized: 2 launches per minute")
+
 	// Initialize template marketplace registry
 	marketplaceConfig := &marketplace.MarketplaceConfig{
 		RegistryEndpoint:      "https://marketplace.prism.org",
@@ -289,6 +295,7 @@ func NewServer(port string) (*Server, error) {
 		stateMonitor:        stateMonitor,
 		budgetTracker:       budgetTracker,
 		alertManager:        alertManager,
+		rateLimiter:         rateLimiter,
 		marketplaceRegistry: marketplaceRegistry,
 		tunnelManager:       tunnelManager,
 		cloudwatchClient:    cloudwatchClient,

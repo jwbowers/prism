@@ -159,6 +159,27 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		return // Error response already written by validateLaunchRequest
 	}
 
+	// Check launch rate limit (v0.5.12)
+	if s.rateLimiter != nil {
+		if err := s.rateLimiter.CheckAndRecordLaunch(); err != nil {
+			if rateLimitErr, ok := err.(*RateLimitError); ok {
+				s.writeError(w, http.StatusTooManyRequests, fmt.Sprintf(
+					"Launch rate limit exceeded. You've launched %d instances in the last %d minute(s) (limit: %d per %d min). "+
+						"Please wait %d seconds before launching another instance. "+
+						"This limit prevents accidental cost overruns.",
+					rateLimitErr.Current,
+					int(rateLimitErr.Window.Minutes()),
+					rateLimitErr.Limit,
+					int(rateLimitErr.Window.Minutes()),
+					int(rateLimitErr.RetryAfter.Seconds()),
+				))
+				return
+			}
+			s.writeError(w, http.StatusTooManyRequests, err.Error())
+			return
+		}
+	}
+
 	// Resolve funding allocation (v0.5.10+)
 	if req.ProjectID != "" {
 		if err := s.resolveFundingAllocation(&req, w); err != nil {
