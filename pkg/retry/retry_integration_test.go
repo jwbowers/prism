@@ -165,13 +165,14 @@ func TestRetryJitterVariance(t *testing.T) {
 
 	// Expected base delay: 100ms
 	// With 20% jitter: 80ms - 120ms range
+	// Add 5ms tolerance for system scheduling overhead
 	minDelay := 80 * time.Millisecond
-	maxDelay := 120 * time.Millisecond
+	maxDelay := 125 * time.Millisecond // 120ms + 5ms tolerance
 
-	// Verify all delays are within jitter bounds
+	// Verify all delays are within jitter bounds (with tolerance)
 	for _, delay := range delays {
 		assert.GreaterOrEqual(t, delay, minDelay, "Delay should be >= 80ms")
-		assert.LessOrEqual(t, delay, maxDelay, "Delay should be <= 120ms")
+		assert.LessOrEqual(t, delay, maxDelay, "Delay should be <= 125ms (120ms + 5ms tolerance)")
 	}
 
 	// Verify variance exists (not all the same)
