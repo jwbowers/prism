@@ -269,6 +269,17 @@ func (m *Manager) AddProjectMember(ctx context.Context, projectID string, member
 		return fmt.Errorf("project %q not found", projectID)
 	}
 
+	// Validate role
+	validRoles := map[types.ProjectRole]bool{
+		types.ProjectRoleOwner:  true,
+		types.ProjectRoleAdmin:  true,
+		types.ProjectRoleMember: true,
+		types.ProjectRoleViewer: true,
+	}
+	if !validRoles[member.Role] {
+		return fmt.Errorf("invalid role %q: must be one of owner, admin, member, or viewer", member.Role)
+	}
+
 	// Check if member already exists
 	for _, existingMember := range project.Members {
 		if existingMember.UserID == member.UserID {

@@ -321,9 +321,21 @@ func (s *Server) handleAcceptInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO: Add user to project members
-	// This will be implemented in Issue #102 (Enhanced Role-Based Permission System)
-	// For now, we'll just mark the invitation as accepted
+	// Add user to project members (Issue #102)
+	member := &types.ProjectMember{
+		UserID:  inv.Email, // Use invitation email as user ID
+		Role:    inv.Role,  // Use role from invitation
+		AddedBy: inv.InvitedBy,
+	}
+
+	if err := s.projectManager.AddProjectMember(r.Context(), inv.ProjectID, member); err != nil {
+		// Handle duplicate member case gracefully (user may already be added)
+		if !strings.Contains(err.Error(), "already a member") {
+			http.Error(w, fmt.Sprintf("Failed to add member to project: %v", err), http.StatusInternalServerError)
+			return
+		}
+		// If already a member, that's fine - continue with acceptance response
+	}
 
 	// Get project details
 	project, err := s.projectManager.GetProject(r.Context(), inv.ProjectID)
