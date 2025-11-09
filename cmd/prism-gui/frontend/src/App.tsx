@@ -2257,7 +2257,7 @@ export default function PrismApp() {
     }
 
     return state.instances.filter((instance) => {
-      return instancesFilterQuery.tokens.every((token: any) => {
+      return instancesFilterQuery.tokens.every((token: { propertyKey?: string; value: string; operator?: string }) => {
         const { propertyKey, value, operator } = token;
 
         if (!propertyKey) {
@@ -2484,7 +2484,7 @@ export default function PrismApp() {
   );
 
   // Comprehensive Storage Action Handler
-  const handleStorageAction = async (action: string, volume: any, volumeType: 'efs' | 'ebs') => {
+  const handleStorageAction = async (action: string, volume: EFSVolume | EBSVolume, volumeType: 'efs' | 'ebs') => {
     try {
       setState(prev => ({ ...prev, loading: true }));
 
@@ -3847,7 +3847,7 @@ export default function PrismApp() {
     };
 
     // Handle shared token extend
-    const handleExtendToken = async (token: any) => {
+    const handleExtendToken = async (token: SharedInvitationToken) => {
       const projects = await api.getProjects();
       if (projects.length === 0) return;
 
@@ -3862,7 +3862,7 @@ export default function PrismApp() {
     };
 
     // Handle shared token revoke
-    const handleRevokeToken = async (token: any) => {
+    const handleRevokeToken = async (token: SharedInvitationToken) => {
       const projects = await api.getProjects();
       if (projects.length === 0) return;
 
@@ -3877,13 +3877,13 @@ export default function PrismApp() {
     };
 
     // Handle QR code display
-    const handleShowQRCode = (token: any) => {
+    const handleShowQRCode = (token: SharedInvitationToken) => {
       setSelectedTokenForQR(token);
       setQrModalVisible(true);
     };
 
     // Handle tab change
-    const handleTabChange = ({ detail }: any) => {
+    const handleTabChange = ({ detail }: { detail: { activeTabId: string } }) => {
       setActiveTabId(detail.activeTabId);
       if (detail.activeTabId === 'shared') {
         loadSharedTokens();
@@ -4213,12 +4213,12 @@ export default function PrismApp() {
                             {
                               id: 'name',
                               header: 'Name',
-                              cell: (item: any) => item.name
+                              cell: (item: SharedInvitationToken) => item.name
                             },
                             {
                               id: 'role',
                               header: 'Role',
-                              cell: (item: any) => (
+                              cell: (item: SharedInvitationToken) => (
                                 <Badge color={item.role === 'admin' ? 'blue' : 'grey'}>
                                   {item.role}
                                 </Badge>
@@ -4227,17 +4227,17 @@ export default function PrismApp() {
                             {
                               id: 'redemptions',
                               header: 'Redemptions',
-                              cell: (item: any) => `${item.redemption_count || 0} / ${item.redemption_limit}`
+                              cell: (item: SharedInvitationToken) => `${item.redemption_count || 0} / ${item.redemption_limit}`
                             },
                             {
                               id: 'expires',
                               header: 'Expires',
-                              cell: (item: any) => new Date(item.expires_at).toLocaleDateString()
+                              cell: (item: SharedInvitationToken) => new Date(item.expires_at).toLocaleDateString()
                             },
                             {
                               id: 'status',
                               header: 'Status',
-                              cell: (item: any) => (
+                              cell: (item: SharedInvitationToken) => (
                                 <StatusIndicator type={item.status === 'active' ? 'success' : 'stopped'}>
                                   {item.status}
                                 </StatusIndicator>
@@ -4246,7 +4246,7 @@ export default function PrismApp() {
                             {
                               id: 'actions',
                               header: 'Actions',
-                              cell: (item: any) => (
+                              cell: (item: SharedInvitationToken) => (
                                 <SpaceBetween direction="horizontal" size="xs">
                                   <Button
                                     variant="icon"
