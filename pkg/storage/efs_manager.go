@@ -427,18 +427,22 @@ func (m *EFSManager) CreateAccessPoint(filesystemId, path string, posixUser *Pos
 		FileSystemId: aws.String(filesystemId),
 		RootDirectory: &efsTypes.RootDirectory{
 			Path: aws.String(path),
-			CreationInfo: &efsTypes.CreationInfo{
-				OwnerUid:    aws.Int64(int64(posixUser.Uid)),
-				OwnerGid:    aws.Int64(int64(posixUser.Gid)),
-				Permissions: aws.String("0755"),
-			},
 		},
 		Tags: []efsTypes.Tag{
 			{Key: aws.String("Prism"), Value: aws.String("true")},
 		},
 	}
 
+	// Only set ownership and POSIX user if provided
 	if posixUser != nil {
+		// Set creation info for directory ownership
+		input.RootDirectory.CreationInfo = &efsTypes.CreationInfo{
+			OwnerUid:    aws.Int64(int64(posixUser.Uid)),
+			OwnerGid:    aws.Int64(int64(posixUser.Gid)),
+			Permissions: aws.String("0755"),
+		}
+
+		// Set POSIX user for access point
 		input.PosixUser = &efsTypes.PosixUser{
 			Uid: aws.Int64(int64(posixUser.Uid)),
 			Gid: aws.Int64(int64(posixUser.Gid)),

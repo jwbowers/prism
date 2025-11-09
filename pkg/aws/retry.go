@@ -159,9 +159,11 @@ func isRetryableError(err error, config *RetryConfig) bool {
 
 // isNetworkError checks if an error is a network-related error
 func isNetworkError(err error) bool {
-	// Check for net.Error interface
-	if netErr, ok := err.(net.Error); ok {
-		return netErr.Temporary() || netErr.Timeout()
+	// Check for net.Error interface (timeout errors)
+	// Note: We no longer check netErr.Temporary() as it was deprecated in Go 1.18
+	// Most temporary errors are actually timeouts, which we handle explicitly
+	if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+		return true
 	}
 
 	// Check for DNS errors

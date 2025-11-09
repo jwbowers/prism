@@ -218,10 +218,11 @@ func testContextOperations(t *testing.T, manager *ManagerEnhanced) {
 	profileFromContext, _ := GetProfileFromContext(profileCtx)
 	if profileFromContext == nil {
 		t.Error("Should retrieve profile from context")
-	}
-
-	if profileFromContext.Name != "context-test-profile" {
-		t.Errorf("Context profile name mismatch: expected context-test-profile, got %s", profileFromContext.Name)
+	} else {
+		// Only check name if profile was successfully retrieved
+		if profileFromContext.Name != "context-test-profile" {
+			t.Errorf("Context profile name mismatch: expected context-test-profile, got %s", profileFromContext.Name)
+		}
 	}
 
 	// Cleanup
