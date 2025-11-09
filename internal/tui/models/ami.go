@@ -16,25 +16,24 @@ import (
 
 // AMIModel represents the AMI management view
 type AMIModel struct {
-	apiClient          apiClient
-	amisTable          components.Table
-	buildsTable        components.Table
-	statusBar          components.StatusBar
-	spinner            components.Spinner
-	width              int
-	height             int
-	loading            bool
-	error              string
-	amis               []api.AMIResponse
-	builds             []api.AMIBuildResponse
-	selectedTab        int // 0=amis, 1=builds, 2=regions
-	selectedAMI        int
-	selectedBuild      int
-	showBuildDialog    bool
-	showDeleteDialog   bool
-	dialogTemplateName string
-	dialogAMIID        string
-	regions            []api.AMIRegionResponse
+	apiClient        apiClient
+	amisTable        components.Table
+	buildsTable      components.Table
+	statusBar        components.StatusBar
+	spinner          components.Spinner
+	width            int
+	height           int
+	loading          bool
+	error            string
+	amis             []api.AMIResponse
+	builds           []api.AMIBuildResponse
+	selectedTab      int // 0=amis, 1=builds, 2=regions
+	selectedAMI      int
+	selectedBuild    int
+	showBuildDialog  bool
+	showDeleteDialog bool
+	dialogAMIID      string
+	regions          []api.AMIRegionResponse
 }
 
 // AMIDataMsg represents AMI data retrieved from the API

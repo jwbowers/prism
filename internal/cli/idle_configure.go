@@ -7,13 +7,6 @@ import (
 	"strings"
 )
 
-// configureIdleDetection handles runtime idle detection configuration using Strategy Pattern (SOLID: Single Responsibility)
-func (a *App) configureIdleDetection(instanceName string, enable, disable bool, idleMinutes, hibernateMinutes, checkInterval int) error {
-	// Create and execute idle configuration command
-	configCmd := NewIdleConfigurationCommand(a.apiClient)
-	return configCmd.Configure(instanceName, enable, disable, idleMinutes, hibernateMinutes, checkInterval)
-}
-
 // IdleConfig represents the idle detection configuration
 type IdleConfig struct {
 	Enabled          bool

@@ -32,7 +32,6 @@ type IdleModel struct {
 	selectedInstance   int
 	showPolicyDialog   bool
 	showEnableDialog   bool
-	dialogPolicyName   string
 	dialogInstanceName string
 }
 

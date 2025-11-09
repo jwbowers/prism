@@ -4445,12 +4445,6 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 	return fmt.Errorf("timeout waiting for SSH to become accessible after %d attempts", maxAttempts)
 }
 
-// waitForInstanceReady is a wrapper that calls waitForInstanceReadyWithProgress without progress callbacks
-// This maintains backward compatibility for code that doesn't use progress reporting yet
-func (m *Manager) waitForInstanceReady(instanceID, region string) error {
-	return m.waitForInstanceReadyWithProgress(instanceID, region, nil)
-}
-
 // ==========================================
 // Instance Snapshot Management
 // ==========================================

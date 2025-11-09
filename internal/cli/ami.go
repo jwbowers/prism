@@ -1456,46 +1456,6 @@ func (a *App) handleAMIStatus(args []string) error {
 	return nil
 }
 
-// handleAMIList lists user's AMIs
-func (a *App) handleAMIListUser(args []string) error {
-	// Make API call to list user AMIs
-	response, err := a.apiClient.ListUserAMIs(a.ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list user AMIs: %w", err)
-	}
-
-	fmt.Printf("🖼️  Your Custom AMIs\n\n")
-
-	amis := getSlice(response, "amis")
-	if len(amis) == 0 {
-		fmt.Printf("No custom AMIs found.\n")
-		fmt.Printf("💡 Create one with: prism ami create <workspace-name> --name <ami-name>\n")
-		return nil
-	}
-
-	for i, ami := range amis {
-		amiMap := ami.(map[string]interface{})
-		fmt.Printf("🖼️  AMI %d:\n", i+1)
-		fmt.Printf("   🆔 ID: %s\n", getString(amiMap, "ami_id"))
-		fmt.Printf("   📝 Name: %s\n", getString(amiMap, "name"))
-		fmt.Printf("   📖 Description: %s\n", getString(amiMap, "description"))
-		fmt.Printf("   🏗️  Architecture: %s\n", getString(amiMap, "architecture"))
-		fmt.Printf("   📅 Created: %s\n", getString(amiMap, "creation_date"))
-
-		if getBool(amiMap, "public") {
-			fmt.Printf("   🌍 Visibility: Public\n")
-		} else {
-			fmt.Printf("   🔒 Visibility: Private\n")
-		}
-
-		fmt.Printf("\n")
-	}
-
-	fmt.Printf("💡 Use an AMI by creating a template or referencing in launch commands\n")
-
-	return nil
-}
-
 // AMI Lifecycle Management Commands
 
 // handleAMICleanup removes old and unused AMIs

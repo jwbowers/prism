@@ -377,11 +377,6 @@ func (r *UniversalAMIResolver) searchAMIByCriteria(ctx context.Context, criteria
 	return nil, fmt.Errorf("dynamic AMI search not yet implemented")
 }
 
-func (r *UniversalAMIResolver) searchMarketplaceAMI(ctx context.Context, search *templates.MarketplaceSearchConfig, region string) (*types.AMIInfo, error) {
-	// This would implement AWS Marketplace API calls
-	return nil, fmt.Errorf("marketplace AMI search not yet implemented")
-}
-
 func (r *UniversalAMIResolver) copyAMIToRegion(ctx context.Context, ami *types.AMIInfo, sourceRegion, targetRegion string) (*types.AMIInfo, error) {
 	// This would implement AWS EC2 CopyImage API call
 	return nil, fmt.Errorf("cross-region AMI copy not yet implemented")
