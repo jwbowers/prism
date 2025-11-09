@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -213,10 +211,4 @@ Lists available services and provides access URLs.`,
 		},
 	}
 	return cmd
-}
-
-// Helper function to print deprecation warning
-func printDeprecationWarning(oldCmd, newCmd string) {
-	fmt.Printf("⚠️  Deprecated: Use '%s' instead of '%s'\n", newCmd, oldCmd)
-	fmt.Printf("   The old command will be removed in v1.0.0\n\n")
 }

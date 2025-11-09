@@ -409,6 +409,142 @@ func TestCostAlertManagerBasicFunctionality(t *testing.T) {
 	t.Log("✅ Cost alert manager basic functionality validated")
 }
 
+// setupAlertManager creates and configures an alert manager for testing
+func setupAlertManager(t *testing.T) *AlertManager {
+	manager := NewAlertManager(nil)
+	if manager == nil {
+		t.Fatal("Failed to create alert manager")
+	}
+
+	// Verify initial state
+	if manager.alerts == nil {
+		t.Error("Alert manager alerts map should be initialized")
+	}
+
+	if manager.rules == nil {
+		t.Error("Alert manager rules map should be initialized")
+	}
+
+	if manager.subscribers == nil {
+		t.Error("Alert manager subscribers should be initialized")
+	}
+
+	return manager
+}
+
+// testAlertManagerCreation validates alert manager initialization
+func testAlertManagerCreation(t *testing.T, manager *AlertManager) {
+	// Test initial empty state
+	if len(manager.alerts) != 0 {
+		t.Error("New alert manager should start with no alerts")
+	}
+
+	if len(manager.rules) != 0 {
+		t.Error("New alert manager should start with no rules")
+	}
+
+	if len(manager.subscribers) != 0 {
+		t.Error("New alert manager should start with no subscribers")
+	}
+
+	// Test context setup
+	if manager.ctx == nil {
+		t.Error("Alert manager context should be initialized")
+	}
+
+	t.Log("Alert manager creation validated")
+}
+
+// testAlertRuleManagement validates alert rule management
+func testAlertRuleManagement(t *testing.T, manager *AlertManager) {
+	// Test adding custom rule
+	customRule := &AlertRule{
+		Name:    "Test Budget Alert",
+		Type:    AlertTypeThreshold,
+		Enabled: true,
+		Conditions: AlertConditions{
+			BudgetPercentage: &[]float64{80.0}[0],
+		},
+		Actions:  []string{"notify", "hibernate"},
+		Cooldown: 2 * time.Hour,
+	}
+
+	err := manager.AddRule(customRule)
+	if err != nil {
+		t.Errorf("Failed to add custom rule: %v", err)
+	}
+
+	// Verify rule was added
+	if len(manager.rules) != 1 {
+		t.Error("Rule should be added to manager")
+	}
+
+	// Verify rule ID was generated
+	if customRule.ID == "" {
+		t.Error("Rule ID should be generated if not provided")
+	}
+
+	// Test creating default rules
+	manager.CreateDefaultRules()
+
+	// Should have custom rule + default rules (at least 2 total)
+	if len(manager.rules) < 2 {
+		t.Error("Should have custom rule plus some default rules")
+	}
+
+	// Validate that default rules exist and are properly configured
+	hasEnabledRules := false
+	for _, rule := range manager.rules {
+		if rule.Enabled && rule.Cooldown > 0 && len(rule.Actions) > 0 {
+			hasEnabledRules = true
+			break
+		}
+	}
+	if !hasEnabledRules {
+		t.Error("Should have at least one properly configured enabled rule")
+	}
+
+	t.Log("Alert rule management validated")
+}
+
+// testAlertGeneration validates alert generation workflow
+func testAlertGeneration(t *testing.T, manager *AlertManager) {
+	// Create a test rule for manual triggering
+	testRule := &AlertRule{
+		ID:      "test-trigger-rule",
+		Name:    "Test Trigger Rule",
+		Type:    AlertTypeThreshold,
+		Enabled: true,
+		Conditions: AlertConditions{
+			BudgetPercentage: &[]float64{85.0}[0],
+		},
+		Actions:  []string{"notify"},
+		Cooldown: 1 * time.Minute,
+	}
+
+	manager.AddRule(testRule)
+
+	// Manually trigger alert for testing
+	manager.triggerAlert(testRule)
+
+	// Verify alert was created
+	alerts := manager.GetAlerts()
+	if len(alerts) != 1 {
+		t.Error("Alert should be generated")
+	}
+
+	alert := alerts[0]
+	validateAlertStructure(t, alert, testRule)
+
+	// Test cooldown behavior
+	initialTriggerTime := testRule.LastTriggered
+	if initialTriggerTime == nil {
+		t.Error("Rule should have last triggered time set")
+	}
+
+	t.Log("Alert generation validated")
+}
+
 // testAlertManagement validates alert state management
 func testAlertManagement(t *testing.T, manager *AlertManager) {
 	// Create test alert

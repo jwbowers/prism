@@ -507,24 +507,6 @@ type InstanceLauncher struct {
 	region  string
 }
 
-// Helper functions for service extraction
-func getServiceString(m map[string]interface{}, key string) string {
-	if val, ok := m[key].(string); ok {
-		return val
-	}
-	return ""
-}
-
-func getServiceInt(m map[string]interface{}, key string) int {
-	if val, ok := m[key].(int); ok {
-		return val
-	}
-	if val, ok := m[key].(float64); ok {
-		return int(val)
-	}
-	return 0
-}
-
 // LaunchInstance executes EC2 instance launch and returns result
 // extractServicesFromTemplate extracts service definitions from template ports
 func (l *InstanceLauncher) extractServicesFromTemplate(template *ctypes.RuntimeTemplate) []ctypes.Service {
