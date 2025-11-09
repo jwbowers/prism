@@ -1976,3 +1976,230 @@ func (m *MockAPIClient) AllowProjectLaunches(ctx context.Context, projectID stri
 		"status":  "launches_allowed",
 	}, nil
 }
+
+// Invitation operations
+func (m *MockAPIClient) GetInvitationByToken(ctx context.Context, token string) (*client.GetInvitationResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &client.GetInvitationResponse{
+		Invitation: &types.Invitation{
+			ID:        "inv-12345",
+			ProjectID: "test-project",
+			Email:     "user@example.com",
+			Role:      types.ProjectRoleMember,
+			Token:     token,
+			InvitedBy: "admin",
+			InvitedAt: time.Now().Add(-24 * time.Hour),
+			ExpiresAt: time.Now().Add(6 * 24 * time.Hour),
+			Status:    types.InvitationPending,
+		},
+		Project: &types.Project{
+			ID:          "test-project",
+			Name:        "Test Project",
+			Description: "A test project",
+			Owner:       "admin",
+			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
+		},
+	}, nil
+}
+
+func (m *MockAPIClient) AcceptInvitation(ctx context.Context, token string) (*client.InvitationActionResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	now := time.Now()
+	return &client.InvitationActionResponse{
+		Invitation: &types.Invitation{
+			ID:         "inv-12345",
+			ProjectID:  "test-project",
+			Email:      "user@example.com",
+			Role:       types.ProjectRoleMember,
+			Token:      token,
+			InvitedBy:  "admin",
+			InvitedAt:  time.Now().Add(-24 * time.Hour),
+			ExpiresAt:  time.Now().Add(6 * 24 * time.Hour),
+			Status:     types.InvitationAccepted,
+			AcceptedAt: &now,
+		},
+		Project: &types.Project{
+			ID:          "test-project",
+			Name:        "Test Project",
+			Description: "A test project",
+			Owner:       "admin",
+			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
+		},
+		Message: "Invitation accepted successfully",
+	}, nil
+}
+
+func (m *MockAPIClient) DeclineInvitation(ctx context.Context, token string, reason string) (*client.InvitationActionResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	now := time.Now()
+	return &client.InvitationActionResponse{
+		Invitation: &types.Invitation{
+			ID:            "inv-12345",
+			ProjectID:     "test-project",
+			Email:         "user@example.com",
+			Role:          types.ProjectRoleMember,
+			Token:         token,
+			InvitedBy:     "admin",
+			InvitedAt:     time.Now().Add(-24 * time.Hour),
+			ExpiresAt:     time.Now().Add(6 * 24 * time.Hour),
+			Status:        types.InvitationDeclined,
+			DeclinedAt:    &now,
+			DeclineReason: reason,
+		},
+		Message: "Invitation declined",
+	}, nil
+}
+
+func (m *MockAPIClient) SendInvitation(ctx context.Context, projectID string, req client.SendInvitationRequest) (*client.SendInvitationResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &client.SendInvitationResponse{
+		Invitation: &types.Invitation{
+			ID:        "inv-67890",
+			ProjectID: projectID,
+			Email:     req.Email,
+			Role:      req.Role,
+			Token:     "mock-invitation-token",
+			InvitedBy: "current-user",
+			InvitedAt: time.Now(),
+			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+			Status:    types.InvitationPending,
+		},
+		Project: &types.Project{
+			ID:          projectID,
+			Name:        "Test Project",
+			Description: "A test project",
+			Owner:       "admin",
+			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
+		},
+		Message: "Invitation sent successfully",
+	}, nil
+}
+
+func (m *MockAPIClient) SendBulkInvitation(ctx context.Context, projectID string, req *types.BulkInvitationRequest) (*types.BulkInvitationResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	var results []types.BulkInvitationResult
+	for _, entry := range req.Invitations {
+		results = append(results, types.BulkInvitationResult{
+			Email:        entry.Email,
+			Status:       "sent",
+			InvitationID: "mock-inv-" + entry.Email,
+		})
+	}
+	return &types.BulkInvitationResponse{
+		Summary: types.BulkInvitationSummary{
+			Total:   len(req.Invitations),
+			Sent:    len(req.Invitations),
+			Failed:  0,
+			Skipped: 0,
+		},
+		Results: results,
+		Message: "All invitations sent successfully",
+	}, nil
+}
+
+// Shared token operations
+func (m *MockAPIClient) CreateSharedToken(ctx context.Context, projectID string, req *types.CreateSharedTokenRequest) (*types.SharedInvitationToken, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	return &types.SharedInvitationToken{
+		ID:              "token-12345",
+		Token:           "WORKSHOP-2025",
+		Name:            req.Name,
+		ProjectID:       projectID,
+		Role:            req.Role,
+		Message:         req.Message,
+		CreatedBy:       req.CreatedBy,
+		CreatedAt:       time.Now(),
+		ExpiresAt:       &expiresAt,
+		RedemptionLimit: req.RedemptionLimit,
+		RedemptionCount: 0,
+		Status:          types.SharedTokenActive,
+		Redemptions:     []types.SharedTokenRedemption{},
+	}, nil
+}
+
+func (m *MockAPIClient) RedeemSharedToken(ctx context.Context, req *types.RedeemSharedTokenRequest) (*types.RedeemSharedTokenResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.RedeemSharedTokenResponse{
+		Success:              true,
+		ProjectID:            "test-project",
+		Role:                 types.ProjectRoleMember,
+		RedemptionPosition:   1,
+		RemainingRedemptions: 49,
+		Message:              "Successfully redeemed shared token",
+	}, nil
+}
+
+func (m *MockAPIClient) GetSharedToken(ctx context.Context, tokenID string) (*types.SharedInvitationToken, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	return &types.SharedInvitationToken{
+		ID:              tokenID,
+		Token:           "WORKSHOP-2025",
+		Name:            "Mock Token",
+		ProjectID:       "test-project",
+		Role:            types.ProjectRoleMember,
+		Message:         "Welcome to the workshop",
+		CreatedBy:       "admin",
+		CreatedAt:       time.Now().Add(-24 * time.Hour),
+		ExpiresAt:       &expiresAt,
+		RedemptionLimit: 50,
+		RedemptionCount: 10,
+		Status:          types.SharedTokenActive,
+		Redemptions:     []types.SharedTokenRedemption{},
+	}, nil
+}
+
+func (m *MockAPIClient) ListSharedTokens(ctx context.Context, projectID string) ([]*types.SharedInvitationToken, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	return []*types.SharedInvitationToken{
+		{
+			ID:              "token-1",
+			Token:           "WORKSHOP-2025",
+			Name:            "Workshop Token",
+			ProjectID:       projectID,
+			Role:            types.ProjectRoleMember,
+			Message:         "Welcome",
+			CreatedBy:       "admin",
+			CreatedAt:       time.Now().Add(-24 * time.Hour),
+			ExpiresAt:       &expiresAt,
+			RedemptionLimit: 50,
+			RedemptionCount: 23,
+			Status:          types.SharedTokenActive,
+			Redemptions:     []types.SharedTokenRedemption{},
+		},
+	}, nil
+}
+
+func (m *MockAPIClient) ExtendSharedToken(ctx context.Context, tokenID string, daysToAdd int) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) RevokeSharedToken(ctx context.Context, tokenID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}

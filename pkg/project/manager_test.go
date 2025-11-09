@@ -84,11 +84,10 @@ func TestManager_CreateProject(t *testing.T) {
 				Name:        "Budgeted Project",
 				Description: "A project with budget tracking",
 				Owner:       "test-user",
-				Budget: &CreateBudgetRequest{
+				Budget: &CreateProjectBudgetRequest{
 					TotalBudget:  1000.0,
 					MonthlyLimit: floatPtr(300.0),
 					DailyLimit:   floatPtr(50.0),
-					BudgetPeriod: types.BudgetPeriodMonthly,
 					AlertThresholds: []types.BudgetAlert{
 						{
 							Threshold:  0.8,
@@ -142,7 +141,7 @@ func TestManager_CreateProject(t *testing.T) {
 				Name:        "Invalid Budget Project",
 				Description: "Project with invalid budget",
 				Owner:       "test-user",
-				Budget: &CreateBudgetRequest{
+				Budget: &CreateProjectBudgetRequest{
 					TotalBudget: -100.0, // Invalid negative budget
 				},
 			},
