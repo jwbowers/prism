@@ -410,7 +410,7 @@ func (v *AMIConfigValidator) validateSSHUserRequirement(template *Template) []Te
 }
 
 func (v *AMIConfigValidator) hasAMIMappings(config *AMIConfig) bool {
-	return config.AMIMappings != nil && len(config.AMIMappings) > 0
+	return len(config.AMIMappings) > 0
 }
 
 // GetAMIConfigSummary returns a human-readable summary of AMI configuration

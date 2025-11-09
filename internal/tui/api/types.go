@@ -164,7 +164,7 @@ type ListStorageResponse struct {
 // ToInstanceResponse converts a types.Instance to an InstanceResponse
 func ToInstanceResponse(instance types.Instance) InstanceResponse {
 	// Look up template info to get ports
-	ports := []int{}
+	var ports []int
 
 	// Real template lookup to get actual port configuration
 	template, err := templates.GetTemplateInfo(instance.Template)

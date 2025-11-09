@@ -583,7 +583,7 @@ func (bm *BudgetManager) RecordSpending(ctx context.Context, allocationID string
 
 				// Get budget names for messaging
 				budgetName := budget.Name
-				backupBudget, _ := bm.budgets[backupAlloc.BudgetID]
+				backupBudget := bm.budgets[backupAlloc.BudgetID]
 				backupBudgetName := backupBudget.Name
 
 				result.WarningMessage = fmt.Sprintf(

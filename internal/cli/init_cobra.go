@@ -305,6 +305,10 @@ func (ic *InitCobraCommands) promptWorkspaceName() string {
 	// Suggest a default name
 	defaultName := fmt.Sprintf("my-workspace-%s", time.Now().Format("0102"))
 
+	// Pre-compile regexes for performance
+	namePattern := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$`)
+	singleCharPattern := regexp.MustCompile(`^[a-zA-Z0-9]$`)
+
 	for {
 		fmt.Printf("Workspace name (default: %s): ", defaultName)
 		input, _ := reader.ReadString('\n')
@@ -315,12 +319,12 @@ func (ic *InitCobraCommands) promptWorkspaceName() string {
 		}
 
 		// Validate name (alphanumeric and hyphens, must start and end with alphanumeric)
-		if matched, _ := regexp.MatchString(`^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$`, input); matched {
+		if namePattern.MatchString(input) {
 			return input
 		}
 
 		// Handle single character names
-		if len(input) == 1 && regexp.MustCompile(`^[a-zA-Z0-9]$`).MatchString(input) {
+		if len(input) == 1 && singleCharPattern.MatchString(input) {
 			return input
 		}
 
