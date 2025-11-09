@@ -156,7 +156,7 @@ func (a *App) invitationList(args []string) error {
 	return nil
 }
 
-// invitationAccept accepts an invitation
+// invitationAccept accepts an invitation (individual or shared token)
 func (a *App) invitationAccept(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: prism invitation accept <project-name|token>")
@@ -164,6 +164,12 @@ func (a *App) invitationAccept(args []string) error {
 
 	input := args[0]
 
+	// Check if this is a shared token (format: WORD-WORD-YEAR-XXXX)
+	if isSharedToken(input) {
+		return a.redeemSharedToken(input)
+	}
+
+	// Standard individual invitation flow
 	// Initialize cache
 	cache, err := invitation.NewInvitationCache()
 	if err != nil {
@@ -252,6 +258,119 @@ func (a *App) invitationAccept(args []string) error {
 	fmt.Printf("\n✅ %s\n", resp.Message)
 	fmt.Printf("   Project: %s\n", projectName)
 	fmt.Println("   You can now manage resources in this project")
+
+	return nil
+}
+
+// isSharedToken checks if a token follows the shared token format
+// Format: WORD-WORD-YEAR-XXXX (e.g., WORKSHOP-NEURIPS-2025-A4F2)
+func isSharedToken(token string) bool {
+	// Shared tokens are relatively short (20-40 characters)
+	// Individual tokens are much longer (60+ characters)
+	if len(token) > 50 {
+		return false
+	}
+
+	// Check for year pattern (2024-2099)
+	// Shared tokens contain a 4-digit year
+	for i := 0; i < len(token)-3; i++ {
+		if token[i] >= '2' && token[i] <= '2' &&
+			token[i+1] >= '0' && token[i+1] <= '0' &&
+			token[i+2] >= '0' && token[i+2] <= '9' &&
+			token[i+3] >= '0' && token[i+3] <= '9' {
+			// Found year pattern 20XX - likely shared token
+			return true
+		}
+	}
+
+	return false
+}
+
+// redeemSharedToken redeems a shared invitation token
+func (a *App) redeemSharedToken(tokenCode string) error {
+	fmt.Printf("🎫 Redeeming shared token...\n")
+	fmt.Printf("   Token: %s\n", tokenCode)
+
+	// Get token info first to show details
+	token, err := a.apiClient.GetSharedToken(a.ctx, tokenCode)
+	if err != nil {
+		return fmt.Errorf("failed to get token information: %w", err)
+	}
+
+	// Display token information
+	fmt.Println()
+	fmt.Printf("   Name: %s\n", token.Name)
+	fmt.Printf("   Role: %s\n", token.Role)
+	fmt.Printf("   Redemptions: %d / %d used\n", token.RedemptionCount, token.RedemptionLimit)
+	if token.ExpiresAt != nil {
+		fmt.Printf("   Expires: %s\n", token.ExpiresAt.Format("Jan 2, 2006"))
+	}
+	fmt.Println()
+
+	// Check if token can be redeemed
+	if !token.CanRedeem() {
+		switch token.Status {
+		case types.SharedTokenExpired:
+			return fmt.Errorf("❌ Token has expired\n\n" +
+				"   Contact the project owner for a new token or extension")
+		case types.SharedTokenRevoked:
+			return fmt.Errorf("❌ Token has been revoked\n\n" +
+				"   Contact the project owner for more information")
+		case types.SharedTokenExhausted:
+			return fmt.Errorf("❌ Token redemption limit reached\n\n"+
+				"   All %d slots have been claimed\n"+
+				"   Contact the project owner to increase the limit",
+				token.RedemptionLimit)
+		default:
+			return fmt.Errorf("❌ Token cannot be redeemed: %s", token.Status)
+		}
+	}
+
+	// TODO: Get actual username from authentication system
+	// For now, use a placeholder
+	username := "cli-user"
+
+	// Redeem token via API
+	req := &types.RedeemSharedTokenRequest{
+		Token:      tokenCode,
+		RedeemedBy: username,
+	}
+
+	resp, err := a.apiClient.RedeemSharedToken(a.ctx, req)
+	if err != nil {
+		// Handle specific error cases
+		if err.Error() == "Token not found" {
+			return fmt.Errorf("token not found")
+		}
+		if err.Error() == "Token has expired" {
+			return fmt.Errorf("token has expired")
+		}
+		if err.Error() == "Token has been revoked" {
+			return fmt.Errorf("token has been revoked")
+		}
+		if err.Error() == "Token has reached redemption limit" {
+			return fmt.Errorf("token redemption limit reached")
+		}
+		if err.Error() == "You have already redeemed this token" {
+			return fmt.Errorf("you have already redeemed this token")
+		}
+		return fmt.Errorf("failed to redeem token: %w", err)
+	}
+
+	// Display success
+	fmt.Println("✅ Token redeemed successfully!")
+	fmt.Println()
+	fmt.Printf("   You are participant #%d of %d\n", resp.RedemptionPosition, token.RedemptionLimit)
+	fmt.Printf("   Role assigned: %s\n", token.Role)
+	if resp.RemainingRedemptions > 0 {
+		fmt.Printf("   Remaining slots: %d\n", resp.RemainingRedemptions)
+	} else {
+		fmt.Printf("   ⚠️  This was the last available slot!\n")
+	}
+	fmt.Println()
+	fmt.Println("   You now have access to the project")
+	fmt.Println()
+	fmt.Println("💡 View your projects: prism project list")
 
 	return nil
 }

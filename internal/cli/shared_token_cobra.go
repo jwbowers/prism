@@ -42,6 +42,7 @@ Examples:
 	cmd.AddCommand(createSharedTokenCreateCommand(app))
 	cmd.AddCommand(createSharedTokenShowCommand(app))
 	cmd.AddCommand(createSharedTokenListCommand(app))
+	cmd.AddCommand(createSharedTokenQRCommand(app))
 	cmd.AddCommand(createSharedTokenExtendCommand(app))
 	cmd.AddCommand(createSharedTokenRevokeCommand(app))
 
@@ -142,6 +143,35 @@ Examples:
 			return app.projectInvitationsSharedList(args)
 		},
 	}
+
+	return cmd
+}
+
+// createSharedTokenQRCommand creates the 'prism project invitations shared qr' command
+func createSharedTokenQRCommand(app *App) *cobra.Command {
+	var output string
+
+	cmd := &cobra.Command{
+		Use:   "qr <token>",
+		Short: "Generate QR code for shared token",
+		Long: `Generate a QR code for a shared token redemption URL.
+
+The QR code can be printed and displayed at registration desks,
+conference booths, or workshop materials for easy mobile scanning.
+
+Examples:
+  # Save QR code to file
+  prism project invitations shared qr WORKSHOP-NEURIPS-2025 --output workshop-qr.png
+
+  # Display QR code URL
+  prism project invitations shared qr WORKSHOP-NEURIPS-2025`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return app.projectInvitationsSharedQR(args, output)
+		},
+	}
+
+	cmd.Flags().StringVar(&output, "output", "", "Output file path (e.g., qrcode.png)")
 
 	return cmd
 }

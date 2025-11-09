@@ -5,6 +5,7 @@
 package daemon
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/types"
+	"github.com/skip2/go-qrcode"
 )
 
 // handleSharedTokenOperations routes shared token-related HTTP requests
@@ -316,7 +318,7 @@ func (s *Server) handleGenerateQRCode(w http.ResponseWriter, r *http.Request) {
 	tokenCode := parts[0]
 
 	// Verify token exists
-	_, err := s.sharedTokenManager.GetSharedToken(r.Context(), tokenCode)
+	token, err := s.sharedTokenManager.GetSharedToken(r.Context(), tokenCode)
 	if err != nil {
 		if err == types.ErrSharedTokenNotFound {
 			http.Error(w, "Token not found", http.StatusNotFound)
@@ -326,17 +328,61 @@ func (s *Server) handleGenerateQRCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Generate QR code for redemption URL
-	// For now, return placeholder response
-	// This will be implemented in Phase 4
+	// Generate redemption URL
+	redemptionURL := fmt.Sprintf("https://prism.dev/join/%s", tokenCode)
 
-	response := map[string]interface{}{
-		"token":          tokenCode,
-		"redemption_url": fmt.Sprintf("https://prism.dev/join/%s", tokenCode),
-		"qr_code_data":   "base64_encoded_qr_code_image",
-		"message":        "QR code generation will be implemented in Phase 4",
+	// Check format parameter (default: json with base64)
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "json"
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	// Generate QR code
+	qrCode, err := generateQRCode(redemptionURL, format)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to generate QR code: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return based on format
+	switch format {
+	case "png":
+		// Return PNG image directly
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.png", tokenCode))
+		w.Write(qrCode)
+
+	case "json":
+		// Return JSON with base64-encoded PNG
+		response := map[string]interface{}{
+			"token":          tokenCode,
+			"name":           token.Name,
+			"redemption_url": redemptionURL,
+			"qr_code_data":   base64EncodeQRCode(qrCode),
+			"format":         "png",
+			"message":        "QR code generated successfully",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+
+	default:
+		http.Error(w, "Invalid format (use 'json' or 'png')", http.StatusBadRequest)
+	}
+}
+
+// generateQRCode generates a QR code image for the given URL
+func generateQRCode(url string, format string) ([]byte, error) {
+	// Generate QR code with medium recovery level
+	// Size 256x256 pixels is good for both printing and display
+	qr, err := qrcode.Encode(url, qrcode.Medium, 256)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode QR code: %w", err)
+	}
+
+	return qr, nil
+}
+
+// base64EncodeQRCode encodes a QR code image to base64 string
+func base64EncodeQRCode(qrCode []byte) string {
+	return base64.StdEncoding.EncodeToString(qrCode)
 }

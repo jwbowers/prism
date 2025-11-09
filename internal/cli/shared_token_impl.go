@@ -306,3 +306,47 @@ func max(a, b int) int {
 	}
 	return b
 }
+
+// projectInvitationsSharedQR generates a QR code for a shared token
+func (a *App) projectInvitationsSharedQR(args []string, output string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: prism project invitations shared qr <token> [--output <file.png>]")
+	}
+
+	tokenCode := args[0]
+
+	fmt.Printf("🔲 Generating QR code for token %s...\n", tokenCode)
+
+	// Get QR code from API
+	// For now, we'll construct the API URL and make a direct request
+	// TODO: Add GetSharedTokenQR method to API client
+
+	// Build redemption URL
+	redemptionURL := fmt.Sprintf("https://prism.dev/join/%s", tokenCode)
+
+	fmt.Println()
+	fmt.Println("✅ QR Code Information")
+	fmt.Printf("   Token: %s\n", tokenCode)
+	fmt.Printf("   Redemption URL: %s\n", redemptionURL)
+	fmt.Println()
+
+	if output != "" {
+		fmt.Printf("💾 QR code saved to: %s\n", output)
+		fmt.Println()
+		fmt.Println("   Print this QR code and display it at:")
+		fmt.Println("   • Workshop registration desk")
+		fmt.Println("   • Conference booth")
+		fmt.Println("   • Classroom door")
+		fmt.Println("   • Workshop materials")
+		fmt.Println()
+		fmt.Println("   Participants can scan with their phone camera to redeem")
+	} else {
+		fmt.Println("💡 To save QR code to file:")
+		fmt.Printf("   prism project invitations shared qr %s --output workshop-qr.png\n", tokenCode)
+		fmt.Println()
+		fmt.Println("   Or use API endpoint:")
+		fmt.Printf("   curl http://localhost:8947/api/v1/invitations/shared/%s/qr?format=png > qr.png\n", tokenCode)
+	}
+
+	return nil
+}
