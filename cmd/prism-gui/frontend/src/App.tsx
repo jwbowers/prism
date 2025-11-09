@@ -76,7 +76,7 @@ interface Template {
   package_manager?: string;
   features?: string[];
   // Additional fields that might come from API
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Instance {
@@ -332,6 +332,50 @@ interface CachedInvitation {
   added_at: string;
 }
 
+interface Notification {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  header?: string;
+  content: string;
+  dismissible?: boolean;
+  onDismiss?: () => void;
+}
+
+interface ProjectData {
+  name: string;
+  description?: string;
+  budget_limit?: number;
+  [key: string]: unknown;
+}
+
+interface MemberData {
+  user_id: string;
+  role: string;
+  [key: string]: unknown;
+}
+
+interface UserData {
+  username: string;
+  full_name: string;
+  email: string;
+  [key: string]: unknown;
+}
+
+interface SharedTokenConfig {
+  name: string;
+  role: string;
+  redemption_limit?: number;
+  expires_at?: string;
+  [key: string]: unknown;
+}
+
+interface BulkInviteResponse {
+  total: number;
+  sent: number;
+  failed: number;
+  errors?: Array<{email: string; error: string}>;
+}
+
 interface AppState {
   activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
@@ -358,7 +402,7 @@ interface AppState {
   selectedProject: Project | null;
   selectedTerminalInstance: string;
   loading: boolean;
-  notifications: any[];
+  notifications: Notification[];
   connected: boolean;
   error: string | null;
 }
@@ -383,7 +427,7 @@ class SafePrismAPI {
     }
   }
 
-  private async safeRequest(endpoint: string, method = 'GET', body?: any): Promise<any> {
+  private async safeRequest<T = unknown>(endpoint: string, method = 'GET', body?: unknown): Promise<T> {
     try {
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method,
@@ -523,7 +567,7 @@ class SafePrismAPI {
   }
 
   async mountEFSVolume(volumeName: string, instance: string, mountPoint?: string): Promise<void> {
-    const body: any = { instance };
+    const body: Record<string, string> = { instance };
     if (mountPoint) body.mount_point = mountPoint;
     await this.safeRequest(`/api/v1/volumes/${volumeName}/mount`, 'POST', body);
   }
@@ -582,16 +626,16 @@ class SafePrismAPI {
     }
   }
 
-  async createProject(projectData: any): Promise<any> {
-    return this.safeRequest('/api/v1/projects', 'POST', projectData);
+  async createProject(projectData: ProjectData): Promise<Project> {
+    return this.safeRequest<Project>('/api/v1/projects', 'POST', projectData);
   }
 
-  async getProject(projectId: string): Promise<any> {
-    return this.safeRequest(`/api/v1/projects/${projectId}`);
+  async getProject(projectId: string): Promise<Project> {
+    return this.safeRequest<Project>(`/api/v1/projects/${projectId}`);
   }
 
-  async updateProject(projectId: string, projectData: any): Promise<any> {
-    return this.safeRequest(`/api/v1/projects/${projectId}`, 'PUT', projectData);
+  async updateProject(projectId: string, projectData: Partial<ProjectData>): Promise<Project> {
+    return this.safeRequest<Project>(`/api/v1/projects/${projectId}`, 'PUT', projectData);
   }
 
   async deleteProject(projectId: string): Promise<void> {
@@ -609,12 +653,12 @@ class SafePrismAPI {
     }
   }
 
-  async addProjectMember(projectId: string, memberData: any): Promise<any> {
-    return this.safeRequest(`/api/v1/projects/${projectId}/members`, 'POST', memberData);
+  async addProjectMember(projectId: string, memberData: MemberData): Promise<MemberData> {
+    return this.safeRequest<MemberData>(`/api/v1/projects/${projectId}/members`, 'POST', memberData);
   }
 
-  async updateProjectMember(projectId: string, userId: string, memberData: any): Promise<any> {
-    return this.safeRequest(`/api/v1/projects/${projectId}/members/${userId}`, 'PUT', memberData);
+  async updateProjectMember(projectId: string, userId: string, memberData: Partial<MemberData>): Promise<MemberData> {
+    return this.safeRequest<MemberData>(`/api/v1/projects/${projectId}/members/${userId}`, 'PUT', memberData);
   }
 
   async removeProjectMember(projectId: string, userId: string): Promise<void> {
@@ -652,8 +696,8 @@ class SafePrismAPI {
     }
   }
 
-  async createUser(userData: any): Promise<any> {
-    return this.safeRequest('/api/v1/users', 'POST', userData);
+  async createUser(userData: UserData): Promise<User> {
+    return this.safeRequest<User>('/api/v1/users', 'POST', userData);
   }
 
   async deleteUser(username: string): Promise<void> {
@@ -794,16 +838,16 @@ class SafePrismAPI {
     }
   }
 
-  async sendInvitation(projectId: string, email: string, role: string, message?: string, expiresAt?: string): Promise<any> {
+  async sendInvitation(projectId: string, email: string, role: string, message?: string, expiresAt?: string): Promise<Invitation> {
     try {
-      const body: any = {
+      const body: Record<string, string> = {
         email,
         role,
       };
       if (message) body.message = message;
       if (expiresAt) body.expires_at = expiresAt;
 
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
+      const data = await this.safeRequest<Invitation>(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
       return data;
     } catch (error) {
       console.error('Failed to send invitation:', error);
@@ -812,15 +856,15 @@ class SafePrismAPI {
   }
 
   // Bulk Invitation API (Issue #240)
-  async bulkInvite(projectId: string, emails: string[], role: string, message?: string): Promise<any> {
+  async bulkInvite(projectId: string, emails: string[], role: string, message?: string): Promise<BulkInviteResponse> {
     try {
-      const body: any = {
+      const body: Record<string, string | string[]> = {
         emails,
         role,
       };
       if (message) body.message = message;
 
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations/bulk`, 'POST', body);
+      const data = await this.safeRequest<BulkInviteResponse>(`/api/v1/projects/${projectId}/invitations/bulk`, 'POST', body);
       return data;
     } catch (error) {
       console.error('Failed to send bulk invitations:', error);
@@ -839,9 +883,9 @@ class SafePrismAPI {
     }
   }
 
-  async createSharedToken(projectId: string, config: any): Promise<any> {
+  async createSharedToken(projectId: string, config: SharedTokenConfig): Promise<SharedInvitationToken> {
     try {
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens`, 'POST', config);
+      const data = await this.safeRequest<SharedInvitationToken>(`/api/v1/projects/${projectId}/shared-tokens`, 'POST', config);
       return data;
     } catch (error) {
       console.error('Failed to create shared token:', error);
@@ -889,17 +933,17 @@ class SafePrismAPI {
         return [];
       }
 
-      return data.map((ami: any) => ({
-        id: ami.id || ami.ami_id || '',
-        name: ami.name || ami.id || '',
-        template_name: ami.template_name || ami.template || 'unknown',
-        region: ami.region || 'us-west-2',
-        state: ami.state || 'available',
-        architecture: ami.architecture || 'x86_64',
-        size_gb: ami.size_gb || ami.size || 0,
-        description: ami.description || '',
-        created_at: ami.created_at || ami.creation_date || new Date().toISOString(),
-        tags: ami.tags || {}
+      return data.map((ami: Record<string, unknown>) => ({
+        id: (ami.id as string) || (ami.ami_id as string) || '',
+        name: (ami.name as string) || (ami.id as string) || '',
+        template_name: (ami.template_name as string) || (ami.template as string) || 'unknown',
+        region: (ami.region as string) || 'us-west-2',
+        state: (ami.state as string) || 'available',
+        architecture: (ami.architecture as string) || 'x86_64',
+        size_gb: (ami.size_gb as number) || (ami.size as number) || 0,
+        description: (ami.description as string) || '',
+        created_at: (ami.created_at as string) || (ami.creation_date as string) || new Date().toISOString(),
+        tags: (ami.tags as Record<string, string>) || {}
       }));
     } catch (error) {
       console.error('Failed to fetch AMIs:', error);
@@ -967,17 +1011,17 @@ class SafePrismAPI {
       if (!data || !Array.isArray(data.recommendations)) {
         return [];
       }
-      return data.recommendations.map((rec: any) => ({
-        instance_name: rec.instance_name || rec.InstanceName || '',
-        current_type: rec.current_type || rec.CurrentType || '',
-        recommended_type: rec.recommended_type || rec.RecommendedType || '',
-        cpu_utilization: rec.cpu_utilization || rec.CPUUtilization || 0,
-        memory_utilization: rec.memory_utilization || rec.MemoryUtilization || 0,
-        current_cost: rec.current_cost || rec.CurrentCost || 0,
-        recommended_cost: rec.recommended_cost || rec.RecommendedCost || 0,
-        monthly_savings: rec.monthly_savings || rec.MonthlySavings || 0,
-        savings_percentage: rec.savings_percentage || rec.SavingsPercentage || 0,
-        confidence: rec.confidence || rec.Confidence || 'medium',
+      return data.recommendations.map((rec: Record<string, unknown>) => ({
+        instance_name: (rec.instance_name as string) || (rec.InstanceName as string) || '',
+        current_type: (rec.current_type as string) || (rec.CurrentType as string) || '',
+        recommended_type: (rec.recommended_type as string) || (rec.RecommendedType as string) || '',
+        cpu_utilization: (rec.cpu_utilization as number) || (rec.CPUUtilization as number) || 0,
+        memory_utilization: (rec.memory_utilization as number) || (rec.MemoryUtilization as number) || 0,
+        current_cost: (rec.current_cost as number) || (rec.CurrentCost as number) || 0,
+        recommended_cost: (rec.recommended_cost as number) || (rec.RecommendedCost as number) || 0,
+        monthly_savings: (rec.monthly_savings as number) || (rec.MonthlySavings as number) || 0,
+        savings_percentage: (rec.savings_percentage as number) || (rec.SavingsPercentage as number) || 0,
+        confidence: (rec.confidence as string) || (rec.Confidence as string) || 'medium',
         reason: rec.reason || rec.Reason
       }));
     } catch (error) {
@@ -997,9 +1041,9 @@ class SafePrismAPI {
         over_provisioned_count: data.over_provisioned_count || 0,
         optimized_count: data.optimized_count || 0
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Silently handle 400/404 - endpoint may not be implemented yet
-      const errorMessage = error?.message || String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('HTTP 400') || errorMessage.includes('HTTP 404')) {
         return null; // Don't log, just return null
       }
@@ -1080,24 +1124,24 @@ class SafePrismAPI {
       if (!data || !Array.isArray(data.templates)) {
         return [];
       }
-      return data.templates.map((t: any) => ({
-        id: t.id || t.ID || '',
-        name: t.name || t.Name || '',
-        display_name: t.display_name || t.DisplayName || t.name || '',
-        author: t.author || t.Author || '',
-        publisher: t.publisher || t.Publisher || '',
-        category: t.category || t.Category || '',
-        description: t.description || t.Description || '',
-        rating: t.rating || t.Rating || 0,
-        downloads: t.downloads || t.Downloads || 0,
-        verified: t.verified || t.Verified || false,
-        featured: t.featured || t.Featured || false,
-        version: t.version || t.Version || '',
-        tags: t.tags || t.Tags,
-        badges: t.badges || t.Badges,
-        created_at: t.created_at || t.CreatedAt || '',
-        updated_at: t.updated_at || t.UpdatedAt || '',
-        ami_available: t.ami_available || t.AMIAvailable || false
+      return data.templates.map((t: Record<string, unknown>) => ({
+        id: (t.id as string) || (t.ID as string) || '',
+        name: (t.name as string) || (t.Name as string) || '',
+        display_name: (t.display_name as string) || (t.DisplayName as string) || (t.name as string) || '',
+        author: (t.author as string) || (t.Author as string) || '',
+        publisher: (t.publisher as string) || (t.Publisher as string) || '',
+        category: (t.category as string) || (t.Category as string) || '',
+        description: (t.description as string) || (t.Description as string) || '',
+        rating: (t.rating as number) || (t.Rating as number) || 0,
+        downloads: (t.downloads as number) || (t.Downloads as number) || 0,
+        verified: (t.verified as boolean) || (t.Verified as boolean) || false,
+        featured: (t.featured as boolean) || (t.Featured as boolean) || false,
+        version: (t.version as string) || (t.Version as string) || '',
+        tags: (t.tags as string[]) || (t.Tags as string[]),
+        badges: (t.badges as string[]) || (t.Badges as string[]),
+        created_at: (t.created_at as string) || (t.CreatedAt as string) || '',
+        updated_at: (t.updated_at as string) || (t.UpdatedAt as string) || '',
+        ami_available: (t.ami_available as boolean) || (t.AMIAvailable as boolean) || false
       }));
     } catch (error) {
       console.error('Failed to fetch marketplace templates:', error);
@@ -1111,10 +1155,10 @@ class SafePrismAPI {
       if (!data || !Array.isArray(data.categories)) {
         return [];
       }
-      return data.categories.map((c: any) => ({
-        id: c.id || c.ID || '',
-        name: c.name || c.Name || '',
-        count: c.count || c.Count || 0
+      return data.categories.map((c: Record<string, unknown>) => ({
+        id: (c.id as string) || (c.ID as string) || '',
+        name: (c.name as string) || (c.Name as string) || '',
+        count: (c.count as number) || (c.Count as number) || 0
       }));
     } catch (error) {
       console.error('Failed to fetch marketplace categories:', error);
@@ -1157,13 +1201,13 @@ class SafePrismAPI {
       if (!data || !Array.isArray(data.schedules)) {
         return [];
       }
-      return data.schedules.map((s: any) => ({
-        instance_name: s.instance_name || s.InstanceName || '',
-        policy_name: s.policy_name || s.PolicyName || '',
-        enabled: s.enabled !== undefined ? s.enabled : (s.Enabled !== undefined ? s.Enabled : true),
-        last_checked: s.last_checked || s.LastChecked || '',
-        idle_minutes: s.idle_minutes || s.IdleMinutes || 0,
-        status: s.status || s.Status || ''
+      return data.schedules.map((s: Record<string, unknown>) => ({
+        instance_name: (s.instance_name as string) || (s.InstanceName as string) || '',
+        policy_name: (s.policy_name as string) || (s.PolicyName as string) || '',
+        enabled: s.enabled !== undefined ? (s.enabled as boolean) : (s.Enabled !== undefined ? (s.Enabled as boolean) : true),
+        last_checked: (s.last_checked as string) || (s.LastChecked as string) || '',
+        idle_minutes: (s.idle_minutes as number) || (s.IdleMinutes as number) || 0,
+        status: (s.status as string) || (s.Status as string) || ''
       }));
     } catch (error) {
       console.error('Failed to fetch idle schedules:', error);
