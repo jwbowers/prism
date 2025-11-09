@@ -6,8 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os/exec"
-	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/ssh"
@@ -15,7 +13,6 @@ import (
 
 // TerminalServer provides web-based terminal access to instances
 type TerminalServer struct {
-	mu        sync.RWMutex
 	sessions  map[string]*TerminalSession
 	sshConfig *ssh.ClientConfig
 	upgrader  websocket.Upgrader
@@ -31,7 +28,6 @@ type TerminalSession struct {
 	StdoutPipe io.Reader
 	StderrPipe io.Reader
 	Connected  bool
-	mu         sync.Mutex
 }
 
 // TerminalMessage represents a message between client and server
@@ -179,138 +175,6 @@ func (ts *TerminalServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sshSession.Wait()
 }
 
-// handleConnect establishes a new SSH connection
-func (ts *TerminalServer) handleConnect(w http.ResponseWriter, r *http.Request) {
-	var connectData ConnectData
-	if err := json.NewDecoder(r.Body).Decode(&connectData); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Create SSH connection
-	addr := fmt.Sprintf("%s:%d", connectData.Host, connectData.Port)
-	client, err := ssh.Dial("tcp", addr, ts.sshConfig)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to connect: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Create session
-	session, err := client.NewSession()
-	if err != nil {
-		client.Close()
-		http.Error(w, fmt.Sprintf("Failed to create session: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Set up pipes
-	stdin, err := session.StdinPipe()
-	if err != nil {
-		session.Close()
-		client.Close()
-		http.Error(w, fmt.Sprintf("Failed to create stdin pipe: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	stdout, err := session.StdoutPipe()
-	if err != nil {
-		session.Close()
-		client.Close()
-		http.Error(w, fmt.Sprintf("Failed to create stdout pipe: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	stderr, err := session.StderrPipe()
-	if err != nil {
-		session.Close()
-		client.Close()
-		http.Error(w, fmt.Sprintf("Failed to create stderr pipe: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Request PTY
-	if err := session.RequestPty("xterm-256color", 24, 80, ssh.TerminalModes{
-		ssh.ECHO:          1,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}); err != nil {
-		session.Close()
-		client.Close()
-		http.Error(w, fmt.Sprintf("Failed to request PTY: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Start shell
-	if err := session.Shell(); err != nil {
-		session.Close()
-		client.Close()
-		http.Error(w, fmt.Sprintf("Failed to start shell: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Create terminal session
-	sessionID := generateSessionID()
-	termSession := &TerminalSession{
-		ID:         sessionID,
-		InstanceID: connectData.InstanceID,
-		SSHClient:  client,
-		Session:    session,
-		StdinPipe:  stdin,
-		StdoutPipe: stdout,
-		StderrPipe: stderr,
-		Connected:  true,
-	}
-
-	// Store session
-	ts.mu.Lock()
-	ts.sessions[sessionID] = termSession
-	ts.mu.Unlock()
-
-	// Return session ID
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"session_id": sessionID,
-		"status":     "connected",
-	})
-}
-
-// handleDisconnect closes an SSH connection
-func (ts *TerminalServer) handleDisconnect(w http.ResponseWriter, r *http.Request) {
-	sessionID := r.URL.Query().Get("session_id")
-	if sessionID == "" {
-		http.Error(w, "session_id required", http.StatusBadRequest)
-		return
-	}
-
-	ts.mu.Lock()
-	session, exists := ts.sessions[sessionID]
-	if exists {
-		delete(ts.sessions, sessionID)
-	}
-	ts.mu.Unlock()
-
-	if !exists {
-		http.Error(w, "Session not found", http.StatusNotFound)
-		return
-	}
-
-	// Close SSH connection
-	session.mu.Lock()
-	if session.Session != nil {
-		session.Session.Close()
-	}
-	if session.SSHClient != nil {
-		_ = session.SSHClient.Close()
-	}
-	session.Connected = false
-	session.mu.Unlock()
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"status": "disconnected",
-	})
-}
-
 // LocalTerminal provides local terminal execution (for development)
 type LocalTerminal struct {
 	cmd    *exec.Cmd
@@ -366,11 +230,6 @@ func (lt *LocalTerminal) Close() error {
 		return lt.cmd.Process.Kill()
 	}
 	return nil
-}
-
-// generateSessionID creates a unique session ID
-func generateSessionID() string {
-	return fmt.Sprintf("term-%d", time.Now().UnixNano())
 }
 
 // ServeTerminalHTML serves the terminal HTML interface

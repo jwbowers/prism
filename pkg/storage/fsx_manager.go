@@ -154,13 +154,6 @@ func (m *FSxManager) DeleteFSxFilesystem(name string, skipFinalBackup bool) erro
 	return nil
 }
 
-// getSecurityGroupIds extracts security group IDs from network interface IDs
-func getSecurityGroupIds(networkInterfaceIds []string) []string {
-	// This is a simplified extraction
-	// In real implementation, we would query EC2 for network interface details
-	return []string{}
-}
-
 // createLustreFilesystem creates a Lustre filesystem
 func (m *FSxManager) createLustreFilesystem(ctx context.Context, req StorageRequest) (*StorageInfo, error) {
 	// Prepare Lustre configuration

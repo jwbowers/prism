@@ -898,20 +898,6 @@ func (s *Server) simulateMemoryUtilization(template, size string) float64 {
 	return base
 }
 
-// generateCPURecommendation generates CPU-specific recommendations
-func (s *Server) generateCPURecommendation(template, size string) string {
-	utilization := s.simulateCPUUtilization(template, size)
-
-	switch {
-	case utilization > 80:
-		return "CPU utilization is high. Consider upgrading to a larger instance size."
-	case utilization < 20:
-		return "CPU utilization is low. Consider downsizing to reduce costs."
-	default:
-		return "CPU utilization is within optimal range."
-	}
-}
-
 // generateMemoryRecommendation generates memory-specific recommendations
 func (s *Server) generateMemoryRecommendation(template, size string) string {
 	utilization := s.simulateMemoryUtilization(template, size)
