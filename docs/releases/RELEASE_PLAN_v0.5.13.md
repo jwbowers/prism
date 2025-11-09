@@ -249,6 +249,14 @@ Based on UX audit and persona validation, implement quick fixes:
 
 **Cleanup Activities**:
 
+#### Dependency Updates
+- [ ] **Wails3 Framework Upgrade**: Update to latest Wails3 version
+  - Review breaking changes in Wails3 release notes
+  - Update `go.mod` and frontend dependencies
+  - Test GUI functionality across all platforms (macOS, Linux, Windows)
+  - Update build scripts if required
+  - Estimated effort: 1-2 days
+
 #### Code Cleanup
 - [ ] Remove deprecated code paths
 - [ ] Consolidate duplicate logic
