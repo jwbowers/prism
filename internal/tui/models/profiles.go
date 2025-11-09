@@ -118,9 +118,9 @@ func (m ProfilesModel) View() string {
 		// Profile management commands
 		profileInfo += "\nProfile Management:\n"
 		profileInfo += "  Use CLI commands to manage profiles:\n"
-		profileInfo += "  cws config profile <name>     # Set AWS profile\n"
-		profileInfo += "  cws config region <region>    # Set AWS region\n"
-		profileInfo += "  cws config show               # Show current config\n"
+		profileInfo += "  prism config profile <name>     # Set AWS profile\n"
+		profileInfo += "  prism config region <region>    # Set AWS region\n"
+		profileInfo += "  prism config show               # Show current config\n"
 
 		content = lipgloss.NewStyle().
 			Width(m.width-4).

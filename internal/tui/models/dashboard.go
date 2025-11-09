@@ -267,7 +267,7 @@ func (m DashboardModel) View() string {
 		instancesPanel := theme.Panel.Width(m.width/2 - 4).Render(
 			lipgloss.JoinVertical(
 				lipgloss.Left,
-				theme.PanelHeader.Render("Running Workspaces"),
+				theme.PanelHeader.Render("Running Instances"),
 				m.instancesTable.View(),
 			),
 		)

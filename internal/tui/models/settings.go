@@ -106,15 +106,15 @@ func (m SettingsModel) View() string {
 	// Configuration
 	configInfo := "\nConfiguration:\n"
 	configInfo += "  Profile system is managed via CLI commands:\n"
-	configInfo += "  cws config profile <name>     # Set AWS profile\n"
-	configInfo += "  cws config region <region>    # Set AWS region\n"
-	configInfo += "  cws config show               # Show current config\n"
+	configInfo += "  prism config profile <name>     # Set AWS profile\n"
+	configInfo += "  prism config region <region>    # Set AWS region\n"
+	configInfo += "  prism config show               # Show current config\n"
 
 	// Daemon Management
 	daemonInfo := "\nDaemon Management:\n"
-	daemonInfo += "  cws daemon start              # Start daemon\n"
-	daemonInfo += "  cws daemon stop               # Stop daemon\n"
-	daemonInfo += "  cws daemon status             # Check daemon status\n"
+	daemonInfo += "  prism daemon start              # Start daemon\n"
+	daemonInfo += "  prism daemon stop               # Stop daemon\n"
+	daemonInfo += "  prism daemon status             # Check daemon status\n"
 
 	// TUI Controls
 	tuiInfo := "\nTUI Navigation:\n"
