@@ -18,6 +18,9 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -216,7 +219,7 @@ func (bc *BackupCommands) displayCreateBackupResult(result *types.BackupCreateRe
 	fmt.Printf("✅ Backup creation initiated\n")
 	fmt.Printf("   Backup ID: %s\n", result.BackupID)
 	fmt.Printf("   Source Instance: %s\n", result.SourceInstance)
-	fmt.Printf("   Backup Type: %s\n", strings.Title(result.BackupType))
+	fmt.Printf("   Backup Type: %s\n", cases.Title(language.English).String(result.BackupType))
 	fmt.Printf("   Storage Location: %s\n", result.StorageLocation)
 	fmt.Printf("   Estimated Completion: %d minutes\n", result.EstimatedCompletionMinutes)
 	if result.EstimatedSizeBytes > 0 {
@@ -251,7 +254,7 @@ func (bc *BackupCommands) listBackups(args []string) error {
 	_, _ = fmt.Fprintln(w, "NAME\tSOURCE INSTANCE\tTYPE\tSTORAGE\tSIZE\tCOST/MONTH\tCREATED")
 
 	for _, backup := range response.Backups {
-		backupType := strings.Title(backup.BackupType)
+		backupType := cases.Title(language.English).String(backup.BackupType)
 		if backup.BackupType == "" {
 			backupType = "Full"
 		}
@@ -317,7 +320,7 @@ func (bc *BackupCommands) getBackupInfo(args []string) error {
 		fmt.Printf("   Description: %s\n", backup.Description)
 	}
 	fmt.Printf("   State: %s\n", strings.ToUpper(backup.State))
-	fmt.Printf("   Backup Type: %s\n", strings.Title(backup.BackupType))
+	fmt.Printf("   Backup Type: %s\n", cases.Title(language.English).String(backup.BackupType))
 	fmt.Printf("   Storage Type: %s\n", strings.ToUpper(backup.StorageType))
 	fmt.Printf("   Storage Location: %s\n", backup.StorageLocation)
 	fmt.Printf("   Size: %s", bc.formatBytes(backup.SizeBytes))

@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/scttfrdmn/prism/pkg/profile"
 )
 
@@ -63,7 +66,7 @@ func (rum *ResearchUserManager) CreateResearchUser(profileID, username string) (
 		Username:        username,
 		UID:             uid,
 		GID:             gid,
-		FullName:        strings.Title(username),
+		FullName:        cases.Title(language.English).String(username),
 		Email:           email,
 		HomeDirectory:   fmt.Sprintf("/efs/home/%s", username),
 		EFSMountPoint:   "/efs",
