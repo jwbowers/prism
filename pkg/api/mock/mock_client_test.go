@@ -358,7 +358,8 @@ func TestStorageManagementWorkflow(t *testing.T) {
 
 			storage, err := client.CreateStorage(ctx, createReq)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedSize, storage.SizeGB)
+			require.NotNil(t, storage.SizeGB, "SizeGB should not be nil")
+			assert.Equal(t, tt.expectedSize, *storage.SizeGB)
 			assert.Equal(t, "gp3", storage.VolumeType)
 
 			// Cleanup
