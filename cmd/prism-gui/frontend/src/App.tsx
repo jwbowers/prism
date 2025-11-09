@@ -34,7 +34,8 @@ import {
   PropertyFilter,
   Wizard,
   ProgressBar,
-  TextContent
+  TextContent,
+  Textarea
 } from '@cloudscape-design/components';
 
 // Type definitions
@@ -810,6 +811,74 @@ class SafePrismAPI {
       return data;
     } catch (error) {
       console.error('Failed to send invitation:', error);
+      throw error;
+    }
+  }
+
+  // Bulk Invitation API (Issue #240)
+  async bulkInvite(projectId: string, emails: string[], role: string, message?: string): Promise<any> {
+    try {
+      const body: any = {
+        emails,
+        role,
+      };
+      if (message) body.message = message;
+
+      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations/bulk`, 'POST', body);
+      return data;
+    } catch (error) {
+      console.error('Failed to send bulk invitations:', error);
+      throw error;
+    }
+  }
+
+  // Shared Token APIs (Issue #241)
+  async getSharedTokens(projectId: string): Promise<any[]> {
+    try {
+      const data = await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens`);
+      return Array.isArray(data?.tokens) ? data.tokens : [];
+    } catch (error) {
+      console.error('Failed to fetch shared tokens:', error);
+      return [];
+    }
+  }
+
+  async createSharedToken(projectId: string, config: any): Promise<any> {
+    try {
+      const data = await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens`, 'POST', config);
+      return data;
+    } catch (error) {
+      console.error('Failed to create shared token:', error);
+      throw error;
+    }
+  }
+
+  async extendSharedToken(projectId: string, tokenId: string, expiresIn: string): Promise<void> {
+    try {
+      await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens/${tokenId}/extend`, 'POST', {
+        expires_in: expiresIn
+      });
+    } catch (error) {
+      console.error('Failed to extend shared token:', error);
+      throw error;
+    }
+  }
+
+  async revokeSharedToken(projectId: string, tokenId: string): Promise<void> {
+    try {
+      await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens/${tokenId}/revoke`, 'POST');
+    } catch (error) {
+      console.error('Failed to revoke shared token:', error);
+      throw error;
+    }
+  }
+
+  async redeemSharedToken(token: string): Promise<any> {
+    try {
+      const data = await this.safeRequest(`/api/v1/shared-tokens/${token}/redeem`, 'POST');
+      return data;
+    } catch (error) {
+      console.error('Failed to redeem shared token:', error);
       throw error;
     }
   }
@@ -3514,6 +3583,7 @@ export default function PrismApp() {
 
   // Invitation Management View (v0.5.11)
   const InvitationView = () => {
+    const [activeTabId, setActiveTabId] = useState('individual');
     const [newToken, setNewToken] = useState('');
     const [addingInvitation, setAddingInvitation] = useState(false);
     const [actionModalVisible, setActionModalVisible] = useState(false);
@@ -3526,6 +3596,28 @@ export default function PrismApp() {
       invitation: null,
       reason: ''
     });
+
+    // Bulk invitation state
+    const [bulkEmailList, setBulkEmailList] = useState('');
+    const [bulkRole, setBulkRole] = useState('member');
+    const [bulkMessage, setBulkMessage] = useState('');
+    const [bulkSending, setBulkSending] = useState(false);
+    const [bulkResults, setBulkResults] = useState<any>(null);
+
+    // Shared token state
+    const [sharedTokens, setSharedTokens] = useState<any[]>([]);
+    const [loadingTokens, setLoadingTokens] = useState(false);
+    const [creatingToken, setCreatingToken] = useState(false);
+    const [tokenModalVisible, setTokenModalVisible] = useState(false);
+    const [newTokenConfig, setNewTokenConfig] = useState({
+      name: '',
+      redemption_limit: 50,
+      expires_in: '7d',
+      role: 'member',
+      message: ''
+    });
+    const [qrModalVisible, setQrModalVisible] = useState(false);
+    const [selectedTokenForQR, setSelectedTokenForQR] = useState<any>(null);
 
     // Handle adding a new invitation
     const handleAddInvitation = async () => {
@@ -3630,6 +3722,148 @@ export default function PrismApp() {
       addNotification('info', 'Invitation Removed', 'Invitation removed from local cache');
     };
 
+    // Handle bulk invitation submission
+    const handleBulkInvite = async () => {
+      if (!bulkEmailList.trim()) {
+        addNotification('error', 'Email List Required', 'Please enter at least one email address');
+        return;
+      }
+
+      // Parse email list (comma or newline separated)
+      const emails = bulkEmailList
+        .split(/[,\n]/)
+        .map(e => e.trim())
+        .filter(e => e.length > 0);
+
+      if (emails.length === 0) {
+        addNotification('error', 'No Valid Emails', 'Please enter valid email addresses');
+        return;
+      }
+
+      // For now, use the first project as context (TODO: add project selector)
+      const projects = await api.getProjects();
+      if (projects.length === 0) {
+        addNotification('error', 'No Projects', 'You must create a project before sending invitations');
+        return;
+      }
+
+      setBulkSending(true);
+      try {
+        const result = await api.bulkInvite(projects[0].id, emails, bulkRole, bulkMessage || undefined);
+        setBulkResults(result);
+        addNotification('success', 'Bulk Invitations Sent',
+          `Sent: ${result.sent}, Failed: ${result.failed}, Skipped: ${result.skipped}`);
+
+        // Clear form on success
+        setBulkEmailList('');
+        setBulkMessage('');
+      } catch (error) {
+        console.error('Failed to send bulk invitations:', error);
+        addNotification('error', 'Failed to Send', String(error));
+      } finally {
+        setBulkSending(false);
+      }
+    };
+
+    // Load shared tokens when tab is selected
+    const loadSharedTokens = async () => {
+      setLoadingTokens(true);
+      try {
+        const projects = await api.getProjects();
+        if (projects.length > 0) {
+          const tokens = await api.getSharedTokens(projects[0].id);
+          setSharedTokens(tokens);
+        }
+      } catch (error) {
+        console.error('Failed to load shared tokens:', error);
+        addNotification('error', 'Failed to Load Tokens', String(error));
+      } finally {
+        setLoadingTokens(false);
+      }
+    };
+
+    // Handle shared token creation
+    const handleCreateSharedToken = async () => {
+      if (!newTokenConfig.name.trim()) {
+        addNotification('error', 'Name Required', 'Please enter a name for the shared token');
+        return;
+      }
+
+      const projects = await api.getProjects();
+      if (projects.length === 0) {
+        addNotification('error', 'No Projects', 'You must create a project before creating shared tokens');
+        return;
+      }
+
+      setCreatingToken(true);
+      try {
+        const result = await api.createSharedToken(projects[0].id, newTokenConfig);
+        addNotification('success', 'Token Created', `Shared token "${newTokenConfig.name}" created successfully`);
+        setTokenModalVisible(false);
+
+        // Reset form
+        setNewTokenConfig({
+          name: '',
+          redemption_limit: 50,
+          expires_in: '7d',
+          role: 'member',
+          message: ''
+        });
+
+        // Reload tokens
+        await loadSharedTokens();
+      } catch (error) {
+        console.error('Failed to create shared token:', error);
+        addNotification('error', 'Failed to Create', String(error));
+      } finally {
+        setCreatingToken(false);
+      }
+    };
+
+    // Handle shared token extend
+    const handleExtendToken = async (token: any) => {
+      const projects = await api.getProjects();
+      if (projects.length === 0) return;
+
+      try {
+        await api.extendSharedToken(projects[0].id, token.id, '7d');
+        addNotification('success', 'Token Extended', `Extended "${token.name}" by 7 days`);
+        await loadSharedTokens();
+      } catch (error) {
+        console.error('Failed to extend token:', error);
+        addNotification('error', 'Failed to Extend', String(error));
+      }
+    };
+
+    // Handle shared token revoke
+    const handleRevokeToken = async (token: any) => {
+      const projects = await api.getProjects();
+      if (projects.length === 0) return;
+
+      try {
+        await api.revokeSharedToken(projects[0].id, token.id);
+        addNotification('success', 'Token Revoked', `Revoked "${token.name}"`);
+        await loadSharedTokens();
+      } catch (error) {
+        console.error('Failed to revoke token:', error);
+        addNotification('error', 'Failed to Revoke', String(error));
+      }
+    };
+
+    // Handle QR code display
+    const handleShowQRCode = (token: any) => {
+      setSelectedTokenForQR(token);
+      setQrModalVisible(true);
+    };
+
+    // Handle tab change
+    const handleTabChange = ({ detail }: any) => {
+      setActiveTabId(detail.activeTabId);
+      if (detail.activeTabId === 'shared') {
+        loadSharedTokens();
+      }
+    };
+
     // Format time remaining
     const formatTimeRemaining = (expiresAt: string) => {
       const now = new Date();
@@ -3679,152 +3913,354 @@ export default function PrismApp() {
             Invitations
           </Header>
 
-          {/* Add Invitation Token */}
-          <Container header={<Header variant="h2">Add Invitation</Header>}>
-            <SpaceBetween size="m">
-              <FormField
-                label="Invitation Token"
-                description="Paste the invitation token you received via email or Slack"
-              >
-                <Input
-                  value={newToken}
-                  onChange={({ detail }) => setNewToken(detail.value)}
-                  placeholder="eyJhbGciOiJIUzI1NiIs..."
-                  disabled={addingInvitation}
-                />
-              </FormField>
-              <Button
-                variant="primary"
-                onClick={handleAddInvitation}
-                loading={addingInvitation}
-                disabled={!newToken.trim()}
-              >
-                Add Invitation
-              </Button>
-            </SpaceBetween>
-          </Container>
+          {/* Tabbed Interface */}
+          <Tabs
+            activeTabId={activeTabId}
+            onChange={handleTabChange}
+            tabs={[
+              {
+                id: 'individual',
+                label: 'Individual Invitations',
+                content: (
+                  <SpaceBetween size="l">
 
-          {/* Summary Stats */}
-          <ColumnLayout columns={3} variant="text-grid">
-            <Container header={<Header variant="h3">Total</Header>}>
-              <Box fontSize="display-l" fontWeight="bold">
-                {state.invitations.length}
-              </Box>
-            </Container>
-            <Container header={<Header variant="h3">Pending</Header>}>
-              <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-                {pendingCount}
-              </Box>
-            </Container>
-            <Container header={<Header variant="h3">Accepted</Header>}>
-              <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-                {acceptedCount}
-              </Box>
-            </Container>
-          </ColumnLayout>
-
-          {/* Invitations Table */}
-          <Table
-            columnDefinitions={[
-              {
-                id: 'project',
-                header: 'Project',
-                cell: (item: CachedInvitation) => item.project_name
-              },
-              {
-                id: 'role',
-                header: 'Role',
-                cell: (item: CachedInvitation) => (
-                  <Badge color={item.role === 'owner' ? 'red' : item.role === 'admin' ? 'blue' : 'grey'}>
-                    {item.role}
-                  </Badge>
-                )
-              },
-              {
-                id: 'invited_by',
-                header: 'Invited By',
-                cell: (item: CachedInvitation) => item.invited_by
-              },
-              {
-                id: 'expires',
-                header: 'Expiration',
-                cell: (item: CachedInvitation) => (
-                  <Box>
-                    <div>{new Date(item.expires_at).toLocaleDateString()}</div>
-                    <Box variant="small" color="text-body-secondary">
-                      {formatTimeRemaining(item.expires_at)}
-                    </Box>
-                  </Box>
-                )
-              },
-              {
-                id: 'status',
-                header: 'Status',
-                cell: (item: CachedInvitation) => getStatusIndicator(item.status)
-              },
-              {
-                id: 'actions',
-                header: 'Actions',
-                cell: (item: CachedInvitation) => (
-                  <SpaceBetween direction="horizontal" size="xs">
-                    {item.status === 'pending' && (
-                      <>
+                    {/* Add Invitation Token */}
+                    <Container header={<Header variant="h2">Add Invitation</Header>}>
+                      <SpaceBetween size="m">
+                        <FormField
+                          label="Invitation Token"
+                          description="Paste the invitation token you received via email or Slack"
+                        >
+                          <Input
+                            value={newToken}
+                            onChange={({ detail }) => setNewToken(detail.value)}
+                            placeholder="eyJhbGciOiJIUzI1NiIs..."
+                            disabled={addingInvitation}
+                          />
+                        </FormField>
                         <Button
                           variant="primary"
-                          onClick={() => {
-                            setActionModalConfig({
-                              type: 'accept',
-                              invitation: item,
-                              reason: ''
-                            });
-                            setActionModalVisible(true);
-                          }}
+                          onClick={handleAddInvitation}
+                          loading={addingInvitation}
+                          disabled={!newToken.trim()}
                         >
-                          Accept
+                          Add Invitation
                         </Button>
-                        <Button
-                          onClick={() => {
-                            setActionModalConfig({
-                              type: 'decline',
-                              invitation: item,
-                              reason: ''
-                            });
-                            setActionModalVisible(true);
-                          }}
+                      </SpaceBetween>
+                    </Container>
+
+                    {/* Summary Stats */}
+                    <ColumnLayout columns={3} variant="text-grid">
+                      <Container header={<Header variant="h3">Total</Header>}>
+                        <Box fontSize="display-l" fontWeight="bold">
+                          {state.invitations.length}
+                        </Box>
+                      </Container>
+                      <Container header={<Header variant="h3">Pending</Header>}>
+                        <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
+                          {pendingCount}
+                        </Box>
+                      </Container>
+                      <Container header={<Header variant="h3">Accepted</Header>}>
+                        <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
+                          {acceptedCount}
+                        </Box>
+                      </Container>
+                    </ColumnLayout>
+
+                    {/* Invitations Table */}
+                    <Table
+                      columnDefinitions={[
+                        {
+                          id: 'project',
+                          header: 'Project',
+                          cell: (item: CachedInvitation) => item.project_name
+                        },
+                        {
+                          id: 'role',
+                          header: 'Role',
+                          cell: (item: CachedInvitation) => (
+                            <Badge color={item.role === 'owner' ? 'red' : item.role === 'admin' ? 'blue' : 'grey'}>
+                              {item.role}
+                            </Badge>
+                          )
+                        },
+                        {
+                          id: 'invited_by',
+                          header: 'Invited By',
+                          cell: (item: CachedInvitation) => item.invited_by
+                        },
+                        {
+                          id: 'expires',
+                          header: 'Expiration',
+                          cell: (item: CachedInvitation) => (
+                            <Box>
+                              <div>{new Date(item.expires_at).toLocaleDateString()}</div>
+                              <Box variant="small" color="text-body-secondary">
+                                {formatTimeRemaining(item.expires_at)}
+                              </Box>
+                            </Box>
+                          )
+                        },
+                        {
+                          id: 'status',
+                          header: 'Status',
+                          cell: (item: CachedInvitation) => getStatusIndicator(item.status)
+                        },
+                        {
+                          id: 'actions',
+                          header: 'Actions',
+                          cell: (item: CachedInvitation) => (
+                            <SpaceBetween direction="horizontal" size="xs">
+                              {item.status === 'pending' && (
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    onClick={() => {
+                                      setActionModalConfig({
+                                        type: 'accept',
+                                        invitation: item,
+                                        reason: ''
+                                      });
+                                      setActionModalVisible(true);
+                                    }}
+                                  >
+                                    Accept
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      setActionModalConfig({
+                                        type: 'decline',
+                                        invitation: item,
+                                        reason: ''
+                                      });
+                                      setActionModalVisible(true);
+                                    }}
+                                  >
+                                    Decline
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                variant="icon"
+                                iconName="remove"
+                                onClick={() => handleRemoveInvitation(item.invitation_id)}
+                              />
+                            </SpaceBetween>
+                          )
+                        }
+                      ]}
+                      items={state.invitations}
+                      empty={
+                        <Box textAlign="center" color="inherit">
+                          <SpaceBetween size="m">
+                            <b>No invitations</b>
+                            <Box variant="p" color="inherit">
+                              Add an invitation token above to get started
+                            </Box>
+                          </SpaceBetween>
+                        </Box>
+                      }
+                      header={
+                        <Header
+                          variant="h2"
+                          description="Your project invitations"
+                          counter={`(${state.invitations.length})`}
                         >
-                          Decline
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      variant="icon"
-                      iconName="remove"
-                      onClick={() => handleRemoveInvitation(item.invitation_id)}
+                          My Invitations
+                        </Header>
+                      }
                     />
+                  </SpaceBetween>
+                )
+              },
+              {
+                id: 'bulk',
+                label: 'Bulk Invitations',
+                content: (
+                  <SpaceBetween size="l">
+                    <Container header={<Header variant="h2">Send Bulk Invitations</Header>}>
+                      <SpaceBetween size="m">
+                        <Alert type="info">
+                          Send invitations to multiple people at once. Enter email addresses separated by commas or new lines.
+                        </Alert>
+
+                        <FormField
+                          label="Email Addresses"
+                          description="Enter one or more email addresses (comma or newline separated)"
+                        >
+                          <Textarea
+                            value={bulkEmailList}
+                            onChange={({ detail }) => setBulkEmailList(detail.value)}
+                            placeholder="alice@university.edu, bob@research.org&#10;charlie@lab.edu"
+                            rows={6}
+                            disabled={bulkSending}
+                          />
+                        </FormField>
+
+                        <FormField label="Role" description="Role for all recipients">
+                          <Select
+                            selectedOption={{ label: bulkRole, value: bulkRole }}
+                            onChange={({ detail }) => setBulkRole(detail.selectedOption.value || 'member')}
+                            options={[
+                              { label: 'viewer', value: 'viewer' },
+                              { label: 'member', value: 'member' },
+                              { label: 'admin', value: 'admin' }
+                            ]}
+                            disabled={bulkSending}
+                          />
+                        </FormField>
+
+                        <FormField
+                          label="Message (optional)"
+                          description="Personal message to include in all invitations"
+                        >
+                          <Textarea
+                            value={bulkMessage}
+                            onChange={({ detail }) => setBulkMessage(detail.value)}
+                            placeholder="You're invited to join our research project..."
+                            rows={3}
+                            disabled={bulkSending}
+                          />
+                        </FormField>
+
+                        <Button
+                          variant="primary"
+                          onClick={handleBulkInvite}
+                          loading={bulkSending}
+                          disabled={!bulkEmailList.trim()}
+                        >
+                          Send Bulk Invitations
+                        </Button>
+                      </SpaceBetween>
+                    </Container>
+
+                    {bulkResults && (
+                      <Container header={<Header variant="h2">Results</Header>}>
+                        <ColumnLayout columns={3} variant="text-grid">
+                          <Container header={<Header variant="h3">Sent</Header>}>
+                            <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
+                              {bulkResults.sent || 0}
+                            </Box>
+                          </Container>
+                          <Container header={<Header variant="h3">Failed</Header>}>
+                            <Box fontSize="display-l" fontWeight="bold" color="text-status-error">
+                              {bulkResults.failed || 0}
+                            </Box>
+                          </Container>
+                          <Container header={<Header variant="h3">Skipped</Header>}>
+                            <Box fontSize="display-l" fontWeight="bold" color="text-status-warning">
+                              {bulkResults.skipped || 0}
+                            </Box>
+                          </Container>
+                        </ColumnLayout>
+                      </Container>
+                    )}
+                  </SpaceBetween>
+                )
+              },
+              {
+                id: 'shared',
+                label: 'Shared Tokens',
+                content: (
+                  <SpaceBetween size="l">
+                    <Container
+                      header={
+                        <Header
+                          variant="h2"
+                          description="Reusable invitation tokens for workshops and classes"
+                          actions={
+                            <Button variant="primary" onClick={() => setTokenModalVisible(true)}>
+                              Create Shared Token
+                            </Button>
+                          }
+                        >
+                          Shared Tokens
+                        </Header>
+                      }
+                    >
+                      {loadingTokens ? (
+                        <Spinner />
+                      ) : (
+                        <Table
+                          columnDefinitions={[
+                            {
+                              id: 'name',
+                              header: 'Name',
+                              cell: (item: any) => item.name
+                            },
+                            {
+                              id: 'role',
+                              header: 'Role',
+                              cell: (item: any) => (
+                                <Badge color={item.role === 'admin' ? 'blue' : 'grey'}>
+                                  {item.role}
+                                </Badge>
+                              )
+                            },
+                            {
+                              id: 'redemptions',
+                              header: 'Redemptions',
+                              cell: (item: any) => `${item.redemption_count || 0} / ${item.redemption_limit}`
+                            },
+                            {
+                              id: 'expires',
+                              header: 'Expires',
+                              cell: (item: any) => new Date(item.expires_at).toLocaleDateString()
+                            },
+                            {
+                              id: 'status',
+                              header: 'Status',
+                              cell: (item: any) => (
+                                <StatusIndicator type={item.status === 'active' ? 'success' : 'stopped'}>
+                                  {item.status}
+                                </StatusIndicator>
+                              )
+                            },
+                            {
+                              id: 'actions',
+                              header: 'Actions',
+                              cell: (item: any) => (
+                                <SpaceBetween direction="horizontal" size="xs">
+                                  <Button
+                                    variant="icon"
+                                    iconName="view-full"
+                                    onClick={() => handleShowQRCode(item)}
+                                  />
+                                  <Button
+                                    variant="icon"
+                                    iconName="add-plus"
+                                    onClick={() => handleExtendToken(item)}
+                                    disabled={item.status !== 'active'}
+                                  />
+                                  <Button
+                                    variant="icon"
+                                    iconName="close"
+                                    onClick={() => handleRevokeToken(item)}
+                                    disabled={item.status !== 'active'}
+                                  />
+                                </SpaceBetween>
+                              )
+                            }
+                          ]}
+                          items={sharedTokens}
+                          empty={
+                            <Box textAlign="center" color="inherit">
+                              <SpaceBetween size="m">
+                                <b>No shared tokens</b>
+                                <Box variant="p" color="inherit">
+                                  Create a shared token to invite multiple people with a single link
+                                </Box>
+                              </SpaceBetween>
+                            </Box>
+                          }
+                        />
+                      )}
+                    </Container>
                   </SpaceBetween>
                 )
               }
             ]}
-            items={state.invitations}
-            empty={
-              <Box textAlign="center" color="inherit">
-                <SpaceBetween size="m">
-                  <b>No invitations</b>
-                  <Box variant="p" color="inherit">
-                    Add an invitation token above to get started
-                  </Box>
-                </SpaceBetween>
-              </Box>
-            }
-            header={
-              <Header
-                variant="h2"
-                description="Your project invitations"
-                counter={`(${state.invitations.length})`}
-              >
-                My Invitations
-              </Header>
-            }
           />
         </SpaceBetween>
 
@@ -3884,6 +4320,187 @@ export default function PrismApp() {
                   </FormField>
                 </>
               )}
+            </SpaceBetween>
+          )}
+        </Modal>
+
+        {/* Token Creation Modal */}
+        <Modal
+          visible={tokenModalVisible}
+          onDismiss={() => setTokenModalVisible(false)}
+          header="Create Shared Token"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button onClick={() => setTokenModalVisible(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleCreateSharedToken}
+                  loading={creatingToken}
+                  disabled={!newTokenConfig.name.trim()}
+                >
+                  Create Token
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            <Alert type="info">
+              Shared tokens can be redeemed by multiple people until they expire or reach the redemption limit.
+              Perfect for workshops, classes, or team onboarding.
+            </Alert>
+
+            <FormField
+              label="Token Name"
+              description="Descriptive name for this token"
+            >
+              <Input
+                value={newTokenConfig.name}
+                onChange={({ detail }) => setNewTokenConfig(prev => ({ ...prev, name: detail.value }))}
+                placeholder="Workshop Spring 2024"
+                disabled={creatingToken}
+              />
+            </FormField>
+
+            <FormField
+              label="Redemption Limit"
+              description="Maximum number of times this token can be used"
+            >
+              <Input
+                type="number"
+                value={String(newTokenConfig.redemption_limit)}
+                onChange={({ detail }) => setNewTokenConfig(prev => ({
+                  ...prev,
+                  redemption_limit: parseInt(detail.value) || 50
+                }))}
+                disabled={creatingToken}
+              />
+            </FormField>
+
+            <FormField label="Expires In" description="How long until token expires">
+              <Select
+                selectedOption={{ label: newTokenConfig.expires_in, value: newTokenConfig.expires_in }}
+                onChange={({ detail }) => setNewTokenConfig(prev => ({
+                  ...prev,
+                  expires_in: detail.selectedOption.value || '7d'
+                }))}
+                options={[
+                  { label: '1d', value: '1d' },
+                  { label: '7d', value: '7d' },
+                  { label: '30d', value: '30d' },
+                  { label: '90d', value: '90d' }
+                ]}
+                disabled={creatingToken}
+              />
+            </FormField>
+
+            <FormField label="Role" description="Role for all users who redeem this token">
+              <Select
+                selectedOption={{ label: newTokenConfig.role, value: newTokenConfig.role }}
+                onChange={({ detail }) => setNewTokenConfig(prev => ({
+                  ...prev,
+                  role: detail.selectedOption.value || 'member'
+                }))}
+                options={[
+                  { label: 'viewer', value: 'viewer' },
+                  { label: 'member', value: 'member' },
+                  { label: 'admin', value: 'admin' }
+                ]}
+                disabled={creatingToken}
+              />
+            </FormField>
+
+            <FormField
+              label="Welcome Message (optional)"
+              description="Message shown when token is redeemed"
+            >
+              <Textarea
+                value={newTokenConfig.message}
+                onChange={({ detail }) => setNewTokenConfig(prev => ({ ...prev, message: detail.value }))}
+                placeholder="Welcome to our research project!"
+                rows={3}
+                disabled={creatingToken}
+              />
+            </FormField>
+          </SpaceBetween>
+        </Modal>
+
+        {/* QR Code Modal */}
+        <Modal
+          visible={qrModalVisible}
+          onDismiss={() => setQrModalVisible(false)}
+          header={`QR Code: ${selectedTokenForQR?.name || ''}`}
+          size="medium"
+        >
+          {selectedTokenForQR && (
+            <SpaceBetween size="l">
+              <Box textAlign="center">
+                <Box variant="p" color="text-body-secondary">
+                  Scan this QR code to redeem the shared token
+                </Box>
+              </Box>
+
+              <Box textAlign="center">
+                {/* QR code image would be displayed here from backend */}
+                <Box
+                  padding="xxl"
+                  variant="div"
+                  textAlign="center"
+                  color="text-body-secondary"
+                  fontSize="heading-xl"
+                >
+                  <div style={{
+                    border: '2px solid #ddd',
+                    borderRadius: '8px',
+                    padding: '40px',
+                    backgroundColor: '#f9f9f9',
+                    display: 'inline-block'
+                  }}>
+                    {/* Placeholder - actual QR code would come from backend */}
+                    <img
+                      src={`http://localhost:8947/api/v1/shared-tokens/${selectedTokenForQR.token}/qr`}
+                      alt="QR Code"
+                      style={{ width: '256px', height: '256px' }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<div style="width: 256px; height: 256px; display: flex; align-items: center; justify-content: center; background: white; border: 1px dashed #999;">QR Code</div>';
+                      }}
+                    />
+                  </div>
+                </Box>
+              </Box>
+
+              <FormField label="Token" description="Share this token or use the QR code">
+                <Input
+                  value={selectedTokenForQR.token || ''}
+                  readOnly
+                />
+              </FormField>
+
+              <Box textAlign="center">
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedTokenForQR.token || '');
+                      addNotification('success', 'Copied', 'Token copied to clipboard');
+                    }}
+                  >
+                    Copy Token
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const url = `${window.location.origin}/redeem?token=${selectedTokenForQR.token}`;
+                      navigator.clipboard.writeText(url);
+                      addNotification('success', 'Copied', 'Redemption URL copied to clipboard');
+                    }}
+                  >
+                    Copy URL
+                  </Button>
+                </SpaceBetween>
+              </Box>
             </SpaceBetween>
           )}
         </Modal>
