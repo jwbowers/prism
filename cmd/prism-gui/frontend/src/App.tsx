@@ -378,7 +378,6 @@ class SafePrismAPI {
       const response = await fetch('http://localhost:8948/api-key');
       const data = await response.json();
       this.apiKey = data.api_key;
-      console.log('✅ API key loaded successfully');
     } catch (error) {
       console.error('❌ Failed to load API key:', error);
     }
@@ -410,9 +409,6 @@ class SafePrismAPI {
   async getTemplates(): Promise<Record<string, Template>> {
     try {
       const data = await this.safeRequest('/api/v1/templates');
-      console.log('[DEBUG] getTemplates() received data:', data);
-      console.log('[DEBUG] typeof data:', typeof data);
-      console.log('[DEBUG] data keys:', data ? Object.keys(data) : 'null/undefined');
       return data || {};
     } catch (error) {
       console.error('Failed to fetch templates:', error);
@@ -1270,8 +1266,6 @@ export default function PrismApp() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      console.log('Loading Prism data...');
-
       // Use Promise.allSettled to allow individual API calls to fail without breaking the entire load
       // This is essential for test environments where some endpoints may not have AWS credentials
       const results = await Promise.allSettled([
@@ -1300,7 +1294,6 @@ export default function PrismApp() {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
-          console.warn(`API call ${index} failed:`, result.reason);
           // Return appropriate empty fallback based on expected type
           if (index === 0) return {}; // templates (object)
           if (index === 11) return null; // rightsizingStats (nullable)
@@ -1308,17 +1301,6 @@ export default function PrismApp() {
           return []; // everything else (arrays)
         }
       });
-
-      console.log('Templates loaded:', templatesData ? Object.keys(templatesData).length : 0);
-      console.log('Instances loaded:', instancesData?.length || 0);
-      console.log('EFS Volumes loaded:', efsVolumesData?.length || 0);
-      console.log('EBS Volumes loaded:', ebsVolumesData?.length || 0);
-      console.log('Projects loaded:', projectsData?.length || 0);
-      console.log('Users loaded:', usersData?.length || 0);
-      console.log('Budgets loaded:', budgetsData?.length || 0);
-      console.log('AMIs loaded:', amisData?.length || 0);
-      console.log('AMI Builds loaded:', amiBuildsData?.length || 0);
-      console.log('AMI Regions loaded:', amiRegionsData?.length || 0);
 
       setState(prev => ({
         ...prev,

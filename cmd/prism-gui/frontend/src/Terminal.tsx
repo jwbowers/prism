@@ -21,7 +21,6 @@ const Terminal: React.FC<TerminalProps> = React.memo(({ instanceName }) => {
 
     // Prevent recreating terminal if instance hasn't changed
     if (xtermRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('Terminal already connected, skipping reconnect');
       return;
     }
 
@@ -76,7 +75,6 @@ const Terminal: React.FC<TerminalProps> = React.memo(({ instanceName }) => {
     ws.binaryType = 'arraybuffer';
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
       setIsConnected(true);
       setError(null);
 
@@ -108,7 +106,6 @@ const Terminal: React.FC<TerminalProps> = React.memo(({ instanceName }) => {
     };
 
     ws.onclose = () => {
-      console.log('WebSocket closed');
       setIsConnected(false);
       term.write('\r\n\x1b[31mConnection closed\x1b[0m\r\n');
     };
