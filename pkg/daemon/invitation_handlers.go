@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/scttfrdmn/prism/pkg/invitation"
+	"github.com/scttfrdmn/prism/pkg/research"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -337,6 +338,28 @@ func (s *Server) handleAcceptInvitation(w http.ResponseWriter, r *http.Request) 
 		// If already a member, that's fine - continue with acceptance response
 	}
 
+	// Auto-provision research user (Issue #106)
+	// Extract username from email (e.g., "user@example.com" → "user")
+	username := strings.Split(inv.Email, "@")[0]
+
+	var researchUser interface{}
+	var provisioningError string
+
+	if researchUserService, err := s.getResearchUserService(); err == nil {
+		// Try to create or get existing research user
+		user, err := researchUserService.CreateResearchUser(username, &research.CreateResearchUserOptions{
+			GenerateSSHKey: true, // Automatically generate SSH keys
+		})
+		if err != nil {
+			// Log error but don't fail invitation acceptance
+			provisioningError = fmt.Sprintf("Research user provisioning failed: %v", err)
+		} else {
+			researchUser = user
+		}
+	} else {
+		provisioningError = fmt.Sprintf("Failed to initialize research user service: %v", err)
+	}
+
 	// Get project details
 	project, err := s.projectManager.GetProject(r.Context(), inv.ProjectID)
 	if err != nil {
@@ -346,10 +369,20 @@ func (s *Server) handleAcceptInvitation(w http.ResponseWriter, r *http.Request) 
 
 	// TODO: Send acceptance confirmation email via EmailSender
 
+	// Build response with provisioning status
 	response := map[string]interface{}{
 		"invitation": inv,
 		"project":    project,
 		"message":    "Invitation accepted successfully",
+	}
+
+	// Add provisioning information to response
+	if researchUser != nil {
+		response["research_user"] = researchUser
+		response["provisioning_status"] = "success"
+	} else if provisioningError != "" {
+		response["provisioning_status"] = "failed"
+		response["provisioning_error"] = provisioningError
 	}
 
 	w.Header().Set("Content-Type", "application/json")
