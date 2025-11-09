@@ -42,6 +42,7 @@ import (
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/api/client"
+	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/pricing"
 	"github.com/scttfrdmn/prism/pkg/profile"
 	"github.com/scttfrdmn/prism/pkg/project"
@@ -1627,6 +1628,27 @@ func (a *App) projectDelete(args []string) error {
 
 	fmt.Printf("🗑️ Project '%s' has been deleted\n", name)
 	return nil
+}
+
+// GetAWSManager creates an AWS manager using the current profile settings
+func (a *App) GetAWSManager() (*aws.Manager, error) {
+	// Determine AWS profile and region to use
+	awsProfile := a.config.AWS.Profile
+	awsRegion := a.config.AWS.Region
+
+	// Check if there's an active Prism profile that overrides config
+	if a.profileManager != nil {
+		if currentProfile, err := a.profileManager.GetCurrentProfile(); err == nil && currentProfile != nil {
+			awsProfile = currentProfile.AWSProfile
+			awsRegion = currentProfile.Region
+		}
+	}
+
+	// Create AWS manager with options
+	return aws.NewManager(aws.ManagerOptions{
+		Profile: awsProfile,
+		Region:  awsRegion,
+	})
 }
 
 // loadAPIKeyFromState attempts to load the API key from daemon state

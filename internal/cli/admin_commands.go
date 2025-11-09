@@ -29,6 +29,7 @@ Examples:
 	cmd.AddCommand(f.createPolicyCommand())
 	cmd.AddCommand(f.createRightsizingCommand())
 	cmd.AddCommand(f.createScalingCommand())
+	cmd.AddCommand(f.createZombiesCommand())
 
 	return cmd
 }
@@ -67,4 +68,10 @@ func (f *AdminCommandFactory) createScalingCommand() *cobra.Command {
 			return f.app.Scaling(args)
 		},
 	}
+}
+
+// createZombiesCommand creates the zombies subcommand
+func (f *AdminCommandFactory) createZombiesCommand() *cobra.Command {
+	zombiesCobra := NewZombiesCobraCommands(f.app)
+	return zombiesCobra.CreateZombiesCommand()
 }
