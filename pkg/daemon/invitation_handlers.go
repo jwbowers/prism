@@ -61,6 +61,10 @@ func (s *Server) handleInvitationOperations(w http.ResponseWriter, r *http.Reque
 	case strings.HasPrefix(path, "/api/v1/invitations/") && method == http.MethodDelete:
 		s.handleRevokeInvitation(w, r)
 
+	// POST /api/v1/invitations/quota-check - Check AWS quota for bulk invitations
+	case path == "/api/v1/invitations/quota-check" && method == http.MethodPost:
+		s.handleQuotaCheck(w, r)
+
 	// GET /api/v1/invitations/{token} - Get invitation by token
 	case strings.HasPrefix(path, "/api/v1/invitations/") && method == http.MethodGet:
 		s.handleGetInvitation(w, r)
@@ -591,5 +595,63 @@ func (s *Server) handleBulkInvitation(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
+}
+
+// QuotaCheckRequest represents a request to check AWS quotas for bulk invitations
+type QuotaCheckRequest struct {
+	InstanceType string `json:"instance_type"`
+	Count        int    `json:"count"` // Number of students/invitations
+	TemplateName string `json:"template_name,omitempty"`
+}
+
+// handleQuotaCheck checks AWS quotas for bulk invitation launch requirements
+// POST /api/v1/invitations/quota-check
+func (s *Server) handleQuotaCheck(w http.ResponseWriter, r *http.Request) {
+	var req QuotaCheckRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate request
+	if req.InstanceType == "" {
+		http.Error(w, "instance_type is required", http.StatusBadRequest)
+		return
+	}
+	if req.Count <= 0 {
+		http.Error(w, "count must be greater than 0", http.StatusBadRequest)
+		return
+	}
+
+	// Get AWS manager
+	if s.awsManager == nil {
+		http.Error(w, "AWS manager not initialized", http.StatusInternalServerError)
+		return
+	}
+
+	// Check quota
+	quotaCheck, err := s.awsManager.CheckQuotaForInvitations(r.Context(), req.InstanceType, req.Count)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to check quota: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Build response
+	response := map[string]interface{}{
+		"has_sufficient_quota": quotaCheck.HasSufficientQuota,
+		"required_vcpus":       quotaCheck.RequiredVCPUs,
+		"current_usage":        quotaCheck.CurrentUsage,
+		"quota_limit":          quotaCheck.QuotaLimit,
+		"available_vcpus":      quotaCheck.AvailableVCPUs,
+		"instance_type":        quotaCheck.InstanceType,
+	}
+
+	if !quotaCheck.HasSufficientQuota {
+		response["warning"] = quotaCheck.WarningMessage
+		w.WriteHeader(http.StatusPreconditionFailed) // 412 status for insufficient quota
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
