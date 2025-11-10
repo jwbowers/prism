@@ -5,6 +5,115 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.11] - 2025-11-09
+
+### 🎯 Focus: Complete User Invitation & Collaboration System
+
+**Production-ready invitation system enabling zero-configuration team onboarding**:
+- Individual, bulk, and shared token invitations with full lifecycle management
+- Automatic research user provisioning with SSH keys, UID/GID, and EFS home directories
+- AWS quota validation prevents bulk invitation failures
+- Professional Cloudscape GUI with QR code generation
+- End-to-end automation from invitation send to workspace access
+
+### Added
+
+- **Role-Based Permission System** (#102):
+  - Users automatically added to project.Members when accepting invitations
+  - Role validation enforces allowed values: owner, admin, member, viewer
+  - Duplicate member detection prevents re-adding existing users
+  - Graceful error handling for edge cases
+  - Automatic member addition in pkg/daemon/invitation_handlers.go
+
+- **Research User Auto-Provisioning** (#106):
+  - SSH key generation (Ed25519) and storage on invitation acceptance
+  - Deterministic UID/GID allocation ensuring consistent IDs across all instances
+  - EFS home directory configuration at `/efs/home/{username}`
+  - Complete user profile saved to `.prism` directory
+  - Graceful failures (provisioning errors don't block invitation acceptance)
+  - Integration in pkg/daemon/invitation_handlers.go
+
+- **AWS Quota Validation for Bulk Invitations** (#105):
+  - Pre-flight quota checking with detailed capacity analysis
+  - Instance type vCPU mapping for 50+ instance types (t3, t4g, c7g, m5, m6g, r5, g4dn, p3)
+  - Current usage calculation from running/pending instances
+  - AWS Service Quotas API integration for limit retrieval
+  - REST endpoint: `POST /api/v1/invitations/quota-check`
+  - Validation logic: `required_vcpus = count × instance_type_vcpus`
+  - New file: pkg/aws/quota.go (220+ lines)
+
+- **Invitation Management GUI** (#103):
+  - Professional Cloudscape-based GUI for invitation lifecycle management
+  - Individual invitations: Add by token, accept/decline with confirmation dialogs
+  - Bulk invitations: Send to multiple emails (comma/newline separated) with role selection
+  - Shared tokens: Create reusable tokens for classrooms/workshops with QR codes
+  - Status tracking: View all invitations with status badges (pending/accepted/declined/expired)
+  - Time display: Human-readable time remaining (e.g., "5 days remaining")
+  - Already implemented in cmd/prism-gui/frontend/src/App.tsx
+
+### Changed
+
+- **Invitation Acceptance Flow**:
+  - Now triggers automatic member addition with role validation
+  - Auto-provisions research users with complete SSH and filesystem setup
+  - Enhanced API response includes provisioning status and research user details
+
+- **Project Member Management**:
+  - Added role validation in AddProjectMember method (pkg/project/manager.go)
+  - Enforces valid roles: owner, admin, member, viewer
+  - Prevents duplicate member addition with graceful error handling
+
+### Technical Implementation
+
+- **Backend**:
+  - pkg/daemon/invitation_handlers.go: Member addition and auto-provisioning integration
+  - pkg/project/manager.go: Role validation (lines 272-281)
+  - pkg/aws/quota.go: Complete quota validation system (220+ lines)
+  - pkg/daemon/invitation_handlers.go: Quota check endpoint (lines 601-657)
+
+- **API Endpoints Added**:
+  - POST /api/v1/invitations/quota-check: Check AWS quota for bulk invitations
+
+- **Dependencies Added**:
+  - github.com/aws/aws-sdk-go-v2/service/servicequotas: AWS Service Quotas API
+
+- **Documentation**:
+  - docs/releases/RELEASE_NOTES_v0.5.11.md (500+ lines)
+  - docs/user-guides/INVITATION_USER_GUIDE.md (600+ lines)
+  - docs/USER_SCENARIOS/: Updated 3 persona walkthroughs with v0.5.11 features
+
+### Use Cases
+
+**University Class (50 Students)**:
+- Check quota for 50 students × t3.medium instances
+- Send bulk invitations with automatic member addition
+- Students auto-provisioned with SSH keys on acceptance
+- Zero manual configuration required
+
+**Research Lab (10 Researchers)**:
+- Send individual invitations with roles (admin/member)
+- Automatic research user provisioning with UID/GID consistency
+- SSH keys ready in `~/.prism/ssh_keys/`
+- EFS home directories at `/efs/home/{username}`
+
+**Conference Workshop (100 Attendees)**:
+- Create shared token for workshop with QR code
+- First-come-first-served redemption (limit: 100)
+- Attendees scan and redeem instantly
+- Auto-provisioning enables immediate workspace access
+
+### Breaking Changes
+
+None. This release is fully backward-compatible.
+
+### Commits
+
+- 58eef9691: Role-Based Permission System (#102)
+- 1348ac245: Research User Auto-Provisioning (#106)
+- 18618de01: AWS Quota Validation (#105)
+- bd78ea89b: Complete v0.5.11 documentation
+- bd3e6a8e0: Update persona walkthroughs for v0.5.11
+
 ## [0.5.10] - 2025-11-08
 
 ### 🎯 Focus: Multi-Project Budget System
