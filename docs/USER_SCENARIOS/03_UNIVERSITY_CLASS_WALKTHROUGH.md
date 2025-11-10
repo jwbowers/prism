@@ -144,7 +144,7 @@ prism delete temp-setup
 
 #### Week 3: Add Students Before Semester
 
-**✅ NEW (v0.5.12+): Bulk Invitations**
+**✅ NEW (v0.5.11): Bulk Invitations with Auto-Provisioning**
 
 ```bash
 # Export student roster from Canvas/university system to CSV
@@ -155,7 +155,25 @@ prism delete temp-setup
 # sophie.martinez@university.edu,member,Welcome to CS 229!
 # ... (47 more students)
 
-# Send bulk invitations (v0.5.12+)
+# Step 1: Check AWS quota before sending bulk invitations (v0.5.11 - Issue #105)
+curl -X POST http://localhost:8947/api/v1/invitations/quota-check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "instance_type": "t3.medium",
+    "count": 50
+  }'
+
+# Output:
+# {
+#   "has_sufficient_quota": true,
+#   "required_vcpus": 100,
+#   "current_usage": 8,
+#   "quota_limit": 128,
+#   "available_vcpus": 120
+# }
+# ✅ Quota check passed - safe to send 50 invitations
+
+# Step 2: Send bulk invitations (v0.5.11)
 prism project invitations bulk "CS229-Fall2024" \
   --file students.csv \
   --message "Welcome to CS 229! Please accept this invitation to access your course workspace." \
@@ -171,9 +189,16 @@ prism project invitations bulk "CS229-Fall2024" \
 #
 # All students will receive email invitations with:
 # - Project: CS229-Fall2024
-# - Role: member
+# - Role: member (automatically added on acceptance - Issue #102)
 # - Budget: $24.00 per student
 # - Expires: 14 days (deadline to accept)
+#
+# 💡 When students accept invitations (v0.5.11):
+#    ✅ Automatic project member addition with validated role (Issue #102)
+#    ✅ Research user auto-provisioning with SSH keys (Issue #106)
+#    ✅ UID/GID allocation for consistent file permissions
+#    ✅ EFS home directory setup at /efs/home/{username}
+#    ✅ Zero manual configuration required!
 #
 # 💡 Tip: Students who don't accept within 14 days will need a resend:
 #    prism project invitations resend <invitation-id>

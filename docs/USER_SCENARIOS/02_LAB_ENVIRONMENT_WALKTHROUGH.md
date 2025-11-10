@@ -356,6 +356,52 @@ prism volume create shared-data 500GB \
 
 ---
 
+### ✅ Inviting Visiting Collaborators (v0.5.11)
+
+**Scenario**: Dr. Smith invites Dr. Kim (external collaborator) for 3-month project
+
+```bash
+# Dr. Smith sends invitation to visiting scholar
+prism project invitation send "NIH-R01-2023" \
+  --email dr.kim@external.edu \
+  --role member \
+  --message "Welcome to our lab! Looking forward to our RNA-seq collaboration." \
+  --expires-in 7d
+
+# Output:
+# ✅ Invitation sent to dr.kim@external.edu
+#    Project: NIH-R01-2023
+#    Role: member
+#    Token: INV-8A7F2E...
+#    Expires: 7 days
+
+# Dr. Kim accepts invitation
+prism invitation accept INV-8A7F2E...
+
+# Prism automatically (v0.5.11):
+# ✅ Adds Dr. Kim to project members (Issue #102)
+# ✅ Creates research user "drkim" with SSH keys (Issue #106)
+# ✅ Allocates UID/GID for consistent file permissions
+# ✅ Sets up EFS home directory at /efs/home/drkim
+# ✅ Distributes SSH public key to all project instances
+
+# Dr. Kim can immediately launch workspaces
+prism launch bioinformatics-suite rnaseq-collab --project "NIH-R01-2023"
+
+# SSH access works instantly
+prism ssh rnaseq-collab
+# (Uses auto-provisioned SSH key from ~/.prism/ssh_keys/)
+```
+
+**v0.5.11 Auto-Provisioning Benefits**:
+- ✅ **Zero manual setup** - Dr. Kim ready to work in 2 minutes
+- ✅ **Automatic SSH keys** - No manual key exchange needed
+- ✅ **Consistent permissions** - Same UID/GID across all lab instances
+- ✅ **Persistent home directory** - Work preserved on EFS
+- ✅ **Role-based access** - Automatic project member addition with validated role
+
+---
+
 ## ⚠️ Current Pain Points: What Doesn't Work
 
 ### ❌ Problem 1: No Sub-Budget Hierarchy (Coming in v0.5.8+)

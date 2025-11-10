@@ -57,10 +57,27 @@ prism project create neurips-dl-workshop \
   --alert-threshold 80
 ```
 
-**✅ NEW (v0.5.13+): Shared Token Access** (Issue #241 - Ideal for workshops)
+**✅ NEW (v0.5.11): Shared Token Access with Auto-Provisioning** (Issue #103 - Ideal for workshops)
 
 ```bash
-# Generate single shared token for all 60 participants
+# Step 1: Check AWS quota for 60 workshop participants (v0.5.11 - Issue #105)
+curl -X POST http://localhost:8947/api/v1/invitations/quota-check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "instance_type": "t3.medium",
+    "count": 60
+  }'
+
+# Output:
+# {
+#   "has_sufficient_quota": true,
+#   "required_vcpus": 120,
+#   "current_usage": 8,
+#   "quota_limit": 192
+# }
+# ✅ Quota check passed - safe for 60 participants
+
+# Step 2: Generate single shared token for all 60 participants
 prism project invitations shared create neurips-dl-workshop \
   --name "NeurIPS Workshop Access" \
   --role member \
@@ -80,6 +97,12 @@ prism project invitations shared create neurips-dl-workshop \
 #    📧 Email: Include WORKSHOP-NEURIPS-2025-A4F2 in registration emails
 #    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2025-A4F2
 #    💡 This single token works for all 60 participants (first-come-first-served)
+#
+#    When participants accept (v0.5.11):
+#    ✅ Automatic project member addition (Issue #102)
+#    ✅ Research user auto-provisioning with SSH keys (Issue #106)
+#    ✅ UID/GID allocation for file consistency
+#    ✅ EFS home directory setup
 
 # Alex includes this token in workshop registration confirmation emails
 # OR displays it as QR code at workshop registration desk (QR generation coming soon)
@@ -91,6 +114,7 @@ prism project invitations shared create neurips-dl-workshop \
 - ✅ **No pre-registration**: Participants don't need to provide emails ahead of time
 - ✅ **First-come-first-served**: 60 redemptions then token becomes invalid
 - ✅ **Atomic redemption**: Thread-safe counter prevents over-redemption
+- ✅ **Auto-provisioning**: Research users with SSH keys created on redemption (v0.5.11)
 - 🔄 **QR code support**: Print token as QR code for easy mobile access (coming soon)
 
 💡 **Monitor Token Usage**:
