@@ -163,15 +163,41 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 	if s.rateLimiter != nil {
 		if err := s.rateLimiter.CheckAndRecordLaunch(); err != nil {
 			if rateLimitErr, ok := err.(*RateLimitError); ok {
+				// Get remaining quota for enhanced error message
+				status := s.rateLimiter.GetStatus()
+				remaining := status.MaxLaunches - rateLimitErr.Current
+
+				// Format retry time in user-friendly way
+				retrySeconds := int(rateLimitErr.RetryAfter.Seconds())
+				var retryTime string
+				if retrySeconds < 60 {
+					retryTime = fmt.Sprintf("%d seconds", retrySeconds)
+				} else {
+					retryMin := retrySeconds / 60
+					retrySec := retrySeconds % 60
+					if retrySec > 0 {
+						retryTime = fmt.Sprintf("%d minutes %d seconds", retryMin, retrySec)
+					} else {
+						retryTime = fmt.Sprintf("%d minutes", retryMin)
+					}
+				}
+
 				s.writeError(w, http.StatusTooManyRequests, fmt.Sprintf(
-					"Launch rate limit exceeded. You've launched %d instances in the last %d minute(s) (limit: %d per %d min). "+
-						"Please wait %d seconds before launching another instance. "+
-						"This limit prevents accidental cost overruns.",
+					"⛔ Launch rate limit exceeded\n\n"+
+						"Current Usage: %d/%d launches in last %d minute(s)\n"+
+						"Remaining Quota: %d launches available\n"+
+						"Next Available: %s\n\n"+
+						"💡 Actions:\n"+
+						"  • Wait %s and try again\n"+
+						"  • Check status: prism admin rate-limit status\n"+
+						"  • Adjust limits: prism admin rate-limit configure --max-launches <num>\n\n"+
+						"This limit prevents accidental cost overruns and AWS API throttling.",
 					rateLimitErr.Current,
-					int(rateLimitErr.Window.Minutes()),
 					rateLimitErr.Limit,
 					int(rateLimitErr.Window.Minutes()),
-					int(rateLimitErr.RetryAfter.Seconds()),
+					remaining,
+					retryTime,
+					retryTime,
 				))
 				return
 			}

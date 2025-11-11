@@ -142,6 +142,16 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	status := s.statusTracker.GetStatus(version.GetVersion(), awsRegion, currentProfile)
 	status.CurrentProfile = currentProfile
 
+	// Add rate limit status (v0.5.12)
+	if s.rateLimiter != nil {
+		rateLimitStatus := s.rateLimiter.GetStatus()
+		status.RateLimitEnabled = rateLimitStatus.Enabled
+		status.RateLimitMaxLaunches = rateLimitStatus.MaxLaunches
+		status.RateLimitWindow = int(rateLimitStatus.Window.Minutes())
+		status.RateLimitCurrent = rateLimitStatus.Current
+		status.RateLimitRemaining = rateLimitStatus.Remaining
+	}
+
 	_ = json.NewEncoder(w).Encode(status)
 }
 
