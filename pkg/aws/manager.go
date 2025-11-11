@@ -847,13 +847,17 @@ func (m *Manager) DeleteInstance(name string) error {
 	// Get regional EC2 client
 	regionalClient := m.getRegionalEC2Client(region)
 
-	// Terminate the instance
+	// Terminate the instance with retry logic for transient failures (v0.5.12)
 	ctx := context.Background()
-	_, err = regionalClient.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
-		InstanceIds: []string{instanceID},
+	err = WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		_, terminateErr := regionalClient.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
+			InstanceIds: []string{instanceID},
+		})
+		return terminateErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to terminate instance: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return EnhanceError(err, "Terminate instance")
 	}
 
 	return nil

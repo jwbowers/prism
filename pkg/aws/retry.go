@@ -24,7 +24,7 @@ type RetryConfig struct {
 // DefaultRetryConfig returns the default retry configuration
 func DefaultRetryConfig() *RetryConfig {
 	return &RetryConfig{
-		MaxAttempts:    3,
+		MaxAttempts:    5, // Issue #108: Max 5 retries for transient AWS failures
 		InitialDelay:   1 * time.Second,
 		MaxDelay:       30 * time.Second,
 		Multiplier:     2.0,
@@ -44,6 +44,11 @@ func DefaultRetryConfig() *RetryConfig {
 			"InternalFailure",
 			"InternalServerError",
 			"SlowDown",
+
+			// AWS capacity errors (Issue #108)
+			"InsufficientInstanceCapacity",
+			"InsufficientCapacity",
+			"InstanceLimitExceeded",
 
 			// Network errors
 			"RequestTimeout",
