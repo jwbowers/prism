@@ -19,7 +19,7 @@
   <a href="https://goreportcard.com/report/github.com/scttfrdmn/prism">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/scttfrdmn/prism?style=flat&cachebust=1">
   </a>
-  <a href="https://github.com/scttfrdmn/prism/blob/main/cmd/cws-gui/frontend/eslint.config.js">
+  <a href="https://github.com/scttfrdmn/prism/blob/main/cmd/prism-gui/frontend/eslint.config.js">
     <img alt="ESLint" src="https://img.shields.io/badge/ESLint-A%2B-success?logo=eslint&logoColor=white">
   </a>
 </p>
@@ -29,6 +29,8 @@
 Prism provides researchers with **pre-configured cloud workstations** for data analysis, machine learning, and computational research. Launch production-ready environments without manual configuration.
 
 **From individual researchers to institutional deployments** - research computing made simple, scalable, and cost-effective.
+
+**Learn more at [prismcloud.io](https://prismcloud.io)**
 
 ## 🎯 Core Design Principles
 
@@ -52,30 +54,30 @@ brew install scttfrdmn/tap/prism
 **Manual Installation**
 ```bash
 # Download and extract
-curl -L https://github.com/scttfrdmn/prism/releases/latest/download/prism_0.5.4_darwin_arm64.tar.gz | tar xz
+curl -L https://github.com/scttfrdmn/prism/releases/latest/download/prism_0.5.11_darwin_arm64.tar.gz | tar xz
 
 # Install binaries
-sudo mv prism cwsd /usr/local/bin/
+sudo mv prism prismd /usr/local/bin/
 ```
 
 ### Linux
 
 **Debian/Ubuntu**
 ```bash
-wget https://github.com/scttfrdmn/prism/releases/download/v0.5.4/prism_0.5.4_linux_amd64.deb
-sudo dpkg -i prism_0.5.4_linux_amd64.deb
+wget https://github.com/scttfrdmn/prism/releases/download/v0.5.11/prism_0.5.11_linux_amd64.deb
+sudo dpkg -i prism_0.5.11_linux_amd64.deb
 ```
 
 **RHEL/CentOS/Fedora**
 ```bash
-wget https://github.com/scttfrdmn/prism/releases/download/v0.5.4/prism_0.5.4_linux_amd64.rpm
-sudo rpm -i prism_0.5.4_linux_amd64.rpm
+wget https://github.com/scttfrdmn/prism/releases/download/v0.5.11/prism_0.5.11_linux_amd64.rpm
+sudo rpm -i prism_0.5.11_linux_amd64.rpm
 ```
 
 **Alpine Linux**
 ```bash
-wget https://github.com/scttfrdmn/prism/releases/download/v0.5.4/prism_0.5.4_linux_amd64.apk
-sudo apk add --allow-untrusted prism_0.5.4_linux_amd64.apk
+wget https://github.com/scttfrdmn/prism/releases/download/v0.5.11/prism_0.5.11_linux_amd64.apk
+sudo apk add --allow-untrusted prism_0.5.11_linux_amd64.apk
 ```
 
 ### Windows
@@ -97,7 +99,7 @@ scoop install prism
 
 ### First-Time Users: Interactive Wizard (⏱️ 30 seconds)
 
-**New in v0.5.8**: Launch your first workspace with a guided wizard!
+Launch your first workspace with a guided wizard!
 
 ```bash
 # Configure AWS credentials (if not already set up)
@@ -256,7 +258,7 @@ prism doctor                      # System health check
 ```
 
 **Guides:**
-- [AWS Setup Guide](AWS_SETUP_GUIDE.md) - AWS account and credential configuration
+- [AWS Setup Guide](docs/user-guides/AWS_SETUP_GUIDE.md) - AWS account and credential configuration
 - [Installation Guide](INSTALL.md) - Comprehensive installation instructions
 - [Budget System Philosophy](docs/BUDGET_PHILOSOPHY.md) - Multi-budget system design and conceptual model (v0.5.10+)
 - [Budget Banking Philosophy](docs/BUDGET_BANKING_PHILOSOPHY.md) - Surplus tracking and burst budgeting
@@ -266,7 +268,27 @@ prism doctor                      # System health check
 
 ## 🗓️ Version History
 
-### v0.5.8 (Current) - Quick Start Experience & Reliability
+### v0.5.11 (Current) - Complete User Invitation & Collaboration System
+- **User Invitation System**: Individual, bulk, and shared token invitations with full lifecycle management
+- **Automatic Provisioning**: Research users created with SSH keys, UID/GID, and EFS home directories on invitation acceptance
+- **Quota Validation**: Pre-flight AWS capacity checking prevents bulk invitation failures
+- **Professional GUI**: Cloudscape-based invitation management interface with QR code generation
+- **Zero Manual Setup**: End-to-end automation from invitation send to workspace access
+
+### v0.5.10 - Multi-Project Budget System & Rebranding
+- **Multi-Project Budgets**: Projects can reference multiple budgets for complex funding scenarios
+- **Budget Surplus Banking**: Track and leverage surplus funds for burst research needs
+- **Budget Performance Metrics**: ROI analysis, utilization tracking, and forecasting
+- **Complete Prism Rebrand**: CloudWorkStation → Prism across entire codebase (29,225 files)
+- **Binary Rename**: `cws`/`cwsd` → `prism`/`prismd`
+
+### v0.5.9 - Navigation Restructure & UX Polish
+- **Streamlined Navigation**: 14 → 6 top-level menu items for clearer workspace focus
+- **Unified Storage**: Single storage interface combining EFS and EBS management
+- **Hierarchical Settings**: Advanced features organized under collapsible settings
+- **Terminal/WebView Integration**: Merged into workspaces view for better context
+
+### v0.5.8 - Quick Start Experience & Reliability
 - **Quick Start Wizard**: Launch first workspace in 30 seconds with GUI wizard
 - **CLI Init Command**: Interactive `prism init` onboarding in terminal
 - **Workspace Terminology**: Consistent "workspace" naming across all interfaces
@@ -278,6 +300,17 @@ prism doctor                      # System health check
 - **Template File Provisioning**: Provision files directly from template definitions
 - **AWS Cost Testing**: Complete integration test suite with cost tracking
 - **Instance Lifecycle Testing**: Full workflow validation including cleanup
+
+### v0.5.6 - Complete Prism Rebrand
+- **Project Rename**: CloudWorkStation → Prism (complete rebrand)
+- **Repository Rename**: `cloudworkstation` → `prism` on GitHub
+- **Configuration Directory**: `.cloudworkstation` → `.prism`
+- **Module Path Update**: Complete Go module path migration
+
+### v0.5.5 - AWS Research Services Integration
+- **EMR Studio**: Big data analytics and Spark-based research
+- **Amazon Braket**: Quantum computing research access
+- **Web Service Framework**: Unified interface for EC2 + AWS research services
 
 ### v0.5.4 - Universal Version System
 - **Dynamic OS Versions**: Choose OS versions at launch time with `--version` flag
@@ -331,8 +364,8 @@ make test
 - **System Check**: `prism doctor`
 - **Issues**: [GitHub Issues](https://github.com/scttfrdmn/prism/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/scttfrdmn/prism/discussions)
-- **AWS Setup**: See [AWS Setup Guide](AWS_SETUP_GUIDE.md)
+- **AWS Setup**: See [AWS Setup Guide](docs/user-guides/AWS_SETUP_GUIDE.md)
 
 ---
 
-**Prism v0.5.4** - Research computing environments made accessible
+**Prism v0.5.11** - Research computing environments made accessible | [prismcloud.io](https://prismcloud.io)
