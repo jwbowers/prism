@@ -30,6 +30,7 @@ Examples:
 	cmd.AddCommand(f.createRightsizingCommand())
 	cmd.AddCommand(f.createScalingCommand())
 	cmd.AddCommand(f.createZombiesCommand())
+	cmd.AddCommand(f.createRateLimitCommand())
 
 	return cmd
 }
@@ -74,4 +75,10 @@ func (f *AdminCommandFactory) createScalingCommand() *cobra.Command {
 func (f *AdminCommandFactory) createZombiesCommand() *cobra.Command {
 	zombiesCobra := NewZombiesCobraCommands(f.app)
 	return zombiesCobra.CreateZombiesCommand()
+}
+
+// createRateLimitCommand creates the rate-limit subcommand
+func (f *AdminCommandFactory) createRateLimitCommand() *cobra.Command {
+	rateLimitCobra := NewRateLimitCobraCommands(f.app)
+	return rateLimitCobra.CreateRateLimitCommand()
 }

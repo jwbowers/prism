@@ -717,6 +717,11 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/security/health", applyMiddleware(s.handleSecurityHealth))
 	mux.HandleFunc("/api/v1/security/dashboard", applyMiddleware(s.handleSecurityDashboard))
 	mux.HandleFunc("/api/v1/security/correlations", applyMiddleware(s.handleSecurityCorrelations))
+
+	// Rate limiting management endpoints (v0.5.12 Issue #107)
+	mux.HandleFunc("/api/v1/rate-limit/status", applyMiddleware(s.handleRateLimitStatus))
+	mux.HandleFunc("/api/v1/rate-limit/configure", applyMiddleware(s.handleRateLimitConfigure))
+	mux.HandleFunc("/api/v1/rate-limit/reset", applyMiddleware(s.handleRateLimitReset))
 	mux.HandleFunc("/api/v1/security/keychain", applyMiddleware(s.handleSecurityKeychain))
 	mux.HandleFunc("/api/v1/security/config", applyMiddleware(s.handleSecurityConfig))
 	// AWS Compliance validation endpoints
