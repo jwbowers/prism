@@ -284,11 +284,12 @@ func (a *App) Launch(args []string) error {
 
 	response, err := a.apiClient.LaunchInstance(a.ctx, req)
 
-	spinner.StopWithMessage(fmt.Sprintf("✅ %s", response.Message))
-
 	if err != nil {
+		spinner.Stop()
 		return WrapAPIError("launch workspace "+req.Name, err)
 	}
+
+	spinner.StopWithMessage(fmt.Sprintf("✅ %s", response.Message))
 
 	// Show project information if launched in a project
 	if req.ProjectID != "" {
