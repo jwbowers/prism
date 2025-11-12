@@ -24,6 +24,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/security"
 	"github.com/scttfrdmn/prism/pkg/state"
+	"github.com/scttfrdmn/prism/pkg/throttle"
 )
 
 // Server represents the Prism daemon server
@@ -58,9 +59,10 @@ type Server struct {
 	stateMonitor *StateMonitor
 
 	// Cost optimization components
-	budgetTracker *project.BudgetTracker
-	alertManager  *cost.AlertManager
-	rateLimiter   *RateLimiter // Launch rate limiting (v0.5.12)
+	budgetTracker   *project.BudgetTracker
+	alertManager    *cost.AlertManager
+	rateLimiter     *RateLimiter              // Launch rate limiting (v0.5.12)
+	launchThrottler *throttle.LaunchThrottler // Advanced launch throttling (v0.6.0)
 
 	// Template marketplace components
 	marketplaceRegistry *marketplace.Registry
