@@ -1,8 +1,10 @@
 # Nice DCV Architecture for Desktop Applications
 
-**Status**: Planned for v0.6.1 (September-October 2026)
-**Last Updated**: November 3, 2025
+**Status**: In Development for v0.5.14 (December 2025)
+**Last Updated**: November 12, 2025
 **Reference Project**: [Lens](https://github.com/scttfrdmn/lens) - Working DCV implementation
+**GitHub Issues**: [#253](https://github.com/scttfrdmn/prism/issues/253), [#254](https://github.com/scttfrdmn/prism/issues/254), [#255](https://github.com/scttfrdmn/prism/issues/255), [#256](https://github.com/scttfrdmn/prism/issues/256)
+**Milestone**: [v0.5.14](https://github.com/scttfrdmn/prism/milestone/33)
 
 ## Overview
 
