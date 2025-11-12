@@ -18,6 +18,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -219,8 +220,7 @@ func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, nam
 	localPort := 8443
 	fmt.Printf("📡 Starting secure tunnel to DCV server (port %d → localhost:%d)...\n", dcvPort, localPort)
 
-	// TODO: Implement SSM port forwarding
-	// For now, show what would happen
+	// Display connection details if verbose
 	if verbose {
 		fmt.Printf("\n🔧 Connection Details:\n")
 		fmt.Printf("   Remote DCV Port: %d\n", dcvPort)
@@ -228,6 +228,15 @@ func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, nam
 		fmt.Printf("   Instance ID: %s\n", instance.ID)
 		fmt.Printf("   DCV URL: https://localhost:%d\n", localPort)
 	}
+
+	// Start SSM port forwarding session in background
+	if err := ic.startSSMPortForwarding(instance.ID, dcvPort, localPort, verbose); err != nil {
+		return fmt.Errorf("failed to start SSM port forwarding: %w", err)
+	}
+
+	// Wait a moment for tunnel to establish
+	fmt.Printf("⏳ Waiting for tunnel to establish...\n")
+	time.Sleep(2 * time.Second)
 
 	// Display credentials
 	fmt.Printf("\n🔑 DCV Connection Credentials:\n")
@@ -239,13 +248,20 @@ func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, nam
 	fmt.Printf("\n🌐 Opening DCV session in browser...\n")
 	fmt.Printf("   URL: %s\n", dcvURL)
 
-	// TODO: Actually open browser
-	// For now, just display instructions
-	fmt.Printf("\n💡 To connect:\n")
-	fmt.Printf("   1. Port forwarding will start automatically\n")
-	fmt.Printf("   2. Browser will open to DCV session\n")
-	fmt.Printf("   3. Login with the credentials above\n")
-	fmt.Printf("   4. Your desktop environment will appear in the browser\n")
+	// Open browser
+	if err := openBrowser(dcvURL); err != nil {
+		fmt.Printf("⚠️  Could not auto-open browser: %v\n", err)
+		fmt.Printf("   Please open manually: %s\n", dcvURL)
+	} else {
+		fmt.Printf("✅ Browser opened\n")
+	}
+
+	// Display usage instructions
+	fmt.Printf("\n💡 Connection Instructions:\n")
+	fmt.Printf("   1. Your browser will warn about self-signed certificate - click 'Advanced' and proceed\n")
+	fmt.Printf("   2. Login with username: %s\n", instance.Username)
+	fmt.Printf("   3. Your desktop environment will appear in the browser window\n")
+	fmt.Printf("   4. The tunnel will stay open until you close it with Ctrl+C\n")
 
 	if verbose {
 		fmt.Printf("\n📚 DCV Features:\n")
@@ -255,6 +271,50 @@ func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, nam
 		fmt.Printf("   • File transfer via browser\n")
 	}
 
+	// Keep the connection open
+	fmt.Printf("\n🔒 Tunnel is active. Press Ctrl+C to disconnect...\n")
+
+	// Block until user interrupts (Ctrl+C)
+	// The SSM session will be terminated when the process exits
+	select {}
+}
+
+// startSSMPortForwarding starts an AWS SSM port forwarding session in the current process
+func (ic *InstanceCommands) startSSMPortForwarding(instanceID string, remotePort, localPort int, verbose bool) error {
+	// Build SSM parameters JSON
+	parameters := fmt.Sprintf(`{"portNumber":["%d"],"localPortNumber":["%d"]}`, remotePort, localPort)
+
+	// Build AWS SSM command
+	cmd := exec.Command("aws", "ssm", "start-session",
+		"--target", instanceID,
+		"--document-name", "AWS-StartPortForwardingSession",
+		"--parameters", parameters,
+	)
+
+	if verbose {
+		fmt.Printf("🔧 SSM Command: %s %s\n", cmd.Path, strings.Join(cmd.Args[1:], " "))
+	}
+
+	// Set up output
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start SSM session: %w", err)
+	}
+
+	// Wait for the command to complete (this will block until Ctrl+C)
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			// Only print error if it's not due to user interrupt
+			if !strings.Contains(err.Error(), "signal: interrupt") {
+				fmt.Printf("\n⚠️  SSM session ended: %v\n", err)
+			}
+		}
+	}()
+
+	fmt.Printf("✅ SSM tunnel started\n")
 	return nil
 }
 
