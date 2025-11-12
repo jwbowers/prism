@@ -206,6 +206,12 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Check advanced launch throttling (v0.6.0)
+	// Multi-scope throttling with per-user, per-project limits and budget awareness
+	if !s.checkLaunchThrottling(&req, w) {
+		return // Error response already written by checkLaunchThrottling
+	}
+
 	// Resolve funding allocation (v0.5.10+)
 	if req.ProjectID != "" {
 		if err := s.resolveFundingAllocation(&req, w); err != nil {

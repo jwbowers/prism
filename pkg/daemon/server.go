@@ -217,6 +217,16 @@ func NewServer(port string) (*Server, error) {
 	rateLimiter := NewRateLimiter(2, time.Minute)
 	log.Printf("Launch rate limiter initialized: 2 launches per minute")
 
+	// Initialize advanced launch throttling (v0.6.0)
+	// Default: Disabled (opt-in), can be configured via API
+	throttleConfig := throttle.DefaultConfig()
+	launchThrottler := throttle.NewLaunchThrottler(throttleConfig)
+	if throttleConfig.Enabled {
+		log.Printf("Launch throttling enabled: %d launches per %s", throttleConfig.MaxLaunches, throttleConfig.TimeWindow)
+	} else {
+		log.Printf("Launch throttling initialized (disabled by default, use API to enable)")
+	}
+
 	// Initialize template marketplace registry
 	marketplaceConfig := &marketplace.MarketplaceConfig{
 		RegistryEndpoint:      "https://marketplace.prism.org",
@@ -298,6 +308,7 @@ func NewServer(port string) (*Server, error) {
 		budgetTracker:       budgetTracker,
 		alertManager:        alertManager,
 		rateLimiter:         rateLimiter,
+		launchThrottler:     launchThrottler,
 		marketplaceRegistry: marketplaceRegistry,
 		tunnelManager:       tunnelManager,
 		cloudwatchClient:    cloudwatchClient,
@@ -724,6 +735,14 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/rate-limit/status", applyMiddleware(s.handleRateLimitStatus))
 	mux.HandleFunc("/api/v1/rate-limit/configure", applyMiddleware(s.handleRateLimitConfigure))
 	mux.HandleFunc("/api/v1/rate-limit/reset", applyMiddleware(s.handleRateLimitReset))
+
+	// Launch throttling endpoints (v0.6.0 Issue #90)
+	mux.HandleFunc("/api/v1/throttling/status", applyMiddleware(s.handleThrottlingStatus))
+	mux.HandleFunc("/api/v1/throttling/configure", applyMiddleware(s.handleThrottlingConfigure))
+	mux.HandleFunc("/api/v1/throttling/remaining", applyMiddleware(s.handleThrottlingRemaining))
+	mux.HandleFunc("/api/v1/throttling/projects/overrides", applyMiddleware(s.handleListProjectOverrides))
+	mux.HandleFunc("/api/v1/throttling/projects/", applyMiddleware(s.handleProjectThrottlingOperations))
+
 	mux.HandleFunc("/api/v1/security/keychain", applyMiddleware(s.handleSecurityKeychain))
 	mux.HandleFunc("/api/v1/security/config", applyMiddleware(s.handleSecurityConfig))
 	// AWS Compliance validation endpoints

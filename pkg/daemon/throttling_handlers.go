@@ -160,6 +160,29 @@ func (s *Server) handleListProjectOverrides(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// handleProjectThrottlingOperations routes project-specific throttling operations
+// POST /api/v1/throttling/projects/{projectID}/override - Set override
+// DELETE /api/v1/throttling/projects/{projectID}/override - Remove override
+func (s *Server) handleProjectThrottlingOperations(w http.ResponseWriter, r *http.Request) {
+	// Extract path after /api/v1/throttling/projects/
+	path := r.URL.Path[len("/api/v1/throttling/projects/"):]
+
+	// Check if it's an override operation
+	if strings.HasSuffix(path, "/override") {
+		switch r.Method {
+		case http.MethodPost:
+			s.handleSetProjectOverride(w, r)
+		case http.MethodDelete:
+			s.handleRemoveProjectOverride(w, r)
+		default:
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		}
+		return
+	}
+
+	s.writeError(w, http.StatusNotFound, "Not found")
+}
+
 // checkLaunchThrottling checks if a launch is allowed under throttling rules
 // This is called from handleLaunchInstance before actually launching
 func (s *Server) checkLaunchThrottling(req *types.LaunchRequest, w http.ResponseWriter) bool {
