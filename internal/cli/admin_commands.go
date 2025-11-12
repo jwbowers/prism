@@ -32,6 +32,7 @@ Examples:
 	cmd.AddCommand(f.createZombiesCommand())
 	cmd.AddCommand(f.createRateLimitCommand())
 	cmd.AddCommand(f.createThrottlingCommand())
+	cmd.AddCommand(f.createSleepWakeCommand())
 
 	return cmd
 }
@@ -88,4 +89,10 @@ func (f *AdminCommandFactory) createRateLimitCommand() *cobra.Command {
 func (f *AdminCommandFactory) createThrottlingCommand() *cobra.Command {
 	throttlingCobra := NewThrottlingCobraCommands(f.app)
 	return throttlingCobra.CreateThrottlingCommand()
+}
+
+// createSleepWakeCommand creates the sleep-wake subcommand
+func (f *AdminCommandFactory) createSleepWakeCommand() *cobra.Command {
+	sleepWakeCobra := NewSleepWakeCobraCommands(f.app)
+	return sleepWakeCobra.CreateSleepWakeCommand()
 }

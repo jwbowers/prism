@@ -1,6 +1,6 @@
 # Technical Debt and Enhancement Backlog
 
-**Last Updated**: October 25, 2025
+**Last Updated**: November 12, 2025
 **Status**: Active tracking of deferred implementations
 
 This document tracks features that were intentionally deferred during development, marked as design decisions rather than immediate TODO items. These represent real work that should be scheduled for future releases.
@@ -565,6 +565,32 @@ Recommendations:
 
 ---
 
+## Platform-Specific Issues
+
+### 12. macOS IOKit API Deprecation Warning
+**Location**: `pkg/sleepwake/monitor_darwin.go:22`
+**Current Issue**: `kIOMasterPortDefault` deprecated in macOS 12.0+
+**Impact**: Compiler warning during build (non-blocking, functionality works)
+**Warning Message**:
+```
+monitor_darwin.go:22:44: warning: 'kIOMasterPortDefault' is deprecated:
+first deprecated in macOS 12.0 [-Wdeprecated-declarations]
+```
+**Implementation Needed**:
+- Replace `kIOMasterPortDefault` with `kIOMainPortDefault` (macOS 12.0+)
+- Add conditional compilation for older macOS versions if needed
+- Alternative: Use `IOMainPort(kNilOptions, &mainPort)` for dynamic port acquisition
+**Context**: Issue #91 - Sleep/Wake Monitoring Implementation
+**Target Release**: v0.6.0 (when minimum macOS version is raised)
+**Effort**: Low (1-2 hours)
+**Priority**: Low - API still works, warning only, will be addressed during macOS version bump
+**Notes**:
+- Current implementation uses static inline functions to avoid linker conflicts
+- Functionality fully working on all macOS versions including latest
+- Will fix when Prism's minimum macOS requirement is raised to 12.0+
+
+---
+
 ## Implementation Strategy
 
 ### Phase Assignments
@@ -606,13 +632,13 @@ Recommendations:
 
 ## Tracking Metrics
 
-- **Total Items**: 14 (added Capacity Blocks for ML)
+- **Total Items**: 15 (added macOS IOKit deprecation)
 - **Completed**: 2 items (SSH Readiness Progress, IAM Instance Profile Validation)
-- **Remaining**: 12 items
+- **Remaining**: 13 items
 - **High Priority**: 4 items (AWS Quota Management, Multi-User Auth, Auto-Update, GUI System Tray)
 - **Medium Priority**: 5 items (includes Capacity Blocks for ML)
-- **Low Priority**: 3 items
-- **Estimated Remaining Effort**: 16-18 weeks of development time (added 4 weeks for Capacity Blocks)
+- **Low Priority**: 4 items (includes macOS IOKit deprecation, Cobra Flag System)
+- **Estimated Remaining Effort**: 16-18 weeks of development time (deprecation fix is minimal effort)
 
 ---
 

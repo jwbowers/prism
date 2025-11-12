@@ -23,6 +23,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/profile"
 	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/security"
+	"github.com/scttfrdmn/prism/pkg/sleepwake"
 	"github.com/scttfrdmn/prism/pkg/state"
 	"github.com/scttfrdmn/prism/pkg/throttle"
 )
@@ -63,6 +64,9 @@ type Server struct {
 	alertManager    *cost.AlertManager
 	rateLimiter     *RateLimiter              // Launch rate limiting (v0.5.12)
 	launchThrottler *throttle.LaunchThrottler // Advanced launch throttling (v0.6.0)
+
+	// Sleep/wake monitoring (v0.5.7 - Issue #91)
+	sleepWakeMonitor *sleepwake.Monitor // Automatic hibernation on system sleep
 
 	// Template marketplace components
 	marketplaceRegistry *marketplace.Registry
@@ -324,6 +328,18 @@ func NewServer(port string) (*Server, error) {
 	// Initialize launch manager (if needed)
 	// server.launchManager = NewLaunchManager(server)
 
+	// Initialize sleep/wake monitor (v0.5.7 - Issue #91)
+	sleepWakeConfig := sleepwake.DefaultConfig()
+	instanceManager := newInstanceManager(server)
+	sleepWakeMonitor, err := sleepwake.NewMonitor(sleepWakeConfig, instanceManager)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize sleep/wake monitor: %v", err)
+		// Non-fatal: continue without sleep/wake monitoring
+	} else {
+		server.sleepWakeMonitor = sleepWakeMonitor
+		log.Printf("Sleep/wake monitor initialized (platform: %s)", sleepWakeMonitor.GetStatus().Platform)
+	}
+
 	// Setup HTTP routes
 	mux := http.NewServeMux()
 	server.setupRoutes(mux)
@@ -435,6 +451,17 @@ func (s *Server) Start() error {
 	// Start integrated autonomous monitoring if idle detection is enabled
 	s.startIntegratedMonitoring()
 
+	// Start sleep/wake monitor (v0.5.7 - Issue #91)
+	if s.sleepWakeMonitor != nil {
+		if err := s.sleepWakeMonitor.Start(); err != nil {
+			log.Printf("Warning: Failed to start sleep/wake monitor: %v", err)
+			s.stabilityManager.RecordError("sleepwake", "startup_failed", err.Error(), ErrorSeverityMedium)
+		} else {
+			log.Printf("Sleep/wake monitor started successfully")
+			s.stabilityManager.RecordRecovery("sleepwake", "startup_failed")
+		}
+	}
+
 	// Handle graceful shutdown with recovery manager
 	go func() {
 		c := make(chan os.Signal, 1)
@@ -458,6 +485,13 @@ func (s *Server) Start() error {
 
 		// Stop integrated monitoring
 		s.stopIntegratedMonitoring()
+
+		// Stop sleep/wake monitor (v0.5.7 - Issue #91)
+		if s.sleepWakeMonitor != nil {
+			if err := s.sleepWakeMonitor.Stop(); err != nil {
+				log.Printf("Warning: Failed to stop sleep/wake monitor: %v", err)
+			}
+		}
 
 		// Stop state monitor (v0.5.8)
 		s.stateMonitor.Stop()
@@ -488,6 +522,13 @@ func (s *Server) Stop() error {
 
 	// Stop integrated monitoring
 	s.stopIntegratedMonitoring()
+
+	// Stop sleep/wake monitor (v0.5.7 - Issue #91)
+	if s.sleepWakeMonitor != nil {
+		if err := s.sleepWakeMonitor.Stop(); err != nil {
+			log.Printf("Warning: Failed to stop sleep/wake monitor: %v", err)
+		}
+	}
 
 	// Stop state monitor (v0.5.8)
 	s.stateMonitor.Stop()
@@ -742,6 +783,9 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/throttling/remaining", applyMiddleware(s.handleThrottlingRemaining))
 	mux.HandleFunc("/api/v1/throttling/projects/overrides", applyMiddleware(s.handleListProjectOverrides))
 	mux.HandleFunc("/api/v1/throttling/projects/", applyMiddleware(s.handleProjectThrottlingOperations))
+
+	// Sleep/wake monitoring endpoints (v0.5.7 Issue #91)
+	s.RegisterSleepWakeRoutes(mux, applyMiddleware)
 
 	mux.HandleFunc("/api/v1/security/keychain", applyMiddleware(s.handleSecurityKeychain))
 	mux.HandleFunc("/api/v1/security/config", applyMiddleware(s.handleSecurityConfig))
