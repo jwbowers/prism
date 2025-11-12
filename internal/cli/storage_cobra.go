@@ -111,6 +111,45 @@ For shared storage (EFS), use 'prism volume' commands.`,
 				return sc.app.Storage([]string{"info", args[0]})
 			},
 		},
+		&cobra.Command{
+			Use:   "upload <local-file> <s3-bucket> <s3-key>",
+			Short: "Upload file to S3 with progress tracking",
+			Args:  cobra.ExactArgs(3),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"upload", args[0], args[1], args[2]})
+			},
+		},
+		&cobra.Command{
+			Use:   "download <s3-bucket> <s3-key> <local-file>",
+			Short: "Download file from S3 with progress tracking",
+			Args:  cobra.ExactArgs(3),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"download", args[0], args[1], args[2]})
+			},
+		},
+		&cobra.Command{
+			Use:   "transfers",
+			Short: "List active file transfers",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"transfers"})
+			},
+		},
+		&cobra.Command{
+			Use:   "transfer <transfer-id>",
+			Short: "Show transfer status",
+			Args:  cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"transfer", args[0]})
+			},
+		},
+		&cobra.Command{
+			Use:   "cancel <transfer-id>",
+			Short: "Cancel an active transfer",
+			Args:  cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"cancel", args[0]})
+			},
+		},
 		deleteCmd,
 	)
 

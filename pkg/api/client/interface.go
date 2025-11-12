@@ -7,6 +7,7 @@ import (
 
 	"github.com/scttfrdmn/prism/pkg/idle"
 	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/storage"
 	"github.com/scttfrdmn/prism/pkg/templates"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
@@ -143,6 +144,12 @@ type PrismAPI interface {
 	ExportRightsizingData(context.Context, string) ([]types.InstanceMetrics, error)
 	GetRightsizingSummary(context.Context) (*types.RightsizingSummaryResponse, error)
 	GetInstanceMetrics(context.Context, string, int) ([]types.InstanceMetrics, error)
+
+	// Transfer operations (S3-backed file transfer)
+	StartTransfer(context.Context, TransferRequest) (*TransferResponse, error)
+	GetTransferStatus(context.Context, string) (*storage.TransferProgress, error)
+	ListTransfers(context.Context) ([]*storage.TransferProgress, error)
+	CancelTransfer(context.Context, string) error
 
 	// Status operations
 	GetStatus(context.Context) (*types.DaemonStatus, error)

@@ -20,7 +20,10 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+	"time"
 
+	"github.com/scttfrdmn/prism/pkg/api/client"
+	"github.com/scttfrdmn/prism/pkg/storage"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -245,8 +248,18 @@ func (sc *StorageCommands) Storage(args []string) error {
 		return sc.storageDetach(storageArgs)
 	case "delete":
 		return sc.storageDelete(storageArgs)
+	case "upload":
+		return sc.storageUpload(storageArgs)
+	case "download":
+		return sc.storageDownload(storageArgs)
+	case "transfers":
+		return sc.storageTransfersList(storageArgs)
+	case "transfer":
+		return sc.storageTransferStatus(storageArgs)
+	case "cancel":
+		return sc.storageTransferCancel(storageArgs)
 	default:
-		return NewValidationError("storage action", action, "create, list, info, attach, detach, delete")
+		return NewValidationError("storage action", action, "create, list, info, attach, detach, delete, upload, download, transfers, transfer, cancel")
 	}
 }
 
@@ -454,5 +467,226 @@ func (sc *StorageCommands) storageDelete(args []string) error {
 	}
 
 	fmt.Printf("%s\n", FormatProgressMessage("Deleting storage", name))
+	return nil
+}
+
+// S3 Transfer operations (Issue #64)
+
+func (sc *StorageCommands) storageUpload(args []string) error {
+	if len(args) < 3 {
+		return NewUsageError("prism storage upload <local-file> <s3-bucket> <s3-key>", "prism storage upload data.csv my-bucket research/data.csv")
+	}
+
+	localPath := args[0]
+	s3Bucket := args[1]
+	s3Key := args[2]
+
+	req := client.TransferRequest{
+		Type:      "upload",
+		LocalPath: localPath,
+		S3Bucket:  s3Bucket,
+		S3Key:     s3Key,
+		Options: &storage.TransferOptions{
+			PartSize:    5 * 1024 * 1024, // 5MB chunks
+			Concurrency: 5,
+		},
+	}
+
+	spinner := NewSpinner(fmt.Sprintf("Uploading '%s' to s3://%s/%s", localPath, s3Bucket, s3Key))
+	spinner.Start()
+
+	response, err := sc.app.apiClient.StartTransfer(sc.app.ctx, req)
+	if err != nil {
+		spinner.Stop()
+		return WrapAPIError("start upload", err)
+	}
+
+	// Poll for progress
+	transferID := response.TransferID
+	for {
+		progress, err := sc.app.apiClient.GetTransferStatus(sc.app.ctx, transferID)
+		if err != nil {
+			spinner.Stop()
+			return WrapAPIError("get transfer status", err)
+		}
+
+		if progress.Status == storage.TransferStatusCompleted {
+			spinner.StopWithMessage(fmt.Sprintf("✅ Upload complete: %s (%.2f MB)", localPath, float64(progress.TransferredBytes)/(1024*1024)))
+			return nil
+		}
+
+		if progress.Status == storage.TransferStatusFailed {
+			spinner.Stop()
+			return fmt.Errorf("upload failed: %s", progress.Error)
+		}
+
+		// Update spinner with progress
+		if progress.TotalBytes > 0 {
+			pct := (float64(progress.TransferredBytes) / float64(progress.TotalBytes)) * 100
+			spinner.UpdateMessage(fmt.Sprintf("Uploading '%s' (%.1f%%)", localPath, pct))
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func (sc *StorageCommands) storageDownload(args []string) error {
+	if len(args) < 3 {
+		return NewUsageError("prism storage download <s3-bucket> <s3-key> <local-file>", "prism storage download my-bucket research/data.csv data.csv")
+	}
+
+	s3Bucket := args[0]
+	s3Key := args[1]
+	localPath := args[2]
+
+	req := client.TransferRequest{
+		Type:      "download",
+		LocalPath: localPath,
+		S3Bucket:  s3Bucket,
+		S3Key:     s3Key,
+		Options: &storage.TransferOptions{
+			PartSize:    5 * 1024 * 1024, // 5MB chunks
+			Concurrency: 5,
+		},
+	}
+
+	spinner := NewSpinner(fmt.Sprintf("Downloading s3://%s/%s to '%s'", s3Bucket, s3Key, localPath))
+	spinner.Start()
+
+	response, err := sc.app.apiClient.StartTransfer(sc.app.ctx, req)
+	if err != nil {
+		spinner.Stop()
+		return WrapAPIError("start download", err)
+	}
+
+	// Poll for progress
+	transferID := response.TransferID
+	for {
+		progress, err := sc.app.apiClient.GetTransferStatus(sc.app.ctx, transferID)
+		if err != nil {
+			spinner.Stop()
+			return WrapAPIError("get transfer status", err)
+		}
+
+		if progress.Status == storage.TransferStatusCompleted {
+			spinner.StopWithMessage(fmt.Sprintf("✅ Download complete: %s (%.2f MB)", localPath, float64(progress.TransferredBytes)/(1024*1024)))
+			return nil
+		}
+
+		if progress.Status == storage.TransferStatusFailed {
+			spinner.Stop()
+			return fmt.Errorf("download failed: %s", progress.Error)
+		}
+
+		// Update spinner with progress
+		if progress.TotalBytes > 0 {
+			pct := (float64(progress.TransferredBytes) / float64(progress.TotalBytes)) * 100
+			spinner.UpdateMessage(fmt.Sprintf("Downloading s3://%s/%s (%.1f%%)", s3Bucket, s3Key, pct))
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func (sc *StorageCommands) storageTransfersList(_ []string) error {
+	transfers, err := sc.app.apiClient.ListTransfers(sc.app.ctx)
+	if err != nil {
+		return WrapAPIError("list transfers", err)
+	}
+
+	if len(transfers) == 0 {
+		fmt.Println("No active transfers.")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, TabWriterMinWidth, TabWriterTabWidth, TabWriterPadding, TabWriterPadChar, TabWriterFlags)
+	_, _ = fmt.Fprintln(w, "TRANSFER ID\tTYPE\tSTATUS\tPROGRESS\tSPEED")
+
+	for _, t := range transfers {
+		var progress string
+		if t.TotalBytes > 0 {
+			pct := (float64(t.TransferredBytes) / float64(t.TotalBytes)) * 100
+			progress = fmt.Sprintf("%.1f%%", pct)
+		} else {
+			progress = "unknown"
+		}
+
+		var speed string
+		if t.BytesPerSecond > 0 {
+			speed = fmt.Sprintf("%.2f MB/s", float64(t.BytesPerSecond)/(1024*1024))
+		} else {
+			speed = "-"
+		}
+
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			t.TransferID,
+			strings.ToUpper(string(t.Type)),
+			strings.ToUpper(string(t.Status)),
+			progress,
+			speed,
+		)
+	}
+	_ = w.Flush()
+
+	return nil
+}
+
+func (sc *StorageCommands) storageTransferStatus(args []string) error {
+	if len(args) < 1 {
+		return NewUsageError("prism storage transfer <transfer-id>", "prism storage transfer abc123")
+	}
+
+	transferID := args[0]
+	progress, err := sc.app.apiClient.GetTransferStatus(sc.app.ctx, transferID)
+	if err != nil {
+		return WrapAPIError("get transfer status for "+transferID, err)
+	}
+
+	fmt.Printf("📦 Transfer: %s\n", progress.TransferID)
+	fmt.Printf("   Type: %s\n", strings.ToUpper(string(progress.Type)))
+	fmt.Printf("   Status: %s\n", strings.ToUpper(string(progress.Status)))
+	fmt.Printf("   S3 Location: s3://%s/%s\n", progress.S3Bucket, progress.S3Key)
+	fmt.Printf("   Local Path: %s\n", progress.FilePath)
+
+	if progress.TotalBytes > 0 {
+		pct := (float64(progress.TransferredBytes) / float64(progress.TotalBytes)) * 100
+		fmt.Printf("   Progress: %.2f MB / %.2f MB (%.1f%%)\n",
+			float64(progress.TransferredBytes)/(1024*1024),
+			float64(progress.TotalBytes)/(1024*1024),
+			pct)
+	}
+
+	if progress.BytesPerSecond > 0 {
+		fmt.Printf("   Speed: %.2f MB/s\n", float64(progress.BytesPerSecond)/(1024*1024))
+	}
+
+	if progress.Status == storage.TransferStatusFailed && progress.Error != "" {
+		fmt.Printf("   Error: %s\n", progress.Error)
+	}
+
+	fmt.Printf("   Started: %s\n", progress.StartTime.Format(StandardDateFormat))
+	if !progress.LastUpdate.IsZero() {
+		fmt.Printf("   Last Update: %s\n", progress.LastUpdate.Format(StandardDateFormat))
+	}
+	if progress.Status == storage.TransferStatusCompleted || progress.Status == storage.TransferStatusFailed {
+		duration := time.Since(progress.StartTime)
+		fmt.Printf("   Duration: %s\n", duration.Round(time.Second))
+	}
+
+	return nil
+}
+
+func (sc *StorageCommands) storageTransferCancel(args []string) error {
+	if len(args) < 1 {
+		return NewUsageError("prism storage cancel <transfer-id>", "prism storage cancel abc123")
+	}
+
+	transferID := args[0]
+	err := sc.app.apiClient.CancelTransfer(sc.app.ctx, transferID)
+	if err != nil {
+		return WrapAPIError("cancel transfer "+transferID, err)
+	}
+
+	fmt.Printf("%s\n", FormatProgressMessage("Cancelling transfer", transferID))
 	return nil
 }
