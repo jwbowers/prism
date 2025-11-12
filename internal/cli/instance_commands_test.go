@@ -157,7 +157,7 @@ func TestInstanceCommands_Stop(t *testing.T) {
 			name:        "API error",
 			args:        []string{"test-instance"},
 			expectError: true,
-			errorMsg:    "stop instance test-instance failed",
+			errorMsg:    "stop workspace test-instance failed",
 			setupMock: func(mock *MockAPIClient) {
 				// Use specific stop error to avoid affecting Ping method
 				mock.StopError = fmt.Errorf("stop failed")
@@ -255,7 +255,7 @@ func TestInstanceCommands_Start(t *testing.T) {
 			name:        "API error on list",
 			args:        []string{"test-instance"},
 			expectError: true,
-			errorMsg:    "get instance status failed",
+			errorMsg:    "get workspace status failed",
 			setupMock: func(mock *MockAPIClient) {
 				// Start command first calls ListInstances, so we need to make that fail specifically
 				mock.ListInstancesError = fmt.Errorf("list failed")
@@ -326,7 +326,7 @@ func TestInstanceCommands_Delete(t *testing.T) {
 			name:        "API error",
 			args:        []string{"test-instance"},
 			expectError: true,
-			errorMsg:    "delete instance test-instance failed",
+			errorMsg:    "delete workspace test-instance failed",
 			setupMock: func(mock *MockAPIClient) {
 				// Use specific delete error to avoid affecting Ping method
 				mock.DeleteError = fmt.Errorf("delete failed")
