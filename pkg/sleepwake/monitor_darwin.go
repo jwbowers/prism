@@ -16,15 +16,15 @@ package sleepwake
 // Current implementation works correctly on all macOS versions but produces compiler warning
 
 // Forward declaration
-extern void goSleepWakeCallback(void*, int, long);
+extern void goSleepWakeCallback(uintptr_t, int, long);
 
 // C callback that forwards to Go
 static inline void sleepWakeCallbackC(void *refcon, io_service_t service, natural_t messageType, void *messageArgument) {
-    goSleepWakeCallback(refcon, (int)messageType, (long)messageArgument);
+    goSleepWakeCallback((uintptr_t)refcon, (int)messageType, (long)messageArgument);
 }
 
 // Register for sleep/wake notifications
-static inline IOReturn registerSleepWake(io_connect_t *connection, IONotificationPortRef *notifyPort, io_object_t *notifier, void *refcon) {
+static inline IOReturn registerSleepWake(io_connect_t *connection, IONotificationPortRef *notifyPort, io_object_t *notifier, uintptr_t refcon) {
     *notifyPort = IONotificationPortCreate(kIOMasterPortDefault);
     if (*notifyPort == NULL) {
         return kIOReturnError;
@@ -35,7 +35,7 @@ static inline IOReturn registerSleepWake(io_connect_t *connection, IONotificatio
     CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopDefaultMode);
 
     // Register for sleep/wake notifications
-    *connection = IORegisterForSystemPower(refcon, notifyPort, sleepWakeCallbackC, notifier);
+    *connection = IORegisterForSystemPower((void*)refcon, notifyPort, sleepWakeCallbackC, notifier);
     if (*connection == 0) {
         return kIOReturnError;
     }
@@ -108,11 +108,12 @@ func (m *darwinMonitor) Start(eventCh chan<- Event) error {
 	monitorsMu.Unlock()
 
 	// Register for sleep/wake notifications
+	// Pass uintptr as void* - safe because we're not dereferencing it in C
 	result := C.registerSleepWake(
 		&m.connection,
 		&m.notifyPort,
 		&m.notifier,
-		unsafe.Pointer(refcon),
+		C.uintptr_t(refcon),
 	)
 
 	if result != C.kIOReturnSuccess {
@@ -256,7 +257,7 @@ func (m *darwinMonitor) handleSleepWakeMessage(messageType int, notificationID i
 }
 
 //export goSleepWakeCallback
-func goSleepWakeCallback(refcon unsafe.Pointer, messageType C.int, notificationID C.long) {
+func goSleepWakeCallback(refcon C.uintptr_t, messageType C.int, notificationID C.long) {
 	// Lookup monitor from global map
 	monitorsMu.RLock()
 	monitor, ok := monitors[uintptr(refcon)]
