@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -98,10 +99,10 @@ func TestNewLaunchProgressReporter(t *testing.T) {
 
 func TestAddCallback(t *testing.T) {
 	reporter := createTestReporter()
-	callCount := 0
+	var callCount int32
 
 	callback := func(update ProgressUpdate) {
-		callCount++
+		atomic.AddInt32(&callCount, 1)
 	}
 
 	reporter.AddCallback(callback)
@@ -115,7 +116,7 @@ func TestAddCallback(t *testing.T) {
 	// Wait for callback to be called (it's called in a goroutine)
 	time.Sleep(10 * time.Millisecond)
 
-	if callCount == 0 {
+	if atomic.LoadInt32(&callCount) == 0 {
 		t.Error("Callback was not called")
 	}
 }
