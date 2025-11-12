@@ -1,8 +1,8 @@
 # Prism Development Roadmap
 
-**Current Version**: v0.5.13 (In Development)
-**Last Released**: v0.5.12 (November 11, 2025)
-**Next Version**: v0.5.14 (Planned - December 2025)
+**Current Version**: v0.5.14 (In Development)
+**Last Released**: v0.5.13 (November 12, 2025)
+**Next Version**: v0.5.15 (Planned - December 2025)
 **Last Updated**: November 12, 2025
 **Status**: Active Development
 
@@ -251,10 +251,11 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.13 (November 2025): Cost Control & Monitoring 🚀 IN DEVELOPMENT
-**Release Date**: Target November 15, 2025
+### v0.5.13 (November 2025): Cost Control & Monitoring ✅ RELEASED
+**Release Date**: November 12, 2025
 **Focus**: Advanced cost control and system power management
 **Issues**: #90, #91, #252
+**Release Notes**: [RELEASE_NOTES_v0.5.13.md](releases/RELEASE_NOTES_v0.5.13.md)
 
 #### Features In Development
 
@@ -299,43 +300,58 @@ Prism is shifting focus from feature development to user experience optimization
 - ✅ Test stability: zero race conditions
 - ✅ Production-ready on macOS, cross-platform prepared
 
-**Status**: 🚀 IN DEVELOPMENT (Ready for Release)
+**Status**: 🎉 RELEASED (November 12, 2025)
 
 ---
 
-### v0.5.14 (December 2025): Desktop Applications Foundation
-**Release Date**: Target December 6, 2025
+### v0.5.14 (December 2025): Desktop Applications Foundation 🚀 IN DEVELOPMENT
+**Release Date**: Target December 6, 2025 (3-4 weeks)
 **Focus**: Nice DCV foundation for desktop GUI applications
-**Issues**: #216-#219
+**Issues**: #253-#256
+**Milestone**: [v0.5.14](https://github.com/scttfrdmn/prism/milestone/33)
+**Release Plan**: [RELEASE_PLAN_v0.5.14.md](releases/RELEASE_PLAN_v0.5.14.md)
 
 #### Planned Features
 
-**Generic Desktop Template** (#219):
+**Nice DCV Architecture Documentation** (#253):
+- DCV vs alternatives comparison
+- Technical requirements (AMIs, desktop environments, instance sizing)
+- Lens project learnings summary
+- Implementation plan for Prism
+- Security considerations and performance characteristics
+
+**Template System Extension for Desktop Support** (#254):
+- `connection_type: "desktop"` support
+- DCV-specific configuration options
+- Cloud-init generation for DCV provisioning
+- Desktop template validation logic
+
+**DCV Connection Management** (#255):
+- SSM port forwarding to DCV port 8443
+- Browser auto-launch integration
+- Secure credential generation and display
+- Connection status tracking
+
+**Generic Desktop Template with MATE + DCV** (#256):
 - Base MATE desktop environment
 - Nice DCV server configuration
 - Browser-based remote desktop access
-
-**DCV Connection Management** (#218):
-- SSM port forwarding to DCV port 8443
-- Browser auto-launch integration
-- Secure credential handling
-
-**Template System Extension** (#217):
-- `connection_type: "desktop"` support
-- DCV-specific provisioning hooks
-- Desktop environment configuration
-
-**Documentation** (#216):
-- Nice DCV architecture guide
-- Desktop template development guide
-- Connection workflow documentation
+- Foundation for commercial software templates
 
 **Implementation Notes**:
 - Leverage complete Lens project implementation
 - MATE desktop for lightweight performance
 - No exposed ports (SSM-only access)
+- Enables MATLAB, QGIS, Mathematica, Stata in v0.5.15
 
-**Status**: 📋 Planned (December 2025)
+**Success Criteria**:
+- Template launches successfully with DCV
+- Connection time < 30 seconds
+- Desktop environment fully functional
+- No exposed ports (SSM-only)
+- Ready for commercial application templates
+
+**Status**: 🚀 IN DEVELOPMENT (Planning Complete - Issues Created)
 
 ---
 
