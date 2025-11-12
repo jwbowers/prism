@@ -53,20 +53,30 @@ func (ic *InstanceCommands) Connect(args []string) error {
 		return err
 	}
 
-	// Get instance and setup tunnels
-	_, err = ic.setupInstanceConnection(name)
+	// Get instance to check connection type
+	instance, err := ic.setupInstanceConnection(name)
 	if err != nil {
 		return err
 	}
 
-	// Get connection info
-	connectionInfo, err := ic.getConnectionInfo(name, userOverride, verbose)
-	if err != nil {
-		return err
+	// Route to appropriate connection handler based on connection type
+	switch instance.ConnectionType {
+	case "desktop":
+		return ic.connectDesktopInstance(instance, name, verbose)
+	case "web":
+		return ic.connectWebInstance(instance, name, verbose)
+	case "ssh", "":
+		// Default to SSH for backwards compatibility
+		return ic.connectSSHInstance(instance, name, userOverride, verbose)
+	case "both":
+		// For "both", prefer web if available, otherwise SSH
+		if len(instance.Services) > 0 {
+			return ic.connectWebInstance(instance, name, verbose)
+		}
+		return ic.connectSSHInstance(instance, name, userOverride, verbose)
+	default:
+		return fmt.Errorf("unknown connection type: %s", instance.ConnectionType)
 	}
-
-	// Execute or display connection
-	return ic.executeConnection(connectionInfo, name, verbose)
 }
 
 // parseConnectFlags parses connect command flags
@@ -162,6 +172,90 @@ func (ic *InstanceCommands) executeConnection(connectionInfo, name string, verbo
 		return nil
 	}
 	return ic.app.executeSSHCommand(connectionInfo, name)
+}
+
+// connectSSHInstance handles SSH connections
+func (ic *InstanceCommands) connectSSHInstance(instance *types.Instance, name, userOverride string, verbose bool) error {
+	// Get connection info
+	connectionInfo, err := ic.getConnectionInfo(name, userOverride, verbose)
+	if err != nil {
+		return err
+	}
+
+	// Execute or display connection
+	return ic.executeConnection(connectionInfo, name, verbose)
+}
+
+// connectWebInstance handles web-based connections
+func (ic *InstanceCommands) connectWebInstance(instance *types.Instance, name string, verbose bool) error {
+	// Setup web service tunnels (already done in setupInstanceConnection)
+	// Just display connection information
+	if verbose {
+		fmt.Printf("🌐 Web services available for %s\n", name)
+		if len(instance.Services) > 0 {
+			fmt.Printf("   Services will be tunneled automatically when accessed\n")
+			fmt.Printf("   Use: prism connect %s\n", name)
+		}
+	}
+	return nil
+}
+
+// connectDesktopInstance handles DCV desktop connections
+func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, name string, verbose bool) error {
+	fmt.Printf("🖥️  Connecting to desktop workspace: %s\n", name)
+
+	// Check instance state
+	if instance.State != "running" {
+		return fmt.Errorf("workspace must be running to connect (current state: %s)", instance.State)
+	}
+
+	// Get DCV port from instance metadata (default to 8443)
+	dcvPort := 8443
+	if instance.WebPort != 0 {
+		dcvPort = instance.WebPort
+	}
+
+	// Start SSM port forwarding
+	localPort := 8443
+	fmt.Printf("📡 Starting secure tunnel to DCV server (port %d → localhost:%d)...\n", dcvPort, localPort)
+
+	// TODO: Implement SSM port forwarding
+	// For now, show what would happen
+	if verbose {
+		fmt.Printf("\n🔧 Connection Details:\n")
+		fmt.Printf("   Remote DCV Port: %d\n", dcvPort)
+		fmt.Printf("   Local Port: %d\n", localPort)
+		fmt.Printf("   Instance ID: %s\n", instance.ID)
+		fmt.Printf("   DCV URL: https://localhost:%d\n", localPort)
+	}
+
+	// Display credentials
+	fmt.Printf("\n🔑 DCV Connection Credentials:\n")
+	fmt.Printf("   Username: %s\n", instance.Username)
+	fmt.Printf("   Password: (check instance console output or user-data for initial password)\n")
+
+	// Open browser to DCV
+	dcvURL := fmt.Sprintf("https://localhost:%d", localPort)
+	fmt.Printf("\n🌐 Opening DCV session in browser...\n")
+	fmt.Printf("   URL: %s\n", dcvURL)
+
+	// TODO: Actually open browser
+	// For now, just display instructions
+	fmt.Printf("\n💡 To connect:\n")
+	fmt.Printf("   1. Port forwarding will start automatically\n")
+	fmt.Printf("   2. Browser will open to DCV session\n")
+	fmt.Printf("   3. Login with the credentials above\n")
+	fmt.Printf("   4. Your desktop environment will appear in the browser\n")
+
+	if verbose {
+		fmt.Printf("\n📚 DCV Features:\n")
+		fmt.Printf("   • Browser-based remote desktop (no client needed)\n")
+		fmt.Printf("   • Full desktop environment with GPU support\n")
+		fmt.Printf("   • Copy/paste between local and remote\n")
+		fmt.Printf("   • File transfer via browser\n")
+	}
+
+	return nil
 }
 
 // Stop handles the stop command

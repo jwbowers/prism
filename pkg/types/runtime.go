@@ -206,10 +206,11 @@ type Instance struct {
 	InstanceLifecycle     string                  `json:"instance_lifecycle"` // "spot" or "on-demand"
 	KeyName               string                  `json:"key_name"`           // EC2 key pair name
 	Username              string                  `json:"username"`
-	WebPort               int                     `json:"web_port"`             // Deprecated: Use Services instead
-	HasWebInterface       bool                    `json:"has_web_interface"`    // Deprecated: Use Services instead
-	Services              []Service               `json:"services,omitempty"`   // Web services available on this instance
-	ProjectID             string                  `json:"project_id,omitempty"` // Associated project ID
+	ConnectionType        ConnectionType          `json:"connection_type,omitempty"` // How users connect (ssh, web, desktop)
+	WebPort               int                     `json:"web_port"`                  // Deprecated: Use Services instead
+	HasWebInterface       bool                    `json:"has_web_interface"`         // Deprecated: Use Services instead
+	Services              []Service               `json:"services,omitempty"`        // Web services available on this instance
+	ProjectID             string                  `json:"project_id,omitempty"`      // Associated project ID
 	IdleDetection         *IdleDetection          `json:"idle_detection,omitempty"`
 	AppliedTemplates      []AppliedTemplateRecord `json:"applied_templates,omitempty"` // Template application history
 
