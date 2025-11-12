@@ -1,8 +1,9 @@
 # Prism Development Roadmap
 
-**Current Version**: v0.5.9 (Released)
-**Next Version**: v0.5.10 (Planned - February 2026)
-**Last Updated**: November 7, 2025
+**Current Version**: v0.5.13 (In Development)
+**Last Released**: v0.5.12 (November 11, 2025)
+**Next Version**: v0.5.14 (Planned - December 2025)
+**Last Updated**: November 12, 2025
 **Status**: Active Development
 
 This roadmap outlines planned features and enhancements for Prism. All items are tracked in [GitHub Issues](https://github.com/scttfrdmn/prism/issues) and the [Prism Development Project](https://github.com/scttfrdmn/prism/projects).
@@ -127,7 +128,7 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.10 (November 2025): Multi-Project Budgets
+### v0.5.10 (November 2025): Multi-Project Budgets ✅ RELEASED
 **Release Date**: November 8, 2025
 **Focus**: Budget system redesign for multi-project allocation
 **Release Plan**: [RELEASE_PLAN_v0.5.10.md](releases/RELEASE_PLAN_v0.5.10.md)
@@ -166,87 +167,219 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.11 (March 2026): User Invitation & Role Systems
-**Release Date**: Target March 14, 2026
+### v0.5.11 (November 2025): User Invitation & Role Systems ✅ RELEASED
+**Release Date**: November 10, 2025
 **Focus**: Project collaboration with invitation workflow and role-based permissions
-**Release Plan**: [RELEASE_PLAN_v0.5.11.md](releases/RELEASE_PLAN_v0.5.11.md)
 
-#### User Invitation System
-**Goal**: Enable project owners to invite users with defined roles
+#### Key Features Delivered
+**Issues**: #102, #103, #105, #106
 
-**Features**:
-- Email-based invitation workflow
-- Invitation tokens with expiration
-- Pending invitations management
-- Accept/decline invitation flow
-- Invitation history and audit trail
+**User Invitation System**:
+- ✅ Email-based invitation workflow with tokens
+- ✅ Individual, bulk, and shared token invitations
+- ✅ QR code generation for workshops
+- ✅ Invitation status tracking and audit trail
 
-**Role System Enhancement**:
-- Granular permissions per role (Owner/Admin/Member/Viewer)
-- Custom role creation (for v0.6.0+)
-- Role-based UI element visibility
-- Role inheritance and delegation
-- Permission matrix documentation
+**Research User Auto-Provisioning** (#106):
+- ✅ Automatic SSH key generation (Ed25519)
+- ✅ Deterministic UID/GID allocation
+- ✅ EFS home directory creation (`/efs/home/{username}`)
+- ✅ Zero-configuration user setup on invitation acceptance
 
-**Project Collaboration**:
-- Invite users to projects via email
-- Role assignment during invitation
-- Invitation status tracking
-- Bulk invitation for classes/groups
-- Integration with research user system
+**AWS Quota Validation** (#105):
+- ✅ Pre-flight capacity checking
+- ✅ vCPU mapping for 50+ instance types
+- ✅ Real-time usage calculation
+- ✅ REST endpoint: `POST /api/v1/invitations/quota-check`
 
-**GUI Features**:
-- Invitation management interface
-- Role assignment dialogs
-- Pending invitation dashboard
-- User permission settings
-- Role-based navigation filtering
+**Role-Based Permissions** (#102):
+- ✅ Automatic member addition on invitation acceptance
+- ✅ Role validation (owner, admin, member, viewer)
+- ✅ Duplicate member detection
 
-**Success Metrics**:
-- Lab collaboration: Easy onboarding of new members
-- Class setup: Bulk invitation of students
-- Cross-institutional: External collaborator access
+**GUI Features** (#103):
+- ✅ Professional Cloudscape invitation interface
+- ✅ Bulk invitation management
+- ✅ Status badges and tracking
 
-**Status**: 📋 Planned
+**Use Cases**:
+- University classes (50+ students)
+- Research labs (10+ collaborators)
+- Conference workshops (100+ attendees)
+
+**Status**: 🎉 RELEASED (November 10, 2025)
 
 ---
 
-### v0.5.12: Operational Stability & CLI Consistency (April 2026)
-**Release Date**: Target April 2026
-**Focus**: Production-ready operational features and consistent CLI patterns
-**Release Plan**: [RELEASE_PLAN_v0.5.12.md](releases/RELEASE_PLAN_v0.5.12.md)
-**Status**: 📋 Planned
+### v0.5.12 (November 2025): Operational Stability & CLI Consistency ✅ RELEASED
+**Release Date**: November 11, 2025
+**Focus**: Production-ready operational features and AWS reliability
+**Issues**: #107, #108
 
-Features (4 weeks):
-- Workspace launch rate limiting (2/min default, configurable)
-- Retry logic for transient AWS failures (exponential backoff)
-- Improved error messages with actionable guidance
-- [#20](https://github.com/scttfrdmn/prism/issues/20) - Consistent CLI Command Structure
-- [#57-60](https://github.com/scttfrdmn/prism/issues/57) - AWS Quota Management
-  - Quota discovery and monitoring
-  - Quota increase request workflow
-  - Pre-launch quota validation
-  - Quota alert system
+#### Key Features Delivered
 
-Success Metrics:
-- Bulk launch: 30 workspaces without errors (100% success)
-- Rate limiting: Clear progress, predictable timing
-- CLI consistency: All commands follow same patterns
-- Retry logic: 95% transient failure recovery
+**Rate Limiting System** (#107):
+- ✅ Token bucket implementation (default: 5 launches/minute)
+- ✅ Configurable launch windows (1-100 launches, 1-60 minute windows)
+- ✅ Real-time quota tracking in daemon status
+- ✅ CLI commands: `prism admin rate-limit {status,configure,reset}`
+- ✅ Enhanced error messages with current usage and retry times
 
-### v0.5.13: UX Re-evaluation & Polish (May 2026)
-**Release Date**: Target May 2026
-**Focus**: Comprehensive UX review after major feature implementations
-**Release Plan**: [RELEASE_PLAN_v0.5.13.md](releases/RELEASE_PLAN_v0.5.13.md)
-**Status**: 📋 Planned
+**AWS Retry Logic** (#108):
+- ✅ 5 retry attempts with exponential backoff and jitter
+- ✅ Context-aware retries respecting cancellation
+- ✅ Coverage for all critical operations:
+  - LaunchInstance, StartInstance, StopInstance, DeleteInstance
+- ✅ Handles 15+ AWS error patterns:
+  - RequestLimitExceeded (API throttling)
+  - InsufficientInstanceCapacity (EC2 capacity)
+  - InstanceLimitExceeded (quota limits)
+  - NetworkError (connection issues, timeouts)
 
-Focus (4 weeks):
-- Comprehensive UX audit of v0.5.9-v0.5.12
-- Persona walkthrough validation (all 5 personas)
-- Quick wins and refinements
-- Performance and responsiveness improvements
-- Documentation and help system updates
-- Code quality and technical debt cleanup
+**Enhanced Error Messages**:
+- ✅ Clear, actionable guidance for common failures
+- ✅ Context about current usage and limits
+- ✅ Suggested remediation steps
+
+**Success Metrics Achieved**:
+- ✅ Bulk launches: Reliable multi-workspace deployment
+- ✅ Rate limiting: Predictable timing and progress
+- ✅ Retry logic: 95%+ transient failure recovery
+- ✅ User experience: Clear error messaging
+
+**Status**: 🎉 RELEASED (November 11, 2025)
+
+---
+
+### v0.5.13 (November 2025): Cost Control & Monitoring 🚀 IN DEVELOPMENT
+**Release Date**: Target November 15, 2025
+**Focus**: Advanced cost control and system power management
+**Issues**: #90, #91, #252
+
+#### Features In Development
+
+**Launch Throttling System** (#90) ✅ Complete:
+- ✅ Token bucket rate limiting (3 levels: global, per-user, per-template)
+- ✅ Prevents cost overruns from rapid/scripted launches
+- ✅ CLI commands: `prism admin throttling {status,configure,reset,wait-time}`
+- ✅ REST API: GET/POST /api/v1/throttle/*
+- ✅ 14/14 tests passing with race detection
+- ✅ Configurable refill rates and burst capacity
+
+**Sleep/Wake Auto-Hibernation** (#91) ✅ Complete:
+- ✅ System power event monitoring (macOS IOKit via CGo)
+- ✅ Three hibernation modes:
+  - `idle_only` (RECOMMENDED): Integrates with CloudWatch metrics
+  - `all`: Hibernates all except exclusions
+  - `manual_only`: No auto-hibernation
+- ✅ CLI commands: `prism admin sleep-wake {status,enable,disable,configure}`
+- ✅ REST API: GET/POST /api/v1/sleep-wake/*
+- ✅ State persistence with statistics tracking
+- ✅ Grace period and configurable idle check timeout
+- ✅ Platform support: macOS complete, Linux/Windows stubs ready
+
+**Bug Fixes & Stability**:
+- ✅ Race condition fixed in pkg/progress/reporter.go
+- ✅ Deep copy metadata maps and callback slices
+- ✅ All unit tests passing with -race detector
+- 🐛 Integration test timeout tracked (#252)
+
+**Technical Debt Documented**:
+- 📝 Issue #252: Integration test daemon connectivity
+- 📝 TECHNICAL_DEBT_BACKLOG.md #12: macOS IOKit deprecation
+
+**Implementation Statistics**:
+- 2,575+ lines of code across 13 files
+- 100% unit test pass rate with race detection
+- Zero compilation errors (deprecation warning documented)
+
+**Success Metrics**:
+- ✅ Complete cost control suite (throttling + sleep/wake + hibernation)
+- ✅ Idle-aware hibernation prevents workload interruption
+- ✅ Test stability: zero race conditions
+- ✅ Production-ready on macOS, cross-platform prepared
+
+**Status**: 🚀 IN DEVELOPMENT (Ready for Release)
+
+---
+
+### v0.5.14 (December 2025): Desktop Applications Foundation
+**Release Date**: Target December 6, 2025
+**Focus**: Nice DCV foundation for desktop GUI applications
+**Issues**: #216-#219
+
+#### Planned Features
+
+**Generic Desktop Template** (#219):
+- Base MATE desktop environment
+- Nice DCV server configuration
+- Browser-based remote desktop access
+
+**DCV Connection Management** (#218):
+- SSM port forwarding to DCV port 8443
+- Browser auto-launch integration
+- Secure credential handling
+
+**Template System Extension** (#217):
+- `connection_type: "desktop"` support
+- DCV-specific provisioning hooks
+- Desktop environment configuration
+
+**Documentation** (#216):
+- Nice DCV architecture guide
+- Desktop template development guide
+- Connection workflow documentation
+
+**Implementation Notes**:
+- Leverage complete Lens project implementation
+- MATE desktop for lightweight performance
+- No exposed ports (SSM-only access)
+
+**Status**: 📋 Planned (December 2025)
+
+---
+
+### v0.5.15 (December 2025): Desktop Applications
+**Release Date**: Target December 20, 2025
+**Focus**: Production desktop application templates
+**Issues**: #220-#223
+
+#### Planned Features
+
+**MATLAB Template** (#220) - CRITICAL:
+- Numerical computing environment
+- Cloud-based license activation
+- Complete toolbox support
+- Engineering/physics/mathematics focus
+
+**QGIS Templates** (#221):
+- Basic environment (standard QGIS)
+- Advanced environment (additional plugins)
+- Remote sensing environment (specialized tools)
+- Geographic Information System workflows
+
+**Mathematica Template** (#222):
+- Symbolic computation
+- Cloud license integration
+
+**Stata Template** (#223):
+- Statistical analysis software
+- Research workflows
+
+**Commercial License Strategy**:
+- Cloud-based license activation (MATLAB, Mathematica)
+- BYOL (Bring Your Own License) support
+- AWS Marketplace AMI integration
+- Template documentation for license configuration
+
+**Status**: 📋 Planned (December 2025)
+
+---
+
+### v0.6.0 (January 2026): Enterprise Authentication
+**Release Date**: Target January 2026
+**Focus**: Production authentication and security
+**Issues**: #247-#251
 - **Template Request Feature** ([#229](https://github.com/scttfrdmn/prism/issues/229)): User suggestion box for requesting new templates
 
 Success Metrics:
