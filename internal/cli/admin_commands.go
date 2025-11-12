@@ -31,6 +31,7 @@ Examples:
 	cmd.AddCommand(f.createScalingCommand())
 	cmd.AddCommand(f.createZombiesCommand())
 	cmd.AddCommand(f.createRateLimitCommand())
+	cmd.AddCommand(f.createThrottlingCommand())
 
 	return cmd
 }
@@ -81,4 +82,10 @@ func (f *AdminCommandFactory) createZombiesCommand() *cobra.Command {
 func (f *AdminCommandFactory) createRateLimitCommand() *cobra.Command {
 	rateLimitCobra := NewRateLimitCobraCommands(f.app)
 	return rateLimitCobra.CreateRateLimitCommand()
+}
+
+// createThrottlingCommand creates the throttling subcommand
+func (f *AdminCommandFactory) createThrottlingCommand() *cobra.Command {
+	throttlingCobra := NewThrottlingCobraCommands(f.app)
+	return throttlingCobra.CreateThrottlingCommand()
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/storage"
 	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/throttle"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -150,6 +151,14 @@ type PrismAPI interface {
 	GetTransferStatus(context.Context, string) (*storage.TransferProgress, error)
 	ListTransfers(context.Context) ([]*storage.TransferProgress, error)
 	CancelTransfer(context.Context, string) error
+
+	// Throttling operations (v0.6.0 - Issue #90)
+	GetThrottlingStatus(context.Context, string) (*throttle.Status, error)
+	ConfigureThrottling(context.Context, throttle.Config) error
+	GetThrottlingRemaining(context.Context, string) (map[string]interface{}, error)
+	SetProjectThrottleOverride(context.Context, string, throttle.Override) error
+	RemoveProjectThrottleOverride(context.Context, string) error
+	ListProjectThrottleOverrides(context.Context) ([]throttle.Override, error)
 
 	// Status operations
 	GetStatus(context.Context) (*types.DaemonStatus, error)
