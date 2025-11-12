@@ -9,6 +9,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/pkg/idle"
 	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/storage"
 	"github.com/scttfrdmn/prism/pkg/templates"
 	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/scttfrdmn/prism/pkg/version"
@@ -2198,6 +2199,44 @@ func (m *MockAPIClient) ExtendSharedToken(ctx context.Context, tokenID string, d
 }
 
 func (m *MockAPIClient) RevokeSharedToken(ctx context.Context, tokenID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+// Transfer operations (S3-backed file transfer)
+func (m *MockAPIClient) StartTransfer(ctx context.Context, req client.TransferRequest) (*client.TransferResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &client.TransferResponse{
+		TransferID: "mock-transfer-id",
+		Status:     "in_progress",
+	}, nil
+}
+
+func (m *MockAPIClient) GetTransferStatus(ctx context.Context, transferID string) (*storage.TransferProgress, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &storage.TransferProgress{
+		TransferID:       transferID,
+		Status:           "in_progress",
+		PercentComplete:  50.0,
+		TransferredBytes: 500,
+		TotalBytes:       1000,
+	}, nil
+}
+
+func (m *MockAPIClient) ListTransfers(ctx context.Context) ([]*storage.TransferProgress, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []*storage.TransferProgress{}, nil
+}
+
+func (m *MockAPIClient) CancelTransfer(ctx context.Context, transferID string) error {
 	if m.ShouldReturnError {
 		return fmt.Errorf("%s", m.ErrorMessage)
 	}

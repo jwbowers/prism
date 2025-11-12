@@ -19,6 +19,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/pkg/idle"
 	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/storage"
 	"github.com/scttfrdmn/prism/pkg/templates"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
@@ -1983,5 +1984,31 @@ func (m *MockClient) ExtendSharedToken(ctx context.Context, tokenID string, days
 }
 
 func (m *MockClient) RevokeSharedToken(ctx context.Context, tokenID string) error {
+	return nil
+}
+
+// Transfer operations (S3-backed file transfer)
+func (m *MockClient) StartTransfer(ctx context.Context, req client.TransferRequest) (*client.TransferResponse, error) {
+	return &client.TransferResponse{
+		TransferID: "mock-transfer-id",
+		Status:     "in_progress",
+	}, nil
+}
+
+func (m *MockClient) GetTransferStatus(ctx context.Context, transferID string) (*storage.TransferProgress, error) {
+	return &storage.TransferProgress{
+		TransferID:       transferID,
+		Status:           "in_progress",
+		PercentComplete:  50.0,
+		TransferredBytes: 500,
+		TotalBytes:       1000,
+	}, nil
+}
+
+func (m *MockClient) ListTransfers(ctx context.Context) ([]*storage.TransferProgress, error) {
+	return []*storage.TransferProgress{}, nil
+}
+
+func (m *MockClient) CancelTransfer(ctx context.Context, transferID string) error {
 	return nil
 }
