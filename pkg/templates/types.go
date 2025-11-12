@@ -37,7 +37,8 @@ type Template struct {
 	Featured bool   `yaml:"featured,omitempty" json:"featured,omitempty"` // Featured template (always visible)
 
 	// Connection configuration
-	ConnectionType ConnectionType `yaml:"connection_type,omitempty" json:"connection_type,omitempty"` // Explicit connection type (dcv, ssh, auto)
+	ConnectionType ConnectionType `yaml:"connection_type,omitempty" json:"connection_type,omitempty"` // Explicit connection type (ssh, web, desktop, both)
+	Desktop        *DesktopConfig `yaml:"desktop,omitempty" json:"desktop,omitempty"`                 // Desktop configuration (only for connection_type: desktop)
 
 	// Package management strategy
 	PackageManager string             `yaml:"package_manager,omitempty" json:"package_manager,omitempty"` // "auto", "apt", "dnf", "conda", "spack", "ami"
@@ -159,6 +160,26 @@ type ServiceConfig struct {
 	Port   int      `yaml:"port,omitempty" json:"port,omitempty"`
 	Config []string `yaml:"config,omitempty" json:"config,omitempty"` // Config file lines
 	Enable bool     `yaml:"enable,omitempty" json:"enable,omitempty"` // Default: true
+}
+
+// DesktopConfig defines desktop environment and DCV configuration for desktop templates
+type DesktopConfig struct {
+	// Desktop environment to install
+	Environment string `yaml:"environment" json:"environment"` // "mate", "xfce", "gnome", "kde"
+
+	// Nice DCV configuration
+	DCVPort    int    `yaml:"dcv_port,omitempty" json:"dcv_port,omitempty"`       // DCV server port (default: 8443)
+	DCVVersion string `yaml:"dcv_version,omitempty" json:"dcv_version,omitempty"` // DCV version to install (default: "latest")
+
+	// Hardware requirements
+	GPURequired bool `yaml:"gpu_required,omitempty" json:"gpu_required,omitempty"` // Require GPU for visualization
+
+	// Session configuration
+	SessionType string `yaml:"session_type,omitempty" json:"session_type,omitempty"` // "console" or "virtual" (default: "virtual")
+	SessionUser string `yaml:"session_user,omitempty" json:"session_user,omitempty"` // User for DCV session (default: template user)
+
+	// Authentication
+	AuthMethod string `yaml:"auth_method,omitempty" json:"auth_method,omitempty"` // "password" or "none" (default: "password")
 }
 
 // IdleDetectionConfig is an alias to types.IdleDetectionConfig (canonical definition)

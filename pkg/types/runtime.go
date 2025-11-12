@@ -166,9 +166,10 @@ const (
 type ConnectionType string
 
 const (
-	ConnectionTypeSSH  ConnectionType = "ssh"
-	ConnectionTypeWeb  ConnectionType = "web"
-	ConnectionTypeBoth ConnectionType = "both"
+	ConnectionTypeSSH     ConnectionType = "ssh"
+	ConnectionTypeWeb     ConnectionType = "web"
+	ConnectionTypeDesktop ConnectionType = "desktop" // Nice DCV remote desktop
+	ConnectionTypeBoth    ConnectionType = "both"
 )
 
 // IdleDetectionConfig represents idle detection configuration in templates

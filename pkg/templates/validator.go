@@ -55,6 +55,7 @@ func NewComprehensiveValidator(registry *TemplateRegistry) *ComprehensiveValidat
 			&PackageManagerRule{},
 			&ServicePortRule{},
 			&UserConfigRule{},
+			&DesktopConfigRule{},
 			&InheritanceRule{registry: registry},
 			&ParameterRule{},
 			&SecurityRule{},
@@ -466,6 +467,104 @@ func (r *BestPracticesRule) Validate(template *Template) []ValidationResult {
 			Level:   ValidationInfo,
 			Field:   "learning_resources",
 			Message: "Consider adding learning resources for users",
+		})
+	}
+
+	return results
+}
+
+// DesktopConfigRule validates desktop template configuration
+type DesktopConfigRule struct{}
+
+func (r *DesktopConfigRule) Name() string { return "desktop_config" }
+
+func (r *DesktopConfigRule) Validate(template *Template) []ValidationResult {
+	var results []ValidationResult
+
+	// Only validate if connection type is desktop
+	if template.ConnectionType != "desktop" {
+		return results
+	}
+
+	// Desktop config is required for desktop templates
+	if template.Desktop == nil {
+		results = append(results, ValidationResult{
+			Level:   ValidationError,
+			Field:   "desktop",
+			Message: "Desktop configuration is required for connection_type: desktop",
+		})
+		return results
+	}
+
+	// Validate desktop environment
+	validEnvironments := map[string]bool{
+		"mate": true, "xfce": true, "gnome": true, "kde": true,
+	}
+	if template.Desktop.Environment == "" {
+		results = append(results, ValidationResult{
+			Level:   ValidationError,
+			Field:   "desktop.environment",
+			Message: "Desktop environment is required (mate, xfce, gnome, kde)",
+		})
+	} else if !validEnvironments[template.Desktop.Environment] {
+		results = append(results, ValidationResult{
+			Level:   ValidationError,
+			Field:   "desktop.environment",
+			Message: fmt.Sprintf("Invalid desktop environment: %s (must be mate, xfce, gnome, or kde)", template.Desktop.Environment),
+		})
+	}
+
+	// Validate DCV port
+	if template.Desktop.DCVPort != 0 && (template.Desktop.DCVPort < 1024 || template.Desktop.DCVPort > 65535) {
+		results = append(results, ValidationResult{
+			Level:   ValidationError,
+			Field:   "desktop.dcv_port",
+			Message: "DCV port must be between 1024 and 65535",
+		})
+	}
+
+	// Validate session type
+	if template.Desktop.SessionType != "" {
+		validSessionTypes := map[string]bool{
+			"console": true, "virtual": true,
+		}
+		if !validSessionTypes[template.Desktop.SessionType] {
+			results = append(results, ValidationResult{
+				Level:   ValidationError,
+				Field:   "desktop.session_type",
+				Message: "Session type must be 'console' or 'virtual'",
+			})
+		}
+	}
+
+	// Validate auth method
+	if template.Desktop.AuthMethod != "" {
+		validAuthMethods := map[string]bool{
+			"password": true, "none": true,
+		}
+		if !validAuthMethods[template.Desktop.AuthMethod] {
+			results = append(results, ValidationResult{
+				Level:   ValidationError,
+				Field:   "desktop.auth_method",
+				Message: "Auth method must be 'password' or 'none'",
+			})
+		}
+	}
+
+	// Recommendations
+	if template.Desktop.Environment == "gnome" || template.Desktop.Environment == "kde" {
+		results = append(results, ValidationResult{
+			Level:   ValidationWarning,
+			Field:   "desktop.environment",
+			Message: fmt.Sprintf("%s is resource-intensive; consider mate or xfce for better performance", template.Desktop.Environment),
+		})
+	}
+
+	if template.Desktop.GPURequired {
+		results = append(results, ValidationResult{
+			Level:   ValidationInfo,
+			Field:   "desktop.gpu_required",
+			Message: "GPU instances are more expensive; ensure this is necessary for your application",
 		})
 	}
 
