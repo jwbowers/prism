@@ -178,7 +178,7 @@ func TestCLIInstanceLifecycle(t *testing.T) {
 		result := ctx.Prism("workspace", "list")
 		result.AssertSuccess(t, "list should succeed")
 		result.AssertContains(t, instanceName, "list should show instance")
-		result.AssertContains(t, "running", "should show running state")
+		result.AssertContains(t, "RUNNING", "should show running state")
 	})
 
 	// Phase 6: Cleanup
