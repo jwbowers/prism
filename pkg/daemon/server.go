@@ -361,10 +361,15 @@ func NewServer(port string) (*Server, error) {
 	server.setupRoutes(mux)
 
 	server.httpServer = &http.Server{
-		Addr:         ":" + port,
-		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		Addr:    ":" + port,
+		Handler: mux,
+		// ReadTimeout: Keep short for receiving requests (30s is reasonable)
+		ReadTimeout: 30 * time.Second,
+		// WriteTimeout: Allow for long-running AWS operations (instance launch = 2-5min)
+		// Set to 10 minutes to accommodate instance launch with system status checks
+		WriteTimeout: 10 * time.Minute,
+		// IdleTimeout: Keep connections alive for multiple requests
+		IdleTimeout: 2 * time.Minute,
 	}
 
 	// Set HTTP server reference in recovery manager
