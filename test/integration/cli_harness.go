@@ -267,8 +267,8 @@ func (ctx *CLITestContext) StopInstanceCLI(name string) error {
 		return fmt.Errorf("stop command failed: %s", result.Stderr)
 	}
 
-	// Wait for stopped state
-	return ctx.WaitForInstanceState(name, "stopped", InstanceDeleteTimeout)
+	// Wait for stopped state (use InstanceStopTimeout for GPU instances that take 10+ minutes)
+	return ctx.WaitForInstanceState(name, "stopped", InstanceStopTimeout)
 }
 
 // DeleteInstanceCLI deletes an instance using the prism CLI
