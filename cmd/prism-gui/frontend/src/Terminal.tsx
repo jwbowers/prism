@@ -3,6 +3,7 @@ import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
+import { logger } from './utils/logger';
 
 interface TerminalProps {
   instanceName: string;
@@ -100,7 +101,7 @@ const Terminal: React.FC<TerminalProps> = React.memo(({ instanceName }) => {
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      logger.error('WebSocket error:', error);
       setError('Connection error - check if workspace is running');
       setIsConnected(false);
     };

@@ -10,10 +10,13 @@ interface WebViewProps {
 const WebView: React.FC<WebViewProps> = ({ url, serviceName, instanceName }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
+  // Use lazy initializer to avoid calling impure function on every render
+  const [lastRefresh, setLastRefresh] = useState(() => Date.now());
 
   useEffect(() => {
     // Reset loading state when URL changes
+    // React batches these setState calls together, preventing cascading renders
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
     setLastRefresh(Date.now());

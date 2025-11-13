@@ -347,7 +347,7 @@ Prism is now a full **enterprise research platform** supporting collaborative pr
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │ CLI Client  │  │ TUI Client  │  │ GUI Client  │
-│ (cmd/cws)   │  │ (prism tui)   │  │ (cmd/cws-gui)│
+│ (cmd/prism) │  │ (prism tui) │  │(cmd/prism-gui)│
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │                │                │
        └────────────────┼────────────────┘
@@ -355,20 +355,20 @@ Prism is now a full **enterprise research platform** supporting collaborative pr
                  ┌─────────────┐
                  │ Backend     │
                  │ Daemon      │
-                 │ (cwsd:8947) │
+                 │(prismd:8947)│
                  └─────────────┘
 ```
 
 **Current Architecture**:
 ```
 cmd/
-├── cws/          # CLI client binary
-├── cws-gui/      # GUI client binary (Wails v3-based)
-└── cwsd/         # Backend daemon binary
+├── prism/        # CLI client binary
+├── prism-gui/    # GUI client binary (Wails v3-based)
+└── prismd/       # Backend daemon binary
 
 pkg/
 ├── api/          # API client interface
-├── daemon/       # Daemon core logic  
+├── daemon/       # Daemon core logic
 ├── aws/          # AWS operations
 ├── state/        # State management
 ├── project/      # Project & budget management (Phase 4)
@@ -379,7 +379,7 @@ pkg/
 internal/
 ├── cli/          # CLI application logic
 ├── tui/          # TUI application (BubbleTea-based)
-└── gui/          # (GUI logic is in cmd/cws-gui/)
+└── gui/          # (GUI logic is in cmd/prism-gui/)
 ```
 
 **Phase 4 Enterprise Components**:
@@ -651,12 +651,12 @@ Enhanced state management with profile integration:
 ```bash
 # Build all components
 make build
-# Builds: prism (CLI), cwsd (daemon), cws-gui (GUI)
+# Builds: prism (CLI), prismd (daemon), prism-gui (GUI)
 
 # Build specific components
-go build -o bin/cws ./cmd/cws/        # CLI
-go build -o bin/cwsd ./cmd/cwsd/      # Daemon  
-go build -o bin/cws-gui ./cmd/cws-gui/ # GUI
+go build -o bin/prism ./cmd/prism/        # CLI
+go build -o bin/prismd ./cmd/prismd/      # Daemon
+go build -o bin/prism-gui ./cmd/prism-gui/ # GUI
 
 # Run tests
 make test
@@ -671,38 +671,38 @@ make clean
 ### Running Different Interfaces
 ```bash
 # CLI interface (traditional) - daemon auto-starts as needed
-./bin/cws launch python-ml my-project
+./bin/prism launch python-ml my-project
 
 # TUI interface (interactive terminal) - daemon auto-starts as needed
-./bin/cws tui
+./bin/prism tui
 # Navigation: 1=Dashboard, 2=Instances, 3=Templates, 4=Storage, 5=Settings, 6=Profiles
 
 # GUI interface (desktop application) - daemon auto-starts as needed
-./bin/cws-gui
+./bin/prism-gui
 # System tray integration with professional tabbed interface
 
 # Manual daemon control (optional)
-./bin/cws daemon start    # Manually start daemon
-./bin/cws daemon stop     # Stop daemon
-./bin/cws daemon status   # Check daemon status
+./bin/prism admin daemon start    # Manually start daemon
+./bin/prism admin daemon stop     # Stop daemon
+./bin/prism admin daemon status   # Check daemon status
 ```
 
 ### Development Workflow
 ```bash
 # Test CLI functionality (daemon auto-starts)
-./bin/cws templates
-./bin/cws list
+./bin/prism templates
+./bin/prism list
 
 # Test TUI functionality (daemon auto-starts if needed)
-./bin/cws tui
+./bin/prism tui
 
 # Test GUI functionality (daemon auto-starts if needed)
-./bin/cws-gui
+./bin/prism-gui
 
 # Optional: Manual daemon control for development
-./bin/cwsd &                    # Start daemon manually (for debugging)
-./bin/cws daemon stop           # Graceful shutdown
-./bin/cws daemon status         # Check status
+./bin/prismd &                        # Start daemon manually (for debugging)
+./bin/prism admin daemon stop         # Graceful shutdown
+./bin/prism admin daemon status       # Check status
 ```
 
 ## Key Implementation Details
@@ -737,7 +737,7 @@ apiClient := api.NewClientWithOptions(daemonURL, client.Options{
 - Shared profile and configuration system
 - Consistent error handling and user feedback
 
-### GUI Specific (cmd/cws-gui/main.go)
+### GUI Specific (cmd/prism-gui/main.go)
 - **Wails v3 Framework**: Cross-platform web-based native GUI with React frontend
 - **Cloudscape Design System**: AWS-native professional UI components
 - **Tabbed Interface**: Templates, Instances, Storage, Settings
@@ -783,8 +783,8 @@ Successfully implemented the complete hibernation ecosystem providing intelligen
 - ✅ **Idle API Layer** (`pkg/daemon/idle_handlers.go`): 7 REST endpoints for complete idle policy management
 - ✅ **Client Layer** (`pkg/api/client/`): Complete API client integration with hibernation + idle methods  
 - ✅ **Types Layer** (`pkg/types/runtime.go`): Complete type system for hibernation status + idle policies
-- ✅ **GUI Layer** (`cmd/cws-gui/main.go`): Smart hibernation controls with educational confirmation dialogs
-- ✅ **CLI Layer** (`cmd/cws/main.go`, `internal/cli/app.go`): Manual hibernation + automated policy commands
+- ✅ **GUI Layer** (`cmd/prism-gui/main.go`): Smart hibernation controls with educational confirmation dialogs
+- ✅ **CLI Layer** (`cmd/prism/main.go`, `internal/cli/app.go`): Manual hibernation + automated policy commands
 
 **💡 Dual-Mode Hibernation System**:
 ```bash

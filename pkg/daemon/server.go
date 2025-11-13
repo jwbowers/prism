@@ -121,19 +121,35 @@ func NewServer(port string) (*Server, error) {
 	profileManager, profileErr := profile.NewManagerEnhanced()
 	if profileErr != nil {
 		log.Printf("Failed to initialize profile manager: %v", profileErr)
-		// Initialize AWS manager with AWS SDK defaults (no hardcoded values)
+		// Fall back to environment variables before using AWS SDK defaults
+		envProfile := os.Getenv("AWS_PROFILE")
+		envRegion := os.Getenv("AWS_REGION")
+		if envProfile != "" {
+			log.Printf("Using AWS_PROFILE from environment: %s", envProfile)
+		}
+		if envRegion != "" {
+			log.Printf("Using AWS_REGION from environment: %s", envRegion)
+		}
 		awsManager, err = aws.NewManager(aws.ManagerOptions{
-			Profile: "", // Use AWS SDK default profile resolution
-			Region:  "", // Use AWS SDK default region resolution
+			Profile: envProfile, // Use environment variable or AWS SDK default
+			Region:  envRegion,  // Use environment variable or AWS SDK default
 		})
 	} else {
 		currentProfile, err := profileManager.GetCurrentProfile()
 		if err != nil {
 			log.Printf("Failed to get current profile, using AWS defaults: %v", err)
-			// Initialize AWS manager with AWS SDK defaults (no hardcoded values)
+			// Fall back to environment variables before using AWS SDK defaults
+			envProfile := os.Getenv("AWS_PROFILE")
+			envRegion := os.Getenv("AWS_REGION")
+			if envProfile != "" {
+				log.Printf("Using AWS_PROFILE from environment: %s", envProfile)
+			}
+			if envRegion != "" {
+				log.Printf("Using AWS_REGION from environment: %s", envRegion)
+			}
 			awsManager, _ = aws.NewManager(aws.ManagerOptions{
-				Profile: "", // Use AWS SDK default profile resolution
-				Region:  "", // Use AWS SDK default region resolution
+				Profile: envProfile, // Use environment variable or AWS SDK default
+				Region:  envRegion,  // Use environment variable or AWS SDK default
 			})
 		} else {
 			// Use profile values from current Prism profile

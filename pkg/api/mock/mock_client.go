@@ -21,6 +21,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/storage"
 	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/throttle"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -2010,5 +2011,49 @@ func (m *MockClient) ListTransfers(ctx context.Context) ([]*storage.TransferProg
 }
 
 func (m *MockClient) CancelTransfer(ctx context.Context, transferID string) error {
+	return nil
+}
+
+// Throttling operations
+
+// ConfigureThrottling configures throttling settings (mock)
+func (m *MockClient) ConfigureThrottling(ctx context.Context, config throttle.Config) error {
+	return nil
+}
+
+// GetThrottlingStatus returns the current throttling status (mock)
+func (m *MockClient) GetThrottlingStatus(ctx context.Context, scope string) (*throttle.Status, error) {
+	return &throttle.Status{
+		Enabled: true,
+		Scope:   scope,
+	}, nil
+}
+
+// GetThrottlingRemaining returns remaining throttle capacity (mock)
+func (m *MockClient) GetThrottlingRemaining(ctx context.Context, scope string) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"scope":     scope,
+		"remaining": 100,
+		"total":     1000,
+	}, nil
+}
+
+// DisableThrottling disables throttling for a scope (mock)
+func (m *MockClient) DisableThrottling(ctx context.Context, scope string) error {
+	return nil
+}
+
+// ListProjectThrottleOverrides lists project throttle overrides (mock)
+func (m *MockClient) ListProjectThrottleOverrides(ctx context.Context) ([]throttle.Override, error) {
+	return []throttle.Override{}, nil
+}
+
+// SetProjectThrottleOverride sets a project throttle override (mock)
+func (m *MockClient) SetProjectThrottleOverride(ctx context.Context, projectID string, override throttle.Override) error {
+	return nil
+}
+
+// RemoveProjectThrottleOverride removes a project throttle override (mock)
+func (m *MockClient) RemoveProjectThrottleOverride(ctx context.Context, projectID string) error {
 	return nil
 }

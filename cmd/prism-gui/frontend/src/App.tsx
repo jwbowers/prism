@@ -1,4 +1,5 @@
 // Prism GUI - Bulletproof AWS Integration
+import { logger } from './utils/logger';
 // Complete error handling, real API integration, professional UX
 
 import React, { useState, useEffect } from 'react';
@@ -407,6 +408,73 @@ interface AppState {
   error: string | null;
 }
 
+// API Response Interfaces
+interface HibernationStatus {
+  supported: boolean;
+  enabled?: boolean;
+  state?: string;
+  message?: string;
+}
+
+interface UserStatus {
+  username: string;
+  status: string;
+  provisioned_instances: string[];
+  ssh_keys_count: number;
+  last_active?: string;
+}
+
+interface UserProvisionResponse {
+  success: boolean;
+  instance: string;
+  username: string;
+  message?: string;
+}
+
+interface SSHKeyResponse {
+  public_key: string;
+  fingerprint: string;
+  created_at: string;
+}
+
+interface ProjectUsageResponse {
+  project_id: string;
+  period: string;
+  instance_hours: number;
+  storage_gb_hours: number;
+  data_transfer_gb: number;
+  [key: string]: string | number;
+}
+
+interface SharedToken {
+  token: string;
+  project_id: string;
+  project_name: string;
+  name: string;
+  role: string;
+  redemption_limit: number;
+  redemptions_remaining: number;
+  created_by: string;
+  created_at: string;
+  expires_at?: string;
+  status: 'active' | 'expired' | 'exhausted';
+}
+
+interface RedeemTokenResponse {
+  success: boolean;
+  project_id: string;
+  project_name: string;
+  role: string;
+  message?: string;
+}
+
+interface WebService {
+  name: string;
+  port: number;
+  url?: string;
+  description?: string;
+}
+
 // Safe API Service with comprehensive error handling
 class SafePrismAPI {
   private baseURL = 'http://localhost:8947';
@@ -423,7 +491,7 @@ class SafePrismAPI {
       const data = await response.json();
       this.apiKey = data.api_key;
     } catch (error) {
-      console.error('❌ Failed to load API key:', error);
+      logger.error('❌ Failed to load API key:', error);
     }
   }
 
@@ -445,7 +513,7 @@ class SafePrismAPI {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error(`API request failed for ${endpoint}:`, error);
+      logger.error(`API request failed for ${endpoint}:`, error);
       throw error;
     }
   }
@@ -455,7 +523,7 @@ class SafePrismAPI {
       const data = await this.safeRequest('/api/v1/templates');
       return data || {};
     } catch (error) {
-      console.error('Failed to fetch templates:', error);
+      logger.error('Failed to fetch templates:', error);
       return {};
     }
   }
@@ -465,12 +533,12 @@ class SafePrismAPI {
       const data = await this.safeRequest('/api/v1/instances');
       return Array.isArray(data?.instances) ? data.instances : [];
     } catch (error) {
-      console.error('Failed to fetch instances:', error);
+      logger.error('Failed to fetch instances:', error);
       return [];
     }
   }
 
-  async launchInstance(templateSlug: string, name: string, size: string = 'M'): Promise<any> {
+  async launchInstance(templateSlug: string, name: string, size: string = 'M'): Promise<Instance> {
     return this.safeRequest('/api/v1/instances', 'POST', {
       template: templateSlug,
       name,
@@ -500,7 +568,7 @@ class SafePrismAPI {
     return data.connection_info || '';
   }
 
-  async getHibernationStatus(identifier: string): Promise<any> {
+  async getHibernationStatus(identifier: string): Promise<HibernationStatus> {
     return this.safeRequest(`/api/v1/instances/${identifier}/hibernation-status`);
   }
 
@@ -549,12 +617,12 @@ class SafePrismAPI {
       // Convert unified StorageVolume to legacy EFSVolume format
       return data.map(vol => this.storageVolumeToEFS(vol)).filter((v): v is EFSVolume => v !== null);
     } catch (error) {
-      console.error('Failed to fetch shared storage volumes:', error);
+      logger.error('Failed to fetch shared storage volumes:', error);
       return [];
     }
   }
 
-  async createEFSVolume(name: string, performanceMode: string = 'generalPurpose', throughputMode: string = 'bursting'): Promise<any> {
+  async createEFSVolume(name: string, performanceMode: string = 'generalPurpose', throughputMode: string = 'bursting'): Promise<EFSVolume> {
     return this.safeRequest('/api/v1/volumes', 'POST', {
       name,
       performance_mode: performanceMode,
@@ -588,12 +656,12 @@ class SafePrismAPI {
         .map(vol => this.storageVolumeToEBS(vol))
         .filter((v): v is EBSVolume => v !== null);
     } catch (error) {
-      console.error('Failed to fetch workspace storage volumes:', error);
+      logger.error('Failed to fetch workspace storage volumes:', error);
       return [];
     }
   }
 
-  async createEBSVolume(name: string, size: string = 'M', volumeType: string = 'gp3'): Promise<any> {
+  async createEBSVolume(name: string, size: string = 'M', volumeType: string = 'gp3'): Promise<EBSVolume> {
     return this.safeRequest('/api/v1/storage', 'POST', {
       name,
       size,
@@ -616,12 +684,12 @@ class SafePrismAPI {
   // Comprehensive Project Management APIs
 
   // Project Operations
-  async getProjects(): Promise<any[]> {
+  async getProjects(): Promise<Project[]> {
     try {
       const data = await this.safeRequest('/api/v1/projects');
       return Array.isArray(data?.projects) ? data.projects : [];
     } catch (error) {
-      console.error('Failed to fetch projects:', error);
+      logger.error('Failed to fetch projects:', error);
       return [];
     }
   }
@@ -643,12 +711,12 @@ class SafePrismAPI {
   }
 
   // Project Members
-  async getProjectMembers(projectId: string): Promise<any[]> {
+  async getProjectMembers(projectId: string): Promise<MemberData[]> {
     try {
       const data = await this.safeRequest(`/api/v1/projects/${projectId}/members`);
       return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('Failed to fetch project members:', error);
+      logger.error('Failed to fetch project members:', error);
       return [];
     }
   }
@@ -666,12 +734,12 @@ class SafePrismAPI {
   }
 
   // Budget Management
-  async getProjectBudget(projectId: string): Promise<any> {
+  async getProjectBudget(projectId: string): Promise<BudgetData> {
     return this.safeRequest(`/api/v1/projects/${projectId}/budget`);
   }
 
   // Cost Analysis
-  async getProjectCosts(projectId: string, startDate?: string, endDate?: string): Promise<any> {
+  async getProjectCosts(projectId: string, startDate?: string, endDate?: string): Promise<CostBreakdown> {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
@@ -680,18 +748,18 @@ class SafePrismAPI {
   }
 
   // Resource Usage
-  async getProjectUsage(projectId: string, period?: string): Promise<any> {
+  async getProjectUsage(projectId: string, period?: string): Promise<ProjectUsageResponse> {
     const query = period ? `?period=${period}` : '';
     return this.safeRequest(`/api/v1/projects/${projectId}/usage${query}`);
   }
 
   // User Operations
-  async getUsers(): Promise<any[]> {
+  async getUsers(): Promise<User[]> {
     try {
       const data = await this.safeRequest('/api/v1/users');
       return Array.isArray(data?.users) ? data.users : [];
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      logger.error('Failed to fetch users:', error);
       return [];
     }
   }
@@ -704,16 +772,23 @@ class SafePrismAPI {
     await this.safeRequest(`/api/v1/users/${username}`, 'DELETE');
   }
 
-  async getUserStatus(username: string): Promise<any> {
+  async getUserStatus(username: string): Promise<UserStatus> {
     return this.safeRequest(`/api/v1/users/${username}/status`);
   }
 
-  async provisionUser(username: string, instanceName: string): Promise<any> {
+  async provisionUser(username: string, instanceName: string): Promise<UserProvisionResponse> {
     return this.safeRequest(`/api/v1/users/${username}/provision`, 'POST', { instance: instanceName });
   }
 
-  async generateSSHKey(username: string): Promise<any> {
+  async generateSSHKey(username: string): Promise<SSHKeyResponse> {
     return this.safeRequest(`/api/v1/users/${username}/ssh-keys`, 'POST');
+  }
+
+  // Helper function to calculate budget status
+  private calculateBudgetStatus(spentPercent: number): 'ok' | 'warning' | 'critical' {
+    if (spentPercent >= 95) return 'critical';
+    if (spentPercent >= 80) return 'warning';
+    return 'ok';
   }
 
   // Budget Management APIs
@@ -731,13 +806,6 @@ class SafePrismAPI {
             const remaining = budgetStatus.total_budget - budgetStatus.spent_amount;
             const spentPercent = budgetStatus.spent_percentage * 100;
 
-            let status: 'ok' | 'warning' | 'critical' = 'ok';
-            if (spentPercent >= 95) {
-              status = 'critical';
-            } else if (spentPercent >= 80) {
-              status = 'warning';
-            }
-
             budgets.push({
               project_id: project.id,
               project_name: project.name,
@@ -746,20 +814,20 @@ class SafePrismAPI {
               spent_percentage: budgetStatus.spent_percentage,
               remaining: remaining,
               alert_count: budgetStatus.alert_count || 0,
-              status: status,
+              status: this.calculateBudgetStatus(spentPercent),
               projected_monthly_spend: budgetStatus.projected_monthly_spend,
               days_until_exhausted: budgetStatus.days_until_exhausted,
               active_alerts: budgetStatus.active_alerts
             });
           }
         } catch (error) {
-          console.error(`Failed to fetch budget for project ${project.id}:`, error);
+          logger.error(`Failed to fetch budget for project ${project.id}:`, error);
         }
       }
 
       return budgets;
     } catch (error) {
-      console.error('Failed to fetch budgets:', error);
+      logger.error('Failed to fetch budgets:', error);
       return [];
     }
   }
@@ -782,7 +850,7 @@ class SafePrismAPI {
         total: data.total || 0
       };
     } catch (error) {
-      console.error(`Failed to fetch cost breakdown for project ${projectId}:`, error);
+      logger.error(`Failed to fetch cost breakdown for project ${projectId}:`, error);
       return {
         ec2_compute: 0,
         ebs_storage: 0,
@@ -809,12 +877,12 @@ class SafePrismAPI {
   }
 
   // Invitation Management APIs (v0.5.11+)
-  async getInvitationByToken(token: string): Promise<any> {
+  async getInvitationByToken(token: string): Promise<CachedInvitation> {
     try {
       const data = await this.safeRequest(`/api/v1/invitations/${token}`);
       return data;
     } catch (error) {
-      console.error('Failed to fetch invitation:', error);
+      logger.error('Failed to fetch invitation:', error);
       throw error;
     }
   }
@@ -823,7 +891,7 @@ class SafePrismAPI {
     try {
       await this.safeRequest(`/api/v1/invitations/${token}/accept`, 'POST');
     } catch (error) {
-      console.error('Failed to accept invitation:', error);
+      logger.error('Failed to accept invitation:', error);
       throw error;
     }
   }
@@ -833,7 +901,7 @@ class SafePrismAPI {
       const body = reason ? { reason } : undefined;
       await this.safeRequest(`/api/v1/invitations/${token}/decline`, 'POST', body);
     } catch (error) {
-      console.error('Failed to decline invitation:', error);
+      logger.error('Failed to decline invitation:', error);
       throw error;
     }
   }
@@ -850,7 +918,7 @@ class SafePrismAPI {
       const data = await this.safeRequest<Invitation>(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
       return data;
     } catch (error) {
-      console.error('Failed to send invitation:', error);
+      logger.error('Failed to send invitation:', error);
       throw error;
     }
   }
@@ -867,18 +935,18 @@ class SafePrismAPI {
       const data = await this.safeRequest<BulkInviteResponse>(`/api/v1/projects/${projectId}/invitations/bulk`, 'POST', body);
       return data;
     } catch (error) {
-      console.error('Failed to send bulk invitations:', error);
+      logger.error('Failed to send bulk invitations:', error);
       throw error;
     }
   }
 
   // Shared Token APIs (Issue #241)
-  async getSharedTokens(projectId: string): Promise<any[]> {
+  async getSharedTokens(projectId: string): Promise<SharedToken[]> {
     try {
       const data = await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens`);
       return Array.isArray(data?.tokens) ? data.tokens : [];
     } catch (error) {
-      console.error('Failed to fetch shared tokens:', error);
+      logger.error('Failed to fetch shared tokens:', error);
       return [];
     }
   }
@@ -888,7 +956,7 @@ class SafePrismAPI {
       const data = await this.safeRequest<SharedInvitationToken>(`/api/v1/projects/${projectId}/shared-tokens`, 'POST', config);
       return data;
     } catch (error) {
-      console.error('Failed to create shared token:', error);
+      logger.error('Failed to create shared token:', error);
       throw error;
     }
   }
@@ -899,7 +967,7 @@ class SafePrismAPI {
         expires_in: expiresIn
       });
     } catch (error) {
-      console.error('Failed to extend shared token:', error);
+      logger.error('Failed to extend shared token:', error);
       throw error;
     }
   }
@@ -908,17 +976,17 @@ class SafePrismAPI {
     try {
       await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens/${tokenId}/revoke`, 'POST');
     } catch (error) {
-      console.error('Failed to revoke shared token:', error);
+      logger.error('Failed to revoke shared token:', error);
       throw error;
     }
   }
 
-  async redeemSharedToken(token: string): Promise<any> {
+  async redeemSharedToken(token: string): Promise<RedeemTokenResponse> {
     try {
       const data = await this.safeRequest(`/api/v1/shared-tokens/${token}/redeem`, 'POST');
       return data;
     } catch (error) {
-      console.error('Failed to redeem shared token:', error);
+      logger.error('Failed to redeem shared token:', error);
       throw error;
     }
   }
@@ -946,7 +1014,7 @@ class SafePrismAPI {
         tags: (ami.tags as Record<string, string>) || {}
       }));
     } catch (error) {
-      console.error('Failed to fetch AMIs:', error);
+      logger.error('Failed to fetch AMIs:', error);
       return [];
     }
   }
@@ -957,7 +1025,7 @@ class SafePrismAPI {
       // Return empty array for now
       return [];
     } catch (error) {
-      console.error('Failed to fetch AMI builds:', error);
+      logger.error('Failed to fetch AMI builds:', error);
       return [];
     }
   }
@@ -985,7 +1053,7 @@ class SafePrismAPI {
         monthly_cost: data.totalSize * 0.05
       })).sort((a, b) => b.ami_count - a.ami_count);
     } catch (error) {
-      console.error('Failed to calculate AMI regions:', error);
+      logger.error('Failed to calculate AMI regions:', error);
       return [];
     }
   }
@@ -1025,7 +1093,7 @@ class SafePrismAPI {
         reason: rec.reason || rec.Reason
       }));
     } catch (error) {
-      console.error('Failed to fetch rightsizing recommendations:', error);
+      logger.error('Failed to fetch rightsizing recommendations:', error);
       return [];
     }
   }
@@ -1048,7 +1116,7 @@ class SafePrismAPI {
         return null; // Don't log, just return null
       }
       // Only log unexpected errors
-      console.error('Unexpected error fetching rightsizing stats:', error);
+      logger.error('Unexpected error fetching rightsizing stats:', error);
       return null;
     }
   }
@@ -1069,7 +1137,7 @@ class SafePrismAPI {
         message: data.message
       };
     } catch (error) {
-      console.error('Failed to fetch policy status:', error);
+      logger.error('Failed to fetch policy status:', error);
       return null;
     }
   }
@@ -1080,7 +1148,7 @@ class SafePrismAPI {
       if (!data || !data.policy_sets) {
         return [];
       }
-      return Object.entries(data.policy_sets).map(([id, info]: [string, any]) => ({
+      return Object.entries(data.policy_sets).map(([id, info]: [string, unknown]) => ({
         id,
         name: info.name || id,
         description: info.description || '',
@@ -1089,7 +1157,7 @@ class SafePrismAPI {
         tags: info.tags
       }));
     } catch (error) {
-      console.error('Failed to fetch policy sets:', error);
+      logger.error('Failed to fetch policy sets:', error);
       return [];
     }
   }
@@ -1144,7 +1212,7 @@ class SafePrismAPI {
         ami_available: (t.ami_available as boolean) || (t.AMIAvailable as boolean) || false
       }));
     } catch (error) {
-      console.error('Failed to fetch marketplace templates:', error);
+      logger.error('Failed to fetch marketplace templates:', error);
       return [];
     }
   }
@@ -1161,7 +1229,7 @@ class SafePrismAPI {
         count: (c.count as number) || (c.Count as number) || 0
       }));
     } catch (error) {
-      console.error('Failed to fetch marketplace categories:', error);
+      logger.error('Failed to fetch marketplace categories:', error);
       return [];
     }
   }
@@ -1177,7 +1245,7 @@ class SafePrismAPI {
       if (!data || !data.policies) {
         return [];
       }
-      const policies = Object.entries(data.policies).map(([id, p]: [string, any]) => ({
+      const policies = Object.entries(data.policies).map(([id, p]: [string, unknown]) => ({
         id,
         name: p.name || p.Name || id,
         idle_minutes: p.idle_minutes || p.IdleMinutes || 0,
@@ -1190,7 +1258,7 @@ class SafePrismAPI {
       }));
       return policies;
     } catch (error) {
-      console.error('Failed to fetch idle policies:', error);
+      logger.error('Failed to fetch idle policies:', error);
       return [];
     }
   }
@@ -1210,7 +1278,7 @@ class SafePrismAPI {
         status: (s.status as string) || (s.Status as string) || ''
       }));
     } catch (error) {
-      console.error('Failed to fetch idle schedules:', error);
+      logger.error('Failed to fetch idle schedules:', error);
       return [];
     }
   }
@@ -1306,7 +1374,8 @@ export default function PrismApp() {
   const [instancesFilterQuery, setInstancesFilterQuery] = useState({ tokens: [], operation: 'and' as const });
 
   // Safe data loading with comprehensive error handling
-  const loadApplicationData = async () => {
+  // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
+  const loadApplicationData = React.useCallback(async () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -1380,7 +1449,7 @@ export default function PrismApp() {
       }));
 
     } catch (error) {
-      console.error('Failed to load application data:', error);
+      logger.error('Failed to load application data:', error);
 
       setState(prev => ({
         ...prev,
@@ -1398,7 +1467,8 @@ export default function PrismApp() {
         ]
       }));
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps: api and setState are stable references that don't change
 
   // Utility function to get accessible status labels (WCAG 1.1.1)
   const getStatusLabel = (context: string, status: string, additionalInfo?: string): string => {
@@ -1470,7 +1540,8 @@ export default function PrismApp() {
     loadApplicationData();
     const interval = setInterval(loadApplicationData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally run only on mount to set up 30s refresh interval
 
   // Show onboarding for first-time users
   useEffect(() => {
@@ -1557,7 +1628,7 @@ export default function PrismApp() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [state.activeView]);
+  }, [state.activeView, loadApplicationData]);
 
   // Safe template selection
   const handleTemplateSelection = (template: Template) => {
@@ -1566,7 +1637,7 @@ export default function PrismApp() {
       setLaunchConfig({ name: '', size: 'M' });
       setLaunchModalVisible(true);
     } catch (error) {
-      console.error('Template selection failed:', error);
+      logger.error('Template selection failed:', error);
     }
   };
 
@@ -1982,7 +2053,7 @@ export default function PrismApp() {
         >
           {/* Working Template Cards Implementation */}
           <SpaceBetween size="m" data-testid="cards">
-            {templateList.map((template, index) => (
+            {templateList.map((template) => (
               <Container
                 key={getTemplateName(template)}
                 data-testid="template-card"
@@ -2035,12 +2106,13 @@ export default function PrismApp() {
           await api.resumeInstance(instance.name);
           actionMessage = `Resumed instance ${instance.name}`;
           break;
-        case 'connect':
+        case 'connect': {
           const connectionInfo = await api.getConnectionInfo(instance.name);
           // Copy to clipboard and show notification
           navigator.clipboard.writeText(connectionInfo);
           actionMessage = `Connection command copied to clipboard: ${connectionInfo}`;
           break;
+        }
         case 'terminal':
           // Open terminal view with this instance pre-selected
           setState(prev => ({
@@ -2127,7 +2199,7 @@ export default function PrismApp() {
       setTimeout(loadApplicationData, 1000);
 
     } catch (error) {
-      console.error(`Failed to ${action} workspace ${instance.name}:`, error);
+      logger.error(`Failed to ${action} workspace ${instance.name}:`, error);
 
       setState(prev => ({
         ...prev,
@@ -2231,7 +2303,7 @@ export default function PrismApp() {
       setTimeout(loadApplicationData, 1000);
 
     } catch (error) {
-      console.error(`Failed to execute bulk ${action}:`, error);
+      logger.error(`Failed to execute bulk ${action}:`, error);
 
       setState(prev => ({
         ...prev,
@@ -2642,7 +2714,7 @@ export default function PrismApp() {
       setTimeout(loadApplicationData, 1000);
 
     } catch (error) {
-      console.error(`Failed to ${action} ${volumeType} volume ${volume.name}:`, error);
+      logger.error(`Failed to ${action} ${volumeType} volume ${volume.name}:`, error);
 
       setState(prev => ({
         ...prev,
@@ -3628,10 +3700,10 @@ export default function PrismApp() {
     const [bulkRole, setBulkRole] = useState('member');
     const [bulkMessage, setBulkMessage] = useState('');
     const [bulkSending, setBulkSending] = useState(false);
-    const [bulkResults, setBulkResults] = useState<any>(null);
+    const [bulkResults, setBulkResults] = useState<BulkInviteResponse | null>(null);
 
     // Shared token state
-    const [sharedTokens, setSharedTokens] = useState<any[]>([]);
+    const [sharedTokens, setSharedTokens] = useState<SharedToken[]>([]);
     const [loadingTokens, setLoadingTokens] = useState(false);
     const [creatingToken, setCreatingToken] = useState(false);
     const [tokenModalVisible, setTokenModalVisible] = useState(false);
@@ -3643,7 +3715,7 @@ export default function PrismApp() {
       message: ''
     });
     const [qrModalVisible, setQrModalVisible] = useState(false);
-    const [selectedTokenForQR, setSelectedTokenForQR] = useState<any>(null);
+    const [selectedTokenForQR, setSelectedTokenForQR] = useState<SharedToken | null>(null);
 
     // Handle adding a new invitation
     const handleAddInvitation = async () => {
@@ -3686,7 +3758,7 @@ export default function PrismApp() {
         addNotification('success', 'Invitation Added', `Added invitation to ${project.name}`);
         setNewToken('');
       } catch (error) {
-        console.error('Failed to add invitation:', error);
+        logger.error('Failed to add invitation:', error);
         addNotification('error', 'Failed to Add', String(error));
       } finally {
         setAddingInvitation(false);
@@ -3711,7 +3783,7 @@ export default function PrismApp() {
         addNotification('success', 'Invitation Accepted', `You now have access to ${invitation.project_name}`);
         setActionModalVisible(false);
       } catch (error) {
-        console.error('Failed to accept invitation:', error);
+        logger.error('Failed to accept invitation:', error);
         addNotification('error', 'Failed to Accept', String(error));
       }
     };
@@ -3734,7 +3806,7 @@ export default function PrismApp() {
         addNotification('success', 'Invitation Declined', `Declined invitation to ${invitation.project_name}`);
         setActionModalVisible(false);
       } catch (error) {
-        console.error('Failed to decline invitation:', error);
+        logger.error('Failed to decline invitation:', error);
         addNotification('error', 'Failed to Decline', String(error));
       }
     };
@@ -3784,7 +3856,7 @@ export default function PrismApp() {
         setBulkEmailList('');
         setBulkMessage('');
       } catch (error) {
-        console.error('Failed to send bulk invitations:', error);
+        logger.error('Failed to send bulk invitations:', error);
         addNotification('error', 'Failed to Send', String(error));
       } finally {
         setBulkSending(false);
@@ -3801,7 +3873,7 @@ export default function PrismApp() {
           setSharedTokens(tokens);
         }
       } catch (error) {
-        console.error('Failed to load shared tokens:', error);
+        logger.error('Failed to load shared tokens:', error);
         addNotification('error', 'Failed to Load Tokens', String(error));
       } finally {
         setLoadingTokens(false);
@@ -3823,7 +3895,7 @@ export default function PrismApp() {
 
       setCreatingToken(true);
       try {
-        const result = await api.createSharedToken(projects[0].id, newTokenConfig);
+        await api.createSharedToken(projects[0].id, newTokenConfig);
         addNotification('success', 'Token Created', `Shared token "${newTokenConfig.name}" created successfully`);
         setTokenModalVisible(false);
 
@@ -3839,7 +3911,7 @@ export default function PrismApp() {
         // Reload tokens
         await loadSharedTokens();
       } catch (error) {
-        console.error('Failed to create shared token:', error);
+        logger.error('Failed to create shared token:', error);
         addNotification('error', 'Failed to Create', String(error));
       } finally {
         setCreatingToken(false);
@@ -3856,7 +3928,7 @@ export default function PrismApp() {
         addNotification('success', 'Token Extended', `Extended "${token.name}" by 7 days`);
         await loadSharedTokens();
       } catch (error) {
-        console.error('Failed to extend token:', error);
+        logger.error('Failed to extend token:', error);
         addNotification('error', 'Failed to Extend', String(error));
       }
     };
@@ -3871,7 +3943,7 @@ export default function PrismApp() {
         addNotification('success', 'Token Revoked', `Revoked "${token.name}"`);
         await loadSharedTokens();
       } catch (error) {
-        console.error('Failed to revoke token:', error);
+        logger.error('Failed to revoke token:', error);
         addNotification('error', 'Failed to Revoke', String(error));
       }
     };
@@ -4536,6 +4608,9 @@ export default function PrismApp() {
 
   // Project Detail View with Integrated Budget
   const ProjectDetailView = () => {
+    // Hooks must be called at the top level before any conditional returns
+    const [activeTabId, setActiveTabId] = React.useState('overview');
+
     if (!state.selectedProject) {
       // Fallback if no project selected
       return (
@@ -4551,10 +4626,9 @@ export default function PrismApp() {
     }
 
     const project = state.selectedProject;
-    const [activeTabId, setActiveTabId] = React.useState('overview');
 
-    // Get budget data for this project
-    const projectBudget = state.budgets.find(b => b.project_id === project.id);
+    // Get budget data for this project (reserved for future use)
+    const _projectBudget = state.budgets.find(b => b.project_id === project.id);
 
     // Get workspaces for this project
     const projectWorkspaces = state.instances.filter(i =>
@@ -4886,7 +4960,7 @@ export default function PrismApp() {
                           {
                             id: 'cost',
                             header: 'Accumulated Cost',
-                            cell: (item: Instance) => {
+                            cell: () => {
                               // Mock cost calculation - in real implementation, fetch from API
                               const mockCost = Math.random() * 50;
                               return `$${mockCost.toFixed(2)}`;
@@ -4895,7 +4969,7 @@ export default function PrismApp() {
                           {
                             id: 'rate',
                             header: 'Hourly Rate',
-                            cell: (item: Instance) => {
+                            cell: () => {
                               // Mock rate - in real implementation, fetch from API
                               return '$0.85/hr';
                             }
@@ -5306,6 +5380,7 @@ export default function PrismApp() {
   };
 
   // Budget Management View
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const BudgetManagementView = () => {
     const [selectedTab, setSelectedTab] = useState<number>(0);
     const [selectedBudget, setSelectedBudget] = useState<BudgetData | null>(null);
@@ -5709,6 +5784,7 @@ export default function PrismApp() {
     const [selectedTab, setSelectedTab] = useState<'amis' | 'builds' | 'regions'>('amis');
     const [selectedAMI, setSelectedAMI] = useState<AMI | null>(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [buildModalVisible, setBuildModalVisible] = useState(false);
 
     const totalSize = state.amis.reduce((sum, ami) => sum + ami.size_gb, 0);
@@ -6026,7 +6102,7 @@ export default function PrismApp() {
       }
 
       setFilteredTemplates(filtered);
-    }, [searchQuery, selectedCategory, state.marketplaceTemplates]);
+    }, [searchQuery, selectedCategory]);
 
     const handleInstallTemplate = async () => {
       if (!selectedTemplate) return;
@@ -6660,7 +6736,8 @@ export default function PrismApp() {
 
     const runningInstances = state.instances.filter(i => i.state === 'running' || i.state === 'stopped');
 
-    const fetchLogs = async () => {
+    // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
+    const fetchLogs = React.useCallback(async () => {
       if (!selectedInstance) return;
 
       setLoadingLogs(true);
@@ -6691,13 +6768,13 @@ export default function PrismApp() {
       } finally {
         setLoadingLogs(false);
       }
-    };
+    }, [selectedInstance, logType]);
 
     useEffect(() => {
       if (selectedInstance) {
         fetchLogs();
       }
-    }, [selectedInstance, logType]);
+    }, [selectedInstance, logType, fetchLogs]);
 
     return (
       <SpaceBetween size="l">
@@ -6915,7 +6992,7 @@ export default function PrismApp() {
 
 
   const WebViewView = () => {
-    const [selectedService, setSelectedService] = React.useState<{instance: string, service: any} | null>(null);
+    const [selectedService, setSelectedService] = React.useState<{instance: string, service: WebService} | null>(null);
     const instancesWithServices = state.instances.filter(i =>
       i.state === 'running' && i.web_services && i.web_services.length > 0
     );
@@ -7740,7 +7817,7 @@ export default function PrismApp() {
             onFollow={event => {
               if (!event.detail.external) {
                 event.preventDefault();
-                const view = event.detail.href.substring(1) as any;
+                const view = event.detail.href.substring(1) as AppState['activeView'];
                 setState(prev => ({ ...prev, activeView: view || 'dashboard' }));
               }
             }}

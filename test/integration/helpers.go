@@ -94,7 +94,11 @@ func (ctx *TestContext) StartDaemon() {
 	cmd := exec.Command(daemonPath)
 	// Set environment to use test state directory (matches user experience with custom state location)
 	env := os.Environ()
-	env = append(env, fmt.Sprintf("PRISM_STATE_DIR=%s", tempStateDir))
+	env = append(env,
+		fmt.Sprintf("PRISM_STATE_DIR=%s", tempStateDir),
+		fmt.Sprintf("AWS_PROFILE=%s", TestAWSProfile),
+		fmt.Sprintf("AWS_REGION=%s", TestAWSRegion),
+	)
 	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

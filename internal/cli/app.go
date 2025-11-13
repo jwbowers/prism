@@ -112,6 +112,19 @@ func NewApp(version string) *App {
 		}
 	}
 
+	// Check environment variables if profile/region not set or is "default"
+	// This ensures AWS_PROFILE and AWS_REGION environment variables are respected
+	if awsProfile == "" || awsProfile == "default" {
+		if envProfile := os.Getenv("AWS_PROFILE"); envProfile != "" {
+			awsProfile = envProfile
+		}
+	}
+	if awsRegion == "" {
+		if envRegion := os.Getenv("AWS_REGION"); envRegion != "" {
+			awsRegion = envRegion
+		}
+	}
+
 	// Create API client with configuration
 	baseClient := client.NewClientWithOptions(apiURL, client.Options{
 		AWSProfile: awsProfile,
