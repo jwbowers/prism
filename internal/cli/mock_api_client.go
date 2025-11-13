@@ -11,6 +11,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/storage"
 	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/throttle"
 	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/scttfrdmn/prism/pkg/version"
 )
@@ -2199,6 +2200,63 @@ func (m *MockAPIClient) ExtendSharedToken(ctx context.Context, tokenID string, d
 }
 
 func (m *MockAPIClient) RevokeSharedToken(ctx context.Context, tokenID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+// Throttling operations
+func (m *MockAPIClient) ConfigureThrottling(ctx context.Context, config throttle.Config) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) GetThrottlingStatus(ctx context.Context, scope string) (*throttle.Status, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &throttle.Status{
+		Enabled: true,
+		Scope:   scope,
+	}, nil
+}
+
+func (m *MockAPIClient) GetThrottlingRemaining(ctx context.Context, scope string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{
+		"scope":     scope,
+		"remaining": 100,
+		"total":     1000,
+	}, nil
+}
+
+func (m *MockAPIClient) DisableThrottling(ctx context.Context, scope string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) ListProjectThrottleOverrides(ctx context.Context) ([]throttle.Override, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []throttle.Override{}, nil
+}
+
+func (m *MockAPIClient) SetProjectThrottleOverride(ctx context.Context, projectID string, override throttle.Override) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) RemoveProjectThrottleOverride(ctx context.Context, projectID string) error {
 	if m.ShouldReturnError {
 		return fmt.Errorf("%s", m.ErrorMessage)
 	}

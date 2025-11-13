@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -218,16 +222,71 @@ func TestListTransfers(t *testing.T) {
 }
 
 func TestDeleteObject(t *testing.T) {
-	t.Skip("Skipping TestDeleteObject - requires proper S3 client configuration")
+	// Check if localstack is available
+	ctx := context.Background()
 
-	// Note: This test would require full S3 mocking with proper AWS SDK configuration.
-	// The current test setup with &s3.Client{} and nil config causes nil pointer dereference
-	// in the AWS SDK's retry middleware initialization.
-	//
-	// To properly test this, we would need:
-	// 1. Mock S3 server (like localstack)
-	// 2. Proper AWS SDK configuration with credentials and region
-	// 3. Or comprehensive AWS SDK mocking
+	// Configure S3 client for localstack
+	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		if service == s3.ServiceID {
+			return aws.Endpoint{
+				URL:               "http://localhost:4566",
+				HostnameImmutable: true,
+			}, nil
+		}
+		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+	})
+
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion("us-east-1"),
+		config.WithEndpointResolverWithOptions(customResolver),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+	)
+	if err != nil {
+		t.Skipf("Skipping TestDeleteObject - cannot configure localstack client: %v", err)
+	}
+
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true // Required for localstack
+	})
+
+	// Create test bucket
+	testBucket := "test-delete-bucket"
+	_, err = s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: &testBucket,
+	})
+	if err != nil {
+		t.Skipf("Skipping TestDeleteObject - localstack not available: %v", err)
+	}
+	defer s3Client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: &testBucket})
+
+	// Create transfer manager
+	tm := NewTransferManager(s3Client, DefaultTransferOptions())
+
+	// Upload a test object first
+	testKey := "test-delete-object.txt"
+	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: &testBucket,
+		Key:    &testKey,
+		Body:   strings.NewReader("test content for deletion"),
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test object: %v", err)
+	}
+
+	// Test DeleteObject
+	err = tm.DeleteObject(ctx, testBucket, testKey)
+	if err != nil {
+		t.Errorf("DeleteObject failed: %v", err)
+	}
+
+	// Verify object is deleted
+	_, err = s3Client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: &testBucket,
+		Key:    &testKey,
+	})
+	if err == nil {
+		t.Error("Expected object to be deleted, but it still exists")
+	}
 }
 
 func TestComputeFileMD5(t *testing.T) {
