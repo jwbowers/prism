@@ -147,7 +147,7 @@ func TestCLIInstanceLifecycle(t *testing.T) {
 
 	// Phase 1: Launch
 	t.Run("Launch", func(t *testing.T) {
-		result, err := ctx.LaunchInstanceCLI("r-research", instanceName, "S")
+		result, err := ctx.LaunchInstanceCLI("r-research-workstation", instanceName, "S")
 		AssertNoError(t, err, "launch should succeed")
 		result.AssertSuccess(t, "launch command should succeed")
 	})
