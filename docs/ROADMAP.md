@@ -1,8 +1,8 @@
 # Prism Development Roadmap
 
-**Current Version**: v0.5.17 (Planned)
-**Last Released**: v0.5.16 (November 12, 2025)
-**Next Version**: v0.5.17 (Planned - December 2025)
+**Current Version**: v0.5.16 (Planned)
+**Last Released**: v0.5.15 (November 12, 2025)
+**Next Version**: v0.5.16 (Planned - December 2025)
 **Last Updated**: November 12, 2025
 **Status**: Active Development
 
@@ -414,49 +414,35 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.16 (November 2025): Technical Debt & Stability ✅ RELEASED
-**Release Date**: November 12, 2025
-**Focus**: Infrastructure verification and test stability
+### v0.5.16 (December 2025): Technical Debt & Stability 🔧 PLANNED
+**Release Date**: Target December 27, 2025
+**Focus**: Infrastructure improvements and test stability
 **Issues**: #257-#259
 
-#### Completed Features
+#### Planned Features
 
-**Template Asset Management** (#257): ✅ COMPLETE
-- ✅ S3 transfer infrastructure production-ready (555 lines)
-- ✅ REST API endpoints for file transfers (227 lines)
-- ✅ Template file provisioning via AWS CLI (196 lines)
-- ✅ Comprehensive test suite (16 tests passing)
-- ✅ Multipart upload/download with progress tracking
-- ✅ MD5 checksum verification
-- ✅ SSM file operations documented as "not currently used"
+**Template Asset Management** (#257):
+- SSM-based file operations for template provisioning
+- S3 backing store for large assets
+- Progress reporting for multi-GB files
+- Enables binary distribution, datasets, installers
 - **Use Case**: MATLAB toolboxes, QGIS plugins, sample datasets
 
-**API Test Stability** (#258): ✅ COMPLETE
-- ✅ All tests in `pkg/api/client/` passing
-- ✅ Zero test failures
-- ✅ Issue resolved in previous development
+**API Test Stability** (#258):
+- Fix 3 failing tests in `pkg/api/client/`
+- Implement proper AWS service mocking
+- Deterministic tests without AWS credentials
+- Green CI/CD builds
 
-**Rename Cleanup** (#259): ✅ PARTIALLY COMPLETE
-- ✅ User-facing error messages fixed (http_client.go)
-- ✅ "cws" → "prism" in version mismatch messages
-- ✅ "cloudworkstation" → "prism" in upgrade instructions
-- 📝 147 internal references remain (low priority maintenance)
-- 📝 S3 buckets, SSM paths, email domains (non-user-facing)
+**Rename Cleanup** (#259):
+- Complete CloudWorkStation → Prism in ~45 script files
+- Build/CI/CD script consistency
+- Final branding pass
+- Low priority maintenance
 
-**Implementation Statistics**:
-- 1 file modified (http_client.go - 4 lines changed)
-- 6 files investigated and verified
-- 16+ tests verified passing
-- 3 technical debt items resolved/documented
+**Priority**: Medium - Infrastructure improvements to support v0.5.15+ templates
 
-**Key Findings**:
-- S3 transfer system already production-ready
-- Template file provisioning fully functional
-- Infrastructure complete, no additional work needed
-
-**See**: [v0.5.16 Completion Summary](releases/v0.5.16_COMPLETION_SUMMARY.md)
-
-**Priority**: Medium - Infrastructure verification successful
+**Status**: 📋 Planned (December 2025)
 
 ---
 
