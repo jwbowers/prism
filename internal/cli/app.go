@@ -922,6 +922,41 @@ func (a *App) Resume(args []string) error {
 	return a.instanceCommands.Resume(args)
 }
 
+// StopWithWait stops an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) StopWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Stop([]string{name})
+}
+
+// StartWithWait starts an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) StartWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Start([]string{name})
+}
+
+// DeleteWithWait deletes an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) DeleteWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Delete([]string{name})
+}
+
+// HibernateWithWait hibernates an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) HibernateWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Hibernate([]string{name})
+}
+
+// ResumeWithWait resumes an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) ResumeWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Resume([]string{name})
+}
+
 // Volume handles volume commands
 func (a *App) Volume(args []string) error {
 	return a.storageCommands.Volume(args)

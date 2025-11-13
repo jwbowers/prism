@@ -119,62 +119,95 @@ func (f *WorkspaceCommandFactory) createListCommand() *cobra.Command {
 }
 
 func (f *WorkspaceCommandFactory) createStartCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "start <name>",
 		Short: "Start a stopped workspace",
-		Args:  cobra.ExactArgs(1),
+		Long: `Start a stopped workspace.
+
+By default, the command initiates the start and returns immediately.
+Use --wait to block until the workspace is running.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return f.app.Start(args)
+			wait, _ := cmd.Flags().GetBool("wait")
+			return f.app.StartWithWait(args[0], wait)
 		},
 	}
+	cmd.Flags().Bool("wait", false, "Wait for the start operation to complete")
+	return cmd
 }
 
 func (f *WorkspaceCommandFactory) createStopCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "stop <name>",
 		Short: "Stop a running workspace",
-		Args:  cobra.ExactArgs(1),
+		Long: `Stop a running workspace.
+
+By default, the command initiates the stop and returns immediately.
+Use --wait to block until the operation completes.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return f.app.Stop(args)
+			wait, _ := cmd.Flags().GetBool("wait")
+			return f.app.StopWithWait(args[0], wait)
 		},
 	}
+	cmd.Flags().Bool("wait", false, "Wait for the stop operation to complete")
+	return cmd
 }
 
 func (f *WorkspaceCommandFactory) createDeleteCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "delete <name>",
 		Aliases: []string{"rm", "remove"},
 		Short:   "Delete a workspace",
-		Args:    cobra.ExactArgs(1),
+		Long: `Delete a workspace and its associated resources.
+
+By default, the command initiates the deletion and returns immediately.
+Use --wait to block until the workspace is fully terminated.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return f.app.Delete(args)
+			wait, _ := cmd.Flags().GetBool("wait")
+			return f.app.DeleteWithWait(args[0], wait)
 		},
 	}
+	cmd.Flags().Bool("wait", false, "Wait for the deletion to complete")
+	return cmd
 }
 
 func (f *WorkspaceCommandFactory) createHibernateCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "hibernate <name>",
 		Short: "Hibernate a workspace (save state, reduce costs)",
 		Long: `Hibernate a workspace to save memory state to disk and stop the workspace.
-This reduces costs while preserving your work session for fast resume.`,
+This reduces costs while preserving your work session for fast resume.
+
+By default, the command initiates hibernation and returns immediately.
+Use --wait to block until the workspace is hibernated.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return f.app.Hibernate(args)
+			wait, _ := cmd.Flags().GetBool("wait")
+			return f.app.HibernateWithWait(args[0], wait)
 		},
 	}
+	cmd.Flags().Bool("wait", false, "Wait for the hibernation to complete")
+	return cmd
 }
 
 func (f *WorkspaceCommandFactory) createResumeCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "resume <name>",
 		Short: "Resume a hibernated workspace",
-		Long:  `Resume a hibernated workspace, restoring memory state and continuing your work session.`,
-		Args:  cobra.ExactArgs(1),
+		Long: `Resume a hibernated workspace, restoring memory state and continuing your work session.
+
+By default, the command initiates the resume and returns immediately.
+Use --wait to block until the workspace is running.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return f.app.Resume(args)
+			wait, _ := cmd.Flags().GetBool("wait")
+			return f.app.ResumeWithWait(args[0], wait)
 		},
 	}
+	cmd.Flags().Bool("wait", false, "Wait for the resume operation to complete")
+	return cmd
 }
 
 func (f *WorkspaceCommandFactory) createConnectCommand() *cobra.Command {
