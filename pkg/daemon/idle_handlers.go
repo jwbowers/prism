@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/idle"
 )
 
@@ -15,7 +16,8 @@ import (
 func (s *Server) RegisterIdleRoutes(mux *http.ServeMux, applyMiddleware func(http.HandlerFunc) http.HandlerFunc) {
 	// Idle policy endpoints
 	mux.HandleFunc("/api/v1/idle/policies", applyMiddleware(s.handleIdlePolicies))
-	mux.HandleFunc("/api/v1/idle/policies/", applyMiddleware(s.handleIdlePolicyOperations))
+	mux.HandleFunc("/api/v1/idle/policies/apply", applyMiddleware(s.handleIdlePolicyApply)) // Register specific route before wildcard
+	mux.HandleFunc("/api/v1/idle/policies/", applyMiddleware(s.handleIdlePolicyOperations)) // Wildcard route last
 	mux.HandleFunc("/api/v1/idle/schedules", applyMiddleware(s.handleIdleSchedules))
 	mux.HandleFunc("/api/v1/idle/savings", applyMiddleware(s.handleIdleSavings))
 }
@@ -303,8 +305,14 @@ func (s *Server) getInstanceIdlePolicies(w http.ResponseWriter, r *http.Request,
 // applyIdlePolicyToInstance applies an idle policy to an instance
 func (s *Server) applyIdlePolicyToInstance(w http.ResponseWriter, r *http.Request, instanceName, policyID string) {
 	// Apply the idle policy via AWS manager
-	if err := s.awsManager.ApplyHibernationPolicy(instanceName, policyID); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to apply idle policy: %v", err), http.StatusInternalServerError)
+	var policyErr error
+	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
+		policyErr = awsManager.ApplyHibernationPolicy(instanceName, policyID)
+		return policyErr
+	})
+
+	// If withAWSManager returned early with an error, it already wrote the response
+	if policyErr != nil {
 		return
 	}
 
@@ -323,8 +331,14 @@ func (s *Server) applyIdlePolicyToInstance(w http.ResponseWriter, r *http.Reques
 // removeIdlePolicyFromInstance removes an idle policy from an instance
 func (s *Server) removeIdlePolicyFromInstance(w http.ResponseWriter, r *http.Request, instanceName, policyID string) {
 	// Remove the idle policy via AWS manager
-	if err := s.awsManager.RemoveHibernationPolicy(instanceName, policyID); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to remove idle policy: %v", err), http.StatusInternalServerError)
+	var policyErr error
+	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
+		policyErr = awsManager.RemoveHibernationPolicy(instanceName, policyID)
+		return policyErr
+	})
+
+	// If withAWSManager returned early with an error, it already wrote the response
+	if policyErr != nil {
 		return
 	}
 
@@ -336,6 +350,81 @@ func (s *Server) removeIdlePolicyFromInstance(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// handleIdlePolicyApply handles POST /api/v1/idle/policies/apply
+func (s *Server) handleIdlePolicyApply(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		InstanceName string `json:"instance_name"`
+		PolicyID     string `json:"policy_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Delegate to existing handler
+	s.applyIdlePolicyToInstance(w, r, req.InstanceName, req.PolicyID)
+}
+
+// handleInstanceRecommendIdlePolicy handles GET /api/v1/instances/{instanceName}/recommend-idle-policy
+func (s *Server) handleInstanceRecommendIdlePolicy(w http.ResponseWriter, r *http.Request, instanceName string) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get instance details from AWS
+	var instanceType string
+
+	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
+		// Get all instances and find the one we're looking for
+		instances, err := awsManager.ListInstances()
+		if err != nil {
+			return fmt.Errorf("failed to get instance details: %w", err)
+		}
+
+		// Find the instance
+		var found bool
+		for _, inst := range instances {
+			if inst.Name == instanceName {
+				instanceType = inst.InstanceType
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("instance not found: %s", instanceName)
+		}
+
+		return nil
+	})
+
+	// If withAWSManager returned early with an error, it already wrote the response
+	if instanceType == "" {
+		return
+	}
+
+	// Get recommendation based on instance type (tags not available in Instance struct)
+	policyManager := idle.NewPolicyManager()
+	policy, err := policyManager.RecommendTemplate(instanceType, nil)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to recommend policy: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(policy); err != nil {
+		http.Error(w, "Failed to encode policy", http.StatusInternalServerError)
 		return
 	}
 }

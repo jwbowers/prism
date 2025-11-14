@@ -266,6 +266,46 @@ Prism can't find or use the specified profile.
 Original error: %v`, err)
 }
 
+// ResumeErrorHandler handles instance resume errors from hibernation
+type ResumeErrorHandler struct{}
+
+func (h *ResumeErrorHandler) CanHandle(errorMsg string) bool {
+	return strings.Contains(errorMsg, "resume workspace") ||
+		strings.Contains(errorMsg, "resume failed") ||
+		strings.Contains(errorMsg, "resume instance")
+}
+
+func (h *ResumeErrorHandler) Handle(err error, context string) error {
+	return fmt.Errorf(`instance resume failed
+
+Prism couldn't resume your hibernated workspace.
+
+🔧 Common solutions:
+1. Check instance state: prism list
+2. Verify hibernation status: prism workspace hibernation-status <name>
+3. Try regular start: prism workspace start <name>
+
+🔍 Hibernation troubleshooting:
+- Instance may not be in hibernated state
+- Hibernation may have failed during suspend
+- Instance type may not support hibernation
+- Check AWS console for EC2 instance state
+
+💡 Understanding hibernation:
+- Hibernation preserves RAM state for instant resume
+- If hibernation fails, Prism falls back to regular start
+- Not all instance types support hibernation
+- Verify with: prism workspace hibernation-status <name>
+
+📊 Cost optimization still available:
+- Regular stop/start provides 100%% compute savings
+- Consider idle policies: prism idle policy list
+
+Need help? Check: https://github.com/scttfrdmn/prism/issues
+
+Original error: %v`, err)
+}
+
 // LaunchErrorHandler handles instance launch errors
 type LaunchErrorHandler struct{}
 
@@ -503,6 +543,7 @@ func NewErrorHandlerRegistry() *ErrorHandlerRegistry {
 			&SecurityGroupErrorHandler{},      // Security group configuration
 			&WebAccessErrorHandler{},          // Web interface access issues
 			&TemplateValidationErrorHandler{}, // Template validation errors
+			&ResumeErrorHandler{},             // Check resume-specific issues (before LaunchErrorHandler)
 			&LaunchErrorHandler{},             // Check launch-specific issues
 			&DaemonErrorHandler{},             // Daemon connectivity issues
 			&ConnectionErrorHandler{},         // Network connection issues

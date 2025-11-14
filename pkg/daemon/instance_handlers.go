@@ -365,14 +365,16 @@ func (s *Server) handleDirectInstanceOperation(w http.ResponseWriter, r *http.Re
 
 func (s *Server) handleInstanceSubOperation(w http.ResponseWriter, r *http.Request, instanceName, operation string) {
 	operationHandlers := map[string]func(http.ResponseWriter, *http.Request, string){
-		"start":              s.handleStartInstance,
-		"stop":               s.handleStopInstance,
-		"hibernate":          s.handleHibernateInstance,
-		"resume":             s.handleResumeInstance,
-		"hibernation-status": s.handleInstanceHibernationStatus,
-		"connect":            s.handleConnectInstance,
-		"exec":               s.handleExecInstance,
-		"resize":             s.handleResizeInstance,
+		"start":                 s.handleStartInstance,
+		"stop":                  s.handleStopInstance,
+		"hibernate":             s.handleHibernateInstance,
+		"resume":                s.handleResumeInstance,
+		"hibernation-status":    s.handleInstanceHibernationStatus,
+		"connect":               s.handleConnectInstance,
+		"exec":                  s.handleExecInstance,
+		"resize":                s.handleResizeInstance,
+		"idle-policies":         s.handleInstanceIdlePolicies,
+		"recommend-idle-policy": s.handleInstanceRecommendIdlePolicy,
 	}
 
 	if handler, exists := operationHandlers[operation]; exists {
