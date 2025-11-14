@@ -450,8 +450,9 @@ func TestCLIOutputFormats(t *testing.T) {
 	t.Run("TemplatesTableFormat", func(t *testing.T) {
 		result := ctx.Prism("templates")
 		result.AssertSuccess(t, "templates should succeed")
-		// Default table format should have headers
-		result.AssertContains(t, "NAME", "should have table header")
+		// Check for the current user-friendly format
+		result.AssertContains(t, "Available Templates", "should show available templates")
+		result.AssertContains(t, "Slug:", "should show template slugs")
 	})
 
 	t.Run("TemplatesJSONFormat", func(t *testing.T) {
