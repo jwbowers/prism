@@ -22,11 +22,12 @@ func NewResearchUserCobraCommands(app *App) *ResearchUserCobraCommands {
 	return &ResearchUserCobraCommands{app: app}
 }
 
-// CreateResearchUserCommand creates the main research-user command with subcommands
+// CreateResearchUserCommand creates the main user command with subcommands
 func (ruc *ResearchUserCobraCommands) CreateResearchUserCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "research-user",
-		Short: "Manage research users for collaborative environments",
+		Use:     "user",
+		Aliases: []string{"research-user"}, // Backward compatibility with v0.5.0
+		Short:   "Manage research users for collaborative environments",
 		Long: `Manage research users that persist across instances and provide collaborative research environments.
 
 Research users are designed for Phase 5A multi-user foundation with:
@@ -42,22 +43,22 @@ Research users complement template-created system users and enable:
 - Consistent development environments across instance types
 - Professional multi-user research computing workflows`,
 		Example: `  # List all research users in the current profile
-  prism research-user list
+  prism user list
 
   # Create a new research user
-  prism research-user create alice
+  prism user create alice
 
   # Get details about a research user
-  prism research-user info alice
+  prism user info alice
 
   # Generate SSH keys for a research user
-  prism research-user keys generate alice
+  prism user keys generate alice
 
   # List SSH keys for a research user
-  prism research-user keys list alice
+  prism user keys list alice
 
   # Update research user settings
-  prism research-user update alice --full-name "Alice Smith" --email "alice@university.edu"`,
+  prism user update alice --full-name "Alice Smith" --email "alice@university.edu"`,
 	}
 
 	// Add subcommands
