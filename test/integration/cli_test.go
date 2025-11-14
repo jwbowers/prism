@@ -20,7 +20,7 @@ func TestCLITemplateOperations(t *testing.T) {
 		result := ctx.Prism("templates")
 		result.AssertSuccess(t, "templates command should succeed")
 		result.AssertContains(t, "python-ml-workstation", "should list python-ml-workstation template")
-		result.AssertContains(t, "r-research", "should list r-research template")
+		result.AssertContains(t, "r-research-workstation", "should list r-research template")
 	})
 
 	t.Run("ValidateTemplates", func(t *testing.T) {
@@ -206,7 +206,7 @@ func TestCLILaunchOptions(t *testing.T) {
 
 	t.Run("LaunchWithSizeL", func(t *testing.T) {
 		instanceName := GenerateTestName("test-cli-size-l")
-		result, err := ctx.LaunchInstanceCLI("r-research", instanceName, "L")
+		result, err := ctx.LaunchInstanceCLI("r-research-workstation", instanceName, "L")
 		AssertNoError(t, err, "launch with size L should succeed")
 		result.AssertSuccess(t, "launch command should succeed")
 
@@ -388,7 +388,7 @@ func TestCLIMultipleInstances(t *testing.T) {
 		_, err := ctx.LaunchInstanceCLI("python-ml-workstation", instance1, "S")
 		AssertNoError(t, err, "launch instance 1")
 
-		_, err = ctx.LaunchInstanceCLI("r-research", instance2, "S")
+		_, err = ctx.LaunchInstanceCLI("r-research-workstation", instance2, "S")
 		AssertNoError(t, err, "launch instance 2")
 
 		_, err = ctx.LaunchInstanceCLI("python-ml-workstation", instance3, "S")
