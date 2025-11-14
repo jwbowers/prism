@@ -446,6 +446,7 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(r.app.tuiCommand)
 	rootCmd.AddCommand(NewGUICommand())
 	rootCmd.AddCommand(NewAboutCommand())
+	rootCmd.AddCommand(NewVersionCommand())
 
 	// Other commands (removed duplicate idle command - using Cobra version instead)
 
