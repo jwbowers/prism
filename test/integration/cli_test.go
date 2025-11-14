@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/scttfrdmn/prism/pkg/types"
 )
@@ -425,9 +426,19 @@ func TestCLIMultipleInstances(t *testing.T) {
 		err = ctx.StopInstanceCLI(instance2)
 		AssertNoError(t, err, "stop instance 2")
 
-		// Verify both stopped
-		ctx.AssertInstanceState(instance1, "stopped")
-		ctx.AssertInstanceState(instance2, "stopped")
+		// Wait for both instances to stop (not immediate)
+		t.Logf("Waiting for instances to stop...")
+		err = ctx.WaitForInstanceState(instance1, "stopped", 2*time.Minute)
+		if err != nil {
+			t.Errorf("Instance 1 failed to stop: %v", err)
+		}
+
+		err = ctx.WaitForInstanceState(instance2, "stopped", 2*time.Minute)
+		if err != nil {
+			t.Errorf("Instance 2 failed to stop: %v", err)
+		}
+
+		t.Logf("✓ Both instances stopped")
 	})
 
 	t.Run("TerminateAll", func(t *testing.T) {
