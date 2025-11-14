@@ -262,20 +262,21 @@ func (ctx *CLITestContext) ListInstancesCLI() ([]string, error) {
 func (ctx *CLITestContext) StopInstanceCLI(name string) error {
 	ctx.T.Logf("Stopping instance '%s' via CLI...", name)
 
-	result := ctx.Prism("workspace", "stop", name)
+	// Use --wait flag to ensure command doesn't return until instance is stopped
+	result := ctx.Prism("workspace", "stop", "--wait", name)
 	if result.ExitCode != 0 {
 		return fmt.Errorf("stop command failed: %s", result.Stderr)
 	}
 
-	// Wait for stopped state (use InstanceStopTimeout for GPU instances that take 10+ minutes)
-	return ctx.WaitForInstanceState(name, "stopped", InstanceStopTimeout)
+	return nil
 }
 
 // DeleteInstanceCLI deletes an instance using the prism CLI
 func (ctx *CLITestContext) DeleteInstanceCLI(name string) error {
 	ctx.T.Logf("Deleting instance '%s' via CLI...", name)
 
-	result := ctx.Prism("workspace", "delete", name)
+	// Use --wait flag to ensure command doesn't return until instance is terminated
+	result := ctx.Prism("workspace", "delete", "--wait", name)
 	if result.ExitCode != 0 {
 		return fmt.Errorf("delete command failed: %s", result.Stderr)
 	}
