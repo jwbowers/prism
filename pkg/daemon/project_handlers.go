@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/project"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // handleProjectOperations routes project-related requests
@@ -63,6 +63,17 @@ func (s *Server) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 		s.handleProjectCosts(w, r, projectID)
 	case "usage":
 		s.handleProjectUsage(w, r, projectID)
+	case "prevent-launches":
+		s.handlePreventLaunches(w, r, projectID)
+	case "allow-launches":
+		s.handleAllowLaunches(w, r, projectID)
+	case "funding":
+		s.handleProjectFunding(w, r, projectID)
+	case "default-allocation":
+		s.handleSetDefaultAllocation(w, r, projectID)
+	case "invitations":
+		// Delegate to invitation handler (v0.5.11)
+		s.handleInvitationOperations(w, r)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
 	}
@@ -759,6 +770,54 @@ func (s *Server) handleDisableProjectBudget(w http.ResponseWriter, r *http.Reque
 		"message":    "Budget disabled successfully",
 		"project_id": projectID,
 		"enabled":    false,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handlePreventLaunches prevents new instance launches for a project (POST)
+func (s *Server) handlePreventLaunches(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := context.Background()
+	if err := s.projectManager.PreventLaunches(ctx, projectID); err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to prevent launches: %v", err))
+		return
+	}
+
+	response := map[string]interface{}{
+		"message":    fmt.Sprintf("Launches prevented for project %s", projectID),
+		"project_id": projectID,
+		"status":     "launches_blocked",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handleAllowLaunches allows instance launches for a project (POST)
+func (s *Server) handleAllowLaunches(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := context.Background()
+	if err := s.projectManager.AllowLaunches(ctx, projectID); err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to allow launches: %v", err))
+		return
+	}
+
+	response := map[string]interface{}{
+		"message":    fmt.Sprintf("Launches allowed for project %s", projectID),
+		"project_id": projectID,
+		"status":     "launches_allowed",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

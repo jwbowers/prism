@@ -4,18 +4,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Cloud Workstation Platform - Claude Development Context
 
-## ⚠️ **IMPORTANT: Project Rename in v0.5.6**
-**This project will be renamed from "CloudWorkStation" to "Prism" in v0.5.6 (Q4 2025 - Q1 2026)**
-
-- **New Project Name**: Prism
-- **New Binaries**: `prism`, `prismd`, `prism-gui` (replacing `cws`, `cwsd`, `cws-gui`)
-- **New Repository**: `github.com/scttfrdmn/prism` (from `github.com/scttfrdmn/cloudworkstation`)
-- **New Config Directory**: `~/.prism` (from `~/.cloudworkstation`)
-- **Automatic Migration**: User data automatically migrated on first v0.5.6 launch
-- **See Issue #65** for complete implementation plan
-
-Until v0.5.6 is released, continue using "CloudWorkStation" terminology and binary names.
-
 ## Project Overview
 
 This is a command-line tool that provides academic researchers with pre-configured cloud workstations, eliminating the need for manual environment configuration.
@@ -26,7 +14,7 @@ These principles guide every design decision and feature implementation:
 
 ### 🎯 **Default to Success**
 Every template must work out of the box in every supported region. No configuration should be required for basic usage.
-- `cws launch python-ml my-project` should always work
+- `prism launch python-ml my-project` should always work
 - Smart fallbacks handle regional/architecture limitations transparently
 - Templates include battle-tested defaults for their specific use cases
 
@@ -59,9 +47,9 @@ Users should never be surprised by what they get - clear communication about wha
 
 ### 📈 **Progressive Disclosure**
 Simple by default, detailed when needed. Power users can access advanced features without cluttering basic workflows.
-- Basic: `cws launch template-name project-name`
-- Intermediate: `cws launch template-name project-name --size L`
-- Advanced: `cws launch template-name project-name --instance-type c5.2xlarge --spot`
+- Basic: `prism launch template-name project-name`
+- Intermediate: `prism launch template-name project-name --size L`
+- Advanced: `prism launch template-name project-name --instance-type c5.2xlarge --spot`
 - Expert: Full template customization and regional optimization
 
 ## Current Status: Production-Ready Enterprise Platform (Phase 4.6 COMPLETE)
@@ -81,7 +69,7 @@ Simple by default, detailed when needed. Power users can access advanced feature
 - ✅ **Enterprise API**: Full REST API for project management, budget monitoring, and cost analysis
 - ✅ **Budget Automation**: Configurable alerts and automated actions (hibernate/stop instances, prevent launches)
 
-CloudWorkstation is now a full **enterprise research platform** supporting collaborative projects, grant-funded budgets, and institutional research management while maintaining its core simplicity for individual researchers.
+Prism is now a full **enterprise research platform** supporting collaborative projects, grant-funded budgets, and institutional research management while maintaining its core simplicity for individual researchers.
 
 **🎉 PHASE 4.6 COMPLETE: Professional AWS-Native GUI (September 29, 2025)**
 ✅ **Cloudscape Design System Migration Complete**:
@@ -103,15 +91,15 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 - ✅ **SSH Key Management**: Complete Ed25519/RSA generation and distribution (500+ lines)
 - ✅ **User Provisioning**: Remote user creation via SSH (450+ lines)
 - ✅ **EFS Integration**: Persistent home directories with collaboration support
-- ✅ **CLI Integration**: Complete `cws user` command suite (600+ lines)
+- ✅ **CLI Integration**: Complete `prism user` command suite (600+ lines)
 
 ### **v0.5.1: Command Structure & GUI Polish** ✅ **COMPLETE (October 2025)**
 **FOCUS**: CLI consistency and professional user experience
 - ✅ **Command Restructure**: `research-user` → `user`, `admin` hierarchy
 - ✅ **TUI Integration**: User management in terminal interface with BubbleTea
-- ✅ **CLI Integration**: Complete `cws user` command suite (create, list, delete, provision, ssh-key)
+- ✅ **CLI Integration**: Complete `prism user` command suite (create, list, delete, provision, ssh-key)
 - ✅ **Template Extensions**: Research user YAML configuration for collaborative-workspace, r-research
-- ✅ **Policy Framework**: `cws admin policy` commands for access control and governance
+- ✅ **Policy Framework**: `prism admin policy` commands for access control and governance
 
 ### **v0.5.2: Template Marketplace Foundation** ✅ **COMPLETE (October 2025)**
 **FOCUS**: Community template sharing and discovery
@@ -138,23 +126,36 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 - 🔄 **Amazon Braket**: Quantum computing research access
 - 🔄 **SageMaker Integration**: ML workflow integration (pending AWS partnership)
 
-### **v0.5.6: Project Rename to "Prism" + Template Provisioning** 🔄 **PLANNED (Q4 2025 - Q1 2026)**
-**PRIMARY FOCUS**: Complete project rebrand from CloudWorkStation to Prism (Issue #65)
-- 🔄 **Project Rename**: CloudWorkStation → Prism (complete rebrand)
-- 🔄 **Binary Rename**: `cws`/`cwsd`/`cws-gui` → `prism`/`prismd`/`prism-gui`
-- 🔄 **Repository Rename**: `cloudworkstation` → `prism` on GitHub
-- 🔄 **Automatic Migration**: User config/state migrated from `~/.cloudworkstation` to `~/.prism`
-- 🔄 **Module Path Update**: `github.com/scttfrdmn/cloudworkstation` → `github.com/scttfrdmn/prism`
+### **v0.5.6: Complete Prism Rebrand** ✅ **COMPLETE (October 26, 2025)**
+**FOCUS**: Complete project rebrand from CloudWorkStation to Prism
+- ✅ **Project Rename**: CloudWorkStation → Prism (complete rebrand)
+- ✅ **Code Rename**: 29,225 files across 3 PRs (#85, #86, #87)
+- ✅ **Binary Rename**: `cws`/`cwsd` → `prism`/`prismd`
+- ✅ **Repository Rename**: `cloudworkstation` → `prism` on GitHub
+- ✅ **Configuration Directory**: `.cloudworkstation` → `.prism`
+- ✅ **Module Path Update**: `github.com/scttfrdmn/cloudworkstation` → `github.com/scttfrdmn/prism`
+- ✅ **Repository Infrastructure**: 45 files updated (packaging, build scripts, CI/CD)
+- ✅ **Test Remediation**: 60 test failures fixed across storage, CLI, and API tests
 
-**SECONDARY FOCUS**: Advanced template capabilities (Issue #64)
+**Feature Issues Created**:
+- Issue #90: Launch Throttling System (rate limiting for cost control)
+- Issue #91: Local System Sleep/Wake Detection with Auto-Hibernation
+
+### **v0.5.7: Template Provisioning & Test Stability** 🔄 **PLANNED (Early November 2025)**
+**PRIMARY FOCUS**: Template Asset Management (Issue #64)
 - 🔄 **SSM File Operations**: S3-backed file transfer for template provisioning
 - 🔄 **Large File Handling**: Progress reporting for multi-GB file transfers
 - 🔄 **Template Asset Management**: Binary and configuration file distribution
 
-**CRITICAL BUG FIX**: EBS volume size tracking (Issue #68)
-- 🔴 **Storage Cost Bug**: Fix `Instance.EBSSize` not being set during launch
-- 🔴 **Cost Calculation Fix**: Ensure accurate storage cost tracking and reporting
-- 🔴 **Data Migration**: Backfill EBS sizes for existing instances
+**SECONDARY FOCUS**: API Test Fixes (Issue #83)
+- 🔄 **AWS Mocking**: Implement proper AWS service mocking for unit tests
+- 🔄 **Test Stability**: Fix 3 failing tests in `pkg/api/client/`
+- 🔄 **CI/CD Pipeline**: Ensure green build with 100% test pass rate
+
+**TERTIARY FOCUS**: Rename Cleanup
+- 🔄 **Script Updates**: Complete remaining CloudWorkStation → Prism renames in ~45 script files
+- 🔄 **Documentation Verification**: Final branding consistency pass
+- 🔄 **Build System**: Ensure all references updated
 
 **Phase 6: Enterprise Authentication & Security** (v0.6.0 - Q2 2026)
 
@@ -194,10 +195,10 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 - ✅ **SSH Key Management**: Complete key generation, storage, and distribution system with Ed25519 and RSA support
 - ✅ **User Provisioning Pipeline**: Remote user creation via SSH with script generation and EFS integration
 - ✅ **EFS Home Directory Integration**: Persistent home directories with proper permissions and collaboration support
-- ✅ **CLI Integration Complete**: Full `cws user` command suite (create, list, delete, provision, ssh-key, status)
+- ✅ **CLI Integration Complete**: Full `prism user` command suite (create, list, delete, provision, ssh-key, status)
 - ✅ **TUI Integration Complete**: Research user management interface in terminal with BubbleTea framework
 - ✅ **Template System Extended**: Multi-language collaborative templates with research user configurations
-- ✅ **Policy Framework**: Complete `cws admin policy` system for institutional governance and access control
+- ✅ **Policy Framework**: Complete `prism admin policy` system for institutional governance and access control
 - ✅ **Multi-Modal Parity**: Research user management available across CLI, TUI, and prepared for GUI integration
 
 **Phase 5A Technical Components**:
@@ -219,7 +220,7 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 - ✅ **Template Discovery**: Advanced search with filters for categories, domains, complexity, ratings, and features
 - ✅ **Security Validation**: Comprehensive security scanning with vulnerability detection and policy enforcement
 - ✅ **Quality Analysis**: Automated quality scoring with documentation, metadata, and complexity analysis
-- ✅ **CLI Integration**: Complete `cws marketplace` command suite (search, browse, show, install, registries)
+- ✅ **CLI Integration**: Complete `prism marketplace` command suite (search, browse, show, install, registries)
 - ✅ **Community Features**: Ratings, reviews, badges, verification status, and usage analytics
 - ✅ **Dependency Management**: Template dependency tracking with license compatibility checking
 
@@ -236,7 +237,7 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 - **Management Guide**: [Research User Management Guide](docs/RESEARCH_USER_MANAGEMENT_GUIDE.md)
 
 **Phase 5A Complete Implementation**:
-✅ **CLI Integration**: Complete `cws user` command suite for full user management (Phase 5A.1)
+✅ **CLI Integration**: Complete `prism user` command suite for full user management (Phase 5A.1)
 ✅ **TUI Integration**: Research user management screens in terminal interface (Phase 5A.2)
 ✅ **REST API Integration**: Complete daemon API endpoints for research user operations (Phase 5A.3)
 ✅ **Template Integration**: Automatic research user provisioning via template system (Phase 5A.3+)
@@ -270,7 +271,7 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 **v0.5.3: Template-Based Configuration Sync** (MEDIUM IMPACT):
 - ✅ **Configuration Templates**: Template-based system for RStudio, Jupyter, VS Code, Git settings
 - ✅ **Local Config Capture**: Scan and template-ize local development environment configurations
-- ✅ **SSH-Based Sync**: Secure configuration deployment to CloudWorkstation instances
+- ✅ **SSH-Based Sync**: Secure configuration deployment to Prism instances
 - ✅ **Community Config Sharing**: Template-based configuration sharing and discovery
 - 🎯 **Applications**: RStudio (packages, themes), Jupyter (extensions, kernels), VS Code (settings, extensions)
 
@@ -287,7 +288,7 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 - ✅ **EFS-Backed Bidirectional Sync**: Real-time directory synchronization between local and cloud
 - ✅ **Research-Optimized Rules**: Smart file filtering for code, datasets, results, and outputs
 - ✅ **Conflict Resolution**: Intelligent handling of simultaneous edits with user control
-- ✅ **Multi-Instance Support**: Single sync directory accessible across multiple CloudWorkstation instances
+- ✅ **Multi-Instance Support**: Single sync directory accessible across multiple Prism instances
 - 🎯 **Integration**: Google Drive/Dropbox-like experience optimized for research workflows
 
 **v0.5.6: AWS Research Services Integration** (STRATEGIC):
@@ -346,7 +347,7 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │ CLI Client  │  │ TUI Client  │  │ GUI Client  │
-│ (cmd/cws)   │  │ (cws tui)   │  │ (cmd/cws-gui)│
+│ (cmd/prism) │  │ (prism tui) │  │(cmd/prism-gui)│
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │                │                │
        └────────────────┼────────────────┘
@@ -354,20 +355,20 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
                  ┌─────────────┐
                  │ Backend     │
                  │ Daemon      │
-                 │ (cwsd:8947) │
+                 │(prismd:8947)│
                  └─────────────┘
 ```
 
 **Current Architecture**:
 ```
 cmd/
-├── cws/          # CLI client binary
-├── cws-gui/      # GUI client binary (Wails v3-based)
-└── cwsd/         # Backend daemon binary
+├── prism/        # CLI client binary
+├── prism-gui/    # GUI client binary (Wails v3-based)
+└── prismd/       # Backend daemon binary
 
 pkg/
 ├── api/          # API client interface
-├── daemon/       # Daemon core logic  
+├── daemon/       # Daemon core logic
 ├── aws/          # AWS operations
 ├── state/        # State management
 ├── project/      # Project & budget management (Phase 4)
@@ -378,7 +379,7 @@ pkg/
 internal/
 ├── cli/          # CLI application logic
 ├── tui/          # TUI application (BubbleTea-based)
-└── gui/          # (GUI logic is in cmd/cws-gui/)
+└── gui/          # (GUI logic is in cmd/prism-gui/)
 ```
 
 **Phase 4 Enterprise Components**:
@@ -432,7 +433,7 @@ pkg/types/
 
 **✅ IMPLEMENTED: Template Inheritance System**
 
-CloudWorkstation now supports template stacking and inheritance, allowing templates to build upon each other:
+Prism now supports template stacking and inheritance, allowing templates to build upon each other:
 
 ```bash
 # Base template provides foundation
@@ -445,7 +446,7 @@ CloudWorkstation now supports template stacking and inheritance, allowing templa
 #   adds: conda packages, datascientist user, jupyter service
 
 # Launch stacked template
-cws launch "Rocky Linux 9 + Conda Stack" my-analysis
+prism launch "Rocky Linux 9 + Conda Stack" my-analysis
 # ↳ Gets: rocky user + datascientist user, system packages + conda packages, ports 22 + 8888
 ```
 
@@ -467,11 +468,11 @@ cws launch "Rocky Linux 9 + Conda Stack" my-analysis
 **Future Multi-Stack Architecture**:
 ```bash  
 # Planned: Complex inheritance chains
-cws launch gpu-ml-workstation my-training
+prism launch gpu-ml-workstation my-training
 # ↳ Inherits: Base OS → GPU Drivers → Conda ML → Desktop GUI
 
 # Power users can override at launch
-cws launch "Rocky Linux 9 + Conda Stack" my-project --with spack
+prism launch "Rocky Linux 9 + Conda Stack" my-project --with spack
 ```
 
 **Design Benefits**:
@@ -479,6 +480,124 @@ cws launch "Rocky Linux 9 + Conda Stack" my-project --with spack
 - **Maintainable Library**: Base template updates propagate to children
 - **Clear Relationships**: Explicit parent-child dependencies
 - **Flexible Override**: Change any aspect while preserving inheritance
+
+### Desktop Applications (Nice DCV)
+
+**✅ PLANNED: Desktop Application Support via Nice DCV** (v0.6.1-v0.6.2)
+
+Prism will support desktop GUI applications (MATLAB, QGIS, Mathematica, etc.) using AWS Nice DCV for browser-based remote desktop access.
+
+#### Web vs Desktop Applications
+
+**Web-Based Templates** (Current - Jupyter, RStudio, VSCode, Streamlit):
+- Applications serve HTTP directly
+- No desktop environment needed
+- Launch time: 2-5 minutes
+- Resources: 2-4 vCPU, 8-16GB RAM
+- Cost: $0.08-0.17/hour
+
+**Desktop Templates** (v0.6.1+ - MATLAB, QGIS, Mathematica):
+- Applications require GUI desktop
+- Nice DCV provides browser-based desktop
+- Launch time: 5-10 minutes
+- Resources: 4-8 vCPU, 16-32GB RAM
+- Cost: $0.17-0.53/hour (GPU optional)
+
+#### Template Configuration Pattern
+
+```yaml
+# Web-based template (existing)
+name: "Jupyter Notebook"
+connection_type: "web"
+ports:
+  - 8888
+
+# Desktop template (v0.6.1+)
+name: "MATLAB Workstation"
+connection_type: "desktop"
+desktop:
+  environment: "mate"  # Lightweight desktop
+  dcv_port: 8443
+  gpu_required: false
+ports:
+  - 8443  # DCV remote desktop
+```
+
+#### Connection Flow
+
+```bash
+# Web apps (existing)
+prism launch jupyter my-notebook
+prism connect my-notebook
+# → Browser opens to Jupyter at https://localhost:8888
+
+# Desktop apps (v0.6.1+)
+prism launch matlab my-matlab
+prism connect my-matlab
+# → Browser opens to DCV desktop at https://localhost:8443
+# → Full MATLAB GUI appears in browser
+```
+
+#### Reference Implementation: Lens Project
+
+The [Lens project](https://github.com/scttfrdmn/lens) has a **complete working Nice DCV implementation** that Prism will learn from:
+
+**Key Lens Components**:
+- `apps/dcv-desktop/` - Complete DCV infrastructure
+- `apps/qgis/` - Production QGIS desktop templates (3 environments)
+- `DESKTOP_APPS.md` - Architectural documentation
+- **Cloud-init scripts**: Automated DCV server installation
+- **Connection management**: SSM port forwarding + browser auto-open
+- **Credential handling**: Secure password generation and display
+
+**What Prism Will Adopt from Lens**:
+1. **Automated DCV Provisioning**: Cloud-init scripts for DCV installation
+2. **Desktop Environment**: MATE desktop (lightweight, performant)
+3. **Connection Pattern**: SSM port forwarding to DCV port 8443
+4. **Security Model**: No exposed ports, SSM-only access
+5. **Application Patterns**: QGIS multi-environment approach (basic, advanced, GPU)
+
+#### Architecture Documentation
+
+**Comprehensive Guide**: [docs/architecture/NICE_DCV_ARCHITECTURE.md](docs/architecture/NICE_DCV_ARCHITECTURE.md)
+
+This document covers:
+- DCV vs alternatives comparison
+- Technical requirements (AMIs, desktop environments, instance sizing)
+- Complete Lens learnings summary
+- Implementation plan for Prism (4 phases)
+- Security considerations
+- Performance characteristics
+- Future enhancements
+
+#### Planned Desktop Templates (v0.6.2)
+
+**High Priority**:
+- **MATLAB** (#220): Numerical computing (engineering, physics, mathematics)
+- **QGIS** (#221): Geographic Information System (3 environments: basic, advanced, remote-sensing)
+
+**Medium Priority**:
+- **Mathematica** (#222): Symbolic computation
+- **Stata** (#223): Statistical analysis
+
+**Commercial License Strategy**:
+- **Cloud-Based Licenses**: Online activation (MATLAB, Mathematica support this)
+- **BYOL** (Bring Your Own License): Users provide license server configuration
+- **AWS Marketplace**: Pre-configured AMIs with integrated licensing
+- Template system supports all three approaches
+
+#### Implementation Timeline
+
+- **v0.6.1 (Sep-Oct 2026)**: DCV foundation (#216-#219)
+  - Template system extension for `connection_type: "desktop"`
+  - DCV server provisioning via cloud-init
+  - DCV connection management
+  - Generic desktop template
+
+- **v0.6.2 (Nov-Dec 2026)**: Desktop applications (#220-#223)
+  - MATLAB template (CRITICAL priority)
+  - QGIS templates (3 environments)
+  - Mathematica and Stata templates
 
 ### State Management
 Enhanced state management with profile integration:
@@ -532,12 +651,12 @@ Enhanced state management with profile integration:
 ```bash
 # Build all components
 make build
-# Builds: cws (CLI), cwsd (daemon), cws-gui (GUI)
+# Builds: prism (CLI), prismd (daemon), prism-gui (GUI)
 
 # Build specific components
-go build -o bin/cws ./cmd/cws/        # CLI
-go build -o bin/cwsd ./cmd/cwsd/      # Daemon  
-go build -o bin/cws-gui ./cmd/cws-gui/ # GUI
+go build -o bin/prism ./cmd/prism/        # CLI
+go build -o bin/prismd ./cmd/prismd/      # Daemon
+go build -o bin/prism-gui ./cmd/prism-gui/ # GUI
 
 # Run tests
 make test
@@ -552,38 +671,38 @@ make clean
 ### Running Different Interfaces
 ```bash
 # CLI interface (traditional) - daemon auto-starts as needed
-./bin/cws launch python-ml my-project
+./bin/prism launch python-ml my-project
 
 # TUI interface (interactive terminal) - daemon auto-starts as needed
-./bin/cws tui
+./bin/prism tui
 # Navigation: 1=Dashboard, 2=Instances, 3=Templates, 4=Storage, 5=Settings, 6=Profiles
 
 # GUI interface (desktop application) - daemon auto-starts as needed
-./bin/cws-gui
+./bin/prism-gui
 # System tray integration with professional tabbed interface
 
 # Manual daemon control (optional)
-./bin/cws daemon start    # Manually start daemon
-./bin/cws daemon stop     # Stop daemon
-./bin/cws daemon status   # Check daemon status
+./bin/prism admin daemon start    # Manually start daemon
+./bin/prism admin daemon stop     # Stop daemon
+./bin/prism admin daemon status   # Check daemon status
 ```
 
 ### Development Workflow
 ```bash
 # Test CLI functionality (daemon auto-starts)
-./bin/cws templates
-./bin/cws list
+./bin/prism templates
+./bin/prism list
 
 # Test TUI functionality (daemon auto-starts if needed)
-./bin/cws tui
+./bin/prism tui
 
 # Test GUI functionality (daemon auto-starts if needed)
-./bin/cws-gui
+./bin/prism-gui
 
 # Optional: Manual daemon control for development
-./bin/cwsd &                    # Start daemon manually (for debugging)
-./bin/cws daemon stop           # Graceful shutdown
-./bin/cws daemon status         # Check status
+./bin/prismd &                        # Start daemon manually (for debugging)
+./bin/prism admin daemon stop         # Graceful shutdown
+./bin/prism admin daemon status       # Check status
 ```
 
 ## Key Implementation Details
@@ -618,7 +737,7 @@ apiClient := api.NewClientWithOptions(daemonURL, client.Options{
 - Shared profile and configuration system
 - Consistent error handling and user feedback
 
-### GUI Specific (cmd/cws-gui/main.go)
+### GUI Specific (cmd/prism-gui/main.go)
 - **Wails v3 Framework**: Cross-platform web-based native GUI with React frontend
 - **Cloudscape Design System**: AWS-native professional UI components
 - **Tabbed Interface**: Templates, Instances, Storage, Settings
@@ -664,20 +783,20 @@ Successfully implemented the complete hibernation ecosystem providing intelligen
 - ✅ **Idle API Layer** (`pkg/daemon/idle_handlers.go`): 7 REST endpoints for complete idle policy management
 - ✅ **Client Layer** (`pkg/api/client/`): Complete API client integration with hibernation + idle methods  
 - ✅ **Types Layer** (`pkg/types/runtime.go`): Complete type system for hibernation status + idle policies
-- ✅ **GUI Layer** (`cmd/cws-gui/main.go`): Smart hibernation controls with educational confirmation dialogs
-- ✅ **CLI Layer** (`cmd/cws/main.go`, `internal/cli/app.go`): Manual hibernation + automated policy commands
+- ✅ **GUI Layer** (`cmd/prism-gui/main.go`): Smart hibernation controls with educational confirmation dialogs
+- ✅ **CLI Layer** (`cmd/prism/main.go`, `internal/cli/app.go`): Manual hibernation + automated policy commands
 
 **💡 Dual-Mode Hibernation System**:
 ```bash
 # Manual Hibernation Controls
-cws hibernate my-instance    # Intelligent hibernation with support detection
-cws resume my-instance       # Smart resume with automatic fallback logic
+prism hibernate my-instance    # Intelligent hibernation with support detection
+prism resume my-instance       # Smart resume with automatic fallback logic
 
 # Automated Hibernation Policies  
-cws idle profile list        # Show hibernation policies (batch: 60min hibernate)
-cws idle profile create cost-optimized --idle-minutes 10 --action hibernate
-cws idle instance my-gpu-workstation --profile gpu  # GPU-optimized hibernation
-cws idle history            # Audit trail of automated hibernation actions
+prism idle profile list        # Show hibernation policies (batch: 60min hibernate)
+prism idle profile create cost-optimized --idle-minutes 10 --action hibernate
+prism idle instance my-gpu-workstation --profile gpu  # GPU-optimized hibernation
+prism idle history            # Audit trail of automated hibernation actions
 
 # Pre-configured hibernation profiles:
 # - batch: 60min idle → hibernate (long-running research jobs)
@@ -714,7 +833,7 @@ cws idle history            # Audit trail of automated hibernation actions
 - **Research-Optimized**: Domain-specific policies (batch jobs hibernate longer, GPU instances hibernate faster)
 - **Comprehensive Audit**: Complete history tracking of automated hibernation cost savings
 
-This represents **CloudWorkstation's complete cost optimization achievement**, providing researchers with the most comprehensive hibernation system available - combining immediate manual control with intelligent automated policies for maximum cost savings while preserving work session continuity.
+This represents **Prism's complete cost optimization achievement**, providing researchers with the most comprehensive hibernation system available - combining immediate manual control with intelligent automated policies for maximum cost savings while preserving work session continuity.
 
 ### ✅ FULLY IMPLEMENTED: Template Inheritance & Validation System
 
@@ -731,7 +850,7 @@ Successfully completed the comprehensive template system addressing the original
 **🏗️ Technical Architecture**:
 - **Template Inheritance Engine**: Multi-level inheritance with intelligent merging
 - **Comprehensive Validation**: 8+ validation rules with clear error messages  
-- **CLI Integration**: `cws templates validate` command with full validation suite
+- **CLI Integration**: `prism templates validate` command with full validation suite
 - **Clean Implementation**: Removed legacy "auto" package manager, cleaned dead code
 
 **📊 Working Example**:
@@ -739,7 +858,7 @@ Successfully completed the comprehensive template system addressing the original
 # Base template: Rocky Linux 9 + DNF + system tools + rocky user
 # Stacked template: inherits base + adds conda packages + datascientist user + jupyter
 
-cws launch "Rocky Linux 9 + Conda Stack" my-analysis
+prism launch "Rocky Linux 9 + Conda Stack" my-analysis
 # Result: Both users, all packages, combined ports [22, 8888]
 ```
 
@@ -754,7 +873,7 @@ cws launch "Rocky Linux 9 + Conda Stack" my-analysis
 - **docs/TEMPLATE_INHERITANCE.md**: Technical inheritance and validation guide
 - **Working Examples**: base-rocky9.yml and rocky9-conda-stack.yml templates
 
-This represents a major advancement in CloudWorkstation's template capabilities, enabling researchers to build complex environments through simple template composition - exactly the "stackable architecture" envisioned for research computing.
+This represents a major advancement in Prism's template capabilities, enabling researchers to build complex environments through simple template composition - exactly the "stackable architecture" envisioned for research computing.
 
 ## Success Criteria
 
@@ -789,7 +908,7 @@ Key validation points for multi-modal access:
 - **Feature Completeness**: Are all necessary research workflows supported?
 - **Performance**: Are real-time updates and interface switching smooth?
 - **Learning Curve**: Can researchers easily switch between interfaces?
-- **Workflow Integration**: How does CloudWorkstation fit into existing research workflows?
+- **Workflow Integration**: How does Prism fit into existing research workflows?
 
 **Phase 2 Status: 🎉 COMPLETE**  
 **Multi-Modal Access: CLI ✅ TUI ✅ GUI ✅**  

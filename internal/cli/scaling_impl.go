@@ -1,4 +1,4 @@
-// Package cli implements CloudWorkstation's scaling and rightsizing command handlers.
+// Package cli implements Prism's scaling and rightsizing command handlers.
 //
 // This file contains all scaling-related functionality including:
 //   - Rightsizing analysis and recommendations
@@ -7,7 +7,7 @@
 //   - Helper functions for size mapping and cost estimation
 //
 // Design Philosophy:
-// Follows CloudWorkstation's core principles of transparency, cost optimization,
+// Follows Prism's core principles of transparency, cost optimization,
 // and progressive disclosure for scaling operations.
 package cli
 
@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // ScalingCommands handles all scaling and rightsizing related commands
@@ -34,7 +34,7 @@ func NewScalingCommands(app *App) *ScalingCommands {
 // Rightsizing handles rightsizing analysis and recommendations
 func (s *ScalingCommands) Rightsizing(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf(`usage: cws rightsizing <subcommand> [options]
+		return fmt.Errorf(`usage: prism rightsizing <subcommand> [options]
 
 Available subcommands:
   analyze <workspace>       - Analyze usage patterns for specific instance
@@ -59,14 +59,14 @@ Available subcommands:
 	case "summary":
 		return s.rightsizingSummary(subargs)
 	default:
-		return fmt.Errorf("unknown rightsizing subcommand: %s\nRun 'cws rightsizing' for usage", subcommand)
+		return fmt.Errorf("unknown rightsizing subcommand: %s\nRun 'prism rightsizing' for usage", subcommand)
 	}
 }
 
 // rightsizingAnalyze analyzes usage patterns for a specific instance
 func (s *ScalingCommands) rightsizingAnalyze(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws rightsizing analyze <workspace-name>", "cws rightsizing analyze my-workspace")
+		return NewUsageError("prism rightsizing analyze <workspace-name>", "prism rightsizing analyze my-workspace")
 	}
 
 	instanceName := args[0]
@@ -165,9 +165,9 @@ func (s *ScalingCommands) rightsizingAnalyze(args []string) error {
 	}
 
 	fmt.Printf("\n💡 **Next Steps**:\n")
-	fmt.Printf("   • View detailed stats: cws rightsizing stats %s\n", instanceName)
-	fmt.Printf("   • See all recommendations: cws rightsizing recommendations\n")
-	fmt.Printf("   • Export raw data: cws rightsizing export %s\n", instanceName)
+	fmt.Printf("   • View detailed stats: prism rightsizing stats %s\n", instanceName)
+	fmt.Printf("   • See all recommendations: prism rightsizing recommendations\n")
+	fmt.Printf("   • Export raw data: prism rightsizing export %s\n", instanceName)
 
 	return nil
 }
@@ -275,9 +275,9 @@ func (s *ScalingCommands) rightsizingRecommendations(args []string) error {
 	fmt.Printf("   Optimally Sized: %d instances\n", optimal)
 
 	fmt.Printf("\n💡 **Next Steps**:\n")
-	fmt.Printf("   • Analyze specific instance: cws rightsizing analyze <workspace>\n")
-	fmt.Printf("   • View detailed stats: cws rightsizing stats <workspace>\n")
-	fmt.Printf("   • See fleet summary: cws rightsizing summary\n")
+	fmt.Printf("   • Analyze specific instance: prism rightsizing analyze <workspace>\n")
+	fmt.Printf("   • View detailed stats: prism rightsizing stats <workspace>\n")
+	fmt.Printf("   • See fleet summary: prism rightsizing summary\n")
 
 	return nil
 }
@@ -285,7 +285,7 @@ func (s *ScalingCommands) rightsizingRecommendations(args []string) error {
 // rightsizingStats shows detailed usage statistics for an instance
 func (s *ScalingCommands) rightsizingStats(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws rightsizing stats <workspace-name>", "cws rightsizing stats my-workspace")
+		return NewUsageError("prism rightsizing stats <workspace-name>", "prism rightsizing stats my-workspace")
 	}
 
 	instanceName := args[0]
@@ -411,9 +411,9 @@ func (s *ScalingCommands) rightsizingStats(args []string) error {
 	}
 
 	fmt.Printf("\n💡 **Next Steps**:\n")
-	fmt.Printf("   • Analyze recommendations: cws rightsizing analyze %s\n", instanceName)
-	fmt.Printf("   • Export raw data: cws rightsizing export %s\n", instanceName)
-	fmt.Printf("   • View all recommendations: cws rightsizing recommendations\n")
+	fmt.Printf("   • Analyze recommendations: prism rightsizing analyze %s\n", instanceName)
+	fmt.Printf("   • Export raw data: prism rightsizing export %s\n", instanceName)
+	fmt.Printf("   • View all recommendations: prism rightsizing recommendations\n")
 
 	return nil
 }
@@ -429,7 +429,7 @@ func min(a, b int) int {
 // rightsizingExport exports usage data as JSON
 func (s *ScalingCommands) rightsizingExport(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws rightsizing export <workspace-name>", "cws rightsizing export my-workspace")
+		return NewUsageError("prism rightsizing export <workspace-name>", "prism rightsizing export my-workspace")
 	}
 
 	instanceName := args[0]
@@ -456,7 +456,7 @@ func (s *ScalingCommands) rightsizingExport(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'cws list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
 	}
 
 	fmt.Printf("📊 **Usage Analytics Export**\n")
@@ -476,7 +476,7 @@ func (s *ScalingCommands) rightsizingExport(args []string) error {
 
 	fmt.Printf("💻 **Command to Access Data**:\n")
 	fmt.Printf("   # Connect to workspace and view analytics\n")
-	fmt.Printf("   cws connect %s\n", instanceName)
+	fmt.Printf("   prism connect %s\n", instanceName)
 	fmt.Printf("   \n")
 	fmt.Printf("   # Then on the instance:\n")
 	fmt.Printf("   sudo cat %s | jq .\n", AnalyticsLogFile)
@@ -575,7 +575,7 @@ func (s *ScalingCommands) rightsizingSummary(args []string) error {
 		fmt.Printf("   No running instances to analyze\n")
 	} else {
 		fmt.Printf("   ✅ Analytics collection is active\n")
-		fmt.Printf("   📊 Run 'cws rightsizing recommendations' for detailed analysis\n")
+		fmt.Printf("   📊 Run 'prism rightsizing recommendations' for detailed analysis\n")
 		fmt.Printf("   💡 Allow 1+ hours runtime for meaningful recommendations\n")
 	}
 
@@ -591,7 +591,7 @@ func (s *ScalingCommands) rightsizingSummary(args []string) error {
 // Scaling handles dynamic instance scaling operations
 func (s *ScalingCommands) Scaling(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf(`usage: cws scaling <subcommand> [options]
+		return fmt.Errorf(`usage: prism scaling <subcommand> [options]
 
 Available subcommands:
   analyze <workspace>       - Analyze current instance and recommend optimal size
@@ -601,10 +601,10 @@ Available subcommands:
   history <workspace>       - Show scaling history for workspace
 
 Examples:
-  cws scaling analyze my-ml-workstation    # Analyze and recommend size
-  cws scaling predict my-ml-workstation    # Predict optimal size from usage data
-  cws scaling scale my-ml-workstation L    # Scale to Large size
-  cws scaling preview my-instance XL       # Preview scaling to XL`)
+  prism scaling analyze my-ml-workstation    # Analyze and recommend size
+  prism scaling predict my-ml-workstation    # Predict optimal size from usage data
+  prism scaling scale my-ml-workstation L    # Scale to Large size
+  prism scaling preview my-instance XL       # Preview scaling to XL`)
 	}
 
 	subcommand := args[0]
@@ -629,7 +629,7 @@ Examples:
 // scalingAnalyze analyzes an instance and recommends optimal size
 func (s *ScalingCommands) scalingAnalyze(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws scaling analyze <workspace-name>", "cws scaling analyze my-workspace")
+		return NewUsageError("prism scaling analyze <workspace-name>", "prism scaling analyze my-workspace")
 	}
 
 	instanceName := args[0]
@@ -657,7 +657,7 @@ func (s *ScalingCommands) scalingAnalyze(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'cws list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
 	}
 
 	fmt.Printf("📊 **Current Instance Configuration**:\n")
@@ -673,7 +673,7 @@ func (s *ScalingCommands) scalingAnalyze(args []string) error {
 	if instance.State != "running" {
 		fmt.Printf("\n⚠️  **Instance Not Running**\n")
 		fmt.Printf("   Instance must be running to collect usage analytics.\n")
-		fmt.Printf("   Start instance: cws start %s\n", instanceName)
+		fmt.Printf("   Start instance: prism start %s\n", instanceName)
 		return nil
 	}
 
@@ -694,9 +694,9 @@ func (s *ScalingCommands) scalingAnalyze(args []string) error {
 	fmt.Printf("   XL: 8vCPU, 32GB RAM, 4TB storage ($8.00/day)\n\n")
 
 	fmt.Printf("🔧 **Next Steps**:\n")
-	fmt.Printf("   1. Monitor usage: cws rightsizing stats %s\n", instanceName)
-	fmt.Printf("   2. Preview scaling: cws scaling preview %s <size>\n", instanceName)
-	fmt.Printf("   3. Execute scaling: cws scaling scale %s <size>\n", instanceName)
+	fmt.Printf("   1. Monitor usage: prism rightsizing stats %s\n", instanceName)
+	fmt.Printf("   2. Preview scaling: prism scaling preview %s <size>\n", instanceName)
+	fmt.Printf("   3. Execute scaling: prism scaling scale %s <size>\n", instanceName)
 
 	return nil
 }
@@ -704,7 +704,7 @@ func (s *ScalingCommands) scalingAnalyze(args []string) error {
 // scalingPredict predicts optimal size based on usage patterns and analytics
 func (s *ScalingCommands) scalingPredict(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws scaling predict <workspace-name>", "cws scaling predict my-workspace")
+		return NewUsageError("prism scaling predict <workspace-name>", "prism scaling predict my-workspace")
 	}
 
 	instanceName := args[0]
@@ -732,7 +732,7 @@ func (s *ScalingCommands) scalingPredict(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'cws list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
 	}
 
 	fmt.Printf("📊 **Instance Analysis**:\n")
@@ -746,7 +746,7 @@ func (s *ScalingCommands) scalingPredict(args []string) error {
 	if instance.State != "running" {
 		fmt.Printf("⚠️  **Instance Not Running**\n")
 		fmt.Printf("   Predictive analysis requires running instance with usage data.\n")
-		fmt.Printf("   Start instance: cws start %s\n", instanceName)
+		fmt.Printf("   Start instance: prism start %s\n", instanceName)
 		fmt.Printf("   Allow 1+ hours of runtime for meaningful predictions.\n")
 		return nil
 	}
@@ -798,8 +798,8 @@ func (s *ScalingCommands) scalingPredict(args []string) error {
 	} else {
 		fmt.Printf("   🎯 Consider scaling to %s for optimal resource utilization\n", predictedSize)
 		fmt.Printf("   📋 Next steps:\n")
-		fmt.Printf("      1. Review prediction: cws scaling preview %s %s\n", instanceName, predictedSize)
-		fmt.Printf("      2. Execute scaling: cws scaling scale %s %s\n", instanceName, predictedSize)
+		fmt.Printf("      1. Review prediction: prism scaling preview %s %s\n", instanceName, predictedSize)
+		fmt.Printf("      2. Execute scaling: prism scaling scale %s %s\n", instanceName, predictedSize)
 		fmt.Printf("   ⏰ Best time to scale: During low-activity periods\n")
 	}
 
@@ -888,7 +888,7 @@ func (s *ScalingCommands) displayUsagePatterns(instance *types.Instance) {
 // scalingScale scales an instance to a new size
 func (s *ScalingCommands) scalingScale(args []string) error {
 	if len(args) < 2 {
-		return NewUsageError("cws scaling scale <workspace-name> <size>", "cws scaling scale my-workspace L")
+		return NewUsageError("prism scaling scale <workspace-name> <size>", "prism scaling scale my-workspace L")
 	}
 
 	instanceName := args[0]
@@ -922,7 +922,7 @@ func (s *ScalingCommands) scalingScale(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'cws list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
 	}
 
 	currentSize := s.parseInstanceSize(instance.InstanceType)
@@ -963,9 +963,9 @@ func (s *ScalingCommands) scalingScale(args []string) error {
 	fmt.Printf("   Currently showing preview mode - full implementation pending.\n\n")
 
 	fmt.Printf("🛠️  **Manual Scaling Process**:\n")
-	fmt.Printf("   1. Stop instance: cws stop %s\n", instanceName)
+	fmt.Printf("   1. Stop instance: prism stop %s\n", instanceName)
 	fmt.Printf("   2. Modify via AWS Console or CLI\n")
-	fmt.Printf("   3. Start instance: cws start %s\n\n", instanceName)
+	fmt.Printf("   3. Start instance: prism start %s\n\n", instanceName)
 
 	fmt.Printf("🚧 **Implementation Status**: Preview Mode\n")
 	fmt.Printf("   Full dynamic scaling will be implemented in future release.\n")
@@ -976,7 +976,7 @@ func (s *ScalingCommands) scalingScale(args []string) error {
 // scalingPreview shows what a scaling operation would do
 func (s *ScalingCommands) scalingPreview(args []string) error {
 	if len(args) < 2 {
-		return NewUsageError("cws scaling preview <workspace-name> <size>", "cws scaling preview my-workspace L")
+		return NewUsageError("prism scaling preview <workspace-name> <size>", "prism scaling preview my-workspace L")
 	}
 
 	instanceName := args[0]
@@ -1010,7 +1010,7 @@ func (s *ScalingCommands) scalingPreview(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'cws list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
 	}
 
 	currentSize := s.parseInstanceSize(instance.InstanceType)
@@ -1061,7 +1061,7 @@ func (s *ScalingCommands) scalingPreview(args []string) error {
 	}
 
 	fmt.Printf("\n✅ **To Execute**:\n")
-	fmt.Printf("   cws scaling scale %s %s\n", instanceName, newSize)
+	fmt.Printf("   prism scaling scale %s %s\n", instanceName, newSize)
 
 	return nil
 }
@@ -1069,7 +1069,7 @@ func (s *ScalingCommands) scalingPreview(args []string) error {
 // scalingHistory shows scaling history for an instance
 func (s *ScalingCommands) scalingHistory(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws scaling history <workspace-name>", "cws scaling history my-workspace")
+		return NewUsageError("prism scaling history <workspace-name>", "prism scaling history my-workspace")
 	}
 
 	instanceName := args[0]
@@ -1097,7 +1097,7 @@ func (s *ScalingCommands) scalingHistory(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'cws list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
 	}
 
 	fmt.Printf("🏷️  **Instance**: %s\n", instance.Name)

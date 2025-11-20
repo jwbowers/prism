@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -138,7 +139,7 @@ func (rp *ResearchUserProvisioner) checkUserExistence(client *ssh.Client, userna
 	// Create base status with user existence confirmed
 	status := &ResearchUserStatus{
 		Username:      username,
-		SSHAccessible: strings.Contains(output, fmt.Sprintf("uid=")),
+		SSHAccessible: strings.Contains(output, "uid="),
 	}
 
 	return status, nil
@@ -442,6 +443,7 @@ type ProvisioningJobManager struct {
 	provisioner *ResearchUserProvisioner
 	jobs        map[string]*ProvisioningJob
 	jobCounter  int
+	mu          sync.RWMutex // Protects jobs map and job fields
 }
 
 // ProvisioningJob represents an asynchronous provisioning job
@@ -477,7 +479,9 @@ func NewProvisioningJobManager(provisioner *ResearchUserProvisioner) *Provisioni
 }
 
 // SubmitProvisioningJob submits a new asynchronous provisioning job
+// Returns a copy of the job to avoid data races when reading job fields
 func (pjm *ProvisioningJobManager) SubmitProvisioningJob(req *UserProvisioningRequest) (*ProvisioningJob, error) {
+	pjm.mu.Lock()
 	pjm.jobCounter++
 	jobID := fmt.Sprintf("provision-%d-%s", pjm.jobCounter, req.ResearchUser.Username)
 
@@ -491,22 +495,29 @@ func (pjm *ProvisioningJobManager) SubmitProvisioningJob(req *UserProvisioningRe
 
 	pjm.jobs[jobID] = job
 
+	// Return a copy to avoid data races
+	jobCopy := *job
+	pjm.mu.Unlock()
+
 	// Start job in background
 	go pjm.executeJob(job)
 
-	return job, nil
+	return &jobCopy, nil
 }
 
 // executeJob executes a provisioning job
 func (pjm *ProvisioningJobManager) executeJob(job *ProvisioningJob) {
+	pjm.mu.Lock()
 	job.Status = ProvisioningJobStatusRunning
 	job.Progress = 0.1
+	pjm.mu.Unlock()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	response, err := pjm.provisioner.ProvisionResearchUser(ctx, job.Request)
 
+	pjm.mu.Lock()
 	endTime := time.Now()
 	job.EndTime = &endTime
 
@@ -519,22 +530,36 @@ func (pjm *ProvisioningJobManager) executeJob(job *ProvisioningJob) {
 	}
 
 	job.Progress = 1.0
+	pjm.mu.Unlock()
 }
 
 // GetJob retrieves a provisioning job by ID
+// Returns a copy of the job to avoid data races when reading job fields
 func (pjm *ProvisioningJobManager) GetJob(jobID string) (*ProvisioningJob, error) {
+	pjm.mu.RLock()
+	defer pjm.mu.RUnlock()
+
 	job, exists := pjm.jobs[jobID]
 	if !exists {
 		return nil, fmt.Errorf("job %s not found", jobID)
 	}
-	return job, nil
+
+	// Return a copy to avoid data races
+	jobCopy := *job
+	return &jobCopy, nil
 }
 
 // ListJobs lists all provisioning jobs
+// Returns copies of jobs to avoid data races when reading job fields
 func (pjm *ProvisioningJobManager) ListJobs() []*ProvisioningJob {
+	pjm.mu.RLock()
+	defer pjm.mu.RUnlock()
+
 	jobs := make([]*ProvisioningJob, 0, len(pjm.jobs))
 	for _, job := range pjm.jobs {
-		jobs = append(jobs, job)
+		// Return a copy to avoid data races
+		jobCopy := *job
+		jobs = append(jobs, &jobCopy)
 	}
 	return jobs
 }
@@ -545,7 +570,7 @@ func (rp *ResearchUserProvisioner) getHostKeyCallback() ssh.HostKeyCallback {
 	// Get known_hosts path
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		// Fallback: For CloudWorkstation-managed EC2 instances, we can trust on first use
+		// Fallback: For Prism-managed EC2 instances, we can trust on first use
 		// since we control the infrastructure
 		return rp.trustOnFirstUseCallback()
 	}
@@ -556,7 +581,7 @@ func (rp *ResearchUserProvisioner) getHostKeyCallback() ssh.HostKeyCallback {
 	callback, err := knownhosts.New(knownHostsPath)
 	if err != nil {
 		// If known_hosts doesn't exist or can't be read, use trust-on-first-use
-		// This is acceptable for CloudWorkstation since:
+		// This is acceptable for Prism since:
 		// 1. We launch the instances ourselves via AWS
 		// 2. We connect immediately after launch
 		// 3. The instance is in our AWS account
@@ -567,7 +592,7 @@ func (rp *ResearchUserProvisioner) getHostKeyCallback() ssh.HostKeyCallback {
 }
 
 // trustOnFirstUseCallback returns a callback that trusts and records host keys on first use
-// This is acceptable for CloudWorkstation EC2 instances since we control the infrastructure
+// This is acceptable for Prism EC2 instances since we control the infrastructure
 func (rp *ResearchUserProvisioner) trustOnFirstUseCallback() ssh.HostKeyCallback {
 	knownHosts := make(map[string]ssh.PublicKey)
 
@@ -585,7 +610,7 @@ func (rp *ResearchUserProvisioner) trustOnFirstUseCallback() ssh.HostKeyCallback
 		// First time seeing this host - record it
 		knownHosts[hostKey] = key
 
-		// For CloudWorkstation instances, we could optionally append to known_hosts file
+		// For Prism instances, we could optionally append to known_hosts file
 		// but for now just keep in memory for the session
 		return nil
 	}

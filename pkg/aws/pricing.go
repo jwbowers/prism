@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -260,14 +259,4 @@ func (p *PricingClient) GetEBSVolumeHourlyRate(volumeType string, sizeGB int) fl
 	// Convert monthly cost to hourly: monthly / (30 days * 24 hours)
 	ratePerGBHour := ratePerGBMonth / (30 * 24)
 	return float64(sizeGB) * ratePerGBHour
-}
-
-// regionFromAZ extracts the region from an availability zone
-func regionFromAZ(az string) string {
-	// Availability zones are like "us-east-1a", we want "us-east-1"
-	parts := strings.Split(az, "-")
-	if len(parts) >= 3 {
-		return strings.Join(parts[:3], "-")
-	}
-	return az // Return as-is if parsing fails
 }

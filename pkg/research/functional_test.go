@@ -10,9 +10,13 @@ import (
 // MockProfileManager for testing research user functionality
 type MockProfileManager struct {
 	currentProfile string
+	profileError   error
 }
 
 func (m *MockProfileManager) GetCurrentProfile() (string, error) {
+	if m.profileError != nil {
+		return "", m.profileError
+	}
 	if m.currentProfile == "" {
 		return "test-profile", nil
 	}
@@ -22,6 +26,11 @@ func (m *MockProfileManager) GetCurrentProfile() (string, error) {
 // SetCurrentProfile allows tests to set the current profile
 func (m *MockProfileManager) SetCurrentProfile(profile string) {
 	m.currentProfile = profile
+}
+
+// SetProfileError allows tests to inject profile errors
+func (m *MockProfileManager) SetProfileError(err error) {
+	m.profileError = err
 }
 
 func (m *MockProfileManager) GetProfileConfig(profileID string) (interface{}, error) {

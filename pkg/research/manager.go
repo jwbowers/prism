@@ -1,7 +1,8 @@
 package research
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,7 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/profile"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
+	"github.com/scttfrdmn/prism/pkg/profile"
 )
 
 // NewResearchUserManager creates a new research user manager
@@ -44,13 +48,16 @@ func (rum *ResearchUserManager) GetOrCreateResearchUser(username string) (*Resea
 
 // CreateResearchUser creates a new research user for the specified profile
 func (rum *ResearchUserManager) CreateResearchUser(profileID, username string) (*ResearchUserConfig, error) {
+	rum.mu.Lock()
+	defer rum.mu.Unlock()
+
 	// Validate username
 	if err := rum.validateUsername(username); err != nil {
 		return nil, fmt.Errorf("invalid username: %w", err)
 	}
 
 	// Allocate UID/GID
-	uid, gid, err := rum.allocateUIGID(profileID)
+	uid, gid, err := rum.allocateUIGID(profileID, username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate UID/GID: %w", err)
 	}
@@ -63,7 +70,7 @@ func (rum *ResearchUserManager) CreateResearchUser(profileID, username string) (
 		Username:        username,
 		UID:             uid,
 		GID:             gid,
-		FullName:        strings.Title(username),
+		FullName:        cases.Title(language.English).String(username),
 		Email:           email,
 		HomeDirectory:   fmt.Sprintf("/efs/home/%s", username),
 		EFSMountPoint:   "/efs",
@@ -91,6 +98,9 @@ func (rum *ResearchUserManager) CreateResearchUser(profileID, username string) (
 
 // GetResearchUser retrieves a research user for the specified profile
 func (rum *ResearchUserManager) GetResearchUser(profileID, username string) (*ResearchUserConfig, error) {
+	rum.mu.RLock()
+	defer rum.mu.RUnlock()
+
 	configFile := rum.getResearchUserConfigPath(profileID, username)
 
 	data, err := os.ReadFile(configFile)
@@ -121,6 +131,9 @@ func (rum *ResearchUserManager) ListResearchUsers() ([]*ResearchUserConfig, erro
 
 // ListResearchUsersForProfile lists all research users for a specific profile
 func (rum *ResearchUserManager) ListResearchUsersForProfile(profileID string) ([]*ResearchUserConfig, error) {
+	rum.mu.RLock()
+	defer rum.mu.RUnlock()
+
 	profileDir := filepath.Join(rum.configPath, "research-users", profileID)
 
 	entries, err := os.ReadDir(profileDir)
@@ -135,11 +148,19 @@ func (rum *ResearchUserManager) ListResearchUsersForProfile(profileID string) ([
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
 			username := strings.TrimSuffix(entry.Name(), ".json")
-			user, err := rum.GetResearchUser(profileID, username)
+
+			// Read user config directly (avoid deadlock with GetResearchUser)
+			configFile := rum.getResearchUserConfigPath(profileID, username)
+			data, err := os.ReadFile(configFile)
 			if err != nil {
 				continue // Skip invalid configs
 			}
-			users = append(users, user)
+
+			var user ResearchUserConfig
+			if err := json.Unmarshal(data, &user); err != nil {
+				continue // Skip invalid configs
+			}
+			users = append(users, &user)
 		}
 	}
 
@@ -153,9 +174,21 @@ func (rum *ResearchUserManager) ListResearchUsersForProfile(profileID string) ([
 
 // UpdateResearchUser updates an existing research user
 func (rum *ResearchUserManager) UpdateResearchUser(profileID string, user *ResearchUserConfig) error {
-	// Validate the user exists
-	existing, err := rum.GetResearchUser(profileID, user.Username)
+	rum.mu.Lock()
+	defer rum.mu.Unlock()
+
+	// Validate the user exists by reading directly (avoid deadlock with GetResearchUser)
+	configFile := rum.getResearchUserConfigPath(profileID, user.Username)
+	data, err := os.ReadFile(configFile)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("research user does not exist: research user %s not found for profile %s", user.Username, profileID)
+		}
+		return fmt.Errorf("research user does not exist: %w", err)
+	}
+
+	var existing ResearchUserConfig
+	if err := json.Unmarshal(data, &existing); err != nil {
 		return fmt.Errorf("research user does not exist: %w", err)
 	}
 
@@ -171,9 +204,17 @@ func (rum *ResearchUserManager) UpdateResearchUser(profileID string, user *Resea
 
 // DeleteResearchUser removes a research user configuration
 func (rum *ResearchUserManager) DeleteResearchUser(profileID, username string) error {
+	rum.mu.Lock()
+	defer rum.mu.Unlock()
+
 	configFile := rum.getResearchUserConfigPath(profileID, username)
 
-	if err := os.Remove(configFile); err != nil && !os.IsNotExist(err) {
+	// Check if user exists before attempting deletion
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		return fmt.Errorf("research user %s does not exist in profile %s", username, profileID)
+	}
+
+	if err := os.Remove(configFile); err != nil {
 		return fmt.Errorf("failed to delete research user config: %w", err)
 	}
 
@@ -194,7 +235,7 @@ func (rum *ResearchUserManager) GenerateUserProvisioningScript(req *UserProvisio
 		"#!/bin/bash",
 		"set -e",
 		"",
-		"# CloudWorkstation Research User Provisioning Script",
+		"# Prism Research User Provisioning Script",
 		fmt.Sprintf("# Instance: %s (%s)", req.InstanceName, req.InstanceID),
 		fmt.Sprintf("# Research User: %s (UID: %d)", user.Username, user.UID),
 		fmt.Sprintf("# Generated: %s", time.Now().Format(time.RFC3339)),
@@ -261,31 +302,25 @@ func (rum *ResearchUserManager) validateUsername(username string) error {
 	return nil
 }
 
-func (rum *ResearchUserManager) allocateUIGID(profileID string) (uid, gid int, err error) {
-	// Generate deterministic UID/GID based on profile ID
-	hash := md5.Sum([]byte(profileID))
+func (rum *ResearchUserManager) allocateUIGID(profileID, username string) (uid, gid int, err error) {
+	// Generate deterministic UID/GID based on profile ID and username
+	// This ensures the same username in the same profile always gets the same UID
+	// Uses the same algorithm as ProfileUIDMapper for consistency
+	combinedKey := fmt.Sprintf("%s:%s", profileID, username)
+	hash := sha256.Sum256([]byte(combinedKey))
 
-	// Use first 4 bytes of hash to generate offset within allowed range
-	offset := int(hash[0])<<24 | int(hash[1])<<16 | int(hash[2])<<8 | int(hash[3])
-	if offset < 0 {
-		offset = -offset
-	}
+	// Use first 8 bytes to generate UID offset (same as ProfileUIDMapper)
+	uidOffset := binary.BigEndian.Uint64(hash[:8])
 
 	// Map to allowed UID range
-	uid = rum.baseUID + (offset % (ResearchUserMaxUID - rum.baseUID))
+	uidRange := uint64(ResearchUserMaxUID - rum.baseUID + 1)
+	uid = rum.baseUID + int(uidOffset%uidRange)
 
-	// Ensure we don't conflict with existing allocations
-	for {
-		key := fmt.Sprintf("%s:%d", profileID, uid)
-		if _, exists := rum.uidAllocations[key]; !exists {
-			rum.uidAllocations[key] = uid
-			break
-		}
-		uid++
-		if uid > ResearchUserMaxUID {
-			return 0, 0, fmt.Errorf("no available UIDs in range %d-%d", rum.baseUID, ResearchUserMaxUID)
-		}
-	}
+	// For deterministic allocation, we don't need to check for conflicts
+	// The same profile:username combination will always produce the same UID
+	// Cache the allocation for this profile:username combination
+	cacheKey := fmt.Sprintf("%s:%s", profileID, username)
+	rum.uidAllocations[cacheKey] = uid
 
 	// GID matches UID for simplicity
 	gid = uid
@@ -405,7 +440,7 @@ func (rum *ResearchUserManager) generateEnvironmentSetupCommands(user *ResearchU
 	if len(user.DefaultEnvironment) > 0 {
 		commands = append(commands, fmt.Sprintf("cat >> %s/.bashrc << 'ENV_EOF'", user.HomeDirectory))
 		commands = append(commands, "")
-		commands = append(commands, "# CloudWorkstation Research User Environment")
+		commands = append(commands, "# Prism Research User Environment")
 		for key, value := range user.DefaultEnvironment {
 			commands = append(commands, fmt.Sprintf("export %s='%s'", key, value))
 		}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // CreateProjectRequest represents a request to create a new project
@@ -21,8 +21,9 @@ type CreateProjectRequest struct {
 	// Tags for project organization
 	Tags map[string]string `json:"tags,omitempty"`
 
-	// Budget contains optional budget configuration
-	Budget *CreateBudgetRequest `json:"budget,omitempty"`
+	// Budget contains optional budget configuration (DEPRECATED in v0.5.10)
+	// Use Budget/Allocation system instead
+	Budget *CreateProjectBudgetRequest `json:"budget,omitempty"`
 }
 
 // Validate validates the create project request
@@ -48,8 +49,9 @@ func (r *CreateProjectRequest) Validate() error {
 	return nil
 }
 
-// CreateBudgetRequest represents a request to create a project budget
-type CreateBudgetRequest struct {
+// CreateProjectBudgetRequest represents a request to create a project budget (DEPRECATED in v0.5.10)
+// Use CreateBudgetRequest + CreateAllocationRequest instead
+type CreateProjectBudgetRequest struct {
 	// TotalBudget is the total project budget in USD
 	TotalBudget float64 `json:"total_budget"`
 
@@ -72,8 +74,8 @@ type CreateBudgetRequest struct {
 	EndDate *time.Time `json:"end_date,omitempty"`
 }
 
-// Validate validates the create budget request
-func (r *CreateBudgetRequest) Validate() error {
+// Validate validates the create project budget request (DEPRECATED in v0.5.10)
+func (r *CreateProjectBudgetRequest) Validate() error {
 	if r.TotalBudget <= 0 {
 		return fmt.Errorf("total budget must be greater than 0")
 	}
@@ -384,4 +386,354 @@ func (r *UpdateMemberRequest) Validate() error {
 	}
 
 	return nil
+}
+
+// ============================================================================
+// v0.5.10: Multi-Budget System Request Types
+// ============================================================================
+
+// CreateBudgetRequest represents a request to create a budget pool (v0.5.10+)
+type CreateBudgetRequest struct {
+	// Name is the budget name (e.g., "NSF Grant CISE-2024-12345")
+	Name string `json:"name"`
+
+	// Description provides budget details
+	Description string `json:"description"`
+
+	// TotalAmount is the total budget pool in USD
+	TotalAmount float64 `json:"total_amount"`
+
+	// Period defines the budget period
+	Period types.BudgetPeriod `json:"period"`
+
+	// StartDate is when the budget period began
+	StartDate time.Time `json:"start_date"`
+
+	// EndDate is when the budget period ends (optional for ongoing budgets)
+	EndDate *time.Time `json:"end_date,omitempty"`
+
+	// AlertThreshold is the global alert percentage (0.0-1.0)
+	AlertThreshold float64 `json:"alert_threshold"`
+
+	// CreatedBy is the user who created the budget
+	CreatedBy string `json:"created_by"`
+
+	// Tags for budget organization
+	Tags map[string]string `json:"tags,omitempty"`
+}
+
+// Validate validates the create budget request
+func (r *CreateBudgetRequest) Validate() error {
+	if r.Name == "" {
+		return fmt.Errorf("budget name is required")
+	}
+
+	if len(r.Name) > 100 {
+		return fmt.Errorf("budget name cannot exceed 100 characters")
+	}
+
+	if r.TotalAmount <= 0 {
+		return fmt.Errorf("total amount must be greater than 0")
+	}
+
+	if r.AlertThreshold < 0 || r.AlertThreshold > 1 {
+		return fmt.Errorf("alert threshold must be between 0.0 and 1.0")
+	}
+
+	if r.Period == "" {
+		return fmt.Errorf("budget period is required")
+	}
+
+	if r.CreatedBy == "" {
+		return fmt.Errorf("created_by is required")
+	}
+
+	return nil
+}
+
+// UpdateBudgetRequest represents a request to update a budget
+type UpdateBudgetRequest struct {
+	// Name is the new budget name (optional)
+	Name *string `json:"name,omitempty"`
+
+	// Description is the new budget description (optional)
+	Description *string `json:"description,omitempty"`
+
+	// TotalAmount is the new total amount (optional)
+	TotalAmount *float64 `json:"total_amount,omitempty"`
+
+	// AlertThreshold is the new alert threshold (optional)
+	AlertThreshold *float64 `json:"alert_threshold,omitempty"`
+
+	// EndDate is the new end date (optional)
+	EndDate *time.Time `json:"end_date,omitempty"`
+
+	// Tags are the new budget tags (optional)
+	Tags map[string]string `json:"tags,omitempty"`
+}
+
+// CreateAllocationRequest represents a request to allocate budget to a project
+type CreateAllocationRequest struct {
+	// BudgetID is the parent budget pool
+	BudgetID string `json:"budget_id"`
+
+	// ProjectID is the project receiving the allocation
+	ProjectID string `json:"project_id"`
+
+	// AllocatedAmount is how much of the budget to allocate to this project
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// AlertThreshold is an optional project-specific alert threshold (overrides budget default)
+	AlertThreshold *float64 `json:"alert_threshold,omitempty"`
+
+	// BackupAllocationID is an optional backup funding source for exhaustion (#234)
+	BackupAllocationID *string `json:"backup_allocation_id,omitempty"`
+
+	// Notes provide context for this allocation
+	Notes string `json:"notes,omitempty"`
+
+	// AllocatedBy is the user who created the allocation
+	AllocatedBy string `json:"allocated_by"`
+}
+
+// Validate validates the create allocation request
+func (r *CreateAllocationRequest) Validate() error {
+	if r.BudgetID == "" {
+		return fmt.Errorf("budget_id is required")
+	}
+
+	if r.ProjectID == "" {
+		return fmt.Errorf("project_id is required")
+	}
+
+	if r.AllocatedAmount <= 0 {
+		return fmt.Errorf("allocated amount must be greater than 0")
+	}
+
+	if r.AlertThreshold != nil && (*r.AlertThreshold < 0 || *r.AlertThreshold > 1) {
+		return fmt.Errorf("alert threshold must be between 0.0 and 1.0")
+	}
+
+	if r.AllocatedBy == "" {
+		return fmt.Errorf("allocated_by is required")
+	}
+
+	return nil
+}
+
+// UpdateAllocationRequest represents a request to update an allocation
+type UpdateAllocationRequest struct {
+	// AllocatedAmount is the new allocated amount (optional)
+	AllocatedAmount *float64 `json:"allocated_amount,omitempty"`
+
+	// AlertThreshold is the new alert threshold (optional)
+	AlertThreshold *float64 `json:"alert_threshold,omitempty"`
+
+	// BackupAllocationID is the new backup allocation (optional)
+	BackupAllocationID *string `json:"backup_allocation_id,omitempty"`
+
+	// Notes are the new notes (optional)
+	Notes *string `json:"notes,omitempty"`
+}
+
+// ReallocateFundsRequest represents a request to reallocate funds between allocations (v0.5.10+ Issue #99)
+type ReallocateFundsRequest struct {
+	// SourceAllocationID is where funds are moved from
+	SourceAllocationID string `json:"source_allocation_id"`
+
+	// DestinationAllocationID is where funds are moved to
+	DestinationAllocationID string `json:"destination_allocation_id"`
+
+	// Amount is how much to reallocate (USD)
+	Amount float64 `json:"amount"`
+
+	// Reason explains why the reallocation is being made (required for audit)
+	Reason string `json:"reason"`
+
+	// PerformedBy is the user making the reallocation
+	PerformedBy string `json:"performed_by"`
+}
+
+// Validate validates the reallocate funds request
+func (r *ReallocateFundsRequest) Validate() error {
+	if r.SourceAllocationID == "" {
+		return fmt.Errorf("source_allocation_id is required")
+	}
+
+	if r.DestinationAllocationID == "" {
+		return fmt.Errorf("destination_allocation_id is required")
+	}
+
+	if r.SourceAllocationID == r.DestinationAllocationID {
+		return fmt.Errorf("source and destination allocations cannot be the same")
+	}
+
+	if r.Amount <= 0 {
+		return fmt.Errorf("reallocation amount must be greater than 0")
+	}
+
+	if r.Reason == "" {
+		return fmt.Errorf("reason is required for audit trail")
+	}
+
+	if len(r.Reason) > 500 {
+		return fmt.Errorf("reason cannot exceed 500 characters")
+	}
+
+	if r.PerformedBy == "" {
+		return fmt.Errorf("performed_by is required")
+	}
+
+	return nil
+}
+
+// ReallocationRecord tracks a funds reallocation for audit purposes (v0.5.10+ Issue #99)
+type ReallocationRecord struct {
+	// ID is the unique reallocation identifier
+	ID string `json:"id"`
+
+	// SourceAllocationID is where funds were moved from
+	SourceAllocationID string `json:"source_allocation_id"`
+
+	// DestinationAllocationID is where funds were moved to
+	DestinationAllocationID string `json:"destination_allocation_id"`
+
+	// SourceBudgetID is the source budget (for cross-budget tracking)
+	SourceBudgetID string `json:"source_budget_id"`
+
+	// DestinationBudgetID is the destination budget (for cross-budget tracking)
+	DestinationBudgetID string `json:"destination_budget_id"`
+
+	// Amount is how much was reallocated (USD)
+	Amount float64 `json:"amount"`
+
+	// Reason explains why the reallocation was made
+	Reason string `json:"reason"`
+
+	// PerformedBy is the user who made the reallocation
+	PerformedBy string `json:"performed_by"`
+
+	// Timestamp is when the reallocation occurred
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// ============================================================================
+// v0.5.10: Multi-Project Cost Rollup and Reporting Types (Issue #100)
+// ============================================================================
+
+// BudgetRollupReport provides aggregated cost and budget information (v0.5.10+ Issue #100)
+type BudgetRollupReport struct {
+	// ReportID is a unique identifier for this report
+	ReportID string `json:"report_id"`
+
+	// GeneratedAt is when this report was generated
+	GeneratedAt time.Time `json:"generated_at"`
+
+	// BudgetSummaries provides per-budget rollup information
+	BudgetSummaries []BudgetSummaryReport `json:"budget_summaries"`
+
+	// TotalBudgets is the total number of budgets in the report
+	TotalBudgets int `json:"total_budgets"`
+
+	// TotalAllocated is the sum of all budget allocations
+	TotalAllocated float64 `json:"total_allocated"`
+
+	// TotalSpent is the sum of all spending across all budgets
+	TotalSpent float64 `json:"total_spent"`
+
+	// TotalRemaining is the total remaining across all budgets
+	TotalRemaining float64 `json:"total_remaining"`
+
+	// OverallUtilization is the percentage of total budget utilized (0.0-1.0)
+	OverallUtilization float64 `json:"overall_utilization"`
+
+	// ProjectCount is the total number of projects funded
+	ProjectCount int `json:"project_count"`
+}
+
+// BudgetSummaryReport provides detailed budget information (v0.5.10+ Issue #100)
+type BudgetSummaryReport struct {
+	// BudgetID is the budget identifier
+	BudgetID string `json:"budget_id"`
+
+	// BudgetName is the budget name
+	BudgetName string `json:"budget_name"`
+
+	// Period is the budget period
+	Period string `json:"period"`
+
+	// TotalAmount is the total budget amount
+	TotalAmount float64 `json:"total_amount"`
+
+	// AllocatedAmount is how much has been allocated to projects
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// SpentAmount is how much has been spent
+	SpentAmount float64 `json:"spent_amount"`
+
+	// RemainingAmount is the remaining unspent budget
+	RemainingAmount float64 `json:"remaining_amount"`
+
+	// Utilization is the percentage of budget utilized (0.0-1.0)
+	Utilization float64 `json:"utilization"`
+
+	// ProjectCount is the number of projects funded by this budget
+	ProjectCount int `json:"project_count"`
+
+	// AllocationCount is the number of allocations from this budget
+	AllocationCount int `json:"allocation_count"`
+
+	// Projects provides per-project information
+	Projects []ProjectCostSummary `json:"projects"`
+}
+
+// ProjectCostSummary provides project-level cost information (v0.5.10+ Issue #100)
+type ProjectCostSummary struct {
+	// ProjectID is the project identifier
+	ProjectID string `json:"project_id"`
+
+	// ProjectName is the project name
+	ProjectName string `json:"project_name"`
+
+	// FundingSources lists all funding allocations for this project
+	FundingSources []AllocationSummary `json:"funding_sources"`
+
+	// TotalAllocated is the total allocated to this project across all sources
+	TotalAllocated float64 `json:"total_allocated"`
+
+	// TotalSpent is the total spent by this project
+	TotalSpent float64 `json:"total_spent"`
+
+	// TotalRemaining is the remaining budget for this project
+	TotalRemaining float64 `json:"total_remaining"`
+
+	// Utilization is the percentage of allocated budget spent (0.0-1.0)
+	Utilization float64 `json:"utilization"`
+}
+
+// AllocationSummary provides allocation-level information (v0.5.10+ Issue #100)
+type AllocationSummary struct {
+	// AllocationID is the allocation identifier
+	AllocationID string `json:"allocation_id"`
+
+	// BudgetID is the parent budget identifier
+	BudgetID string `json:"budget_id"`
+
+	// BudgetName is the parent budget name
+	BudgetName string `json:"budget_name"`
+
+	// AllocatedAmount is how much was allocated
+	AllocatedAmount float64 `json:"allocated_amount"`
+
+	// SpentAmount is how much has been spent
+	SpentAmount float64 `json:"spent_amount"`
+
+	// RemainingAmount is the remaining allocation
+	RemainingAmount float64 `json:"remaining_amount"`
+
+	// Utilization is the percentage of allocation spent (0.0-1.0)
+	Utilization float64 `json:"utilization"`
+
+	// HasBackup indicates if backup funding is configured
+	HasBackup bool `json:"has_backup"`
 }

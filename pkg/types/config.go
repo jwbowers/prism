@@ -17,7 +17,7 @@ type State struct {
 	Config         Config                   `json:"config"`
 }
 
-// DaemonStatus represents the status of the CloudWorkstation daemon
+// DaemonStatus represents the status of the Prism daemon
 type DaemonStatus struct {
 	// Version of the daemon
 	Version string `json:"version"`
@@ -48,6 +48,13 @@ type DaemonStatus struct {
 
 	// CurrentProfile is the active profile ID (if applicable)
 	CurrentProfile string `json:"current_profile,omitempty"`
+
+	// Rate limiting status (v0.5.12)
+	RateLimitEnabled     bool `json:"rate_limit_enabled,omitempty"`
+	RateLimitMaxLaunches int  `json:"rate_limit_max_launches,omitempty"`
+	RateLimitWindow      int  `json:"rate_limit_window,omitempty"`
+	RateLimitCurrent     int  `json:"rate_limit_current,omitempty"`
+	RateLimitRemaining   int  `json:"rate_limit_remaining,omitempty"`
 }
 
 // AuthResponse represents an authentication response

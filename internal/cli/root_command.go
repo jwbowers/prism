@@ -2,11 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/version"
+	"github.com/scttfrdmn/prism/pkg/version"
 	"github.com/spf13/cobra"
 )
 
@@ -141,10 +138,10 @@ This command provides powerful remote execution capabilities with support for:
 • Verbose output and execution details (--verbose flag)
 
 Examples:
-  cws exec my-workspace "ls -la"                    # List directory contents
-  cws exec my-workspace "python script.py" --user researcher --timeout 60
-  cws exec my-workspace "cd /data && df -h" --working-dir /data
-  cws exec my-workspace "export VAR=value && echo $VAR" --env=VAR=value`,
+  prism exec my-workspace "ls -la"                    # List directory contents
+  prism exec my-workspace "python script.py" --user researcher --timeout 60
+  prism exec my-workspace "cd /data && df -h" --working-dir /data
+  prism exec my-workspace "export VAR=value && echo $VAR" --env=VAR=value`,
 		Args: cobra.MinimumNArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return f.app.Exec(args)
@@ -247,10 +244,10 @@ The resize operation requires instance shutdown and will cause 2-5 minutes of do
 All data and configuration are preserved during the resize operation.
 
 Examples:
-  cws resize my-workspace --size L                  # Resize to Large t-shirt size
-  cws resize gpu-training --instance-type p3.2xlarge # Resize to specific GPU instance
-  cws resize my-analysis --size XL --dry-run       # Preview resize to Extra Large
-  cws resize my-server --size M --wait             # Resize and wait for completion`,
+  prism resize my-workspace --size L                  # Resize to Large t-shirt size
+  prism resize gpu-training --instance-type p3.2xlarge # Resize to specific GPU instance
+  prism resize my-analysis --size XL --dry-run       # Preview resize to Extra Large
+  prism resize my-server --size M --wait             # Resize and wait for completion`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			instanceCommands := NewInstanceCommands(f.app)
@@ -380,18 +377,13 @@ func NewCommandFactoryRegistry(app *App) *CommandFactoryRegistry {
 
 // RegisterAllCommands adds all commands to root using factories
 func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
-	// Launch command
-	launchFactory := &LaunchCommandFactory{app: r.app}
-	rootCmd.AddCommand(launchFactory.CreateCommand())
+	// NEW: Unified workspace command group (Phase 5.0.3 - CLI Consistency)
+	workspaceFactory := &WorkspaceCommandFactory{app: r.app}
+	rootCmd.AddCommand(workspaceFactory.CreateCommand())
 
-	// List command
-	rootCmd.AddCommand(r.createListCommand())
-
-	// Instance commands
-	instanceFactory := &InstanceCommandFactory{app: r.app}
-	for _, cmd := range instanceFactory.CreateCommands() {
-		rootCmd.AddCommand(cmd)
-	}
+	// Init command (Quick Start wizard for first-time users - v0.5.8)
+	initCobra := NewInitCobraCommands(r.app)
+	rootCmd.AddCommand(initCobra.CreateInitCommand())
 
 	// Logs command
 	logsCommands := NewLogsCommands(r.app)
@@ -410,6 +402,10 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	// Project commands (using new Cobra structure)
 	projectCobra := NewProjectCobraCommands(r.app)
 	rootCmd.AddCommand(projectCobra.CreateProjectCommand())
+
+	// Invitation commands (v0.5.11 user invitation system)
+	invitationCobra := NewInvitationCobraCommands(r.app)
+	rootCmd.AddCommand(invitationCobra.CreateInvitationCommand())
 
 	// Budget commands (comprehensive financial management)
 	budgetCommands := NewBudgetCommands(r.app)
@@ -450,6 +446,7 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(r.app.tuiCommand)
 	rootCmd.AddCommand(NewGUICommand())
 	rootCmd.AddCommand(NewAboutCommand())
+	rootCmd.AddCommand(NewVersionCommand())
 
 	// Other commands (removed duplicate idle command - using Cobra version instead)
 
@@ -466,50 +463,9 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	repoCobra := NewRepoCobraCommands(r.app)
 	rootCmd.AddCommand(repoCobra.CreateRepoCommand())
 
-	// System management commands
-	rootCmd.AddCommand(r.createDaemonCommand())
-
-	// Advanced commands (using new Cobra structure)
-	rightsizingCobra := NewRightsizingCobraCommands(r.app)
-	rootCmd.AddCommand(rightsizingCobra.CreateRightsizingCommand())
-	rootCmd.AddCommand(r.createScalingCommand())
-}
-
-func (r *CommandFactoryRegistry) createListCommand() *cobra.Command {
-	listCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List workstations",
-		Long: `List all your cloud workstations and their status from local cache (fast).
-Use --refresh to query AWS for real-time status (slower).`,
-		GroupID: "core",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get flag values and prepend to args for App.List() to parse
-			detailed, _ := cmd.Flags().GetBool("detailed")
-			refresh, _ := cmd.Flags().GetBool("refresh")
-			if detailed {
-				args = append([]string{"--detailed"}, args...)
-			}
-			if refresh {
-				args = append([]string{"--refresh"}, args...)
-			}
-			return r.app.List(args)
-		},
-	}
-
-	// Add flags
-	listCmd.Flags().BoolP("detailed", "d", false, "Show detailed information including region and availability zone")
-	listCmd.Flags().BoolP("refresh", "r", false, "Refresh from AWS for real-time status (slower)")
-
-	listCostCmd := &cobra.Command{
-		Use:   "cost",
-		Short: "Show detailed cost information",
-		Long:  `Show detailed cost information for all workstations with four decimal precision.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return r.app.ListCost(args)
-		},
-	}
-	listCmd.AddCommand(listCostCmd)
-	return listCmd
+	// NEW: Unified admin command group (Phase 5.0.3 - CLI Consistency)
+	adminFactory := &AdminCommandFactory{app: r.app}
+	rootCmd.AddCommand(adminFactory.CreateCommand())
 }
 
 func (r *CommandFactoryRegistry) createSnapshotCommand() *cobra.Command {
@@ -517,7 +473,7 @@ func (r *CommandFactoryRegistry) createSnapshotCommand() *cobra.Command {
 		Use:     "snapshot <action>",
 		Short:   "Manage workspace snapshots",
 		GroupID: "storage",
-		Long: `Create and manage CloudWorkstation workspace snapshots for backup, cloning, and disaster recovery.
+		Long: `Create and manage Prism workspace snapshots for backup, cloning, and disaster recovery.
 
 Snapshots capture the complete state of your workspaces including:
 • Operating system and all installed software
@@ -525,9 +481,9 @@ Snapshots capture the complete state of your workspaces including:
 • Template metadata for easy restoration
 
 Examples:
-  cws snapshot create my-workspace backup-v1
-  cws snapshot list
-  cws snapshot restore backup-v1 my-new-workspace`,
+  prism snapshot create my-workspace backup-v1
+  prism snapshot list
+  prism snapshot restore backup-v1 my-new-workspace`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return r.app.Snapshot(args)
 		},
@@ -539,7 +495,7 @@ func (r *CommandFactoryRegistry) createBackupCommand() *cobra.Command {
 		Use:     "backup <action>",
 		Short:   "Manage data backups",
 		GroupID: "storage",
-		Long: `Create and manage CloudWorkstation data backups for user files, configurations, and research data.
+		Long: `Create and manage Prism data backups for user files, configurations, and research data.
 
 Data backups provide granular backup capabilities with:
 • Selective file and directory backup
@@ -549,9 +505,9 @@ Data backups provide granular backup capabilities with:
 • Cost-effective storage with deduplication
 
 Examples:
-  cws backup create my-workspace daily-backup
-  cws backup list
-  cws backup restore daily-backup target-workspace`,
+  prism backup create my-workspace daily-backup
+  prism backup list
+  prism backup restore daily-backup target-workspace`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return r.app.Backup(args)
 		},
@@ -563,7 +519,7 @@ func (r *CommandFactoryRegistry) createRestoreCommand() *cobra.Command {
 		Use:     "restore <backup-name> <target-workspace>",
 		Short:   "Restore data from backups",
 		GroupID: "storage",
-		Long: `Restore data from CloudWorkstation backups with granular control over restore operations.
+		Long: `Restore data from Prism backups with granular control over restore operations.
 
 Restore capabilities include:
 • Cross-workspace restoration
@@ -573,9 +529,9 @@ Restore capabilities include:
 • Progress monitoring and dry-run preview
 
 Examples:
-  cws restore daily-backup my-workspace
-  cws restore daily-backup my-workspace --path /data --selective /home/user
-  cws restore daily-backup my-workspace --dry-run`,
+  prism restore daily-backup my-workspace
+  prism restore daily-backup my-workspace --path /data --selective /home/user
+  prism restore daily-backup my-workspace --dry-run`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return r.app.Restore(args)
 		},
@@ -587,7 +543,7 @@ func (r *CommandFactoryRegistry) createWebCommand() *cobra.Command {
 		Use:     "web <action>",
 		Short:   "Manage workspace web services",
 		GroupID: "instance",
-		Long: `Access and manage web services running on CloudWorkstation workspaces.
+		Long: `Access and manage web services running on Prism workspaces.
 
 Web service management provides seamless access to:
 • Jupyter Lab and Jupyter Notebook
@@ -596,250 +552,12 @@ Web service management provides seamless access to:
 • Custom web applications
 
 Examples:
-  cws web list my-jupyter         # List all web services for workspace
-  cws web open my-jupyter jupyter # Open Jupyter in browser with auto-tunneling
-  cws web close my-jupyter         # Close all tunnels for workspace
-  cws web close my-jupyter jupyter # Close specific service tunnel`,
+  prism web list my-jupyter         # List all web services for workspace
+  prism web open my-jupyter jupyter # Open Jupyter in browser with auto-tunneling
+  prism web close my-jupyter         # Close all tunnels for workspace
+  prism web close my-jupyter jupyter # Close specific service tunnel`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return r.app.Web(args)
-		},
-	}
-}
-
-func (r *CommandFactoryRegistry) createDaemonCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:     "daemon <action>",
-		Short:   "Manage the daemon",
-		GroupID: "system",
-		Long:    `Control the CloudWorkstation daemon process.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return r.app.Daemon(args)
-		},
-	}
-}
-
-func (r *CommandFactoryRegistry) createUninstallCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "uninstall",
-		Short: "Uninstall CloudWorkstation completely",
-		Long: `Completely uninstall CloudWorkstation from your system.
-		
-This command performs comprehensive cleanup including:
-• Stop all running daemon processes
-• Remove all configuration files and data
-• Clean up log files and temporary data
-• Remove service files and system integrations
-
-Use with caution - this will remove ALL CloudWorkstation data.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return r.handleUninstallCommand(cmd, args)
-		},
-	}
-}
-
-func (r *CommandFactoryRegistry) handleUninstallCommand(cmd *cobra.Command, args []string) error {
-	fmt.Println("🗑️  CloudWorkstation Uninstaller")
-	fmt.Println("=================================")
-	fmt.Println()
-	fmt.Println("⚠️  This will completely remove CloudWorkstation from your system!")
-	fmt.Println()
-	fmt.Println("The following will be removed:")
-	fmt.Println("  • All daemon processes")
-	fmt.Println("  • Configuration files (~/.cloudworkstation)")
-	fmt.Println("  • Log files and temporary data")
-	fmt.Println("  • Service files and system integrations")
-	fmt.Println()
-	fmt.Println("🔒 AWS credentials and profiles will remain unchanged")
-	fmt.Println()
-
-	// Confirmation
-	fmt.Print("Are you sure you want to completely uninstall CloudWorkstation? [y/N]: ")
-	var response string
-	_, _ = fmt.Scanln(&response) // Error ignored - user input validation happens below
-
-	if response != "y" && response != "Y" && response != "yes" {
-		fmt.Println("❌ Uninstallation cancelled")
-		return nil
-	}
-
-	fmt.Println()
-	fmt.Println("🚀 Starting uninstallation...")
-
-	// Find script path
-	scriptPath, err := r.findUninstallScript()
-	if err != nil {
-		fmt.Printf("⚠️  Uninstall script not found: %v\n", err)
-		fmt.Println("🔧 Falling back to manual cleanup...")
-		return r.performManualCleanup()
-	}
-
-	// Execute uninstall script
-	fmt.Printf("📜 Executing uninstall script: %s\n", scriptPath)
-	execCmd := exec.Command("bash", scriptPath, "--force")
-	execCmd.Stdout = os.Stdout
-	execCmd.Stderr = os.Stderr
-
-	if err := execCmd.Run(); err != nil {
-		fmt.Printf("⚠️  Uninstall script failed: %v\n", err)
-		fmt.Println("🔧 Falling back to manual cleanup...")
-		return r.performManualCleanup()
-	}
-
-	fmt.Println()
-	fmt.Println("✅ CloudWorkstation has been successfully uninstalled!")
-	fmt.Println("   Thank you for using CloudWorkstation! 👋")
-
-	return nil
-}
-
-func (r *CommandFactoryRegistry) findUninstallScript() (string, error) {
-	// Try to find the uninstall script in various locations
-	candidates := []string{
-		"./scripts/uninstall-manager.sh",
-		"../scripts/uninstall-manager.sh",
-		"/usr/local/share/cloudworkstation/uninstall-manager.sh",
-		"/opt/homebrew/share/cloudworkstation/uninstall-manager.sh",
-	}
-
-	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
-			return path, nil
-		}
-	}
-
-	return "", fmt.Errorf("uninstall script not found")
-}
-
-func (r *CommandFactoryRegistry) performManualCleanup() error {
-	fmt.Println("🧹 Performing manual cleanup...")
-
-	// Stop daemon processes
-	fmt.Println("🛑 Stopping daemon processes...")
-	if err := r.app.systemCommands.daemonCleanup([]string{"--yes", "--force"}); err != nil {
-		fmt.Printf("⚠️  Daemon cleanup failed: %v\n", err)
-	}
-
-	// Remove configuration directory
-	homeDir, err := os.UserHomeDir()
-	if err == nil {
-		configDir := filepath.Join(homeDir, ".cloudworkstation")
-		if _, err := os.Stat(configDir); err == nil {
-			fmt.Printf("🗂️  Removing configuration directory: %s\n", configDir)
-			if err := os.RemoveAll(configDir); err != nil {
-				fmt.Printf("⚠️  Failed to remove config directory: %v\n", err)
-			} else {
-				fmt.Println("✅ Configuration directory removed")
-			}
-		}
-	}
-
-	fmt.Println()
-	fmt.Println("✅ Manual cleanup completed")
-	fmt.Println("💡 You may need to manually remove:")
-	fmt.Println("   • Binary files (cws, cwsd) from your PATH")
-	fmt.Println("   • System service files")
-	fmt.Println("   • Homebrew package: brew uninstall cloudworkstation")
-
-	return nil
-}
-
-func (r *CommandFactoryRegistry) createConfigCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "config <action> [args]",
-		Short: "Configure CloudWorkstation",
-		Long:  `View and update CloudWorkstation configuration.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return r.handleConfigCommand(args)
-		},
-	}
-}
-
-func (r *CommandFactoryRegistry) handleConfigCommand(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("usage: cws config <action> [args]")
-	}
-
-	action := args[0]
-	configArgs := args[1:]
-
-	switch action {
-	case "show":
-		return r.app.configShow()
-	case "profile", "set-aws-profile":
-		if len(configArgs) != 1 {
-			return fmt.Errorf("usage: cws config profile <aws-profile>")
-		}
-		return r.app.configSetProfile(configArgs[0])
-	case "region":
-		if len(configArgs) != 1 {
-			return fmt.Errorf("usage: cws config region <aws-region>")
-		}
-		return r.app.configSetRegion(configArgs[0])
-	default:
-		return fmt.Errorf("unknown config action: %s", action)
-	}
-}
-
-func (r *CommandFactoryRegistry) createIdleCommand() *cobra.Command {
-	idleCmd := &cobra.Command{
-		Use:   "idle",
-		Short: "Configure idle detection on running workspaces",
-		Long:  "Configure runtime idle detection parameters on running CloudWorkstation workspaces.",
-	}
-
-	idleConfigureCmd := &cobra.Command{
-		Use:   "configure <workspace-name>",
-		Short: "Configure idle thresholds on running workspace",
-		Long:  "Configure runtime idle detection parameters on a running CloudWorkstation workspace.",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return r.handleIdleConfigureCommand(cmd, args)
-		},
-	}
-
-	r.addIdleFlags(idleConfigureCmd)
-	idleCmd.AddCommand(idleConfigureCmd)
-	return idleCmd
-}
-
-func (r *CommandFactoryRegistry) handleIdleConfigureCommand(cmd *cobra.Command, args []string) error {
-	instanceName := args[0]
-	enable, _ := cmd.Flags().GetBool("enable")
-	disable, _ := cmd.Flags().GetBool("disable")
-	idleMinutes, _ := cmd.Flags().GetInt("idle-minutes")
-	hibernateMinutes, _ := cmd.Flags().GetInt("hibernate-minutes")
-	checkInterval, _ := cmd.Flags().GetInt("check-interval")
-	return r.app.configureIdleDetection(instanceName, enable, disable, idleMinutes, hibernateMinutes, checkInterval)
-}
-
-func (r *CommandFactoryRegistry) addIdleFlags(cmd *cobra.Command) {
-	cmd.Flags().Bool("enable", false, "Enable idle detection")
-	cmd.Flags().Bool("disable", false, "Disable idle detection")
-	cmd.Flags().Int("idle-minutes", 0, "Minutes before considered idle")
-	cmd.Flags().Int("hibernate-minutes", 0, "Minutes before hibernation/stop")
-	cmd.Flags().Int("check-interval", 0, "Check interval in minutes")
-}
-
-func (r *CommandFactoryRegistry) createRightsizingCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:     "rightsizing <action>",
-		Short:   "Analyze and optimize workspace sizes",
-		GroupID: "cost",
-		Long:    `Analyze usage patterns and provide rightsizing recommendations for cost optimization.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return r.app.Rightsizing(args)
-		},
-	}
-}
-
-func (r *CommandFactoryRegistry) createScalingCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:     "scaling <action>",
-		Short:   "Dynamic workspace scaling operations",
-		GroupID: "cost",
-		Long:    `Dynamically scale workspaces to different sizes based on usage patterns and requirements.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return r.app.Scaling(args)
 		},
 	}
 }
@@ -858,11 +576,11 @@ func (r *CommandFactoryRegistry) createAMIDiscoverCommand() *cobra.Command {
 // NewRootCommand creates the root command for the CLI
 func (a *App) NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "cws",
-		Short: "CloudWorkstation - Launch research computing environments",
+		Use:   "prism",
+		Short: "Prism - Launch research computing environments",
 		Long: fmt.Sprintf(`%s
 
-CloudWorkstation provides researchers with pre-configured cloud computing
+Prism provides researchers with pre-configured cloud computing
 environments for data analysis, machine learning, and research computing.
 
 `, version.GetVersionInfo()),
@@ -890,66 +608,4 @@ func (a *App) Run(args []string) error {
 	rootCmd := a.NewRootCommand()
 	rootCmd.SetArgs(args[1:]) // Skip the first argument (program name)
 	return rootCmd.Execute()
-}
-
-// Config command implementations
-
-func (a *App) configShow() error {
-	fmt.Printf("📋 CloudWorkstation Configuration\n\n")
-
-	// Show current effective configuration
-	fmt.Printf("🔧 Current Configuration:\n")
-	fmt.Printf("   Daemon URL: %s\n", a.config.Daemon.URL)
-	fmt.Printf("   AWS Profile: %s\n", valueOrEmpty(a.config.AWS.Profile))
-	fmt.Printf("   AWS Region: %s\n", valueOrEmpty(a.config.AWS.Region))
-
-	// Show environment variable overrides
-	fmt.Printf("\n🌍 Environment Variables:\n")
-	if profile := os.Getenv("AWS_PROFILE"); profile != "" {
-		fmt.Printf("   AWS_PROFILE: %s (overrides config file)\n", profile)
-	} else {
-		fmt.Printf("   AWS_PROFILE: (not set)\n")
-	}
-	if region := os.Getenv("AWS_REGION"); region != "" {
-		fmt.Printf("   AWS_REGION: %s (overrides config file)\n", region)
-	} else if region := os.Getenv("AWS_DEFAULT_REGION"); region != "" {
-		fmt.Printf("   AWS_DEFAULT_REGION: %s (overrides config file)\n", region)
-	} else {
-		fmt.Printf("   AWS_REGION/AWS_DEFAULT_REGION: (not set)\n")
-	}
-
-	// Show config file location
-	homeDir, _ := os.UserHomeDir()
-	configFile := filepath.Join(homeDir, ".cloudworkstation", "config.json")
-	fmt.Printf("\n📁 Config File: %s\n", configFile)
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		fmt.Printf("   (file does not exist - using defaults)\n")
-	}
-
-	fmt.Printf("\n💡 Usage:\n")
-	fmt.Printf("   cws config profile <aws-profile>  # Set default AWS profile\n")
-	fmt.Printf("   cws config region <aws-region>    # Set default AWS region\n")
-	fmt.Printf("   export AWS_PROFILE=profile        # Override profile for session\n")
-
-	return nil
-}
-
-func (a *App) configSetProfile(awsProfile string) error {
-	a.config.AWS.Profile = awsProfile
-	err := saveConfig(a.config)
-	if err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
-	}
-	fmt.Printf("✅ AWS Profile set to '%s'\n", awsProfile)
-	return nil
-}
-
-func (a *App) configSetRegion(region string) error {
-	a.config.AWS.Region = region
-	err := saveConfig(a.config)
-	if err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
-	}
-	fmt.Printf("✅ AWS Region set to '%s'\n", region)
-	return nil
 }

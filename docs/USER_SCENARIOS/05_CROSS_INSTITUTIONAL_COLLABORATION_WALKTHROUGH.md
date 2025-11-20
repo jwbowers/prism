@@ -38,20 +38,24 @@
 
 ---
 
-## Current State (v0.5.5): What Works Today with Invitations
+## Version Legend
+- ✅ **v0.5.7 (Current)**: Features available today
+- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+
+## Current State (v0.5.7): What Works Today with Invitations
 
 ### ✅ Stanford Creates Collaboration Invitations (Month 1)
 
 ```bash
 # Dr. Smith (Stanford) sets up collaboration project
-stanford$ cws profile use stanford-neuroscience
-stanford$ cws project create nih-neuro-consortium \
+stanford$ prism profile use stanford-neuroscience
+stanford$ prism project create nih-neuro-consortium \
   --budget 5000 \
   --description "NIH R01: Multi-site neuroimaging analysis" \
   --alert-threshold 75
 
 # Create time-boxed invitation for MIT collaborator (18 months)
-stanford$ cws profiles invitations create mit-collaboration \
+stanford$ prism profiles invitations create mit-collaboration \
   --type admin \
   --valid-days 540 \
   --can-invite false \
@@ -67,7 +71,7 @@ stanford$ cws profiles invitations create mit-collaboration \
 # 🔗 Share this token with Dr. Johnson (MIT)
 
 # Create similar invitation for Berkeley collaborator
-stanford$ cws profiles invitations create berkeley-collaboration \
+stanford$ prism profiles invitations create berkeley-collaboration \
   --type read_write \
   --valid-days 540 \
   --device-bound true \
@@ -84,21 +88,21 @@ stanford$ cws profiles invitations create berkeley-collaboration \
 
 ```bash
 # Dr. Johnson (MIT) accepts Stanford invitation
-mit$ cws profiles invitations accept <STANFORD-INVITATION-TOKEN> stanford-collab
+mit$ prism profiles invitations accept <STANFORD-INVITATION-TOKEN> stanford-collab
 # ✅ Profile created: stanford-collab
 # 🏛️  Accessing: stanford-neuroscience AWS account
 # ⏰ Access expires: June 1, 2027 (18 months)
-# 💡 Switch profiles: cws profiles use stanford-collab
+# 💡 Switch profiles: prism profiles use stanford-collab
 
 # Dr. Johnson lists his profiles
-mit$ cws profiles list
+mit$ prism profiles list
 # Profiles:
 # - mit-csail (personal) [default]
 # - stanford-collab (invitation) - expires in 18 months
 
 # Dr. Lee (Berkeley) accepts Stanford invitation
-berkeley$ cws profiles invitations accept <STANFORD-INVITATION-TOKEN> stanford-collab
-berkeley$ cws profiles list
+berkeley$ prism profiles invitations accept <STANFORD-INVITATION-TOKEN> stanford-collab
+berkeley$ prism profiles list
 # Profiles:
 # - berkeley-neuroscience (personal) [default]
 # - stanford-collab (invitation) - expires in 18 months
@@ -114,8 +118,8 @@ berkeley$ cws profiles list
 
 ```bash
 # Dr. Johnson (MIT) develops algorithms in Stanford's account
-mit$ cws profiles use stanford-collab
-mit$ cws launch "Python Machine Learning" mit-algorithm-dev
+mit$ prism profiles use stanford-collab
+mit$ prism launch "Python Machine Learning" mit-algorithm-dev
 
 # MIT workspace launches in Stanford's AWS account
 # - Uses Stanford's VPC and networking
@@ -123,8 +127,8 @@ mit$ cws launch "Python Machine Learning" mit-algorithm-dev
 # - MIT researcher has full access
 
 # Dr. Lee (Berkeley) analyzes data in Stanford's account
-berkeley$ cws profiles use stanford-collab
-berkeley$ cws launch "R Research Environment" berkeley-analysis
+berkeley$ prism profiles use stanford-collab
+berkeley$ prism launch "R Research Environment" berkeley-analysis
 
 # Berkeley workspace also in Stanford's AWS account
 # - Can access same EFS volumes as MIT
@@ -142,20 +146,21 @@ berkeley$ cws launch "R Research Environment" berkeley-analysis
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Cross-Account EFS Access
+### ❌ Problem 1: No Cross-Account EFS Access (Coming in v0.5.8+)
+**Tracking:** See issue [#185](https://github.com/scttfrdmn/prism/issues/185)
 
-**Scenario**: Stanford's 50TB neuroimaging dataset needs to be accessible to MIT and Berkeley instances
+**Scenario**: Stanford's 50TB neuroimaging dataset needs to be accessible to MIT and Berkeley workspaces
 
 **What should happen** (MISSING):
 ```bash
 # Stanford creates shared data volume with cross-account access
-stanford$ cws volume create neuro-dataset \
+stanford$ prism volume create neuro-dataset \
   --size 50000 \
   --cross-account-access mit-csail,berkeley-neuroscience \
   --read-only-for mit-csail \
   --read-write-for berkeley-neuroscience
 
-# CloudWorkstation output:
+# Prism output:
 # ✅ EFS created: neuro-dataset (fs-1234567890abcdef0)
 # 🔐 Cross-account access configured:
 #    - mit-csail: Read-only (EFS Access Point: fsap-mit-readonly)
@@ -166,17 +171,17 @@ stanford$ cws volume create neuro-dataset \
 #    - MIT: arn:aws:iam::MIT-ACCOUNT-ID:policy/stanford-efs-readonly
 #    - Berkeley: arn:aws:iam::BERKELEY-ACCOUNT-ID:policy/stanford-efs-readwrite
 #
-# 💡 Collaborators can mount: cws volume mount neuro-dataset <instance-name>
+# 💡 Collaborators can mount: prism volume mount neuro-dataset <instance-name>
 
 # MIT mounts Stanford's EFS (read-only)
-mit$ cws profiles use stanford-collab
-mit$ cws volume mount neuro-dataset mit-algorithm-dev
+mit$ prism profiles use stanford-collab
+mit$ prism volume mount neuro-dataset mit-algorithm-dev
 # ✅ Mounted at /mnt/neuro-dataset (read-only)
 # 📊 50TB neuroimaging data accessible
 
 # Berkeley mounts Stanford's EFS (read-write)
-berkeley$ cws profiles use stanford-collab
-berkeley$ cws volume mount neuro-dataset berkeley-analysis
+berkeley$ prism profiles use stanford-collab
+berkeley$ prism volume mount neuro-dataset berkeley-analysis
 # ✅ Mounted at /mnt/neuro-dataset (read-write)
 # 📊 Can add analysis results to shared dataset
 ```
@@ -184,14 +189,15 @@ berkeley$ cws volume mount neuro-dataset berkeley-analysis
 **Current workaround**: All workspaces must be in Stanford's account to access EFS
 **Risk**: Cannot use collaborators' institutional AWS credits/accounts
 
-### ❌ Problem 2: No Cost Attribution for Collaborators
+### ❌ Problem 2: No Cost Attribution for Collaborators (Coming in v0.5.8+)
+**Tracking:** See issue [#186](https://github.com/scttfrdmn/prism/issues/186)
 
 **Scenario**: Who launched what? Stanford needs to track collaborator usage
 
 **What should happen** (MISSING):
 ```bash
 # Stanford views cost breakdown by collaborator
-stanford$ cws project cost nih-neuro-consortium --by-user
+stanford$ prism project cost nih-neuro-consortium --by-user
 
 # Output:
 # 📊 NIH Neuro Consortium - Cost Attribution (Month 6)
@@ -229,7 +235,7 @@ stanford$ cws project cost nih-neuro-consortium --by-user
 
 ```bash
 # Optional: Enable chargeback to collaborator accounts
-stanford$ cws project chargeback nih-neuro-consortium \
+stanford$ prism project chargeback nih-neuro-consortium \
   --enable \
   --mit-account 123456789012 \
   --berkeley-account 987654321098
@@ -243,14 +249,15 @@ stanford$ cws project chargeback nih-neuro-consortium \
 **Current workaround**: Manual tagging and AWS Cost Explorer queries
 **Impact**: Cannot accurately report grant expenditures by institution
 
-### ❌ Problem 3: No Invitation-Based Policy Enforcement
+### ❌ Problem 3: No Invitation-Based Policy Enforcement (Coming in v0.5.8+)
+**Tracking:** See issue [#187](https://github.com/scttfrdmn/prism/issues/187)
 
 **Scenario**: Berkeley should only launch small workspaces for analysis (not expensive GPUs)
 
 **What should happen** (MISSING):
 ```bash
 # Stanford creates policy-restricted invitation for Berkeley
-stanford$ cws profiles invitations create berkeley-collaboration \
+stanford$ prism profiles invitations create berkeley-collaboration \
   --type read_write \
   --valid-days 540 \
   --policy-restrictions \
@@ -260,10 +267,10 @@ stanford$ cws profiles invitations create berkeley-collaboration \
     --forbidden-regions "us-west-1,eu-west-1"
 
 # Berkeley tries to launch expensive GPU workspace
-berkeley$ cws profiles use stanford-collab
-berkeley$ cws launch "GPU ML Workstation" expensive-gpu --size XL
+berkeley$ prism profiles use stanford-collab
+berkeley$ prism launch "GPU ML Workstation" expensive-gpu --size XL
 
-# CloudWorkstation blocks with helpful error:
+# Prism blocks with helpful error:
 # ❌ Policy violation: Invitation restrictions prevent this launch
 #
 # Your invitation from Stanford has the following restrictions:
@@ -282,14 +289,15 @@ berkeley$ cws launch "GPU ML Workstation" expensive-gpu --size XL
 **Current workaround**: Trust-based + budget alerts
 **Risk**: Single expensive launch depletes monthly budget
 
-### ❌ Problem 4: No Audit Trail for Collaborative Access
+### ❌ Problem 4: No Audit Trail for Collaborative Access (Coming in v0.5.8+)
+**Tracking:** See issue [#188](https://github.com/scttfrdmn/prism/issues/188)
 
 **Scenario**: Stanford needs compliance audit of who accessed what data when
 
 **What should happen** (MISSING):
 ```bash
 # Stanford generates collaboration audit report
-stanford$ cws audit collaboration nih-neuro-consortium \
+stanford$ prism audit collaboration nih-neuro-consortium \
   --start-date 2026-01-01 \
   --end-date 2026-06-30 \
   --export compliance_audit_h1_2026.json
@@ -325,7 +333,8 @@ stanford$ cws audit collaboration nih-neuro-consortium \
 **Current workaround**: Manual AWS CloudTrail queries
 **Impact**: 40+ hours/year of manual compliance reporting
 
-### ❌ Problem 5: No Graceful Collaboration End
+### ❌ Problem 5: No Graceful Collaboration End (Coming in v0.5.8+)
+**Tracking:** See issue [#189](https://github.com/scttfrdmn/prism/issues/189)
 
 **Scenario**: Project ends June 2027, need to revoke access and preserve work
 
@@ -345,19 +354,19 @@ stanford$ cws audit collaboration nih-neuro-consortium \
 #   - 12 snapshots created
 #
 # Before expiration:
-#   1. Download critical data: cws download mit-algorithm-dev ~/backup.zip
-#   2. Snapshot instances: cws snapshot create mit-algorithm-dev mit-final-work
-#   3. Transfer results: cws transfer mit-algorithm-dev mit-csail:my-account
+#   1. Download critical data: prism download mit-algorithm-dev ~/backup.zip
+#   2. Snapshot instances: prism snapshot create mit-algorithm-dev mit-final-work
+#   3. Transfer results: prism transfer mit-algorithm-dev mit-csail:my-account
 #
 # After expiration, you will lose access to all Stanford resources.
 
 # Stanford PI manages end of collaboration
-stanford$ cws collaboration end nih-neuro-consortium \
+stanford$ prism collaboration end nih-neuro-consortium \
   --date 2027-06-01 \
   --archive-collaborator-work \
   --transfer-snapshots mit-csail,berkeley-neuroscience
 
-# CloudWorkstation automated cleanup:
+# Prism automated cleanup:
 # 1. Warns collaborators 30 days, 7 days, 1 day before expiration
 # 2. On expiration date:
 #    - Revokes all invitation tokens
@@ -380,22 +389,34 @@ stanford$ cws collaboration end nih-neuro-consortium \
 
 ### Month 1: Stanford Sets Up Cross-Account Collaboration
 
+**AWS Profile Configuration** (Multi-institution setup):
+
+![AWS Profile Settings](images/05-cross-institutional/gui-settings-profiles.png)
+
+*Screenshot shows AWS profile configuration interface. Dr. Thompson (lead institution coordinator) ensures all 4 institutions (MIT, Stanford, UCSF, JHU) have validated their AWS credentials and institutional SSO access.*
+
+**What Dr. Thompson coordinates**:
+- **Multi-Institution Validation**: Each institution configures their own AWS profile with institutional SSO (OAuth/SAML)
+- **Region Consistency**: All 4 universities standardized on us-west-2 (Oregon) for data proximity to shared EFS
+- **Cross-Account Setup**: Stanford (lead institution) account validated, MIT/UCSF/JHU profiles prepared for invitation-based access
+- **Compliance Verification**: Each institution's IT confirms HIPAA BAA and institutional data governance policies are active
+
 ```bash
 # Dr. Smith (Stanford) creates collaboration project
-stanford$ cws project create nih-neuro-consortium \
+stanford$ prism project create nih-neuro-consortium \
   --budget 5000 \
   --type collaboration \
   --duration 18-months \
   --description "NIH R01: Multi-site neuroimaging analysis"
 
 # Create shared data volume with cross-account access
-stanford$ cws volume create neuro-dataset \
+stanford$ prism volume create neuro-dataset \
   --size 50000 \
   --cross-account-access \
     mit-csail:read-only \
     berkeley-neuroscience:read-write
 
-# CloudWorkstation output:
+# Prism output:
 # ✅ EFS created with cross-account access points
 # 🔐 IAM policies generated for MIT and Berkeley accounts
 # 📧 Send policy ARNs to collaborator IT departments:
@@ -404,10 +425,10 @@ stanford$ cws volume create neuro-dataset \
 #
 # Next steps:
 #   1. MIT/Berkeley IT attach policies to researcher roles
-#   2. Create invitations: cws profiles invitations create-collaboration
+#   2. Create invitations: prism profiles invitations create-collaboration
 
 # Create policy-restricted invitations
-stanford$ cws profiles invitations create-collaboration \
+stanford$ prism profiles invitations create-collaboration \
   --csv-file collaborators.csv \
   --project nih-neuro-consortium \
   --output invitations.csv
@@ -430,58 +451,95 @@ stanford$ cws profiles invitations create-collaboration \
 # Cost attribution enabled: All launches tagged by collaborator
 ```
 
+**Standardized Workspace Template** (Consortium-wide onboarding):
+
+![Quick Start Wizard](images/05-cross-institutional/gui-quick-start-wizard.png)
+
+*Screenshot shows template selection wizard. All 4 institutions (MIT, Stanford, UCSF, JHU) use standardized "Python Machine Learning" and "R Research Environment" templates to ensure consistent research environments across the consortium.*
+
+**What consortium researchers launch**:
+- **Standardized Templates**: MIT (algorithm development), Stanford (pipeline integration), UCSF (validation), JHU (clinical analysis) all use same base templates
+- **Consistent Environments**: Python 3.11 + PyTorch 2.0 + CUDA 11.8 identical across all 4 institutions
+- **Pre-configured Dependencies**: Shared neuroimaging libraries (nibabel, nipy, FSL) pre-installed in all templates
+- **Template Governance**: Stanford IT maintains approved template marketplace with security-validated templates for consortium use
+
 ### Month 2-18: Active Collaboration
 
 **MIT Algorithm Development**:
 ```bash
 # Dr. Johnson (MIT) accepts invitation
-mit$ cws profiles invitations accept <STANFORD-TOKEN> stanford-collab
+mit$ prism profiles invitations accept <STANFORD-TOKEN> stanford-collab
 
 # Launch algorithm development environment
-mit$ cws profiles use stanford-collab
-mit$ cws launch "Python Machine Learning" mit-algorithm-dev
+mit$ prism profiles use stanford-collab
+mit$ prism launch "Python Machine Learning" mit-algorithm-dev
 
 # Mount Stanford's shared dataset
-mit$ cws volume mount neuro-dataset mit-algorithm-dev
+mit$ prism volume mount neuro-dataset mit-algorithm-dev
 # ✅ Mounted at /mnt/neuro-dataset (read-only, cross-account)
-# 📊 50TB dataset accessible from MIT instance
+# 📊 50TB dataset accessible from MIT workspace
 
 # SSH into instance
-mit$ cws ssh mit-algorithm-dev
+mit$ prism ssh mit-algorithm-dev
 
 # Inside workspace - develop algorithms on Stanford data
 mit-instance$ ls /mnt/neuro-dataset/
 # raw-data/ (50TB neuroimaging scans - read-only)
 
 mit-instance$ python train_model.py --data /mnt/neuro-dataset/raw-data/
-# Training on Stanford's data from MIT instance...
+# Training on Stanford's data from MIT workspace...
 ```
+
+**Shared Data Lake** (Cross-institutional EFS access):
+
+![Storage Management](images/05-cross-institutional/gui-storage-management.png)
+
+*Screenshot shows EFS storage management interface. Dr. Thompson's consortium shares a 10TB genomics data lake (neuro-dataset) accessible across all 4 institutions with institution-specific access controls.*
+
+**What the 4 institutions access**:
+- **10TB Shared EFS**: Cross-institutional neuro-dataset visible to MIT (read-only), Stanford (read-write, owner), UCSF (read-write), JHU (read-only)
+- **Institution-Specific Access**: MIT/JHU read raw data, Stanford/UCSF write analysis results and pipeline outputs
+- **Multi-Mount Support**: Same EFS mounted by 15 concurrent workspaces across all 4 institutions simultaneously
+- **Collaborative Directories**: `/consortium/mit/`, `/consortium/stanford/`, `/consortium/ucsf/`, `/consortium/jhu/` for institution-specific intermediate files
 
 **Berkeley Analysis**:
 ```bash
 # Dr. Lee (Berkeley) accepts invitation
-berkeley$ cws profiles invitations accept <STANFORD-TOKEN> stanford-collab
+berkeley$ prism profiles invitations accept <STANFORD-TOKEN> stanford-collab
 
 # Launch analysis environment
-berkeley$ cws profiles use stanford-collab
-berkeley$ cws launch "R Research Environment" berkeley-analysis
+berkeley$ prism profiles use stanford-collab
+berkeley$ prism launch "R Research Environment" berkeley-analysis
 
 # Mount Stanford's shared dataset (read-write for Berkeley)
-berkeley$ cws volume mount neuro-dataset berkeley-analysis
+berkeley$ prism volume mount neuro-dataset berkeley-analysis
 # ✅ Mounted at /mnt/neuro-dataset (read-write, cross-account)
 # 📊 Can read raw data + write analysis results
 
 # Add analysis results
-berkeley$ cws ssh berkeley-analysis
+berkeley$ prism ssh berkeley-analysis
 berkeley-instance$ Rscript analysis.R
 berkeley-instance$ cp results.csv /mnt/neuro-dataset/analysis-results/berkeley/
 # ✅ Results written to shared dataset (accessible by all)
 ```
 
 **Stanford Monitoring**:
+
+**Consortium Workspace Dashboard** (Multi-institution visibility):
+
+![Workspaces List](images/05-cross-institutional/gui-workspaces-list.png)
+
+*Screenshot shows workspace management interface. Dr. Thompson (consortium coordinator) monitors 15 concurrent workspaces across all 4 institutions (MIT, Stanford, UCSF, JHU) with institution tags and researcher attribution.*
+
+**What Dr. Thompson monitors**:
+- **Multi-Institution Workspaces**: 15 active workspaces tagged by institution (MIT: 5, Stanford: 3, UCSF: 4, JHU: 3)
+- **Researcher Attribution**: Each workspace tagged with researcher name and institutional affiliation for cost tracking
+- **Cross-Account Visibility**: Stanford (lead institution) sees all consortium workspaces despite being launched in different AWS accounts
+- **Resource Utilization**: Real-time monitoring of compute hours, storage access, and data transfer across all 4 institutions
+
 ```bash
 # Dr. Smith monitors collaboration
-stanford$ cws project status nih-neuro-consortium --detail
+stanford$ prism project status nih-neuro-consortium --detail
 
 # Output:
 # 📊 NIH Neuro Consortium Status - Month 6
@@ -494,7 +552,7 @@ stanford$ cws project status nih-neuro-consortium --detail
 #    Active compute: 10 workspaces (2,554 hours this month)
 #    Hibernation savings banked: $3,890 (available for extended compute)
 #
-# Active Instances:
+# Active Workspaces:
 #   Stanford (3):  stanford-integration-1, stanford-pipeline-2, stanford-viz-3
 #   MIT (5):       mit-algorithm-dev, mit-validation, mit-test-1/2/3
 #   Berkeley (2):  berkeley-analysis, berkeley-validation
@@ -514,6 +572,18 @@ stanford$ cws project status nih-neuro-consortium --detail
 # Collaboration Health: Excellent ✅
 ```
 
+**NIH Grant Budget Management** (Consortium-wide cost tracking):
+
+![Projects Dashboard](images/05-cross-institutional/gui-projects-dashboard.png)
+
+*Screenshot shows project budget management interface. Dr. Thompson tracks the NIH U01 consortium grant ($5000/month) with per-institution subaward budgets for all 4 universities (MIT, Stanford, UCSF, JHU).*
+
+**What Dr. Thompson tracks**:
+- **Primary Grant Budget**: NIH U01 consortium grant with $5000/month total budget managed by Stanford (lead institution)
+- **Per-Institution Subawards**: MIT ($2000/month, 40% allocation), Stanford ($1500/month, 30%), UCSF ($1000/month, 20%), JHU ($500/month, 10%)
+- **Cross-Institutional Cost Attribution**: Automated tagging of every workspace launch by researcher and institution for NIH reporting
+- **Subaward Burn Rates**: Real-time monitoring shows MIT at 145% (algorithm-heavy), Stanford at 82%, UCSF at 69%, JHU at 31% - rebalancing needed
+
 ### Month 17: Approaching Collaboration End
 
 ```bash
@@ -525,13 +595,13 @@ stanford$ cws project status nih-neuro-consortium --detail
 # Your access to stanford-neuroscience expires on June 1, 2027.
 #
 # Preserve your work:
-#   cws collaboration export stanford-collab ~/mit-stanford-work/
+#   prism collaboration export stanford-collab ~/mit-stanford-work/
 #
 # Or extend collaboration:
 #   Contact Dr. Smith to request extension
 
 # Dr. Johnson exports critical work
-mit$ cws collaboration export stanford-collab \
+mit$ prism collaboration export stanford-collab \
   --output ~/mit-stanford-final/ \
   --include-snapshots
 
@@ -554,7 +624,7 @@ mit$ cws collaboration export stanford-collab \
 #   [... 3 more ...]
 #
 # 💡 To transfer snapshots to MIT account:
-#   cws collaboration transfer-snapshots stanford-collab mit-csail
+#   prism collaboration transfer-snapshots stanford-collab mit-csail
 ```
 
 ### Month 18: Graceful Collaboration End
@@ -563,7 +633,7 @@ mit$ cws collaboration export stanford-collab \
 # June 1, 2027 - Invitations expire automatically
 
 # Stanford PI receives final report
-stanford$ cws collaboration report nih-neuro-consortium --final
+stanford$ prism collaboration report nih-neuro-consortium --final
 
 # Output:
 # 📊 NIH Neuro Consortium - Final Report (18 months)
@@ -588,7 +658,7 @@ stanford$ cws collaboration report nih-neuro-consortium --final
 #
 # 💡 Cloud vs Traditional Multi-Institution Setup:
 #    Each institution buying hardware: 3 × $100,000 = $300,000 upfront
-#    CloudWorkstation: $87,234.60 for 18 months of actual compute
+#    Prism: $87,234.60 for 18 months of actual compute
 #    Only paid for compute time, not infrastructure ownership!
 #
 # Cost by Institution:
@@ -622,7 +692,7 @@ stanford$ cws collaboration report nih-neuro-consortium --final
 #
 # Next Steps:
 #   1. Generate compliance report: --export-compliance
-#   2. Archive final data: cws project archive nih-neuro-consortium
+#   2. Archive final data: prism project archive nih-neuro-consortium
 #   3. Submit final grant report with cost breakdowns
 ```
 
@@ -664,7 +734,7 @@ stanford$ cws collaboration report nih-neuro-consortium --final
 
 2. **Cost Attribution Tagging** (1 week)
    - Tag all resources with user/institution
-   - `cws project cost --by-user` reporting
+   - `prism project cost --by-user` reporting
    - Monthly cost attribution reports
    - CSV export for chargeback
 
@@ -720,7 +790,7 @@ stanford$ cws collaboration report nih-neuro-consortium --final
 
 ### Business Impact
 - **Grant Compliance**: Simplified NIH/NSF multi-site reporting
-- **Institutional Adoption**: "CloudWorkstation for consortiums" standard
+- **Institutional Adoption**: "Prism for consortiums" standard
 - **Research Impact**: Enables multi-institution projects previously too complex
 - **Cost Recovery**: Chargeback reduces lead institution burden
 

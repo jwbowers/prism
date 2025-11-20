@@ -1,4 +1,4 @@
-// Package cli provides the command-line interface for CloudWorkstation
+// Package cli provides the command-line interface for Prism
 package cli
 
 import (
@@ -22,18 +22,19 @@ func NewResearchUserCobraCommands(app *App) *ResearchUserCobraCommands {
 	return &ResearchUserCobraCommands{app: app}
 }
 
-// CreateResearchUserCommand creates the main research-user command with subcommands
+// CreateResearchUserCommand creates the main user command with subcommands
 func (ruc *ResearchUserCobraCommands) CreateResearchUserCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "research-user",
-		Short: "Manage research users for collaborative environments",
+		Use:     "user",
+		Aliases: []string{"research-user"}, // Backward compatibility with v0.5.0
+		Short:   "Manage research users for collaborative environments",
 		Long: `Manage research users that persist across instances and provide collaborative research environments.
 
 Research users are designed for Phase 5A multi-user foundation with:
 - Persistent identity across all instances
 - Consistent UID/GID allocation for seamless EFS sharing
 - SSH key management with Ed25519 and RSA support
-- Integration with existing CloudWorkstation profile system
+- Integration with existing Prism profile system
 - Dual-user system supporting both system and research users
 
 Research users complement template-created system users and enable:
@@ -42,22 +43,22 @@ Research users complement template-created system users and enable:
 - Consistent development environments across instance types
 - Professional multi-user research computing workflows`,
 		Example: `  # List all research users in the current profile
-  cws research-user list
+  prism user list
 
   # Create a new research user
-  cws research-user create alice
+  prism user create alice
 
   # Get details about a research user
-  cws research-user info alice
+  prism user info alice
 
   # Generate SSH keys for a research user
-  cws research-user keys generate alice
+  prism user keys generate alice
 
   # List SSH keys for a research user
-  cws research-user keys list alice
+  prism user keys list alice
 
   # Update research user settings
-  cws research-user update alice --full-name "Alice Smith" --email "alice@university.edu"`,
+  prism user update alice --full-name "Alice Smith" --email "alice@university.edu"`,
 	}
 
 	// Add subcommands
@@ -96,7 +97,7 @@ func (ruc *ResearchUserCobraCommands) createListCommand() *cobra.Command {
 
 			if len(users) == 0 {
 				fmt.Println("No research users found")
-				fmt.Println("\n💡 Tip: Use 'cws research-user create <username>' to create your first research user")
+				fmt.Println("\n💡 Tip: Use 'prism research-user create <username>' to create your first research user")
 				return nil
 			}
 
@@ -131,7 +132,7 @@ func (ruc *ResearchUserCobraCommands) createListCommand() *cobra.Command {
 			fmt.Println("   • Each user has consistent UID/GID across all instances")
 			fmt.Println("   • Home directories persist on EFS volumes for collaboration")
 			fmt.Println("   • SSH keys enable secure, passwordless access")
-			fmt.Printf("\n💡 Use 'cws research-user info <username>' for detailed information\n")
+			fmt.Printf("\n💡 Use 'prism research-user info <username>' for detailed information\n")
 
 			return nil
 		},
@@ -203,8 +204,8 @@ func (ruc *ResearchUserCobraCommands) createCreateCommand() *cobra.Command {
 			fmt.Printf("   • Professional research computing environment\n")
 
 			fmt.Printf("\n💡 Next steps:\n")
-			fmt.Printf("   • Generate SSH keys: cws research-user keys generate %s\n", username)
-			fmt.Printf("   • View full details: cws research-user info %s\n", username)
+			fmt.Printf("   • Generate SSH keys: prism research-user keys generate %s\n", username)
+			fmt.Printf("   • View full details: prism research-user info %s\n", username)
 			fmt.Printf("   • Launch instance with research user integration\n")
 
 			return nil
@@ -368,7 +369,7 @@ func (ruc *ResearchUserCobraCommands) createUpdateCommand() *cobra.Command {
 					for key, value := range updates {
 						fmt.Printf("   %s: %v\n", key, value)
 					}
-					fmt.Printf("\n💡 This feature will be available in a future CloudWorkstation release\n")
+					fmt.Printf("\n💡 This feature will be available in a future Prism release\n")
 					return nil
 				}
 				return fmt.Errorf("failed to update research user: %w", err)
@@ -452,7 +453,7 @@ func (ruc *ResearchUserCobraCommands) createDeleteCommand() *cobra.Command {
 			if err != nil {
 				if strings.Contains(err.Error(), "not implemented") {
 					fmt.Printf("⚠️  User deletion API not yet implemented in daemon\n")
-					fmt.Printf("💡 This feature will be available in a future CloudWorkstation release\n")
+					fmt.Printf("💡 This feature will be available in a future Prism release\n")
 					return nil
 				}
 				return fmt.Errorf("failed to delete research user: %w", err)
@@ -519,7 +520,7 @@ func (ruc *ResearchUserCobraCommands) createKeysListCommand() *cobra.Command {
 
 			if len(keyResponse.Keys) == 0 {
 				fmt.Printf("No SSH keys found for research user '%s'\n", username)
-				fmt.Printf("\n💡 Generate a key pair: cws research-user keys generate %s\n", username)
+				fmt.Printf("\n💡 Generate a key pair: prism research-user keys generate %s\n", username)
 				return nil
 			}
 
@@ -615,7 +616,7 @@ func (ruc *ResearchUserCobraCommands) createKeysGenerateCommand() *cobra.Command
 			fmt.Printf("\n🔗 Next steps:\n")
 			fmt.Printf("   • SSH keys are automatically installed on new instances\n")
 			fmt.Printf("   • Connect with: ssh %s@<instance-ip>\n", username)
-			fmt.Printf("   • View all keys: cws research-user keys list %s\n", username)
+			fmt.Printf("   • View all keys: prism research-user keys list %s\n", username)
 
 			return nil
 		},
@@ -662,7 +663,7 @@ func (ruc *ResearchUserCobraCommands) createKeysAddCommand() *cobra.Command {
 			fmt.Printf("🔄 Adding SSH public key for research user '%s'...\n", username)
 			fmt.Printf("⚠️  SSH key addition API not yet implemented in daemon\n")
 			fmt.Printf("📝 Key to be added:\n%s\n", publicKey)
-			fmt.Printf("\n💡 This feature will be available in a future CloudWorkstation release\n")
+			fmt.Printf("\n💡 This feature will be available in a future Prism release\n")
 
 			return nil
 		},
@@ -696,7 +697,7 @@ func (ruc *ResearchUserCobraCommands) createKeysRemoveCommand() *cobra.Command {
 			fmt.Printf("🔄 Removing SSH key for research user '%s'...\n", username)
 			fmt.Printf("⚠️  SSH key removal API not yet implemented in daemon\n")
 			fmt.Printf("📝 Key to be removed: %s\n", keyIdentifier)
-			fmt.Printf("\n💡 This feature will be available in a future CloudWorkstation release\n")
+			fmt.Printf("\n💡 This feature will be available in a future Prism release\n")
 
 			return nil
 		},

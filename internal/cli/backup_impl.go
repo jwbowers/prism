@@ -3,7 +3,7 @@
 // ARCHITECTURE NOTE: This file contains backup and restore command business logic.
 // These commands are registered in root_command.go and called directly from the CLI.
 //
-// This follows CloudWorkstation's command architecture pattern:
+// This follows Prism's command architecture pattern:
 //   - Single-layer implementation for straightforward operations
 //   - Direct integration with root command structure
 //   - API-driven operations with consistent error handling
@@ -18,7 +18,10 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // BackupCommands handles data backup and restore management operations (implementation layer)
@@ -79,7 +82,7 @@ func (bc *BackupCommands) Restore(args []string) error {
 
 	switch action {
 	case "restore":
-		// Handle both "cws restore backup-name instance-name" and "cws restore restore backup-name instance-name"
+		// Handle both "prism restore backup-name instance-name" and "prism restore restore backup-name instance-name"
 		if len(args) >= 2 {
 			return bc.restoreFromBackup(args)
 		}
@@ -101,7 +104,7 @@ func (bc *BackupCommands) Restore(args []string) error {
 // createBackup creates a data backup from an instance
 func (bc *BackupCommands) createBackup(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: cws backup create <workspace-name> <backup-name> [options]")
+		return fmt.Errorf("usage: prism backup create <workspace-name> <backup-name> [options]")
 	}
 
 	req, err := bc.parseCreateBackupFlags(args)
@@ -216,7 +219,7 @@ func (bc *BackupCommands) displayCreateBackupResult(result *types.BackupCreateRe
 	fmt.Printf("✅ Backup creation initiated\n")
 	fmt.Printf("   Backup ID: %s\n", result.BackupID)
 	fmt.Printf("   Source Instance: %s\n", result.SourceInstance)
-	fmt.Printf("   Backup Type: %s\n", strings.Title(result.BackupType))
+	fmt.Printf("   Backup Type: %s\n", cases.Title(language.English).String(result.BackupType))
 	fmt.Printf("   Storage Location: %s\n", result.StorageLocation)
 	fmt.Printf("   Estimated Completion: %d minutes\n", result.EstimatedCompletionMinutes)
 	if result.EstimatedSizeBytes > 0 {
@@ -228,8 +231,8 @@ func (bc *BackupCommands) displayCreateBackupResult(result *types.BackupCreateRe
 
 // displayCreateBackupNextSteps displays next steps after backup creation
 func (bc *BackupCommands) displayCreateBackupNextSteps(backupName string) {
-	fmt.Printf("\n💡 Check progress with: cws backup info %s\n", backupName)
-	fmt.Printf("💡 List backup contents: cws backup contents %s\n", backupName)
+	fmt.Printf("\n💡 Check progress with: prism backup info %s\n", backupName)
+	fmt.Printf("💡 List backup contents: prism backup contents %s\n", backupName)
 }
 
 // listBackups lists all data backups
@@ -241,7 +244,7 @@ func (bc *BackupCommands) listBackups(args []string) error {
 
 	if len(response.Backups) == 0 {
 		fmt.Println("No data backups found.")
-		fmt.Println("Create one with: cws backup create <workspace-name> <backup-name>")
+		fmt.Println("Create one with: prism backup create <workspace-name> <backup-name>")
 		return nil
 	}
 
@@ -251,7 +254,7 @@ func (bc *BackupCommands) listBackups(args []string) error {
 	_, _ = fmt.Fprintln(w, "NAME\tSOURCE INSTANCE\tTYPE\tSTORAGE\tSIZE\tCOST/MONTH\tCREATED")
 
 	for _, backup := range response.Backups {
-		backupType := strings.Title(backup.BackupType)
+		backupType := cases.Title(language.English).String(backup.BackupType)
 		if backup.BackupType == "" {
 			backupType = "Full"
 		}
@@ -288,8 +291,8 @@ func (bc *BackupCommands) listBackups(args []string) error {
 		fmt.Printf("%s\n", strings.Join(types, ", "))
 	}
 
-	fmt.Printf("\n💡 Use 'cws backup info <name>' for detailed information\n")
-	fmt.Printf("💡 Restore data with: cws restore <backup-name> <workspace-name>\n")
+	fmt.Printf("\n💡 Use 'prism backup info <name>' for detailed information\n")
+	fmt.Printf("💡 Restore data with: prism restore <backup-name> <workspace-name>\n")
 
 	return nil
 }
@@ -297,7 +300,7 @@ func (bc *BackupCommands) listBackups(args []string) error {
 // getBackupInfo gets detailed information about a backup
 func (bc *BackupCommands) getBackupInfo(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws backup info <backup-name>")
+		return fmt.Errorf("usage: prism backup info <backup-name>")
 	}
 
 	backupName := args[0]
@@ -317,7 +320,7 @@ func (bc *BackupCommands) getBackupInfo(args []string) error {
 		fmt.Printf("   Description: %s\n", backup.Description)
 	}
 	fmt.Printf("   State: %s\n", strings.ToUpper(backup.State))
-	fmt.Printf("   Backup Type: %s\n", strings.Title(backup.BackupType))
+	fmt.Printf("   Backup Type: %s\n", cases.Title(language.English).String(backup.BackupType))
 	fmt.Printf("   Storage Type: %s\n", strings.ToUpper(backup.StorageType))
 	fmt.Printf("   Storage Location: %s\n", backup.StorageLocation)
 	fmt.Printf("   Size: %s", bc.formatBytes(backup.SizeBytes))
@@ -358,10 +361,10 @@ func (bc *BackupCommands) getBackupInfo(args []string) error {
 	}
 
 	fmt.Printf("\n💡 Operations:\n")
-	fmt.Printf("   List contents: cws backup contents %s\n", backup.BackupName)
-	fmt.Printf("   Restore data: cws restore %s <workspace-name>\n", backup.BackupName)
-	fmt.Printf("   Verify integrity: cws backup verify %s\n", backup.BackupName)
-	fmt.Printf("   Delete backup: cws backup delete %s\n", backup.BackupName)
+	fmt.Printf("   List contents: prism backup contents %s\n", backup.BackupName)
+	fmt.Printf("   Restore data: prism restore %s <workspace-name>\n", backup.BackupName)
+	fmt.Printf("   Verify integrity: prism backup verify %s\n", backup.BackupName)
+	fmt.Printf("   Delete backup: prism backup delete %s\n", backup.BackupName)
 
 	return nil
 }
@@ -369,7 +372,7 @@ func (bc *BackupCommands) getBackupInfo(args []string) error {
 // deleteBackup deletes a backup
 func (bc *BackupCommands) deleteBackup(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws backup delete <backup-name>")
+		return fmt.Errorf("usage: prism backup delete <backup-name>")
 	}
 
 	backupName := args[0]
@@ -407,7 +410,7 @@ func (bc *BackupCommands) deleteBackup(args []string) error {
 // listBackupContents lists the contents of a backup
 func (bc *BackupCommands) listBackupContents(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws backup contents <backup-name> [path]")
+		return fmt.Errorf("usage: prism backup contents <backup-name> [path]")
 	}
 
 	backupName := args[0]
@@ -476,7 +479,7 @@ func (bc *BackupCommands) listBackupContents(args []string) error {
 	if !req.Recursive {
 		fmt.Printf("💡 Use '--recursive' to list all files recursively\n")
 	}
-	fmt.Printf("💡 Restore files: cws restore %s <workspace-name> --path %s\n", backupName, path)
+	fmt.Printf("💡 Restore files: prism restore %s <workspace-name> --path %s\n", backupName, path)
 
 	return nil
 }
@@ -484,7 +487,7 @@ func (bc *BackupCommands) listBackupContents(args []string) error {
 // verifyBackup verifies backup integrity
 func (bc *BackupCommands) verifyBackup(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws backup verify <backup-name> [options]")
+		return fmt.Errorf("usage: prism backup verify <backup-name> [options]")
 	}
 
 	req, err := bc.parseVerifyBackupFlags(args)
@@ -587,7 +590,7 @@ func (bc *BackupCommands) displayMissingFiles(result *types.BackupVerifyResult) 
 // restoreFromBackup restores data from a backup
 func (bc *BackupCommands) restoreFromBackup(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: cws restore <backup-name> <target-instance> [options]")
+		return fmt.Errorf("usage: prism restore <backup-name> <target-instance> [options]")
 	}
 
 	req, err := bc.parseRestoreFlags(args)
@@ -718,15 +721,15 @@ func (bc *BackupCommands) displayRestoreResult(req types.RestoreRequest, result 
 // displayRestoreNextSteps displays next steps after restore initiation
 func (bc *BackupCommands) displayRestoreNextSteps(req types.RestoreRequest, result *types.RestoreResult) {
 	if !req.DryRun {
-		fmt.Printf("\n💡 Check progress with: cws restore status %s\n", result.RestoreID)
-		fmt.Printf("💡 View all operations: cws restore operations\n")
+		fmt.Printf("\n💡 Check progress with: prism restore status %s\n", result.RestoreID)
+		fmt.Printf("💡 View all operations: prism restore operations\n")
 	}
 }
 
 // getRestoreStatus gets the status of a restore operation
 func (bc *BackupCommands) getRestoreStatus(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws restore status <restore-id>")
+		return fmt.Errorf("usage: prism restore status <restore-id>")
 	}
 
 	restoreID := args[0]
@@ -815,7 +818,7 @@ func (bc *BackupCommands) listRestoreOperations(args []string) error {
 
 	_ = w.Flush()
 
-	fmt.Printf("\n💡 Check operation status: cws restore status <restore-id>\n")
+	fmt.Printf("\n💡 Check operation status: prism restore status <restore-id>\n")
 
 	return nil
 }
@@ -823,7 +826,7 @@ func (bc *BackupCommands) listRestoreOperations(args []string) error {
 // verifyRestore verifies a completed restore operation
 func (bc *BackupCommands) verifyRestore(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws restore verify <restore-id>")
+		return fmt.Errorf("usage: prism restore verify <restore-id>")
 	}
 
 	restoreID := args[0]
@@ -880,7 +883,7 @@ func (bc *BackupCommands) monitorBackupProgress(backupID, backupName string) err
 		if elapsed > maxDuration {
 			fmt.Printf("⚠️  Backup monitoring timeout (%s). Backup may still be creating.\n",
 				bc.formatDuration(maxDuration))
-			fmt.Printf("💡 Check status with: cws backup info %s\n", backupName)
+			fmt.Printf("💡 Check status with: prism backup info %s\n", backupName)
 			return nil
 		}
 
@@ -931,7 +934,7 @@ func (bc *BackupCommands) monitorRestoreProgress(restoreID, backupName, targetIn
 		if elapsed > maxDuration {
 			fmt.Printf("⚠️  Restore monitoring timeout (%s). Restore may still be running.\n",
 				bc.formatDuration(maxDuration))
-			fmt.Printf("💡 Check status with: cws restore status %s\n", restoreID)
+			fmt.Printf("💡 Check status with: prism restore status %s\n", restoreID)
 			return nil
 		}
 
@@ -1033,7 +1036,7 @@ func (bc *BackupCommands) showRestoreUsage() error {
 
 // getBackupUsageText returns the backup usage text
 func (bc *BackupCommands) getBackupUsageText() string {
-	return `Usage: cws backup <action> [arguments]
+	return `Usage: prism backup <action> [arguments]
 
 Actions:
   create <workspace> <backup-name> [options]    Create a data backup from workspace
@@ -1061,13 +1064,13 @@ Contents Options:
   --recursive, -r            List contents recursively
 
 Examples:
-  cws backup create my-workspace daily-backup
-  cws backup create gpu-training checkpoint-data --include /data,/results --incremental
-  cws backup list
-  cws backup info daily-backup
-  cws backup contents daily-backup /home
-  cws backup verify daily-backup --quick
-  cws backup delete old-backup
+  prism backup create my-workspace daily-backup
+  prism backup create gpu-training checkpoint-data --include /data,/results --incremental
+  prism backup list
+  prism backup info daily-backup
+  prism backup contents daily-backup /home
+  prism backup verify daily-backup --quick
+  prism backup delete old-backup
 
 Storage Options:
   • S3: Cost-effective, encrypted, cross-region replication
@@ -1092,8 +1095,8 @@ Cost Information:
 
 // getRestoreUsageText returns the restore usage text
 func (bc *BackupCommands) getRestoreUsageText() string {
-	return `Usage: cws restore <backup-name> <target-instance> [options]
-       cws restore <action> [arguments]
+	return `Usage: prism restore <backup-name> <target-instance> [options]
+       prism restore <action> [arguments]
 
 Direct Restore:
   <backup-name> <target-instance>    Restore backup to workspace
@@ -1116,13 +1119,13 @@ Restore Options:
   --wait                            Wait and monitor restore progress
 
 Examples:
-  cws restore daily-backup my-workspace
-  cws restore checkpoint-data gpu-training --path /data --overwrite
-  cws restore daily-backup my-workspace --selective /home/user,/data/project
-  cws restore daily-backup my-workspace --dry-run
-  cws restore operations
-  cws restore status restore-123456
-  cws restore verify restore-123456
+  prism restore daily-backup my-workspace
+  prism restore checkpoint-data gpu-training --path /data --overwrite
+  prism restore daily-backup my-workspace --selective /home/user,/data/project
+  prism restore daily-backup my-workspace --dry-run
+  prism restore operations
+  prism restore status restore-123456
+  prism restore verify restore-123456
 
 Restore Modes:
   • Safe (default): Preserve existing files, restore only missing files
@@ -1137,7 +1140,7 @@ Selective Restore:
 
 Verification:
   • Automatic integrity verification during restore (disable with --no-verify)
-  • Post-restore verification with 'cws restore verify <restore-id>'
+  • Post-restore verification with 'prism restore verify <restore-id>'
   • Checksum validation for data integrity assurance
 
 💡 Restoration Features:

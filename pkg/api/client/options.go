@@ -39,7 +39,7 @@ type PerformanceOptions struct {
 // DefaultPerformanceOptions returns sensible defaults for HTTP client performance
 func DefaultPerformanceOptions() PerformanceOptions {
 	return PerformanceOptions{
-		Timeout:        60 * time.Second, // Allow time for AWS operations (stop, launch, etc)
+		Timeout:        5 * time.Minute, // Allow time for AWS operations (instance launch can take 2-3 minutes)
 		MaxConnections: 10,
 		KeepAlive:      30 * time.Second,
 		RequestRetries: 3,
@@ -48,14 +48,14 @@ func DefaultPerformanceOptions() PerformanceOptions {
 }
 
 // ApplyClientOptions applies configuration options to a client
-func ApplyClientOptions(client CloudWorkstationAPI, options Options) CloudWorkstationAPI {
+func ApplyClientOptions(client PrismAPI, options Options) PrismAPI {
 	// Apply basic options
 	client.SetOptions(options)
 	return client
 }
 
 // ApplyExtendedClientOptions applies extended configuration options to a client
-func ApplyExtendedClientOptions(client CloudWorkstationAPI, options ExtendedOptions) CloudWorkstationAPI {
+func ApplyExtendedClientOptions(client PrismAPI, options ExtendedOptions) PrismAPI {
 	// Convert to basic options and apply
 	basicOptions := Options{
 		AWSProfile:      options.AWSProfile,

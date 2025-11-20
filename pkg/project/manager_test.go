@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +48,7 @@ func TestNewManager(t *testing.T) {
 				assert.NotNil(t, manager.projects)
 
 				// Verify state directory was created
-				stateDir := filepath.Join(tempDir, ".cloudworkstation")
+				stateDir := filepath.Join(tempDir, ".prism")
 				assert.DirExists(t, stateDir)
 			}
 		})
@@ -69,7 +69,7 @@ func TestManager_CreateProject(t *testing.T) {
 			name: "successful project creation",
 			req: &CreateProjectRequest{
 				Name:        "Test Project",
-				Description: "A test project for CloudWorkstation",
+				Description: "A test project for Prism",
 				Owner:       "test-user",
 				Tags: map[string]string{
 					"department": "research",
@@ -84,11 +84,10 @@ func TestManager_CreateProject(t *testing.T) {
 				Name:        "Budgeted Project",
 				Description: "A project with budget tracking",
 				Owner:       "test-user",
-				Budget: &CreateBudgetRequest{
+				Budget: &CreateProjectBudgetRequest{
 					TotalBudget:  1000.0,
 					MonthlyLimit: floatPtr(300.0),
 					DailyLimit:   floatPtr(50.0),
-					BudgetPeriod: types.BudgetPeriodMonthly,
 					AlertThresholds: []types.BudgetAlert{
 						{
 							Threshold:  0.8,
@@ -142,7 +141,7 @@ func TestManager_CreateProject(t *testing.T) {
 				Name:        "Invalid Budget Project",
 				Description: "Project with invalid budget",
 				Owner:       "test-user",
-				Budget: &CreateBudgetRequest{
+				Budget: &CreateProjectBudgetRequest{
 					TotalBudget: -100.0, // Invalid negative budget
 				},
 			},

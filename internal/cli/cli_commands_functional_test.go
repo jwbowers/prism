@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // TestCLIApplicationFunctionalWorkflow validates complete CLI application functionality
@@ -501,6 +501,28 @@ func testEBSVolumeOperations(t *testing.T, app *App) {
 // testStorageListingOperations validates storage listing functionality
 func testStorageListingOperations(t *testing.T, app *App) {
 	mockClient := app.apiClient.(*MockAPIClient)
+
+	// Restore both storage types for listing test
+	sizeGB := int32(100)
+	mockClient.StorageVolumes = []types.StorageVolume{
+		{
+			Type:         types.StorageTypeShared,
+			AWSService:   types.AWSServiceEFS,
+			FileSystemID: "fs-1234567890abcdef0",
+			Name:         "shared-data",
+			State:        "available",
+			CreationTime: time.Now(),
+		},
+		{
+			Type:         types.StorageTypeWorkspace,
+			AWSService:   types.AWSServiceEBS,
+			VolumeID:     "vol-1234567890abcdef0",
+			Name:         "project-storage-L",
+			SizeGB:       &sizeGB,
+			State:        "available",
+			CreationTime: time.Now(),
+		},
+	}
 
 	// Ensure both storage types are available in unified StorageVolumes
 	hasEFS := false

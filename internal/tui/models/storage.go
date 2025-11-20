@@ -7,9 +7,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/scttfrdmn/cloudworkstation/internal/tui/api"
-	"github.com/scttfrdmn/cloudworkstation/internal/tui/components"
-	"github.com/scttfrdmn/cloudworkstation/internal/tui/styles"
+	"github.com/scttfrdmn/prism/internal/tui/api"
+	"github.com/scttfrdmn/prism/internal/tui/components"
+	"github.com/scttfrdmn/prism/internal/tui/styles"
 )
 
 // StorageModel represents the storage management view
@@ -35,7 +35,7 @@ type StorageModel struct {
 // NewStorageModel creates a new storage model
 func NewStorageModel(apiClient apiClient) StorageModel {
 	// Create status bar and spinner
-	statusBar := components.NewStatusBar("CloudWorkstation Storage", "")
+	statusBar := components.NewStatusBar("Prism Storage", "")
 	spinner := components.NewSpinner("Loading storage information...")
 
 	return StorageModel{
@@ -316,7 +316,7 @@ func (m StorageModel) View() string {
 	theme := styles.CurrentTheme
 
 	// Title section
-	title := theme.Title.Render("CloudWorkstation Storage")
+	title := theme.Title.Render("Prism Storage")
 
 	// Content area
 	var content string
@@ -361,9 +361,17 @@ func (m StorageModel) View() string {
 func (m StorageModel) renderMainView() string {
 	theme := styles.CurrentTheme
 
-	// Tab headers
-	efsTab := "EFS Volumes"
-	ebsTab := "EBS Volumes"
+	// Educational guide
+	guide := lipgloss.NewStyle().
+		Padding(0, 2).
+		Render("📁 Shared (EFS): Multi-workspace collaboration, elastic capacity (~$0.30/GB/month)\n" +
+			"💾 Private (EBS): High-performance workspace-specific, fixed allocation (~$0.10/GB/month)")
+
+	// Tab headers with counts
+	efsCount := len(m.volumes)
+	ebsCount := len(m.storage)
+	efsTab := fmt.Sprintf("Shared (EFS) - %d", efsCount)
+	ebsTab := fmt.Sprintf("Private (EBS) - %d", ebsCount)
 	if m.selectedTab == 0 {
 		efsTab = theme.Tab.Active.Render(efsTab)
 		ebsTab = theme.Tab.Inactive.Render(ebsTab)
@@ -382,8 +390,8 @@ func (m StorageModel) renderMainView() string {
 		tabContent = m.renderEBSVolumes()
 	}
 
-	// Combine tabs and content
-	return lipgloss.JoinVertical(lipgloss.Left, tabs, "", tabContent)
+	// Combine guide, tabs and content
+	return lipgloss.JoinVertical(lipgloss.Left, guide, "", tabs, "", tabContent)
 }
 
 // renderEFSVolumes renders the EFS volumes tab

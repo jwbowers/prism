@@ -7,13 +7,6 @@ import (
 	"strings"
 )
 
-// configureIdleDetection handles runtime idle detection configuration using Strategy Pattern (SOLID: Single Responsibility)
-func (a *App) configureIdleDetection(instanceName string, enable, disable bool, idleMinutes, hibernateMinutes, checkInterval int) error {
-	// Create and execute idle configuration command
-	configCmd := NewIdleConfigurationCommand(a.apiClient)
-	return configCmd.Configure(instanceName, enable, disable, idleMinutes, hibernateMinutes, checkInterval)
-}
-
 // IdleConfig represents the idle detection configuration
 type IdleConfig struct {
 	Enabled          bool
@@ -115,7 +108,7 @@ func (s *IdleInstanceService) FindAndValidateInstance(instanceName string) (*Idl
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(interface{}) error }); ok {
 		if err := pingable.Ping(nil); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: cws daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
 		}
 	}
 
@@ -302,7 +295,7 @@ func (b *IdleScriptBuilder) buildConfigFileCreation() []string {
 	return []string{
 		"# Write updated config",
 		"cat > /tmp/idle-config-new << 'EOF'",
-		"# CloudWorkstation Idle Detection Configuration",
+		"# Prism Idle Detection Configuration",
 		"# This file is automatically updated by runtime configuration",
 		"ENABLED=${ENABLED:-false}",
 		"IDLE_THRESHOLD_MINUTES=${IDLE_THRESHOLD_MINUTES:-999999}",
@@ -362,7 +355,7 @@ func (s *IdleDisplayService) displayConfigurationStatus(instanceName string, con
 		fmt.Printf("   Idle threshold:      %d minutes (ignored while disabled)\n", config.IdleMinutes)
 		fmt.Printf("   Hibernate threshold: %d minutes (ignored while disabled)\n", config.HibernateMinutes)
 		fmt.Printf("   Check interval:      %d minutes (minimal overhead)\n", config.CheckInterval)
-		fmt.Printf("   💡 Enable with: cws idle configure %s --enable\n", instanceName)
+		fmt.Printf("   💡 Enable with: prism idle configure %s --enable\n", instanceName)
 	}
 }
 

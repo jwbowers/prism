@@ -1,0 +1,311 @@
+# QGIS Basic - Standard GIS Desktop Environment with Nice DCV
+name: "QGIS Basic Desktop"
+slug: "qgis-basic"
+description: "Standard QGIS desktop for basic GIS analysis with browser-based remote access"
+long_description: |
+  Complete QGIS desktop environment with MATE desktop and Nice DCV remote desktop access.
+  Perfect for standard GIS workflows: mapping, spatial analysis, and basic geoprocessing.
+
+  Features:
+  - QGIS LTR (Long Term Release) with essential plugins
+  - GRASS GIS integration for advanced analysis
+  - MATE desktop environment (lightweight, performant)
+  - Nice DCV for browser-based remote desktop
+  - No exposed ports (secure SSM port forwarding)
+  - Sample datasets included for getting started
+
+  Use Cases:
+  - Standard GIS mapping and spatial analysis
+  - Basic geoprocessing workflows
+  - Educational GIS coursework
+  - Small to medium dataset analysis
+
+base: "ubuntu-24.04"
+
+# Connection configuration
+connection_type: "desktop"
+
+desktop:
+  environment: "mate"          # Lightweight desktop environment
+  dcv_port: 8443              # DCV server port (HTTPS)
+  dcv_version: "latest"       # Use latest DCV release
+  gpu_required: false         # No GPU needed for basic GIS
+  session_type: "virtual"     # Virtual session (no physical display)
+  session_user: "ubuntu"      # User for DCV session
+  auth_method: "password"     # Password authentication
+
+# Complexity and categorization
+complexity: "simple"
+category: "Desktop Environment"
+domain: "gis"
+
+# Visual presentation
+icon: "🗺️"
+color: "#589632"  # QGIS green
+popular: true
+
+# Package management
+package_manager: "apt"
+packages:
+  system:
+    # MATE Desktop Environment
+    - ubuntu-mate-desktop
+    - mate-desktop-environment
+
+    # QGIS and GIS tools
+    - qgis
+    - qgis-plugin-grass
+    - grass
+    - python3-qgis
+    - qgis-common
+
+    # Essential applications
+    - firefox
+    - gedit
+    - file-roller  # Archive manager
+
+    # Development and data tools
+    - git
+    - vim
+    - curl
+    - wget
+    - gdal-bin
+    - python3-gdal
+
+    # System utilities
+    - htop
+    - net-tools
+    - dbus-x11  # Required for DCV
+    - mesa-utils  # OpenGL utilities
+
+# System services
+services:
+  - name: dcv
+    port: 8443
+    description: "Nice DCV remote desktop"
+    protocol: "https"
+
+# Default user
+users:
+  - name: ubuntu
+    groups: ["sudo", "adm", "video", "render"]
+    shell: "/bin/bash"
+
+# Cloud-init user data for DCV installation
+user_data: |
+  #cloud-config
+
+  # Update system
+  package_update: true
+  package_upgrade: true
+
+  # Install Nice DCV dependencies
+  packages:
+    - mesa-utils
+    - ubuntu-mate-desktop
+    - dbus-x11
+    - lightdm
+    - qgis
+    - qgis-plugin-grass
+
+  runcmd:
+    # Download and install Nice DCV server
+    - wget https://d1uj6qtbmh3dt5.cloudfront.net/nice-dcv-ubuntu2404-x86_64.tgz -O /tmp/nice-dcv.tgz
+    - tar -xzf /tmp/nice-dcv.tgz -C /tmp
+    - apt install -y /tmp/nice-dcv-*-ubuntu2404-x86_64/*.deb
+
+    # Configure DCV server
+    - |
+      cat > /etc/dcv/dcv.conf <<'EOF'
+      [license]
+      [log]
+      level="info"
+      [session-management]
+      create-session = true
+      [session-management/defaults]
+      [session-management/automatic-console-session]
+      owner="ubuntu"
+      [display]
+      [connectivity]
+      enable-quic-frontend=true
+      [security]
+      authentication="system"
+      EOF
+
+    # Set password for ubuntu user (users should change this)
+    - echo "ubuntu:ChangeMe123!" | chpasswd
+
+    # Configure LightDM for automatic login
+    - |
+      cat > /etc/lightdm/lightdm.conf.d/50-dcv.conf <<'EOF'
+      [Seat:*]
+      autologin-user=ubuntu
+      autologin-user-timeout=0
+      EOF
+
+    # Enable and start DCV server
+    - systemctl enable dcvserver
+    - systemctl start dcvserver
+
+    # Create initial DCV session
+    - sleep 10
+    - sudo -u ubuntu dcv create-session --type=virtual --owner ubuntu my-session
+
+    # Create QGIS desktop shortcuts and sample data directory
+    - |
+      mkdir -p /home/ubuntu/Desktop
+      mkdir -p /home/ubuntu/GIS-Data
+
+      cat > /home/ubuntu/Desktop/QGIS-Quick-Start.txt <<'EOF'
+      QGIS Basic Desktop - Quick Start Guide
+      =======================================
+
+      🗺️  Getting Started:
+      1. Launch QGIS from Applications → Graphics → QGIS Desktop
+      2. Your GIS data directory: ~/GIS-Data/
+      3. Sample datasets available in QGIS (Layer → Add Layer → Sample Data)
+
+      📡 Connection Info:
+      To reconnect from your local machine:
+      1. Run: prism connect <instance-name>
+      2. Browser opens to DCV session
+      3. Login with your credentials
+
+      🔧 Installed Tools:
+      - QGIS LTR (Long Term Release)
+      - GRASS GIS (advanced geoprocessing)
+      - GDAL/OGR command-line tools
+      - Python3 with QGIS and GDAL bindings
+
+      📚 Quick Tips:
+      - Use Processing Toolbox for batch operations
+      - GRASS tools available via Processing
+      - File formats: Shapefiles, GeoJSON, GeoTIFF, PostGIS
+      - Python Console: Plugins → Python Console
+
+      🔑 Change Your Password:
+      Open terminal and run: passwd
+
+      For more help: https://qgis.org/en/docs/
+      EOF
+
+      chown -R ubuntu:ubuntu /home/ubuntu/Desktop
+      chown -R ubuntu:ubuntu /home/ubuntu/GIS-Data
+
+    # Clean up
+    - rm -rf /tmp/nice-dcv*
+
+# Post-install message
+post_install: |
+  #!/bin/bash
+
+  echo "========================================="
+  echo "QGIS Basic Desktop Setup Complete!"
+  echo "========================================="
+  echo ""
+  echo "🗺️  QGIS Desktop with Nice DCV is ready"
+  echo ""
+  echo "📡 To connect:"
+  echo "   prism connect {{ .InstanceName }}"
+  echo ""
+  echo "🔑 Default Credentials:"
+  echo "   Username: ubuntu"
+  echo "   Password: ChangeMe123!"
+  echo "   ⚠️  IMPORTANT: Change this password immediately!"
+  echo ""
+  echo "🗺️  QGIS Features:"
+  echo "   - QGIS LTR with GRASS plugin"
+  echo "   - Python3 QGIS and GDAL bindings"
+  echo "   - GDAL/OGR command-line tools"
+  echo "   - Sample data directory: ~/GIS-Data/"
+  echo ""
+  echo "🔒 Security:"
+  echo "   - No exposed ports (SSM tunneling)"
+  echo "   - Browser-based access"
+  echo "   - SSL encrypted connection"
+  echo ""
+  echo "📚 Getting Started:"
+  echo "   - Quick Start guide on desktop"
+  echo "   - QGIS docs: https://qgis.org/en/docs/"
+  echo "   - GRASS tutorials: https://grass.osgeo.org/learn/"
+  echo ""
+  echo "========================================="
+
+# Idle detection configuration
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 45     # GIS users have moderate idle times
+  hibernate_threshold_minutes: 120 # Preserve GIS projects and data
+  check_interval_minutes: 5
+  detection_method: "composite"   # Check CPU, memory, network, disk
+
+# Instance defaults optimized for basic GIS
+instance_defaults:
+  type: "t3.medium"  # 2 vCPU, 4 GB RAM - good for basic GIS
+  ports: [22]        # SSH for SSM only, DCV tunneled
+  estimated_cost_per_hour:
+    x86_64: 0.0464   # t3.medium hourly rate
+    arm64: 0.0368    # t4g.medium hourly rate (if ARM)
+
+# Resource recommendations
+recommended_sizes:
+  - size: "S"
+    instance_type: "t3.small"
+    vcpu: 2
+    memory: 2
+    use_case: "Very light GIS work, learning QGIS basics"
+    cost_per_hour: 0.0232
+
+  - size: "M"
+    instance_type: "t3.medium"
+    vcpu: 2
+    memory: 4
+    use_case: "Standard GIS workflows, small datasets (recommended)"
+    cost_per_hour: 0.0464
+
+  - size: "L"
+    instance_type: "t3.large"
+    vcpu: 2
+    memory: 8
+    use_case: "Larger datasets, complex spatial analysis"
+    cost_per_hour: 0.0928
+
+  - size: "XL"
+    instance_type: "t3.xlarge"
+    vcpu: 4
+    memory: 16
+    use_case: "Heavy GIS workloads, many concurrent layers"
+    cost_per_hour: 0.1856
+
+# User guidance
+estimated_launch_time: 10  # Minutes - DCV + QGIS installation takes time
+prerequisites:
+  - "Basic GIS knowledge (familiarity with shapefiles, coordinate systems)"
+  - "AWS CLI installed locally (for SSM)"
+  - "Modern web browser (Chrome, Firefox, Edge)"
+
+learning_resources:
+  - "https://qgis.org/en/docs/"
+  - "https://grass.osgeo.org/learn/"
+  - "https://docs.qgis.org/latest/en/docs/training_manual/"
+  - "https://docs.aws.amazon.com/dcv/latest/userguide/"
+  - "https://github.com/scttfrdmn/prism/blob/main/docs/architecture/NICE_DCV_ARCHITECTURE.md"
+
+# Template metadata
+version: "1.0.0"
+validation_status: "validated"
+maintainer: "Prism Team"
+tags:
+  desktop: "mate"
+  remote_desktop: "nice-dcv"
+  connection_type: "desktop"
+  gis: "qgis"
+  geospatial: "true"
+  grass: "true"
+
+# Advanced options
+advanced_options:
+  gpu_acceleration: false
+  audio_support: false
+  usb_redirection: false
+  multi_monitor: true

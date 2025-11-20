@@ -1,20 +1,20 @@
-# CloudWorkstation Daemon API Reference
+# Prism Daemon API Reference
 
-## Version: v0.5.5
+## Version: v0.5.8
 **Last Updated**: October 20, 2025
 **Port**: 8947 (CWS on phone keypad)
 **Base URL**: `http://localhost:8947`
 **Protocol**: REST API with JSON
 
-> **Note**: This API reference is maintained alongside the codebase. The version number reflects the current CloudWorkstation release. All endpoints are stable unless marked as "Future Enhancement" or "Planned".
+> **Note**: This API reference is maintained alongside the codebase. The version number reflects the current Prism release. All endpoints are stable unless marked as "Future Enhancement" or "Planned".
 
 ---
 
 ## 🔌 **API Architecture**
 
-The CloudWorkstation daemon provides a unified REST API that serves all client interfaces:
+The Prism daemon provides a unified REST API that serves all client interfaces:
 - **CLI Client** (`cmd/cws`) - Command-line interface
-- **TUI Client** (`cws tui`) - Interactive terminal interface  
+- **TUI Client** (`prism tui`) - Interactive terminal interface  
 - **GUI Client** (`cmd/cws-gui`) - Desktop application (Wails 3.x)
 
 All clients use the same API endpoints through the `pkg/api/client` library for consistent functionality across interfaces.
@@ -26,7 +26,7 @@ All clients use the same API endpoints through the `pkg/api/client` library for 
 ### **Templates**
 
 #### `GET /api/v1/templates`
-Retrieve all available CloudWorkstation templates.
+Retrieve all available Prism templates.
 
 **Response**:
 ```json
@@ -95,10 +95,10 @@ Get detailed information about a specific template including dependency chains a
 
 ---
 
-### **Instances**
+### **Workspaces**
 
 #### `GET /api/v1/instances`
-List all CloudWorkstation instances with current status and metadata.
+List all Prism workspaces with current status and metadata.
 
 **Response**:
 ```json
@@ -127,7 +127,7 @@ List all CloudWorkstation instances with current status and metadata.
 ```
 
 #### `POST /api/v1/instances/launch`
-Launch a new CloudWorkstation instance.
+Launch a new Prism workspace.
 
 **Request**:
 ```json
@@ -160,7 +160,7 @@ Launch a new CloudWorkstation instance.
 ```
 
 #### `POST /api/v1/instances/{name}/stop`
-Stop a running instance (preserves EBS storage).
+Stop a running workspace (preserves EBS storage).
 
 **Response**:
 ```json
@@ -168,12 +168,12 @@ Stop a running instance (preserves EBS storage).
   "name": "my-ml-research",
   "previous_state": "running", 
   "new_state": "stopping",
-  "message": "Instance stopping - all data preserved"
+  "message": "Workspace stopping - all data preserved"
 }
 ```
 
 #### `POST /api/v1/instances/{name}/start`  
-Start a stopped instance.
+Start a stopped workspace.
 
 **Response**:
 ```json
@@ -186,7 +186,7 @@ Start a stopped instance.
 ```
 
 #### `POST /api/v1/instances/{name}/terminate`
-Permanently terminate an instance (destroys all data).
+Permanently terminate a workspace (destroys all data).
 
 **Request**:
 ```json
@@ -201,18 +201,18 @@ Permanently terminate an instance (destroys all data).
 {
   "name": "my-ml-research",
   "state": "terminating",
-  "message": "Instance terminating - all data will be permanently lost"
+  "message": "Workspace terminating - all data will be permanently lost"
 }
 ```
 
 #### `GET /api/v1/instances/{name}/connect`
-Get connection information for accessing an instance.
+Get connection information for accessing a workspace.
 
 **Response**:
 ```json
 {
   "ssh": {
-    "command": "ssh -i ~/.ssh/cloudworkstation.pem ec2-user@54.123.45.67",
+    "command": "ssh -i ~/.ssh/prism.pem ec2-user@54.123.45.67",
     "host": "54.123.45.67", 
     "user": "ec2-user",
     "port": 22
@@ -221,7 +221,7 @@ Get connection information for accessing an instance.
     "jupyter": {
       "url": "http://54.123.45.67:8888",
       "token": "a1b2c3d4e5f6g7h8i9j0",
-      "local_forward": "ssh -L 8888:localhost:8888 -i ~/.ssh/cloudworkstation.pem ec2-user@54.123.45.67"
+      "local_forward": "ssh -L 8888:localhost:8888 -i ~/.ssh/prism.pem ec2-user@54.123.45.67"
     },
     "rstudio": {
       "url": "http://54.123.45.67:8787", 
@@ -237,7 +237,7 @@ Get connection information for accessing an instance.
 ### **Hibernation System** (Phase 3)
 
 #### `POST /api/v1/instances/{name}/hibernate`
-Hibernate an instance (preserves RAM state + EBS storage).
+Hibernate a workspace (preserves RAM state + EBS storage).
 
 **Response**:
 ```json
@@ -251,7 +251,7 @@ Hibernate an instance (preserves RAM state + EBS storage).
 ```
 
 #### `POST /api/v1/instances/{name}/resume`  
-Resume a hibernated instance (restores RAM state).
+Resume a hibernated workspace (restores RAM state).
 
 **Response**:
 ```json
@@ -265,7 +265,7 @@ Resume a hibernated instance (restores RAM state).
 ```
 
 #### `GET /api/v1/instances/{name}/hibernation-status`
-Check hibernation capability and status for an instance.
+Check hibernation capability and status for a workspace.
 
 **Response**:
 ```json
@@ -328,7 +328,7 @@ Create a new idle detection profile.
 ```
 
 #### `POST /api/v1/idle/instances/{name}/configure`
-Configure idle detection for a specific instance.
+Configure idle detection for a specific workspace.
 
 **Request**:
 ```json
@@ -464,7 +464,7 @@ Get comprehensive cost analysis and optimization recommendations.
       "recommendation": "Enable automated hibernation after 30 minutes idle"
     },
     {
-      "type": "rightsizing", 
+      "type": "rightsizing",
       "instance": "web-scraper-micro",
       "potential_savings": 180.40,
       "recommendation": "Downsize from t3.medium to t3.small - current CPU usage <10%"
@@ -531,7 +531,7 @@ Create new EFS or EBS storage volume.
 ### **Cost Tracking & Analytics**
 
 #### `GET /api/v1/costs/current`
-Get current AWS costs across all CloudWorkstation resources.
+Get current AWS costs across all Prism resources.
 
 **Response**:
 ```json
@@ -582,7 +582,7 @@ Get historical cost data with trends and analysis.
   "cost_trends": {
     "trend_direction": "increasing",
     "percentage_change": 15.3,
-    "primary_driver": "additional GPU instances"
+    "primary_driver": "additional GPU workspaces"
   }
 }
 ```
@@ -607,7 +607,7 @@ Get current active AWS profile and region configuration.
 ```
 
 #### `GET /api/v1/profiles`
-List all available CloudWorkstation profiles.
+List all available Prism profiles.
 
 **Response**:
 ```json
@@ -630,7 +630,7 @@ List all available CloudWorkstation profiles.
 ```
 
 #### `POST /api/v1/profiles/switch`
-Switch to a different CloudWorkstation profile.
+Switch to a different Prism profile.
 
 **Request**:
 ```json
@@ -732,20 +732,20 @@ Gracefully shutdown the daemon service.
 {
   "error": {
     "code": "INSTANCE_NOT_FOUND",
-    "message": "Instance 'my-research' not found in current region", 
-    "details": "Check instance name and ensure correct AWS profile/region",
-    "remediation": "Use 'cws list' to see available instances",
+    "message": "Workspace 'my-research' not found in current region",
+    "details": "Check workspace name and ensure correct AWS profile/region",
+    "remediation": "Use 'cws list' to see available workspaces",
     "timestamp": "2024-06-15T10:30:00Z"
   }
 }
 ```
 
 ### **Common Error Codes**
-- `INSTANCE_NOT_FOUND` - Instance doesn't exist
+- `INSTANCE_NOT_FOUND` - Workspace doesn't exist
 - `TEMPLATE_INVALID` - Template validation failed  
 - `AWS_PERMISSION_DENIED` - Insufficient AWS permissions
 - `BUDGET_EXCEEDED` - Project budget limits exceeded
-- `HIBERNATION_NOT_SUPPORTED` - Instance type doesn't support hibernation
+- `HIBERNATION_NOT_SUPPORTED` - Workspace type doesn't support hibernation
 - `DAEMON_UNREACHABLE` - Cannot connect to daemon service
 
 ---
@@ -760,13 +760,13 @@ client := api.NewClientWithOptions("http://localhost:8947", client.Options{
     AWSRegion:  "us-west-2",
 })
 
-// List instances
+// List workspaces
 instances, err := client.GetInstances()
 if err != nil {
     log.Fatal(err)
 }
 
-// Launch new instance
+// Launch new workspace
 launchReq := &api.LaunchInstanceRequest{
     Name:     "new-ml-workstation",
     Template: "Python Machine Learning (Simplified)",
@@ -781,11 +781,11 @@ instance, err := client.LaunchInstance(launchReq)
 // Frontend service integration example
 async function loadInstances() {
     try {
-        const instances = await window.wails.CloudWorkstationService.GetInstances();
-        renderInstances(instances);
+        const instances = await window.wails.PrismService.GetInstances();
+        renderWorkspaces(workspaces);
     } catch (error) {
-        console.error('Failed to load instances:', error);
-        showError(`Failed to load instances: ${error.message}`);
+        console.error('Failed to load workspaces:', error);
+        showError(`Failed to load workspaces: ${error.message}`);
     }
 }
 
@@ -796,12 +796,12 @@ async function launchInstance(templateName, instanceName, size) {
         Size: size
     };
     
-    return await window.wails.CloudWorkstationService.LaunchInstance(request);
+    return await window.wails.PrismService.LaunchInstance(request);
 }
 ```
 
 ---
 
-**Total API Endpoints**: 35+ endpoints across templates, instances, hibernation, projects, storage, costs, profiles, and system management.
+**Total API Endpoints**: 35+ endpoints across templates, workspaces, hibernation, projects, storage, costs, profiles, and system management.
 
-This comprehensive API reference provides complete documentation for integrating with the CloudWorkstation daemon across all client interfaces (CLI, TUI, GUI) and supports the full enterprise research platform feature set.
+This comprehensive API reference provides complete documentation for integrating with the Prism daemon across all client interfaces (CLI, TUI, GUI) and supports the full enterprise research platform feature set.

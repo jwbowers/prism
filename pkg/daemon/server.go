@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,32 +13,39 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
-	"github.com/scttfrdmn/cloudworkstation/pkg/aws"
-	"github.com/scttfrdmn/cloudworkstation/pkg/connection"
-	"github.com/scttfrdmn/cloudworkstation/pkg/cost"
-	"github.com/scttfrdmn/cloudworkstation/pkg/marketplace"
-	"github.com/scttfrdmn/cloudworkstation/pkg/monitoring"
-	"github.com/scttfrdmn/cloudworkstation/pkg/policy"
-	"github.com/scttfrdmn/cloudworkstation/pkg/profile"
-	"github.com/scttfrdmn/cloudworkstation/pkg/project"
-	"github.com/scttfrdmn/cloudworkstation/pkg/security"
-	"github.com/scttfrdmn/cloudworkstation/pkg/state"
+	"github.com/scttfrdmn/prism/pkg/aws"
+	"github.com/scttfrdmn/prism/pkg/connection"
+	"github.com/scttfrdmn/prism/pkg/cost"
+	"github.com/scttfrdmn/prism/pkg/idle"
+	"github.com/scttfrdmn/prism/pkg/invitation"
+	"github.com/scttfrdmn/prism/pkg/marketplace"
+	"github.com/scttfrdmn/prism/pkg/monitoring"
+	"github.com/scttfrdmn/prism/pkg/policy"
+	"github.com/scttfrdmn/prism/pkg/profile"
+	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/security"
+	"github.com/scttfrdmn/prism/pkg/sleepwake"
+	"github.com/scttfrdmn/prism/pkg/state"
+	"github.com/scttfrdmn/prism/pkg/throttle"
 )
 
-// Server represents the CloudWorkstation daemon server
+// Server represents the Prism daemon server
 type Server struct {
-	config          *Config
-	port            string
-	httpServer      *http.Server
-	stateManager    *state.Manager
-	userManager     *UserManager
-	statusTracker   *StatusTracker
-	versionManager  *APIVersionManager
-	awsManager      *aws.Manager
-	projectManager  *project.Manager
-	securityManager *security.SecurityManager
-	policyService   *policy.Service
-	processManager  ProcessManager
+	config             *Config
+	port               string
+	httpServer         *http.Server
+	stateManager       *state.Manager
+	userManager        *UserManager
+	statusTracker      *StatusTracker
+	versionManager     *APIVersionManager
+	awsManager         *aws.Manager
+	projectManager     *project.Manager
+	budgetManager      *project.BudgetManager
+	invitationManager  *invitation.Manager
+	sharedTokenManager *invitation.SharedTokenManager
+	securityManager    *security.SecurityManager
+	policyService      *policy.Service
+	processManager     ProcessManager
 
 	// Connection reliability components
 	performanceMonitor *monitoring.PerformanceMonitor
@@ -49,9 +57,17 @@ type Server struct {
 	recoveryManager  *RecoveryManager
 	healthMonitor    *HealthMonitor
 
+	// Background state monitoring (v0.5.8)
+	stateMonitor *StateMonitor
+
 	// Cost optimization components
-	budgetTracker *project.BudgetTracker
-	alertManager  *cost.AlertManager
+	budgetTracker   *project.BudgetTracker
+	alertManager    *cost.AlertManager
+	rateLimiter     *RateLimiter              // Launch rate limiting (v0.5.12)
+	launchThrottler *throttle.LaunchThrottler // Advanced launch throttling (v0.6.0)
+
+	// Sleep/wake monitoring (v0.5.7 - Issue #91)
+	sleepWakeMonitor *sleepwake.Monitor // Automatic hibernation on system sleep
 
 	// Template marketplace components
 	marketplaceRegistry *marketplace.Registry
@@ -61,6 +77,13 @@ type Server struct {
 
 	// CloudWatch client for rightsizing metrics
 	cloudwatchClient *cloudwatch.Client
+
+	// Test mode flag (skips AWS operations for unit testing)
+	testMode bool
+
+	// Idle detection components (daemon singletons - Issue #289)
+	idleScheduler *idle.Scheduler
+	policyManager *idle.PolicyManager
 }
 
 // NewServer creates a new daemon server
@@ -103,22 +126,38 @@ func NewServer(port string) (*Server, error) {
 	profileManager, profileErr := profile.NewManagerEnhanced()
 	if profileErr != nil {
 		log.Printf("Failed to initialize profile manager: %v", profileErr)
-		// Initialize AWS manager with AWS SDK defaults (no hardcoded values)
+		// Fall back to environment variables before using AWS SDK defaults
+		envProfile := os.Getenv("AWS_PROFILE")
+		envRegion := os.Getenv("AWS_REGION")
+		if envProfile != "" {
+			log.Printf("Using AWS_PROFILE from environment: %s", envProfile)
+		}
+		if envRegion != "" {
+			log.Printf("Using AWS_REGION from environment: %s", envRegion)
+		}
 		awsManager, err = aws.NewManager(aws.ManagerOptions{
-			Profile: "", // Use AWS SDK default profile resolution
-			Region:  "", // Use AWS SDK default region resolution
+			Profile: envProfile, // Use environment variable or AWS SDK default
+			Region:  envRegion,  // Use environment variable or AWS SDK default
 		})
 	} else {
 		currentProfile, err := profileManager.GetCurrentProfile()
 		if err != nil {
 			log.Printf("Failed to get current profile, using AWS defaults: %v", err)
-			// Initialize AWS manager with AWS SDK defaults (no hardcoded values)
+			// Fall back to environment variables before using AWS SDK defaults
+			envProfile := os.Getenv("AWS_PROFILE")
+			envRegion := os.Getenv("AWS_REGION")
+			if envProfile != "" {
+				log.Printf("Using AWS_PROFILE from environment: %s", envProfile)
+			}
+			if envRegion != "" {
+				log.Printf("Using AWS_REGION from environment: %s", envRegion)
+			}
 			awsManager, _ = aws.NewManager(aws.ManagerOptions{
-				Profile: "", // Use AWS SDK default profile resolution
-				Region:  "", // Use AWS SDK default region resolution
+				Profile: envProfile, // Use environment variable or AWS SDK default
+				Region:  envRegion,  // Use environment variable or AWS SDK default
 			})
 		} else {
-			// Use profile values from current CloudWorkstation profile
+			// Use profile values from current Prism profile
 			awsManager, _ = aws.NewManager(aws.ManagerOptions{
 				Profile: currentProfile.AWSProfile,
 				Region:  currentProfile.Region,
@@ -129,6 +168,24 @@ func NewServer(port string) (*Server, error) {
 		return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
 	}
 
+	// Initialize idle detection components as daemon singletons (Issue #289 fix)
+	var idleScheduler *idle.Scheduler
+	var policyManager *idle.PolicyManager
+	if awsManager != nil {
+		// Create metrics collector with AWS config
+		metricsCollector := idle.NewMetricsCollector(awsManager.GetAWSConfig())
+
+		// Create scheduler and policy manager as daemon-level singletons
+		idleScheduler = idle.NewScheduler(awsManager, metricsCollector)
+		policyManager = idle.NewPolicyManager()
+		policyManager.SetScheduler(idleScheduler)
+
+		// Start the scheduler
+		idleScheduler.Start()
+
+		log.Printf("Idle detection system initialized (daemon singleton)")
+	}
+
 	// Legacy idle management removed - using universal idle detection via template resolver
 
 	// Initialize project manager
@@ -136,6 +193,21 @@ func NewServer(port string) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize project manager: %w", err)
 	}
+
+	// Initialize budget manager (v0.5.10 multi-budget system)
+	budgetManager, err := project.NewBudgetManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize budget manager: %w", err)
+	}
+
+	// Initialize invitation manager (v0.5.11 user invitation system)
+	invitationManager, err := invitation.NewManager(nil) // nil EmailSender for now, will be added later
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize invitation manager: %w", err)
+	}
+
+	// Initialize shared token manager (v0.5.13 shared token system)
+	sharedTokenManager := invitation.NewSharedTokenManager()
 
 	// Initialize cost optimization components
 	budgetTracker, err := project.NewBudgetTracker()
@@ -183,12 +255,27 @@ func NewServer(port string) (*Server, error) {
 	alertManager := cost.NewAlertManager(costDataProvider)
 	alertManager.CreateDefaultRules()
 
+	// Initialize launch rate limiter (v0.5.12)
+	// Default: 2 launches per minute to prevent accidental cost overruns
+	rateLimiter := NewRateLimiter(2, time.Minute)
+	log.Printf("Launch rate limiter initialized: 2 launches per minute")
+
+	// Initialize advanced launch throttling (v0.6.0)
+	// Default: Disabled (opt-in), can be configured via API
+	throttleConfig := throttle.DefaultConfig()
+	launchThrottler := throttle.NewLaunchThrottler(throttleConfig)
+	if throttleConfig.Enabled {
+		log.Printf("Launch throttling enabled: %d launches per %s", throttleConfig.MaxLaunches, throttleConfig.TimeWindow)
+	} else {
+		log.Printf("Launch throttling initialized (disabled by default, use API to enable)")
+	}
+
 	// Initialize template marketplace registry
 	marketplaceConfig := &marketplace.MarketplaceConfig{
-		RegistryEndpoint:      "https://marketplace.cloudworkstation.org",
+		RegistryEndpoint:      "https://marketplace.prism.org",
 		S3Bucket:              "cloudworkstation-marketplace",
 		DynamoDBTable:         "marketplace-templates",
-		CDNEndpoint:           "https://cdn.cloudworkstation.org",
+		CDNEndpoint:           "https://cdn.prism.org",
 		AutoAMIGeneration:     true,
 		DefaultRegions:        []string{"us-east-1", "us-west-2", "eu-west-1"},
 		RequireModeration:     false,
@@ -230,6 +317,9 @@ func NewServer(port string) (*Server, error) {
 	// Initialize daemon stability
 	stabilityManager := NewStabilityManager(performanceMonitor)
 
+	// Initialize state monitor for background instance monitoring (v0.5.8)
+	stateMonitor := NewStateMonitor(awsManager, stateManager)
+
 	// Initialize CloudWatch client for rightsizing metrics
 	var cloudwatchClient *cloudwatch.Client
 	if awsManager != nil {
@@ -247,6 +337,9 @@ func NewServer(port string) (*Server, error) {
 		versionManager:      versionManager,
 		awsManager:          awsManager,
 		projectManager:      projectManager,
+		budgetManager:       budgetManager,
+		invitationManager:   invitationManager,
+		sharedTokenManager:  sharedTokenManager,
 		securityManager:     securityManager,
 		policyService:       policyService,
 		processManager:      processManager,
@@ -254,11 +347,16 @@ func NewServer(port string) (*Server, error) {
 		connManager:         connManager,
 		reliabilityManager:  reliabilityManager,
 		stabilityManager:    stabilityManager,
+		stateMonitor:        stateMonitor,
 		budgetTracker:       budgetTracker,
 		alertManager:        alertManager,
+		rateLimiter:         rateLimiter,
+		launchThrottler:     launchThrottler,
 		marketplaceRegistry: marketplaceRegistry,
 		tunnelManager:       tunnelManager,
 		cloudwatchClient:    cloudwatchClient,
+		idleScheduler:       idleScheduler,
+		policyManager:       policyManager,
 	}
 
 	// Configure budget tracker with action executor
@@ -271,15 +369,32 @@ func NewServer(port string) (*Server, error) {
 	// Initialize launch manager (if needed)
 	// server.launchManager = NewLaunchManager(server)
 
+	// Initialize sleep/wake monitor (v0.5.7 - Issue #91)
+	sleepWakeConfig := sleepwake.DefaultConfig()
+	instanceManager := newInstanceManager(server)
+	sleepWakeMonitor, err := sleepwake.NewMonitor(sleepWakeConfig, instanceManager)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize sleep/wake monitor: %v", err)
+		// Non-fatal: continue without sleep/wake monitoring
+	} else {
+		server.sleepWakeMonitor = sleepWakeMonitor
+		log.Printf("Sleep/wake monitor initialized (platform: %s)", sleepWakeMonitor.GetStatus().Platform)
+	}
+
 	// Setup HTTP routes
 	mux := http.NewServeMux()
 	server.setupRoutes(mux)
 
 	server.httpServer = &http.Server{
-		Addr:         ":" + port,
-		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		Addr:    ":" + port,
+		Handler: mux,
+		// ReadTimeout: Keep short for receiving requests (30s is reasonable)
+		ReadTimeout: 30 * time.Second,
+		// WriteTimeout: Allow for long-running AWS operations (instance launch = 2-5min)
+		// Set to 10 minutes to accommodate instance launch with system status checks
+		WriteTimeout: 10 * time.Minute,
+		// IdleTimeout: Keep connections alive for multiple requests
+		IdleTimeout: 2 * time.Minute,
 	}
 
 	// Set HTTP server reference in recovery manager
@@ -288,15 +403,67 @@ func NewServer(port string) (*Server, error) {
 	return server, nil
 }
 
+// NewServerForTesting creates a new daemon server with test mode enabled
+// Test mode skips AWS operations to allow unit testing without AWS credentials
+func NewServerForTesting(port string) (*Server, error) {
+	server, err := NewServer(port)
+	if err != nil {
+		return nil, err
+	}
+	server.testMode = true
+	return server, nil
+}
+
 // Start starts the daemon server
 func (s *Server) Start() error {
-	log.Printf("Starting CloudWorkstation daemon on port %s", s.port)
+	log.Printf("Starting Prism daemon on port %s", s.port)
+
+	// Enforce singleton: check for existing daemon and perform takeover if necessary
+	currentPID := os.Getpid()
+	existingProcesses, err := s.processManager.FindDaemonProcesses()
+	if err == nil && len(existingProcesses) > 0 {
+		for _, proc := range existingProcesses {
+			if proc.PID != currentPID && s.processManager.IsProcessRunning(proc.PID) {
+				log.Printf("Found existing daemon (PID: %d), performing singleton takeover...", proc.PID)
+
+				// Signal existing daemon to shut down gracefully
+				if err := s.processManager.GracefulShutdown(proc.PID); err != nil {
+					log.Printf("Warning: Failed to gracefully shutdown existing daemon: %v", err)
+					// Continue anyway - might be stale registry entry
+				}
+
+				// Wait for port to be released (with timeout)
+				portReleased := false
+				for i := 0; i < 10; i++ {
+					time.Sleep(1 * time.Second)
+					// Try to bind to the port to check if it's available
+					listener, err := net.Listen("tcp", fmt.Sprintf(":%s", s.port))
+					if err == nil {
+						listener.Close()
+						portReleased = true
+						break
+					}
+				}
+
+				if !portReleased {
+					return fmt.Errorf("timeout waiting for existing daemon (PID: %d) to release port %s", proc.PID, s.port)
+				}
+
+				log.Printf("✅ Singleton lock acquired (PID: %d)", currentPID)
+			}
+		}
+	}
 
 	// Register this daemon instance
 	pid := os.Getpid()
-	configPath := fmt.Sprintf("%s/.cloudworkstation", os.Getenv("HOME"))
+	configPath := fmt.Sprintf("%s/.prism", os.Getenv("HOME"))
 	if err := s.processManager.RegisterDaemon(pid, configPath, ""); err != nil {
 		log.Printf("Warning: Failed to register daemon: %v", err)
+	} else {
+		// Only log this if there was no takeover (otherwise we already logged "Singleton lock acquired")
+		if len(existingProcesses) == 0 {
+			log.Printf("✅ Singleton lock acquired (PID: %d)", currentPID)
+		}
 	}
 
 	// Start daemon stability and monitoring systems
@@ -308,6 +475,11 @@ func (s *Server) Start() error {
 	go s.reliabilityManager.Start(ctx)
 	go s.stabilityManager.Start(ctx)
 	go s.healthMonitor.Start(ctx)
+
+	// Start background state monitor for async instance state tracking (v0.5.8)
+	if err := s.stateMonitor.Start(); err != nil {
+		log.Printf("Warning: Failed to start state monitor: %v", err)
+	}
 
 	// Enable memory management
 	s.stabilityManager.EnableForceGC(true)
@@ -324,6 +496,17 @@ func (s *Server) Start() error {
 
 	// Start integrated autonomous monitoring if idle detection is enabled
 	s.startIntegratedMonitoring()
+
+	// Start sleep/wake monitor (v0.5.7 - Issue #91)
+	if s.sleepWakeMonitor != nil {
+		if err := s.sleepWakeMonitor.Start(); err != nil {
+			log.Printf("Warning: Failed to start sleep/wake monitor: %v", err)
+			s.stabilityManager.RecordError("sleepwake", "startup_failed", err.Error(), ErrorSeverityMedium)
+		} else {
+			log.Printf("Sleep/wake monitor started successfully")
+			s.stabilityManager.RecordRecovery("sleepwake", "startup_failed")
+		}
+	}
 
 	// Handle graceful shutdown with recovery manager
 	go func() {
@@ -348,6 +531,16 @@ func (s *Server) Start() error {
 
 		// Stop integrated monitoring
 		s.stopIntegratedMonitoring()
+
+		// Stop sleep/wake monitor (v0.5.7 - Issue #91)
+		if s.sleepWakeMonitor != nil {
+			if err := s.sleepWakeMonitor.Stop(); err != nil {
+				log.Printf("Warning: Failed to stop sleep/wake monitor: %v", err)
+			}
+		}
+
+		// Stop state monitor (v0.5.8)
+		s.stateMonitor.Stop()
 
 		// Stop security manager
 		if err := s.securityManager.Stop(); err != nil {
@@ -375,6 +568,16 @@ func (s *Server) Stop() error {
 
 	// Stop integrated monitoring
 	s.stopIntegratedMonitoring()
+
+	// Stop sleep/wake monitor (v0.5.7 - Issue #91)
+	if s.sleepWakeMonitor != nil {
+		if err := s.sleepWakeMonitor.Stop(); err != nil {
+			log.Printf("Warning: Failed to stop sleep/wake monitor: %v", err)
+		}
+	}
+
+	// Stop state monitor (v0.5.8)
+	s.stateMonitor.Stop()
 
 	// Shutdown HTTP server with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -564,6 +767,10 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/storage", applyMiddleware(s.handleStorage))
 	mux.HandleFunc("/api/v1/storage/", applyMiddleware(s.handleStorageOperations))
 
+	// Storage transfer operations (S3-backed file transfers) (v0.5.7)
+	mux.HandleFunc("/api/v1/storage/transfer", applyMiddleware(s.handleStorageTransfer))
+	mux.HandleFunc("/api/v1/storage/transfer/", applyMiddleware(s.handleStorageTransferOperations))
+
 	// Instance snapshot operations
 	mux.HandleFunc("/api/v1/snapshots", applyMiddleware(s.handleSnapshots))
 	mux.HandleFunc("/api/v1/snapshots/", applyMiddleware(s.handleSnapshotOperations))
@@ -586,11 +793,46 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/projects", applyMiddleware(s.handleProjectOperations))
 	mux.HandleFunc("/api/v1/projects/", applyMiddleware(s.handleProjectByID))
 
+	// Budget management operations (v0.5.10 multi-budget system)
+	mux.HandleFunc("/api/v1/budgets", applyMiddleware(s.handleBudgetOperations))
+	mux.HandleFunc("/api/v1/budgets/", applyMiddleware(s.handleBudgetByID))
+
+	// Allocation management operations (v0.5.10 multi-budget system)
+	mux.HandleFunc("/api/v1/allocations", applyMiddleware(s.handleAllocationOperations))
+	mux.HandleFunc("/api/v1/allocations/", applyMiddleware(s.handleAllocationByID))
+
+	// Reallocation operations (v0.5.10 Issue #99)
+	mux.HandleFunc("/api/v1/reallocations", applyMiddleware(s.handleReallocationOperations))
+
+	// Cost rollup and reporting operations (v0.5.10 Issue #100)
+	mux.HandleFunc("/api/v1/reports/rollup", applyMiddleware(s.handleBudgetRollupReport))
+	mux.HandleFunc("/api/v1/reports/projects", applyMiddleware(s.handleProjectCostRollup))
+
+	// Invitation management operations (v0.5.11 user invitation system)
+	// Note: Project invitation routes handled by handleProjectByID
+	mux.HandleFunc("/api/v1/invitations/", applyMiddleware(s.handleInvitationOperations))
+
 	// Security management endpoints (Phase 4: Security integration)
 	mux.HandleFunc("/api/v1/security/status", applyMiddleware(s.handleSecurityStatus))
 	mux.HandleFunc("/api/v1/security/health", applyMiddleware(s.handleSecurityHealth))
 	mux.HandleFunc("/api/v1/security/dashboard", applyMiddleware(s.handleSecurityDashboard))
 	mux.HandleFunc("/api/v1/security/correlations", applyMiddleware(s.handleSecurityCorrelations))
+
+	// Rate limiting management endpoints (v0.5.12 Issue #107)
+	mux.HandleFunc("/api/v1/rate-limit/status", applyMiddleware(s.handleRateLimitStatus))
+	mux.HandleFunc("/api/v1/rate-limit/configure", applyMiddleware(s.handleRateLimitConfigure))
+	mux.HandleFunc("/api/v1/rate-limit/reset", applyMiddleware(s.handleRateLimitReset))
+
+	// Launch throttling endpoints (v0.6.0 Issue #90)
+	mux.HandleFunc("/api/v1/throttling/status", applyMiddleware(s.handleThrottlingStatus))
+	mux.HandleFunc("/api/v1/throttling/configure", applyMiddleware(s.handleThrottlingConfigure))
+	mux.HandleFunc("/api/v1/throttling/remaining", applyMiddleware(s.handleThrottlingRemaining))
+	mux.HandleFunc("/api/v1/throttling/projects/overrides", applyMiddleware(s.handleListProjectOverrides))
+	mux.HandleFunc("/api/v1/throttling/projects/", applyMiddleware(s.handleProjectThrottlingOperations))
+
+	// Sleep/wake monitoring endpoints (v0.5.7 Issue #91)
+	s.RegisterSleepWakeRoutes(mux, applyMiddleware)
+
 	mux.HandleFunc("/api/v1/security/keychain", applyMiddleware(s.handleSecurityKeychain))
 	mux.HandleFunc("/api/v1/security/config", applyMiddleware(s.handleSecurityConfig))
 	// AWS Compliance validation endpoints
