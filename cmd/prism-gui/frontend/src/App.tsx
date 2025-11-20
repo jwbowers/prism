@@ -146,6 +146,20 @@ interface EBSVolume {
   attached_to?: string;
 }
 
+interface InstanceSnapshot {
+  snapshot_id: string;
+  snapshot_name: string;
+  source_instance: string;
+  source_instance_id: string;
+  source_template: string;
+  description: string;
+  state: string;
+  architecture: string;
+  storage_cost_monthly: number;
+  created_at: string;
+  size_gb?: number;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -378,12 +392,13 @@ interface BulkInviteResponse {
 }
 
 interface AppState {
-  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview';
+  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
   templates: Record<string, Template>;
   instances: Instance[];
   efsVolumes: EFSVolume[];
   ebsVolumes: EBSVolume[];
+  snapshots: InstanceSnapshot[];
   projects: Project[];
   users: User[];
   budgets: BudgetData[];
@@ -679,6 +694,36 @@ class SafePrismAPI {
 
   async detachEBSVolume(storageName: string): Promise<void> {
     await this.safeRequest(`/api/v1/storage/${storageName}/detach`, 'POST');
+  }
+
+  // Snapshot/Backup Management APIs
+  async getSnapshots(): Promise<InstanceSnapshot[]> {
+    try {
+      const data = await this.safeRequest<{snapshots: InstanceSnapshot[], count: number}>('/api/v1/snapshots');
+      return Array.isArray(data?.snapshots) ? data.snapshots : [];
+    } catch (error) {
+      logger.error('Failed to fetch snapshots:', error);
+      return [];
+    }
+  }
+
+  async createSnapshot(instanceName: string, snapshotName: string, description?: string): Promise<InstanceSnapshot> {
+    return this.safeRequest('/api/v1/snapshots', 'POST', {
+      instance_name: instanceName,
+      snapshot_name: snapshotName,
+      description: description || '',
+      no_reboot: true
+    });
+  }
+
+  async deleteSnapshot(snapshotName: string): Promise<void> {
+    await this.safeRequest(`/api/v1/snapshots/${snapshotName}`, 'DELETE');
+  }
+
+  async restoreSnapshot(snapshotName: string, instanceName: string): Promise<void> {
+    await this.safeRequest(`/api/v1/snapshots/${snapshotName}/restore`, 'POST', {
+      instance_name: instanceName
+    });
   }
 
   // Comprehensive Project Management APIs
@@ -1294,6 +1339,7 @@ export default function PrismApp() {
     instances: [],
     efsVolumes: [],
     ebsVolumes: [],
+    snapshots: [],
     projects: [],
     users: [],
     budgets: [],
@@ -1373,6 +1419,25 @@ export default function PrismApp() {
   // Filtering state for instances table
   const [instancesFilterQuery, setInstancesFilterQuery] = useState({ tokens: [], operation: 'and' as const });
 
+  // Create Backup modal state
+  const [createBackupModalVisible, setCreateBackupModalVisible] = useState(false);
+  const [createBackupConfig, setCreateBackupConfig] = useState({
+    instanceId: '',
+    backupName: '',
+    backupType: 'full',
+    description: ''
+  });
+  const [createBackupValidationAttempted, setCreateBackupValidationAttempted] = useState(false);
+
+  // Delete Backup modal state
+  const [deleteBackupModalVisible, setDeleteBackupModalVisible] = useState(false);
+  const [selectedBackupForDelete, setSelectedBackupForDelete] = useState<InstanceSnapshot | null>(null);
+
+  // Restore Backup modal state
+  const [restoreBackupModalVisible, setRestoreBackupModalVisible] = useState(false);
+  const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<InstanceSnapshot | null>(null);
+  const [restoreInstanceName, setRestoreInstanceName] = useState('');
+
   // Safe data loading with comprehensive error handling
   // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
   const loadApplicationData = React.useCallback(async () => {
@@ -1386,6 +1451,7 @@ export default function PrismApp() {
         api.getInstances(),
         api.getEFSVolumes(),
         api.getEBSVolumes(),
+        api.getSnapshots(),
         api.getProjects(),
         api.getUsers(),
         api.getBudgets(),
@@ -1403,14 +1469,14 @@ export default function PrismApp() {
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, projectsData, usersData, budgetsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, rightsizingStatsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData] = results.map((result, index) => {
+      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, rightsizingStatsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData] = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
           // Return appropriate empty fallback based on expected type
           if (index === 0) return {}; // templates (object)
-          if (index === 11) return null; // rightsizingStats (nullable)
-          if (index === 12) return null; // policyStatus (nullable)
+          if (index === 12) return null; // rightsizingStats (nullable)
+          if (index === 13) return null; // policyStatus (nullable)
           return []; // everything else (arrays)
         }
       });
@@ -1421,6 +1487,7 @@ export default function PrismApp() {
         instances: instancesData,
         efsVolumes: efsVolumesData,
         ebsVolumes: ebsVolumesData,
+        snapshots: snapshotsData,
         projects: projectsData,
         users: usersData,
         budgets: budgetsData,
@@ -3132,6 +3199,251 @@ export default function PrismApp() {
               </Box>
               <Box color="text-body-secondary">
                 ~$0.10/GB/month average
+              </Box>
+            </SpaceBetween>
+          </ColumnLayout>
+        </Container>
+      </SpaceBetween>
+    );
+  };
+
+  // Backup Management View
+  const BackupManagementView = () => {
+    return (
+      <SpaceBetween size="l">
+        <Header
+          variant="h1"
+          description="Create and manage backups (snapshots) of your research workspaces for disaster recovery and reproducibility"
+          actions={
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button onClick={loadApplicationData} disabled={state.loading}>
+                {state.loading ? <Spinner /> : 'Refresh'}
+              </Button>
+            </SpaceBetween>
+          }
+        >
+          Backups
+        </Header>
+
+        {/* Educational Overview */}
+        <Container>
+          <SpaceBetween size="m">
+            <Box variant="h3">💾 Instance Snapshots & Backups</Box>
+            <Box color="text-body-secondary">
+              Instance snapshots (AMI backups) capture the complete state of your workspace, including installed software, configurations, and data.
+              Use snapshots for disaster recovery, creating reproducible research environments, or cloning workspaces.
+            </Box>
+            <ColumnLayout columns={3} variant="text-grid">
+              <SpaceBetween size="s">
+                <Box variant="awsui-key-label">💰 Cost</Box>
+                <Box color="text-body-secondary">
+                  ~$0.05/GB/month for EBS snapshot storage
+                </Box>
+              </SpaceBetween>
+              <SpaceBetween size="s">
+                <Box variant="awsui-key-label">⏱️ Creation Time</Box>
+                <Box color="text-body-secondary">
+                  5-10 minutes (depending on instance size)
+                </Box>
+              </SpaceBetween>
+              <SpaceBetween size="s">
+                <Box variant="awsui-key-label">🔄 Restore Time</Box>
+                <Box color="text-body-secondary">
+                  10-15 minutes to launch from snapshot
+                </Box>
+              </SpaceBetween>
+            </ColumnLayout>
+          </SpaceBetween>
+        </Container>
+
+        {/* Backups Table */}
+        <Container
+          header={
+            <Header
+              variant="h2"
+              description="Instance snapshots available for restore or clone operations"
+              counter={`(${state.snapshots.length})`}
+              actions={
+                <Button variant="primary" onClick={() => {
+                  setCreateBackupConfig({
+                    instanceId: '',
+                    backupName: '',
+                    backupType: 'full',
+                    description: ''
+                  });
+                  setCreateBackupValidationAttempted(false);
+                  setCreateBackupModalVisible(true);
+                }}>
+                  Create Backup
+                </Button>
+              }
+            >
+              Available Backups
+            </Header>
+          }
+        >
+          <Table
+            data-testid="backups-table"
+            columnDefinitions={[
+              {
+                id: "name",
+                header: "Backup Name",
+                cell: (item: InstanceSnapshot) => (
+                  <div data-testid="backup-name">
+                    <Link fontSize="body-m">{item.snapshot_name}</Link>
+                  </div>
+                ),
+                sortingField: "snapshot_name"
+              },
+              {
+                id: "instance",
+                header: "Source Instance",
+                cell: (item: InstanceSnapshot) => item.source_instance,
+                sortingField: "source_instance"
+              },
+              {
+                id: "template",
+                header: "Template",
+                cell: (item: InstanceSnapshot) => item.source_template || 'N/A'
+              },
+              {
+                id: "size",
+                header: "Size",
+                cell: (item: InstanceSnapshot) => {
+                  const sizeGB = item.size_gb || Math.ceil(item.storage_cost_monthly / 0.05);
+                  return `${sizeGB} GB`;
+                }
+              },
+              {
+                id: "status",
+                header: "Status",
+                cell: (item: InstanceSnapshot) => (
+                  <StatusIndicator
+                    data-testid="status-badge"
+                    type={
+                      item.state === 'available' ? 'success' :
+                      item.state === 'creating' || item.state === 'pending' ? 'in-progress' :
+                      item.state === 'deleting' ? 'warning' : 'error'
+                    }
+                    ariaLabel={getStatusLabel('snapshot', item.state)}
+                  >
+                    {item.state}
+                  </StatusIndicator>
+                )
+              },
+              {
+                id: "created",
+                header: "Created",
+                cell: (item: InstanceSnapshot) => {
+                  const date = new Date(item.created_at);
+                  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                }
+              },
+              {
+                id: "cost",
+                header: "Monthly Cost",
+                cell: (item: InstanceSnapshot) => `$${item.storage_cost_monthly.toFixed(2)}`
+              },
+              {
+                id: "actions",
+                header: "Actions",
+                cell: (item: InstanceSnapshot) => (
+                  <ButtonDropdown
+                    expandToViewport
+                    items={[
+                      { text: 'Restore to New Instance', id: 'restore', disabled: item.state !== 'available' },
+                      { text: 'Clone Instance', id: 'clone', disabled: item.state !== 'available' },
+                      { text: 'View Details', id: 'details' },
+                      { text: 'Delete', id: 'delete', disabled: item.state !== 'available' }
+                    ]}
+                    onItemClick={({ detail }) => {
+                      if (detail.id === 'delete') {
+                        setSelectedBackupForDelete(item);
+                        setDeleteBackupModalVisible(true);
+                      } else if (detail.id === 'restore') {
+                        setSelectedBackupForRestore(item);
+                        setRestoreInstanceName('');
+                        setRestoreBackupModalVisible(true);
+                      } else if (detail.id === 'clone') {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'info',
+                              header: 'Clone Instance',
+                              content: `Restoring backup "${item.snapshot_name}" will create a new instance. This may take 10-15 minutes.`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            }
+                          ]
+                        }));
+                      }
+                    }}
+                  >
+                    Actions
+                  </ButtonDropdown>
+                )
+              }
+            ]}
+            items={state.snapshots}
+            loadingText="Loading backups from AWS"
+            loading={state.loading}
+            trackBy="snapshot_id"
+            empty={
+              <Box data-testid="empty-backups" textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
+                <SpaceBetween size="m">
+                  <Box variant="strong" textAlign="center" color="inherit">
+                    No backups found
+                  </Box>
+                  <Box variant="p" color="text-body-secondary">
+                    Create backups of your workspaces to enable disaster recovery, reproducibility, and environment cloning.
+                    Backups capture the complete state of your instance including all installed software and data.
+                  </Box>
+                  <Box textAlign="center">
+                    <Button variant="primary" onClick={() => {
+                      setState(prev => ({ ...prev, activeView: 'workspaces' }));
+                    }}>
+                      Go to Workspaces
+                    </Button>
+                  </Box>
+                </SpaceBetween>
+              </Box>
+            }
+            sortingDisabled={false}
+          />
+        </Container>
+
+        {/* Storage Savings Summary */}
+        <Container
+          header={<Header variant="h3">📊 Backup Storage Summary</Header>}
+        >
+          <ColumnLayout columns={4} variant="text-grid">
+            <SpaceBetween size="s">
+              <Box variant="awsui-key-label">Total Backups</Box>
+              <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
+                {state.snapshots.length}
+              </Box>
+            </SpaceBetween>
+            <SpaceBetween size="s">
+              <Box variant="awsui-key-label">Total Storage Size</Box>
+              <Box fontSize="display-l" fontWeight="bold" color="text-body-secondary">
+                {state.snapshots.reduce((sum, s) => {
+                  const sizeGB = s.size_gb || Math.ceil(s.storage_cost_monthly / 0.05);
+                  return sum + sizeGB;
+                }, 0)} GB
+              </Box>
+            </SpaceBetween>
+            <SpaceBetween size="s">
+              <Box variant="awsui-key-label">Available Backups</Box>
+              <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
+                {state.snapshots.filter(s => s.state === 'available').length}
+              </Box>
+            </SpaceBetween>
+            <SpaceBetween size="s">
+              <Box variant="awsui-key-label">Monthly Storage Cost</Box>
+              <Box fontSize="display-l" fontWeight="bold" color="text-status-warning">
+                ${state.snapshots.reduce((sum, s) => sum + s.storage_cost_monthly, 0).toFixed(2)}
               </Box>
             </SpaceBetween>
           </ColumnLayout>
@@ -7219,6 +7531,488 @@ export default function PrismApp() {
     </Modal>
   );
 
+  // Create Backup Modal
+  const CreateBackupModal = () => {
+    const handleCreateBackup = async () => {
+      try {
+        setCreateBackupValidationAttempted(true);
+
+        if (!createBackupConfig.instanceId || !createBackupConfig.backupName) {
+          setState(prev => ({
+            ...prev,
+            notifications: [
+              ...prev.notifications,
+              {
+                type: 'error',
+                header: 'Validation Error',
+                content: 'Instance and backup name are required',
+                dismissible: true,
+                id: Date.now().toString()
+              }
+            ]
+          }));
+          return;
+        }
+
+        setState(prev => ({ ...prev, loading: true }));
+        setCreateBackupModalVisible(false);
+
+        await api.createSnapshot(
+          createBackupConfig.instanceId,
+          createBackupConfig.backupName,
+          createBackupConfig.description
+        );
+
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'success',
+              header: 'Backup Created',
+              content: `Backup "${createBackupConfig.backupName}" is being created. This may take 5-10 minutes.`,
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+
+        // Reload data to show new backup
+        await loadApplicationData();
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'error',
+              header: 'Backup Creation Failed',
+              content: error instanceof Error ? error.message : 'Unknown error occurred',
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+      }
+    };
+
+    const handleDismiss = () => {
+      setCreateBackupModalVisible(false);
+      setCreateBackupValidationAttempted(false);
+      setCreateBackupConfig({
+        instanceId: '',
+        backupName: '',
+        backupType: 'full',
+        description: ''
+      });
+    };
+
+    return (
+      <Modal
+        onDismiss={handleDismiss}
+        visible={createBackupModalVisible}
+        header="Create Backup"
+        size="medium"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={handleDismiss}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={!createBackupConfig.instanceId || !createBackupConfig.backupName.trim()}
+                onClick={handleCreateBackup}
+                data-testid="create-backup-submit"
+              >
+                Create
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <Form>
+          <SpaceBetween size="m">
+            <FormField
+              label="Instance"
+              description="Select the workspace instance to backup"
+              errorText={createBackupValidationAttempted && !createBackupConfig.instanceId ? "Instance is required" : ""}
+            >
+              <Select
+                data-testid="instance-select"
+                selectedOption={
+                  createBackupConfig.instanceId
+                    ? {
+                        label: state.instances.find(i => i.name === createBackupConfig.instanceId)?.name || createBackupConfig.instanceId,
+                        value: createBackupConfig.instanceId
+                      }
+                    : null
+                }
+                onChange={({ detail }) =>
+                  setCreateBackupConfig(prev => ({ ...prev, instanceId: detail.selectedOption.value || '' }))
+                }
+                options={state.instances.map(instance => ({
+                  label: `${instance.name} (${instance.template || 'Unknown template'})`,
+                  value: instance.name
+                }))}
+                placeholder="Select an instance..."
+                empty="No instances available"
+                ariaLabel="Instance"
+              />
+            </FormField>
+
+            <FormField
+              label="Backup name"
+              description="Choose a descriptive name for this backup"
+              errorText={createBackupValidationAttempted && !createBackupConfig.backupName.trim() ? "Backup name is required" : ""}
+            >
+              <Input
+                value={createBackupConfig.backupName}
+                onChange={({ detail }) =>
+                  setCreateBackupConfig(prev => ({ ...prev, backupName: detail.value }))
+                }
+                placeholder="my-backup-2024-11-16"
+              />
+            </FormField>
+
+            <FormField
+              label="Backup type"
+              description="Full backups capture the entire instance state"
+            >
+              <Select
+                selectedOption={{ label: "Full backup", value: "full" }}
+                onChange={({ detail }) =>
+                  setCreateBackupConfig(prev => ({ ...prev, backupType: detail.selectedOption.value || 'full' }))
+                }
+                options={[
+                  { label: "Full backup", value: "full" },
+                  { label: "Incremental backup", value: "incremental" }
+                ]}
+              />
+            </FormField>
+
+            <FormField
+              label="Description (optional)"
+              description="Add notes about this backup"
+            >
+              <Input
+                value={createBackupConfig.description}
+                onChange={({ detail }) =>
+                  setCreateBackupConfig(prev => ({ ...prev, description: detail.value }))
+                }
+                placeholder="Weekly backup before major update"
+              />
+            </FormField>
+
+            {createBackupConfig.instanceId && (
+              <Alert type="info">
+                <SpaceBetween size="s">
+                  <Box variant="strong">Backup Information</Box>
+                  <Box>
+                    • <strong>Creation time:</strong> 5-10 minutes depending on instance size
+                  </Box>
+                  <Box>
+                    • <strong>Cost:</strong> ~$0.05/GB/month for snapshot storage
+                  </Box>
+                  <Box>
+                    • <strong>Instance continues running:</strong> No downtime during backup creation
+                  </Box>
+                </SpaceBetween>
+              </Alert>
+            )}
+
+            {createBackupValidationAttempted && (!createBackupConfig.instanceId || !createBackupConfig.backupName.trim()) && (
+              <div data-testid="validation-error">
+                {!createBackupConfig.instanceId ? "Instance is required" : !createBackupConfig.backupName.trim() ? "Backup name is required" : ""}
+              </div>
+            )}
+          </SpaceBetween>
+        </Form>
+      </Modal>
+    );
+  };
+
+  // Delete Backup Confirmation Modal
+  const DeleteBackupModal = () => {
+    if (!selectedBackupForDelete) return null;
+
+    const handleDeleteBackup = async () => {
+      try {
+        setState(prev => ({ ...prev, loading: true }));
+        setDeleteBackupModalVisible(false);
+
+        await api.deleteSnapshot(selectedBackupForDelete.snapshot_name);
+
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'success',
+              header: 'Backup Deleted',
+              content: `Backup "${selectedBackupForDelete.snapshot_name}" has been deleted. You will save $${selectedBackupForDelete.storage_cost_monthly.toFixed(2)}/month.`,
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+
+        // Reload data to update backup list
+        await loadApplicationData();
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'error',
+              header: 'Delete Failed',
+              content: error instanceof Error ? error.message : 'Unknown error occurred',
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+      }
+    };
+
+    const handleDismiss = () => {
+      setDeleteBackupModalVisible(false);
+      setSelectedBackupForDelete(null);
+    };
+
+    const sizeGB = selectedBackupForDelete.size_gb || Math.ceil(selectedBackupForDelete.storage_cost_monthly / 0.05);
+    const monthlySavings = selectedBackupForDelete.storage_cost_monthly;
+
+    return (
+      <Modal
+        onDismiss={handleDismiss}
+        visible={deleteBackupModalVisible}
+        header="Delete Backup Confirmation"
+        size="medium"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={handleDismiss}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleDeleteBackup}
+              >
+                Delete
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <SpaceBetween size="m">
+          <Alert type="warning">
+            <Box variant="strong">This action cannot be undone</Box>
+          </Alert>
+
+          <Box>
+            Are you sure you want to delete backup <strong>"{selectedBackupForDelete.snapshot_name}"</strong>?
+          </Box>
+
+          <Container>
+            <SpaceBetween size="s">
+              <Box variant="h4">💰 Cost Savings</Box>
+              <ColumnLayout columns={2} variant="text-grid">
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Storage Size</Box>
+                  <Box>{sizeGB} GB</Box>
+                </SpaceBetween>
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Monthly Savings</Box>
+                  <Box color="text-status-success" fontSize="heading-m">
+                    <strong>${monthlySavings.toFixed(2)}/month</strong>
+                  </Box>
+                </SpaceBetween>
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Annual Savings</Box>
+                  <Box>${(monthlySavings * 12).toFixed(2)}/year</Box>
+                </SpaceBetween>
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Free Storage</Box>
+                  <Box>{sizeGB} GB freed</Box>
+                </SpaceBetween>
+              </ColumnLayout>
+            </SpaceBetween>
+          </Container>
+
+          <Box variant="small" color="text-body-secondary">
+            <strong>Backup Details:</strong><br/>
+            • Source: {selectedBackupForDelete.source_instance}<br/>
+            • Template: {selectedBackupForDelete.source_template}<br/>
+            • Created: {new Date(selectedBackupForDelete.created_at).toLocaleString()}
+          </Box>
+        </SpaceBetween>
+      </Modal>
+    );
+  };
+
+  // Restore Backup Modal
+  const RestoreBackupModal = () => {
+    if (!selectedBackupForRestore) return null;
+
+    const handleRestoreBackup = async () => {
+      try {
+        if (!restoreInstanceName.trim()) {
+          setState(prev => ({
+            ...prev,
+            notifications: [
+              ...prev.notifications,
+              {
+                type: 'error',
+                header: 'Validation Error',
+                content: 'New instance name is required',
+                dismissible: true,
+                id: Date.now().toString()
+              }
+            ]
+          }));
+          return;
+        }
+
+        setState(prev => ({ ...prev, loading: true }));
+        setRestoreBackupModalVisible(false);
+
+        await api.restoreSnapshot(selectedBackupForRestore.snapshot_name, restoreInstanceName);
+
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'success',
+              header: 'Restoring Backup',
+              content: `Backup "${selectedBackupForRestore.snapshot_name}" is being restored to instance "${restoreInstanceName}". This may take 10-15 minutes.`,
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+
+        // Reload data to show new instance
+        await loadApplicationData();
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'error',
+              header: 'Restore Failed',
+              content: error instanceof Error ? error.message : 'Unknown error occurred',
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+      }
+    };
+
+    const handleDismiss = () => {
+      setRestoreBackupModalVisible(false);
+      setSelectedBackupForRestore(null);
+      setRestoreInstanceName('');
+    };
+
+    const sizeGB = selectedBackupForRestore.size_gb || Math.ceil(selectedBackupForRestore.storage_cost_monthly / 0.05);
+
+    return (
+      <Modal
+        onDismiss={handleDismiss}
+        visible={restoreBackupModalVisible}
+        header="Restore Backup"
+        size="medium"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={handleDismiss}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={!restoreInstanceName.trim()}
+                onClick={handleRestoreBackup}
+              >
+                Restore
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <SpaceBetween size="m">
+          <Alert type="info">
+            <Box variant="strong">⏱️ Restore Time</Box>
+            <Box>
+              Restoring this backup may take 10-15 minutes depending on the backup size ({sizeGB} GB).
+              The new instance will be created with all data and configuration from the backup.
+            </Box>
+          </Alert>
+
+          <Box>
+            Restore backup <strong>"{selectedBackupForRestore.snapshot_name}"</strong> to a new instance.
+          </Box>
+
+          <FormField
+            label="New instance name"
+            description="Choose a name for the restored instance"
+            errorText={!restoreInstanceName.trim() ? "Instance name is required" : ""}
+          >
+            <Input
+              value={restoreInstanceName}
+              onChange={({ detail }) => setRestoreInstanceName(detail.value)}
+              placeholder="restored-instance"
+            />
+          </FormField>
+
+          <Container>
+            <SpaceBetween size="s">
+              <Box variant="h4">📋 Backup Details</Box>
+              <ColumnLayout columns={2} variant="text-grid">
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Source Instance</Box>
+                  <Box>{selectedBackupForRestore.source_instance}</Box>
+                </SpaceBetween>
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Template</Box>
+                  <Box>{selectedBackupForRestore.source_template}</Box>
+                </SpaceBetween>
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Backup Size</Box>
+                  <Box>{sizeGB} GB</Box>
+                </SpaceBetween>
+                <SpaceBetween size="xs">
+                  <Box variant="awsui-key-label">Created</Box>
+                  <Box>{new Date(selectedBackupForRestore.created_at).toLocaleDateString()}</Box>
+                </SpaceBetween>
+              </ColumnLayout>
+            </SpaceBetween>
+          </Container>
+
+          <Alert type="warning">
+            <Box variant="strong">What happens during restore:</Box>
+            <ul>
+              <li>A new EC2 instance will be launched from this backup</li>
+              <li>All files, configurations, and installed software will be restored</li>
+              <li>The new instance will have the same specifications as the original</li>
+              <li>You can modify the instance after restoration completes</li>
+            </ul>
+          </Alert>
+        </SpaceBetween>
+      </Modal>
+    );
+  };
+
   // Onboarding Wizard Modal
   const OnboardingWizard = () => {
     const totalSteps = 3;
@@ -7796,6 +8590,11 @@ export default function PrismApp() {
               },
               {
                 type: "link",
+                text: "Backups",
+                href: "/backups"
+              },
+              {
+                type: "link",
                 text: "Projects",
                 href: "/projects"
               },
@@ -7874,6 +8673,7 @@ export default function PrismApp() {
             </div>
             {state.activeView === 'webview' && <WebViewView />}
             {state.activeView === 'storage' && <StorageManagementView />}
+            {state.activeView === 'backups' && <BackupManagementView />}
             {state.activeView === 'projects' && <ProjectManagementView />}
             {state.activeView === 'project-detail' && <ProjectDetailView />}
             {state.activeView === 'invitations' && <InvitationView />}
@@ -7890,6 +8690,9 @@ export default function PrismApp() {
         toolsHide
       />
       <LaunchModal />
+      <CreateBackupModal />
+      <DeleteBackupModal />
+      <RestoreBackupModal />
       <DeleteConfirmationModal />
       <OnboardingWizard />
       <QuickStartWizard />
