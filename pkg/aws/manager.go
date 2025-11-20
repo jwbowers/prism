@@ -4325,7 +4325,7 @@ func (m *Manager) CreateInstanceAMISnapshot(instanceName, snapshotName, descript
 					{Key: aws.String("SourceInstance"), Value: aws.String(instanceName)},
 					{Key: aws.String("SourceInstanceId"), Value: aws.String(instanceData.ID)},
 					{Key: aws.String("SourceTemplate"), Value: aws.String(instanceData.Template)},
-					{Key: aws.String("CreatedBy"), Value: aws.String("cloudworkstation-snapshot")},
+					{Key: aws.String("CreatedBy"), Value: aws.String("prism-snapshot")},
 				},
 			},
 		},
@@ -4367,7 +4367,7 @@ func (m *Manager) ListInstanceSnapshots() ([]ctypes.InstanceSnapshotInfo, error)
 			},
 			{
 				Name:   aws.String("tag:CreatedBy"),
-				Values: []string{"cloudworkstation-snapshot"},
+				Values: []string{"prism-snapshot"},
 			},
 		},
 	}
