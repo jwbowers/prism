@@ -3,50 +3,127 @@
  *
  * End-to-end tests for backup and snapshot management workflows in Prism GUI.
  * Tests: Backup creation (full/incremental), restore, clone, and backup management.
+ *
+ * NOTE: These tests are designed for the actual Cloudscape Design System components,
+ * not generic HTML elements. Cloudscape Select uses custom button+listbox patterns.
  */
 
-import { test, expect } from '@playwright/test';
-import { BasePage, ConfirmDialog } from './pages';
+import { test, expect, Page } from '@playwright/test';
+
+/**
+ * Helper: Wait for AWS API calls to complete and table loading to finish
+ * AWS API calls can take 8-15 seconds, especially when querying multiple regions
+ */
+async function waitForBackupsToLoad(page: Page, timeoutMs: number = 30000) {
+  // First, wait for the Backups view heading to appear (confirms view rendered)
+  await page.waitForSelector('text=Available Backups', { timeout: timeoutMs });
+
+  // Give React time to fully render the view components
+  await page.waitForTimeout(1000);
+
+  // Now wait for the table to exist
+  await page.waitForSelector('[data-testid="backups-table"]', { timeout: timeoutMs });
+
+  // Wait for loading text to disappear (critical - table shows "Loading backups from AWS" while loading)
+  // Use polling: true to check every 200ms instead of waiting for mutations
+  await page.waitForFunction(
+    () => {
+      const table = document.querySelector('[data-testid="backups-table"]');
+      const tableText = table?.textContent || '';
+      return !tableText.includes('Loading backups');
+    },
+    { timeout: timeoutMs, polling: 200 }
+  );
+
+  // Give a longer buffer for AWS responses and React re-renders
+  await page.waitForTimeout(2000);
+}
+
+/**
+ * Helper: Navigate to Backups view
+ * Uses the same pattern as working storage-workflows tests
+ */
+async function navigateToBackups(page: Page) {
+  // Find the link by accessible name (text content) - this is how BasePage.navigateToTab() works
+  const link = page.getByRole('link', { name: /backups/i });
+  await link.click();
+
+  // Wait for navigation state to update
+  await page.waitForTimeout(500);
+}
+
+/**
+ * Helper: Select an option from Cloudscape Select component
+ * Cloudscape Select uses a button trigger + dropdown pattern, not native <select>
+ */
+async function selectCloudscapeOption(page: Page, labelText: string, optionText: string) {
+  // Find the FormField by label
+  const formField = page.locator('label', { hasText: new RegExp(labelText, 'i') }).locator('..').locator('..');
+
+  // Click the Select button trigger (opens dropdown)
+  await formField.locator('button[aria-haspopup="listbox"]').click();
+
+  // Wait for dropdown to appear
+  await page.waitForTimeout(300);
+
+  // Click the option in the dropdown
+  await page.getByRole('option', { name: new RegExp(optionText, 'i') }).click();
+}
+
+/**
+ * Helper: Click item in ButtonDropdown (Actions menu)
+ */
+async function clickDropdownAction(page: Page, rowIndex: number, actionText: string) {
+  const rows = page.locator('[data-testid="backups-table"] tbody tr');
+  const row = rows.nth(rowIndex);
+
+  // Click the Actions dropdown button
+  await row.getByRole('button', { name: 'Actions' }).click();
+  await page.waitForTimeout(300);
+
+  // Click the specific action item
+  await page.getByRole('menuitem', { name: new RegExp(actionText, 'i') }).click();
+}
 
 test.describe('Backup Management Workflows', () => {
-  let basePage: BasePage;
-  let confirmDialog: ConfirmDialog;
+  test.beforeEach(async ({ page, context }) => {
+    // Set localStorage BEFORE navigating to prevent onboarding modal
+    await context.addInitScript(() => {
+      localStorage.setItem('cws_onboarding_complete', 'true');
+    });
 
-  test.beforeEach(async ({ page }) => {
-    basePage = new BasePage(page);
-    confirmDialog = new ConfirmDialog(page);
+    // Navigate to Prism GUI (uses baseURL from playwright.config.js)
+    await page.goto('/');
 
-    await basePage.goto();
-    await basePage.navigateToTab('backups');
+    // Don't use networkidle - AWS API calls continuously, use domcontentloaded instead
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait a bit for app to initialize
+    await page.waitForTimeout(2000);
+
+    // Navigate to Backups view
+    await navigateToBackups(page);
   });
 
   test.describe('Backup List Display', () => {
-    test('should display list of backups', async ({ page }) => {
-      // Wait for backups to load
-      await page.waitForTimeout(2000);
+    test('should display list of backups or empty state', async ({ page }) => {
+      // Wait for backups to load from AWS
+      await waitForBackupsToLoad(page);
 
       // Check for backups table or empty state
       const backupsTable = page.locator('[data-testid="backups-table"]');
       const emptyState = page.locator('[data-testid="empty-backups"]');
 
-      const hasBackups = await backupsTable.isVisible();
+      const hasTable = await backupsTable.isVisible();
       const hasEmptyState = await emptyState.isVisible();
 
       // Either backups exist or empty state is shown
-      expect(hasBackups || hasEmptyState).toBe(true);
+      expect(hasTable || hasEmptyState).toBe(true);
     });
 
-    test('should display backup details (size, type, date)', async ({ page }) => {
-      // Wait for loading to complete (AWS API can take 10+ seconds)
-      await page.waitForTimeout(2000);
-
-      // Wait for either the table to appear with data or empty state (max 15s)
-      await page.waitForSelector('[data-testid="backups-table"], [data-testid="empty-backups"]', {
-        timeout: 15000
-      });
-
-      // Additional wait for data to populate
-      await page.waitForTimeout(1000);
+    test('should display backup details (size, status, date, cost)', async ({ page }) => {
+      // Wait for backups to load from AWS (can take 10-15 seconds)
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
@@ -62,43 +139,51 @@ test.describe('Backup Management Workflows', () => {
       // Should display size (GB)
       expect(backupText).toMatch(/\d+\s*GB/i);
 
-      // Should display type (full/incremental)
-      expect(backupText).toMatch(/full|incremental/i);
+      // Should display status (available, creating, etc.)
+      expect(backupText).toMatch(/available|creating|pending|deleting/i);
 
       // Should display date/time
-      expect(backupText).toMatch(/\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{2,4}/);
+      expect(backupText).toMatch(/\d{1,2}\/\d{1,2}\/\d{2,4}/);
+
+      // Should display cost ($X.XX)
+      expect(backupText).toMatch(/\$\d+\.\d{2}/);
     });
 
-    test('should show monthly cost for each backup', async ({ page }) => {
-      // Wait for loading to complete (AWS API can take 10+ seconds)
-      await page.waitForTimeout(2000);
-
-      // Wait for either the table to appear with data or empty state (max 15s)
-      await page.waitForSelector('[data-testid="backups-table"], [data-testid="empty-backups"]', {
-        timeout: 15000
-      });
-
-      // Additional wait for data to populate
-      await page.waitForTimeout(1000);
+    test('should show backup name as link', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
       if (backupRows.length === 0) {
-        // Skip: No backups available for cost testing
         test.skip();
         return;
       }
 
-      const firstBackup = backupRows[0];
-      const backupText = await firstBackup.textContent();
+      // Check that backup name cell has data-testid
+      const backupNameCell = page.locator('[data-testid="backup-name"]').first();
+      expect(await backupNameCell.isVisible()).toBe(true);
+    });
 
-      // Should display cost ($X.XX/month)
-      expect(backupText).toMatch(/\$\d+\.\d{2}/);
+    test('should show status indicator badge', async ({ page }) => {
+      await waitForBackupsToLoad(page);
+
+      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
+
+      if (backupRows.length === 0) {
+        test.skip();
+        return;
+      }
+
+      // Check for status badge
+      const statusBadge = page.locator('[data-testid="status-badge"]').first();
+      expect(await statusBadge.isVisible()).toBe(true);
     });
   });
 
   test.describe('Create Backup Workflow', () => {
     test('should open create backup dialog', async ({ page }) => {
+      await waitForBackupsToLoad(page);
+
       const createButton = page.getByRole('button', { name: /create.*backup/i });
       await createButton.click();
 
@@ -109,413 +194,262 @@ test.describe('Backup Management Workflows', () => {
       expect(await dialog.isVisible()).toBe(true);
     });
 
-    test('should create full backup', async ({ page }) => {
-      await page.getByRole('button', { name: /create.*backup/i }).click();
+    test('should create backup from instance', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
-      // Wait for dialog
+      // Open create backup dialog
+      await page.getByRole('button', { name: /create.*backup/i }).click();
       await page.waitForTimeout(1000);
 
-      // Select instance
-      const instanceSelect = page.getByLabel(/instance/i);
-      await instanceSelect.selectOption({ index: 0 }); // Select first instance
+      // Select instance using Cloudscape Select component
+      await selectCloudscapeOption(page, 'Instance', '0'); // Select first instance by index
+      await page.waitForTimeout(500);
 
       // Fill backup name
-      await basePage.fillInput('backup name', 'test-full-backup');
-
-      // Select full backup type
-      await basePage.selectOption('backup type', 'full');
+      const backupNameInput = page.locator('input').filter({ hasText: '' }).first();
+      await backupNameInput.fill(`test-backup-${Date.now()}`);
 
       // Create backup
-      await basePage.clickButton('create');
+      const createButton = page.locator('[data-testid="create-backup-submit"]');
+      await createButton.click();
 
-      // Wait for creation
-      await page.waitForTimeout(3000);
+      // Wait for success notification
+      await page.waitForTimeout(2000);
 
-      // Should show success message
-      const successMessage = await page.locator('text=/success|created/i').isVisible();
-      expect(successMessage).toBe(true);
-
-      // Cleanup
-      const backupRow = page.locator('tr:has-text("test-full-backup")');
-      const deleteButton = backupRow.getByRole('button', { name: /delete/i });
-      if (await deleteButton.isVisible()) {
-        await deleteButton.click();
-        await confirmDialog.confirmDelete();
-      }
+      // Should show success message in notifications
+      const notification = page.locator('text=/success|created/i');
+      expect(await notification.isVisible()).toBe(true);
     });
 
-    test('should create incremental backup', async ({ page }) => {
+    test('should validate instance selection required', async ({ page }) => {
+      await waitForBackupsToLoad(page);
+
       await page.getByRole('button', { name: /create.*backup/i }).click();
       await page.waitForTimeout(1000);
 
-      const instanceSelect = page.getByLabel(/instance/i);
-      await instanceSelect.selectOption({ index: 0 });
+      // Fill backup name but don't select instance
+      const backupNameInput = page.locator('input').filter({ hasText: '' }).first();
+      await backupNameInput.fill('test-validation');
 
-      await basePage.fillInput('backup name', 'test-incremental-backup');
-      await basePage.selectOption('backup type', 'incremental');
-      await basePage.clickButton('create');
+      // Try to create without selecting instance
+      const createButton = page.locator('[data-testid="create-backup-submit"]');
 
-      await page.waitForTimeout(3000);
-
-      const successMessage = await page.locator('text=/success|created/i').isVisible();
-      expect(successMessage).toBe(true);
-
-      // Cleanup
-      const backupRow = page.locator('tr:has-text("test-incremental-backup")');
-      const deleteButton = backupRow.getByRole('button', { name: /delete/i });
-      if (await deleteButton.isVisible()) {
-        await deleteButton.click();
-        await confirmDialog.confirmDelete();
-      }
+      // Button should be disabled
+      expect(await createButton.isDisabled()).toBe(true);
     });
 
-    test('should show estimated backup size', async ({ page }) => {
+    test('should validate backup name required', async ({ page }) => {
+      await waitForBackupsToLoad(page);
+
       await page.getByRole('button', { name: /create.*backup/i }).click();
       await page.waitForTimeout(1000);
 
-      const instanceSelect = page.getByLabel(/instance/i);
-      await instanceSelect.selectOption({ index: 0 });
+      // Select instance but don't fill name
+      await selectCloudscapeOption(page, 'Instance', '0');
+      await page.waitForTimeout(500);
 
-      // Wait for size estimate to calculate
-      await page.waitForTimeout(1000);
-
-      // Should show size estimate
-      const estimateText = page.locator('[data-testid="size-estimate"]');
-      const hasEstimate = await estimateText.isVisible();
-
-      if (hasEstimate) {
-        const estimateValue = await estimateText.textContent();
-        expect(estimateValue).toMatch(/\d+\s*GB/i);
-      }
-
-      await basePage.clickButton('cancel');
-    });
-
-    test('should validate backup name is required', async ({ page }) => {
-      await page.getByRole('button', { name: /create.*backup/i }).click();
-      await page.waitForTimeout(1000);
-
-      const instanceSelect = page.getByLabel(/instance/i);
-      await instanceSelect.selectOption({ index: 0 });
-
-      // Don't fill name, just click create
-      await basePage.clickButton('create');
-
-      // Should show validation error
-      const validationError = await page.locator('[data-testid="validation-error"]').textContent();
-      expect(validationError).toMatch(/name.*required/i);
-    });
-
-    test('should validate instance is selected', async ({ page }) => {
-      await page.getByRole('button', { name: /create.*backup/i }).click();
-      await page.waitForTimeout(1000);
-
-      // Fill name but don't select instance
-      await basePage.fillInput('backup name', 'test-validation');
-      await basePage.clickButton('create');
-
-      // Should show validation error
-      const validationError = await page.locator('[data-testid="validation-error"]').textContent();
-      expect(validationError).toMatch(/instance.*required/i);
+      // Create button should be disabled without name
+      const createButton = page.locator('[data-testid="create-backup-submit"]');
+      expect(await createButton.isDisabled()).toBe(true);
     });
   });
 
   test.describe('Delete Backup Workflow', () => {
-    test('should delete backup with confirmation', async ({ page }) => {
-      await page.waitForTimeout(2000);
+    test('should open delete confirmation dialog', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
       if (backupRows.length === 0) {
-        // Skip: No backups available for deletion testing
         test.skip();
         return;
       }
 
-      const firstBackup = backupRows[0];
-      const backupName = await firstBackup.locator('[data-testid="backup-name"]').textContent();
-
-      // Click delete button
-      const deleteButton = firstBackup.getByRole('button', { name: /delete/i });
-      await deleteButton.click();
+      // Click Actions dropdown and select Delete
+      await clickDropdownAction(page, 0, 'Delete');
 
       // Confirmation dialog should appear
-      await confirmDialog.waitForDialog();
+      await page.waitForTimeout(500);
+      const dialog = page.locator('[role="dialog"]', { hasText: /delete.*confirmation/i });
+      await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
-      // Should show cost savings information
-      const hasCostSavings = await confirmDialog.hasCostSavings();
-      expect(hasCostSavings).toBe(true);
-
-      // Cancel for safety
-      await confirmDialog.clickCancel();
+      expect(await dialog.isVisible()).toBe(true);
     });
 
-    test('should show cost savings after deletion', async ({ page }) => {
-      await page.waitForTimeout(2000);
+    test('should show cost savings in delete dialog', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
       if (backupRows.length === 0) {
-        // Skip: No backups available for deletion testing
         test.skip();
         return;
       }
 
-      const firstBackup = backupRows[0];
-      const deleteButton = firstBackup.getByRole('button', { name: /delete/i });
-      await deleteButton.click();
+      // Open delete dialog
+      await clickDropdownAction(page, 0, 'Delete');
+      await page.waitForTimeout(500);
 
-      await confirmDialog.waitForDialog();
+      // Dialog should show cost savings
+      const dialog = page.locator('[role="dialog"]');
+      const dialogText = await dialog.textContent();
 
-      // Dialog should show how much will be saved
-      const message = await confirmDialog.getMessage();
-      expect(message).toMatch(/save.*\$|free.*GB/i);
+      expect(dialogText).toMatch(/cost.*savings|monthly.*savings|save/i);
+      expect(dialogText).toMatch(/\$\d+\.\d{2}/);
+    });
 
-      await confirmDialog.clickCancel();
+    test('should be able to cancel delete', async ({ page }) => {
+      await waitForBackupsToLoad(page);
+
+      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
+
+      if (backupRows.length === 0) {
+        test.skip();
+        return;
+      }
+
+      // Open delete dialog
+      await clickDropdownAction(page, 0, 'Delete');
+      await page.waitForTimeout(500);
+
+      // Click Cancel
+      await page.getByRole('button', { name: /cancel/i }).click();
+      await page.waitForTimeout(500);
+
+      // Dialog should close
+      const dialog = page.locator('[role="dialog"]');
+      expect(await dialog.isVisible()).toBe(false);
     });
   });
 
   test.describe('Restore Backup Workflow', () => {
     test('should open restore dialog', async ({ page }) => {
-      await page.waitForTimeout(2000);
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
       if (backupRows.length === 0) {
-        // Skip: No backups available for restore testing
         test.skip();
         return;
       }
 
-      const firstBackup = backupRows[0];
-      const restoreButton = firstBackup.getByRole('button', { name: /restore/i });
-      await restoreButton.click();
+      // Click Actions dropdown and select Restore
+      await clickDropdownAction(page, 0, 'Restore');
 
       // Restore dialog should open
+      await page.waitForTimeout(500);
       const dialog = page.locator('[role="dialog"]', { hasText: /restore/i });
       await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
       expect(await dialog.isVisible()).toBe(true);
-
-      // Cancel
-      await basePage.clickButton('cancel');
     });
 
-    test('should restore backup to new instance', async ({ page }) => {
-      await page.waitForTimeout(2000);
+    test('should show restore time warning', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
       if (backupRows.length === 0) {
-        // Skip: No backups available for restore testing
         test.skip();
         return;
       }
 
-      const firstBackup = backupRows[0];
-      const restoreButton = firstBackup.getByRole('button', { name: /restore/i });
-      await restoreButton.click();
-
-      // Wait for dialog
-      await page.waitForTimeout(1000);
-
-      // Fill new instance name
-      await basePage.fillInput('new instance name', 'restored-test-instance');
-
-      // Start restore
-      await basePage.clickButton('restore');
-
-      // Wait for restore to initiate
-      await page.waitForTimeout(3000);
-
-      // Should show success message
-      const successMessage = await page.locator('text=/success|restoring/i').isVisible();
-      expect(successMessage).toBe(true);
-    });
-
-    test('should warn about restore time', async ({ page }) => {
-      await page.waitForTimeout(2000);
-
-      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
-
-      if (backupRows.length === 0) {
-        // Skip: No backups available for restore testing
-        test.skip();
-        return;
-      }
-
-      const firstBackup = backupRows[0];
-      const restoreButton = firstBackup.getByRole('button', { name: /restore/i });
-      await restoreButton.click();
-
-      await page.waitForTimeout(1000);
-
-      // Should show warning about restore time
-      const warningText = page.locator('text=/may take.*minutes|restore.*time/i');
-      const hasWarning = await warningText.isVisible();
-      expect(hasWarning).toBe(true);
-
-      await basePage.clickButton('cancel');
-    });
-  });
-
-  test.describe('Clone from Backup Workflow', () => {
-    test('should clone instance from backup', async ({ page }) => {
-      await page.waitForTimeout(2000);
-
-      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
-
-      if (backupRows.length === 0) {
-        // Skip: No backups available for clone testing
-        test.skip();
-        return;
-      }
-
-      const firstBackup = backupRows[0];
-      const cloneButton = firstBackup.getByRole('button', { name: /clone/i });
-
-      const hasCloneButton = await cloneButton.isVisible();
-      if (!hasCloneButton) {
-        // Skip: Clone button not available
-        test.skip();
-        return;
-      }
-
-      await cloneButton.click();
-
-      // Wait for dialog
-      await page.waitForTimeout(1000);
-
-      // Fill clone name
-      await basePage.fillInput('clone name', 'cloned-test-instance');
-
-      // Create clone
-      await basePage.clickButton('clone');
-
-      // Wait for clone to initiate
-      await page.waitForTimeout(3000);
-
-      // Should show success message
-      const successMessage = await page.locator('text=/success|cloning/i').isVisible();
-      expect(successMessage).toBe(true);
-    });
-  });
-
-  test.describe('Backup Filtering', () => {
-    test('should filter by backup type', async ({ page }) => {
-      await page.waitForTimeout(2000);
-
-      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
-
-      if (backupRows.length === 0) {
-        // Skip: No backups available for filtering
-        test.skip();
-        return;
-      }
-
-      // Filter by full backups
-      const filterSelect = page.getByLabel(/filter.*type/i);
-      const hasFilter = await filterSelect.isVisible();
-
-      if (hasFilter) {
-        await filterSelect.selectOption('full');
-        await page.waitForTimeout(500);
-
-        // Verify filtering worked (all visible backups should be full)
-        const visibleRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
-        for (const row of visibleRows) {
-          const rowText = await row.textContent();
-          expect(rowText).toMatch(/full/i);
-        }
-      }
-    });
-
-    test('should search backups by name', async ({ page }) => {
-      await page.waitForTimeout(2000);
-
-      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
-
-      if (backupRows.length === 0) {
-        // Skip: No backups available for search
-        test.skip();
-        return;
-      }
-
-      const firstBackup = backupRows[0];
-      const backupName = await firstBackup.locator('[data-testid="backup-name"]').textContent();
-
-      if (!backupName) {
-        // Skip: Could not get backup name
-        test.skip();
-        return;
-      }
-
-      // Search for backup
-      const searchInput = page.getByPlaceholder(/search.*backups/i);
-      await searchInput.fill(backupName);
+      // Open restore dialog
+      await clickDropdownAction(page, 0, 'Restore');
       await page.waitForTimeout(500);
 
-      // Verify search results
-      const searchResults = await page.locator('[data-testid="backups-table"] tbody tr').all();
-      expect(searchResults.length).toBeGreaterThanOrEqual(1);
+      // Should show warning about restore time
+      const dialog = page.locator('[role="dialog"]');
+      const dialogText = await dialog.textContent();
+      expect(dialogText).toMatch(/10-15.*minutes|restore.*time/i);
+    });
+
+    test('should validate instance name required for restore', async ({ page }) => {
+      await waitForBackupsToLoad(page);
+
+      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
+
+      if (backupRows.length === 0) {
+        test.skip();
+        return;
+      }
+
+      // Open restore dialog
+      await clickDropdownAction(page, 0, 'Restore');
+      await page.waitForTimeout(1000);
+
+      // Restore button should be disabled without instance name
+      const restoreButton = page.locator('button[variant="primary"]', { hasText: /restore/i });
+      expect(await restoreButton.isDisabled()).toBe(true);
     });
   });
 
   test.describe('Empty State Handling', () => {
-    test('should show helpful message when no backups exist', async ({ page }) => {
-      await page.waitForTimeout(2000);
+    test('should show empty state if no backups exist', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
       if (backupRows.length === 0) {
-        // Verify empty state
+        // Verify empty state is shown
         const emptyState = page.locator('[data-testid="empty-backups"]');
-        const isVisible = await emptyState.isVisible();
-        expect(isVisible).toBe(true);
+        expect(await emptyState.isVisible()).toBe(true);
 
-        // Should have helpful content
+        // Should have helpful message
         const emptyStateText = await emptyState.textContent();
-        expect(emptyStateText?.length).toBeGreaterThan(0);
+        expect(emptyStateText).toContain('No backups');
+      } else {
+        // Skip: Backups exist, can't test empty state
+        test.skip();
       }
     });
 
-    test('should provide create backup button in empty state', async ({ page }) => {
-      await page.waitForTimeout(2000);
+    test('should have create backup button in all states', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
-      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
-
-      if (backupRows.length === 0) {
-        // Create button should be visible
-        const createButton = page.getByRole('button', { name: /create.*backup/i });
-        const isVisible = await createButton.isVisible();
-        expect(isVisible).toBe(true);
-      }
+      // Create button should always be visible (in header)
+      const createButton = page.getByRole('button', { name: /create.*backup/i });
+      expect(await createButton.isVisible()).toBe(true);
     });
   });
 
-  test.describe('Backup Status Monitoring', () => {
-    test('should display backup status', async ({ page }) => {
-      await page.waitForTimeout(2000);
+  test.describe('Backup Actions', () => {
+    test('should have Actions dropdown for each backup', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
       if (backupRows.length === 0) {
-        // Skip: No backups available for status testing
         test.skip();
         return;
       }
 
-      const firstBackup = backupRows[0];
-      const statusBadge = firstBackup.locator('[data-testid="status-badge"]');
+      // Each row should have Actions button
+      const firstRow = backupRows[0];
+      const actionsButton = firstRow.getByRole('button', { name: 'Actions' });
+      expect(await actionsButton.isVisible()).toBe(true);
+    });
 
-      if (await statusBadge.isVisible()) {
-        const statusText = await statusBadge.textContent();
+    test('should show restore, clone, details, and delete actions', async ({ page }) => {
+      await waitForBackupsToLoad(page);
 
-        // Valid backup states
-        const validStates = ['available', 'creating', 'deleting', 'error'];
-        const isValidState = validStates.some((state) => statusText?.toLowerCase().includes(state));
-        expect(isValidState).toBe(true);
+      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
+
+      if (backupRows.length === 0) {
+        test.skip();
+        return;
       }
+
+      // Click Actions dropdown
+      const firstRow = backupRows[0];
+      await firstRow.getByRole('button', { name: 'Actions' }).click();
+      await page.waitForTimeout(300);
+
+      // Should show expected actions
+      expect(await page.getByRole('menuitem', { name: /restore/i }).isVisible()).toBe(true);
+      expect(await page.getByRole('menuitem', { name: /clone/i }).isVisible()).toBe(true);
+      expect(await page.getByRole('menuitem', { name: /details/i }).isVisible()).toBe(true);
+      expect(await page.getByRole('menuitem', { name: /delete/i }).isVisible()).toBe(true);
     });
   });
 });

@@ -49,7 +49,11 @@ async function startDaemon() {
     env: {
       ...process.env,
       PRISM_TEST_MODE: 'true',
-      PRISM_TEMPLATE_DIR: templatesPath
+      PRISM_TEMPLATE_DIR: templatesPath,
+      AWS_PROFILE: 'aws',
+      AWS_REGION: 'us-west-2',
+      AWS_SDK_LOAD_CONFIG: '1',
+      AWS_EC2_METADATA_DISABLED: 'true'
     }
   })
   
