@@ -732,6 +732,11 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// User authentication
 	mux.HandleFunc("/api/v1/authenticate", applyMiddleware(s.handleAuthenticate))
 
+	// Profile management
+	mux.HandleFunc("/api/v1/profiles", applyMiddleware(s.handleProfiles))
+	mux.HandleFunc("/api/v1/profiles/current", applyMiddleware(s.handleGetCurrentProfile))
+	mux.HandleFunc("/api/v1/profiles/", applyMiddleware(s.handleProfileOperations))
+
 	// User management
 	mux.HandleFunc("/api/v1/users", applyMiddleware(s.handleUsers))
 	mux.HandleFunc("/api/v1/users/", applyMiddleware(s.handleUserOperations))
