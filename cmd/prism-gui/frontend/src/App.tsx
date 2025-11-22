@@ -2805,7 +2805,7 @@ export default function PrismApp() {
     const [activeTabId, setActiveTabId] = React.useState('shared');
 
     return (
-      <SpaceBetween size="l">
+      <SpaceBetween size="l" data-testid="storage-page">
         <Header
           variant="h1"
           description="Manage shared and workspace-specific storage for your research computing environments"
@@ -2908,11 +2908,12 @@ export default function PrismApp() {
                   }
                 >
                   <Table
+                    data-testid="efs-table"
                     columnDefinitions={[
                       {
                         id: "name",
                         header: "Volume Name",
-                        cell: (item: EFSVolume) => <Link fontSize="body-m">{item.name}</Link>,
+                        cell: (item: EFSVolume) => <div data-testid="volume-name"><Link fontSize="body-m">{item.name}</Link></div>,
                         sortingField: "name"
                       },
                       {
@@ -2981,7 +2982,7 @@ export default function PrismApp() {
                     loading={state.loading}
                     trackBy="name"
                     empty={
-                      <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
+                      <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }} data-testid="empty-efs">
                         <SpaceBetween size="m">
                           <Box variant="strong" textAlign="center" color="inherit">
                             No shared storage volumes found
@@ -3026,11 +3027,12 @@ export default function PrismApp() {
                   }
                 >
                   <Table
+                    data-testid="ebs-table"
                     columnDefinitions={[
                       {
                         id: "name",
                         header: "Volume Name",
-                        cell: (item: EBSVolume) => <Link fontSize="body-m">{item.name}</Link>,
+                        cell: (item: EBSVolume) => <div data-testid="volume-name"><Link fontSize="body-m">{item.name}</Link></div>,
                         sortingField: "name"
                       },
                       {
@@ -3131,7 +3133,7 @@ export default function PrismApp() {
                     loading={state.loading}
                     trackBy="name"
                     empty={
-                      <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
+                      <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }} data-testid="empty-ebs">
                         <SpaceBetween size="m">
                           <Box variant="strong" textAlign="center" color="inherit">
                             No private storage volumes found
