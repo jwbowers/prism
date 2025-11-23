@@ -20,6 +20,18 @@ test.describe('Profile Management Workflows', () => {
     settingsPage = new SettingsPage(page);
     await settingsPage.goto();
     await settingsPage.navigate();
+
+    // Close any open dialogs/modals from previous tests
+    try {
+      const closeButton = page.locator('button[aria-label="Close dialog"], button[aria-label="Close modal"], .awsui_dismiss-control button').first();
+      if (await closeButton.isVisible({ timeout: 1000 })) {
+        await closeButton.click();
+        await page.waitForTimeout(500);
+      }
+    } catch {
+      // No dialog open, that's fine
+    }
+
     await settingsPage.switchToProfiles();
   });
 
