@@ -71,8 +71,8 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.page.getByTestId('region-input').locator('input').fill('us-east-1');
       await settingsPage.clickButton('create');
 
-      // Should show validation error (scope to the dialog)
-      const dialog = settingsPage.page.locator('[role="dialog"]');
+      // Should show validation error (get first visible dialog)
+      const dialog = settingsPage.page.locator('[role="dialog"]').first();
       const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/name.*required/i);
     });

@@ -134,12 +134,12 @@
                           "workerIndex": 0,
                           "parallelIndex": 0,
                           "status": "passed",
-                          "duration": 6061,
+                          "duration": 6508,
                           "errors": [],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:16:38.894Z",
+                          "startTime": "2025-11-23T04:31:35.155Z",
                           "annotations": [],
                           "attachments": []
                         }
@@ -154,7 +154,7 @@
                 },
                 {
                   "title": "should validate profile name is required",
-                  "ok": false,
+                  "ok": true,
                   "tags": [],
                   "tests": [
                     {
@@ -167,58 +167,18 @@
                         {
                           "workerIndex": 0,
                           "parallelIndex": 0,
-                          "status": "failed",
-                          "duration": 5073,
-                          "error": {
-                            "message": "Error: locator.textContent: Error: strict mode violation: locator('[role=\"dialog\"]').locator('[data-testid=\"validation-error\"]') resolved to 2 elements:\n    1) <div aria-hidden=\"false\" data-analytics-alert=\"error\" data-testid=\"validation-error\" class=\"awsui_root_mx3cw_14o2k_215\">…</div> aka getByRole('dialog', { name: 'Create Profile' }).getByTestId('validation-error')\n    2) <div aria-hidden=\"false\" data-analytics-alert=\"error\" data-testid=\"validation-error\" class=\"awsui_root_mx3cw_14o2k_215\">…</div> aka getByLabel('Edit Profile').getByTestId('validation-error')\n\nCall log:\n\u001b[2m  - waiting for locator('[role=\"dialog\"]').locator('[data-testid=\"validation-error\"]')\u001b[22m\n",
-                            "stack": "Error: locator.textContent: Error: strict mode violation: locator('[role=\"dialog\"]').locator('[data-testid=\"validation-error\"]') resolved to 2 elements:\n    1) <div aria-hidden=\"false\" data-analytics-alert=\"error\" data-testid=\"validation-error\" class=\"awsui_root_mx3cw_14o2k_215\">…</div> aka getByRole('dialog', { name: 'Create Profile' }).getByTestId('validation-error')\n    2) <div aria-hidden=\"false\" data-analytics-alert=\"error\" data-testid=\"validation-error\" class=\"awsui_root_mx3cw_14o2k_215\">…</div> aka getByLabel('Edit Profile').getByTestId('validation-error')\n\nCall log:\n\u001b[2m  - waiting for locator('[role=\"dialog\"]').locator('[data-testid=\"validation-error\"]')\u001b[22m\n\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:76:88",
-                            "location": {
-                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
-                              "column": 88,
-                              "line": 76
-                            },
-                            "snippet": "  74 |       // Should show validation error (scope to the dialog)\n  75 |       const dialog = settingsPage.page.locator('[role=\"dialog\"]');\n> 76 |       const validationError = await dialog.locator('[data-testid=\"validation-error\"]').textContent();\n     |                                                                                        ^\n  77 |       expect(validationError).toMatch(/name.*required/i);\n  78 |     });\n  79 |"
-                          },
-                          "errors": [
-                            {
-                              "location": {
-                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
-                                "column": 88,
-                                "line": 76
-                              },
-                              "message": "Error: locator.textContent: Error: strict mode violation: locator('[role=\"dialog\"]').locator('[data-testid=\"validation-error\"]') resolved to 2 elements:\n    1) <div aria-hidden=\"false\" data-analytics-alert=\"error\" data-testid=\"validation-error\" class=\"awsui_root_mx3cw_14o2k_215\">…</div> aka getByRole('dialog', { name: 'Create Profile' }).getByTestId('validation-error')\n    2) <div aria-hidden=\"false\" data-analytics-alert=\"error\" data-testid=\"validation-error\" class=\"awsui_root_mx3cw_14o2k_215\">…</div> aka getByLabel('Edit Profile').getByTestId('validation-error')\n\nCall log:\n\u001b[2m  - waiting for locator('[role=\"dialog\"]').locator('[data-testid=\"validation-error\"]')\u001b[22m\n\n\n  74 |       // Should show validation error (scope to the dialog)\n  75 |       const dialog = settingsPage.page.locator('[role=\"dialog\"]');\n> 76 |       const validationError = await dialog.locator('[data-testid=\"validation-error\"]').textContent();\n     |                                                                                        ^\n  77 |       expect(validationError).toMatch(/name.*required/i);\n  78 |     });\n  79 |\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:76:88"
-                            }
-                          ],
+                          "status": "passed",
+                          "duration": 5044,
+                          "errors": [],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:16:45.153Z",
+                          "startTime": "2025-11-23T04:31:41.884Z",
                           "annotations": [],
-                          "attachments": [
-                            {
-                              "name": "screenshot",
-                              "contentType": "image/png",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/profile-workflows-Profile--b2cbd-te-profile-name-is-required-chromium/test-failed-1.png"
-                            },
-                            {
-                              "name": "video",
-                              "contentType": "video/webm",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/profile-workflows-Profile--b2cbd-te-profile-name-is-required-chromium/video.webm"
-                            },
-                            {
-                              "name": "error-context",
-                              "contentType": "text/markdown",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/profile-workflows-Profile--b2cbd-te-profile-name-is-required-chromium/error-context.md"
-                            }
-                          ],
-                          "errorLocation": {
-                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
-                            "column": 88,
-                            "line": 76
-                          }
+                          "attachments": []
                         }
                       ],
-                      "status": "unexpected"
+                      "status": "expected"
                     }
                   ],
                   "id": "df818b8a6484e506d5dd-09f2459017284764a1ca",
@@ -239,10 +199,10 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 1,
+                          "workerIndex": 0,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 5015,
+                          "duration": 5081,
                           "error": {
                             "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
                             "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:90:24",
@@ -266,7 +226,7 @@
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:16:50.561Z",
+                          "startTime": "2025-11-23T04:31:46.932Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -313,10 +273,10 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 2,
+                          "workerIndex": 1,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 5356,
+                          "duration": 5370,
                           "error": {
                             "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
                             "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:113:33",
@@ -340,7 +300,7 @@
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:16:55.968Z",
+                          "startTime": "2025-11-23T04:31:52.361Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -395,13 +355,13 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 3,
+                          "workerIndex": 2,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 11071,
+                          "duration": 11102,
                           "error": {
-                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"switch-test-1-1763871426504\"\u001b[39m\nReceived string:    \u001b[31m\"Current\"\u001b[39m",
-                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"switch-test-1-1763871426504\"\u001b[39m\nReceived string:    \u001b[31m\"Current\"\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:139:30",
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"switch-test-1-1763872323000\"\u001b[39m\nReceived string:    \u001b[31m\"Current\"\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"switch-test-1-1763872323000\"\u001b[39m\nReceived string:    \u001b[31m\"Current\"\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:139:30",
                             "location": {
                               "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
                               "column": 30,
@@ -416,13 +376,13 @@
                                 "column": 30,
                                 "line": 139
                               },
-                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"switch-test-1-1763871426504\"\u001b[39m\nReceived string:    \u001b[31m\"Current\"\u001b[39m\n\n  137 |       // Verify current profile is updated\n  138 |       const currentProfile = await settingsPage.getCurrentProfile();\n> 139 |       expect(currentProfile).toContain(name1);\n      |                              ^\n  140 |\n  141 |       // Switch to second profile\n  142 |       await settingsPage.switchProfile(name2);\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:139:30"
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"switch-test-1-1763872323000\"\u001b[39m\nReceived string:    \u001b[31m\"Current\"\u001b[39m\n\n  137 |       // Verify current profile is updated\n  138 |       const currentProfile = await settingsPage.getCurrentProfile();\n> 139 |       expect(currentProfile).toContain(name1);\n      |                              ^\n  140 |\n  141 |       // Switch to second profile\n  142 |       await settingsPage.switchProfile(name2);\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:139:30"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:17:01.715Z",
+                          "startTime": "2025-11-23T04:31:58.167Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -469,15 +429,15 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 4,
+                          "workerIndex": 3,
                           "parallelIndex": 0,
                           "status": "passed",
-                          "duration": 8371,
+                          "duration": 8381,
                           "errors": [],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:17:13.208Z",
+                          "startTime": "2025-11-23T04:32:09.699Z",
                           "annotations": [],
                           "attachments": []
                         }
@@ -511,13 +471,13 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 4,
+                          "workerIndex": 3,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 18618,
+                          "duration": 18161,
                           "error": {
-                            "message": "TimeoutError: locator.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('region-input').locator('input')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_291_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_291_-label\" aria-describedby=\"formField_r_291_-description\"/>\u001b[22m\n\u001b[2m    - fill(\"eu-west-1\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    20 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
-                            "stack": "TimeoutError: locator.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('region-input').locator('input')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_291_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_291_-label\" aria-describedby=\"formField_r_291_-description\"/>\u001b[22m\n\u001b[2m    - fill(\"eu-west-1\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    20 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at SettingsPage.updateProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:91:66)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:188:7",
+                            "message": "TimeoutError: locator.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('region-input').locator('input')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_2fp_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_2fp_-label\" aria-describedby=\"formField_r_2fp_-description\"/>\u001b[22m\n\u001b[2m    - fill(\"eu-west-1\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    20 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+                            "stack": "TimeoutError: locator.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('region-input').locator('input')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_2fp_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_2fp_-label\" aria-describedby=\"formField_r_2fp_-description\"/>\u001b[22m\n\u001b[2m    - fill(\"eu-west-1\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    20 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at SettingsPage.updateProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:91:66)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:188:7",
                             "location": {
                               "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts",
                               "column": 66,
@@ -532,13 +492,13 @@
                                 "column": 66,
                                 "line": 91
                               },
-                              "message": "TimeoutError: locator.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('region-input').locator('input')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_291_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_291_-label\" aria-describedby=\"formField_r_291_-description\"/>\u001b[22m\n\u001b[2m    - fill(\"eu-west-1\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    20 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n   at pages/SettingsPage.ts:91\n\n  89 |\n  90 |     // Cloudscape Input wraps input in a div\n> 91 |     await this.page.getByTestId('region-input').locator('input').fill(newRegion);\n     |                                                                  ^\n  92 |     await this.clickButton('save');\n  93 |   }\n  94 |\n    at SettingsPage.updateProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:91:66)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:188:7"
+                              "message": "TimeoutError: locator.fill: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('region-input').locator('input')\u001b[22m\n\u001b[2m    - locator resolved to <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_2fp_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_2fp_-label\" aria-describedby=\"formField_r_2fp_-description\"/>\u001b[22m\n\u001b[2m    - fill(\"eu-west-1\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    20 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n   at pages/SettingsPage.ts:91\n\n  89 |\n  90 |     // Cloudscape Input wraps input in a div\n> 91 |     await this.page.getByTestId('region-input').locator('input').fill(newRegion);\n     |                                                                  ^\n  92 |     await this.clickButton('save');\n  93 |   }\n  94 |\n    at SettingsPage.updateProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:91:66)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:188:7"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:17:21.675Z",
+                          "startTime": "2025-11-23T04:32:18.181Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -585,13 +545,13 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 5,
+                          "workerIndex": 4,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 7069,
+                          "duration": 7295,
                           "error": {
-                            "message": "Error: locator.fill: Error: strict mode violation: getByLabel(/region/i) resolved to 2 elements:\n    1) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1md_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1md_-label\" aria-describedby=\"formField_r_1md_-description\"/> aka getByPlaceholder('us-west-')\n    2) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1mo_\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1mo_-label\"/> aka getByRole('textbox', { name: 'Region' })\n\nCall log:\n\u001b[2m  - waiting for getByLabel(/region/i)\u001b[22m\n",
-                            "stack": "Error: locator.fill: Error: strict mode violation: getByLabel(/region/i) resolved to 2 elements:\n    1) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1md_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1md_-label\" aria-describedby=\"formField_r_1md_-description\"/> aka getByPlaceholder('us-west-')\n    2) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1mo_\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1mo_-label\"/> aka getByRole('textbox', { name: 'Region' })\n\nCall log:\n\u001b[2m  - waiting for getByLabel(/region/i)\u001b[22m\n\n    at SettingsPage.fillInput (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:137:17)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:211:26",
+                            "message": "Error: locator.fill: Error: strict mode violation: getByLabel(/region/i) resolved to 2 elements:\n    1) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1pp_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1pp_-label\" aria-describedby=\"formField_r_1pp_-description\"/> aka getByPlaceholder('us-west-')\n    2) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1q4_\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1q4_-label\"/> aka getByRole('textbox', { name: 'Region' })\n\nCall log:\n\u001b[2m  - waiting for getByLabel(/region/i)\u001b[22m\n",
+                            "stack": "Error: locator.fill: Error: strict mode violation: getByLabel(/region/i) resolved to 2 elements:\n    1) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1pp_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1pp_-label\" aria-describedby=\"formField_r_1pp_-description\"/> aka getByPlaceholder('us-west-')\n    2) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1q4_\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1q4_-label\"/> aka getByRole('textbox', { name: 'Region' })\n\nCall log:\n\u001b[2m  - waiting for getByLabel(/region/i)\u001b[22m\n\n    at SettingsPage.fillInput (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:137:17)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:211:26",
                             "location": {
                               "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts",
                               "column": 17,
@@ -606,13 +566,13 @@
                                 "column": 17,
                                 "line": 137
                               },
-                              "message": "Error: locator.fill: Error: strict mode violation: getByLabel(/region/i) resolved to 2 elements:\n    1) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1md_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1md_-label\" aria-describedby=\"formField_r_1md_-description\"/> aka getByPlaceholder('us-west-')\n    2) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1mo_\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1mo_-label\"/> aka getByRole('textbox', { name: 'Region' })\n\nCall log:\n\u001b[2m  - waiting for getByLabel(/region/i)\u001b[22m\n\n\n   at pages/BasePage.ts:137\n\n  135 |   async fillInput(label: string, value: string) {\n  136 |     const input = this.page.getByLabel(new RegExp(label, 'i'));\n> 137 |     await input.fill(value);\n      |                 ^\n  138 |   }\n  139 |\n  140 |   /**\n    at SettingsPage.fillInput (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:137:17)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:211:26"
+                              "message": "Error: locator.fill: Error: strict mode violation: getByLabel(/region/i) resolved to 2 elements:\n    1) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1pp_\" placeholder=\"us-west-2\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1pp_-label\" aria-describedby=\"formField_r_1pp_-description\"/> aka getByPlaceholder('us-west-')\n    2) <input type=\"text\" autocomplete=\"on\" value=\"us-west-2\" id=\"formField_r_1q4_\" class=\"awsui_input_2rhyz_1pxbp_149\" aria-labelledby=\"formField_r_1q4_-label\"/> aka getByRole('textbox', { name: 'Region' })\n\nCall log:\n\u001b[2m  - waiting for getByLabel(/region/i)\u001b[22m\n\n\n   at pages/BasePage.ts:137\n\n  135 |   async fillInput(label: string, value: string) {\n  136 |     const input = this.page.getByLabel(new RegExp(label, 'i'));\n> 137 |     await input.fill(value);\n      |                 ^\n  138 |   }\n  139 |\n  140 |   /**\n    at SettingsPage.fillInput (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:137:17)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:211:26"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:17:40.638Z",
+                          "startTime": "2025-11-23T04:32:36.898Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -667,10 +627,10 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 6,
+                          "workerIndex": 5,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 16893,
+                          "duration": 16942,
                           "error": {
                             "message": "TimeoutError: page.waitForEvent: Timeout 10000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================",
                             "stack": "TimeoutError: page.waitForEvent: Timeout 10000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:234:49",
@@ -696,13 +656,13 @@
                                 "column": 24,
                                 "line": 118
                               },
-                              "message": "Error: locator.click: Test ended.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"profiles-table\"] tr:has-text(\"export-test-1763871472983\")').getByTestId('export-profile-export-test-1763871472983')\u001b[22m\n\n\n   at pages/SettingsPage.ts:118\n\n  116 |     const profile = this.getProfileByName(name);\n  117 |     const exportButton = profile.getByTestId(`export-profile-${name}`);\n> 118 |     await exportButton.click();\n      |                        ^\n  119 |   }\n  120 |\n  121 |   /**\n    at SettingsPage.exportProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:118:24)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:237:7"
+                              "message": "Error: locator.click: Test ended.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"profiles-table\"] tr:has-text(\"export-test-1763872369584\")').getByTestId('export-profile-export-test-1763872369584')\u001b[22m\n\n\n   at pages/SettingsPage.ts:118\n\n  116 |     const profile = this.getProfileByName(name);\n  117 |     const exportButton = profile.getByTestId(`export-profile-${name}`);\n> 118 |     await exportButton.click();\n      |                        ^\n  119 |   }\n  120 |\n  121 |   /**\n    at SettingsPage.exportProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:118:24)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:237:7"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:17:48.141Z",
+                          "startTime": "2025-11-23T04:32:44.681Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -757,10 +717,10 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 7,
+                          "workerIndex": 6,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 5032,
+                          "duration": 5037,
                           "error": {
                             "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
                             "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:261:46",
@@ -784,7 +744,7 @@
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:18:05.463Z",
+                          "startTime": "2025-11-23T04:33:02.065Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -831,10 +791,10 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 8,
+                          "workerIndex": 7,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 5020,
+                          "duration": 4889,
                           "error": {
                             "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
                             "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:268:46",
@@ -858,7 +818,7 @@
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:18:10.940Z",
+                          "startTime": "2025-11-23T04:33:07.521Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -913,13 +873,13 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 9,
+                          "workerIndex": 8,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 19376,
+                          "duration": 18356,
                           "error": {
-                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
-                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.verifyProfileExists (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:229:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:292:23",
+                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.verifyProfileExists (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:229:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:292:23",
                             "location": {
                               "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts",
                               "column": 26,
@@ -934,13 +894,13 @@
                                 "column": 26,
                                 "line": 31
                               },
-                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_2p9_-header\" data-analytics-modal-id=\"_r_2o7_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n   at pages/SettingsPage.ts:31\n\n  29 |     const profilesLink = this.page.getByRole('link', { name: /^profiles$/i });\n  30 |     if (await this.elementExists(profilesLink)) {\n> 31 |       await profilesLink.click();\n     |                          ^\n  32 |       await this.waitForLoadingComplete();\n  33 |     }\n  34 |   }\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.verifyProfileExists (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:229:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:292:23"
+                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_31n_-header\" data-analytics-modal-id=\"_r_30l_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n   at pages/SettingsPage.ts:31\n\n  29 |     const profilesLink = this.page.getByRole('link', { name: /^profiles$/i });\n  30 |     if (await this.elementExists(profilesLink)) {\n> 31 |       await profilesLink.click();\n     |                          ^\n  32 |       await this.waitForLoadingComplete();\n  33 |     }\n  34 |   }\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.verifyProfileExists (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:229:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:292:23"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:18:16.409Z",
+                          "startTime": "2025-11-23T04:33:12.797Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -987,15 +947,15 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 10,
+                          "workerIndex": 9,
                           "parallelIndex": 0,
                           "status": "passed",
-                          "duration": 8366,
+                          "duration": 8389,
                           "errors": [],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:18:36.262Z",
+                          "startTime": "2025-11-23T04:33:31.603Z",
                           "annotations": [],
                           "attachments": []
                         }
@@ -1021,13 +981,13 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 10,
+                          "workerIndex": 9,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 18327,
+                          "duration": 18284,
                           "error": {
-                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('delete-profile-active-delete-test-1763871529524')\u001b[22m\n",
-                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('delete-profile-active-delete-test-1763871529524')\u001b[22m\n\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:100:59)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:329:7",
+                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('delete-profile-active-delete-test-1763872424841')\u001b[22m\n",
+                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('delete-profile-active-delete-test-1763872424841')\u001b[22m\n\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:100:59)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:329:7",
                             "location": {
                               "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts",
                               "column": 59,
@@ -1042,13 +1002,13 @@
                                 "column": 59,
                                 "line": 100
                               },
-                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('delete-profile-active-delete-test-1763871529524')\u001b[22m\n\n\n   at pages/SettingsPage.ts:100\n\n   98 |   async deleteProfile(name: string) {\n   99 |     await this.switchToProfiles();\n> 100 |     await this.page.getByTestId(`delete-profile-${name}`).click();\n      |                                                           ^\n  101 |   }\n  102 |\n  103 |   /**\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:100:59)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:329:7"
+                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('delete-profile-active-delete-test-1763872424841')\u001b[22m\n\n\n   at pages/SettingsPage.ts:100\n\n   98 |   async deleteProfile(name: string) {\n   99 |     await this.switchToProfiles();\n> 100 |     await this.page.getByTestId(`delete-profile-${name}`).click();\n      |                                                           ^\n  101 |   }\n  102 |\n  103 |   /**\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:100:59)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:329:7"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:18:44.730Z",
+                          "startTime": "2025-11-23T04:33:40.101Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -1103,13 +1063,13 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 11,
+                          "workerIndex": 10,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 19137,
+                          "duration": 19396,
                           "error": {
-                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
-                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:99:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:362:7",
+                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:99:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:362:7",
                             "location": {
                               "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts",
                               "column": 26,
@@ -1124,13 +1084,13 @@
                                 "column": 26,
                                 "line": 31
                               },
-                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_3sp_-header\" data-analytics-modal-id=\"_r_3rn_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n   at pages/SettingsPage.ts:31\n\n  29 |     const profilesLink = this.page.getByRole('link', { name: /^profiles$/i });\n  30 |     if (await this.elementExists(profilesLink)) {\n> 31 |       await profilesLink.click();\n     |                          ^\n  32 |       await this.waitForLoadingComplete();\n  33 |     }\n  34 |   }\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:99:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:362:7"
+                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: /^profiles$/i })\u001b[22m\n\u001b[2m    - locator resolved to <a href=\"#profiles\" aria-current=\"page\" class=\"awsui_link_l0dv0_1u5ju_317 awsui_link-active_l0dv0_1u5ju_326\">…</a>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    19 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div role=\"dialog\" data-analytics-funnel-step=\"1\" aria-labelledby=\"_r_4a9_-header\" data-analytics-modal-id=\"_r_497_\" class=\"awsui_root_1d2i7_1e7ip_225 awsui_refresh_1d2i7_1e7ip_192\">…</div> from <div>…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n   at pages/SettingsPage.ts:31\n\n  29 |     const profilesLink = this.page.getByRole('link', { name: /^profiles$/i });\n  30 |     if (await this.elementExists(profilesLink)) {\n> 31 |       await profilesLink.click();\n     |                          ^\n  32 |       await this.waitForLoadingComplete();\n  33 |     }\n  34 |   }\n    at SettingsPage.switchToProfiles (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:31:26)\n    at SettingsPage.deleteProfile (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/SettingsPage.ts:99:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts:362:7"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:19:03.388Z",
+                          "startTime": "2025-11-23T04:33:58.730Z",
                           "annotations": [],
                           "attachments": [
                             {
@@ -1177,15 +1137,15 @@
                       "projectName": "chromium",
                       "results": [
                         {
-                          "workerIndex": 12,
+                          "workerIndex": 11,
                           "parallelIndex": 0,
                           "status": "passed",
-                          "duration": 6687,
+                          "duration": 6972,
                           "errors": [],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-23T04:19:22.977Z",
+                          "startTime": "2025-11-23T04:34:18.564Z",
                           "annotations": [],
                           "attachments": []
                         }
@@ -1207,11 +1167,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-11-23T04:16:36.426Z",
-    "duration": 173896.976,
-    "expected": 4,
+    "startTime": "2025-11-23T04:31:32.438Z",
+    "duration": 173259.222,
+    "expected": 5,
     "skipped": 0,
-    "unexpected": 12,
+    "unexpected": 11,
     "flaky": 0
   }
 }
