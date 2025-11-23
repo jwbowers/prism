@@ -64,12 +64,11 @@ export class SettingsPage extends BasePage {
    */
   async createProfile(name: string, awsProfile: string, region: string) {
     await this.switchToProfiles();
-    const createButton = this.page.getByRole('button', { name: /create.*profile/i });
-    await createButton.click();
+    await this.page.getByTestId('create-profile-button').click();
 
-    await this.fillInput('profile name', name);
-    await this.fillInput('aws profile', awsProfile);
-    await this.fillInput('region', region);
+    await this.page.getByTestId('profile-name-input').fill(name);
+    await this.page.getByTestId('aws-profile-input').fill(awsProfile);
+    await this.page.getByTestId('region-input').fill(region);
     await this.clickButton('create');
   }
 
@@ -79,10 +78,10 @@ export class SettingsPage extends BasePage {
   async updateProfile(name: string, newRegion: string) {
     await this.switchToProfiles();
     const profile = this.getProfileByName(name);
-    const editButton = profile.getByRole('button', { name: /edit/i });
+    const editButton = profile.getByTestId(`edit-profile-${name}`);
     await editButton.click();
 
-    await this.fillInput('region', newRegion);
+    await this.page.getByTestId('region-input').fill(newRegion);
     await this.clickButton('save');
   }
 
@@ -91,9 +90,7 @@ export class SettingsPage extends BasePage {
    */
   async deleteProfile(name: string) {
     await this.switchToProfiles();
-    const profile = this.getProfileByName(name);
-    const deleteButton = profile.getByRole('button', { name: /delete/i });
-    await deleteButton.click();
+    await this.page.getByTestId(`delete-profile-${name}`).click();
   }
 
   /**
@@ -101,9 +98,7 @@ export class SettingsPage extends BasePage {
    */
   async switchProfile(name: string) {
     await this.switchToProfiles();
-    const profile = this.getProfileByName(name);
-    const switchButton = profile.getByRole('button', { name: /switch/i });
-    await switchButton.click();
+    await this.page.getByTestId(`switch-profile-${name}`).click();
   }
 
   /**
@@ -112,7 +107,7 @@ export class SettingsPage extends BasePage {
   async exportProfile(name: string) {
     await this.switchToProfiles();
     const profile = this.getProfileByName(name);
-    const exportButton = profile.getByRole('button', { name: /export/i });
+    const exportButton = profile.getByTestId(`export-profile-${name}`);
     await exportButton.click();
   }
 
@@ -135,7 +130,14 @@ export class SettingsPage extends BasePage {
    */
   async getCurrentProfile(): Promise<string | null> {
     await this.switchToProfiles();
-    const currentBadge = this.page.locator('[data-testid="current-profile"], .awsui-badge-color-green');
+
+    // Wait for profiles table to load
+    await this.page.waitForSelector('[data-testid="profiles-table"]', { timeout: 5000 });
+
+    // Wait a moment for the API call to complete and profiles to render
+    await this.page.waitForTimeout(1000);
+
+    const currentBadge = this.page.getByTestId('current-profile-badge');
     return await this.getTextContent(currentBadge);
   }
 

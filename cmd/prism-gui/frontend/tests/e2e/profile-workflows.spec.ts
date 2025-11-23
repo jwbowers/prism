@@ -49,11 +49,11 @@ test.describe('Profile Management Workflows', () => {
     });
 
     test('should validate profile name is required', async () => {
-      await settingsPage.page.getByRole('button', { name: /create.*profile/i }).click();
+      await settingsPage.page.getByTestId('create-profile-button').click();
 
       // Leave name empty
-      await settingsPage.fillInput('aws profile', 'default');
-      await settingsPage.fillInput('region', 'us-east-1');
+      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
+      await settingsPage.page.getByTestId('region-input').fill('us-east-1');
       await settingsPage.clickButton('create');
 
       // Should show validation error
@@ -62,11 +62,11 @@ test.describe('Profile Management Workflows', () => {
     });
 
     test('should validate region format', async () => {
-      await settingsPage.page.getByRole('button', { name: /create.*profile/i }).click();
+      await settingsPage.page.getByTestId('create-profile-button').click();
 
-      await settingsPage.fillInput('profile name', 'test-region-validation');
-      await settingsPage.fillInput('aws profile', 'default');
-      await settingsPage.fillInput('region', 'invalid-region');
+      await settingsPage.page.getByTestId('profile-name-input').fill('test-region-validation');
+      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
+      await settingsPage.page.getByTestId('region-input').fill('invalid-region');
       await settingsPage.clickButton('create');
 
       // Should show validation error
@@ -76,18 +76,18 @@ test.describe('Profile Management Workflows', () => {
 
     test('should prevent duplicate profile names', async () => {
       // Create first profile
-      await settingsPage.page.getByRole('button', { name: /create.*profile/i }).click();
-      await settingsPage.fillInput('profile name', 'duplicate-test');
-      await settingsPage.fillInput('aws profile', 'default');
-      await settingsPage.fillInput('region', 'us-west-2');
+      await settingsPage.page.getByTestId('create-profile-button').click();
+      await settingsPage.page.getByTestId('profile-name-input').fill('duplicate-test');
+      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
+      await settingsPage.page.getByTestId('region-input').fill('us-west-2');
       await settingsPage.clickButton('create');
       await settingsPage.page.waitForTimeout(2000);
 
       // Try to create second profile with same name
-      await settingsPage.page.getByRole('button', { name: /create.*profile/i }).click();
-      await settingsPage.fillInput('profile name', 'duplicate-test');
-      await settingsPage.fillInput('aws profile', 'default');
-      await settingsPage.fillInput('region', 'us-east-1');
+      await settingsPage.page.getByTestId('create-profile-button').click();
+      await settingsPage.page.getByTestId('profile-name-input').fill('duplicate-test');
+      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
+      await settingsPage.page.getByTestId('region-input').fill('us-east-1');
       await settingsPage.clickButton('create');
 
       // Should show duplicate error

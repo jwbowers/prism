@@ -144,6 +144,35 @@ pkg/types/
 - **Profile Integration**: Integrated AWS credential and region management
 - **Graceful Operations**: Proper shutdown, error handling, progress reporting
 
+### API Authentication
+The daemon uses header-based authentication with test mode bypass:
+
+**Production Mode:**
+- API key required via `X-API-Key` header
+- Key stored in daemon state configuration (`~/.prism/state.json`)
+- Constant-time comparison prevents timing attacks (pkg/daemon/middleware.go:94)
+- Applies to all endpoints except `/api/v1/ping`, `/api/v1/auth`, `/api/v1/authenticate`
+
+**Test Mode (E2E Tests):**
+- Set `PRISM_TEST_MODE=true` environment variable
+- Authentication middleware bypasses all key checks (middleware.go:73-76)
+- GUI frontend does NOT send API key in test mode (App.tsx loadAPIKey disabled)
+- E2E test setup script (`tests/e2e/setup-daemon.js`) automatically sets test mode
+
+**Implementation Reference:**
+```go
+// pkg/daemon/middleware.go
+if os.Getenv("PRISM_TEST_MODE") == "true" {
+    next(w, r)  // Skip authentication
+    return
+}
+```
+
+**Testing Pattern:**
+- E2E tests use setup-daemon.js to launch daemon with PRISM_TEST_MODE
+- No API key configuration needed for tests
+- Frontend disables loadAPIKey() to avoid keychain prompts
+
 ### Streamlined User Experience
 - **Auto-Start Daemon**: All interfaces automatically start daemon as needed - no manual setup required
 - **Zero Keychain Prompts**: Basic profiles work without macOS keychain password requests

@@ -3891,6 +3891,7 @@ export default function PrismApp() {
 
         {/* Profiles Table */}
         <Table
+          data-testid="profiles-table"
           columnDefinitions={[
             {
               id: 'name',
@@ -3898,7 +3899,7 @@ export default function PrismApp() {
               cell: (item: any) => (
                 <Box>
                   {item.id === currentProfileId && (
-                    <Badge color="blue">Current</Badge>
+                    <Badge color="blue" data-testid="current-profile-badge">Current</Badge>
                   )}{' '}
                   {item.name}
                 </Box>
@@ -3929,15 +3930,24 @@ export default function PrismApp() {
               cell: (item: any) => (
                 <SpaceBetween direction="horizontal" size="xs">
                   {item.id !== currentProfileId && (
-                    <Button onClick={() => handleSwitchProfile(item.id)}>
+                    <Button
+                      onClick={() => handleSwitchProfile(item.id)}
+                      data-testid={`switch-profile-${item.name}`}
+                    >
                       Switch
                     </Button>
                   )}
-                  <Button onClick={() => openEditDialog(item)}>
+                  <Button
+                    onClick={() => openEditDialog(item)}
+                    data-testid={`edit-profile-${item.name}`}
+                  >
                     Edit
                   </Button>
                   {item.id !== currentProfileId && (
-                    <Button onClick={() => openDeleteDialog(item)}>
+                    <Button
+                      onClick={() => openDeleteDialog(item)}
+                      data-testid={`delete-profile-${item.name}`}
+                    >
                       Delete
                     </Button>
                   )}
