@@ -1,0 +1,624 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - main [ref=e5]:
+    - navigation [ref=e6]:
+      - generic [ref=e7]:
+        - button [ref=e9] [cursor=pointer]:
+          - generic [ref=e10]:
+            - img
+        - generic [ref=e11]:
+          - heading "Prism" [level=2] [ref=e12]:
+            - link "Prism" [ref=e13] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e14]: Prism
+          - generic [ref=e15]:
+            - list [ref=e16]:
+              - listitem [ref=e17]:
+                - link "Dashboard" [ref=e18] [cursor=pointer]:
+                  - /url: /dashboard
+            - separator [ref=e21]
+            - list [ref=e22]:
+              - listitem [ref=e23]:
+                - link "Templates" [ref=e24] [cursor=pointer]:
+                  - /url: /templates
+                - generic [ref=e26]: "29"
+              - listitem [ref=e27]:
+                - link "My Workspaces" [ref=e28] [cursor=pointer]:
+                  - /url: /instances
+                - generic [ref=e30]: "1"
+            - separator [ref=e33]
+            - list [ref=e34]:
+              - listitem [ref=e35]:
+                - link "Storage" [ref=e36] [cursor=pointer]:
+                  - /url: /storage
+              - listitem [ref=e37]:
+                - link "Backups" [ref=e38] [cursor=pointer]:
+                  - /url: /backups
+              - listitem [ref=e39]:
+                - link "Projects" [ref=e40] [cursor=pointer]:
+                  - /url: /projects
+              - listitem [ref=e41]:
+                - link "Invitations" [ref=e42] [cursor=pointer]:
+                  - /url: /invitations
+            - separator [ref=e45]
+            - list [ref=e46]:
+              - listitem [ref=e47]:
+                - link "Settings" [ref=e48] [cursor=pointer]:
+                  - /url: /settings
+                - generic [ref=e50]: Advanced
+    - region:
+      - generic:
+        - generic:
+          - list
+    - main [ref=e52]:
+      - generic [ref=e53]:
+        - generic [ref=e55]:
+          - heading "Settings" [level=2] [ref=e56]:
+            - link "Settings" [ref=e57] [cursor=pointer]:
+              - /url: "#general"
+              - generic [ref=e58]: Settings
+          - generic [ref=e59]:
+            - list [ref=e60]:
+              - listitem [ref=e61]:
+                - link "General" [ref=e62] [cursor=pointer]:
+                  - /url: "#general"
+              - listitem [ref=e63]:
+                - link "Profiles" [ref=e64] [cursor=pointer]:
+                  - /url: "#profiles"
+              - listitem [ref=e65]:
+                - link "Users" [ref=e66] [cursor=pointer]:
+                  - /url: "#users"
+            - separator [ref=e69]
+            - list [ref=e70]:
+              - listitem [ref=e71]:
+                - generic [ref=e73] [cursor=pointer]:
+                  - button "Advanced" [ref=e74]:
+                    - generic [ref=e75]:
+                      - img
+                  - link "Advanced" [ref=e76]:
+                    - /url: "#advanced"
+        - generic [ref=e78]:
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - heading "Profile Management (36 profiles)" [level=1] [ref=e83]:
+                - text: Profile Management
+                - generic [ref=e84]: (36 profiles)
+              - generic [ref=e86]:
+                - button "Refresh" [ref=e88] [cursor=pointer]
+                - button "Create Profile" [ref=e90] [cursor=pointer]
+            - paragraph [ref=e91]: Manage AWS profiles for different accounts and regions
+          - region [ref=e97]:
+            - table [ref=e98]:
+              - rowgroup [ref=e99]:
+                - row "Profile Name AWS Profile Region Type Actions" [ref=e100]:
+                  - columnheader "Profile Name" [ref=e101]:
+                    - button "Profile Name" [ref=e102] [cursor=pointer]:
+                      - generic [ref=e103]: Profile Name
+                      - generic [ref=e105]:
+                        - img
+                  - columnheader "AWS Profile" [ref=e106]:
+                    - button "AWS Profile" [ref=e107] [cursor=pointer]:
+                      - generic [ref=e108]: AWS Profile
+                      - generic [ref=e110]:
+                        - img
+                  - columnheader "Region" [ref=e111]:
+                    - button "Region" [ref=e112] [cursor=pointer]:
+                      - generic [ref=e113]: Region
+                      - generic [ref=e115]:
+                        - img
+                  - columnheader "Type" [ref=e116]:
+                    - button "Type" [ref=e117] [cursor=pointer]:
+                      - generic [ref=e118]: Type
+                      - generic [ref=e120]:
+                        - img
+                  - columnheader "Actions" [ref=e121]:
+                    - generic [ref=e123]: Actions
+              - rowgroup [ref=e124]:
+                - row "Current AWS Default default-imported-1763250272 - personal Edit" [ref=e125]:
+                  - cell "Current AWS Default" [ref=e126]:
+                    - generic [ref=e128]:
+                      - generic [ref=e129]: Current
+                      - text: AWS Default
+                  - cell "default-imported-1763250272" [ref=e130]:
+                    - generic [ref=e131]: default-imported-1763250272
+                  - cell "-" [ref=e132]:
+                    - generic [ref=e133]: "-"
+                  - cell "personal" [ref=e134]:
+                    - generic [ref=e135]: personal
+                  - cell "Edit" [ref=e136]:
+                    - button "Edit" [ref=e140] [cursor=pointer]
+                - row "active-delete-test default us-west-2 personal Switch Edit Delete" [ref=e141]:
+                  - cell "active-delete-test" [ref=e142]:
+                    - generic [ref=e144]: active-delete-test
+                  - cell "default" [ref=e145]:
+                    - generic [ref=e146]: default
+                  - cell "us-west-2" [ref=e147]:
+                    - generic [ref=e148]: us-west-2
+                  - cell "personal" [ref=e149]:
+                    - generic [ref=e150]: personal
+                  - cell "Switch Edit Delete" [ref=e151]:
+                    - generic [ref=e153]:
+                      - button "Switch" [ref=e155] [cursor=pointer]
+                      - button "Edit" [ref=e157] [cursor=pointer]
+                      - button "Delete" [ref=e159] [cursor=pointer]
+                - row "default-test-profile aws us-west-2 personal Switch Edit Delete" [ref=e160]:
+                  - cell "default-test-profile" [ref=e161]:
+                    - generic [ref=e163]: default-test-profile
+                  - cell "aws" [ref=e164]:
+                    - generic [ref=e165]: aws
+                  - cell "us-west-2" [ref=e166]:
+                    - generic [ref=e167]: us-west-2
+                  - cell "personal" [ref=e168]:
+                    - generic [ref=e169]: personal
+                  - cell "Switch Edit Delete" [ref=e170]:
+                    - generic [ref=e172]:
+                      - button "Switch" [ref=e174] [cursor=pointer]
+                      - button "Edit" [ref=e176] [cursor=pointer]
+                      - button "Delete" [ref=e178] [cursor=pointer]
+                - row "preserve-test test-profile ap-northeast-1 personal Switch Edit Delete" [ref=e179]:
+                  - cell "preserve-test" [ref=e180]:
+                    - generic [ref=e182]: preserve-test
+                  - cell "test-profile" [ref=e183]:
+                    - generic [ref=e184]: test-profile
+                  - cell "ap-northeast-1" [ref=e185]:
+                    - generic [ref=e186]: ap-northeast-1
+                  - cell "personal" [ref=e187]:
+                    - generic [ref=e188]: personal
+                  - cell "Switch Edit Delete" [ref=e189]:
+                    - generic [ref=e191]:
+                      - button "Switch" [ref=e193] [cursor=pointer]
+                      - button "Edit" [ref=e195] [cursor=pointer]
+                      - button "Delete" [ref=e197] [cursor=pointer]
+                - row "update-test default us-west-2 personal Switch Edit Delete" [ref=e198]:
+                  - cell "update-test" [ref=e199]:
+                    - generic [ref=e201]: update-test
+                  - cell "default" [ref=e202]:
+                    - generic [ref=e203]: default
+                  - cell "us-west-2" [ref=e204]:
+                    - generic [ref=e205]: us-west-2
+                  - cell "personal" [ref=e206]:
+                    - generic [ref=e207]: personal
+                  - cell "Switch Edit Delete" [ref=e208]:
+                    - generic [ref=e210]:
+                      - button "Switch" [ref=e212] [cursor=pointer]
+                      - button "Edit" [ref=e214] [cursor=pointer]
+                      - button "Delete" [ref=e216] [cursor=pointer]
+                - row "duplicate-test-1763869579035 default us-west-2 personal Switch Edit Delete" [ref=e217]:
+                  - cell "duplicate-test-1763869579035" [ref=e218]:
+                    - generic [ref=e220]: duplicate-test-1763869579035
+                  - cell "default" [ref=e221]:
+                    - generic [ref=e222]: default
+                  - cell "us-west-2" [ref=e223]:
+                    - generic [ref=e224]: us-west-2
+                  - cell "personal" [ref=e225]:
+                    - generic [ref=e226]: personal
+                  - cell "Switch Edit Delete" [ref=e227]:
+                    - generic [ref=e229]:
+                      - button "Switch" [ref=e231] [cursor=pointer]
+                      - button "Edit" [ref=e233] [cursor=pointer]
+                      - button "Delete" [ref=e235] [cursor=pointer]
+                - row "export-test default us-west-2 personal Switch Edit Delete" [ref=e236]:
+                  - cell "export-test" [ref=e237]:
+                    - generic [ref=e239]: export-test
+                  - cell "default" [ref=e240]:
+                    - generic [ref=e241]: default
+                  - cell "us-west-2" [ref=e242]:
+                    - generic [ref=e243]: us-west-2
+                  - cell "personal" [ref=e244]:
+                    - generic [ref=e245]: personal
+                  - cell "Switch Edit Delete" [ref=e246]:
+                    - generic [ref=e248]:
+                      - button "Switch" [ref=e250] [cursor=pointer]
+                      - button "Edit" [ref=e252] [cursor=pointer]
+                      - button "Delete" [ref=e254] [cursor=pointer]
+                - row "switch-test-1 default us-west-2 personal Switch Edit Delete" [ref=e255]:
+                  - cell "switch-test-1" [ref=e256]:
+                    - generic [ref=e258]: switch-test-1
+                  - cell "default" [ref=e259]:
+                    - generic [ref=e260]: default
+                  - cell "us-west-2" [ref=e261]:
+                    - generic [ref=e262]: us-west-2
+                  - cell "personal" [ref=e263]:
+                    - generic [ref=e264]: personal
+                  - cell "Switch Edit Delete" [ref=e265]:
+                    - generic [ref=e267]:
+                      - button "Switch" [ref=e269] [cursor=pointer]
+                      - button "Edit" [ref=e271] [cursor=pointer]
+                      - button "Delete" [ref=e273] [cursor=pointer]
+                - row "validation-test-1763871465663 default us-west-2 personal Switch Edit Delete" [ref=e274]:
+                  - cell "validation-test-1763871465663" [ref=e275]:
+                    - generic [ref=e277]: validation-test-1763871465663
+                  - cell "default" [ref=e278]:
+                    - generic [ref=e279]: default
+                  - cell "us-west-2" [ref=e280]:
+                    - generic [ref=e281]: us-west-2
+                  - cell "personal" [ref=e282]:
+                    - generic [ref=e283]: personal
+                  - cell "Switch Edit Delete" [ref=e284]:
+                    - generic [ref=e286]:
+                      - button "Switch" [ref=e288] [cursor=pointer]
+                      - button "Edit" [ref=e290] [cursor=pointer]
+                      - button "Delete" [ref=e292] [cursor=pointer]
+                - row "duplicate-test-1763869790938 default us-west-2 personal Switch Edit Delete" [ref=e293]:
+                  - cell "duplicate-test-1763869790938" [ref=e294]:
+                    - generic [ref=e296]: duplicate-test-1763869790938
+                  - cell "default" [ref=e297]:
+                    - generic [ref=e298]: default
+                  - cell "us-west-2" [ref=e299]:
+                    - generic [ref=e300]: us-west-2
+                  - cell "personal" [ref=e301]:
+                    - generic [ref=e302]: personal
+                  - cell "Switch Edit Delete" [ref=e303]:
+                    - generic [ref=e305]:
+                      - button "Switch" [ref=e307] [cursor=pointer]
+                      - button "Edit" [ref=e309] [cursor=pointer]
+                      - button "Delete" [ref=e311] [cursor=pointer]
+                - row "invalid-profile-1763250290 nonexistent-aws-profile us-west-2 personal Switch Edit Delete" [ref=e312]:
+                  - cell "invalid-profile-1763250290" [ref=e313]:
+                    - generic [ref=e315]: invalid-profile-1763250290
+                  - cell "nonexistent-aws-profile" [ref=e316]:
+                    - generic [ref=e317]: nonexistent-aws-profile
+                  - cell "us-west-2" [ref=e318]:
+                    - generic [ref=e319]: us-west-2
+                  - cell "personal" [ref=e320]:
+                    - generic [ref=e321]: personal
+                  - cell "Switch Edit Delete" [ref=e322]:
+                    - generic [ref=e324]:
+                      - button "Switch" [ref=e326] [cursor=pointer]
+                      - button "Edit" [ref=e328] [cursor=pointer]
+                      - button "Delete" [ref=e330] [cursor=pointer]
+                - row "list-test-2 default us-east-1 personal Switch Edit Delete" [ref=e331]:
+                  - cell "list-test-2" [ref=e332]:
+                    - generic [ref=e334]: list-test-2
+                  - cell "default" [ref=e335]:
+                    - generic [ref=e336]: default
+                  - cell "us-east-1" [ref=e337]:
+                    - generic [ref=e338]: us-east-1
+                  - cell "personal" [ref=e339]:
+                    - generic [ref=e340]: personal
+                  - cell "Switch Edit Delete" [ref=e341]:
+                    - generic [ref=e343]:
+                      - button "Switch" [ref=e345] [cursor=pointer]
+                      - button "Edit" [ref=e347] [cursor=pointer]
+                      - button "Delete" [ref=e349] [cursor=pointer]
+                - row "preserve-test-1763871438070 test-profile ap-northeast-1 personal Switch Edit Delete" [ref=e350]:
+                  - cell "preserve-test-1763871438070" [ref=e351]:
+                    - generic [ref=e353]: preserve-test-1763871438070
+                  - cell "test-profile" [ref=e354]:
+                    - generic [ref=e355]: test-profile
+                  - cell "ap-northeast-1" [ref=e356]:
+                    - generic [ref=e357]: ap-northeast-1
+                  - cell "personal" [ref=e358]:
+                    - generic [ref=e359]: personal
+                  - cell "Switch Edit Delete" [ref=e360]:
+                    - generic [ref=e362]:
+                      - button "Switch" [ref=e364] [cursor=pointer]
+                      - button "Edit" [ref=e366] [cursor=pointer]
+                      - button "Delete" [ref=e368] [cursor=pointer]
+                - row "renamed-profile-1763249319 aws us-east-1 personal Switch Edit Delete" [ref=e369]:
+                  - cell "renamed-profile-1763249319" [ref=e370]:
+                    - generic [ref=e372]: renamed-profile-1763249319
+                  - cell "aws" [ref=e373]:
+                    - generic [ref=e374]: aws
+                  - cell "us-east-1" [ref=e375]:
+                    - generic [ref=e376]: us-east-1
+                  - cell "personal" [ref=e377]:
+                    - generic [ref=e378]: personal
+                  - cell "Switch Edit Delete" [ref=e379]:
+                    - generic [ref=e381]:
+                      - button "Switch" [ref=e383] [cursor=pointer]
+                      - button "Edit" [ref=e385] [cursor=pointer]
+                      - button "Delete" [ref=e387] [cursor=pointer]
+                - row "test-profile-1763864518404 default us-west-2 personal Switch Edit Delete" [ref=e388]:
+                  - cell "test-profile-1763864518404" [ref=e389]:
+                    - generic [ref=e391]: test-profile-1763864518404
+                  - cell "default" [ref=e392]:
+                    - generic [ref=e393]: default
+                  - cell "us-west-2" [ref=e394]:
+                    - generic [ref=e395]: us-west-2
+                  - cell "personal" [ref=e396]:
+                    - generic [ref=e397]: personal
+                  - cell "Switch Edit Delete" [ref=e398]:
+                    - generic [ref=e400]:
+                      - button "Switch" [ref=e402] [cursor=pointer]
+                      - button "Edit" [ref=e404] [cursor=pointer]
+                      - button "Delete" [ref=e406] [cursor=pointer]
+                - row "duplicate-test-1763868398102 default us-west-2 personal Switch Edit Delete" [ref=e407]:
+                  - cell "duplicate-test-1763868398102" [ref=e408]:
+                    - generic [ref=e410]: duplicate-test-1763868398102
+                  - cell "default" [ref=e411]:
+                    - generic [ref=e412]: default
+                  - cell "us-west-2" [ref=e413]:
+                    - generic [ref=e414]: us-west-2
+                  - cell "personal" [ref=e415]:
+                    - generic [ref=e416]: personal
+                  - cell "Switch Edit Delete" [ref=e417]:
+                    - generic [ref=e419]:
+                      - button "Switch" [ref=e421] [cursor=pointer]
+                      - button "Edit" [ref=e423] [cursor=pointer]
+                      - button "Delete" [ref=e425] [cursor=pointer]
+                - row "duplicate-test-1763871420840 default us-west-2 personal Switch Edit Delete" [ref=e426]:
+                  - cell "duplicate-test-1763871420840" [ref=e427]:
+                    - generic [ref=e429]: duplicate-test-1763871420840
+                  - cell "default" [ref=e430]:
+                    - generic [ref=e431]: default
+                  - cell "us-west-2" [ref=e432]:
+                    - generic [ref=e433]: us-west-2
+                  - cell "personal" [ref=e434]:
+                    - generic [ref=e435]: personal
+                  - cell "Switch Edit Delete" [ref=e436]:
+                    - generic [ref=e438]:
+                      - button "Switch" [ref=e440] [cursor=pointer]
+                      - button "Edit" [ref=e442] [cursor=pointer]
+                      - button "Delete" [ref=e444] [cursor=pointer]
+                - row "export-test-1763871472983 default us-west-2 personal Switch Edit Delete" [ref=e445]:
+                  - cell "export-test-1763871472983" [ref=e446]:
+                    - generic [ref=e448]: export-test-1763871472983
+                  - cell "default" [ref=e449]:
+                    - generic [ref=e450]: default
+                  - cell "us-west-2" [ref=e451]:
+                    - generic [ref=e452]: us-west-2
+                  - cell "personal" [ref=e453]:
+                    - generic [ref=e454]: personal
+                  - cell "Switch Edit Delete" [ref=e455]:
+                    - generic [ref=e457]:
+                      - button "Switch" [ref=e459] [cursor=pointer]
+                      - button "Edit" [ref=e461] [cursor=pointer]
+                      - button "Delete" [ref=e463] [cursor=pointer]
+                - row "invalid-profile-1763249563 nonexistent-aws-profile us-west-2 personal Switch Edit Delete" [ref=e464]:
+                  - cell "invalid-profile-1763249563" [ref=e465]:
+                    - generic [ref=e467]: invalid-profile-1763249563
+                  - cell "nonexistent-aws-profile" [ref=e468]:
+                    - generic [ref=e469]: nonexistent-aws-profile
+                  - cell "us-west-2" [ref=e470]:
+                    - generic [ref=e471]: us-west-2
+                  - cell "personal" [ref=e472]:
+                    - generic [ref=e473]: personal
+                  - cell "Switch Edit Delete" [ref=e474]:
+                    - generic [ref=e476]:
+                      - button "Switch" [ref=e478] [cursor=pointer]
+                      - button "Edit" [ref=e480] [cursor=pointer]
+                      - button "Delete" [ref=e482] [cursor=pointer]
+                - row "switch-test-2 default us-east-1 personal Switch Edit Delete" [ref=e483]:
+                  - cell "switch-test-2" [ref=e484]:
+                    - generic [ref=e486]: switch-test-2
+                  - cell "default" [ref=e487]:
+                    - generic [ref=e488]: default
+                  - cell "us-east-1" [ref=e489]:
+                    - generic [ref=e490]: us-east-1
+                  - cell "personal" [ref=e491]:
+                    - generic [ref=e492]: personal
+                  - cell "Switch Edit Delete" [ref=e493]:
+                    - generic [ref=e495]:
+                      - button "Switch" [ref=e497] [cursor=pointer]
+                      - button "Edit" [ref=e499] [cursor=pointer]
+                      - button "Delete" [ref=e501] [cursor=pointer]
+                - row "update-test-1763871447418 default us-west-2 personal Switch Edit Delete" [ref=e502]:
+                  - cell "update-test-1763871447418" [ref=e503]:
+                    - generic [ref=e505]: update-test-1763871447418
+                  - cell "default" [ref=e506]:
+                    - generic [ref=e507]: default
+                  - cell "us-west-2" [ref=e508]:
+                    - generic [ref=e509]: us-west-2
+                  - cell "personal" [ref=e510]:
+                    - generic [ref=e511]: personal
+                  - cell "Switch Edit Delete" [ref=e512]:
+                    - generic [ref=e514]:
+                      - button "Switch" [ref=e516] [cursor=pointer]
+                      - button "Edit" [ref=e518] [cursor=pointer]
+                      - button "Delete" [ref=e520] [cursor=pointer]
+                - row "renamed-profile-1763249169 aws us-east-1 personal Switch Edit Delete" [ref=e521]:
+                  - cell "renamed-profile-1763249169" [ref=e522]:
+                    - generic [ref=e524]: renamed-profile-1763249169
+                  - cell "aws" [ref=e525]:
+                    - generic [ref=e526]: aws
+                  - cell "us-east-1" [ref=e527]:
+                    - generic [ref=e528]: us-east-1
+                  - cell "personal" [ref=e529]:
+                    - generic [ref=e530]: personal
+                  - cell "Switch Edit Delete" [ref=e531]:
+                    - generic [ref=e533]:
+                      - button "Switch" [ref=e535] [cursor=pointer]
+                      - button "Edit" [ref=e537] [cursor=pointer]
+                      - button "Delete" [ref=e539] [cursor=pointer]
+                - row "switch-test-2-1763871426504 default us-east-1 personal Switch Edit Delete" [ref=e540]:
+                  - cell "switch-test-2-1763871426504" [ref=e541]:
+                    - generic [ref=e543]: switch-test-2-1763871426504
+                  - cell "default" [ref=e544]:
+                    - generic [ref=e545]: default
+                  - cell "us-east-1" [ref=e546]:
+                    - generic [ref=e547]: us-east-1
+                  - cell "personal" [ref=e548]:
+                    - generic [ref=e549]: personal
+                  - cell "Switch Edit Delete" [ref=e550]:
+                    - generic [ref=e552]:
+                      - button "Switch" [ref=e554] [cursor=pointer]
+                      - button "Edit" [ref=e556] [cursor=pointer]
+                      - button "Delete" [ref=e558] [cursor=pointer]
+                - row "concurrent-profile-0 test us-west-2 personal Switch Edit Delete" [ref=e559]:
+                  - cell "concurrent-profile-0" [ref=e560]:
+                    - generic [ref=e562]: concurrent-profile-0
+                  - cell "test" [ref=e563]:
+                    - generic [ref=e564]: test
+                  - cell "us-west-2" [ref=e565]:
+                    - generic [ref=e566]: us-west-2
+                  - cell "personal" [ref=e567]:
+                    - generic [ref=e568]: personal
+                  - cell "Switch Edit Delete" [ref=e569]:
+                    - generic [ref=e571]:
+                      - button "Switch" [ref=e573] [cursor=pointer]
+                      - button "Edit" [ref=e575] [cursor=pointer]
+                      - button "Delete" [ref=e577] [cursor=pointer]
+                - row "concurrent-profile-1 test us-west-2 personal Switch Edit Delete" [ref=e578]:
+                  - cell "concurrent-profile-1" [ref=e579]:
+                    - generic [ref=e581]: concurrent-profile-1
+                  - cell "test" [ref=e582]:
+                    - generic [ref=e583]: test
+                  - cell "us-west-2" [ref=e584]:
+                    - generic [ref=e585]: us-west-2
+                  - cell "personal" [ref=e586]:
+                    - generic [ref=e587]: personal
+                  - cell "Switch Edit Delete" [ref=e588]:
+                    - generic [ref=e590]:
+                      - button "Switch" [ref=e592] [cursor=pointer]
+                      - button "Edit" [ref=e594] [cursor=pointer]
+                      - button "Delete" [ref=e596] [cursor=pointer]
+                - row "concurrent-profile-4 test us-west-2 personal Switch Edit Delete" [ref=e597]:
+                  - cell "concurrent-profile-4" [ref=e598]:
+                    - generic [ref=e600]: concurrent-profile-4
+                  - cell "test" [ref=e601]:
+                    - generic [ref=e602]: test
+                  - cell "us-west-2" [ref=e603]:
+                    - generic [ref=e604]: us-west-2
+                  - cell "personal" [ref=e605]:
+                    - generic [ref=e606]: personal
+                  - cell "Switch Edit Delete" [ref=e607]:
+                    - generic [ref=e609]:
+                      - button "Switch" [ref=e611] [cursor=pointer]
+                      - button "Edit" [ref=e613] [cursor=pointer]
+                      - button "Delete" [ref=e615] [cursor=pointer]
+                - row "renamed-profile-1763249319 aws us-east-1 personal Switch Edit Delete" [ref=e616]:
+                  - cell "renamed-profile-1763249319" [ref=e617]:
+                    - generic [ref=e619]: renamed-profile-1763249319
+                  - cell "aws" [ref=e620]:
+                    - generic [ref=e621]: aws
+                  - cell "us-east-1" [ref=e622]:
+                    - generic [ref=e623]: us-east-1
+                  - cell "personal" [ref=e624]:
+                    - generic [ref=e625]: personal
+                  - cell "Switch Edit Delete" [ref=e626]:
+                    - generic [ref=e628]:
+                      - button "Switch" [ref=e630] [cursor=pointer]
+                      - button "Edit" [ref=e632] [cursor=pointer]
+                      - button "Delete" [ref=e634] [cursor=pointer]
+                - row "test-region-validation default invalid-region personal Switch Edit Delete" [ref=e635]:
+                  - cell "test-region-validation" [ref=e636]:
+                    - generic [ref=e638]: test-region-validation
+                  - cell "default" [ref=e639]:
+                    - generic [ref=e640]: default
+                  - cell "invalid-region" [ref=e641]:
+                    - generic [ref=e642]: invalid-region
+                  - cell "personal" [ref=e643]:
+                    - generic [ref=e644]: personal
+                  - cell "Switch Edit Delete" [ref=e645]:
+                    - generic [ref=e647]:
+                      - button "Switch" [ref=e649] [cursor=pointer]
+                      - button "Edit" [ref=e651] [cursor=pointer]
+                      - button "Delete" [ref=e653] [cursor=pointer]
+                - row "validation-test default us-west-2 personal Switch Edit Delete" [ref=e654]:
+                  - cell "validation-test" [ref=e655]:
+                    - generic [ref=e657]: validation-test
+                  - cell "default" [ref=e658]:
+                    - generic [ref=e659]: default
+                  - cell "us-west-2" [ref=e660]:
+                    - generic [ref=e661]: us-west-2
+                  - cell "personal" [ref=e662]:
+                    - generic [ref=e663]: personal
+                  - cell "Switch Edit Delete" [ref=e664]:
+                    - generic [ref=e666]:
+                      - button "Switch" [ref=e668] [cursor=pointer]
+                      - button "Edit" [ref=e670] [cursor=pointer]
+                      - button "Delete" [ref=e672] [cursor=pointer]
+                - row "concurrent-profile-2 test us-west-2 personal Switch Edit Delete" [ref=e673]:
+                  - cell "concurrent-profile-2" [ref=e674]:
+                    - generic [ref=e676]: concurrent-profile-2
+                  - cell "test" [ref=e677]:
+                    - generic [ref=e678]: test
+                  - cell "us-west-2" [ref=e679]:
+                    - generic [ref=e680]: us-west-2
+                  - cell "personal" [ref=e681]:
+                    - generic [ref=e682]: personal
+                  - cell "Switch Edit Delete" [ref=e683]:
+                    - generic [ref=e685]:
+                      - button "Switch" [ref=e687] [cursor=pointer]
+                      - button "Edit" [ref=e689] [cursor=pointer]
+                      - button "Delete" [ref=e691] [cursor=pointer]
+                - row "concurrent-profile-3 test us-west-2 personal Switch Edit Delete" [ref=e692]:
+                  - cell "concurrent-profile-3" [ref=e693]:
+                    - generic [ref=e695]: concurrent-profile-3
+                  - cell "test" [ref=e696]:
+                    - generic [ref=e697]: test
+                  - cell "us-west-2" [ref=e698]:
+                    - generic [ref=e699]: us-west-2
+                  - cell "personal" [ref=e700]:
+                    - generic [ref=e701]: personal
+                  - cell "Switch Edit Delete" [ref=e702]:
+                    - generic [ref=e704]:
+                      - button "Switch" [ref=e706] [cursor=pointer]
+                      - button "Edit" [ref=e708] [cursor=pointer]
+                      - button "Delete" [ref=e710] [cursor=pointer]
+                - row "test-profile default us-west-2 personal Switch Edit Delete" [ref=e711]:
+                  - cell "test-profile" [ref=e712]:
+                    - generic [ref=e714]: test-profile
+                  - cell "default" [ref=e715]:
+                    - generic [ref=e716]: default
+                  - cell "us-west-2" [ref=e717]:
+                    - generic [ref=e718]: us-west-2
+                  - cell "personal" [ref=e719]:
+                    - generic [ref=e720]: personal
+                  - cell "Switch Edit Delete" [ref=e721]:
+                    - generic [ref=e723]:
+                      - button "Switch" [ref=e725] [cursor=pointer]
+                      - button "Edit" [ref=e727] [cursor=pointer]
+                      - button "Delete" [ref=e729] [cursor=pointer]
+                - row "AWS Default default - personal Switch Edit Delete" [ref=e730]:
+                  - cell "AWS Default" [ref=e731]:
+                    - generic [ref=e733]: AWS Default
+                  - cell "default" [ref=e734]:
+                    - generic [ref=e735]: default
+                  - cell "-" [ref=e736]:
+                    - generic [ref=e737]: "-"
+                  - cell "personal" [ref=e738]:
+                    - generic [ref=e739]: personal
+                  - cell "Switch Edit Delete" [ref=e740]:
+                    - generic [ref=e742]:
+                      - button "Switch" [ref=e744] [cursor=pointer]
+                      - button "Edit" [ref=e746] [cursor=pointer]
+                      - button "Delete" [ref=e748] [cursor=pointer]
+                - row "switch-test-1-1763871426504 default us-west-2 personal Switch Edit Delete" [ref=e749]:
+                  - cell "switch-test-1-1763871426504" [ref=e750]:
+                    - generic [ref=e752]: switch-test-1-1763871426504
+                  - cell "default" [ref=e753]:
+                    - generic [ref=e754]: default
+                  - cell "us-west-2" [ref=e755]:
+                    - generic [ref=e756]: us-west-2
+                  - cell "personal" [ref=e757]:
+                    - generic [ref=e758]: personal
+                  - cell "Switch Edit Delete" [ref=e759]:
+                    - generic [ref=e761]:
+                      - button "Switch" [ref=e763] [cursor=pointer]
+                      - button "Edit" [ref=e765] [cursor=pointer]
+                      - button "Delete" [ref=e767] [cursor=pointer]
+                - row "test-profile-1763248437 aws us-west-2 personal Switch Edit Delete" [ref=e768]:
+                  - cell "test-profile-1763248437" [ref=e769]:
+                    - generic [ref=e771]: test-profile-1763248437
+                  - cell "aws" [ref=e772]:
+                    - generic [ref=e773]: aws
+                  - cell "us-west-2" [ref=e774]:
+                    - generic [ref=e775]: us-west-2
+                  - cell "personal" [ref=e776]:
+                    - generic [ref=e777]: personal
+                  - cell "Switch Edit Delete" [ref=e778]:
+                    - generic [ref=e780]:
+                      - button "Switch" [ref=e782] [cursor=pointer]
+                      - button "Edit" [ref=e784] [cursor=pointer]
+                      - button "Delete" [ref=e786] [cursor=pointer]
+                - row "renamed-profile-1763249169 aws us-east-1 personal Switch Edit Delete" [ref=e787]:
+                  - cell "renamed-profile-1763249169" [ref=e788]:
+                    - generic [ref=e790]: renamed-profile-1763249169
+                  - cell "aws" [ref=e791]:
+                    - generic [ref=e792]: aws
+                  - cell "us-east-1" [ref=e793]:
+                    - generic [ref=e794]: us-east-1
+                  - cell "personal" [ref=e795]:
+                    - generic [ref=e796]: personal
+                  - cell "Switch Edit Delete" [ref=e797]:
+                    - generic [ref=e799]:
+                      - button "Switch" [ref=e801] [cursor=pointer]
+                      - button "Edit" [ref=e803] [cursor=pointer]
+                      - button "Delete" [ref=e805] [cursor=pointer]
+```

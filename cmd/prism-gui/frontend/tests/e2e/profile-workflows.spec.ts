@@ -71,8 +71,9 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.page.getByTestId('region-input').locator('input').fill('us-east-1');
       await settingsPage.clickButton('create');
 
-      // Should show validation error
-      const validationError = await settingsPage.page.locator('[data-testid="validation-error"]').textContent();
+      // Should show validation error (scope to the dialog)
+      const dialog = settingsPage.page.locator('[role="dialog"]');
+      const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/name.*required/i);
     });
 
@@ -120,83 +121,92 @@ test.describe('Profile Management Workflows', () => {
 
   test.describe('Switch Profile Workflow', () => {
     test('should switch between profiles successfully', async () => {
+      const name1 = `switch-test-1-${Date.now()}`;
+      const name2 = `switch-test-2-${Date.now()}`;
+
       // Create test profiles
-      await settingsPage.createProfile('switch-test-1', 'default', 'us-west-2');
+      await settingsPage.createProfile(name1, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(1000);
-      await settingsPage.createProfile('switch-test-2', 'default', 'us-east-1');
+      await settingsPage.createProfile(name2, 'default', 'us-east-1');
       await settingsPage.page.waitForTimeout(1000);
 
       // Switch to first profile
-      await settingsPage.switchProfile('switch-test-1');
+      await settingsPage.switchProfile(name1);
       await settingsPage.page.waitForTimeout(1000);
 
       // Verify current profile is updated
       const currentProfile = await settingsPage.getCurrentProfile();
-      expect(currentProfile).toContain('switch-test-1');
+      expect(currentProfile).toContain(name1);
 
       // Switch to second profile
-      await settingsPage.switchProfile('switch-test-2');
+      await settingsPage.switchProfile(name2);
       await settingsPage.page.waitForTimeout(1000);
 
       // Verify current profile changed
       const newCurrentProfile = await settingsPage.getCurrentProfile();
-      expect(newCurrentProfile).toContain('switch-test-2');
+      expect(newCurrentProfile).toContain(name2);
 
       // Cleanup
-      await settingsPage.deleteProfile('switch-test-1');
+      await settingsPage.deleteProfile(name1);
       await settingsPage.clickButton('delete');
       await settingsPage.page.waitForTimeout(500);
-      await settingsPage.deleteProfile('switch-test-2');
+      await settingsPage.deleteProfile(name2);
       await settingsPage.clickButton('delete');
     });
 
     test('should preserve profile settings after switch', async () => {
+      const uniqueName = `preserve-test-${Date.now()}`;
+
       // Create profile with specific settings
-      await settingsPage.createProfile('preserve-test', 'test-profile', 'ap-northeast-1');
+      await settingsPage.createProfile(uniqueName, 'test-profile', 'ap-northeast-1');
       await settingsPage.page.waitForTimeout(1000);
 
       // Switch to it
-      await settingsPage.switchProfile('preserve-test');
+      await settingsPage.switchProfile(uniqueName);
       await settingsPage.page.waitForTimeout(1000);
 
       // Verify settings are preserved
-      const profileRow = settingsPage.getProfileByName('preserve-test');
+      const profileRow = settingsPage.getProfileByName(uniqueName);
       const profileText = await profileRow.textContent();
       expect(profileText).toContain('ap-northeast-1');
 
       // Cleanup
-      await settingsPage.deleteProfile('preserve-test');
+      await settingsPage.deleteProfile(uniqueName);
       await settingsPage.clickButton('delete');
     });
   });
 
   test.describe('Update Profile Workflow', () => {
     test('should update profile region successfully', async () => {
+      const uniqueName = `update-test-${Date.now()}`;
+
       // Create profile
-      await settingsPage.createProfile('update-test', 'default', 'us-west-2');
+      await settingsPage.createProfile(uniqueName, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(1000);
 
       // Update profile
-      await settingsPage.updateProfile('update-test', 'eu-west-1');
+      await settingsPage.updateProfile(uniqueName, 'eu-west-1');
       await settingsPage.page.waitForTimeout(1000);
 
       // Verify update
-      const profileRow = settingsPage.getProfileByName('update-test');
+      const profileRow = settingsPage.getProfileByName(uniqueName);
       const profileText = await profileRow.textContent();
       expect(profileText).toContain('eu-west-1');
 
       // Cleanup
-      await settingsPage.deleteProfile('update-test');
+      await settingsPage.deleteProfile(uniqueName);
       await settingsPage.clickButton('delete');
     });
 
     test('should not allow updating to invalid region', async () => {
+      const uniqueName = `validation-test-${Date.now()}`;
+
       // Create profile
-      await settingsPage.createProfile('validation-test', 'default', 'us-west-2');
+      await settingsPage.createProfile(uniqueName, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(1000);
 
       // Try to update with invalid region
-      const profile = settingsPage.getProfileByName('validation-test');
+      const profile = settingsPage.getProfileByName(uniqueName);
       await profile.getByRole('button', { name: /edit/i }).click();
       await settingsPage.fillInput('region', 'invalid-region-name');
       await settingsPage.clickButton('save');
@@ -207,29 +217,31 @@ test.describe('Profile Management Workflows', () => {
 
       // Cleanup
       await settingsPage.clickButton('cancel');
-      await settingsPage.deleteProfile('validation-test');
+      await settingsPage.deleteProfile(uniqueName);
       await settingsPage.clickButton('delete');
     });
   });
 
   test.describe('Export Profile Workflow', () => {
     test('should export profile configuration', async () => {
+      const uniqueName = `export-test-${Date.now()}`;
+
       // Create profile to export
-      await settingsPage.createProfile('export-test', 'default', 'us-west-2');
+      await settingsPage.createProfile(uniqueName, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(1000);
 
       // Start download listener
       const downloadPromise = settingsPage.page.waitForEvent('download');
 
       // Export profile
-      await settingsPage.exportProfile('export-test');
+      await settingsPage.exportProfile(uniqueName);
 
       // Verify download started
       const download = await downloadPromise;
-      expect(download.suggestedFilename()).toMatch(/export-test.*\.json/i);
+      expect(download.suggestedFilename()).toMatch(new RegExp(`${uniqueName}.*\\.json`, 'i'));
 
       // Cleanup
-      await settingsPage.deleteProfile('export-test');
+      await settingsPage.deleteProfile(uniqueName);
       await settingsPage.clickButton('delete');
     });
   });
@@ -259,56 +271,62 @@ test.describe('Profile Management Workflows', () => {
 
   test.describe('Delete Profile Workflow', () => {
     test('should delete profile with confirmation', async () => {
+      const uniqueName = `delete-test-${Date.now()}`;
+
       // Create profile to delete
-      await settingsPage.createProfile('delete-test', 'default', 'us-west-2');
+      await settingsPage.createProfile(uniqueName, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(1000);
 
       // Verify profile exists
-      let profileExists = await settingsPage.verifyProfileExists('delete-test');
+      let profileExists = await settingsPage.verifyProfileExists(uniqueName);
       expect(profileExists).toBe(true);
 
       // Delete profile
-      await settingsPage.deleteProfile('delete-test');
+      await settingsPage.deleteProfile(uniqueName);
 
       // Confirm deletion
       await settingsPage.clickButton('delete');
       await settingsPage.page.waitForTimeout(1000);
 
       // Verify profile is removed
-      profileExists = await settingsPage.verifyProfileExists('delete-test');
+      profileExists = await settingsPage.verifyProfileExists(uniqueName);
       expect(profileExists).toBe(false);
     });
 
     test('should cancel profile deletion', async () => {
+      const uniqueName = `cancel-delete-test-${Date.now()}`;
+
       // Create profile
-      await settingsPage.createProfile('cancel-delete-test', 'default', 'us-west-2');
+      await settingsPage.createProfile(uniqueName, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(1000);
 
       // Start deletion
-      await settingsPage.deleteProfile('cancel-delete-test');
+      await settingsPage.deleteProfile(uniqueName);
 
       // Cancel deletion
       await settingsPage.clickButton('cancel');
       await settingsPage.page.waitForTimeout(500);
 
       // Verify profile still exists
-      const profileExists = await settingsPage.verifyProfileExists('cancel-delete-test');
+      const profileExists = await settingsPage.verifyProfileExists(uniqueName);
       expect(profileExists).toBe(true);
 
       // Cleanup
-      await settingsPage.deleteProfile('cancel-delete-test');
+      await settingsPage.deleteProfile(uniqueName);
       await settingsPage.clickButton('delete');
     });
 
     test('should prevent deleting currently active profile', async () => {
+      const uniqueName = `active-delete-test-${Date.now()}`;
+
       // Create and switch to profile
-      await settingsPage.createProfile('active-delete-test', 'default', 'us-west-2');
+      await settingsPage.createProfile(uniqueName, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(1000);
-      await settingsPage.switchProfile('active-delete-test');
+      await settingsPage.switchProfile(uniqueName);
       await settingsPage.page.waitForTimeout(1000);
 
       // Try to delete active profile
-      await settingsPage.deleteProfile('active-delete-test');
+      await settingsPage.deleteProfile(uniqueName);
 
       // Should show warning about active profile
       const warningText = await settingsPage.page.locator('text=/active.*profile|cannot.*delete.*active/i').textContent();
@@ -321,13 +339,16 @@ test.describe('Profile Management Workflows', () => {
 
   test.describe('Profile Listing and Display', () => {
     test('should display all profiles in list', async () => {
+      const name1 = `list-test-1-${Date.now()}`;
+      const name2 = `list-test-2-${Date.now()}`;
+
       // Get initial count
       const initialCount = await settingsPage.getProfileCount();
 
       // Create multiple profiles
-      await settingsPage.createProfile('list-test-1', 'default', 'us-west-2');
+      await settingsPage.createProfile(name1, 'default', 'us-west-2');
       await settingsPage.page.waitForTimeout(500);
-      await settingsPage.createProfile('list-test-2', 'default', 'us-east-1');
+      await settingsPage.createProfile(name2, 'default', 'us-east-1');
       await settingsPage.page.waitForTimeout(500);
 
       // Verify count increased
@@ -335,10 +356,10 @@ test.describe('Profile Management Workflows', () => {
       expect(newCount).toBe(initialCount + 2);
 
       // Cleanup
-      await settingsPage.deleteProfile('list-test-1');
+      await settingsPage.deleteProfile(name1);
       await settingsPage.clickButton('delete');
       await settingsPage.page.waitForTimeout(500);
-      await settingsPage.deleteProfile('list-test-2');
+      await settingsPage.deleteProfile(name2);
       await settingsPage.clickButton('delete');
     });
 
