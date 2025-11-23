@@ -86,8 +86,12 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('create');
 
       // Should show validation error
-      const hasError = await settingsPage.page.locator('text=/invalid.*region/i').isVisible();
-      expect(hasError).toBe(true);
+      const dialog = settingsPage.page.locator('[role="dialog"]').first();
+      const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
+      expect(validationError).toMatch(/region/i);
+
+      // Cleanup - cancel the dialog
+      await settingsPage.clickButton('cancel');
     });
 
     test('should prevent duplicate profile names', async () => {
@@ -109,8 +113,9 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('create');
 
       // Should show duplicate error
-      const hasDuplicateError = await settingsPage.page.locator('text=/already exists|duplicate/i').isVisible();
-      expect(hasDuplicateError).toBe(true);
+      const dialog = settingsPage.page.locator('[role="dialog"]').first();
+      const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
+      expect(validationError).toMatch(/already exists|duplicate/i);
 
       // Cleanup
       await settingsPage.clickButton('cancel');
@@ -208,12 +213,16 @@ test.describe('Profile Management Workflows', () => {
       // Try to update with invalid region
       const profile = settingsPage.getProfileByName(uniqueName);
       await profile.getByRole('button', { name: /edit/i }).click();
-      await settingsPage.fillInput('region', 'invalid-region-name');
+      await settingsPage.page.waitForTimeout(500);
+
+      // Fill the region input directly
+      await settingsPage.page.getByTestId('region-input').locator('input').fill('invalid-region-name');
       await settingsPage.clickButton('save');
 
       // Should show validation error
-      const hasError = await settingsPage.page.locator('text=/invalid.*region/i').isVisible();
-      expect(hasError).toBe(true);
+      const dialog = settingsPage.page.locator('[role="dialog"]').first();
+      const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
+      expect(validationError).toMatch(/region/i);
 
       // Cleanup
       await settingsPage.clickButton('cancel');
