@@ -72,6 +72,9 @@ export class SettingsPage extends BasePage {
     await this.page.getByTestId('aws-profile-input').locator('input').fill(awsProfile);
     await this.page.getByTestId('region-input').locator('input').fill(region);
     await this.clickButton('create');
+
+    // Wait for dialog to close (profile created successfully)
+    await this.waitForDialogClose();
   }
 
   /**
@@ -251,5 +254,96 @@ export class SettingsPage extends BasePage {
   async getIdlePolicyCount(): Promise<number> {
     await this.switchToIdlePolicies();
     return await this.getIdlePolicyRows().count();
+  }
+
+  /**
+   * Clean up test profiles by deleting profiles matching a pattern
+   */
+  async cleanupTestProfiles(namePattern: RegExp) {
+    await this.switchToProfiles();
+
+    // Get all profile rows
+    const rows = this.getProfileRows();
+    const count = await rows.count();
+
+    for (let i = 0; i < count; i++) {
+      const row = rows.nth(i);
+      const text = await row.textContent();
+
+      if (text && namePattern.test(text)) {
+        // Extract profile name from the row
+        const match = text.match(/^([a-zA-Z0-9\-_]+)/);
+        if (match) {
+          const profileName = match[1];
+          try {
+            // Try to delete it
+            await this.deleteProfile(profileName);
+            await this.page.waitForTimeout(200);
+
+            // Confirm deletion
+            const confirmButton = this.page.getByRole('button', { name: /delete|confirm/i });
+            if (await confirmButton.isVisible({ timeout: 1000 })) {
+              await confirmButton.click();
+              await this.page.waitForTimeout(500);
+            }
+          } catch (error) {
+            // Profile might not be deletable (could be current), skip it
+            // Try to close any dialog
+            try {
+              const cancelButton = this.page.getByRole('button', { name: /cancel/i });
+              if (await cancelButton.isVisible({ timeout: 500 })) {
+                await cancelButton.click();
+              }
+            } catch {
+              // Ignore
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Wait for any dialog to close
+   */
+  async waitForDialogClose(timeout: number = 5000) {
+    try {
+      await this.page.waitForSelector('[role="dialog"]', {
+        state: 'hidden',
+        timeout
+      });
+    } catch {
+      // Dialog might already be closed
+    }
+  }
+
+  /**
+   * Force close any open dialogs
+   */
+  async forceCloseDialogs() {
+    try {
+      // Try multiple methods to close dialogs
+      const closeSelectors = [
+        'button[aria-label="Close dialog"]',
+        'button[aria-label="Close modal"]',
+        '.awsui_dismiss-control button',
+        '[role="dialog"] button:has-text("Cancel")',
+        '[role="dialog"] button:has-text("Close")'
+      ];
+
+      for (const selector of closeSelectors) {
+        const button = this.page.locator(selector).first();
+        if (await button.isVisible({ timeout: 500 })) {
+          await button.click();
+          await this.page.waitForTimeout(500);
+          break;
+        }
+      }
+
+      // Wait for dialog to actually close
+      await this.waitForDialogClose(2000);
+    } catch {
+      // No dialogs to close or already closed
+    }
   }
 }

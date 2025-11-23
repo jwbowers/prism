@@ -21,43 +21,46 @@ test.describe('Profile Management Workflows', () => {
     await settingsPage.goto();
     await settingsPage.navigate();
 
-    // Close any open dialogs/modals from previous tests
-    try {
-      const closeButton = page.locator('button[aria-label="Close dialog"], button[aria-label="Close modal"], .awsui_dismiss-control button').first();
-      if (await closeButton.isVisible({ timeout: 1000 })) {
-        await closeButton.click();
-        await page.waitForTimeout(500);
-      }
-    } catch {
-      // No dialog open, that's fine
-    }
+    // Force close any open dialogs from previous tests
+    await settingsPage.forceCloseDialogs();
 
     await settingsPage.switchToProfiles();
+
+    // Clean up any test profiles from previous runs
+    try {
+      await settingsPage.cleanupTestProfiles(/^test-|^duplicate-|^switch-test-|^preserve-test|^update-test|^validation-test|^export-test|^delete-test|^cancel-delete-test|^active-delete-test|^list-test-/);
+    } catch (error) {
+      // Cleanup failed, but we can continue
+      console.log('Profile cleanup failed:', error);
+    }
   });
 
   test.describe('Create Profile Workflow', () => {
     test('should create a new profile with valid configuration', async () => {
+      // Use unique name to avoid conflicts with previous runs
+      const uniqueName = `test-profile-${Date.now()}`;
+
       // Step 1: Click create profile button
       await settingsPage.page.getByTestId('create-profile-button').click();
 
       // Step 2: Fill profile form (Cloudscape Input wraps input in div, need to find input inside)
-      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('test-profile');
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill(uniqueName);
       await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
       await settingsPage.page.getByTestId('region-input').locator('input').fill('us-west-2');
 
       // Step 3: Submit form
       await settingsPage.clickButton('create');
 
-      // Step 4: Wait for profile creation to complete
-      await settingsPage.page.waitForTimeout(2000);
+      // Step 4: Wait for dialog to close (profile created successfully)
+      await settingsPage.waitForDialogClose();
 
       // Step 5: Verify profile appears in list
-      const profileExists = await settingsPage.verifyProfileExists('test-profile');
+      const profileExists = await settingsPage.verifyProfileExists(uniqueName);
       expect(profileExists).toBe(true);
 
       // Cleanup: Delete test profile
-      await settingsPage.deleteProfile('test-profile');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.deleteProfile(uniqueName);
+      await settingsPage.clickButton('delete');
     });
 
     test('should validate profile name is required', async () => {
@@ -87,17 +90,19 @@ test.describe('Profile Management Workflows', () => {
     });
 
     test('should prevent duplicate profile names', async () => {
+      const uniqueName = `duplicate-test-${Date.now()}`;
+
       // Create first profile
       await settingsPage.page.getByTestId('create-profile-button').click();
-      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('duplicate-test');
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill(uniqueName);
       await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
       await settingsPage.page.getByTestId('region-input').locator('input').fill('us-west-2');
       await settingsPage.clickButton('create');
-      await settingsPage.page.waitForTimeout(2000);
+      await settingsPage.waitForDialogClose();
 
       // Try to create second profile with same name
       await settingsPage.page.getByTestId('create-profile-button').click();
-      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('duplicate-test');
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill(uniqueName);
       await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
       await settingsPage.page.getByTestId('region-input').locator('input').fill('us-east-1');
       await settingsPage.clickButton('create');
@@ -107,9 +112,9 @@ test.describe('Profile Management Workflows', () => {
       expect(hasDuplicateError).toBe(true);
 
       // Cleanup
-      await settingsPage.page.getByRole('button', { name: /cancel/i }).click();
-      await settingsPage.deleteProfile('duplicate-test');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('cancel');
+      await settingsPage.deleteProfile(uniqueName);
+      await settingsPage.clickButton('delete');
     });
   });
 
@@ -139,10 +144,10 @@ test.describe('Profile Management Workflows', () => {
 
       // Cleanup
       await settingsPage.deleteProfile('switch-test-1');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
       await settingsPage.page.waitForTimeout(500);
       await settingsPage.deleteProfile('switch-test-2');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
     });
 
     test('should preserve profile settings after switch', async () => {
@@ -161,7 +166,7 @@ test.describe('Profile Management Workflows', () => {
 
       // Cleanup
       await settingsPage.deleteProfile('preserve-test');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
     });
   });
 
@@ -182,7 +187,7 @@ test.describe('Profile Management Workflows', () => {
 
       // Cleanup
       await settingsPage.deleteProfile('update-test');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
     });
 
     test('should not allow updating to invalid region', async () => {
@@ -203,7 +208,7 @@ test.describe('Profile Management Workflows', () => {
       // Cleanup
       await settingsPage.clickButton('cancel');
       await settingsPage.deleteProfile('validation-test');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
     });
   });
 
@@ -225,7 +230,7 @@ test.describe('Profile Management Workflows', () => {
 
       // Cleanup
       await settingsPage.deleteProfile('export-test');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
     });
   });
 
@@ -266,7 +271,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.deleteProfile('delete-test');
 
       // Confirm deletion
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
       await settingsPage.page.waitForTimeout(1000);
 
       // Verify profile is removed
@@ -283,7 +288,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.deleteProfile('cancel-delete-test');
 
       // Cancel deletion
-      await settingsPage.page.getByRole('button', { name: /cancel/i }).click();
+      await settingsPage.clickButton('cancel');
       await settingsPage.page.waitForTimeout(500);
 
       // Verify profile still exists
@@ -292,7 +297,7 @@ test.describe('Profile Management Workflows', () => {
 
       // Cleanup
       await settingsPage.deleteProfile('cancel-delete-test');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
     });
 
     test('should prevent deleting currently active profile', async () => {
@@ -331,10 +336,10 @@ test.describe('Profile Management Workflows', () => {
 
       // Cleanup
       await settingsPage.deleteProfile('list-test-1');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
       await settingsPage.page.waitForTimeout(500);
       await settingsPage.deleteProfile('list-test-2');
-      await settingsPage.page.getByRole('button', { name: /delete|confirm/i }).click();
+      await settingsPage.clickButton('delete');
     });
 
     test('should show current profile indicator', async () => {

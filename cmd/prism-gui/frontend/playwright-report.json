@@ -1,10 +1,10 @@
 {
   "config": {
-    "configFile": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/playwright.config.js",
-    "rootDir": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e",
+    "configFile": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/playwright.config.js",
+    "rootDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
     "forbidOnly": false,
     "fullyParallel": true,
-    "globalSetup": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/global-setup.js",
+    "globalSetup": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/global-setup.js",
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
@@ -37,7 +37,7 @@
     "quiet": false,
     "projects": [
       {
-        "outputDir": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results",
+        "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -45,15 +45,15 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e",
+        "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 120000
+        "timeout": 30000
       },
       {
-        "outputDir": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results",
+        "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -61,15 +61,15 @@
         },
         "id": "firefox",
         "name": "firefox",
-        "testDir": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e",
+        "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 120000
+        "timeout": 30000
       },
       {
-        "outputDir": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results",
+        "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -77,12 +77,12 @@
         },
         "id": "webkit",
         "name": "webkit",
-        "testDir": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e",
+        "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 120000
+        "timeout": 30000
       }
     ],
     "shard": null,
@@ -99,493 +99,60 @@
   },
   "suites": [
     {
-      "title": "capture-screenshots.spec.js",
-      "file": "capture-screenshots.spec.js",
+      "title": "profile-workflows.spec.ts",
+      "file": "profile-workflows.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "GUI Screenshots for Persona Documentation",
-          "file": "capture-screenshots.spec.js",
-          "line": 26,
+          "title": "Profile Management Workflows",
+          "file": "profile-workflows.spec.ts",
+          "line": 10,
           "column": 6,
-          "specs": [
+          "specs": [],
+          "suites": [
             {
-              "title": "01 - Template Gallery (Home Page)",
-              "ok": false,
-              "tags": [],
-              "tests": [
+              "title": "Create Profile Workflow",
+              "file": "profile-workflows.spec.ts",
+              "line": 36,
+              "column": 8,
+              "specs": [
                 {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
+                  "title": "should create a new profile with valid configuration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 10951,
-                      "error": {
-                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n",
-                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n\n    at /Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js:33:16",
-                        "location": {
-                          "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                          "column": 16,
-                          "line": 33
-                        },
-                        "snippet": "  31 |\n  32 |     // Wait for templates to load\n> 33 |     await page.waitForSelector('[data-testid=\"template-card\"]', { timeout: 10000 });\n     |                ^\n  34 |\n  35 |     // Take full page screenshot\n  36 |     await page.screenshot({"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                            "column": 16,
-                            "line": 33
-                          },
-                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n\n\n  31 |\n  32 |     // Wait for templates to load\n> 33 |     await page.waitForSelector('[data-testid=\"template-card\"]', { timeout: 10000 });\n     |                ^\n  34 |\n  35 |     // Take full page screenshot\n  36 |     await page.screenshot({\n    at /Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js:33:16"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "📸 Screenshots will be saved to: /Users/scttfrdmn/src/cloudworkstation/docs/USER_SCENARIOS/images/01-solo-researcher\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:37:58.933Z",
+                      "timeout": 30000,
                       "annotations": [],
-                      "attachments": [
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
                         {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-60c3b-Template-Gallery-Home-Page--chromium/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-60c3b-Template-Gallery-Home-Page--chromium/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-60c3b-Template-Gallery-Home-Page--chromium/error-context.md"
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6497,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-23T02:23:42.111Z",
+                          "annotations": [],
+                          "attachments": []
                         }
                       ],
-                      "errorLocation": {
-                        "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                        "column": 16,
-                        "line": 33
-                      }
+                      "status": "expected"
                     }
                   ],
-                  "status": "unexpected"
+                  "id": "df818b8a6484e506d5dd-46ba3ec6a4dc7f1bc57d",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 37,
+                  "column": 5
                 }
-              ],
-              "id": "4561872f222a55a1d2b2-0a0993eba3384c1bcd72",
-              "file": "capture-screenshots.spec.js",
-              "line": 28,
-              "column": 3
-            },
-            {
-              "title": "02 - Quick Start Wizard (if available)",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5631,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "📸 Screenshots will be saved to: /Users/scttfrdmn/src/cloudworkstation/docs/USER_SCENARIOS/images/01-solo-researcher\n"
-                        },
-                        {
-                          "text": "⚠️  No Quick Start wizard dialog found\n"
-                        },
-                        {
-                          "text": "✅ Captured: gui-quick-start-wizard.png\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:10.484Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-b3d267e7d0957a543c24",
-              "file": "capture-screenshots.spec.js",
-              "line": 44,
-              "column": 3
-            },
-            {
-              "title": "03 - Template Card Detail View",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 10337,
-                      "error": {
-                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n",
-                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n\n    at /Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js:74:16",
-                        "location": {
-                          "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                          "column": 16,
-                          "line": 74
-                        },
-                        "snippet": "  72 |\n  73 |     // Wait for templates to load\n> 74 |     await page.waitForSelector('[data-testid=\"template-card\"]', { timeout: 10000 });\n     |                ^\n  75 |\n  76 |     // Click on first template card to show details\n  77 |     const firstTemplate = await page.locator('[data-testid=\"template-card\"]').first();"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                            "column": 16,
-                            "line": 74
-                          },
-                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n\n\n  72 |\n  73 |     // Wait for templates to load\n> 74 |     await page.waitForSelector('[data-testid=\"template-card\"]', { timeout: 10000 });\n     |                ^\n  75 |\n  76 |     // Click on first template card to show details\n  77 |     const firstTemplate = await page.locator('[data-testid=\"template-card\"]').first();\n    at /Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js:74:16"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:16.223Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-f3ebe---Template-Card-Detail-View-chromium/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-f3ebe---Template-Card-Detail-View-chromium/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-f3ebe---Template-Card-Detail-View-chromium/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                        "column": 16,
-                        "line": 74
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-89cd359d4798d537a92f",
-              "file": "capture-screenshots.spec.js",
-              "line": 70,
-              "column": 3
-            },
-            {
-              "title": "04 - Workspaces Tab (Instances List)",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1905,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "📸 Screenshots will be saved to: /Users/scttfrdmn/src/cloudworkstation/docs/USER_SCENARIOS/images/01-solo-researcher\n"
-                        },
-                        {
-                          "text": "✅ Captured: gui-workspaces-list.png\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:26.965Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-32ee57857cc7de4e0d04",
-              "file": "capture-screenshots.spec.js",
-              "line": 92,
-              "column": 3
-            },
-            {
-              "title": "05 - Projects Tab (if available)",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1570,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ Captured: gui-projects-dashboard.png\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:29.046Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-4d1469d4a2be12779c77",
-              "file": "capture-screenshots.spec.js",
-              "line": 115,
-              "column": 3
-            },
-            {
-              "title": "06 - Storage Tab",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1547,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ Captured: gui-storage-management.png\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:30.621Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-130ba475f1dfdce23c9f",
-              "file": "capture-screenshots.spec.js",
-              "line": 136,
-              "column": 3
-            },
-            {
-              "title": "07 - Settings/Profiles Tab",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1558,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ Captured: gui-settings-profiles.png\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:32.172Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-98b0dc5980491b1711ef",
-              "file": "capture-screenshots.spec.js",
-              "line": 157,
-              "column": 3
-            },
-            {
-              "title": "08 - Launch Dialog (Template Selection)",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 10276,
-                      "error": {
-                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n",
-                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n\n    at /Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js:184:16",
-                        "location": {
-                          "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                          "column": 16,
-                          "line": 184
-                        },
-                        "snippet": "  182 |\n  183 |     // Wait for templates\n> 184 |     await page.waitForSelector('[data-testid=\"template-card\"]', { timeout: 10000 });\n      |                ^\n  185 |\n  186 |     // Find and click Launch button on first template\n  187 |     const launchButton = await page.locator('button:has-text(\"Launch\")').first();"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                            "column": 16,
-                            "line": 184
-                          },
-                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"template-card\"]') to be visible\u001b[22m\n\n\n  182 |\n  183 |     // Wait for templates\n> 184 |     await page.waitForSelector('[data-testid=\"template-card\"]', { timeout: 10000 });\n      |                ^\n  185 |\n  186 |     // Find and click Launch button on first template\n  187 |     const launchButton = await page.locator('button:has-text(\"Launch\")').first();\n    at /Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js:184:16"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:33.734Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-a2345--Dialog-Template-Selection--chromium/test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-a2345--Dialog-Template-Selection--chromium/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/test-results/capture-screenshots-GUI-Sc-a2345--Dialog-Template-Selection--chromium/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                        "column": 16,
-                        "line": 184
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-d945ad6caadfbbac67fa",
-              "file": "capture-screenshots.spec.js",
-              "line": 180,
-              "column": 3
-            }
-          ]
-        },
-        {
-          "title": "CLI Screenshots (Terminal Output)",
-          "file": "capture-screenshots.spec.js",
-          "line": 212,
-          "column": 6,
-          "specs": [
-            {
-              "title": "CLI screenshots require separate terminal capture",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "location": {
-                        "file": "/Users/scttfrdmn/src/cloudworkstation/cmd/prism-gui/frontend/tests/e2e/capture-screenshots.spec.js",
-                        "line": 214,
-                        "column": 8
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-28T18:38:44.034Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "4561872f222a55a1d2b2-ffba8f3a16fb06299527",
-              "file": "capture-screenshots.spec.js",
-              "line": 214,
-              "column": 8
+              ]
             }
           ]
         }
@@ -594,11 +161,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-28T18:37:56.160Z",
-    "duration": 47907.218,
-    "expected": 5,
-    "skipped": 1,
-    "unexpected": 3,
+    "startTime": "2025-11-23T02:23:38.304Z",
+    "duration": 10559.288,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
     "flaky": 0
   }
 }
