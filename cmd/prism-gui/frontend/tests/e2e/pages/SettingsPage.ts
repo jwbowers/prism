@@ -65,10 +65,12 @@ export class SettingsPage extends BasePage {
   async createProfile(name: string, awsProfile: string, region: string) {
     await this.switchToProfiles();
     await this.page.getByTestId('create-profile-button').click();
+    await this.page.waitForTimeout(500); // Wait for dialog to open
 
-    await this.page.getByTestId('profile-name-input').fill(name);
-    await this.page.getByTestId('aws-profile-input').fill(awsProfile);
-    await this.page.getByTestId('region-input').fill(region);
+    // Cloudscape Input wraps input in a div, so we need to find the input inside
+    await this.page.getByTestId('profile-name-input').locator('input').fill(name);
+    await this.page.getByTestId('aws-profile-input').locator('input').fill(awsProfile);
+    await this.page.getByTestId('region-input').locator('input').fill(region);
     await this.clickButton('create');
   }
 
@@ -80,8 +82,10 @@ export class SettingsPage extends BasePage {
     const profile = this.getProfileByName(name);
     const editButton = profile.getByTestId(`edit-profile-${name}`);
     await editButton.click();
+    await this.page.waitForTimeout(500); // Wait for dialog
 
-    await this.page.getByTestId('region-input').fill(newRegion);
+    // Cloudscape Input wraps input in a div
+    await this.page.getByTestId('region-input').locator('input').fill(newRegion);
     await this.clickButton('save');
   }
 

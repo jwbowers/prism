@@ -28,10 +28,10 @@ test.describe('Profile Management Workflows', () => {
       // Step 1: Click create profile button
       await settingsPage.page.getByTestId('create-profile-button').click();
 
-      // Step 2: Fill profile form
-      await settingsPage.page.getByTestId('profile-name-input').fill('test-profile');
-      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
-      await settingsPage.page.getByTestId('region-input').fill('us-west-2');
+      // Step 2: Fill profile form (Cloudscape Input wraps input in div, need to find input inside)
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('test-profile');
+      await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
+      await settingsPage.page.getByTestId('region-input').locator('input').fill('us-west-2');
 
       // Step 3: Submit form
       await settingsPage.clickButton('create');
@@ -52,8 +52,8 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.page.getByTestId('create-profile-button').click();
 
       // Leave name empty
-      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
-      await settingsPage.page.getByTestId('region-input').fill('us-east-1');
+      await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
+      await settingsPage.page.getByTestId('region-input').locator('input').fill('us-east-1');
       await settingsPage.clickButton('create');
 
       // Should show validation error
@@ -64,9 +64,9 @@ test.describe('Profile Management Workflows', () => {
     test('should validate region format', async () => {
       await settingsPage.page.getByTestId('create-profile-button').click();
 
-      await settingsPage.page.getByTestId('profile-name-input').fill('test-region-validation');
-      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
-      await settingsPage.page.getByTestId('region-input').fill('invalid-region');
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('test-region-validation');
+      await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
+      await settingsPage.page.getByTestId('region-input').locator('input').fill('invalid-region');
       await settingsPage.clickButton('create');
 
       // Should show validation error
@@ -77,17 +77,17 @@ test.describe('Profile Management Workflows', () => {
     test('should prevent duplicate profile names', async () => {
       // Create first profile
       await settingsPage.page.getByTestId('create-profile-button').click();
-      await settingsPage.page.getByTestId('profile-name-input').fill('duplicate-test');
-      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
-      await settingsPage.page.getByTestId('region-input').fill('us-west-2');
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('duplicate-test');
+      await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
+      await settingsPage.page.getByTestId('region-input').locator('input').fill('us-west-2');
       await settingsPage.clickButton('create');
       await settingsPage.page.waitForTimeout(2000);
 
       // Try to create second profile with same name
       await settingsPage.page.getByTestId('create-profile-button').click();
-      await settingsPage.page.getByTestId('profile-name-input').fill('duplicate-test');
-      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
-      await settingsPage.page.getByTestId('region-input').fill('us-east-1');
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('duplicate-test');
+      await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
+      await settingsPage.page.getByTestId('region-input').locator('input').fill('us-east-1');
       await settingsPage.clickButton('create');
 
       // Should show duplicate error
