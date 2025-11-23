@@ -78,9 +78,11 @@ test.describe('Profile Management Workflows', () => {
     });
 
     test('should validate region format', async () => {
+      const uniqueName = `region-test-${Date.now()}`;
+
       await settingsPage.page.getByTestId('create-profile-button').click();
 
-      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill('test-region-validation');
+      await settingsPage.page.getByTestId('profile-name-input').locator('input').fill(uniqueName);
       await settingsPage.page.getByTestId('aws-profile-input').locator('input').fill('default');
       await settingsPage.page.getByTestId('region-input').locator('input').fill('invalid-region');
       await settingsPage.clickButton('create');
