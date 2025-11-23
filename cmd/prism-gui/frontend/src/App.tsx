@@ -3724,6 +3724,376 @@ export default function PrismApp() {
     </SpaceBetween>
   );
 
+  // Profile Management View
+  const ProfileSelectorView = () => {
+    const [profiles, setProfiles] = useState<any[]>([]);
+    const [currentProfileId, setCurrentProfileId] = useState<string>('');
+    const [loading, setLoading] = useState(false);
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [showEditDialog, setShowEditDialog] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [selectedProfile, setSelectedProfile] = useState<any>(null);
+    const [formData, setFormData] = useState({ name: '', aws_profile: '', region: '' });
+    const [validationError, setValidationError] = useState('');
+
+    // Load profiles
+    const loadProfiles = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/v1/profiles');
+        setProfiles(response);
+
+        // Find current profile
+        const current = response.find((p: any) => p.default);
+        if (current) {
+          setCurrentProfileId(current.id);
+        }
+      } catch (error) {
+        console.error('Failed to load profiles:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      loadProfiles();
+    }, []);
+
+    // Create profile
+    const handleCreateProfile = async () => {
+      setValidationError('');
+
+      // Validation
+      if (!formData.name) {
+        setValidationError('Profile name is required');
+        return;
+      }
+      if (!formData.aws_profile) {
+        setValidationError('AWS profile is required');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await api.post('/api/v1/profiles', formData);
+        setShowCreateDialog(false);
+        setFormData({ name: '', aws_profile: '', region: '' });
+        await loadProfiles();
+      } catch (error: any) {
+        setValidationError(error.message || 'Failed to create profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Update profile
+    const handleUpdateProfile = async () => {
+      if (!selectedProfile) return;
+
+      setValidationError('');
+      if (!formData.name) {
+        setValidationError('Profile name is required');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await api.put(`/api/v1/profiles/${selectedProfile.id}`, formData);
+        setShowEditDialog(false);
+        setSelectedProfile(null);
+        setFormData({ name: '', aws_profile: '', region: '' });
+        await loadProfiles();
+      } catch (error: any) {
+        setValidationError(error.message || 'Failed to update profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Delete profile
+    const handleDeleteProfile = async () => {
+      if (!selectedProfile) return;
+
+      setLoading(true);
+      try {
+        await api.delete(`/api/v1/profiles/${selectedProfile.id}`);
+        setShowDeleteDialog(false);
+        setSelectedProfile(null);
+        await loadProfiles();
+      } catch (error: any) {
+        setValidationError(error.message || 'Failed to delete profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Switch profile
+    const handleSwitchProfile = async (profileId: string) => {
+      setLoading(true);
+      try {
+        await api.post(`/api/v1/profiles/${profileId}/activate`, {});
+        setCurrentProfileId(profileId);
+        await loadProfiles();
+      } catch (error) {
+        console.error('Failed to switch profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Open dialogs
+    const openCreateDialog = () => {
+      setFormData({ name: '', aws_profile: '', region: '' });
+      setValidationError('');
+      setShowCreateDialog(true);
+    };
+
+    const openEditDialog = (profile: any) => {
+      setSelectedProfile(profile);
+      setFormData({
+        name: profile.name,
+        aws_profile: profile.aws_profile,
+        region: profile.region || ''
+      });
+      setValidationError('');
+      setShowEditDialog(true);
+    };
+
+    const openDeleteDialog = (profile: any) => {
+      setSelectedProfile(profile);
+      setValidationError('');
+      setShowDeleteDialog(true);
+    };
+
+    return (
+      <SpaceBetween size="l">
+        <Header
+          variant="h1"
+          description="Manage AWS profiles for different accounts and regions"
+          counter={`(${profiles.length} profiles)`}
+          actions={
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button onClick={loadProfiles} disabled={loading}>
+                {loading ? <Spinner /> : 'Refresh'}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={openCreateDialog}
+                data-testid="create-profile-button"
+              >
+                Create Profile
+              </Button>
+            </SpaceBetween>
+          }
+        >
+          Profile Management
+        </Header>
+
+        {/* Profiles Table */}
+        <Table
+          columnDefinitions={[
+            {
+              id: 'name',
+              header: 'Profile Name',
+              cell: (item: any) => (
+                <Box>
+                  {item.id === currentProfileId && (
+                    <Badge color="blue">Current</Badge>
+                  )}{' '}
+                  {item.name}
+                </Box>
+              ),
+              sortingField: 'name'
+            },
+            {
+              id: 'aws_profile',
+              header: 'AWS Profile',
+              cell: (item: any) => item.aws_profile,
+              sortingField: 'aws_profile'
+            },
+            {
+              id: 'region',
+              header: 'Region',
+              cell: (item: any) => item.region || '-',
+              sortingField: 'region'
+            },
+            {
+              id: 'type',
+              header: 'Type',
+              cell: (item: any) => item.type,
+              sortingField: 'type'
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              cell: (item: any) => (
+                <SpaceBetween direction="horizontal" size="xs">
+                  {item.id !== currentProfileId && (
+                    <Button onClick={() => handleSwitchProfile(item.id)}>
+                      Switch
+                    </Button>
+                  )}
+                  <Button onClick={() => openEditDialog(item)}>
+                    Edit
+                  </Button>
+                  {item.id !== currentProfileId && (
+                    <Button onClick={() => openDeleteDialog(item)}>
+                      Delete
+                    </Button>
+                  )}
+                </SpaceBetween>
+              )
+            }
+          ]}
+          items={profiles}
+          loading={loading}
+          loadingText="Loading profiles..."
+          empty={
+            <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
+              <SpaceBetween size="m">
+                <b>No profiles</b>
+                <Button onClick={openCreateDialog}>Create Profile</Button>
+              </SpaceBetween>
+            </Box>
+          }
+        />
+
+        {/* Create Profile Dialog */}
+        <Modal
+          visible={showCreateDialog}
+          onDismiss={() => setShowCreateDialog(false)}
+          header="Create Profile"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setShowCreateDialog(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleCreateProfile} disabled={loading}>
+                  Create
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            {validationError && (
+              <Alert type="error" data-testid="validation-error">
+                {validationError}
+              </Alert>
+            )}
+            <FormField label="Profile Name" description="A descriptive name for this profile">
+              <Input
+                value={formData.name}
+                onChange={({ detail }) => setFormData({ ...formData, name: detail.value })}
+                placeholder="e.g., production, development"
+                data-testid="profile-name-input"
+              />
+            </FormField>
+            <FormField label="AWS Profile" description="AWS CLI profile name from ~/.aws/credentials">
+              <Input
+                value={formData.aws_profile}
+                onChange={({ detail }) => setFormData({ ...formData, aws_profile: detail.value })}
+                placeholder="default"
+                data-testid="aws-profile-input"
+              />
+            </FormField>
+            <FormField label="Region" description="Default AWS region (optional)">
+              <Input
+                value={formData.region}
+                onChange={({ detail }) => setFormData({ ...formData, region: detail.value })}
+                placeholder="us-west-2"
+                data-testid="region-input"
+              />
+            </FormField>
+          </SpaceBetween>
+        </Modal>
+
+        {/* Edit Profile Dialog */}
+        <Modal
+          visible={showEditDialog}
+          onDismiss={() => setShowEditDialog(false)}
+          header="Edit Profile"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setShowEditDialog(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleUpdateProfile} disabled={loading}>
+                  Save
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            {validationError && (
+              <Alert type="error" data-testid="validation-error">
+                {validationError}
+              </Alert>
+            )}
+            <FormField label="Profile Name">
+              <Input
+                value={formData.name}
+                onChange={({ detail }) => setFormData({ ...formData, name: detail.value })}
+              />
+            </FormField>
+            <FormField label="AWS Profile">
+              <Input
+                value={formData.aws_profile}
+                onChange={({ detail }) => setFormData({ ...formData, aws_profile: detail.value })}
+              />
+            </FormField>
+            <FormField label="Region">
+              <Input
+                value={formData.region}
+                onChange={({ detail }) => setFormData({ ...formData, region: detail.value })}
+              />
+            </FormField>
+          </SpaceBetween>
+        </Modal>
+
+        {/* Delete Profile Dialog */}
+        <Modal
+          visible={showDeleteDialog}
+          onDismiss={() => setShowDeleteDialog(false)}
+          header="Delete Profile"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setShowDeleteDialog(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleDeleteProfile} disabled={loading}>
+                  Delete
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            {validationError && (
+              <Alert type="error">
+                {validationError}
+              </Alert>
+            )}
+            {selectedProfile?.id === currentProfileId ? (
+              <Alert type="warning">
+                Cannot delete the currently active profile. Switch to a different profile first.
+              </Alert>
+            ) : (
+              <Box>
+                Are you sure you want to delete the profile <strong>{selectedProfile?.name}</strong>?
+                This action cannot be undone.
+              </Box>
+            )}
+          </SpaceBetween>
+        </Modal>
+      </SpaceBetween>
+    );
+  };
+
   // User Management View
   const UserManagementView = () => (
     <SpaceBetween size="l">

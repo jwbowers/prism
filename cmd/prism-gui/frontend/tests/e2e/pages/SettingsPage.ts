@@ -25,9 +25,10 @@ export class SettingsPage extends BasePage {
    * Switch to Profiles section
    */
   async switchToProfiles() {
-    const profilesTab = this.page.getByRole('tab', { name: /profiles/i });
-    if (await this.elementExists(profilesTab)) {
-      await profilesTab.click();
+    // Settings uses SideNavigation with links, not tabs
+    const profilesLink = this.page.getByRole('link', { name: /^profiles$/i });
+    if (await this.elementExists(profilesLink)) {
+      await profilesLink.click();
       await this.waitForLoadingComplete();
     }
   }
@@ -36,9 +37,10 @@ export class SettingsPage extends BasePage {
    * Switch to Idle Policies section
    */
   async switchToIdlePolicies() {
-    const idleTab = this.page.getByRole('tab', { name: /idle.*policies/i });
-    if (await this.elementExists(idleTab)) {
-      await idleTab.click();
+    // Settings uses SideNavigation with links, not tabs
+    const idleLink = this.page.getByRole('link', { name: /idle.*detection/i });
+    if (await this.elementExists(idleLink)) {
+      await idleLink.click();
       await this.waitForLoadingComplete();
     }
   }

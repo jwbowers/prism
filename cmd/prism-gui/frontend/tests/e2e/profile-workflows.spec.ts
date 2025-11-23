@@ -26,12 +26,12 @@ test.describe('Profile Management Workflows', () => {
   test.describe('Create Profile Workflow', () => {
     test('should create a new profile with valid configuration', async () => {
       // Step 1: Click create profile button
-      await settingsPage.page.getByRole('button', { name: /create.*profile/i }).click();
+      await settingsPage.page.getByTestId('create-profile-button').click();
 
       // Step 2: Fill profile form
-      await settingsPage.fillInput('profile name', 'test-profile');
-      await settingsPage.fillInput('aws profile', 'default');
-      await settingsPage.fillInput('region', 'us-west-2');
+      await settingsPage.page.getByTestId('profile-name-input').fill('test-profile');
+      await settingsPage.page.getByTestId('aws-profile-input').fill('default');
+      await settingsPage.page.getByTestId('region-input').fill('us-west-2');
 
       // Step 3: Submit form
       await settingsPage.clickButton('create');
