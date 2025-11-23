@@ -1327,6 +1327,33 @@ class SafePrismAPI {
       return [];
     }
   }
+
+  // Profile Management APIs
+  async getProfiles(): Promise<any[]> {
+    try {
+      const data = await this.safeRequest('/api/v1/profiles');
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      logger.error('Failed to fetch profiles:', error);
+      return [];
+    }
+  }
+
+  async createProfile(profile: { name: string; aws_profile: string; region?: string }): Promise<any> {
+    return this.safeRequest('/api/v1/profiles', 'POST', profile);
+  }
+
+  async updateProfile(profileId: string, updates: { name?: string; aws_profile?: string; region?: string }): Promise<any> {
+    return this.safeRequest(`/api/v1/profiles/${profileId}`, 'PUT', updates);
+  }
+
+  async deleteProfile(profileId: string): Promise<void> {
+    await this.safeRequest(`/api/v1/profiles/${profileId}`, 'DELETE');
+  }
+
+  async switchProfile(profileId: string): Promise<void> {
+    await this.safeRequest(`/api/v1/profiles/${profileId}/activate`, 'POST');
+  }
 }
 
 export default function PrismApp() {
@@ -3740,7 +3767,7 @@ export default function PrismApp() {
     const loadProfiles = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/api/v1/profiles');
+        const response = await api.getProfiles();
         setProfiles(response);
 
         // Find current profile
@@ -3775,7 +3802,7 @@ export default function PrismApp() {
 
       setLoading(true);
       try {
-        await api.post('/api/v1/profiles', formData);
+        await api.createProfile(formData);
         setShowCreateDialog(false);
         setFormData({ name: '', aws_profile: '', region: '' });
         await loadProfiles();
@@ -3798,7 +3825,7 @@ export default function PrismApp() {
 
       setLoading(true);
       try {
-        await api.put(`/api/v1/profiles/${selectedProfile.id}`, formData);
+        await api.updateProfile(selectedProfile.id, formData);
         setShowEditDialog(false);
         setSelectedProfile(null);
         setFormData({ name: '', aws_profile: '', region: '' });
@@ -3816,7 +3843,7 @@ export default function PrismApp() {
 
       setLoading(true);
       try {
-        await api.delete(`/api/v1/profiles/${selectedProfile.id}`);
+        await api.deleteProfile(selectedProfile.id);
         setShowDeleteDialog(false);
         setSelectedProfile(null);
         await loadProfiles();
@@ -3831,7 +3858,7 @@ export default function PrismApp() {
     const handleSwitchProfile = async (profileId: string) => {
       setLoading(true);
       try {
-        await api.post(`/api/v1/profiles/${profileId}/activate`, {});
+        await api.switchProfile(profileId);
         setCurrentProfileId(profileId);
         await loadProfiles();
       } catch (error) {

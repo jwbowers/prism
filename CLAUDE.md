@@ -144,6 +144,54 @@ pkg/types/
 - **Profile Integration**: Integrated AWS credential and region management
 - **Graceful Operations**: Proper shutdown, error handling, progress reporting
 
+### Frontend API Client Pattern (SafePrismAPI)
+
+**CRITICAL**: The frontend follows a **specific method pattern** for API calls - NOT generic HTTP methods.
+
+**✅ CORRECT Pattern - Specific Methods:**
+```typescript
+// SafePrismAPI class (cmd/prism-gui/frontend/src/App.tsx)
+class SafePrismAPI {
+  // Feature-specific methods that call safeRequest internally
+  async getTemplates(): Promise<Template[]> { ... }
+  async getInstances(): Promise<Instance[]> { ... }
+  async getProfiles(): Promise<Profile[]> { ... }
+  async createProfile(profile: ProfileData): Promise<Profile> { ... }
+  async updateProfile(id: string, updates: Partial<ProfileData>): Promise<Profile> { ... }
+  async deleteProfile(id: string): Promise<void> { ... }
+  async switchProfile(id: string): Promise<void> { ... }
+}
+
+// Components use specific methods
+const profiles = await api.getProfiles();
+await api.createProfile({ name, aws_profile, region });
+```
+
+**❌ INCORRECT Pattern - Generic HTTP Methods:**
+```typescript
+// DO NOT ADD these to SafePrismAPI:
+async get(endpoint: string) { ... }    // ❌ No
+async post(endpoint: string) { ... }   // ❌ No
+async put(endpoint: string) { ... }    // ❌ No
+async delete(endpoint: string) { ... } // ❌ No
+
+// DO NOT use generic calls in components:
+await api.get('/api/v1/profiles');     // ❌ No
+await api.post('/api/v1/profiles', data); // ❌ No
+```
+
+**Why This Pattern?**
+1. **Architectural Consistency**: All features (Templates, Instances, Storage, Profiles) use specific methods
+2. **Type Safety**: Specific methods provide better TypeScript typing
+3. **Maintainability**: Changes to API structure are isolated to method implementations
+4. **Discoverability**: IDE autocomplete shows available operations
+
+**When Adding New Features:**
+1. Add specific methods to SafePrismAPI for the feature (e.g., `getProfiles()`, `createProfile()`)
+2. Each method calls the private `safeRequest()` helper internally
+3. Components use these specific methods, never direct HTTP calls
+4. Follow the same error handling pattern as existing methods
+
 ### API Authentication
 The daemon uses header-based authentication with test mode bypass:
 
