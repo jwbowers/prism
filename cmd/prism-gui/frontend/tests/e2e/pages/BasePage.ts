@@ -115,15 +115,15 @@ export class BasePage {
 
   /**
    * Click button by text or role
-   * If multiple buttons match, clicks the first visible one (usually in a modal/dialog)
+   * If multiple buttons match, clicks the last visible one (usually in a modal/dialog)
    */
   async clickButton(text: string) {
     const button = this.page.getByRole('button', { name: new RegExp(text, 'i') });
     const count = await button.count();
 
     if (count > 1) {
-      // Multiple buttons found - click the first one (usually in modal/dialog)
-      await button.first().click();
+      // Multiple buttons found - click the last one (the one in the topmost dialog)
+      await button.last().click();
     } else {
       await button.click();
     }
