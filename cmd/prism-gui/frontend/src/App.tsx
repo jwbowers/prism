@@ -8,6 +8,7 @@ import './index.css';
 import Terminal from './Terminal';
 import WebView from './WebView';
 import { ValidationError } from './components/ValidationError';
+import { ProjectDetailView } from './components/ProjectDetailView';
 
 import {
   AppLayout,
@@ -1489,6 +1490,9 @@ class SafePrismAPI {
 export default function PrismApp() {
   const api = new SafePrismAPI();
 
+  // Make API client available to ProjectDetailView component
+  (window as any).__apiClient = api;
+
   const [state, setState] = useState<AppState>({
     activeView: 'dashboard',
     settingsSection: 'general',
@@ -1601,6 +1605,9 @@ export default function PrismApp() {
   const [projectDescription, setProjectDescription] = useState('');
   const [projectBudget, setProjectBudget] = useState('');
   const [projectValidationError, setProjectValidationError] = useState('');
+
+  // Project detail view state
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   // Create User modal state
   const [userModalVisible, setUserModalVisible] = useState(false);
@@ -3803,11 +3810,7 @@ export default function PrismApp() {
                 <Link
                   fontSize="body-m"
                   onFollow={() => {
-                    setState(prev => ({
-                      ...prev,
-                      selectedProject: item,
-                      activeView: 'project-detail'
-                    }));
+                    setSelectedProjectId(item.id);
                   }}
                 >
                   {item.name}
@@ -3905,19 +3908,25 @@ export default function PrismApp() {
                     { text: "Delete", id: "delete" }
                   ]}
                   onItemClick={(detail) => {
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        {
-                          type: 'info',
-                          header: 'Project Action',
-                          content: `${detail.detail.text} for project "${item.name}" - Feature coming soon!`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
+                    if (detail.detail.id === 'view') {
+                      // Navigate to project detail view
+                      setSelectedProjectId(item.id);
+                    } else {
+                      // Show "coming soon" notification for other actions
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [
+                          {
+                            type: 'info',
+                            header: 'Project Action',
+                            content: `${detail.detail.text} for project "${item.name}" - Feature coming soon!`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          },
+                          ...prev.notifications
+                        ]
+                      }));
+                    }
                   }}
                 >
                   Actions
@@ -5626,8 +5635,8 @@ export default function PrismApp() {
     );
   };
 
-  // Project Detail View with Integrated Budget
-  const ProjectDetailView = () => {
+  // Project Detail View with Integrated Budget (Legacy - kept for backward compatibility)
+  const ProjectDetailViewLegacy = () => {
     // Hooks must be called at the top level before any conditional returns
     const [activeTabId, setActiveTabId] = React.useState('overview');
 
@@ -9489,8 +9498,17 @@ export default function PrismApp() {
             {state.activeView === 'webview' && <WebViewView />}
             {state.activeView === 'storage' && <StorageManagementView />}
             {state.activeView === 'backups' && <BackupManagementView />}
-            {state.activeView === 'projects' && <ProjectManagementView />}
-            {state.activeView === 'project-detail' && <ProjectDetailView />}
+            {state.activeView === 'projects' && (
+              selectedProjectId ? (
+                <ProjectDetailView
+                  projectId={selectedProjectId}
+                  onBack={() => setSelectedProjectId(null)}
+                />
+              ) : (
+                <ProjectManagementView />
+              )
+            )}
+            {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
             {state.activeView === 'invitations' && <InvitationView />}
             {state.activeView === 'users' && <UserManagementView />}
             {state.activeView === 'ami' && <AMIManagementView />}
