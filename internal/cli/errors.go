@@ -65,19 +65,19 @@ func (h *DaemonErrorHandler) CanHandle(errorMsg string) bool {
 func (h *DaemonErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`daemon not running
 
-The CloudWorkstation background service is not responding. This is unusual since the daemon auto-starts.
+The Prism background service is not responding. This is unusual since the daemon auto-starts.
 
 🔧 Quick fixes:
 1. Try your command again (daemon may be starting up)
-2. Check daemon status: cws daemon status
-3. If needed, restart daemon: cws daemon stop (next command will auto-start)
+2. Check daemon status: prism daemon status
+3. If needed, restart daemon: prism daemon stop (next command will auto-start)
 
 🔍 If this persists:
 - Check for port conflicts: lsof -i :8947
-- Verify binary permissions: ls -la $(which cws) $(which cwsd)
-- Check logs: cws daemon logs
+- Verify binary permissions: ls -la $(which prism) $(which prismd)
+- Check logs: prism daemon logs
 
-Need help? https://github.com/scttfrdmn/cloudworkstation/issues`)
+Need help? https://github.com/scttfrdmn/prism/issues`)
 }
 
 // ConnectionErrorHandler handles connection-related errors
@@ -90,15 +90,15 @@ func (h *ConnectionErrorHandler) CanHandle(errorMsg string) bool {
 func (h *ConnectionErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`connection refused - daemon startup failed
 
-CloudWorkstation's auto-start couldn't connect to the background service.
+Prism's auto-start couldn't connect to the background service.
 
 🔧 Quick fixes:
 1. Wait a moment and try again (daemon may still be starting)
 2. Check what's using port 8947: lsof -i :8947
-3. Manual restart: cws daemon stop && cws templates
+3. Manual restart: prism daemon stop && prism templates
 
 🔍 If this continues:
-- Check if another CloudWorkstation is running
+- Check if another Prism is running
 - Verify network permissions for localhost:8947
 - Look for firewall blocking local connections
 
@@ -115,7 +115,7 @@ func (h *NetworkErrorHandler) CanHandle(errorMsg string) bool {
 func (h *NetworkErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`network connectivity issue
 
-CloudWorkstation can't reach AWS services. To fix this:
+Prism can't reach AWS services. To fix this:
 
 1. Check internet connection
 2. Verify AWS region is accessible:
@@ -135,7 +135,7 @@ func (h *CredentialsErrorHandler) CanHandle(errorMsg string) bool {
 func (h *CredentialsErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`AWS credentials issue
 
-CloudWorkstation can't access your AWS account. To fix this:
+Prism can't access your AWS account. To fix this:
 
 1. Configure AWS credentials:
    aws configure
@@ -144,7 +144,7 @@ CloudWorkstation can't access your AWS account. To fix this:
    aws sts get-caller-identity
 
 3. Check IAM permissions:
-   https://github.com/scttfrdmn/cloudworkstation/blob/main/docs/DEMO_TESTER_SETUP.md
+   https://github.com/scttfrdmn/prism/blob/main/docs/DEMO_TESTER_SETUP.md
 
 Original error: %v`, err)
 }
@@ -159,16 +159,16 @@ func (h *NetworkConfigErrorHandler) CanHandle(errorMsg string) bool {
 func (h *NetworkConfigErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`AWS network configuration issue
 
-CloudWorkstation can't find your VPC or subnet. To fix this:
+Prism can't find your VPC or subnet. To fix this:
 
 1. Use auto-discovery (recommended):
-   cws launch template-name instance-name
+   prism launch template-name instance-name
 
 2. Create default VPC if needed:
    aws ec2 create-default-vpc
 
 3. Or specify manually:
-   cws ami build template-name --vpc vpc-12345 --subnet subnet-67890
+   prism ami build template-name --vpc vpc-12345 --subnet subnet-67890
 
 Original error: %v`, err)
 }
@@ -186,10 +186,10 @@ func (h *CapacityErrorHandler) Handle(err error, context string) error {
 The requested instance type is not available. To fix this:
 
 1. Try a different region:
-   cws launch template-name instance-name --region us-east-1
+   prism launch template-name instance-name --region us-east-1
 
 2. Use a different instance size:
-   cws launch template-name instance-name --size M
+   prism launch template-name instance-name --size M
 
 3. Try again later (capacity changes frequently)
 
@@ -209,11 +209,11 @@ func (h *TemplateErrorHandler) Handle(err error, context string) error {
 The specified template doesn't exist. To fix this:
 
 1. List available templates:
-   cws templates
+   prism templates
 
 2. Check template name spelling
 3. Refresh template cache:
-   rm -rf ~/.cloudworkstation/templates && cws templates
+   rm -rf ~/.prism/templates && prism templates
 
 Original error: %v`, err)
 }
@@ -234,7 +234,7 @@ The operation failed validation checks. To fix this:
 2. Verify your inputs are correct
 3. Try with different parameters
 
-Need help? Check: https://github.com/scttfrdmn/cloudworkstation/blob/main/TROUBLESHOOTING.md
+Need help? Check: https://github.com/scttfrdmn/prism/blob/main/TROUBLESHOOTING.md
 
 Original error: %v`, err)
 }
@@ -251,17 +251,57 @@ func (h *ProfileErrorHandler) CanHandle(errorMsg string) bool {
 func (h *ProfileErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`profile configuration issue
 
-CloudWorkstation can't find or use the specified profile.
+Prism can't find or use the specified profile.
 
 🔧 Quick fixes:
-1. List available profiles: cws profiles list
-2. Create a new profile: cws profiles add personal my-account --aws-profile default --region us-east-1
-3. Switch profiles: cws profiles switch <profile-id>
+1. List available profiles: prism profiles list
+2. Create a new profile: prism profiles add personal my-account --aws-profile default --region us-east-1
+3. Switch profiles: prism profiles switch <profile-id>
 
 🔍 Profile troubleshooting:
 - Verify AWS credentials: aws sts get-caller-identity
-- Check profile file: cat ~/.cloudworkstation/profiles.json
-- Reset to default: rm ~/.cloudworkstation/profiles.json && cws profiles list
+- Check profile file: cat ~/.prism/profiles.json
+- Reset to default: rm ~/.prism/profiles.json && prism profiles list
+
+Original error: %v`, err)
+}
+
+// ResumeErrorHandler handles instance resume errors from hibernation
+type ResumeErrorHandler struct{}
+
+func (h *ResumeErrorHandler) CanHandle(errorMsg string) bool {
+	return strings.Contains(errorMsg, "resume workspace") ||
+		strings.Contains(errorMsg, "resume failed") ||
+		strings.Contains(errorMsg, "resume instance")
+}
+
+func (h *ResumeErrorHandler) Handle(err error, context string) error {
+	return fmt.Errorf(`instance resume failed
+
+Prism couldn't resume your hibernated workspace.
+
+🔧 Common solutions:
+1. Check instance state: prism list
+2. Verify hibernation status: prism workspace hibernation-status <name>
+3. Try regular start: prism workspace start <name>
+
+🔍 Hibernation troubleshooting:
+- Instance may not be in hibernated state
+- Hibernation may have failed during suspend
+- Instance type may not support hibernation
+- Check AWS console for EC2 instance state
+
+💡 Understanding hibernation:
+- Hibernation preserves RAM state for instant resume
+- If hibernation fails, Prism falls back to regular start
+- Not all instance types support hibernation
+- Verify with: prism workspace hibernation-status <name>
+
+📊 Cost optimization still available:
+- Regular stop/start provides 100%% compute savings
+- Consider idle policies: prism idle policy list
+
+Need help? Check: https://github.com/scttfrdmn/prism/issues
 
 Original error: %v`, err)
 }
@@ -278,19 +318,19 @@ func (h *LaunchErrorHandler) CanHandle(errorMsg string) bool {
 func (h *LaunchErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`instance launch failed
 
-CloudWorkstation couldn't launch your research environment.
+Prism couldn't launch your research environment.
 
 🔧 Common solutions:
-1. Try different region: cws launch template-name instance-name --region us-west-2
-2. Use different size: cws launch template-name instance-name --size S
-3. Check template availability: cws templates
+1. Try different region: prism launch template-name instance-name --region us-west-2
+2. Use different size: prism launch template-name instance-name --size S
+3. Check template availability: prism templates
 
 🔍 Advanced troubleshooting:
 - Verify AWS quotas: aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A
-- Check template validation: cws templates validate
-- Try different instance type: cws launch template-name instance-name --instance-type t3.medium
+- Check template validation: prism templates validate
+- Try different instance type: prism launch template-name instance-name --instance-type t3.medium
 
-Need template help? Each template shows its requirements with 'cws templates'
+Need template help? Each template shows its requirements with 'prism templates'
 
 Original error: %v`, err)
 }
@@ -307,19 +347,19 @@ func (h *KeychainErrorHandler) CanHandle(errorMsg string) bool {
 func (h *KeychainErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`keychain access issue
 
-CloudWorkstation is having trouble with macOS keychain access.
+Prism is having trouble with macOS keychain access.
 
 🔧 Quick fixes:
 1. This shouldn't happen with basic profiles - try again
-2. Check profile type: cws profiles list
+2. Check profile type: prism profiles list
 3. Use AWS CLI credentials: aws configure
 
 🔍 If keychain prompts persist:
 - Basic profiles should NOT require keychain access
 - This may indicate a configuration issue
-- Please report this: https://github.com/scttfrdmn/cloudworkstation/issues
+- Please report this: https://github.com/scttfrdmn/prism/issues
 
-Note: CloudWorkstation v0.4.4+ eliminates keychain prompts for normal usage.
+Note: Prism v0.4.4+ eliminates keychain prompts for normal usage.
 
 Original error: %v`, err)
 }
@@ -339,15 +379,15 @@ func (h *DefaultErrorHandler) Handle(err error, context string) error {
 
 Need help?
 1. Check our troubleshooting guide:
-   https://github.com/scttfrdmn/cloudworkstation/blob/main/TROUBLESHOOTING.md
+   https://github.com/scttfrdmn/prism/blob/main/TROUBLESHOOTING.md
 
 2. Verify daemon status:
-   cws daemon status
+   prism daemon status
 
 3. Check AWS credentials:
    aws sts get-caller-identity
 
-4. Open an issue: https://github.com/scttfrdmn/cloudworkstation/issues`, context, err)
+4. Open an issue: https://github.com/scttfrdmn/prism/issues`, context, err)
 	}
 	return err
 }
@@ -363,7 +403,7 @@ func (h *IPDetectionErrorHandler) CanHandle(errorMsg string) bool {
 func (h *IPDetectionErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`IP detection failed - web interfaces secured to SSH tunneling
 
-CloudWorkstation couldn't detect your external IP for secure direct web access.
+Prism couldn't detect your external IP for secure direct web access.
 Your instances are still fully functional, but web interfaces require SSH tunneling.
 
 🔧 Web Interface Access:
@@ -374,7 +414,7 @@ Your instances are still fully functional, but web interfaces require SSH tunnel
 🌐 Alternative Solutions:
 1. Check internet connectivity and try again
 2. Use a VPN or different network
-3. Manual IP refresh: cws access refresh (when available)
+3. Manual IP refresh: prism access refresh (when available)
 
 ✅ This is secure by design - SSH tunneling provides encrypted access.
 
@@ -394,7 +434,7 @@ func (h *SecurityGroupErrorHandler) CanHandle(errorMsg string) bool {
 func (h *SecurityGroupErrorHandler) Handle(err error, context string) error {
 	return fmt.Errorf(`security group configuration failed
 
-CloudWorkstation couldn't configure secure access rules. This may be due to:
+Prism couldn't configure secure access rules. This may be due to:
 
 🔧 Possible Solutions:
 1. Check AWS IAM permissions for EC2 security groups:
@@ -410,7 +450,7 @@ CloudWorkstation couldn't configure secure access rules. This may be due to:
 💡 Fallback: Instances will use SSH-only access (secure by default)
    Connect with: ssh -L 8888:localhost:8888 user@<instance-ip>
 
-Documentation: https://github.com/scttfrdmn/cloudworkstation/blob/main/docs/DEMO_TESTER_SETUP.md
+Documentation: https://github.com/scttfrdmn/prism/blob/main/docs/DEMO_TESTER_SETUP.md
 
 Original error: %v`, err)
 }
@@ -429,8 +469,8 @@ func (h *TemplateValidationErrorHandler) Handle(err error, context string) error
 One or more templates have configuration issues.
 
 🔧 Troubleshooting:
-1. Check specific template: cws templates validate <template-name>
-2. List all templates: cws templates
+1. Check specific template: prism templates validate <template-name>
+2. List all templates: prism templates
 3. Check template syntax: look for YAML formatting issues
 
 🔍 Common Issues:
@@ -475,15 +515,15 @@ Having trouble accessing Jupyter, RStudio, or other web interfaces?
    Then: http://localhost:8888
 
 🔍 Troubleshooting:
-- Check instance is running: cws list
+- Check instance is running: prism list
 - Verify correct port (8888 for Jupyter, 8787 for RStudio)
 - Try SSH tunnel if direct access fails
-- Check your current IP: cws access status (when available)
+- Check your current IP: prism access status (when available)
 
 🔧 IP Changed? 
 If you moved networks or your IP changed:
 - Use SSH tunneling as immediate solution
-- Command available later: cws access refresh
+- Command available later: prism access refresh
 
 Original error: %v`, err)
 }
@@ -503,6 +543,7 @@ func NewErrorHandlerRegistry() *ErrorHandlerRegistry {
 			&SecurityGroupErrorHandler{},      // Security group configuration
 			&WebAccessErrorHandler{},          // Web interface access issues
 			&TemplateValidationErrorHandler{}, // Template validation errors
+			&ResumeErrorHandler{},             // Check resume-specific issues (before LaunchErrorHandler)
 			&LaunchErrorHandler{},             // Check launch-specific issues
 			&DaemonErrorHandler{},             // Daemon connectivity issues
 			&ConnectionErrorHandler{},         // Network connection issues

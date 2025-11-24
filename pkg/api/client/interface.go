@@ -1,14 +1,16 @@
-// Package client provides the CloudWorkstation API client interface and implementation.
+// Package client provides the Prism API client interface and implementation.
 package client
 
 import (
 	"context"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/idle"
-	"github.com/scttfrdmn/cloudworkstation/pkg/project"
-	"github.com/scttfrdmn/cloudworkstation/pkg/templates"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/idle"
+	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/storage"
+	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/throttle"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // Options represents configuration options for the API client
@@ -21,8 +23,8 @@ type Options struct {
 	APIKey          string // API key for daemon authentication
 }
 
-// CloudWorkstationAPI defines the interface for interacting with the CloudWorkstation API
-type CloudWorkstationAPI interface {
+// PrismAPI defines the interface for interacting with the Prism API
+type PrismAPI interface {
 	// Configuration
 	SetOptions(Options)
 
@@ -102,6 +104,23 @@ type CloudWorkstationAPI interface {
 	GetProjectCostBreakdown(context.Context, string, time.Time, time.Time) (*types.ProjectCostBreakdown, error)
 	GetProjectResourceUsage(context.Context, string, time.Duration) (*types.ProjectResourceUsage, error)
 	GetCostTrends(context.Context, string, string) (map[string]interface{}, error)
+	PreventProjectLaunches(context.Context, string) (map[string]interface{}, error)
+	AllowProjectLaunches(context.Context, string) (map[string]interface{}, error)
+
+	// Invitation operations (v0.5.11)
+	GetInvitationByToken(context.Context, string) (*GetInvitationResponse, error)
+	AcceptInvitation(context.Context, string) (*InvitationActionResponse, error)
+	DeclineInvitation(context.Context, string, string) (*InvitationActionResponse, error)
+	SendInvitation(context.Context, string, SendInvitationRequest) (*SendInvitationResponse, error)
+	SendBulkInvitation(context.Context, string, *types.BulkInvitationRequest) (*types.BulkInvitationResponse, error)
+
+	// Shared token operations (v0.5.13)
+	CreateSharedToken(context.Context, string, *types.CreateSharedTokenRequest) (*types.SharedInvitationToken, error)
+	RedeemSharedToken(context.Context, *types.RedeemSharedTokenRequest) (*types.RedeemSharedTokenResponse, error)
+	GetSharedToken(context.Context, string) (*types.SharedInvitationToken, error)
+	ListSharedTokens(context.Context, string) ([]*types.SharedInvitationToken, error)
+	ExtendSharedToken(context.Context, string, int) error
+	RevokeSharedToken(context.Context, string) error
 
 	// Policy management operations (Phase 5A.5)
 	GetPolicyStatus(context.Context) (*PolicyStatusResponse, error)
@@ -126,6 +145,20 @@ type CloudWorkstationAPI interface {
 	ExportRightsizingData(context.Context, string) ([]types.InstanceMetrics, error)
 	GetRightsizingSummary(context.Context) (*types.RightsizingSummaryResponse, error)
 	GetInstanceMetrics(context.Context, string, int) ([]types.InstanceMetrics, error)
+
+	// Transfer operations (S3-backed file transfer)
+	StartTransfer(context.Context, TransferRequest) (*TransferResponse, error)
+	GetTransferStatus(context.Context, string) (*storage.TransferProgress, error)
+	ListTransfers(context.Context) ([]*storage.TransferProgress, error)
+	CancelTransfer(context.Context, string) error
+
+	// Throttling operations (v0.6.0 - Issue #90)
+	GetThrottlingStatus(context.Context, string) (*throttle.Status, error)
+	ConfigureThrottling(context.Context, throttle.Config) error
+	GetThrottlingRemaining(context.Context, string) (map[string]interface{}, error)
+	SetProjectThrottleOverride(context.Context, string, throttle.Override) error
+	RemoveProjectThrottleOverride(context.Context, string) error
+	ListProjectThrottleOverrides(context.Context) ([]throttle.Override, error)
 
 	// Status operations
 	GetStatus(context.Context) (*types.DaemonStatus, error)
@@ -294,4 +327,34 @@ type PolicyCheckResponse struct {
 	Reason          string   `json:"reason"`
 	MatchedPolicies []string `json:"matched_policies,omitempty"`
 	Suggestions     []string `json:"suggestions,omitempty"`
+}
+
+// Invitation operation types (v0.5.11)
+
+// GetInvitationResponse represents the response from GetInvitationByToken
+type GetInvitationResponse struct {
+	Invitation *types.Invitation `json:"invitation"`
+	Project    *types.Project    `json:"project"`
+}
+
+// InvitationActionResponse represents the response from accept/decline operations
+type InvitationActionResponse struct {
+	Invitation *types.Invitation `json:"invitation"`
+	Project    *types.Project    `json:"project,omitempty"`
+	Message    string            `json:"message"`
+}
+
+// SendInvitationRequest represents a request to send an invitation
+type SendInvitationRequest struct {
+	Email     string            `json:"email"`
+	Role      types.ProjectRole `json:"role"`
+	Message   string            `json:"message,omitempty"`
+	ExpiresAt *time.Time        `json:"expires_at,omitempty"`
+}
+
+// SendInvitationResponse represents the response from sending an invitation
+type SendInvitationResponse struct {
+	Invitation *types.Invitation `json:"invitation"`
+	Project    *types.Project    `json:"project"`
+	Message    string            `json:"message"`
 }

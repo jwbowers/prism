@@ -1,4 +1,4 @@
-// Package templates provides CloudWorkstation's unified template system.
+// Package templates provides Prism's unified template system.
 //
 // This package implements a simplified, deterministic template architecture that
 // leverages existing package managers (apt, conda, spack) instead of custom scripts.
@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/research"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/research"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
-// Template represents a unified CloudWorkstation template
+// Template represents a unified Prism template
 type Template struct {
 	// Basic metadata
 	Name            string `yaml:"name" json:"name"`
@@ -37,7 +37,8 @@ type Template struct {
 	Featured bool   `yaml:"featured,omitempty" json:"featured,omitempty"` // Featured template (always visible)
 
 	// Connection configuration
-	ConnectionType ConnectionType `yaml:"connection_type,omitempty" json:"connection_type,omitempty"` // Explicit connection type (dcv, ssh, auto)
+	ConnectionType ConnectionType `yaml:"connection_type,omitempty" json:"connection_type,omitempty"` // Explicit connection type (ssh, web, desktop, both)
+	Desktop        *DesktopConfig `yaml:"desktop,omitempty" json:"desktop,omitempty"`                 // Desktop configuration (only for connection_type: desktop)
 
 	// Package management strategy
 	PackageManager string             `yaml:"package_manager,omitempty" json:"package_manager,omitempty"` // "auto", "apt", "dnf", "conda", "spack", "ami"
@@ -54,6 +55,9 @@ type Template struct {
 
 	// Post-install script
 	PostInstall string `yaml:"post_install,omitempty" json:"post_install,omitempty"`
+
+	// File provisioning (S3-backed transfers) (v0.5.7)
+	Files []FileConfig `yaml:"files,omitempty" json:"files,omitempty"`
 
 	// User data script for instance initialization
 	UserData string `yaml:"user_data,omitempty" json:"user_data,omitempty"`
@@ -158,6 +162,26 @@ type ServiceConfig struct {
 	Enable bool     `yaml:"enable,omitempty" json:"enable,omitempty"` // Default: true
 }
 
+// DesktopConfig defines desktop environment and DCV configuration for desktop templates
+type DesktopConfig struct {
+	// Desktop environment to install
+	Environment string `yaml:"environment" json:"environment"` // "mate", "xfce", "gnome", "kde"
+
+	// Nice DCV configuration
+	DCVPort    int    `yaml:"dcv_port,omitempty" json:"dcv_port,omitempty"`       // DCV server port (default: 8443)
+	DCVVersion string `yaml:"dcv_version,omitempty" json:"dcv_version,omitempty"` // DCV version to install (default: "latest")
+
+	// Hardware requirements
+	GPURequired bool `yaml:"gpu_required,omitempty" json:"gpu_required,omitempty"` // Require GPU for visualization
+
+	// Session configuration
+	SessionType string `yaml:"session_type,omitempty" json:"session_type,omitempty"` // "console" or "virtual" (default: "virtual")
+	SessionUser string `yaml:"session_user,omitempty" json:"session_user,omitempty"` // User for DCV session (default: template user)
+
+	// Authentication
+	AuthMethod string `yaml:"auth_method,omitempty" json:"auth_method,omitempty"` // "password" or "none" (default: "password")
+}
+
 // IdleDetectionConfig is an alias to types.IdleDetectionConfig (canonical definition)
 type IdleDetectionConfig = types.IdleDetectionConfig
 
@@ -166,6 +190,32 @@ type UserConfig struct {
 	Name   string   `yaml:"name" json:"name"`
 	Groups []string `yaml:"groups,omitempty" json:"groups,omitempty"`
 	Shell  string   `yaml:"shell,omitempty" json:"shell,omitempty"` // Default: /bin/bash
+}
+
+// FileConfig defines a file to provision via S3 transfer (v0.5.7)
+type FileConfig struct {
+	// Source S3 location
+	S3Bucket string `yaml:"s3_bucket" json:"s3_bucket"` // S3 bucket name
+	S3Key    string `yaml:"s3_key" json:"s3_key"`       // S3 object key
+
+	// Destination on instance
+	DestinationPath string `yaml:"destination_path" json:"destination_path"` // Target path on instance
+
+	// File properties
+	Owner       string `yaml:"owner,omitempty" json:"owner,omitempty"`             // File owner (default: current user)
+	Group       string `yaml:"group,omitempty" json:"group,omitempty"`             // File group (default: current user's group)
+	Permissions string `yaml:"permissions,omitempty" json:"permissions,omitempty"` // File permissions (e.g., "0644")
+
+	// Transfer options
+	Checksum    bool `yaml:"checksum,omitempty" json:"checksum,omitempty"`         // Enable MD5 checksum verification (default: true)
+	AutoCleanup bool `yaml:"auto_cleanup,omitempty" json:"auto_cleanup,omitempty"` // Delete from S3 after successful download (default: false)
+
+	// Conditional provisioning
+	Required bool   `yaml:"required,omitempty" json:"required,omitempty"` // Fail template launch if file transfer fails (default: true)
+	OnlyIf   string `yaml:"only_if,omitempty" json:"only_if,omitempty"`   // Conditional expression (e.g., "arch == 'x86_64'")
+
+	// Description for documentation
+	Description string `yaml:"description,omitempty" json:"description,omitempty"` // Human-readable description
 }
 
 // InstanceDefaults defines default instance configuration
@@ -481,7 +531,7 @@ type MarketplaceConfig struct {
 	// Dependency information
 	Dependencies  []TemplateDependency `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`   // Other templates this depends on
 	Dependents    []string             `yaml:"dependents,omitempty" json:"dependents,omitempty"`       // Templates that depend on this
-	Compatibility []string             `yaml:"compatibility,omitempty" json:"compatibility,omitempty"` // Compatible CloudWorkstation versions
+	Compatibility []string             `yaml:"compatibility,omitempty" json:"compatibility,omitempty"` // Compatible Prism versions
 }
 
 // SecurityScanResult contains security scanning information

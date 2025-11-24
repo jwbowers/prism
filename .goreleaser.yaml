@@ -1,10 +1,10 @@
-# GoReleaser configuration for CloudWorkstation
+# GoReleaser configuration for Prism
 # https://goreleaser.com/customization/
 
 version: 2
 
 # Project metadata
-project_name: cloudworkstation
+project_name: prism
 
 # Before hooks - run before building
 before:
@@ -14,10 +14,10 @@ before:
 
 # Build configuration
 builds:
-  # CLI binary (cws)
-  - id: cws
-    binary: cws
-    main: ./cmd/cws
+  # CLI binary (prism)
+  - id: prism
+    binary: prism
+    main: ./cmd/prism
     env:
       - CGO_ENABLED=0
     overrides:
@@ -38,14 +38,14 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/scttfrdmn/cloudworkstation/pkg/version.Version={{.Version}}
-      - -X github.com/scttfrdmn/cloudworkstation/pkg/version.BuildDate={{.Date}}
-      - -X github.com/scttfrdmn/cloudworkstation/pkg/version.GitCommit={{.Commit}}
+      - -X github.com/scttfrdmn/prism/pkg/version.Version={{.Version}}
+      - -X github.com/scttfrdmn/prism/pkg/version.BuildDate={{.Date}}
+      - -X github.com/scttfrdmn/prism/pkg/version.GitCommit={{.Commit}}
 
-  # Daemon binary (cwsd)
-  - id: cwsd
-    binary: cwsd
-    main: ./cmd/cwsd
+  # Daemon binary (prismd)
+  - id: prismd
+    binary: prismd
+    main: ./cmd/prismd
     env:
       - CGO_ENABLED=0
     overrides:
@@ -66,13 +66,13 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/scttfrdmn/cloudworkstation/pkg/version.Version={{.Version}}
-      - -X github.com/scttfrdmn/cloudworkstation/pkg/version.BuildDate={{.Date}}
-      - -X github.com/scttfrdmn/cloudworkstation/pkg/version.GitCommit={{.Commit}}
+      - -X github.com/scttfrdmn/prism/pkg/version.Version={{.Version}}
+      - -X github.com/scttfrdmn/prism/pkg/version.BuildDate={{.Date}}
+      - -X github.com/scttfrdmn/prism/pkg/version.GitCommit={{.Commit}}
 
 # Archives configuration
 archives:
-  - id: cloudworkstation
+  - id: prism
     format: tar.gz
     name_template: >-
       {{ .ProjectName }}_
@@ -94,8 +94,8 @@ archives:
       - docs/user-guides/GETTING_STARTED.md
       - docs/admin-guides/AWS_IAM_PERMISSIONS.md
     builds:
-      - cws
-      - cwsd
+      - prism
+      - prismd
 
 # Checksum configuration
 checksum:
@@ -132,7 +132,7 @@ changelog:
 
 # Homebrew tap configuration
 brews:
-  - name: cloudworkstation
+  - name: prism
     # Replace with your consolidated homebrew-tap repository
     repository:
       owner: scttfrdmn
@@ -144,50 +144,50 @@ brews:
     commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
 
     # Formula metadata
-    homepage: "https://github.com/scttfrdmn/cloudworkstation"
+    homepage: "https://github.com/scttfrdmn/prism"
     description: "CLI tool for launching pre-configured cloud workstations for academic research"
     license: "MIT"
 
     # Installation configuration
     install: |
-      bin.install "cws"
-      bin.install "cwsd"
+      bin.install "prism"
+      bin.install "prismd"
 
       # Install documentation
       doc.install "README.md"
       doc.install "CHANGELOG.md"
 
       # Install templates
-      (share/"cloudworkstation").install "templates"
+      (share/"prism").install "templates"
 
       # Create config directory
-      (etc/"cloudworkstation").mkpath
+      (etc/"prism").mkpath
 
     # Post-install message
     caveats: |
-      CloudWorkstation has been installed!
+      Prism has been installed!
 
       Command Line Interface (CLI):
-        cws --help
+        prism --help
 
       Terminal User Interface (TUI):
-        cws tui
+        prism tui
 
       Quick start:
-        cws templates                           # List available templates
-        cws launch <template-name> <instance>   # Launch a workstation
+        prism templates                           # List available templates
+        prism launch <template-name> <instance>   # Launch a workstation
 
-      The daemon (cwsd) starts automatically when needed - no manual setup required!
+      The daemon (prismd) starts automatically when needed - no manual setup required!
 
       AWS credentials are required:
         aws configure
 
-      Documentation: https://github.com/scttfrdmn/cloudworkstation
+      Documentation: https://github.com/scttfrdmn/prism
 
     # Test block
     test: |
-      system "#{bin}/cws", "--version"
-      system "#{bin}/cwsd", "--version"
+      system "#{bin}/prism", "--version"
+      system "#{bin}/prismd", "--version"
 
     # Dependencies
     dependencies:
@@ -196,7 +196,7 @@ brews:
 
 # Scoop bucket configuration
 scoops:
-  - name: cloudworkstation
+  - name: prism
     repository:
       owner: scttfrdmn
       name: scoop-bucket
@@ -205,21 +205,21 @@ scoops:
 
     commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
 
-    homepage: "https://github.com/scttfrdmn/cloudworkstation"
+    homepage: "https://github.com/scttfrdmn/prism"
     description: "CLI tool for launching pre-configured cloud workstations for academic research"
     license: "MIT"
 
     # Post-install message
-    post_install: ["Write-Host 'CloudWorkstation installed successfully!'", "Write-Host 'Run: cws --help to get started'"]
+    post_install: ["Write-Host 'Prism installed successfully!'", "Write-Host 'Run: prism --help to get started'"]
 
 # Linux packages (deb and rpm)
 nfpms:
-  - id: cloudworkstation
-    package_name: cloudworkstation
+  - id: prism
+    package_name: prism
 
     # Package metadata
     vendor: Scott Freedman
-    homepage: https://github.com/scttfrdmn/cloudworkstation
+    homepage: https://github.com/scttfrdmn/prism
     maintainer: Scott Freedman <scott@example.com>
     description: CLI tool for launching pre-configured cloud workstations for academic research
     license: MIT
@@ -233,21 +233,21 @@ nfpms:
     # Additional files
     contents:
       - src: README.md
-        dst: /usr/share/doc/cloudworkstation/README.md
+        dst: /usr/share/doc/prism/README.md
       - src: CHANGELOG.md
-        dst: /usr/share/doc/cloudworkstation/CHANGELOG.md
+        dst: /usr/share/doc/prism/CHANGELOG.md
       - src: templates/*.yml
-        dst: /usr/share/cloudworkstation/templates/
+        dst: /usr/share/prism/templates/
       - src: templates/community/*.yml
-        dst: /usr/share/cloudworkstation/templates/community/
+        dst: /usr/share/prism/templates/community/
       - src: templates/examples/*.yml
-        dst: /usr/share/cloudworkstation/templates/examples/
+        dst: /usr/share/prism/templates/examples/
       - src: templates/testing/*.yml
-        dst: /usr/share/cloudworkstation/templates/testing/
+        dst: /usr/share/prism/templates/testing/
       - src: docs/user-guides/GETTING_STARTED.md
-        dst: /usr/share/doc/cloudworkstation/GETTING_STARTED.md
+        dst: /usr/share/doc/prism/GETTING_STARTED.md
       - src: docs/admin-guides/AWS_IAM_PERMISSIONS.md
-        dst: /usr/share/doc/cloudworkstation/AWS_IAM_PERMISSIONS.md
+        dst: /usr/share/doc/prism/AWS_IAM_PERMISSIONS.md
 
     # Scripts
     scripts:
@@ -261,7 +261,7 @@ nfpms:
         - changelog-file-missing-in-native-package
 
     rpm:
-      summary: CloudWorkstation CLI tool
+      summary: Prism CLI tool
       group: Development/Tools
       compression: lzma
 
@@ -281,8 +281,8 @@ nfpms:
 #      - "--platform=linux/amd64"
 #      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
 #      - "--label=org.opencontainers.image.description={{ .ProjectName }}"
-#      - "--label=org.opencontainers.image.url=https://github.com/scttfrdmn/cloudworkstation"
-#      - "--label=org.opencontainers.image.source=https://github.com/scttfrdmn/cloudworkstation"
+#      - "--label=org.opencontainers.image.url=https://github.com/scttfrdmn/prism"
+#      - "--label=org.opencontainers.image.source=https://github.com/scttfrdmn/prism"
 #      - "--label=org.opencontainers.image.version={{ .Version }}"
 #      - "--label=org.opencontainers.image.created={{ .Date }}"
 #      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
@@ -297,8 +297,8 @@ nfpms:
 #      - "--platform=linux/arm64"
 #      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
 #      - "--label=org.opencontainers.image.description={{ .ProjectName }}"
-#      - "--label=org.opencontainers.image.url=https://github.com/scttfrdmn/cloudworkstation"
-#      - "--label=org.opencontainers.image.source=https://github.com/scttfrdmn/cloudworkstation"
+#      - "--label=org.opencontainers.image.url=https://github.com/scttfrdmn/prism"
+#      - "--label=org.opencontainers.image.source=https://github.com/scttfrdmn/prism"
 #      - "--label=org.opencontainers.image.version={{ .Version }}"
 #      - "--label=org.opencontainers.image.created={{ .Date }}"
 #      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
@@ -321,46 +321,46 @@ nfpms:
 release:
   github:
     owner: scttfrdmn
-    name: cloudworkstation
+    name: prism
 
   # Release notes
   header: |
-    ## CloudWorkstation {{ .Tag }}
+    ## Prism {{ .Tag }}
 
-    Welcome to this new release of CloudWorkstation!
+    Welcome to this new release of Prism!
 
   footer: |
     ## Installation
 
     ### Homebrew (macOS and Linux)
     ```bash
-    brew install scttfrdmn/tap/cloudworkstation
+    brew install scttfrdmn/tap/prism
     ```
 
     ### Scoop (Windows)
     ```powershell
     scoop bucket add scttfrdmn https://github.com/scttfrdmn/scoop-bucket
-    scoop install cloudworkstation
+    scoop install prism
     ```
 
     ### Debian/Ubuntu
     ```bash
-    wget https://github.com/scttfrdmn/cloudworkstation/releases/download/{{ .Tag }}/cloudworkstation_{{ .Version }}_linux_amd64.deb
-    sudo dpkg -i cloudworkstation_{{ .Version }}_linux_amd64.deb
+    wget https://github.com/scttfrdmn/prism/releases/download/{{ .Tag }}/prism_{{ .Version }}_linux_amd64.deb
+    sudo dpkg -i prism_{{ .Version }}_linux_amd64.deb
     ```
 
     ### RHEL/CentOS/Fedora
     ```bash
-    wget https://github.com/scttfrdmn/cloudworkstation/releases/download/{{ .Tag }}/cloudworkstation_{{ .Version }}_linux_amd64.rpm
-    sudo rpm -i cloudworkstation_{{ .Version }}_linux_amd64.rpm
+    wget https://github.com/scttfrdmn/prism/releases/download/{{ .Tag }}/prism_{{ .Version }}_linux_amd64.rpm
+    sudo rpm -i prism_{{ .Version }}_linux_amd64.rpm
     ```
 
     ### Docker
     ```bash
-    docker pull ghcr.io/scttfrdmn/cloudworkstation:{{ .Tag }}
+    docker pull ghcr.io/scttfrdmn/prism:{{ .Tag }}
     ```
 
-    **Full Changelog**: https://github.com/scttfrdmn/cloudworkstation/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/scttfrdmn/prism/compare/{{ .PreviousTag }}...{{ .Tag }}
 
   # Release name template
   name_template: "{{.ProjectName}} v{{.Version}}"

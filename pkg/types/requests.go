@@ -2,23 +2,24 @@ package types
 
 // LaunchRequest represents a request to launch an instance
 type LaunchRequest struct {
-	Template       string                 `json:"template"`
-	Name           string                 `json:"name"`
-	Size           string                 `json:"size,omitempty"`            // XS, S, M, L, XL, GPU-S, etc.
-	PackageManager string                 `json:"package_manager,omitempty"` // auto, conda, spack, apt
-	Volumes        []string               `json:"volumes,omitempty"`         // EFS volume names to attach
-	EBSVolumes     []string               `json:"ebs_volumes,omitempty"`     // EBS volume IDs to attach
-	Region         string                 `json:"region,omitempty"`
-	SubnetID       string                 `json:"subnet_id,omitempty"`
-	VpcID          string                 `json:"vpc_id,omitempty"`
-	ProjectID      string                 `json:"project_id,omitempty"`   // Project to associate instance with
-	SSHKeyName     string                 `json:"ssh_key_name,omitempty"` // AWS key pair name to use
-	Spot           bool                   `json:"spot,omitempty"`
-	IdlePolicy     bool                   `json:"idle_policy,omitempty"` // Enable idle policy for automatic cost optimization
-	DryRun         bool                   `json:"dry_run,omitempty"`
-	Wait           bool                   `json:"wait,omitempty"`          // Wait and show launch progress
-	Parameters     map[string]interface{} `json:"parameters,omitempty"`    // Template parameters
-	ResearchUser   string                 `json:"research_user,omitempty"` // Research user to create and provision (Phase 5A+)
+	Template            string                 `json:"template"`
+	Name                string                 `json:"name"`
+	Size                string                 `json:"size,omitempty"`            // XS, S, M, L, XL, GPU-S, etc.
+	PackageManager      string                 `json:"package_manager,omitempty"` // auto, conda, spack, apt
+	Volumes             []string               `json:"volumes,omitempty"`         // EFS volume names to attach
+	EBSVolumes          []string               `json:"ebs_volumes,omitempty"`     // EBS volume IDs to attach
+	Region              string                 `json:"region,omitempty"`
+	SubnetID            string                 `json:"subnet_id,omitempty"`
+	VpcID               string                 `json:"vpc_id,omitempty"`
+	ProjectID           string                 `json:"project_id,omitempty"`            // Project to associate instance with
+	FundingAllocationID string                 `json:"funding_allocation_id,omitempty"` // Budget allocation to charge (v0.5.10+)
+	SSHKeyName          string                 `json:"ssh_key_name,omitempty"`          // AWS key pair name to use
+	Spot                bool                   `json:"spot,omitempty"`
+	IdlePolicy          bool                   `json:"idle_policy,omitempty"` // Enable idle policy for automatic cost optimization
+	DryRun              bool                   `json:"dry_run,omitempty"`
+	Wait                bool                   `json:"wait,omitempty"`          // Wait and show launch progress
+	Parameters          map[string]interface{} `json:"parameters,omitempty"`    // Template parameters
+	ResearchUser        string                 `json:"research_user,omitempty"` // Research user to create and provision (Phase 5A+)
 
 	// Universal Version System (v0.5.5)
 	Version string `json:"version,omitempty"` // OS version (e.g., "24.04", "22.04", "9", "10", "latest", "lts")

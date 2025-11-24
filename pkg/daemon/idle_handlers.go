@@ -8,14 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/idle"
+	"github.com/scttfrdmn/prism/pkg/aws"
+	"github.com/scttfrdmn/prism/pkg/idle"
 )
 
 // RegisterIdleRoutes registers all idle policy API routes
 func (s *Server) RegisterIdleRoutes(mux *http.ServeMux, applyMiddleware func(http.HandlerFunc) http.HandlerFunc) {
 	// Idle policy endpoints
 	mux.HandleFunc("/api/v1/idle/policies", applyMiddleware(s.handleIdlePolicies))
-	mux.HandleFunc("/api/v1/idle/policies/", applyMiddleware(s.handleIdlePolicyOperations))
+	mux.HandleFunc("/api/v1/idle/policies/apply", applyMiddleware(s.handleIdlePolicyApply)) // Register specific route before wildcard
+	mux.HandleFunc("/api/v1/idle/policies/", applyMiddleware(s.handleIdlePolicyOperations)) // Wildcard route last
 	mux.HandleFunc("/api/v1/idle/schedules", applyMiddleware(s.handleIdleSchedules))
 	mux.HandleFunc("/api/v1/idle/savings", applyMiddleware(s.handleIdleSavings))
 }
@@ -139,15 +141,14 @@ func (s *Server) recommendIdlePolicy(w http.ResponseWriter, r *http.Request) {
 
 // listIdleSchedules returns active idle schedules
 func (s *Server) listIdleSchedules(w http.ResponseWriter, r *http.Request) {
-	// Get scheduler from AWS manager
-	scheduler := s.awsManager.GetIdleScheduler()
-	if scheduler == nil {
+	// Use daemon-level singleton scheduler (Issue #289 fix)
+	if s.idleScheduler == nil {
 		http.Error(w, "Scheduler not available", http.StatusServiceUnavailable)
 		return
 	}
 
 	// Get all schedules from scheduler
-	schedules := scheduler.ListSchedules()
+	schedules := s.idleScheduler.ListSchedules()
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(schedules); err != nil {
@@ -239,9 +240,10 @@ func (s *Server) generateSavingsRecommendations() []map[string]interface{} {
 	if instances, err := s.awsManager.ListInstances(); err == nil {
 		instancesWithoutPolicy := 0
 		for _, instance := range instances {
-			// Check if instance has idle policy
-			if policies, err := s.awsManager.GetInstancePolicies(instance.Name); err == nil {
-				if len(policies) == 0 {
+			// Check if instance has idle policy (use daemon-level scheduler)
+			if s.idleScheduler != nil {
+				schedules := s.idleScheduler.GetInstanceSchedules(instance.Name)
+				if len(schedules) == 0 {
 					instancesWithoutPolicy++
 				}
 			}
@@ -286,11 +288,46 @@ func (s *Server) handleInstanceIdlePolicy(w http.ResponseWriter, r *http.Request
 
 // getInstanceIdlePolicies returns idle policies applied to an instance
 func (s *Server) getInstanceIdlePolicies(w http.ResponseWriter, r *http.Request, instanceName string) {
-	// Get applied policies from AWS manager
-	policies, err := s.awsManager.GetInstancePolicies(instanceName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get instance policies: %v", err), http.StatusInternalServerError)
+	// Use daemon-level singleton components (Issue #289 fix)
+	if s.idleScheduler == nil || s.policyManager == nil {
+		// No idle detection components, return empty list
+		policies := []*idle.PolicyTemplate{}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(policies); err != nil {
+			http.Error(w, "Failed to encode policies", http.StatusInternalServerError)
+		}
 		return
+	}
+
+	// Get schedules for this instance
+	schedules := s.idleScheduler.GetInstanceSchedules(instanceName)
+	if len(schedules) == 0 {
+		// No schedules applied, return empty list
+		policies := []*idle.PolicyTemplate{}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(policies); err != nil {
+			http.Error(w, "Failed to encode policies", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Collect unique policy IDs from schedules (Issue #289)
+	policyIDs := make(map[string]bool)
+	for _, schedule := range schedules {
+		if schedule.PolicyID != "" {
+			policyIDs[schedule.PolicyID] = true
+		}
+	}
+
+	// Get policy templates for each unique PolicyID
+	policies := make([]*idle.PolicyTemplate, 0, len(policyIDs))
+	for policyID := range policyIDs {
+		policy, err := s.policyManager.GetTemplate(policyID)
+		if err != nil {
+			// Skip policies that can't be found
+			continue
+		}
+		policies = append(policies, policy)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -302,10 +339,30 @@ func (s *Server) getInstanceIdlePolicies(w http.ResponseWriter, r *http.Request,
 
 // applyIdlePolicyToInstance applies an idle policy to an instance
 func (s *Server) applyIdlePolicyToInstance(w http.ResponseWriter, r *http.Request, instanceName, policyID string) {
-	// Apply the idle policy via AWS manager
-	if err := s.awsManager.ApplyHibernationPolicy(instanceName, policyID); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to apply idle policy: %v", err), http.StatusInternalServerError)
+	// Use daemon-level singleton components (Issue #289 fix)
+	if s.idleScheduler == nil || s.policyManager == nil {
+		http.Error(w, "Idle detection not initialized", http.StatusServiceUnavailable)
 		return
+	}
+
+	// Get policy template
+	policy, err := s.policyManager.GetTemplate(policyID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Policy not found: %s", policyID), http.StatusNotFound)
+		return
+	}
+
+	// Apply policy by adding its schedules to the scheduler
+	for i := range policy.Schedules {
+		schedule := policy.Schedules[i]
+		// Set this instance as the target
+		schedule.TargetInstances = []string{instanceName}
+		// Tag schedule with policy ID for status tracking (Issue #289)
+		schedule.PolicyID = policyID
+		if err := s.idleScheduler.AddSchedule(&schedule); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to add schedule: %v", err), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	response := map[string]string{
@@ -322,20 +379,115 @@ func (s *Server) applyIdlePolicyToInstance(w http.ResponseWriter, r *http.Reques
 
 // removeIdlePolicyFromInstance removes an idle policy from an instance
 func (s *Server) removeIdlePolicyFromInstance(w http.ResponseWriter, r *http.Request, instanceName, policyID string) {
-	// Remove the idle policy via AWS manager
-	if err := s.awsManager.RemoveHibernationPolicy(instanceName, policyID); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to remove idle policy: %v", err), http.StatusInternalServerError)
+	// Use daemon-level singleton components (Issue #289 fix)
+	if s.idleScheduler == nil {
+		http.Error(w, "Idle detection not initialized", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Get all schedules for this instance
+	schedules := s.idleScheduler.GetInstanceSchedules(instanceName)
+
+	// Remove schedules matching the policy ID
+	removedCount := 0
+	for _, schedule := range schedules {
+		if schedule.PolicyID == policyID {
+			if err := s.idleScheduler.RemoveScheduleFromInstance(schedule.ID, instanceName); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to remove schedule: %v", err), http.StatusInternalServerError)
+				return
+			}
+			removedCount++
+		}
+	}
+
+	if removedCount == 0 {
+		http.Error(w, fmt.Sprintf("No schedules found for policy %s on instance %s", policyID, instanceName), http.StatusNotFound)
 		return
 	}
 
 	response := map[string]string{
 		"status":  "success",
-		"message": fmt.Sprintf("Successfully removed idle policy %s from instance %s", policyID, instanceName),
+		"message": fmt.Sprintf("Successfully removed idle policy %s from instance %s (%d schedules removed)", policyID, instanceName, removedCount),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// handleIdlePolicyApply handles POST /api/v1/idle/policies/apply
+func (s *Server) handleIdlePolicyApply(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		InstanceName string `json:"instance_name"`
+		PolicyID     string `json:"policy_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Delegate to existing handler
+	s.applyIdlePolicyToInstance(w, r, req.InstanceName, req.PolicyID)
+}
+
+// handleInstanceRecommendIdlePolicy handles GET /api/v1/instances/{instanceName}/recommend-idle-policy
+func (s *Server) handleInstanceRecommendIdlePolicy(w http.ResponseWriter, r *http.Request, instanceName string) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get instance details from AWS
+	var instanceType string
+
+	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
+		// Get all instances and find the one we're looking for
+		instances, err := awsManager.ListInstances()
+		if err != nil {
+			return fmt.Errorf("failed to get instance details: %w", err)
+		}
+
+		// Find the instance
+		var found bool
+		for _, inst := range instances {
+			if inst.Name == instanceName {
+				instanceType = inst.InstanceType
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("instance not found: %s", instanceName)
+		}
+
+		return nil
+	})
+
+	// If withAWSManager returned early with an error, it already wrote the response
+	if instanceType == "" {
+		return
+	}
+
+	// Get recommendation based on instance type (tags not available in Instance struct)
+	policyManager := idle.NewPolicyManager()
+	policy, err := policyManager.RecommendTemplate(instanceType, nil)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to recommend policy: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(policy); err != nil {
+		http.Error(w, "Failed to encode policy", http.StatusInternalServerError)
 		return
 	}
 }

@@ -1,12 +1,12 @@
-// Package cli implements CloudWorkstation's command-line interface application.
+// Package cli implements Prism's command-line interface application.
 //
-// This package provides the CLI application logic for the CloudWorkstation client (cws).
+// This package provides the CLI application logic for the Prism client (cws).
 // It handles command parsing, API client communication, output formatting, and user
-// interaction flows while maintaining CloudWorkstation's core design principles.
+// interaction flows while maintaining Prism's core design principles.
 //
 // Application Structure:
 //   - App: Main CLI application with command routing
-//   - Command handlers for all CloudWorkstation operations
+//   - Command handlers for all Prism operations
 //   - Output formatting with tables and JSON support
 //   - Error handling with user-friendly messages
 //   - Configuration management and validation
@@ -41,19 +41,20 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/api/client"
-	"github.com/scttfrdmn/cloudworkstation/pkg/pricing"
-	"github.com/scttfrdmn/cloudworkstation/pkg/profile"
-	"github.com/scttfrdmn/cloudworkstation/pkg/project"
-	"github.com/scttfrdmn/cloudworkstation/pkg/templates"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/api/client"
+	"github.com/scttfrdmn/prism/pkg/aws"
+	"github.com/scttfrdmn/prism/pkg/pricing"
+	"github.com/scttfrdmn/prism/pkg/profile"
+	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/spf13/cobra"
 )
 
 // App represents the CLI application
 type App struct {
 	version               string
-	apiClient             client.CloudWorkstationAPI
+	apiClient             client.PrismAPI
 	ctx                   context.Context // Context for AWS operations
 	tuiCommand            *cobra.Command
 	config                *Config
@@ -98,16 +99,29 @@ func NewApp(version string) *App {
 	apiKey := loadAPIKeyFromState()
 
 	// Determine AWS profile and region to use
-	// Priority: Current CloudWorkstation profile > Config file > Environment variables
+	// Priority: Current Prism profile > Config file > Environment variables
 	awsProfile := config.AWS.Profile
 	awsRegion := config.AWS.Region
 
-	// Check if there's an active CloudWorkstation profile
+	// Check if there's an active Prism profile
 	if profileManager != nil {
 		if currentProfile, err := profileManager.GetCurrentProfile(); err == nil && currentProfile != nil {
-			// Use CloudWorkstation profile settings
+			// Use Prism profile settings
 			awsProfile = currentProfile.AWSProfile
 			awsRegion = currentProfile.Region
+		}
+	}
+
+	// Check environment variables if profile/region not set or is "default"
+	// This ensures AWS_PROFILE and AWS_REGION environment variables are respected
+	if awsProfile == "" || awsProfile == "default" {
+		if envProfile := os.Getenv("AWS_PROFILE"); envProfile != "" {
+			awsProfile = envProfile
+		}
+	}
+	if awsRegion == "" {
+		if envRegion := os.Getenv("AWS_REGION"); envRegion != "" {
+			awsRegion = envRegion
 		}
 	}
 
@@ -176,8 +190,8 @@ func (a *App) ensureDaemonRunning() error {
 	if err := a.systemCommands.Daemon([]string{"start"}); err != nil {
 		fmt.Println(DaemonAutoStartFailedMessage)
 		fmt.Printf("\n💡 Troubleshooting:\n")
-		fmt.Printf("   • Check if 'cwsd' binary is in your PATH\n")
-		fmt.Printf("   • Try manual start: cws daemon start\n")
+		fmt.Printf("   • Check if 'prismd' binary is in your PATH\n")
+		fmt.Printf("   • Try manual start: prism daemon start\n")
 		fmt.Printf("   • Check daemon logs for errors\n")
 		return WrapAPIError("auto-start daemon", err)
 	}
@@ -199,7 +213,7 @@ func (a *App) checkVersionCompatibility() error {
 }
 
 // NewAppWithClient creates a new CLI application with a custom API client
-func NewAppWithClient(version string, apiClient client.CloudWorkstationAPI) *App {
+func NewAppWithClient(version string, apiClient client.PrismAPI) *App {
 	// Load config
 	config, err := LoadConfig()
 	if err != nil {
@@ -255,7 +269,7 @@ func (a *App) TUI(_ []string) error {
 // Launch handles the launch command
 func (a *App) Launch(args []string) error {
 	if len(args) < 2 {
-		return NewUsageError("cws launch <template> <name>", "cws launch python-ml my-workstation")
+		return NewUsageError("prism launch <template> <name>", "prism launch python-ml my-workstation")
 	}
 
 	template := args[0]
@@ -283,11 +297,12 @@ func (a *App) Launch(args []string) error {
 
 	response, err := a.apiClient.LaunchInstance(a.ctx, req)
 
-	spinner.StopWithMessage(fmt.Sprintf("✅ %s", response.Message))
-
 	if err != nil {
+		spinner.Stop()
 		return WrapAPIError("launch workspace "+req.Name, err)
 	}
+
+	spinner.StopWithMessage(fmt.Sprintf("✅ %s", response.Message))
 
 	// Show project information if launched in a project
 	if req.ProjectID != "" {
@@ -303,7 +318,7 @@ func (a *App) Launch(args []string) error {
 	// Check if this is a package-based template (no AMI = needs package installation)
 	if !shouldMonitor {
 		templateInfo, err := a.apiClient.GetTemplate(a.ctx, req.Template)
-		if err == nil && (templateInfo.AMI == nil || len(templateInfo.AMI) == 0) {
+		if err == nil && len(templateInfo.AMI) == 0 {
 			// Package-based template - always monitor progress
 			shouldMonitor = true
 			fmt.Printf("\n💡 Package installation will take 5-10 minutes. Monitoring progress...\n")
@@ -392,8 +407,8 @@ func (a *App) monitorLaunchWithEnhancedProgress(reporter *ProgressReporter, temp
 		if elapsed > maxDuration {
 			fmt.Printf("⚠️  Launch monitoring timeout (%s). Workspace may still be setting up.\n",
 				reporter.FormatDuration(maxDuration))
-			fmt.Printf("💡 Check status with: cws list\n")
-			fmt.Printf("💡 Try connecting: cws connect %s\n", reporter.instanceName)
+			fmt.Printf("💡 Check status with: prism list\n")
+			fmt.Printf("💡 Try connecting: prism connect %s\n", reporter.instanceName)
 			return nil
 		}
 
@@ -406,7 +421,7 @@ func (a *App) monitorLaunchWithEnhancedProgress(reporter *ProgressReporter, temp
 			} else {
 				// After 30 seconds, show as potential issue
 				fmt.Printf("⚠️  Unable to get instance status after %s\n", reporter.FormatDuration(elapsed))
-				fmt.Printf("💡 Workspace may still be launching. Check with: cws list\n")
+				fmt.Printf("💡 Workspace may still be launching. Check with: prism list\n")
 			}
 			time.Sleep(5 * time.Second)
 			continue
@@ -477,7 +492,7 @@ func (h *PendingStateHandler) Handle(state string, elapsed int, instanceName str
 
 // RunningStateHandler handles running instance state with setup monitoring
 type RunningStateHandler struct {
-	apiClient client.CloudWorkstationAPI
+	apiClient client.PrismAPI
 	ctx       context.Context
 }
 
@@ -494,7 +509,7 @@ func (h *RunningStateHandler) Handle(state string, elapsed int, instanceName str
 		_, connErr := h.apiClient.ConnectInstance(h.ctx, instanceName)
 		if connErr == nil {
 			fmt.Printf("✅ Setup complete! Workspace ready.\n")
-			fmt.Printf("🔗 Connect: cws connect %s\n", instanceName)
+			fmt.Printf("🔗 Connect: prism connect %s\n", instanceName)
 			return false, nil
 		}
 	}
@@ -557,12 +572,12 @@ func (h *DefaultStateHandler) Handle(state string, elapsed int, instanceName str
 // LaunchProgressMonitor manages package launch monitoring (Strategy Pattern - SOLID)
 type LaunchProgressMonitor struct {
 	handlers  []InstanceStateHandler
-	apiClient client.CloudWorkstationAPI
+	apiClient client.PrismAPI
 	ctx       context.Context
 }
 
 // NewLaunchProgressMonitor creates launch progress monitor
-func NewLaunchProgressMonitor(apiClient client.CloudWorkstationAPI, ctx context.Context) *LaunchProgressMonitor {
+func NewLaunchProgressMonitor(apiClient client.PrismAPI, ctx context.Context) *LaunchProgressMonitor {
 	return &LaunchProgressMonitor{
 		handlers: []InstanceStateHandler{
 			&PendingStateHandler{},
@@ -773,7 +788,7 @@ func (a *App) List(args []string) error {
 		fmt.Printf("   Total accumulated:  $%.4f (since launch)\n", totalCurrentCost)
 		fmt.Printf("   Effective rate:     $%.4f/hr (actual usage)\n", totalEffectiveCost)
 		fmt.Printf("   Estimated daily:    $%.2f (at current rate)\n", totalEffectiveCost*24)
-		fmt.Printf("\n💡 Tip: Use 'cws list cost' for detailed cost breakdown with savings analysis\n")
+		fmt.Printf("\n💡 Tip: Use 'prism list cost' for detailed cost breakdown with savings analysis\n")
 	}
 
 	return nil
@@ -825,7 +840,7 @@ func (a *App) ListCost(args []string) error {
 	if projectFilter != "" {
 		fmt.Printf("💰 Cost Analysis for project '%s':\n\n", projectFilter)
 	} else {
-		fmt.Println("💰 CloudWorkstation Cost Analysis")
+		fmt.Println("💰 Prism Cost Analysis")
 	}
 
 	// Use Strategy Pattern for cost analysis (SOLID: Open/Closed Principle)
@@ -842,7 +857,7 @@ func (a *App) ListCost(args []string) error {
 	// Display cost summary
 	a.displayCostSummary(summary, hasDiscounts, pricingConfig)
 
-	fmt.Printf("\n💡 Tip: Use 'cws list' for a clean workspace overview without cost data\n")
+	fmt.Printf("\n💡 Tip: Use 'prism list' for a clean workspace overview without cost data\n")
 
 	return nil
 }
@@ -905,6 +920,41 @@ func (a *App) Hibernate(args []string) error {
 
 func (a *App) Resume(args []string) error {
 	return a.instanceCommands.Resume(args)
+}
+
+// StopWithWait stops an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) StopWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Stop([]string{name})
+}
+
+// StartWithWait starts an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) StartWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Start([]string{name})
+}
+
+// DeleteWithWait deletes an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) DeleteWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Delete([]string{name})
+}
+
+// HibernateWithWait hibernates an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) HibernateWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Hibernate([]string{name})
+}
+
+// ResumeWithWait resumes an instance with optional blocking (Phase 1: backward compatible, always blocks)
+func (a *App) ResumeWithWait(name string, wait bool) error {
+	// Phase 1: Keep current blocking behavior regardless of wait flag
+	// TODO: In Phase 2, make async by default and only wait if wait==true
+	return a.instanceCommands.Resume([]string{name})
 }
 
 // Volume handles volume commands
@@ -973,7 +1023,7 @@ func (a *App) Scaling(args []string) error {
 
 // AMIDiscover demonstrates AMI auto-discovery functionality
 func (a *App) AMIDiscover(args []string) error {
-	fmt.Printf("🔍 CloudWorkstation AMI Auto-Discovery\n\n")
+	fmt.Printf("🔍 Prism AMI Auto-Discovery\n\n")
 
 	// This would normally get the template resolver from the daemon
 	// For demo purposes, create a resolver and populate it with mock AMI data
@@ -1004,7 +1054,7 @@ func (a *App) AMIDiscover(args []string) error {
 
 	fmt.Printf("\n💡 Templates with ✅ use pre-built AMIs for faster deployment\n")
 	fmt.Printf("💡 Templates with ⏱️ will take several minutes to install packages\n")
-	fmt.Printf("\n🛠️  To build AMIs: cws ami build <template-name>\n")
+	fmt.Printf("\n🛠️  To build AMIs: prism ami build <template-name>\n")
 
 	return nil
 }
@@ -1016,7 +1066,7 @@ func (a *App) AMIDiscover(args []string) error {
 // Project command implementation
 func (a *App) Project(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project <action> [args]")
+		return fmt.Errorf("usage: prism project <action> [args]")
 	}
 
 	action := args[0]
@@ -1024,7 +1074,7 @@ func (a *App) Project(args []string) error {
 
 	// Check daemon is running
 	if err := a.apiClient.Ping(a.ctx); err != nil {
-		return fmt.Errorf("daemon not running. Start with: cws daemon start")
+		return fmt.Errorf("daemon not running. Start with: prism daemon start")
 	}
 
 	switch action {
@@ -1042,6 +1092,10 @@ func (a *App) Project(args []string) error {
 		return a.projectTemplates(projectArgs)
 	case "members":
 		return a.projectMembers(projectArgs)
+	case "invite":
+		return a.projectInvite(projectArgs)
+	case "invitations":
+		return a.projectInvitations(projectArgs)
 	case "delete":
 		return a.projectDelete(projectArgs)
 	default:
@@ -1051,7 +1105,7 @@ func (a *App) Project(args []string) error {
 
 func (a *App) projectCreate(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project create <name> [options]")
+		return fmt.Errorf("usage: prism project create <name> [options]")
 	}
 
 	name := args[0]
@@ -1070,7 +1124,7 @@ func (a *App) projectCreate(args []string) error {
 			if err != nil {
 				return fmt.Errorf("invalid budget amount: %s", args[i+1])
 			}
-			req.Budget = &project.CreateBudgetRequest{
+			req.Budget = &project.CreateProjectBudgetRequest{
 				TotalBudget: budgetAmount,
 			}
 			i++
@@ -1111,7 +1165,7 @@ func (a *App) projectList(_ []string) error {
 	}
 
 	if len(projectResponse.Projects) == 0 {
-		fmt.Println("No projects found. Create one with: cws project create <name>")
+		fmt.Println("No projects found. Create one with: prism project create <name>")
 		return nil
 	}
 
@@ -1148,7 +1202,7 @@ func (a *App) projectList(_ []string) error {
 
 func (a *App) projectInfo(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project info <name>")
+		return fmt.Errorf("usage: prism project info <name>")
 	}
 
 	name := args[0]
@@ -1184,7 +1238,7 @@ func (a *App) projectInfo(args []string) error {
 	}
 
 	// Instance information (placeholder - would need API extension to get project instances)
-	fmt.Printf("\n🖥️ Instances: (Use 'cws project instances %s' for detailed list)\n", project.Name)
+	fmt.Printf("\n🖥️ Instances: (Use 'prism project instances %s' for detailed list)\n", project.Name)
 
 	// Member information
 	fmt.Printf("\n👥 Members: %d\n", len(project.Members))
@@ -1199,7 +1253,7 @@ func (a *App) projectInfo(args []string) error {
 
 func (a *App) projectBudget(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project budget <action> <project> [options]")
+		return fmt.Errorf("usage: prism project budget <action> <project> [options]")
 	}
 
 	action := args[0]
@@ -1216,6 +1270,10 @@ func (a *App) projectBudget(args []string) error {
 		return a.projectBudgetDisable(remainingArgs)
 	case "history":
 		return a.projectBudgetHistory(remainingArgs)
+	case "prevent-launches":
+		return a.projectBudgetPreventLaunches(remainingArgs)
+	case "allow-launches":
+		return a.projectBudgetAllowLaunches(remainingArgs)
 	default:
 		// Legacy support: if first arg is not a subcommand, assume it's a project name for status
 		return a.projectBudgetStatus(args)
@@ -1224,7 +1282,7 @@ func (a *App) projectBudget(args []string) error {
 
 func (a *App) projectBudgetStatus(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project budget status <project>")
+		return fmt.Errorf("usage: prism project budget status <project>")
 	}
 
 	projectName := args[0]
@@ -1239,7 +1297,7 @@ func (a *App) projectBudgetStatus(args []string) error {
 
 	if !budgetStatus.BudgetEnabled {
 		fmt.Printf("   Budget: Not enabled\n")
-		fmt.Printf("   💡 Enable cost tracking with: cws project budget set %s <amount>\n", projectName)
+		fmt.Printf("   💡 Enable cost tracking with: prism project budget set %s <amount>\n", projectName)
 		return nil
 	}
 
@@ -1276,7 +1334,7 @@ func (a *App) projectBudgetStatus(args []string) error {
 
 func (a *App) projectBudgetSet(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: cws project budget set <project> <amount> [options]")
+		return fmt.Errorf("usage: prism project budget set <project> <amount> [options]")
 	}
 
 	projectName := args[0]
@@ -1291,7 +1349,7 @@ func (a *App) projectBudgetSet(args []string) error {
 
 	// NOTE: This is a simplified legacy function for backwards compatibility
 	// For full budget creation with all flags (--monthly-limit, --daily-limit, --alert, --action, etc.),
-	// use the Cobra-based command: `cws budget create <project> <amount> [flags]`
+	// use the Cobra-based command: `prism budget create <project> <amount> [flags]`
 	// See internal/cli/budget_commands.go for complete implementation with all features
 
 	req := client.SetProjectBudgetRequest{
@@ -1301,7 +1359,7 @@ func (a *App) projectBudgetSet(args []string) error {
 		AutoActions:     []types.BudgetAutoAction{},
 	}
 
-	// Add a default 80% warning alert (for full alert customization, use `cws budget create`)
+	// Add a default 80% warning alert (for full alert customization, use `prism budget create`)
 	req.AlertThresholds = append(req.AlertThresholds, types.BudgetAlert{
 		Threshold: 0.8,
 		Type:      types.BudgetAlertEmail,
@@ -1326,7 +1384,7 @@ func (a *App) projectBudgetSet(args []string) error {
 
 func (a *App) projectBudgetUpdate(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project budget update <project> [options]")
+		return fmt.Errorf("usage: prism project budget update <project> [options]")
 	}
 
 	projectName := args[0]
@@ -1350,7 +1408,7 @@ func (a *App) projectBudgetUpdate(args []string) error {
 
 func (a *App) projectBudgetDisable(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project budget disable <project>")
+		return fmt.Errorf("usage: prism project budget disable <project>")
 	}
 
 	projectName := args[0]
@@ -1372,7 +1430,7 @@ func (a *App) projectBudgetDisable(args []string) error {
 
 func (a *App) projectBudgetHistory(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project budget history <project> [--days N]")
+		return fmt.Errorf("usage: prism project budget history <project> [--days N]")
 	}
 
 	projectName := args[0]
@@ -1380,14 +1438,61 @@ func (a *App) projectBudgetHistory(args []string) error {
 	// For now, show a placeholder - this would be enhanced with actual cost history data
 	fmt.Printf("📊 Budget History for '%s':\n", projectName)
 	fmt.Printf("   (Cost history functionality would be implemented here)\n")
-	fmt.Printf("   💡 Use 'cws project budget status %s' for current spending\n", projectName)
+	fmt.Printf("   💡 Use 'prism project budget status %s' for current spending\n", projectName)
+
+	return nil
+}
+
+func (a *App) projectBudgetPreventLaunches(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: prism project budget prevent-launches <project>")
+	}
+
+	projectName := args[0]
+
+	// Call API to prevent launches
+	response, err := a.apiClient.PreventProjectLaunches(a.ctx, projectName)
+	if err != nil {
+		return fmt.Errorf("failed to prevent launches: %w", err)
+	}
+
+	fmt.Printf("🚫 Launch prevention enabled for project '%s'\n", projectName)
+	fmt.Printf("   New instance launches are now blocked\n")
+	fmt.Printf("   💡 To allow launches again: prism project budget allow-launches %s\n", projectName)
+
+	if message, ok := response["message"].(string); ok {
+		fmt.Printf("   %s\n", message)
+	}
+
+	return nil
+}
+
+func (a *App) projectBudgetAllowLaunches(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: prism project budget allow-launches <project>")
+	}
+
+	projectName := args[0]
+
+	// Call API to allow launches
+	response, err := a.apiClient.AllowProjectLaunches(a.ctx, projectName)
+	if err != nil {
+		return fmt.Errorf("failed to allow launches: %w", err)
+	}
+
+	fmt.Printf("✅ Launch prevention cleared for project '%s'\n", projectName)
+	fmt.Printf("   New instance launches are now allowed\n")
+
+	if message, ok := response["message"].(string); ok {
+		fmt.Printf("   %s\n", message)
+	}
 
 	return nil
 }
 
 func (a *App) projectInstances(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project instances <name>")
+		return fmt.Errorf("usage: prism project instances <name>")
 	}
 
 	projectName := args[0]
@@ -1408,7 +1513,7 @@ func (a *App) projectInstances(args []string) error {
 
 	if len(projectInstances) == 0 {
 		fmt.Printf("No instances found in project '%s'\n", projectName)
-		fmt.Printf("Launch one with: cws launch <template> <workspace-name> --project %s\n", projectName)
+		fmt.Printf("Launch one with: prism launch <template> <workspace-name> --project %s\n", projectName)
 		return nil
 	}
 
@@ -1439,7 +1544,7 @@ func (a *App) projectInstances(args []string) error {
 
 func (a *App) projectTemplates(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project templates <name>")
+		return fmt.Errorf("usage: prism project templates <name>")
 	}
 
 	name := args[0]
@@ -1447,14 +1552,14 @@ func (a *App) projectTemplates(args []string) error {
 	// For now, show a placeholder since project templates integration is complex
 	fmt.Printf("🏗️ Custom templates in project '%s':\n", name)
 	fmt.Printf("(Project template integration is being developed)\n")
-	fmt.Printf("Save an instance as template with: cws save <instance> <template> --project %s\n", name)
+	fmt.Printf("Save an instance as template with: prism save <instance> <template> --project %s\n", name)
 
 	return nil
 }
 
 func (a *App) projectMembers(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project members <name> [action] [member-email] [role]")
+		return fmt.Errorf("usage: prism project members <name> [action] [member-email] [role]")
 	}
 
 	name := args[0]
@@ -1465,7 +1570,7 @@ func (a *App) projectMembers(args []string) error {
 		switch action {
 		case "add":
 			if len(args) < 4 {
-				return fmt.Errorf("usage: cws project members <name> add <email> <role>")
+				return fmt.Errorf("usage: prism project members <name> add <email> <role>")
 			}
 			email := args[2]
 			role := args[3]
@@ -1494,7 +1599,7 @@ func (a *App) projectMembers(args []string) error {
 
 		case "remove":
 			if len(args) < 3 {
-				return fmt.Errorf("usage: cws project members <name> remove <email>")
+				return fmt.Errorf("usage: prism project members <name> remove <email>")
 			}
 			email := args[2]
 
@@ -1516,7 +1621,7 @@ func (a *App) projectMembers(args []string) error {
 
 	if len(members) == 0 {
 		fmt.Printf("No members found in project '%s'\n", name)
-		fmt.Printf("Add members with: cws project members %s add <email> <role>\n", name)
+		fmt.Printf("Add members with: prism project members %s add <email> <role>\n", name)
 		return nil
 	}
 
@@ -1538,15 +1643,15 @@ func (a *App) projectMembers(args []string) error {
 	_ = w.Flush()
 
 	fmt.Printf("\nRoles: owner, admin, member, viewer\n")
-	fmt.Printf("Add member: cws project members %s add <email> <role>\n", name)
-	fmt.Printf("Remove member: cws project members %s remove <email>\n", name)
+	fmt.Printf("Add member: prism project members %s add <email> <role>\n", name)
+	fmt.Printf("Remove member: prism project members %s remove <email>\n", name)
 
 	return nil
 }
 
 func (a *App) projectDelete(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: cws project delete <name>")
+		return fmt.Errorf("usage: prism project delete <name>")
 	}
 
 	name := args[0]
@@ -1574,6 +1679,27 @@ func (a *App) projectDelete(args []string) error {
 	return nil
 }
 
+// GetAWSManager creates an AWS manager using the current profile settings
+func (a *App) GetAWSManager() (*aws.Manager, error) {
+	// Determine AWS profile and region to use
+	awsProfile := a.config.AWS.Profile
+	awsRegion := a.config.AWS.Region
+
+	// Check if there's an active Prism profile that overrides config
+	if a.profileManager != nil {
+		if currentProfile, err := a.profileManager.GetCurrentProfile(); err == nil && currentProfile != nil {
+			awsProfile = currentProfile.AWSProfile
+			awsRegion = currentProfile.Region
+		}
+	}
+
+	// Create AWS manager with options
+	return aws.NewManager(aws.ManagerOptions{
+		Profile: awsProfile,
+		Region:  awsRegion,
+	})
+}
+
 // loadAPIKeyFromState attempts to load the API key from daemon state
 func loadAPIKeyFromState() string {
 	// Try to load daemon state to get API key
@@ -1582,7 +1708,7 @@ func loadAPIKeyFromState() string {
 		return "" // No API key available
 	}
 
-	stateFile := filepath.Join(homeDir, ".cloudworkstation", "state.json")
+	stateFile := filepath.Join(homeDir, ".prism", "state.json")
 	data, err := os.ReadFile(stateFile)
 	if err != nil {
 		return "" // No state file or can't read it
@@ -1652,14 +1778,14 @@ func (a *App) monitorSetupProgress(instance *types.Instance) error {
 			if strings.Contains(status, "Complete") || strings.Contains(status, "ready") {
 				fmt.Printf("\n✅ Setup complete! Workspace ready.\n")
 				fmt.Printf("⏱️  Total setup time: %s\n", elapsed.Round(time.Second))
-				fmt.Printf("🔗 Connect: cws connect %s\n", instance.Name)
+				fmt.Printf("🔗 Connect: prism connect %s\n", instance.Name)
 				return nil
 			}
 
 			// Timeout after 15 minutes
 			if elapsed > 15*time.Minute {
 				fmt.Printf("\n⚠️  Setup taking longer than expected\n")
-				fmt.Printf("💡 Workspace may still be configuring. Check with: cws list\n")
+				fmt.Printf("💡 Workspace may still be configuring. Check with: prism list\n")
 				return nil
 			}
 		}
@@ -1676,7 +1802,7 @@ func (a *App) findSSHKey(region string) (string, error) {
 	// Standard format: cws-test-{region}-key
 	keyPaths := []string{
 		filepath.Join(homeDir, ".ssh", fmt.Sprintf("cws-test-%s-key", region)),
-		filepath.Join(homeDir, ".cloudworkstation", "profiles", "test", "ssh", fmt.Sprintf("cws-test-%s-key", region)),
+		filepath.Join(homeDir, ".prism", "profiles", "test", "ssh", fmt.Sprintf("cws-test-%s-key", region)),
 	}
 
 	for _, path := range keyPaths {

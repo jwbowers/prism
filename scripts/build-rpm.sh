@@ -13,12 +13,12 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-PACKAGE_NAME="cloudworkstation"
+PACKAGE_NAME="prism"
 VERSION="${VERSION:-0.5.1}"
 RELEASE="${RELEASE:-1}"
 ARCH="${ARCH:-$(uname -m)}"
 BUILD_DIR="$(pwd)/packaging/rpm"
-SPEC_FILE="$BUILD_DIR/cloudworkstation.spec"
+SPEC_FILE="$BUILD_DIR/prism.spec"
 SOURCE_DIR="$BUILD_DIR/sources"
 DIST_DIR="$(pwd)/dist/rpm"
 
@@ -146,7 +146,7 @@ prepare_source_package() {
         --exclude='.pytest_cache/' \
         --exclude='test_results/' \
         --exclude='volume/' \
-        --exclude='cloudworkstation-*.tar.gz' \
+        --exclude='prism-*.tar.gz' \
         --exclude='packaging/rpm/BUILD/*' \
         --exclude='packaging/rpm/RPMS/*' \
         --exclude='packaging/rpm/SRPMS/*' \
@@ -172,9 +172,9 @@ build_binaries() {
     
     # Build flags with version information
     local ldflags
-    ldflags="-ldflags \"-X github.com/scttfrdmn/cloudworkstation/pkg/version.Version=$VERSION \
-                     -X github.com/scttfrdmn/cloudworkstation/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%H:%M:%S') \
-                     -X github.com/scttfrdmn/cloudworkstation/pkg/version.GitCommit=rpm-build \
+    ldflags="-ldflags \"-X github.com/scttfrdmn/prism/pkg/version.Version=$VERSION \
+                     -X github.com/scttfrdmn/prism/pkg/version.BuildDate=$(date -u '+%Y-%m-%d_%H:%M:%S') \
+                     -X github.com/scttfrdmn/prism/pkg/version.GitCommit=rpm-build \
                      -w -s\""
     
     # Clean and create bin directory
@@ -186,10 +186,10 @@ build_binaries() {
     
     # Build daemon
     print_step "Building daemon binary (cwsd)..."
-    eval "go build $ldflags -o bin/cwsd ./cmd/cwsd"
+    eval "go build $ldflags -o bin/prismd ./cmd/cwsd"
     
     # Verify binaries
-    if [[ ! -x "bin/cws" ]] || [[ ! -x "bin/cwsd" ]]; then
+    if [[ ! -x "bin/cws" ]] || [[ ! -x "bin/prismd" ]]; then
         print_error "Failed to build binaries"
         exit 1
     fi
@@ -197,11 +197,11 @@ build_binaries() {
     # Show binary information
     print_success "Built binaries:"
     echo "  CLI:    $(file bin/cws)"
-    echo "  Daemon: $(file bin/cwsd)"
+    echo "  Daemon: $(file bin/prismd)"
     
     # Test binary execution
     print_step "Testing binary functionality..."
-    if ./bin/cws --version >/dev/null 2>&1 && ./bin/cwsd --version >/dev/null 2>&1; then
+    if ./bin/prism --version >/dev/null 2>&1 && ./bin/prismd --version >/dev/null 2>&1; then
         print_success "Binaries execute correctly"
     else
         print_error "Binary functionality test failed"
@@ -336,9 +336,9 @@ print_build_summary() {
     echo "   SUSE:         sudo zypper install $DIST_DIR/${PACKAGE_NAME}-${VERSION}-${RELEASE}.*.rpm"
     echo ""
     echo -e "${BOLD}📚 Post-Installation:${NC}"
-    echo "   1. Configure AWS credentials in /etc/cloudworkstation/aws/"
-    echo "   2. Start service: sudo systemctl start cloudworkstation"
-    echo "   3. Enable auto-start: sudo systemctl enable cloudworkstation"
+    echo "   1. Configure AWS credentials in /etc/prism/aws/"
+    echo "   2. Start service: sudo systemctl start prism"
+    echo "   3. Enable auto-start: sudo systemctl enable prism"
     echo "   4. Test: cws --version && cws templates"
     echo ""
 }

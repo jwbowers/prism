@@ -1,6 +1,6 @@
-// Package mock provides mock implementations for CloudWorkstation API.
+// Package mock provides mock implementations for Prism API.
 //
-// This package contains mock implementations of the CloudWorkstation API interfaces
+// This package contains mock implementations of the Prism API interfaces
 // for use in demos, testing, and development without requiring actual AWS credentials
 // or resources. It simulates all API responses with realistic data.
 //
@@ -16,22 +16,24 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/api/client"
-	"github.com/scttfrdmn/cloudworkstation/pkg/idle"
-	"github.com/scttfrdmn/cloudworkstation/pkg/project"
-	"github.com/scttfrdmn/cloudworkstation/pkg/templates"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/api/client"
+	"github.com/scttfrdmn/prism/pkg/idle"
+	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/storage"
+	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/throttle"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
-// MockClient provides a mock implementation of the CloudWorkstationAPI interface
+// MockClient provides a mock implementation of the PrismAPI interface
 type MockClient struct {
 	Templates      map[string]types.Template
 	Instances      map[string]types.Instance
 	StorageVolumes map[string]types.StorageVolume // Unified storage (all types)
 }
 
-// Ensure MockClient implements CloudWorkstationAPI
-var _ client.CloudWorkstationAPI = (*MockClient)(nil)
+// Ensure MockClient implements PrismAPI
+var _ client.PrismAPI = (*MockClient)(nil)
 
 // NewClient creates a new mock client with pre-populated data
 func NewClient() *MockClient {
@@ -1416,9 +1418,9 @@ func (m *MockClient) ListUserAMIs(ctx context.Context) (map[string]interface{}, 
 				"creation_date": "2024-12-01T15:30:00Z",
 				"public":        false,
 				"tags": map[string]string{
-					"CloudWorkstation": "true",
-					"Template":         "python-ml",
-					"Creator":          "researcher",
+					"Prism":    "true",
+					"Template": "python-ml",
+					"Creator":  "researcher",
 				},
 			},
 			{
@@ -1430,10 +1432,10 @@ func (m *MockClient) ListUserAMIs(ctx context.Context) (map[string]interface{}, 
 				"creation_date": "2024-11-30T14:20:00Z",
 				"public":        true,
 				"tags": map[string]string{
-					"CloudWorkstation": "true",
-					"Template":         "bioinformatics",
-					"Creator":          "researcher",
-					"Community":        "published",
+					"Prism":     "true",
+					"Template":  "bioinformatics",
+					"Creator":   "researcher",
+					"Community": "published",
 				},
 			},
 		},
@@ -1478,7 +1480,7 @@ func (m *MockClient) GetMarketplaceTemplate(ctx context.Context, templateID stri
 		"last_updated": "2024-11-15",
 		"verified":     true,
 		"readme":       "# Deep Learning GPU Template\nThis template provides...",
-		"installation": "Automated installation via CloudWorkstation marketplace",
+		"installation": "Automated installation via Prism marketplace",
 	}, nil
 }
 
@@ -1772,4 +1774,286 @@ func (m *MockClient) CheckAMIFreshness(ctx context.Context) (map[string]interfac
 			},
 		},
 	}, nil
+}
+
+// PreventProjectLaunches prevents new instance launches for a project (mock)
+func (m *MockClient) PreventProjectLaunches(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Project '%s' launch prevention enabled successfully (mock)", projectID),
+		"status":  "launches_prevented",
+	}, nil
+}
+
+// AllowProjectLaunches allows new instance launches for a project (mock)
+func (m *MockClient) AllowProjectLaunches(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Project '%s' launch prevention disabled successfully (mock)", projectID),
+		"status":  "launches_allowed",
+	}, nil
+}
+
+// Invitation operations
+func (m *MockClient) GetInvitationByToken(ctx context.Context, token string) (*client.GetInvitationResponse, error) {
+	return &client.GetInvitationResponse{
+		Invitation: &types.Invitation{
+			ID:        "inv-12345",
+			ProjectID: "test-project",
+			Email:     "user@example.com",
+			Role:      types.ProjectRoleMember,
+			Token:     token,
+			InvitedBy: "admin",
+			InvitedAt: time.Now().Add(-24 * time.Hour),
+			ExpiresAt: time.Now().Add(6 * 24 * time.Hour),
+			Status:    types.InvitationPending,
+		},
+		Project: &types.Project{
+			ID:          "test-project",
+			Name:        "Test Project",
+			Description: "A test project",
+			Owner:       "admin",
+			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
+		},
+	}, nil
+}
+
+func (m *MockClient) AcceptInvitation(ctx context.Context, token string) (*client.InvitationActionResponse, error) {
+	now := time.Now()
+	return &client.InvitationActionResponse{
+		Invitation: &types.Invitation{
+			ID:         "inv-12345",
+			ProjectID:  "test-project",
+			Email:      "user@example.com",
+			Role:       types.ProjectRoleMember,
+			Token:      token,
+			InvitedBy:  "admin",
+			InvitedAt:  time.Now().Add(-24 * time.Hour),
+			ExpiresAt:  time.Now().Add(6 * 24 * time.Hour),
+			Status:     types.InvitationAccepted,
+			AcceptedAt: &now,
+		},
+		Project: &types.Project{
+			ID:          "test-project",
+			Name:        "Test Project",
+			Description: "A test project",
+			Owner:       "admin",
+			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
+		},
+		Message: "Invitation accepted successfully",
+	}, nil
+}
+
+func (m *MockClient) DeclineInvitation(ctx context.Context, token string, reason string) (*client.InvitationActionResponse, error) {
+	now := time.Now()
+	return &client.InvitationActionResponse{
+		Invitation: &types.Invitation{
+			ID:            "inv-12345",
+			ProjectID:     "test-project",
+			Email:         "user@example.com",
+			Role:          types.ProjectRoleMember,
+			Token:         token,
+			InvitedBy:     "admin",
+			InvitedAt:     time.Now().Add(-24 * time.Hour),
+			ExpiresAt:     time.Now().Add(6 * 24 * time.Hour),
+			Status:        types.InvitationDeclined,
+			DeclinedAt:    &now,
+			DeclineReason: reason,
+		},
+		Message: "Invitation declined",
+	}, nil
+}
+
+func (m *MockClient) SendInvitation(ctx context.Context, projectID string, req client.SendInvitationRequest) (*client.SendInvitationResponse, error) {
+	return &client.SendInvitationResponse{
+		Invitation: &types.Invitation{
+			ID:        "inv-67890",
+			ProjectID: projectID,
+			Email:     req.Email,
+			Role:      req.Role,
+			Token:     "mock-invitation-token",
+			InvitedBy: "current-user",
+			InvitedAt: time.Now(),
+			ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+			Status:    types.InvitationPending,
+		},
+		Project: &types.Project{
+			ID:          projectID,
+			Name:        "Test Project",
+			Description: "A test project",
+			Owner:       "admin",
+			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
+		},
+		Message: "Invitation sent successfully",
+	}, nil
+}
+
+func (m *MockClient) SendBulkInvitation(ctx context.Context, projectID string, req *types.BulkInvitationRequest) (*types.BulkInvitationResponse, error) {
+	var results []types.BulkInvitationResult
+	for _, entry := range req.Invitations {
+		results = append(results, types.BulkInvitationResult{
+			Email:        entry.Email,
+			Status:       "sent",
+			InvitationID: "mock-inv-" + entry.Email,
+		})
+	}
+	return &types.BulkInvitationResponse{
+		Summary: types.BulkInvitationSummary{
+			Total:   len(req.Invitations),
+			Sent:    len(req.Invitations),
+			Failed:  0,
+			Skipped: 0,
+		},
+		Results: results,
+		Message: "All invitations sent successfully",
+	}, nil
+}
+
+// Shared token operations
+func (m *MockClient) CreateSharedToken(ctx context.Context, projectID string, req *types.CreateSharedTokenRequest) (*types.SharedInvitationToken, error) {
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	return &types.SharedInvitationToken{
+		ID:              "token-12345",
+		Token:           "WORKSHOP-2025",
+		Name:            req.Name,
+		ProjectID:       projectID,
+		Role:            req.Role,
+		Message:         req.Message,
+		CreatedBy:       req.CreatedBy,
+		CreatedAt:       time.Now(),
+		ExpiresAt:       &expiresAt,
+		RedemptionLimit: req.RedemptionLimit,
+		RedemptionCount: 0,
+		Status:          types.SharedTokenActive,
+		Redemptions:     []types.SharedTokenRedemption{},
+	}, nil
+}
+
+func (m *MockClient) RedeemSharedToken(ctx context.Context, req *types.RedeemSharedTokenRequest) (*types.RedeemSharedTokenResponse, error) {
+	return &types.RedeemSharedTokenResponse{
+		Success:              true,
+		ProjectID:            "test-project",
+		Role:                 types.ProjectRoleMember,
+		RedemptionPosition:   1,
+		RemainingRedemptions: 49,
+		Message:              "Successfully redeemed shared token",
+	}, nil
+}
+
+func (m *MockClient) GetSharedToken(ctx context.Context, tokenID string) (*types.SharedInvitationToken, error) {
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	return &types.SharedInvitationToken{
+		ID:              tokenID,
+		Token:           "WORKSHOP-2025",
+		Name:            "Mock Token",
+		ProjectID:       "test-project",
+		Role:            types.ProjectRoleMember,
+		Message:         "Welcome to the workshop",
+		CreatedBy:       "admin",
+		CreatedAt:       time.Now().Add(-24 * time.Hour),
+		ExpiresAt:       &expiresAt,
+		RedemptionLimit: 50,
+		RedemptionCount: 10,
+		Status:          types.SharedTokenActive,
+		Redemptions:     []types.SharedTokenRedemption{},
+	}, nil
+}
+
+func (m *MockClient) ListSharedTokens(ctx context.Context, projectID string) ([]*types.SharedInvitationToken, error) {
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	return []*types.SharedInvitationToken{
+		{
+			ID:              "token-1",
+			Token:           "WORKSHOP-2025",
+			Name:            "Workshop Token",
+			ProjectID:       projectID,
+			Role:            types.ProjectRoleMember,
+			Message:         "Welcome",
+			CreatedBy:       "admin",
+			CreatedAt:       time.Now().Add(-24 * time.Hour),
+			ExpiresAt:       &expiresAt,
+			RedemptionLimit: 50,
+			RedemptionCount: 23,
+			Status:          types.SharedTokenActive,
+			Redemptions:     []types.SharedTokenRedemption{},
+		},
+	}, nil
+}
+
+func (m *MockClient) ExtendSharedToken(ctx context.Context, tokenID string, daysToAdd int) error {
+	return nil
+}
+
+func (m *MockClient) RevokeSharedToken(ctx context.Context, tokenID string) error {
+	return nil
+}
+
+// Transfer operations (S3-backed file transfer)
+func (m *MockClient) StartTransfer(ctx context.Context, req client.TransferRequest) (*client.TransferResponse, error) {
+	return &client.TransferResponse{
+		TransferID: "mock-transfer-id",
+		Status:     "in_progress",
+	}, nil
+}
+
+func (m *MockClient) GetTransferStatus(ctx context.Context, transferID string) (*storage.TransferProgress, error) {
+	return &storage.TransferProgress{
+		TransferID:       transferID,
+		Status:           "in_progress",
+		PercentComplete:  50.0,
+		TransferredBytes: 500,
+		TotalBytes:       1000,
+	}, nil
+}
+
+func (m *MockClient) ListTransfers(ctx context.Context) ([]*storage.TransferProgress, error) {
+	return []*storage.TransferProgress{}, nil
+}
+
+func (m *MockClient) CancelTransfer(ctx context.Context, transferID string) error {
+	return nil
+}
+
+// Throttling operations
+
+// ConfigureThrottling configures throttling settings (mock)
+func (m *MockClient) ConfigureThrottling(ctx context.Context, config throttle.Config) error {
+	return nil
+}
+
+// GetThrottlingStatus returns the current throttling status (mock)
+func (m *MockClient) GetThrottlingStatus(ctx context.Context, scope string) (*throttle.Status, error) {
+	return &throttle.Status{
+		Enabled: true,
+		Scope:   scope,
+	}, nil
+}
+
+// GetThrottlingRemaining returns remaining throttle capacity (mock)
+func (m *MockClient) GetThrottlingRemaining(ctx context.Context, scope string) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"scope":     scope,
+		"remaining": 100,
+		"total":     1000,
+	}, nil
+}
+
+// DisableThrottling disables throttling for a scope (mock)
+func (m *MockClient) DisableThrottling(ctx context.Context, scope string) error {
+	return nil
+}
+
+// ListProjectThrottleOverrides lists project throttle overrides (mock)
+func (m *MockClient) ListProjectThrottleOverrides(ctx context.Context) ([]throttle.Override, error) {
+	return []throttle.Override{}, nil
+}
+
+// SetProjectThrottleOverride sets a project throttle override (mock)
+func (m *MockClient) SetProjectThrottleOverride(ctx context.Context, projectID string, override throttle.Override) error {
+	return nil
+}
+
+// RemoveProjectThrottleOverride removes a project throttle override (mock)
+func (m *MockClient) RemoveProjectThrottleOverride(ctx context.Context, projectID string) error {
+	return nil
 }

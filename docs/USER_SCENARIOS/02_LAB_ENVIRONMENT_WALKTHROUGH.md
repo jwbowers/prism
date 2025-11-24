@@ -12,7 +12,7 @@
 ### Dr. Michael Torres (Senior Research Scientist)
 - **Role**: Lab Manager / Senior Staff
 - **Responsibilities**: Day-to-day lab operations, mentors junior staff, manages GPU cluster usage
-- **Technical level**: Expert - can troubleshoot CloudWorkstation, optimizes costs
+- **Technical level**: Expert - can troubleshoot Prism, optimizes costs
 - **Concerns**: Efficient resource allocation, preventing grad student mistakes
 - **Authority**: Can approve requests up to $500, launch any workspace type
 
@@ -62,14 +62,32 @@ Smith Lab Organization
 
 ---
 
-## Current State (v0.5.5): What Works Today
+## Version Legend
+- ✅ **v0.5.7 (Current)**: Features available today
+- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+
+## Current State (v0.5.7): What Works Today
+
+**Note**: Throughout this document, "workspace" refers to the Prism research environment (what users interact with), while "EC2 instance" refers to the underlying AWS infrastructure.
 
 ### ✅ Lab Setup (Phase 4 Complete)
+
+**AWS Profile Configuration** (Lab IT Setup):
+
+![AWS Profile Configuration](images/02-lab-environment/gui-settings-profiles.png)
+
+*Screenshot shows the AWS profile configuration interface. Dr. Smith validates institutional AWS credentials for the entire lab, ensuring all 8 PhD students will have consistent access to the lab's AWS account with proper SSO integration.*
+
+**What Dr. Smith configures**:
+- **Institutional Profile**: Lab-wide AWS profile (`smith-lab-research`) connected to university AWS Organization
+- **SSO Integration**: University credentials work for all lab members via institutional identity provider
+- **Region Selection**: `us-west-2` (optimized for GPU instance availability and west coast university location)
+- **Cost Allocation Tags**: Automatic tagging for departmental chargeback system
 
 #### Step 1: PI Creates Organization
 ```bash
 # Dr. Smith creates lab organization
-cws project create "Smith Lab" \
+prism project create "Smith Lab" \
   --description "Computational Biology Research Group" \
   --owner patricia.smith@university.edu
 
@@ -80,21 +98,21 @@ cws project create "Smith Lab" \
 #### Step 2: Create Grant Projects
 ```bash
 # NIH Grant project
-cws project create "NIH-R01-2023" \
+prism project create "NIH-R01-2023" \
   --parent "Smith Lab" \
   --budget 2000 \
   --budget-period monthly \
   --description "RNA-seq and transcriptomics research"
 
 # NSF Grant project
-cws project create "NSF-2024-ML" \
+prism project create "NSF-2024-ML" \
   --parent "Smith Lab" \
   --budget 1500 \
   --budget-period monthly \
   --description "Machine learning for protein structure prediction"
 
 # Discretionary
-cws project create "Discretionary" \
+prism project create "Discretionary" \
   --parent "Smith Lab" \
   --budget 1000 \
   --budget-period monthly \
@@ -104,23 +122,23 @@ cws project create "Discretionary" \
 #### Step 3: Add Lab Members with Roles
 ```bash
 # Add senior staff with Admin role
-cws project member add "NIH-R01-2023" \
+prism project member add "NIH-R01-2023" \
   --email michael.torres@university.edu \
   --role admin \
   --budget-allocation 800
 
-cws project member add "NSF-2024-ML" \
+prism project member add "NSF-2024-ML" \
   --email lisa.park@university.edu \
   --role admin \
   --budget-allocation 800
 
 # Add graduate students with Member role
-cws project member add "NIH-R01-2023" \
+prism project member add "NIH-R01-2023" \
   --email james.wilson@university.edu \
   --role member \
   --budget-allocation 400
 
-cws project member add "NSF-2024-ML" \
+prism project member add "NSF-2024-ML" \
   --email maria.garcia@university.edu \
   --role member \
   --budget-allocation 300
@@ -129,34 +147,59 @@ cws project member add "NSF-2024-ML" \
 #### Step 4: Configure Budget Alerts
 ```bash
 # Alert PI at 75% and 90% of each project
-cws project budget alert add "NIH-R01-2023" \
+prism project budget alert add "NIH-R01-2023" \
   --threshold 75 \
   --email patricia.smith@university.edu
 
-cws project budget alert add "NIH-R01-2023" \
+prism project budget alert add "NIH-R01-2023" \
   --threshold 90 \
   --email patricia.smith@university.edu,michael.torres@university.edu
 
 # Same for other projects...
 ```
 
+**Quick Start Wizard** (Team Onboarding):
+
+![Quick Start Wizard](images/02-lab-environment/gui-quick-start-wizard.png)
+
+*Screenshot shows the template selection wizard interface. Dr. Torres uses this visual wizard to onboard new lab members, walking them through the 30-second process to launch their first workspace with lab-approved templates.*
+
+**What Dr. Torres uses for onboarding**:
+- **Visual Template Gallery**: Lab-approved templates (Bioinformatics Suite, R Research, Python ML) prominently displayed
+- **Template Filtering**: Lab members see only pre-approved templates that fit within grant budgets
+- **Resource Estimates**: Clear $2.40/day cost estimates help students understand budget impact
+- **One-Click Launch**: New students launch correctly-configured workspaces without CLI knowledge
+
 ### ✅ Daily Lab Operations (What Works)
 
 #### Scenario: James (Grad Student) Runs RNA-seq Pipeline
+
+**Shared Data Management** (Lab Collaboration):
+
+![Storage Management](images/02-lab-environment/gui-storage-management.png)
+
+*Screenshot shows the storage management interface. The Smith Lab maintains a 5TB shared EFS volume (`/data/smith-lab-shared`) that all 8 PhD students access simultaneously, enabling seamless collaboration on genomic datasets without manual file transfers.*
+
+**What the lab uses for shared storage**:
+- **Shared EFS Volume**: `smith-lab-shared` (5TB) mounted at `/data` on all lab workspaces automatically
+- **Collaborative Access**: All 8 students see same datasets instantly - no Dropbox uploads or email attachments
+- **Cost Visibility**: $150/month storage cost (3% of lab budget) clearly displayed with usage trends
+- **Department Datasets**: RNA-seq reference genomes, protein databases shared across entire lab
+
 ```bash
-# James launches instance
-cws launch bioinformatics-suite rnaseq-sample-42 \
+# James launches workspace
+prism launch bioinformatics-suite rnaseq-sample-42 \
   --project "NIH-R01-2023" \
   --size M
 
-# CloudWorkstation output:
+# Prism output:
 # ✅ Workspace launching: rnaseq-sample-42
 # 📊 Cost: $2.40/day (r5.xlarge)
 # 💰 Project budget: $245 / $400 (61% used this month)
 # 🔗 SSH ready in ~90 seconds...
 
 # James works for 4 hours, then stops
-cws stop rnaseq-sample-42
+prism stop rnaseq-sample-42
 
 # ✅ Workspace stopped - charges cease immediately
 # 💰 Real-time budget update: $9.60 "banked" back to available budget
@@ -164,7 +207,7 @@ cws stop rnaseq-sample-42
 #    The $48 you DIDN'T spend is now available for other lab members!
 
 # Cost tracking automatically updated
-cws project cost show "NIH-R01-2023"
+prism project cost show "NIH-R01-2023"
 
 # Output:
 # 💰 Project: NIH-R01-2023 Budget Status
@@ -183,16 +226,29 @@ cws project cost show "NIH-R01-2023"
 #
 # 💡 Cloud vs Owned Hardware Reality:
 #    Owned workstation: $5,000 upfront + depreciation whether used or not
-#    CloudWorkstation: Pay $1,245 for 606 actual compute hours
+#    Prism: Pay $1,245 for 606 actual compute hours
 #    Every hibernation/stop IMMEDIATELY increases available budget!
 ```
 
 > **💡 GUI Note**: Project cost tracking available in GUI Projects tab with visual breakdown - *coming soon in v0.6.0*
 
 #### Scenario: Lab Manager Monitors Usage
+
+**Lab Dashboard** (Multi-User Workspace Management):
+
+![Workspaces List](images/02-lab-environment/gui-workspaces-list.png)
+
+*Screenshot shows the workspace management interface. Dr. Torres sees all 8 concurrent student workspaces at a glance, with lab-wide visibility into who's running what, real-time costs, and hibernation status - essential for managing shared GPU resources and preventing budget surprises.*
+
+**What Dr. Torres monitors**:
+- **8 Concurrent Workspaces**: Full lab visibility - james.wilson's RNA-seq, maria.garcia's protein folding, etc.
+- **Real-Time Costs**: Each workspace shows daily cost ($2.40/day vs $24.80/day GPU) for immediate budget impact
+- **Hibernation Status**: Quickly identify idle workspaces wasting budget (manual intervention until automated policies)
+- **Student Attribution**: Filter by grant project (NIH R01 vs NSF ML) for per-grant cost allocation tracking
+
 ```bash
 # Dr. Torres checks overall lab status
-cws project list --tree
+prism project list --tree
 
 # Output:
 # Smith Lab
@@ -215,17 +271,148 @@ cws project list --tree
 
 > **💡 GUI Note**: Project tree view available in GUI Projects tab - *coming soon in v0.6.0*
 
+**Grant Budget Management** (Multi-Project Tracking):
+
+![Projects Dashboard](images/02-lab-environment/gui-projects-dashboard.png)
+
+*Screenshot shows the project management interface. Dr. Smith (PI) tracks 3 concurrent grants (NIH R01: $2,000/mo, NSF ML: $1,500/mo, Discretionary: $1,000/mo) with real-time budget consumption, automated alerts at 75%/90% thresholds, and per-student cost allocation for grant compliance reporting.*
+
+**What Dr. Smith tracks**:
+- **Multi-Grant Portfolio**: 3 concurrent projects with hierarchical budgets ($4,500/month total lab budget)
+- **Per-Student Allocation**: James Wilson ($400/mo), Maria Garcia ($300/mo) tracked against their allocated budgets
+- **Automated Alerts**: Email notifications when students reach 75% budget consumption (prevent overruns)
+- **Grant Compliance**: Monthly cost reports by grant code for NIH/NSF financial reporting requirements
+
+#### Scenario: Dr. Smith Sets Up Project Funding (v0.5.10+)
+
+**Design Principle**: PIs control funding, students just launch workspaces.
+
+**Step 1: Dr. Smith Creates Project with Default Funding**
+```bash
+# Dr. Smith creates NIH R01 project
+prism project create "NIH-R01-2023" \
+  --description "RNA-seq pipeline development" \
+  --default-funding "NIH Grant R01-AI123456"
+
+# Project now automatically uses NIH funding for all launches
+# Students don't need to worry about which budget pays for what
+```
+
+**Step 2: Students Launch Workspaces (Zero Funding Complexity)**
+```bash
+# James Wilson (PhD student) launches his workspace
+prism launch bioinformatics my-rnaseq --project NIH-R01-2023
+# ↳ Automatically charged to NIH Grant R01-AI123456
+# ↳ James never sees funding options - just works!
+
+# Maria Garcia launches hers
+prism launch python-ml protein-folding --project NSF-2024-ML
+# ↳ Automatically charged to NSF Grant DBI-2024-456
+# ↳ Maria focuses on research, not accounting
+```
+
+**Step 3: Dr. Smith Overrides When Needed**
+```bash
+# Shared GPU cluster funded differently
+prism launch gpu-cluster shared-gpu \
+  --project NIH-R01-2023 \
+  --funding "Department Equipment Fund"
+# ↳ Override: Use department fund instead of NIH grant
+```
+
+**Multi-Source Funding Example** (v0.5.10+):
+```bash
+# Dr. Smith's large collaboration project funded by multiple sources
+prism project create "Climate-Sim-Infrastructure" \
+  --description "Multi-institution climate modeling" \
+  --default-funding "NSF Grant CISE-2024-12345"
+
+# Allocate budgets to project
+prism budget allocate "NSF Grant CISE-2024-12345" \
+  --project Climate-Sim-Infrastructure --amount 50000
+
+prism budget allocate "MIT Matching Funds" \
+  --project Climate-Sim-Infrastructure --amount 10000
+
+prism budget allocate "AWS Research Credits" \
+  --project Climate-Sim-Infrastructure --amount 5000
+
+# Students/postdocs launch workspaces
+prism launch python-ml climate-model-1 --project Climate-Sim-Infrastructure
+# ↳ Uses default: NSF Grant (50k)
+
+# Dr. Smith uses department matching for storage
+prism volume create shared-data 500GB \
+  --project Climate-Sim-Infrastructure \
+  --funding "MIT Matching Funds"
+# ↳ Override: Storage from matching funds, not NSF grant
+```
+
+**Benefits**:
+- **Students focus on research**, not accounting
+- **PIs maintain control** over which grant funds what
+- **Automatic attribution** = fewer errors
+- **Override available** when needed (power users)
+
+---
+
+### ✅ Inviting Visiting Collaborators (v0.5.11)
+
+**Scenario**: Dr. Smith invites Dr. Kim (external collaborator) for 3-month project
+
+```bash
+# Dr. Smith sends invitation to visiting scholar
+prism project invitation send "NIH-R01-2023" \
+  --email dr.kim@external.edu \
+  --role member \
+  --message "Welcome to our lab! Looking forward to our RNA-seq collaboration." \
+  --expires-in 7d
+
+# Output:
+# ✅ Invitation sent to dr.kim@external.edu
+#    Project: NIH-R01-2023
+#    Role: member
+#    Token: INV-8A7F2E...
+#    Expires: 7 days
+
+# Dr. Kim accepts invitation
+prism invitation accept INV-8A7F2E...
+
+# Prism automatically (v0.5.11):
+# ✅ Adds Dr. Kim to project members (Issue #102)
+# ✅ Creates research user "drkim" with SSH keys (Issue #106)
+# ✅ Allocates UID/GID for consistent file permissions
+# ✅ Sets up EFS home directory at /efs/home/drkim
+# ✅ Distributes SSH public key to all project instances
+
+# Dr. Kim can immediately launch workspaces
+prism launch bioinformatics-suite rnaseq-collab --project "NIH-R01-2023"
+
+# SSH access works instantly
+prism ssh rnaseq-collab
+# (Uses auto-provisioned SSH key from ~/.prism/ssh_keys/)
+```
+
+**v0.5.11 Auto-Provisioning Benefits**:
+- ✅ **Zero manual setup** - Dr. Kim ready to work in 2 minutes
+- ✅ **Automatic SSH keys** - No manual key exchange needed
+- ✅ **Consistent permissions** - Same UID/GID across all lab instances
+- ✅ **Persistent home directory** - Work preserved on EFS
+- ✅ **Role-based access** - Automatic project member addition with validated role
+
 ---
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Sub-Budget Hierarchy
+### ❌ Problem 1: No Sub-Budget Hierarchy (Coming in v0.5.8+)
+**Tracking:** See issue [#148](https://github.com/scttfrdmn/prism/issues/148)
+
 **Scenario**: Dr. Park wants to allocate her $800 between her own work and grad student Maria
 
 **What should work** (MISSING):
 ```bash
 # Dr. Park creates sub-budgets from her allocation
-cws project budget allocate "NSF-2024-ML" \
+prism project budget allocate "NSF-2024-ML" \
   --member lisa.park \
   --subdivide \
   --personal 500 \
@@ -241,15 +428,17 @@ cws project budget allocate "NSF-2024-ML" \
 **Workaround**: Manual tracking in spreadsheet, trust system
 **Impact**: Dr. Park can't manage her sub-team independently
 
-### ❌ Problem 2: No Approval Workflows
+### ❌ Problem 2: No Approval Workflows (Coming in v0.5.8+)
+**Tracking:** See issue [#150](https://github.com/scttfrdmn/prism/issues/150)
+
 **Scenario**: Maria (beginner grad student) tries to launch expensive GPU workspace
 
 **What should happen** (MISSING):
 ```bash
 # Maria attempts GPU launch
-cws launch gpu-ml-workstation protein-experiment --project "NSF-2024-ML"
+prism launch gpu-ml-workstation protein-experiment --project "NSF-2024-ML"
 
-# CloudWorkstation should prompt:
+# Prism should prompt:
 # ⚠️  APPROVAL REQUIRED: GPU Workspace Launch
 #
 #    Requested by: maria.garcia@university.edu
@@ -265,7 +454,7 @@ cws launch gpu-ml-workstation protein-experiment --project "NSF-2024-ML"
 #    Request ID: req-xyz789
 #    Status: Pending approval (will notify via email)
 #
-#    You can check status with: cws approval status req-xyz789
+#    You can check status with: prism approval status req-xyz789
 
 # Dr. Park receives email:
 # Subject: Approval Request: GPU Workspace Launch (Maria Garcia)
@@ -279,20 +468,22 @@ cws launch gpu-ml-workstation protein-experiment --project "NSF-2024-ML"
 # Maria's budget: $130 / $300 (43% used)
 # Project budget: $980 / $1,500 (65% used)
 #
-# Approve or deny: cws approval review req-xyz789
+# Approve or deny: prism approval review req-xyz789
 ```
 
 **Current state**: No approval system - relies on role-based restrictions only
 **Workaround**: Maria asks in Slack, someone with admin role launches for her
 **Impact**: Bypasses audit trails, confusion about who launched what
 
-### ❌ Problem 3: No Time-Boxed Collaborator Access
+### ❌ Problem 3: No Time-Boxed Collaborator Access (Coming in v0.5.8+)
+**Tracking:** See issue [#151](https://github.com/scttfrdmn/prism/issues/151)
+
 **Scenario**: Visiting scholar Dr. Kim joins for 3-month collaboration
 
 **What should work** (MISSING):
 ```bash
 # Dr. Smith grants temporary access
-cws project member add "NIH-R01-2023" \
+prism project member add "NIH-R01-2023" \
   --email dr.kim@external.edu \
   --role member \
   --budget-allocation 200 \
@@ -318,9 +509,9 @@ cws project member add "NIH-R01-2023" \
 # - Spend: $180 / $200 (90%)
 #
 # Actions:
-# 1. Extend access: cws project member extend dr.kim@external.edu --days 30
+# 1. Extend access: prism project member extend dr.kim@external.edu --days 30
 # 2. Let expire: Workspaces will be stopped, data archived on Sep 1
-# 3. Convert to permanent: cws project member permanent dr.kim@external.edu
+# 3. Convert to permanent: prism project member permanent dr.kim@external.edu
 
 # On September 1 at 00:00 UTC (auto-revoke):
 # - Dr. Kim's workspaces automatically stopped
@@ -333,13 +524,15 @@ cws project member add "NIH-R01-2023" \
 **Workaround**: Calendar reminders, manual revocation
 **Impact**: Forgotten temp users accumulate, security risk, budget waste
 
-### ❌ Problem 4: No Resource Quotas by Role
+### ❌ Problem 4: No Resource Quotas by Role (Coming in v0.5.8+)
+**Tracking:** See issue [#152](https://github.com/scttfrdmn/prism/issues/152)
+
 **Scenario**: Grad students should have workspace limits to prevent mistakes
 
 **What should work** (MISSING):
 ```bash
 # PI configures role-based quotas
-cws project policy create "NIH-R01-2023" \
+prism project policy create "NIH-R01-2023" \
   --role member \
   --max-instances 2 \
   --max-instance-cost 5.00/day \
@@ -347,9 +540,9 @@ cws project policy create "NIH-R01-2023" \
   --blocked-instance-types "p3.*,p4.*"  # No GPUs
 
 # Maria tries to launch 3rd instance
-cws launch bioinformatics-suite experiment-3 --project "NIH-R01-2023"
+prism launch bioinformatics-suite experiment-3 --project "NIH-R01-2023"
 
-# CloudWorkstation output:
+# Prism output:
 # ❌ Launch failed: Quota exceeded
 #
 #    Your quota (Member role):
@@ -365,9 +558,9 @@ cws launch bioinformatics-suite experiment-3 --project "NIH-R01-2023"
 #    Contact: michael.torres@university.edu
 
 # Maria tries GPU workspace
-cws launch gpu-ml-workstation experiment-gpu --project "NIH-R01-2023"
+prism launch gpu-ml-workstation experiment-gpu --project "NIH-R01-2023"
 
-# CloudWorkstation output:
+# Prism output:
 # ❌ Launch failed: Workspace type not allowed
 #
 #    p3.2xlarge is not permitted for Member role.
@@ -382,13 +575,15 @@ cws launch gpu-ml-workstation experiment-gpu --project "NIH-R01-2023"
 **Workaround**: Trust-based system, post-incident corrections
 **Impact**: Accidental expensive launches, budget surprises
 
-### ❌ Problem 5: No Grant Period Management
+### ❌ Problem 5: No Grant Period Management (Coming in v0.5.8+)
+**Tracking:** See issue [#159](https://github.com/scttfrdmn/prism/issues/159)
+
 **Scenario**: NIH grant ends June 30 - need to freeze project and generate final report
 
 **What should work** (MISSING):
 ```bash
 # Dr. Smith configures grant end date
-cws project configure "NIH-R01-2023" \
+prism project configure "NIH-R01-2023" \
   --end-date 2024-06-30 \
   --freeze-after-end \
   --final-report-email patricia.smith@university.edu
@@ -422,10 +617,10 @@ cws project configure "NIH-R01-2023" \
 # Next steps:
 # 1. Review final report (attached PDF)
 # 2. Data will be archived to S3 and EFS volumes deleted after 90 days
-# 3. To restore project: cws project restore NIH-R01-2023
+# 3. To restore project: prism project restore NIH-R01-2023
 
 # Generate grant office report
-cws project report "NIH-R01-2023" \
+prism project report "NIH-R01-2023" \
   --start 2023-07-01 \
   --end 2024-06-30 \
   --format pdf \
@@ -454,7 +649,7 @@ cws project report "NIH-R01-2023" \
 
 ```bash
 # Dr. Smith (PI) initial setup
-cws init --org-mode
+prism init --org-mode
 
 # Interactive org setup:
 #
@@ -473,7 +668,7 @@ cws init --org-mode
 # ✅ Organization created!
 
 # Create projects with full configuration
-cws project create "NIH-R01-2023" \
+prism project create "NIH-R01-2023" \
   --budget 2000 \
   --period monthly \
   --start-date 2023-07-01 \
@@ -484,13 +679,13 @@ cws project create "NIH-R01-2023" \
   --approval-required-over 10.00/day
 
 # Configure role-based policies
-cws project policy create "NIH-R01-2023" \
+prism project policy create "NIH-R01-2023" \
   --role admin \
   --max-instances 10 \
   --max-daily-cost 100 \
   --approval-threshold 50/day
 
-cws project policy create "NIH-R01-2023" \
+prism project policy create "NIH-R01-2023" \
   --role member \
   --max-instances 2 \
   --max-daily-cost 10 \
@@ -499,14 +694,14 @@ cws project policy create "NIH-R01-2023" \
   --blocked-types "p3.*,p4.*,x2.*"
 
 # Add lab members with detailed configuration
-cws project member add "NIH-R01-2023" \
+prism project member add "NIH-R01-2023" \
   --email michael.torres@university.edu \
   --role admin \
   --budget 800 \
   --notify-at 75,90 \
   --allow-subdelegation
 
-cws project member add "NIH-R01-2023" \
+prism project member add "NIH-R01-2023" \
   --email james.wilson@university.edu \
   --role member \
   --budget 400 \
@@ -520,7 +715,7 @@ cws project member add "NIH-R01-2023" \
 #### Week 1: James (Grad Student) Regular Work
 ```bash
 # James launches standard analysis instance
-cws launch bioinformatics-suite rnaseq-batch-1 --project "NIH-R01-2023"
+prism launch bioinformatics-suite rnaseq-batch-1 --project "NIH-R01-2023"
 
 # Auto-approved (within authority):
 # ✅ Workspace launching: rnaseq-batch-1 (r5.xlarge, $2.40/day)
@@ -531,7 +726,7 @@ cws launch bioinformatics-suite rnaseq-batch-1 --project "NIH-R01-2023"
 #### Week 2: Maria Requests GPU (Approval Flow)
 ```bash
 # Maria needs GPU for first time
-cws launch gpu-ml-workstation protein-hw --project "NSF-2024-ML"
+prism launch gpu-ml-workstation protein-hw --project "NSF-2024-ML"
 
 # Approval required (exceeds authority):
 # ⚠️  GPU Workspace Approval Required
@@ -546,7 +741,7 @@ cws launch gpu-ml-workstation protein-hw --project "NSF-2024-ML"
 #    Include justification: (optional but recommended)
 
 # Maria adds context
-cws approval comment req-202406-015 \
+prism approval comment req-202406-015 \
   "Need GPU for deep learning homework (Biophysics 601). Estimated 4 hours. Will use time limit."
 
 # Dr. Park receives Slack notification (integration):
@@ -558,7 +753,7 @@ cws approval comment req-202406-015 \
 #    Deny: /cws deny req-202406-015
 
 # Dr. Park approves with modifications
-cws approval approve req-202406-015 \
+prism approval approve req-202406-015 \
   --max-hours 6 \
   --note "Approved for homework. Auto-terminate after 6h. Come to my office if you need more time."
 
@@ -568,9 +763,9 @@ cws approval approve req-202406-015 \
 #    Time limit: 6 hours (auto-terminate at 4:30 PM today)
 #    Notes from Dr. Park: "Approved for homework..."
 #
-#    Launch with: cws launch --approval req-202406-015
+#    Launch with: prism launch --approval req-202406-015
 
-cws launch --approval req-202406-015
+prism launch --approval req-202406-015
 
 # Workspace launches with enforced limits:
 # ✅ Launching: protein-hw (p3.2xlarge)
@@ -581,7 +776,7 @@ cws launch --approval req-202406-015
 #### Week 3: Dr. Torres Manages Lab Resources
 ```bash
 # Morning dashboard check
-cws project dashboard "Smith Lab"
+prism project dashboard "Smith Lab"
 
 # Output (TUI dashboard):
 # ╔══════════════════════════════════════════════════════════════╗
@@ -609,7 +804,7 @@ cws project dashboard "Smith Lab"
 # ╚══════════════════════════════════════════════════════════════╝
 
 # Dr. Torres reviews James' GPU request
-cws approval show req-202406-018
+prism approval show req-202406-018
 
 # Details:
 # Approval Request: req-202406-018
@@ -632,12 +827,12 @@ cws approval show req-202406-018
 # Recommendation: ✅ Low risk, reasonable justification
 
 # Approve with time limit
-cws approval approve req-202406-018 \
+prism approval approve req-202406-018 \
   --max-hours 12 \
   --note "Approved for benchmarking. Please document results for lab meeting."
 
 # Dr. Torres handles temporary collaborator
-cws approval review req-202406-019
+prism approval review req-202406-019
 
 # Temporary Access Request: req-202406-019
 # Requested by: Dr. Patricia Smith (PI)
@@ -651,7 +846,7 @@ cws approval review req-202406-019
 # Status: Pending patricia.smith@university.edu
 
 # Dr. Torres adds recommendation
-cws approval comment req-202406-019 \
+prism approval comment req-202406-019 \
   "Dr. Kim has good track record from previous collaboration. Recommend approval with standard member permissions."
 ```
 
@@ -677,10 +872,10 @@ cws approval comment req-202406-019 \
 # 3. Generate preliminary reports
 # 4. Consider requesting no-cost extension if needed
 #
-# Archive checklist: cws project archive-plan NIH-R01-2023
+# Archive checklist: prism project archive-plan NIH-R01-2023
 
 # Dr. Smith reviews archive plan
-cws project archive-plan "NIH-R01-2023"
+prism project archive-plan "NIH-R01-2023"
 
 # Archive Plan: NIH-R01-2023
 # End date: June 30, 2024 (60 days)
@@ -721,7 +916,7 @@ cws project archive-plan "NIH-R01-2023"
 # - Project marked "Archived"
 
 # July 1: Dr. Smith receives final report
-cws project report "NIH-R01-2023" --final
+prism project report "NIH-R01-2023" --final
 
 # NIH R01-2023 Final Report
 # Grant Period: July 1, 2023 - June 30, 2024

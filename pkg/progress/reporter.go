@@ -334,9 +334,51 @@ func (pr *ProgressReporter) getStageByName(name string) *Stage {
 }
 
 // notifyCallbacks notifies all registered callbacks
+// Note: This method expects the caller to hold pr.mu (either read or write lock)
 func (pr *ProgressReporter) notifyCallbacks() {
-	update := pr.calculateProgressUpdate()
-	for _, callback := range pr.callbacks {
+	// Calculate update while lock is held by caller
+	overallProgress := pr.calculateOverallProgress()
+	eta := pr.calculateETA(overallProgress)
+
+	currentStageName := ""
+	stageProgress := 0.0
+	description := ""
+
+	if pr.current < len(pr.stages) {
+		currentStage := &pr.stages[pr.current]
+		currentStageName = currentStage.Name
+		stageProgress = currentStage.Progress
+		description = currentStage.Description
+	}
+
+	// Copy stages to avoid race conditions
+	stagesCopy := make([]Stage, len(pr.stages))
+	copy(stagesCopy, pr.stages)
+
+	// Deep copy metadata map to avoid races
+	metadataCopy := make(map[string]any, len(pr.metadata))
+	for k, v := range pr.metadata {
+		metadataCopy[k] = v
+	}
+
+	update := ProgressUpdate{
+		Operation:       pr.operation,
+		CurrentStage:    currentStageName,
+		StageProgress:   stageProgress,
+		OverallProgress: overallProgress,
+		ETA:             eta,
+		ElapsedTime:     time.Since(pr.startTime),
+		Description:     description,
+		Metadata:        metadataCopy,
+		AllStages:       stagesCopy,
+	}
+
+	// Copy callbacks slice to avoid races during iteration
+	callbacksCopy := make([]ProgressCallback, len(pr.callbacks))
+	copy(callbacksCopy, pr.callbacks)
+
+	// Spawn goroutines to call callbacks without holding the lock
+	for _, callback := range callbacksCopy {
 		go func(cb ProgressCallback, u ProgressUpdate) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -350,6 +392,7 @@ func (pr *ProgressReporter) notifyCallbacks() {
 }
 
 // calculateProgressUpdate creates a progress update (internal helper)
+// This method is kept for backward compatibility with GetProgress()
 func (pr *ProgressReporter) calculateProgressUpdate() ProgressUpdate {
 	overallProgress := pr.calculateOverallProgress()
 	eta := pr.calculateETA(overallProgress)
@@ -369,6 +412,12 @@ func (pr *ProgressReporter) calculateProgressUpdate() ProgressUpdate {
 	stagesCopy := make([]Stage, len(pr.stages))
 	copy(stagesCopy, pr.stages)
 
+	// Deep copy metadata map to avoid races
+	metadataCopy := make(map[string]any, len(pr.metadata))
+	for k, v := range pr.metadata {
+		metadataCopy[k] = v
+	}
+
 	return ProgressUpdate{
 		Operation:       pr.operation,
 		CurrentStage:    currentStageName,
@@ -377,7 +426,7 @@ func (pr *ProgressReporter) calculateProgressUpdate() ProgressUpdate {
 		ETA:             eta,
 		ElapsedTime:     time.Since(pr.startTime),
 		Description:     description,
-		Metadata:        pr.metadata,
+		Metadata:        metadataCopy,
 		AllStages:       stagesCopy,
 	}
 }

@@ -26,50 +26,151 @@
 
 ---
 
-## Current State (v0.5.5): What Works Today
+## Version Legend
+- ✅ **v0.5.7 (Current)**: Features available today
+- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+
+## Current State (v0.5.7): What Works Today
 
 ### ✅ Pre-Workshop Setup (1 Week Before)
 
+**AWS Profile Configuration** (Conference workshop setup):
+
+![AWS Profile Settings Interface](images/04-conference-workshop/gui-settings-profiles.png)
+
+*Screenshot shows Cloudscape Settings interface for AWS profile management. Dr. Kim validates conference-provided AWS credits and verifies region configuration 1 week before the 3-hour ISMB workshop.*
+
+**What Dr. Kim validates**:
+- **AWS Credentials**: Conference AWS credits (part of $200 fixed budget for 50 participants)
+- **Region Selection**: us-west-2 (closest to conference venue for minimal latency)
+- **Profile Testing**: Validates AWS access works before workshop day (no second chances)
+- **Budget Verification**: Confirms $200 allocation is active and ready for 3-hour workshop
+
 ```bash
 # Alex sets up workshop environment
-cws profile create neurips-workshop --aws-profile alex-research --region us-west-2
+prism profile create neurips-workshop --aws-profile alex-research --region us-west-2
 
 # Create template-restricted project for workshop
-cws project create neurips-dl-workshop \
+prism project create neurips-dl-workshop \
   --budget 200 \
   --description "NeurIPS 2025: Deep Learning Workshop" \
   --alert-threshold 80
-
-# Generate batch invitations for 60 participants
-cat > workshop_participants.csv << EOF
-Name,Type,ValidDays,CanInvite,Transferable,DeviceBound,MaxDevices
-Participant_01,read_only,7,no,no,yes,2
-Participant_02,read_only,7,no,no,yes,2
-Participant_03,read_only,7,no,no,yes,2
-[... 57 more participants ...]
-EOF
-
-# Create invitations with basic policy restrictions
-cws profiles invitations batch-create \
-  --csv-file workshop_participants.csv \
-  --output-file invitation_codes.csv \
-  --include-encoded
 ```
 
-**Current capabilities**:
-- ✅ Batch invitation generation (60 participants in seconds)
-- ✅ Time-boxed access (7-day expiration)
-- ✅ **Access extension**: Can extend for additional day(s) so participants can continue working
-- ✅ Device binding (prevents casual sharing)
-- ✅ Budget allocation ($200 total)
-- ✅ Basic policy restrictions (template whitelist)
+**✅ NEW (v0.5.11): Shared Token Access with Auto-Provisioning** (Issue #103 - Ideal for workshops)
 
-💡 **Workshop Extension Example**: After 3-hour workshop ends, Alex can extend access for 24 hours:
 ```bash
-cws profiles invitations extend neurips-workshop --add-days 1
-# All 60 participants get automatic 24-hour extension
-# Great for: Homework completion, extended tutorials, follow-up work
+# Step 1: Check AWS quota for 60 workshop participants (v0.5.11 - Issue #105)
+curl -X POST http://localhost:8947/api/v1/invitations/quota-check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "instance_type": "t3.medium",
+    "count": 60
+  }'
+
+# Output:
+# {
+#   "has_sufficient_quota": true,
+#   "required_vcpus": 120,
+#   "current_usage": 8,
+#   "quota_limit": 192
+# }
+# ✅ Quota check passed - safe for 60 participants
+
+# Step 2: Generate single shared token for all 60 participants
+prism project invitations shared create neurips-dl-workshop \
+  --name "NeurIPS Workshop Access" \
+  --role member \
+  --redemption-limit 60 \
+  --expires-in 7d \
+  --message "Welcome to the NeurIPS Deep Learning Workshop!"
+
+# Output:
+# 🎫 Shared Invitation Token Generated
+#
+#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    Project: neurips-dl-workshop
+#    Role: member
+#    Redemptions: 0 / 60
+#
+#    Share this token with all participants:
+#    📧 Email: Include WORKSHOP-NEURIPS-2025-A4F2 in registration emails
+#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2025-A4F2
+#    💡 This single token works for all 60 participants (first-come-first-served)
+#
+#    When participants accept (v0.5.11):
+#    ✅ Automatic project member addition (Issue #102)
+#    ✅ Research user auto-provisioning with SSH keys (Issue #106)
+#    ✅ UID/GID allocation for file consistency
+#    ✅ EFS home directory setup
+
+# Alex includes this token in workshop registration confirmation emails
+# OR displays it as QR code at workshop registration desk (QR generation coming soon)
 ```
+
+**Shared Token Benefits**:
+- ✅ **Single token** for all participants (vs 60 individual tokens)
+- ✅ **Walk-in friendly**: Display token at registration desk
+- ✅ **No pre-registration**: Participants don't need to provide emails ahead of time
+- ✅ **First-come-first-served**: 60 redemptions then token becomes invalid
+- ✅ **Atomic redemption**: Thread-safe counter prevents over-redemption
+- ✅ **Auto-provisioning**: Research users with SSH keys created on redemption (v0.5.11)
+- 🔄 **QR code support**: Print token as QR code for easy mobile access (coming soon)
+
+💡 **Monitor Token Usage**:
+```bash
+# Check redemption status
+prism project invitations shared show WORKSHOP-NEURIPS-2025-A4F2
+
+# Output:
+# 🎫 Shared Token Information
+#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    Name: NeurIPS Workshop Access
+#    Redemptions:
+#    • Used: 42 / 60 (70%)
+#    • Remaining: 18
+#    Status: active
+#    Expires: Dec 9, 2025
+```
+
+💡 **Workshop Extension**: After 3-hour workshop ends, extend token expiration:
+```bash
+prism project invitations shared extend WORKSHOP-NEURIPS-2025-A4F2 --add-days 1
+# All 42 redeemed participants get automatic 24-hour extension
+# Great for: Homework completion, extended tutorials, follow-up work
+
+# Output:
+# ✅ Token expiration extended
+#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    New expiration: Dec 10, 2025
+#    💡 All 42 redeemed participants automatically get the extension
+```
+
+**Alternative: Bulk Invitations** (if you have participant emails ahead of time):
+
+```bash
+# Generate individual invitations for 60 participants
+prism project invitations bulk neurips-dl-workshop \
+  --file workshop_participants.txt \
+  --role member \
+  --expires-in 7d
+
+# 📬 Bulk Invitation Summary
+# Total:   60 invitations
+# ✅ Sent:    60 (100%)
+```
+
+**Quick Start Wizard** (Rapid 50-participant onboarding):
+
+![Quick Start Wizard Interface](images/04-conference-workshop/gui-quick-start-wizard.png)
+
+*Screenshot shows Cloudscape Quick Start wizard for template selection. Dr. Kim uses this interface to guide 50 workshop participants to launch identical bioinformatics workspaces in under 5 minutes during the workshop opening.*
+
+**What Dr. Kim demonstrates**:
+- **Template Selection**: "Bioinformatics Pipeline" template (pre-configured for workshop)
+- **Fixed Size**: All participants use Small (t3.medium) instances for cost control
+- **Rapid Launch**: 50 identical workspaces launching in parallel during workshop opening
+- **Time-Limited**: All workspaces auto-terminate 3 hours after workshop ends
 
 ### ✅ Day Before Workshop (Early Access Testing)
 
@@ -78,31 +179,44 @@ cws profiles invitations extend neurips-workshop --add-days 1
 # They accept invitation and test their environment
 
 # Participant workflow:
-cws profiles invitations accept <INVITATION-CODE> neurips-workshop
-cws launch pytorch-ml workshop-test --size S
+prism profiles invitations accept <INVITATION-CODE> neurips-workshop
+prism launch pytorch-ml workshop-test --size S
 
 # Alex monitors early access
-cws project workspaces neurips-dl-workshop
+prism project workspaces neurips-dl-workshop
 # Output:
 # ✅ 12 participants tested successfully
 # ⚠️  3 participants having issues (Alex contacts them)
 # 💰 Current spend: $4.20 (within budget)
 ```
 
+**Workshop Materials Storage** (Read-only tutorial datasets):
+
+![Storage Management Interface](images/04-conference-workshop/gui-storage-management.png)
+
+*Screenshot shows Cloudscape Storage interface for EFS management. Dr. Kim pre-loads 50GB of read-only tutorial datasets on shared EFS that all 50 workshop participants access during the 3-hour session.*
+
+**What Dr. Kim pre-provisions**:
+- **Shared EFS**: Read-only tutorial datasets (50GB genomics data pre-loaded)
+- **Workshop Materials**: Jupyter notebooks, scripts, and example data
+- **Zero Write Costs**: Read-only access minimizes storage costs during workshop
+- **Instant Access**: All 50 participants mount same EFS at workspace launch
+
 ---
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Automatic Workspace Termination
+### ❌ Problem 1: No Automatic Workspace Termination (Coming in v0.5.8+)
+**Tracking:** See issue [#176](https://github.com/scttfrdmn/prism/issues/176)
 
 **Scenario**: Workshop ends at 3:00 PM, workspaces should terminate at 6:00 PM
 
 **What should happen** (MISSING):
 ```bash
 # Alex launches workspaces with auto-terminate timer
-cws launch pytorch-ml workshop-instance --hours 6
+prism launch pytorch-ml workshop-instance --hours 6
 
-# CloudWorkstation output:
+# Prism output:
 # ✅ Workspace launching: workshop-instance
 # ⏰ Auto-terminate scheduled: 6 hours from now (6:00 PM)
 # 📊 Cost for 6 hours: $3.20
@@ -112,39 +226,41 @@ cws launch pytorch-ml workshop-instance --hours 6
 **Current workaround**: Alex must manually stop 60 workspaces or rely on participants
 **Risk**: If forgotten, $200 budget exhausted in 3 days
 
-### ❌ Problem 2: No Template Whitelisting at Invitation Level
+### ❌ Problem 2: No Template Whitelisting at Invitation Level (Coming in v0.5.8+)
+**Tracking:** See issue [#179](https://github.com/scttfrdmn/prism/issues/179)
 
 **Scenario**: Participants should ONLY be able to launch PyTorch ML template
 
 **What should happen** (MISSING):
 ```bash
 # Create invitations with template restrictions
-cws profiles invitations batch-create \
+prism profiles invitations batch-create \
   --csv-file participants.csv \
   --template-whitelist "PyTorch Machine Learning" \
   --max-instance-type "t3.medium" \
   --output-file invitations.csv
 
 # When participant tries wrong template:
-participant$ cws launch gpu-ml-workstation expensive-instance
+participant$ prism launch gpu-ml-workstation expensive-instance
 # ❌ Error: Template 'gpu-ml-workstation' not allowed by your invitation policy
 #    Allowed templates: ["PyTorch Machine Learning"]
 #
 #    This is a workshop environment with restricted templates.
-#    Please use: cws launch "PyTorch Machine Learning" my-instance
+#    Please use: prism launch "PyTorch Machine Learning" my-instance
 ```
 
 **Current workaround**: Trust participants + budget alerts
 **Risk**: Single participant launches GPU workspace → $600/day → budget blown in 8 hours
 
-### ❌ Problem 3: No Bulk Launch for Pre-Provisioning
+### ❌ Problem 3: No Bulk Launch for Pre-Provisioning (Coming in v0.5.8+)
+**Tracking:** See issue [#180](https://github.com/scttfrdmn/prism/issues/180)
 
 **Scenario**: Workshop starts at 9:00 AM, Alex wants all environments ready at 8:45 AM
 
 **What should happen** (MISSING):
 ```bash
 # Night before workshop: Pre-provision all instances
-cws project bulk-launch neurips-dl-workshop \
+prism project bulk-launch neurips-dl-workshop \
   --template "PyTorch Machine Learning" \
   --count 60 \
   --name-pattern "workshop-{01-60}" \
@@ -176,13 +292,14 @@ cws project bulk-launch neurips-dl-workshop \
 **Current workaround**: Participants launch on-demand (slow, error-prone)
 **Impact**: First 30 minutes wasted on environment setup
 
-### ❌ Problem 4: No Real-Time Workshop Dashboard
+### ❌ Problem 4: No Real-Time Workshop Dashboard (Coming in v0.5.8+)
+**Tracking:** See issue [#182](https://github.com/scttfrdmn/prism/issues/182)
 
 **Scenario**: During workshop, Alex needs to see participant progress at a glance
 
 **What should happen** (MISSING):
 ```bash
-cws workshop dashboard neurips-dl-workshop
+prism workshop dashboard neurips-dl-workshop
 
 # Terminal dashboard (live updates):
 # ┌─────────────────────────────────────────────────────────┐
@@ -213,10 +330,23 @@ cws workshop dashboard neurips-dl-workshop
 
 > **💡 GUI Note**: Live workshop dashboard available in GUI with real-time participant status - *coming soon in v0.6.0*
 
-**Current workaround**: Manual `cws list` + `cws project instances` polling
+**Current workaround**: Manual `prism list` + `prism project instances` polling
 **Impact**: Can't proactively help struggling participants
 
-### ❌ Problem 5: No Post-Workshop Data Preservation
+**Live Workshop Monitoring** (50 concurrent workspaces):
+
+![Workspaces List Interface](images/04-conference-workshop/gui-workspaces-list.png)
+
+*Screenshot shows Cloudscape Workspaces table with management actions. Dr. Kim monitors all 50 workshop participant workspaces in real-time during the 3-hour tutorial session, identifying issues before participants need to ask for help.*
+
+**What Dr. Kim monitors during workshop**:
+- **Status Tracking**: 50 workspaces running, real-time status for all participants
+- **Problem Detection**: Quickly spot stopped instances or connection issues
+- **Time Remaining**: Countdown to auto-termination (3 hours after workshop start)
+- **Quick Actions**: Restart, connect, or troubleshoot participant workspaces during tutorial
+
+### ❌ Problem 5: No Post-Workshop Data Preservation (Coming in v0.5.8+)
+**Tracking:** See issue [#177](https://github.com/scttfrdmn/prism/issues/177)
 
 **Scenario**: Participants want to keep their workshop code after workspaces terminate
 
@@ -231,17 +361,17 @@ cws workshop dashboard neurips-dl-workshop
 # To preserve your work:
 #
 # 1. Download your notebook:
-#    cws download workshop-instance ~/workshop-code.zip
+#    prism download workshop-instance ~/workshop-code.zip
 #
 # 2. Or snapshot your instance:
-#    cws snapshot create workshop-instance my-workshop-work
+#    prism snapshot create workshop-instance my-workshop-work
 #    (This will create a personal AMI - $2.50/month storage)
 #
 # After termination, you can recreate your environment:
-#    cws launch-from-snapshot my-workshop-work restored-env
+#    prism launch-from-snapshot my-workshop-work restored-env
 
 # Bulk download (instructor):
-cws workshop export-all neurips-dl-workshop \
+prism workshop export-all neurips-dl-workshop \
   --output-dir ./participant-work/ \
   --format zip
 
@@ -255,89 +385,114 @@ cws workshop export-all neurips-dl-workshop \
 **Current workaround**: Participants manually SCP files (most don't)
 **Impact**: Lost learning artifacts, can't reproduce workshop results
 
+**Workshop Budget Management** (Fixed $200 hard stop):
+
+![Projects Dashboard Interface](images/04-conference-workshop/gui-projects-dashboard.png)
+
+*Screenshot shows Cloudscape Projects dashboard with budget tracking. Dr. Kim monitors the fixed $200 conference budget throughout the 3-hour workshop, ensuring no overruns while tracking real-time spend across all 50 participants.*
+
+**What Dr. Kim tracks**:
+- **Fixed Budget**: $200 conference allocation with hard stop (no overruns allowed)
+- **Real-Time Spend**: Current workshop costs across 50 concurrent workspaces
+- **Cost Per Participant**: Individual workspace costs during 3-hour session
+- **Time-Limited Tracking**: Budget resets to zero after auto-termination (no ongoing costs)
+
 ---
 
 ## 🎯 Ideal Future State: Complete Workshop Walkthrough
 
-### Week Before Workshop: Setup with Auto-Terminate
+### Week Before Workshop: Setup with Shared Token & Auto-Terminate
 
 ```bash
 # Create workshop project with aggressive cost controls
-cws project create neurips-dl-workshop \
+prism project create neurips-dl-workshop \
   --budget 200 \
   --hard-cap \
   --alert-threshold 50,75,90 \
   --description "NeurIPS 2025 Workshop: Deep Learning with PyTorch"
 
-# Create policy-restricted invitations
-cws profiles invitations batch-create-workshop \
-  --csv-file participants.csv \
+# Generate shared token with policy restrictions (v0.5.13+)
+prism project invitations shared neurips-dl-workshop \
+  --name "NeurIPS Workshop Access" \
+  --role member \
+  --redemption-limit 60 \
+  --expires-in 7d \
   --template-whitelist "PyTorch Machine Learning" \
   --max-instance-type "t3.medium" \
-  --max-hourly-cost 0.10 \
-  --valid-days 7 \
   --auto-terminate-hours 6 \
-  --output-file invitation_codes.csv
+  --message "Welcome to the NeurIPS Deep Learning Workshop!"
 
-# CloudWorkstation output:
-# 📧 Generated 60 workshop invitations
-#    - Valid for 7 days (expires Dec 9, 2025)
-#    - Template restricted: "PyTorch Machine Learning" only
+# Prism output:
+# 🎫 Shared Invitation Token Generated
+#
+#    Token: WORKSHOP-NEURIPS-2025
+#    Project: neurips-dl-workshop
+#    Role: member
+#    Redemptions: 0 / 60 (first-come-first-served)
+#    Expires: 7 days (Dec 9, 2025)
+#
+#    Policy restrictions:
+#    - Template whitelist: "PyTorch Machine Learning" only
 #    - Max instance: t3.medium ($0.0416/hr)
 #    - Auto-terminate: 6 hours after launch
 #    - Device limit: 2 devices per participant
 #
 # 📊 Projected costs:
 #    - Per participant: $3.20 (6 hours × $0.0416/hr × 1.3 buffer)
-#    - Total if all 60 launch: $192.00 ✅ (within $200 budget)
+#    - Total if all 60 redeem: $192.00 ✅ (within $200 budget)
 #
-# ✅ Invitations saved to: invitation_codes.csv
+#    💡 This single token works for all 60 participants!
+#
+#    Share via:
+#    📧 Email: Include WORKSHOP-NEURIPS-2025 in registration emails
+#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2025
+#    📱 QR Code: Display at workshop registration desk
 #
 # Next steps:
-#   1. Email invitation codes to participants
-#   2. Enable early access (optional): cws workshop early-access enable
-#   3. Monitor signups: cws workshop participants neurips-dl-workshop
-
-# Email invitation codes to participants
-cws workshop email-invitations \
-  --csv-file invitation_codes.csv \
-  --template workshop_welcome.html \
-  --subject "NeurIPS 2025: Deep Learning Workshop Access"
+#   1. Email token to all registered participants
+#   2. Print QR code for walk-ins at registration
+#   3. Monitor redemptions: prism project invitations stats neurips-dl-workshop
 ```
 
 ### Day Before Workshop: Early Access Testing
 
 ```bash
 # Enable early access window (24 hours before workshop)
-cws workshop early-access neurips-dl-workshop \
+prism workshop early-access neurips-dl-workshop \
   --enable \
   --duration 24h \
   --test-mode
 
 # Participants who test early (optional for them):
-participant$ cws profiles invitations accept <CODE> neurips-workshop
-participant$ cws launch "PyTorch Machine Learning" test-env --hours 2
+participant$ prism invitation accept WORKSHOP-NEURIPS-2025
+# ✅ Invitation accepted! You've joined: neurips-dl-workshop
+# 🎓 Role: member
+# ⏰ Access expires: Dec 9, 2025 (7 days)
+
+participant$ prism launch "PyTorch Machine Learning" test-env --hours 2
 # (Automatically terminates after 2 hours)
 
-# Alex monitors early access
-cws workshop participants neurips-dl-workshop
+# Alex monitors shared token redemptions
+prism project invitations stats neurips-dl-workshop
 
 # Output:
-# 📊 Early Access Status (24 hours before workshop)
+# 📊 Invitation Stats: neurips-dl-workshop
 #
-# Accepted Invitations: 58 / 60 (97%)
-# Tested Environment:   15 / 58 (26%)
+# Shared Token: WORKSHOP-NEURIPS-2025
+# Redemptions: 15 / 60 (25%)
+# Time remaining: 6 days (expires Dec 9)
 #
-# ✅ Ready: 15 participants (tested successfully)
-# 🟡 Accepted but not tested: 43 participants
-# ❌ Not yet accepted: 2 participants
-#    - Participant_23: Invitation sent, not accepted
-#    - Participant_47: Invitation sent, not accepted
+# ✅ Redeemed: 15 participants
+# ⏳ Unused redemptions: 45 remaining
 #
-# 💰 Early access cost: $3.20 (15 participants × $0.21/test)
-# 📧 Reminder emails:
-#    - Send reminder to 43 accepted-not-tested? [Y/n]: y
-#    - Send urgent reminder to 2 not-accepted? [Y/n]: y
+# Early test launches: 12 participants (3 redeemed but haven't launched)
+#
+# 💰 Early access cost: $3.20 (12 test launches × $0.27/2hrs)
+#
+# 💡 Tip: Send reminder email with token to increase early testing:
+#    "Remember to test your workshop environment!
+#     Access code: WORKSHOP-NEURIPS-2025
+#     Instructions: https://prism.dev/join/WORKSHOP-NEURIPS-2025"
 ```
 
 ### Workshop Day: Smooth Execution
@@ -349,7 +504,7 @@ cws workshop participants neurips-dl-workshop
 # - Launch time: ~2 minutes per instance
 
 # Option B: Pre-provision all workspaces (advanced)
-cws workshop bulk-provision neurips-dl-workshop \
+prism workshop bulk-provision neurips-dl-workshop \
   --template "PyTorch Machine Learning" \
   --size S \
   --auto-terminate-hours 6
@@ -368,21 +523,21 @@ cws workshop bulk-provision neurips-dl-workshop \
 **9:00 AM - Workshop begins**:
 ```bash
 # Alex opens live dashboard in separate terminal
-cws workshop dashboard neurips-dl-workshop --live
+prism workshop dashboard neurips-dl-workshop --live
 
 # Participants launch (if not pre-provisioned):
-participant$ cws launch "PyTorch Machine Learning" workshop-instance
+participant$ prism launch "PyTorch Machine Learning" workshop-instance
 # ✅ Workspace ready in 90 seconds!
 # 📓 Jupyter Lab: http://54.123.45.67:8888 (token: abc123)
 # ⏰ Workspace will auto-terminate at 3:00 PM (6 hours)
-# 💡 To save your work: cws download workshop-instance ~/my-work.zip
+# 💡 To save your work: prism download workshop-instance ~/my-work.zip
 ```
 
 **10:30 AM - Participant needs help**:
 ```bash
 # Dashboard shows participant_27 with high error rate
 # Alex remotely debugs (with participant permission):
-alex$ cws workshop debug neurips-dl-workshop workshop-27
+alex$ prism workshop debug neurips-dl-workshop workshop-27
 
 # Options:
 # 1. View Jupyter logs
@@ -401,37 +556,37 @@ alex$ cws workshop debug neurips-dl-workshop workshop-27
 # ⏰ Your workshop workspace will terminate in 30 minutes!
 #
 # Save your work now:
-#   cws download workshop-instance ~/neurips-workshop.zip
+#   prism download workshop-instance ~/neurips-workshop.zip
 #
 # Or create a snapshot to continue later:
-#   cws snapshot create workshop-instance my-dl-work
+#   prism snapshot create workshop-instance my-dl-work
 #   (Costs $2.50/month, can recreate anytime)
 
 # Participants who want to continue (personal budget):
-participant$ cws snapshot create workshop-instance my-workshop
+participant$ prism snapshot create workshop-instance my-workshop
 # ✅ Snapshot created: my-workshop
 # 💰 Storage cost: $2.50/month (personal account)
 #
 # To recreate:
-#   cws launch-from-snapshot my-workshop continued-work
+#   prism launch-from-snapshot my-workshop continued-work
 ```
 
 **3:00 PM - Workshop ends, auto-terminate begins**:
 ```bash
-# CloudWorkstation automatically:
+# Prism automatically:
 # 1. Sends final warning (5 minutes before)
 # 2. Terminates all workspaces at 3:00 PM sharp
 # 3. Generates cost report
 # 4. Archives workshop data (optional)
 
 # Alex receives final report:
-cws workshop report neurips-dl-workshop --export-pdf
+prism workshop report neurips-dl-workshop --export-pdf
 
 # Output:
 # 📊 NeurIPS 2025 Deep Learning Workshop - Final Report
 #
 # Participants:     58 / 60 registered (97%)
-# Active instances: 58 workspaces for 3 hours
+# Active workspaces: 58 workspaces for 3 hours
 # Total uptime:     174 instance-hours
 #
 # Budget:
@@ -453,7 +608,7 @@ cws workshop report neurips-dl-workshop --export-pdf
 #
 #   💡 Cloud vs Traditional:
 #      Conference room PCs: $60,000 upfront + maintenance
-#      CloudWorkstation: $187.45 for 3 hours of actual use
+#      Prism: $187.45 for 3 hours of actual use
 #      You only paid for compute time, not ownership!
 #
 # Participant Engagement:
@@ -505,7 +660,7 @@ cws workshop report neurips-dl-workshop --export-pdf
 **Target**: Workshops can run without budget disasters
 
 1. **Auto-Terminate Timer** (1 week)
-   - `cws launch template name --hours 6`
+   - `prism launch template name --hours 6`
    - Countdown warnings at 30min, 5min
    - Graceful termination with EBS preservation
 
@@ -516,7 +671,7 @@ cws workshop report neurips-dl-workshop --export-pdf
    - Policy validation before launch
 
 3. **Workshop Project Type** (3 days)
-   - `cws project create workshop --type workshop`
+   - `prism project create workshop --type workshop`
    - Built-in auto-terminate defaults
    - Aggressive budget alerts
    - One-time budget (no rollover)
@@ -566,10 +721,10 @@ cws workshop report neurips-dl-workshop --export-pdf
 - Zero workspaces left running post-workshop
 
 ### Business Impact
-- **Conference Adoption**: "CloudWorkstation workshops" become a standard
+- **Conference Adoption**: "Prism workshops" become a standard
 - **Reduced Support**: Instructors handle workshops independently
 - **Positive Reviews**: "Best hands-on workshop I've attended!" - Participants
-- **Academic Reputation**: CloudWorkstation seen as workshop-ready platform
+- **Academic Reputation**: Prism seen as workshop-ready platform
 
 ---
 

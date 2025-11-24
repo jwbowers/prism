@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -34,16 +34,16 @@ func (lc *LogsCommands) CreateLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs [workspace-name]",
 		Short: "View and manage workspace logs",
-		Long: `View logs from CloudWorkstation workspaces including console output,
+		Long: `View logs from Prism workspaces including console output,
 system logs, and application logs.
 
 Examples:
-  cws logs my-workspace                    # Show console logs
-  cws logs my-workspace --type cloud-init # Show cloud-init logs
-  cws logs my-workspace --tail 50         # Show last 50 lines
-  cws logs my-workspace --since 1h        # Show logs from last hour
-  cws logs my-workspace --follow          # Follow logs in real-time
-  cws logs --list                         # List all workspaces with log availability`,
+  prism logs my-workspace                    # Show console logs
+  prism logs my-workspace --type cloud-init # Show cloud-init logs
+  prism logs my-workspace --tail 50         # Show last 50 lines
+  prism logs my-workspace --since 1h        # Show logs from last hour
+  prism logs my-workspace --follow          # Follow logs in real-time
+  prism logs --list                         # List all workspaces with log availability`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: lc.handleLogsCommand,
 	}
@@ -124,7 +124,7 @@ func (lc *LogsCommands) handleListLogs(jsonOutput bool) error {
 	}
 
 	fmt.Printf("\nAvailable log types: %s\n", strings.Join(summary.AvailableLogTypes, ", "))
-	fmt.Println("\nUse 'cws logs <workspace-name>' to view logs for a specific workspace")
+	fmt.Println("\nUse 'prism logs <workspace-name>' to view logs for a specific workspace")
 
 	return nil
 }
@@ -160,7 +160,7 @@ func (lc *LogsCommands) handleShowLogTypes(instanceName string, jsonOutput bool)
 		fmt.Println("\n⚠️  Some log types require the workspace to be running for SSM access")
 	}
 
-	fmt.Printf("\nUsage: cws logs %s --type <log-type>\n", instanceName)
+	fmt.Printf("\nUsage: prism logs %s --type <log-type>\n", instanceName)
 
 	return nil
 }

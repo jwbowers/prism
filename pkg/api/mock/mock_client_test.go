@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/project"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -358,7 +358,8 @@ func TestStorageManagementWorkflow(t *testing.T) {
 
 			storage, err := client.CreateStorage(ctx, createReq)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedSize, storage.SizeGB)
+			require.NotNil(t, storage.SizeGB, "SizeGB should not be nil")
+			assert.Equal(t, tt.expectedSize, *storage.SizeGB)
 			assert.Equal(t, "gp3", storage.VolumeType)
 
 			// Cleanup
