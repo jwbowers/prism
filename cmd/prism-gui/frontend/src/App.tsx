@@ -1621,6 +1621,19 @@ export default function PrismApp() {
   const [sshKeyModalVisible, setSshKeyModalVisible] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState<string>('');
 
+  // Individual invitation states
+  const [sendInvitationModalVisible, setSendInvitationModalVisible] = useState(false);
+  const [selectedProjectForInvitation, setSelectedProjectForInvitation] = useState<string>('');
+  const [invitationEmail, setInvitationEmail] = useState('');
+  const [invitationRole, setInvitationRole] = useState<'viewer' | 'member' | 'admin'>('member');
+  const [invitationMessage, setInvitationMessage] = useState('');
+  const [invitationValidationError, setInvitationValidationError] = useState('');
+
+  // Invitation token redemption
+  const [redeemTokenModalVisible, setRedeemTokenModalVisible] = useState(false);
+  const [invitationToken, setInvitationToken] = useState('');
+  const [tokenValidationError, setTokenValidationError] = useState('');
+
   // Safe data loading with comprehensive error handling
   // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
   const loadApplicationData = React.useCallback(async () => {
@@ -1648,11 +1661,12 @@ export default function PrismApp() {
         api.getMarketplaceTemplates(),
         api.getMarketplaceCategories(),
         api.getIdlePolicies(),
-        api.getIdleSchedules()
+        api.getIdleSchedules(),
+        api.getMyInvitations()
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, rightsizingStatsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData] = results.map((result, index) => {
+      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, rightsizingStatsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData] = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
@@ -1663,6 +1677,22 @@ export default function PrismApp() {
           return []; // everything else (arrays)
         }
       });
+
+      // Convert Invitation[] to CachedInvitation[] format
+      const cachedInvitations: CachedInvitation[] = (invitationsData || []).map((inv: Invitation) => ({
+        token: inv.token,
+        invitation_id: inv.id,
+        project_id: inv.project_id,
+        project_name: inv.project_name,
+        email: inv.email,
+        role: inv.role,
+        invited_by: inv.invited_by,
+        invited_at: inv.invited_at,
+        expires_at: inv.expires_at,
+        status: inv.status,
+        message: inv.message || '',
+        added_at: new Date().toISOString()
+      }));
 
       setState(prev => ({
         ...prev,
@@ -1685,6 +1715,7 @@ export default function PrismApp() {
         marketplaceCategories: marketplaceCategoriesData,
         idlePolicies: idlePoliciesData,
         idleSchedules: idleSchedulesData,
+        invitations: cachedInvitations,
         loading: false,
         connected: true,
         error: null
@@ -2067,6 +2098,90 @@ export default function PrismApp() {
       return response;
     } catch (error: any) {
       throw new Error(error.message || 'Failed to generate SSH key');
+    }
+  };
+
+  // Individual Invitation Handlers
+  const handleSendInvitation = async () => {
+    // Validate
+    if (!invitationEmail.trim()) {
+      setInvitationValidationError('Email address is required');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(invitationEmail)) {
+      setInvitationValidationError('Please enter a valid email address');
+      return;
+    }
+
+    if (!selectedProjectForInvitation) {
+      setInvitationValidationError('Please select a project');
+      return;
+    }
+
+    try {
+      await api.sendInvitation(selectedProjectForInvitation, invitationEmail.trim(), invitationRole, invitationMessage.trim() || undefined);
+
+      // Show success notification
+      setState(prev => ({
+        ...prev,
+        notifications: [{
+          type: 'success',
+          header: 'Invitation Sent',
+          content: `Invitation sent to ${invitationEmail}`,
+          dismissible: true,
+          id: Date.now().toString()
+        }, ...prev.notifications]
+      }));
+
+      // Reset form
+      setInvitationValidationError('');
+      setSendInvitationModalVisible(false);
+      setInvitationEmail('');
+      setInvitationMessage('');
+      setInvitationRole('member');
+    } catch (error: any) {
+      setInvitationValidationError(`Failed to send invitation: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleRedeemToken = async () => {
+    if (!invitationToken.trim()) {
+      setTokenValidationError('Invitation token is required');
+      return;
+    }
+
+    try {
+      const invitationData = await api.getInvitationByToken(invitationToken.trim());
+
+      // Extract invitation and project info
+      const invitation = invitationData.invitation;
+      const project = invitationData.project;
+
+      // Show confirmation with invitation details
+      const confirmed = confirm(`Accept invitation to project "${project.name}" as ${invitation.role}?`);
+
+      if (confirmed) {
+        await api.acceptInvitation(invitationToken.trim());
+
+        setState(prev => ({
+          ...prev,
+          notifications: [{
+            type: 'success',
+            header: 'Token Redeemed',
+            content: `Successfully joined project "${project.name}"`,
+            dismissible: true,
+            id: Date.now().toString()
+          }, ...prev.notifications]
+        }));
+
+        setTokenValidationError('');
+        setRedeemTokenModalVisible(false);
+        setInvitationToken('');
+      }
+    } catch (error: any) {
+      setTokenValidationError(`Failed to redeem token: ${error.message || 'Invalid or expired token'}`);
     }
   };
 
@@ -5054,6 +5169,38 @@ export default function PrismApp() {
             variant="h1"
             description="Manage project invitations and collaborate with research teams"
             counter={`(${state.invitations.length} total, ${pendingCount} pending)`}
+            actions={
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button
+                  onClick={() => setRedeemTokenModalVisible(true)}
+                  data-testid="redeem-token-button"
+                >
+                  Redeem Token
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    if (state.projects.length === 0) {
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [{
+                          type: 'warning',
+                          header: 'No Projects',
+                          content: 'Create a project first before sending invitations',
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }, ...prev.notifications]
+                      }));
+                      return;
+                    }
+                    setSendInvitationModalVisible(true);
+                  }}
+                  data-testid="send-invitation-button"
+                >
+                  Send Invitation
+                </Button>
+              </SpaceBetween>
+            }
           >
             Invitations
           </Header>
@@ -9577,6 +9724,119 @@ export default function PrismApp() {
         }}
         onGenerate={handleGenerateSSHKey}
       />
+
+      {/* Send Invitation Modal */}
+      <Modal
+        visible={sendInvitationModalVisible}
+        onDismiss={() => {
+          setSendInvitationModalVisible(false);
+          setInvitationValidationError('');
+        }}
+        header="Send Project Invitation"
+        data-testid="send-invitation-modal"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button onClick={() => setSendInvitationModalVisible(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSendInvitation} data-testid="confirm-send-invitation">
+                Send Invitation
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <SpaceBetween size="m">
+          {invitationValidationError && (
+            <ValidationError message={invitationValidationError} visible={true} />
+          )}
+
+          <FormField label="Project" description="Select the project to invite user to">
+            <Select
+              selectedOption={
+                selectedProjectForInvitation
+                  ? { label: state.projects.find(p => p.id === selectedProjectForInvitation)?.name || '', value: selectedProjectForInvitation }
+                  : null
+              }
+              onChange={({ detail }) => setSelectedProjectForInvitation(detail.selectedOption?.value || '')}
+              options={state.projects.map(p => ({ label: p.name, value: p.id }))}
+              placeholder="Select a project"
+              data-testid="invitation-project-select"
+            />
+          </FormField>
+
+          <FormField label="Email Address" description="Enter the recipient's email address">
+            <Input
+              value={invitationEmail}
+              onChange={({ detail }) => setInvitationEmail(detail.value)}
+              placeholder="user@example.com"
+              type="email"
+              data-testid="invitation-email-input"
+            />
+          </FormField>
+
+          <FormField label="Role" description="Select the role for this user">
+            <Select
+              selectedOption={{ label: invitationRole, value: invitationRole }}
+              onChange={({ detail }) => setInvitationRole(detail.selectedOption?.value as 'viewer' | 'member' | 'admin')}
+              options={[
+                { label: 'viewer', value: 'viewer', description: 'Read-only access' },
+                { label: 'member', value: 'member', description: 'Can create and manage resources' },
+                { label: 'admin', value: 'admin', description: 'Full project control' }
+              ]}
+              data-testid="invitation-role-select"
+            />
+          </FormField>
+
+          <FormField label="Message (optional)" description="Add a personal message to the invitation">
+            <Textarea
+              value={invitationMessage}
+              onChange={({ detail }) => setInvitationMessage(detail.value)}
+              placeholder="Welcome to the project! Looking forward to collaborating..."
+              data-testid="invitation-message-input"
+            />
+          </FormField>
+        </SpaceBetween>
+      </Modal>
+
+      {/* Redeem Token Modal */}
+      <Modal
+        visible={redeemTokenModalVisible}
+        onDismiss={() => {
+          setRedeemTokenModalVisible(false);
+          setTokenValidationError('');
+        }}
+        header="Redeem Invitation Token"
+        data-testid="redeem-token-modal"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button onClick={() => setRedeemTokenModalVisible(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleRedeemToken} data-testid="confirm-redeem-token">
+                Redeem
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <SpaceBetween size="m">
+          {tokenValidationError && (
+            <ValidationError message={tokenValidationError} visible={true} />
+          )}
+
+          <FormField label="Invitation Token" description="Enter the invitation token you received">
+            <Input
+              value={invitationToken}
+              onChange={({ detail }) => setInvitationToken(detail.value)}
+              placeholder="Enter token..."
+              data-testid="invitation-token-input"
+            />
+          </FormField>
+
+          <Alert type="info">
+            The token can be found in your invitation email or shared by the project admin.
+          </Alert>
+        </SpaceBetween>
+      </Modal>
     </>
   );
 }
