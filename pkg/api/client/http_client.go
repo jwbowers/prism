@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/project"
-	"github.com/scttfrdmn/cloudworkstation/pkg/templates"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
-// HTTPClient provides an HTTP-based implementation of CloudWorkstationAPI
+// HTTPClient provides an HTTP-based implementation of PrismAPI
 type HTTPClient struct {
 	baseURL    string
 	httpClient *http.Client
@@ -35,7 +35,7 @@ type HTTPClient struct {
 }
 
 // NewClient creates a new HTTP API client
-func NewClient(baseURL string) CloudWorkstationAPI {
+func NewClient(baseURL string) PrismAPI {
 	if baseURL == "" {
 		baseURL = "http://localhost:8080"
 	}
@@ -50,7 +50,7 @@ func NewClient(baseURL string) CloudWorkstationAPI {
 }
 
 // NewClientWithOptions creates a new HTTP API client with specific options
-func NewClientWithOptions(baseURL string, opts Options) CloudWorkstationAPI {
+func NewClientWithOptions(baseURL string, opts Options) PrismAPI {
 	client := NewClient(baseURL).(*HTTPClient)
 	client.SetOptions(opts)
 	return client
@@ -1498,6 +1498,38 @@ func (c *HTTPClient) DisableProjectBudget(ctx context.Context, projectID string)
 	return result, nil
 }
 
+// PreventProjectLaunches prevents new instance launches for a project
+func (c *HTTPClient) PreventProjectLaunches(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "POST", fmt.Sprintf("/api/v1/projects/%s/prevent-launches", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// AllowProjectLaunches allows instance launches for a project
+func (c *HTTPClient) AllowProjectLaunches(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "POST", fmt.Sprintf("/api/v1/projects/%s/allow-launches", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // GetCostTrends retrieves cost trends for analysis
 func (c *HTTPClient) GetCostTrends(ctx context.Context, projectID, period string) (map[string]interface{}, error) {
 	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/cost/trends?project_id=%s&period=%s", projectID, period), nil)
@@ -1704,7 +1736,7 @@ func (c *HTTPClient) CheckVersionCompatibility(ctx context.Context, clientVersio
 			"Both must be updated to the same major version.\n\n"+
 			"💡 To fix this:\n"+
 			"   1. Stop the daemon: cws daemon stop\n"+
-			"   2. Update CloudWorkstation: brew upgrade cloudworkstation\n"+
+			"   2. Update Prism: brew upgrade cloudworkstation\n"+
 			"   3. Restart the daemon: cws daemon start\n"+
 			"   4. Verify versions match: cws version && cws daemon status",
 			clientVersion, daemonVersionStr)

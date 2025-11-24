@@ -1,4 +1,4 @@
-// Package project provides project and budget management functionality for CloudWorkstation.
+// Package project provides project and budget management functionality for Prism.
 //
 // This package implements project-based resource organization, budget tracking,
 // and cost controls that enable researchers to organize instances, storage, and
@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // Manager handles project lifecycle, budget tracking, and cost controls
@@ -33,7 +33,7 @@ func NewManager() (*Manager, error) {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	stateDir := filepath.Join(homeDir, ".cloudworkstation")
+	stateDir := filepath.Join(homeDir, ".prism")
 	if err := os.MkdirAll(stateDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create state directory: %w", err)
 	}
@@ -267,6 +267,17 @@ func (m *Manager) AddProjectMember(ctx context.Context, projectID string, member
 	project, exists := m.projects[projectID]
 	if !exists {
 		return fmt.Errorf("project %q not found", projectID)
+	}
+
+	// Validate role
+	validRoles := map[types.ProjectRole]bool{
+		types.ProjectRoleOwner:  true,
+		types.ProjectRoleAdmin:  true,
+		types.ProjectRoleMember: true,
+		types.ProjectRoleViewer: true,
+	}
+	if !validRoles[member.Role] {
+		return fmt.Errorf("invalid role %q: must be one of owner, admin, member, or viewer", member.Role)
 	}
 
 	// Check if member already exists
@@ -632,4 +643,48 @@ func (m *Manager) IsLaunchPrevented(ctx context.Context, projectID string) (bool
 	}
 
 	return project.LaunchPrevented, nil
+}
+
+// SetDefaultAllocation sets the default funding allocation for a project (v0.5.10+)
+func (m *Manager) SetDefaultAllocation(ctx context.Context, projectID string, allocationID string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project not found: %s", projectID)
+	}
+
+	// Set the default allocation
+	project.DefaultAllocationID = &allocationID
+	project.UpdatedAt = time.Now()
+
+	// Save projects to disk
+	if err := m.saveProjects(); err != nil {
+		return fmt.Errorf("failed to save project: %w", err)
+	}
+
+	return nil
+}
+
+// ClearDefaultAllocation clears the default funding allocation for a project (v0.5.10+)
+func (m *Manager) ClearDefaultAllocation(ctx context.Context, projectID string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project not found: %s", projectID)
+	}
+
+	// Clear the default allocation
+	project.DefaultAllocationID = nil
+	project.UpdatedAt = time.Now()
+
+	// Save projects to disk
+	if err := m.saveProjects(); err != nil {
+		return fmt.Errorf("failed to save project: %w", err)
+	}
+
+	return nil
 }

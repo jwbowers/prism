@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -69,6 +70,8 @@ func TestNewLaunchProgressReporter(t *testing.T) {
 		"template_resolution",
 		"ami_discovery",
 		"instance_launch",
+		"instance_ready",
+		"ssh_ready",
 		"software_installation",
 		"service_startup",
 		"finalization",
@@ -96,10 +99,10 @@ func TestNewLaunchProgressReporter(t *testing.T) {
 
 func TestAddCallback(t *testing.T) {
 	reporter := createTestReporter()
-	callCount := 0
+	var callCount int32
 
 	callback := func(update ProgressUpdate) {
-		callCount++
+		atomic.AddInt32(&callCount, 1)
 	}
 
 	reporter.AddCallback(callback)
@@ -113,7 +116,7 @@ func TestAddCallback(t *testing.T) {
 	// Wait for callback to be called (it's called in a goroutine)
 	time.Sleep(10 * time.Millisecond)
 
-	if callCount == 0 {
+	if atomic.LoadInt32(&callCount) == 0 {
 		t.Error("Callback was not called")
 	}
 }
@@ -358,11 +361,11 @@ func TestCalculateETAWithProgress(t *testing.T) {
 	eta := reporter.calculateETA(0.5) // 50% complete
 	if eta == nil {
 		t.Error("Expected ETA to be calculated with progress")
-	}
-
-	// With 50% done in 10 seconds, should estimate ~10 more seconds
-	if *eta < 5*time.Second || *eta > 15*time.Second {
-		t.Errorf("Expected ETA around 10 seconds, got %v", *eta)
+	} else {
+		// With 50% done in 10 seconds, should estimate ~10 more seconds
+		if *eta < 5*time.Second || *eta > 15*time.Second {
+			t.Errorf("Expected ETA around 10 seconds, got %v", *eta)
+		}
 	}
 }
 
@@ -372,10 +375,10 @@ func TestGetStageByName(t *testing.T) {
 	stage := reporter.getStageByName("stage1")
 	if stage == nil {
 		t.Error("Expected to find stage1")
-	}
-
-	if stage.Name != "stage1" {
-		t.Errorf("Expected stage name 'stage1', got '%s'", stage.Name)
+	} else {
+		if stage.Name != "stage1" {
+			t.Errorf("Expected stage name 'stage1', got '%s'", stage.Name)
+		}
 	}
 
 	nonExistentStage := reporter.getStageByName("nonexistent")

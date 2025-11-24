@@ -8,8 +8,8 @@ set -euo pipefail
 
 # Configuration
 readonly INSTALL_DIR="/usr/local/bin"
-readonly CLOUDWORKSTATION_DIR="$HOME/.cloudworkstation"
-readonly LAUNCH_AGENT_PLIST="$HOME/Library/LaunchAgents/com.cloudworkstation.daemon.plist"
+readonly PRISM_DIR="$HOME/.prism"
+readonly LAUNCH_AGENT_PLIST="$HOME/Library/LaunchAgents/com.prism.daemon.plist"
 readonly APP_APPLICATIONS="/Applications/CloudWorkstation.app"
 readonly DESKTOP_SHORTCUT="$HOME/Desktop/CloudWorkstation.command"
 
@@ -193,7 +193,7 @@ clean_shell_config() {
     local cleaned_files=()
     
     for config_file in "${shell_configs[@]}"; do
-        if [[ -f "$config_file" ]] && grep -q "cloudworkstation\|$INSTALL_DIR.*cws" "$config_file"; then
+        if [[ -f "$config_file" ]] && grep -q "prism\|$INSTALL_DIR.*cws" "$config_file"; then
             # Create backup
             cp "$config_file" "$config_file.bak.$(date +%Y%m%d%H%M%S)"
             
@@ -223,16 +223,16 @@ remove_user_data() {
     local removed_items=()
     
     # Remove CloudWorkstation directory
-    if [[ -d "$CLOUDWORKSTATION_DIR" ]]; then
-        rm -rf "$CLOUDWORKSTATION_DIR"
-        removed_items+=(".cloudworkstation directory")
+    if [[ -d "$PRISM_DIR" ]]; then
+        rm -rf "$PRISM_DIR"
+        removed_items+=(".prism directory")
     fi
     
     # Remove macOS preferences
     local prefs_files=(
-        "$HOME/Library/Preferences/com.cloudworkstation.app.plist"
-        "$HOME/Library/Preferences/com.cloudworkstation.daemon.plist"
-        "$HOME/Library/Preferences/com.cloudworkstation.cli.plist"
+        "$HOME/Library/Preferences/com.prism.app.plist"
+        "$HOME/Library/Preferences/com.prism.daemon.plist"
+        "$HOME/Library/Preferences/com.prism.cli.plist"
     )
     
     for pref_file in "${prefs_files[@]}"; do
@@ -250,7 +250,7 @@ remove_user_data() {
     fi
     
     # Remove caches
-    local cache_dir="$HOME/Library/Caches/com.cloudworkstation.app"
+    local cache_dir="$HOME/Library/Caches/com.prism.app"
     if [[ -d "$cache_dir" ]]; then
         rm -rf "$cache_dir"
         removed_items+=("Cache files")
@@ -269,7 +269,7 @@ remove_logs_and_temp() {
     
     local temp_locations=(
         "/tmp/cwsd.log"
-        "/tmp/cloudworkstation-*"
+        "/tmp/prism-*"
         "$HOME/Library/Logs/CloudWorkstation"
     )
     
@@ -315,7 +315,7 @@ verify_removal() {
         remaining_items+=("LaunchAgent")
     fi
     
-    if [[ "$KEEP_USER_DATA" == false ]] && [[ -d "$CLOUDWORKSTATION_DIR" ]]; then
+    if [[ "$KEEP_USER_DATA" == false ]] && [[ -d "$PRISM_DIR" ]]; then
         remaining_items+=("User data")
     fi
     
@@ -424,11 +424,11 @@ Thank you for using CloudWorkstation!"
     if [[ "$COMPLETE_REMOVAL" == true ]] || ([[ "$KEEP_USER_DATA" == false ]] && [[ "$?" == 0 ]]); then
         echo "• User data: Removed"
     else
-        echo "• User data: Preserved in $CLOUDWORKSTATION_DIR"
+        echo "• User data: Preserved in $PRISM_DIR"
     fi
     echo ""
     echo "To reinstall CloudWorkstation, download the latest DMG from:"
-    echo "https://github.com/scttfrdmn/cloudworkstation/releases"
+    echo "https://github.com/scttfrdmn/prism/releases"
 }
 
 # Run main function

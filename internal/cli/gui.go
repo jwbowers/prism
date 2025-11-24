@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/version"
+	"github.com/scttfrdmn/prism/pkg/version"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,7 @@ func NewGUICommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gui",
 		Short: "Launch the graphical user interface",
-		Long: `Launch the CloudWorkstation Graphical User Interface (GUI).
+		Long: `Launch the Prism Graphical User Interface (GUI).
 
 This provides a professional desktop interface for managing your cloud workstations.
 The GUI includes template browsing, instance management, remote desktop connections,
@@ -40,7 +40,7 @@ func runGUI() {
 
 		if err := startDaemonForGUI(); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", FormatErrorForCLI(err, "start daemon for GUI"))
-			fmt.Println("Please start the daemon manually with: cws daemon start")
+			fmt.Println("Please start the daemon manually with: prism daemon start")
 			os.Exit(1)
 		}
 
@@ -48,7 +48,7 @@ func runGUI() {
 	}
 
 	// Print GUI initialization message
-	fmt.Printf("Starting CloudWorkstation GUI v%s...\n", version.GetVersion())
+	fmt.Printf("Starting Prism GUI v%s...\n", version.GetVersion())
 
 	// Find and execute the GUI binary
 	guiPath, err := findGUIBinary()
@@ -57,12 +57,12 @@ func runGUI() {
 		fmt.Println("\nTo install GUI support:")
 		fmt.Println("  1. Install Wails CLI: go install github.com/wailsapp/wails/v3/cmd/wails@latest")
 		fmt.Println("  2. Build GUI: make build-gui")
-		fmt.Println("  3. Or use TUI instead: cws tui")
+		fmt.Println("  3. Or use TUI instead: prism tui")
 		os.Exit(1)
 	}
 
 	// Execute the GUI with any passed flags
-	args := os.Args[2:] // Skip "cws gui"
+	args := os.Args[2:] // Skip "prism gui"
 	cmd := exec.Command(guiPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -97,21 +97,21 @@ func startDaemonForGUI() error {
 		return nil // Already running
 	}
 
-	// First, try to find cwsd binary
-	cwsdPath, _ := exec.LookPath("cwsd")
-	if cwsdPath == "" {
+	// First, try to find prismd binary
+	prismdPath, _ := exec.LookPath("prismd")
+	if prismdPath == "" {
 		// Try in bin directory
-		cwsdPath = "./bin/cwsd"
-		if _, err := os.Stat(cwsdPath); os.IsNotExist(err) {
-			cwsdPath = "../bin/cwsd"
-			if _, err := os.Stat(cwsdPath); os.IsNotExist(err) {
+		prismdPath = "./bin/prismd"
+		if _, err := os.Stat(prismdPath); os.IsNotExist(err) {
+			prismdPath = "../bin/prismd"
+			if _, err := os.Stat(prismdPath); os.IsNotExist(err) {
 				return fmt.Errorf("daemon executable not found in PATH or bin directory")
 			}
 		}
 	}
 
 	// Start daemon
-	cmd := exec.Command(cwsdPath)
+	cmd := exec.Command(prismdPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
@@ -158,12 +158,12 @@ func findGUIBinary() (string, error) {
 
 	return "", fmt.Errorf(`GUI binary 'cws-gui' not found
 
-The CloudWorkstation GUI requires the cws-gui binary to be built and available.
+The Prism GUI requires the cws-gui binary to be built and available.
 
 Installation options:
   • Homebrew (includes GUI): brew install cloudworkstation
   • Manual build: make build-gui (requires Wails CLI)
-  • Alternative: Use TUI instead with 'cws tui'
+  • Alternative: Use TUI instead with 'prism tui'
 
 For GUI development:
   • Install Wails: go install github.com/wailsapp/wails/v3/cmd/wails@latest

@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/efs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // MockEC2Client provides a mock implementation of EC2ClientInterface for testing
@@ -43,6 +43,7 @@ type MockEC2Client struct {
 	CreateTagsFunc                    func(ctx context.Context, params *ec2.CreateTagsInput) (*ec2.CreateTagsOutput, error)
 	DescribeInstanceTypeOfferingsFunc func(ctx context.Context, params *ec2.DescribeInstanceTypeOfferingsInput) (*ec2.DescribeInstanceTypeOfferingsOutput, error)
 	DescribeInstanceTypesFunc         func(ctx context.Context, params *ec2.DescribeInstanceTypesInput) (*ec2.DescribeInstanceTypesOutput, error)
+	DescribeInstanceStatusFunc        func(ctx context.Context, params *ec2.DescribeInstanceStatusInput) (*ec2.DescribeInstanceStatusOutput, error)
 }
 
 func (m *MockEC2Client) RunInstances(ctx context.Context, params *ec2.RunInstancesInput, optFns ...func(*ec2.Options)) (*ec2.RunInstancesOutput, error) {
@@ -380,22 +381,23 @@ func (m *MockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCa
 
 // MockStateManager provides a mock implementation of StateManagerInterface for testing
 type MockStateManager struct {
-	LoadStateFunc       func() (*types.State, error)
-	SaveStateFunc       func(*types.State) error
-	SaveInstanceFunc    func(types.Instance) error
-	RemoveInstanceFunc  func(string) error
-	SaveVolumeFunc      func(types.EFSVolume) error
-	RemoveVolumeFunc    func(string) error
-	SaveEBSVolumeFunc   func(types.EBSVolume) error
-	RemoveEBSVolumeFunc func(string) error
-	UpdateConfigFunc    func(types.Config) error
+	LoadStateFunc           func() (*types.State, error)
+	SaveStateFunc           func(*types.State) error
+	SaveInstanceFunc        func(types.Instance) error
+	RemoveInstanceFunc      func(string) error
+	SaveStorageVolumeFunc   func(types.StorageVolume) error
+	RemoveStorageVolumeFunc func(string) error
+	UpdateConfigFunc        func(types.Config) error
 }
 
 func (m *MockStateManager) LoadState() (*types.State, error) {
 	if m.LoadStateFunc != nil {
 		return m.LoadStateFunc()
 	}
-	return &types.State{}, nil
+	return &types.State{
+		Instances:      make(map[string]types.Instance),
+		StorageVolumes: make(map[string]types.StorageVolume),
+	}, nil
 }
 
 func (m *MockStateManager) SaveState(state *types.State) error {
@@ -419,30 +421,16 @@ func (m *MockStateManager) RemoveInstance(name string) error {
 	return nil
 }
 
-func (m *MockStateManager) SaveVolume(volume types.EFSVolume) error {
-	if m.SaveVolumeFunc != nil {
-		return m.SaveVolumeFunc(volume)
+func (m *MockStateManager) SaveStorageVolume(volume types.StorageVolume) error {
+	if m.SaveStorageVolumeFunc != nil {
+		return m.SaveStorageVolumeFunc(volume)
 	}
 	return nil
 }
 
-func (m *MockStateManager) RemoveVolume(name string) error {
-	if m.RemoveVolumeFunc != nil {
-		return m.RemoveVolumeFunc(name)
-	}
-	return nil
-}
-
-func (m *MockStateManager) SaveEBSVolume(volume types.EBSVolume) error {
-	if m.SaveEBSVolumeFunc != nil {
-		return m.SaveEBSVolumeFunc(volume)
-	}
-	return nil
-}
-
-func (m *MockStateManager) RemoveEBSVolume(name string) error {
-	if m.RemoveEBSVolumeFunc != nil {
-		return m.RemoveEBSVolumeFunc(name)
+func (m *MockStateManager) RemoveStorageVolume(name string) error {
+	if m.RemoveStorageVolumeFunc != nil {
+		return m.RemoveStorageVolumeFunc(name)
 	}
 	return nil
 }
@@ -452,4 +440,11 @@ func (m *MockStateManager) UpdateConfig(config types.Config) error {
 		return m.UpdateConfigFunc(config)
 	}
 	return nil
+}
+
+func (m *MockEC2Client) DescribeInstanceStatus(ctx context.Context, params *ec2.DescribeInstanceStatusInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstanceStatusOutput, error) {
+	if m.DescribeInstanceStatusFunc != nil {
+		return m.DescribeInstanceStatusFunc(ctx, params)
+	}
+	return &ec2.DescribeInstanceStatusOutput{}, nil
 }

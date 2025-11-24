@@ -1,0 +1,498 @@
+# ParaView Desktop - Scientific Visualization and Data Analysis
+name: "ParaView Desktop"
+slug: "paraview-desktop"
+description: "ParaView scientific visualization platform for analyzing large datasets with 3D rendering"
+long_description: |
+  Professional ParaView desktop environment for scientific visualization and data analysis.
+  ParaView is an open-source platform for visualizing large computational science datasets
+  with advanced 3D rendering, volume visualization, and Python scripting capabilities.
+
+  Features:
+  - ParaView (latest stable version)
+  - Python bindings for scripting and automation
+  - 3D visualization and volume rendering
+  - VTK (Visualization Toolkit) support
+  - MPI support for parallel processing
+  - GPU acceleration support (optional)
+  - MATE desktop environment
+  - Nice DCV for browser-based remote desktop
+  - No exposed ports (secure SSM port forwarding)
+
+  Use Cases:
+  - Computational fluid dynamics (CFD) visualization
+  - Finite element analysis (FEA) results
+  - Climate and weather modeling data
+  - Molecular dynamics visualization
+  - Medical imaging and biomedical research
+  - Large-scale scientific simulation results
+  - 3D volume rendering and isosurface extraction
+
+  Supported Data Formats:
+  - VTK formats (VTI, VTP, VTU, PVTU, etc.)
+  - Exodus, NetCDF, HDF5
+  - CGNS, Ensight, Tecplot
+  - DICOM, NIFTI (medical imaging)
+  - Many others via plugins
+
+base: "ubuntu-24.04"
+
+# Connection configuration
+connection_type: "desktop"
+
+desktop:
+  environment: "mate"          # Lightweight but powerful desktop
+  dcv_port: 8443              # DCV server port (HTTPS)
+  dcv_version: "latest"       # Use latest DCV release
+  gpu_required: false         # Optional GPU (recommended for large datasets)
+  session_type: "virtual"     # Virtual session
+  session_user: "ubuntu"      # User for DCV session
+  auth_method: "password"     # Password authentication
+
+# Complexity and categorization
+complexity: "intermediate"
+category: "Desktop Environment"
+domain: "visualization"
+
+# Visual presentation
+icon: "📊"
+color: "#0076A8"  # ParaView blue
+popular: true
+
+# Package management
+package_manager: "apt"
+packages:
+  system:
+    # MATE Desktop Environment
+    - ubuntu-mate-desktop
+    - mate-desktop-environment
+
+    # ParaView and visualization tools
+    - paraview
+    - paraview-dev
+    - paraview-python
+    - python3-paraview
+
+    # VTK libraries
+    - libvtk9-dev
+    - vtk9
+
+    # Scientific computing support
+    - python3-numpy
+    - python3-scipy
+    - python3-matplotlib
+    - python3-h5py
+    - python3-netcdf4
+
+    # MPI for parallel processing
+    - libopenmpi-dev
+    - openmpi-bin
+
+    # Additional scientific tools
+    - gnuplot
+    - octave
+
+    # Essential applications
+    - firefox
+    - gedit
+    - file-roller
+
+    # Development tools
+    - git
+    - vim
+    - curl
+    - wget
+    - build-essential
+    - python3-pip
+    - python3-dev
+    - cmake
+
+    # System utilities
+    - htop
+    - net-tools
+    - dbus-x11  # Required for DCV
+    - mesa-utils  # OpenGL utilities
+
+# System services
+services:
+  - name: dcv
+    port: 8443
+    description: "Nice DCV remote desktop"
+    protocol: "https"
+
+# Default user
+users:
+  - name: ubuntu
+    groups: ["sudo", "adm", "video", "render"]
+    shell: "/bin/bash"
+
+# Cloud-init user data for DCV installation
+user_data: |
+  #cloud-config
+
+  # Update system
+  package_update: true
+  package_upgrade: true
+
+  # Install Nice DCV dependencies
+  packages:
+    - mesa-utils
+    - ubuntu-mate-desktop
+    - dbus-x11
+    - lightdm
+    - paraview
+    - paraview-python
+
+  runcmd:
+    # Download and install Nice DCV server
+    - wget https://d1uj6qtbmh3dt5.cloudfront.net/nice-dcv-ubuntu2404-x86_64.tgz -O /tmp/nice-dcv.tgz
+    - tar -xzf /tmp/nice-dcv.tgz -C /tmp
+    - apt install -y /tmp/nice-dcv-*-ubuntu2404-x86_64/*.deb
+
+    # Configure DCV server
+    - |
+      cat > /etc/dcv/dcv.conf <<'EOF'
+      [license]
+      [log]
+      level="info"
+      [session-management]
+      create-session = true
+      [session-management/defaults]
+      [session-management/automatic-console-session]
+      owner="ubuntu"
+      [display]
+      use-gl-in-virtual-sessions = true
+      [connectivity]
+      enable-quic-frontend=true
+      [security]
+      authentication="system"
+      EOF
+
+    # Set password for ubuntu user (users should change this)
+    - echo "ubuntu:ChangeMe123!" | chpasswd
+
+    # Configure LightDM for automatic login
+    - |
+      cat > /etc/lightdm/lightdm.conf.d/50-dcv.conf <<'EOF'
+      [Seat:*]
+      autologin-user=ubuntu
+      autologin-user-timeout=0
+      EOF
+
+    # Enable and start DCV server
+    - systemctl enable dcvserver
+    - systemctl start dcvserver
+
+    # Create initial DCV session
+    - sleep 10
+    - sudo -u ubuntu dcv create-session --type=virtual --owner ubuntu --gl on my-session
+
+    # Create ParaView workspace
+    - |
+      mkdir -p /home/ubuntu/Desktop
+      mkdir -p /home/ubuntu/ParaView-Projects
+      mkdir -p /home/ubuntu/Visualization-Data
+      mkdir -p /home/ubuntu/Python-Scripts
+      mkdir -p /home/ubuntu/Outputs
+
+      cat > /home/ubuntu/Desktop/ParaView-Quick-Start.txt <<'EOF'
+      ParaView Desktop - Scientific Visualization Quick Start
+      ========================================================
+
+      📊 Getting Started:
+      1. Launch ParaView from Applications → Graphics → ParaView
+      2. Your workspace: ~/ParaView-Projects/
+      3. Data directory: ~/Visualization-Data/
+      4. Scripts: ~/Python-Scripts/
+
+      📡 Connection:
+      From local: prism connect <instance-name>
+
+      🔧 ParaView Capabilities:
+
+      1. Data Import:
+         - File → Open
+         - Supports: VTK, Exodus, NetCDF, HDF5, CGNS, etc.
+         - Drag and drop files into pipeline browser
+
+      2. Filters and Processing:
+         - Filters menu: Clip, Slice, Contour, Threshold
+         - Calculator for derived quantities
+         - Temporal analysis for time-series data
+         - Parallel processing with MPI
+
+      3. Visualization Types:
+         - Surface rendering
+         - Volume rendering
+         - Streamlines and particle tracing
+         - Glyphs and vectors
+         - Slices and contours
+         - Animations
+
+      4. Python Scripting:
+         - Tools → Python Shell
+         - Automate visualization workflows
+         - Batch processing
+         - Custom filters
+
+      🐍 Python ParaView Example:
+
+      from paraview.simple import *
+
+      # Load data
+      reader = OpenDataFile('data.vtu')
+
+      # Apply filter
+      contour = Contour(Input=reader)
+      contour.ContourBy = ['POINTS', 'pressure']
+      contour.Isosurfaces = [100, 200, 300]
+
+      # Render
+      Show(contour)
+      Render()
+
+      # Save screenshot
+      SaveScreenshot('output.png')
+
+      💡 Common Workflows:
+
+      1. CFD Results:
+         - Load mesh and solution files
+         - Create slices through domain
+         - Visualize velocity vectors
+         - Extract streamlines
+         - Animate time steps
+
+      2. FEA Analysis:
+         - Load deformed mesh
+         - Apply displacement warp filter
+         - Color by stress/strain
+         - Extract contours of interest
+
+      3. Climate Data:
+         - Load NetCDF/HDF5 data
+         - Extract 2D slices
+         - Create isosurfaces
+         - Temporal averaging
+
+      4. Volume Rendering:
+         - Load 3D scalar field
+         - Apply volume rendering
+         - Adjust opacity transfer function
+         - Extract isosurfaces
+
+      🎨 Visualization Tips:
+
+      1. Color Maps:
+         - Edit → Color Map Editor
+         - Choose perceptually uniform colormaps
+         - Adjust opacity for transparency
+
+      2. Performance:
+         - Use Extract Subset for large data
+         - Apply Threshold to reduce geometry
+         - Use LOD (Level of Detail) representations
+         - Enable caching for repeated operations
+
+      3. Animations:
+         - View → Animation View
+         - Create camera animations
+         - Animate time steps
+         - Export movies (File → Save Animation)
+
+      4. Parallel Processing:
+         - Run with MPI: mpirun -np 4 pvserver
+         - Connect to remote server
+         - Process large datasets in parallel
+
+      📂 Workspace Structure:
+      - ~/ParaView-Projects/ - ParaView state files (.pvsm)
+      - ~/Visualization-Data/ - Input data files
+      - ~/Python-Scripts/ - Automation scripts
+      - ~/Outputs/ - Screenshots, movies, exports
+
+      🔑 Security:
+      Change password immediately: passwd
+
+      📚 Resources:
+      - ParaView Guide: https://docs.paraview.org/
+      - ParaView Tutorial: https://www.paraview.org/Wiki/The_ParaView_Tutorial
+      - Python scripting: https://docs.paraview.org/en/latest/UsersGuide/pythonScripting.html
+      - VTK: https://vtk.org/
+      - Example datasets: https://www.paraview.org/download/
+
+      🆘 Support:
+      https://github.com/scttfrdmn/prism/issues
+
+      🎓 Quick Tutorial:
+      1. Help → Example Visualizations → can.ex2
+      2. Apply → Clip filter
+      3. Adjust clip parameters
+      4. Color by variable (e.g., DISPL)
+      5. Try other filters!
+      EOF
+
+      # Create sample Python script
+      cat > /home/ubuntu/Python-Scripts/example.py <<'EOF'
+      #!/usr/bin/env pvpython
+      """
+      Sample ParaView Python script
+      Demonstrates basic visualization workflow
+      """
+      from paraview.simple import *
+
+      # Example: Create a simple sphere and save screenshot
+      sphere = Sphere()
+      Show(sphere)
+      Render()
+
+      # Save output
+      SaveScreenshot('/home/ubuntu/Outputs/sphere.png',
+                     ImageResolution=[1920, 1080])
+
+      print("✅ Visualization complete!")
+      EOF
+
+      chmod +x /home/ubuntu/Python-Scripts/example.py
+      chown -R ubuntu:ubuntu /home/ubuntu/Desktop
+      chown -R ubuntu:ubuntu /home/ubuntu/ParaView-*
+      chown -R ubuntu:ubuntu /home/ubuntu/Visualization-*
+      chown -R ubuntu:ubuntu /home/ubuntu/Python-*
+      chown -R ubuntu:ubuntu /home/ubuntu/Outputs
+
+    # Clean up
+    - rm -rf /tmp/nice-dcv*
+
+# Post-install message
+post_install: |
+  #!/bin/bash
+
+  echo "========================================="
+  echo "ParaView Desktop Setup Complete!"
+  echo "========================================="
+  echo ""
+  echo "📊 Scientific Visualization Platform Ready"
+  echo ""
+  echo "📡 To connect:"
+  echo "   prism connect {{ .InstanceName }}"
+  echo ""
+  echo "🔑 Default Credentials:"
+  echo "   Username: ubuntu"
+  echo "   Password: ChangeMe123!"
+  echo "   ⚠️  IMPORTANT: Change this password immediately!"
+  echo ""
+  echo "📊 ParaView Features:"
+  echo "   - ParaView (latest stable)"
+  echo "   - Python scripting support"
+  echo "   - 3D visualization and volume rendering"
+  echo "   - MPI parallel processing"
+  echo "   - VTK toolkit support"
+  echo ""
+  echo "📂 Workspace Directories:"
+  echo "   - ~/ParaView-Projects/ (state files)"
+  echo "   - ~/Visualization-Data/ (input data)"
+  echo "   - ~/Python-Scripts/ (automation)"
+  echo "   - ~/Outputs/ (screenshots, movies)"
+  echo ""
+  echo "💡 Quick Start:"
+  echo "   1. Launch ParaView from Applications menu"
+  echo "   2. Try Help → Example Visualizations"
+  echo "   3. Read Quick Start guide on desktop"
+  echo ""
+  echo "🔒 Security:"
+  echo "   - No exposed ports (SSM tunneling)"
+  echo "   - Browser-based access"
+  echo "   - SSL encrypted connection"
+  echo ""
+  echo "📚 Documentation:"
+  echo "   - Quick Start guide on desktop"
+  echo "   - ParaView Guide: https://docs.paraview.org/"
+  echo "   - Tutorials: https://www.paraview.org/Wiki/The_ParaView_Tutorial"
+  echo ""
+  echo "========================================="
+
+# Idle detection configuration
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 60     # Visualization work has longer sessions
+  hibernate_threshold_minutes: 120 # Preserve visualization state
+  check_interval_minutes: 5
+  detection_method: "composite"   # Check CPU, memory, network, disk
+
+# Instance defaults optimized for scientific visualization
+instance_defaults:
+  type: "t3.xlarge"  # 4 vCPU, 16 GB RAM - good for moderate datasets
+  ports: [22]        # SSH for SSM only, DCV tunneled
+  estimated_cost_per_hour:
+    x86_64: 0.1856    # t3.xlarge hourly rate
+    arm64: 0.1472     # t4g.xlarge hourly rate (if ARM)
+
+# Resource recommendations
+recommended_sizes:
+  - size: "L"
+    instance_type: "t3.large"
+    vcpu: 2
+    memory: 8
+    use_case: "Small datasets, learning ParaView"
+    cost_per_hour: 0.0928
+
+  - size: "XL"
+    instance_type: "t3.xlarge"
+    vcpu: 4
+    memory: 16
+    use_case: "Standard visualization, moderate datasets (recommended)"
+    cost_per_hour: 0.1856
+
+  - size: "2XL"
+    instance_type: "t3.2xlarge"
+    vcpu: 8
+    memory: 32
+    use_case: "Large datasets, complex visualizations"
+    cost_per_hour: 0.3712
+
+  - size: "GPU"
+    instance_type: "g4dn.xlarge"
+    vcpu: 4
+    memory: 16
+    gpu: "NVIDIA T4 (16GB)"
+    use_case: "Very large datasets, GPU-accelerated rendering"
+    cost_per_hour: 0.526
+
+# User guidance
+estimated_launch_time: 10  # Minutes - DCV + ParaView installation
+prerequisites:
+  - "Scientific computing background"
+  - "Familiarity with 3D visualization concepts"
+  - "Understanding of scientific data formats (VTK, NetCDF, HDF5)"
+  - "AWS CLI installed locally (for SSM)"
+  - "Modern web browser with WebGL support"
+
+learning_resources:
+  - "https://docs.paraview.org/"
+  - "https://www.paraview.org/Wiki/The_ParaView_Tutorial"
+  - "https://docs.paraview.org/en/latest/UsersGuide/pythonScripting.html"
+  - "https://vtk.org/"
+  - "https://www.paraview.org/download/"
+  - "https://docs.aws.amazon.com/dcv/latest/userguide/"
+  - "https://github.com/scttfrdmn/prism/blob/main/docs/architecture/NICE_DCV_ARCHITECTURE.md"
+
+# Template metadata
+version: "1.0.0"
+validation_status: "validated"
+maintainer: "Prism Team"
+tags:
+  desktop: "mate"
+  remote_desktop: "nice-dcv"
+  connection_type: "desktop"
+  visualization: "true"
+  paraview: "true"
+  vtk: "true"
+  scientific: "true"
+  cfd: "true"
+  fea: "true"
+
+# Advanced options
+advanced_options:
+  gpu_acceleration: false  # Can be enabled for GPU instances
+  audio_support: false
+  usb_redirection: false
+  multi_monitor: true

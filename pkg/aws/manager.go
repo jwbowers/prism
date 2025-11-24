@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -20,21 +21,23 @@ import (
 	efsTypes "github.com/aws/aws-sdk-go-v2/service/efs/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	iamTypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/idle"
-	"github.com/scttfrdmn/cloudworkstation/pkg/security"
-	"github.com/scttfrdmn/cloudworkstation/pkg/state"
-	"github.com/scttfrdmn/cloudworkstation/pkg/templates"
-	ctypes "github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/security"
+	"github.com/scttfrdmn/prism/pkg/state"
+	"github.com/scttfrdmn/prism/pkg/templates"
+	ctypes "github.com/scttfrdmn/prism/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/version"
 )
 
 // AWS instance state constants
 const (
-	instanceStateRunning = "running"
-	instanceStateStopped = "stopped"
-	volumeTypeIO2        = "io2"
+	instanceStateRunning  = "running"
+	instanceStateStopped  = "stopped"
+	instanceStateStopping = "stopping"
+	volumeTypeIO2         = "io2"
 )
 
 // Manager handles all AWS operations
@@ -50,8 +53,6 @@ type Manager struct {
 	pricingClient  *PricingClient
 	discountConfig ctypes.DiscountConfig
 	stateManager   StateManagerInterface
-	idleScheduler  *idle.Scheduler
-	policyManager  *idle.PolicyManager
 
 	// Universal AMI System components (Phase 5.1)
 	amiResolver *UniversalAMIResolver
@@ -141,53 +142,8 @@ func NewManager(opts ...ManagerOptions) (*Manager, error) {
 		architectureCache: make(map[string]string), // Initialize architecture cache
 	}
 
-	// Initialize hibernation components with adapter to break circular dependency
-	awsAdapter := idle.NewAWSManagerAdapter(
-		manager.HibernateInstance,
-		manager.ResumeInstance,
-		manager.StopInstance,
-		manager.StartInstance,
-		func() ([]string, error) {
-			// Get instance names from ListInstances
-			instances, err := manager.ListInstances()
-			if err != nil {
-				return nil, err
-			}
-			names := make([]string, len(instances))
-			for i, inst := range instances {
-				names[i] = inst.Name
-			}
-			return names, nil
-		},
-		func(name string) (string, error) {
-			// Get instance ID from name via state manager
-			instances, err := manager.ListInstances()
-			if err != nil {
-				return "", err
-			}
-			for _, inst := range instances {
-				if inst.Name == name {
-					return inst.ID, nil
-				}
-			}
-			return "", fmt.Errorf("instance not found: %s", name)
-		},
-	)
-
-	// Create CloudWatch metrics collector for idle detection
-	metricsCollector := idle.NewMetricsCollector(cfg)
-
-	// Create scheduler with metrics collector
-	idleScheduler := idle.NewScheduler(awsAdapter, metricsCollector)
-	policyManager := idle.NewPolicyManager()
-	policyManager.SetScheduler(idleScheduler)
-
-	// Assign to manager
-	manager.idleScheduler = idleScheduler
-	manager.policyManager = policyManager
-
-	// Start the idle scheduler
-	idleScheduler.Start()
+	// Idle detection components moved to daemon level (Issue #289 fix)
+	// Scheduler and policy manager are now daemon-level singletons initialized in pkg/daemon/server.go
 
 	return manager, nil
 }
@@ -322,7 +278,7 @@ func (n *NetworkingResolver) ResolveNetworking(req ctypes.LaunchRequest, instanc
 		subnetID = discoveredSubnet
 	}
 
-	securityGroupID, err := n.manager.GetOrCreateCloudWorkstationSecurityGroup(vpcID)
+	securityGroupID, err := n.manager.GetOrCreatePrismSecurityGroup(vpcID)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to create security group: %w", err)
 	}
@@ -340,6 +296,65 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 	minCount := int32(1)
 	maxCount := int32(1)
 
+	// Get current user for lifecycle tracking
+	currentUser := "unknown"
+	if u, err := user.Current(); err == nil {
+		currentUser = u.Username
+	}
+
+	// Build enhanced tag list (Issue #128: Enhanced Resource Tagging)
+	tags := []ec2types.Tag{
+		// User-facing identification
+		{Key: aws.String("Name"), Value: &req.Name},
+
+		// Prism identification (namespaced for AWS best practices)
+		{Key: aws.String("prism:managed"), Value: aws.String("true")},
+		{Key: aws.String("prism:version"), Value: aws.String(version.Version)},
+		{Key: aws.String("prism:instance-id"), Value: &req.Name},
+
+		// Workload information
+		{Key: aws.String("prism:template"), Value: &req.Template},
+		{Key: aws.String("prism:package-manager"), Value: &req.PackageManager},
+		{Key: aws.String("prism:primary-user"), Value: aws.String(primaryUsername)},
+
+		// Lifecycle tracking (Issue #128: Zombie resource detection)
+		{Key: aws.String("prism:launched-at"), Value: aws.String(time.Now().Format(time.RFC3339))},
+		{Key: aws.String("prism:launched-by"), Value: aws.String(currentUser)},
+
+		// AWS Cost Explorer integration tags (Issue #128: Cost allocation)
+		{Key: aws.String("Application"), Value: aws.String("Prism")},
+		{Key: aws.String("Environment"), Value: aws.String("research")},
+
+		// Legacy tags (maintained for backwards compatibility)
+		{Key: aws.String("Prism"), Value: aws.String("true")},
+		{Key: aws.String("LaunchedBy"), Value: aws.String("Prism")},
+		{Key: aws.String("Template"), Value: &req.Template},
+		{Key: aws.String("PackageManager"), Value: &req.PackageManager},
+		{Key: aws.String("PrimaryUser"), Value: aws.String(primaryUsername)},
+	}
+
+	// Add project tags if project is specified (Issue #128: Project/budget tracking)
+	if req.ProjectID != "" {
+		tags = append(tags,
+			ec2types.Tag{Key: aws.String("prism:project-id"), Value: &req.ProjectID},
+			ec2types.Tag{Key: aws.String("CostCenter"), Value: &req.ProjectID}, // AWS Cost Explorer
+		)
+	}
+
+	// Add funding allocation if specified (v0.5.10: Budget tracking)
+	if req.FundingAllocationID != "" {
+		tags = append(tags,
+			ec2types.Tag{Key: aws.String("prism:funding-allocation-id"), Value: &req.FundingAllocationID},
+		)
+	}
+
+	// Add research user if specified (Phase 5A: Multi-user support)
+	if req.ResearchUser != "" {
+		tags = append(tags,
+			ec2types.Tag{Key: aws.String("prism:research-user"), Value: &req.ResearchUser},
+		)
+	}
+
 	runInput := &ec2.RunInstancesInput{
 		ImageId:          &ami,
 		InstanceType:     ec2types.InstanceType(instanceType),
@@ -353,14 +368,7 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 		TagSpecifications: []ec2types.TagSpecification{
 			{
 				ResourceType: ec2types.ResourceTypeInstance,
-				Tags: []ec2types.Tag{
-					{Key: aws.String("Name"), Value: &req.Name},
-					{Key: aws.String("CloudWorkstation"), Value: aws.String("true")},
-					{Key: aws.String("LaunchedBy"), Value: aws.String("CloudWorkstation")},
-					{Key: aws.String("Template"), Value: &req.Template},
-					{Key: aws.String("PackageManager"), Value: &req.PackageManager},
-					{Key: aws.String("PrimaryUser"), Value: aws.String(primaryUsername)},
-				},
+				Tags:         tags,
 			},
 		},
 	}
@@ -372,9 +380,9 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 
 	// Optionally add IAM instance profile if it exists
 	// This enables SSM access for advanced features while not blocking new users
-	if b.manager.checkIAMInstanceProfileExists("CloudWorkstation-Instance-Profile") {
+	if b.manager.checkIAMInstanceProfileExists("Prism-Instance-Profile") {
 		runInput.IamInstanceProfile = &ec2types.IamInstanceProfileSpecification{
-			Name: aws.String("CloudWorkstation-Instance-Profile"),
+			Name: aws.String("Prism-Instance-Profile"),
 		}
 		log.Printf("Using IAM instance profile for SSM access")
 	} else {
@@ -451,24 +459,6 @@ type InstanceLauncher struct {
 	region  string
 }
 
-// Helper functions for service extraction
-func getServiceString(m map[string]interface{}, key string) string {
-	if val, ok := m[key].(string); ok {
-		return val
-	}
-	return ""
-}
-
-func getServiceInt(m map[string]interface{}, key string) int {
-	if val, ok := m[key].(int); ok {
-		return val
-	}
-	if val, ok := m[key].(float64); ok {
-		return int(val)
-	}
-	return 0
-}
-
 // LaunchInstance executes EC2 instance launch and returns result
 // extractServicesFromTemplate extracts service definitions from template ports
 func (l *InstanceLauncher) extractServicesFromTemplate(template *ctypes.RuntimeTemplate) []ctypes.Service {
@@ -542,9 +532,18 @@ func (l *InstanceLauncher) createDryRunInstance(req ctypes.LaunchRequest, hourly
 
 // executeInstanceLaunch performs the actual EC2 instance launch
 func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *ec2.RunInstancesInput) (*ec2types.Instance, error) {
-	result, err := l.manager.ec2.RunInstances(ctx, runInput)
+	// Launch the instance with retry logic for transient failures (v0.5.12)
+	var result *ec2.RunInstancesOutput
+
+	err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		var runErr error
+		result, runErr = l.manager.ec2.RunInstances(ctx, runInput)
+		return runErr
+	})
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to launch instance: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return nil, EnhanceError(err, "Launch instance")
 	}
 
 	if len(result.Instances) == 0 {
@@ -554,7 +553,7 @@ func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *
 	return &result.Instances[0], nil
 }
 
-// buildInstanceFromEC2 builds CloudWorkstation instance from EC2 instance
+// buildInstanceFromEC2 builds Prism instance from EC2 instance
 func (l *InstanceLauncher) buildInstanceFromEC2(instance *ec2types.Instance, req ctypes.LaunchRequest, hourlyRate float64, services []ctypes.Service, primaryUsername string, rootVolumeGB int) *ctypes.Instance {
 	instanceType := string(instance.InstanceType)
 	launchTime := time.Now()
@@ -655,7 +654,7 @@ func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec
 		return nil, err
 	}
 
-	// Build CloudWorkstation instance from EC2 instance
+	// Build Prism instance from EC2 instance
 	cwsInstance := l.buildInstanceFromEC2(instance, req, hourlyRate, services, primaryUsername, rootVolumeGB)
 
 	// Wait for instance to be ready for use
@@ -800,13 +799,17 @@ func (m *Manager) DeleteInstance(name string) error {
 	// Get regional EC2 client
 	regionalClient := m.getRegionalEC2Client(region)
 
-	// Terminate the instance
+	// Terminate the instance with retry logic for transient failures (v0.5.12)
 	ctx := context.Background()
-	_, err = regionalClient.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
-		InstanceIds: []string{instanceID},
+	err = WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		_, terminateErr := regionalClient.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
+			InstanceIds: []string{instanceID},
+		})
+		return terminateErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to terminate instance: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return EnhanceError(err, "Terminate instance")
 	}
 
 	return nil
@@ -829,13 +832,17 @@ func (m *Manager) StartInstance(name string) error {
 	// Get regional EC2 client
 	regionalClient := m.getRegionalEC2Client(region)
 
-	// Start the instance
+	// Start the instance with retry logic for transient failures (v0.5.12)
 	ctx := context.Background()
-	_, err = regionalClient.StartInstances(ctx, &ec2.StartInstancesInput{
-		InstanceIds: []string{instanceID},
+	err = WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		_, startErr := regionalClient.StartInstances(ctx, &ec2.StartInstancesInput{
+			InstanceIds: []string{instanceID},
+		})
+		return startErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to start instance: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return EnhanceError(err, "Start instance")
 	}
 
 	return nil
@@ -859,12 +866,16 @@ func (m *Manager) StopInstance(name string) error {
 	regionalClient := m.getRegionalEC2Client(region)
 
 	ctx := context.Background()
-	// Stop the instance
-	_, err = regionalClient.StopInstances(ctx, &ec2.StopInstancesInput{
-		InstanceIds: []string{instanceID},
+	// Stop the instance with retry logic for transient failures (v0.5.12)
+	err = WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+		_, stopErr := regionalClient.StopInstances(ctx, &ec2.StopInstancesInput{
+			InstanceIds: []string{instanceID},
+		})
+		return stopErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to stop instance: %w", err)
+		// Enhance error with actionable guidance (v0.5.12)
+		return EnhanceError(err, "Stop instance")
 	}
 
 	return nil
@@ -950,6 +961,26 @@ func (m *Manager) HibernateInstance(name string) error {
 		return fmt.Errorf("failed to hibernate instance: %w", err)
 	}
 
+	// Mark instance as hibernating in state (stopping state IS billable during hibernation)
+	localState, err := m.stateManager.LoadState()
+	if err != nil {
+		log.Printf("Warning: failed to update hibernating flag: %v", err)
+	} else {
+		// Find and update instance
+		for instanceName, inst := range localState.Instances {
+			if inst.Name == name {
+				// Copy instance, modify, and save back (can't modify map value directly in Go)
+				inst.IsHibernating = true
+				localState.Instances[instanceName] = inst
+				if err := m.stateManager.SaveInstance(inst); err != nil {
+					log.Printf("Warning: failed to save hibernating flag: %v", err)
+				}
+				log.Printf("✅ Marked instance %s as hibernating (stopping state is billable during hibernation)", name)
+				break
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1008,125 +1039,6 @@ func (m *Manager) GetInstanceHibernationStatus(name string) (bool, string, bool,
 	possiblyHibernated := hibernationSupported && currentState == instanceStateStopped
 
 	return hibernationSupported, currentState, possiblyHibernated, nil
-}
-
-// ApplyHibernationPolicy applies a hibernation policy template to an instance
-func (m *Manager) ApplyHibernationPolicy(instanceName string, policyID string) error {
-	// Get the instance ID
-	instanceID, err := m.findInstanceByName(instanceName)
-	if err != nil {
-		return fmt.Errorf("failed to find instance: %w", err)
-	}
-
-	// Apply the policy
-	if err := m.policyManager.ApplyTemplate(instanceID, policyID); err != nil {
-		return fmt.Errorf("failed to apply hibernation policy: %w", err)
-	}
-
-	// Add schedules to the scheduler
-	template, err := m.policyManager.GetTemplate(policyID)
-	if err != nil {
-		return fmt.Errorf("failed to get policy template: %w", err)
-	}
-
-	// Register each schedule with the instance
-	for _, schedule := range template.Schedules {
-		// Create a copy of the schedule with instance-specific ID
-		instanceSchedule := schedule
-		instanceSchedule.ID = fmt.Sprintf("%s-%s-%s", instanceID, policyID, schedule.Name)
-
-		if err := m.idleScheduler.AddSchedule(&instanceSchedule); err != nil {
-			return fmt.Errorf("failed to add schedule %s: %w", schedule.Name, err)
-		}
-	}
-
-	return nil
-}
-
-// RemoveHibernationPolicy removes a hibernation policy from an instance
-func (m *Manager) RemoveHibernationPolicy(instanceName string, policyID string) error {
-	// Get the instance ID
-	instanceID, err := m.findInstanceByName(instanceName)
-	if err != nil {
-		return fmt.Errorf("failed to find instance: %w", err)
-	}
-
-	// Get the policy template to find schedules
-	template, err := m.policyManager.GetTemplate(policyID)
-	if err != nil {
-		return fmt.Errorf("failed to get policy template: %w", err)
-	}
-
-	// Remove schedules from the scheduler
-	for _, schedule := range template.Schedules {
-		scheduleID := fmt.Sprintf("%s-%s-%s", instanceID, policyID, schedule.Name)
-		if err := m.idleScheduler.DeleteSchedule(scheduleID); err != nil {
-			// Log but don't fail if schedule doesn't exist
-			fmt.Printf("Warning: failed to delete schedule %s: %v\n", scheduleID, err)
-		}
-	}
-
-	// Remove the policy
-	if err := m.policyManager.RemoveTemplate(instanceID, policyID); err != nil {
-		return fmt.Errorf("failed to remove hibernation policy: %w", err)
-	}
-
-	return nil
-}
-
-// ListHibernationPolicies returns all available hibernation policy templates
-func (m *Manager) ListIdlePolicies() []*idle.PolicyTemplate {
-	return m.policyManager.ListTemplates()
-}
-
-// GetIdlePolicy gets a specific idle policy template
-func (m *Manager) GetIdlePolicy(policyID string) (*idle.PolicyTemplate, error) {
-	return m.policyManager.GetTemplate(policyID)
-}
-
-// GetInstancePolicies returns the idle policies applied to an instance
-func (m *Manager) GetInstancePolicies(instanceName string) ([]*idle.PolicyTemplate, error) {
-	// Get the instance ID
-	instanceID, err := m.findInstanceByName(instanceName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find instance: %w", err)
-	}
-
-	return m.policyManager.GetAppliedTemplates(instanceID)
-}
-
-// RecommendIdlePolicy recommends an idle policy based on instance characteristics
-func (m *Manager) RecommendIdlePolicy(instanceName string) (*idle.PolicyTemplate, error) {
-	// Get instance details
-	instanceID, err := m.findInstanceByName(instanceName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find instance: %w", err)
-	}
-
-	ctx := context.Background()
-	result, err := m.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []string{instanceID},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to describe instance: %w", err)
-	}
-
-	if len(result.Reservations) == 0 || len(result.Reservations[0].Instances) == 0 {
-		return nil, fmt.Errorf("instance not found")
-	}
-
-	instance := result.Reservations[0].Instances[0]
-
-	// Extract instance type and tags
-	instanceType := string(instance.InstanceType)
-	tags := make(map[string]string)
-	for _, tag := range instance.Tags {
-		if tag.Key != nil && tag.Value != nil {
-			tags[*tag.Key] = *tag.Value
-		}
-	}
-
-	return m.policyManager.RecommendTemplate(instanceType, tags)
 }
 
 // GetConnectionInfo returns connection information for an instance with SSH key path
@@ -1191,7 +1103,7 @@ func (m *Manager) CreateVolume(req ctypes.VolumeCreateRequest) (*ctypes.StorageV
 				Value: aws.String(req.Name),
 			},
 			{
-				Key:   aws.String("CloudWorkstation"),
+				Key:   aws.String("Prism"),
 				Value: aws.String("true"),
 			},
 		},
@@ -1355,7 +1267,7 @@ if ! command -v mount.efs &> /dev/null; then
     fi
 fi
 
-# Create CloudWorkstation shared group if it doesn't exist
+# Create Prism shared group if it doesn't exist
 if ! getent group cloudworkstation-shared >/dev/null 2>&1; then
     sudo groupadd -g 3000 cloudworkstation-shared
     echo "Created cloudworkstation-shared group (gid: 3000)"
@@ -1485,7 +1397,7 @@ func (m *Manager) executeScriptOnInstance(instanceID, script string) error {
 		Parameters: map[string][]string{
 			"commands": {script},
 		},
-		Comment: aws.String("CloudWorkstation EFS mount/unmount operation"),
+		Comment: aws.String("Prism EFS mount/unmount operation"),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to send SSM command: %w", err)
@@ -1568,7 +1480,7 @@ func (m *Manager) CreateStorage(req ctypes.StorageCreateRequest) (*ctypes.Storag
 						Value: aws.String(req.Name),
 					},
 					{
-						Key:   aws.String("CloudWorkstation"),
+						Key:   aws.String("Prism"),
 						Value: aws.String("true"),
 					},
 				},
@@ -1786,11 +1698,11 @@ func (m *Manager) checkIAMInstanceProfileExists(profileName string) bool {
 	_, err = m.iam.CreateRole(ctx, &iam.CreateRoleInput{
 		RoleName:                 aws.String(roleName),
 		AssumeRolePolicyDocument: aws.String(trustPolicy),
-		Description:              aws.String("CloudWorkstation instance role for SSM access and autonomous idle detection"),
+		Description:              aws.String("Prism instance role for SSM access and autonomous idle detection"),
 		Tags: []iamTypes.Tag{
 			{
 				Key:   aws.String("ManagedBy"),
-				Value: aws.String("CloudWorkstation"),
+				Value: aws.String("Prism"),
 			},
 			{
 				Key:   aws.String("Purpose"),
@@ -1837,7 +1749,7 @@ func (m *Manager) checkIAMInstanceProfileExists(profileName string) bool {
 
 	_, err = m.iam.PutRolePolicy(ctx, &iam.PutRolePolicyInput{
 		RoleName:       aws.String(roleName),
-		PolicyName:     aws.String("CloudWorkstation-IdleDetection"),
+		PolicyName:     aws.String("Prism-IdleDetection"),
 		PolicyDocument: aws.String(idleDetectionPolicy),
 	})
 	if err != nil {
@@ -1850,7 +1762,7 @@ func (m *Manager) checkIAMInstanceProfileExists(profileName string) bool {
 		Tags: []iamTypes.Tag{
 			{
 				Key:   aws.String("ManagedBy"),
-				Value: aws.String("CloudWorkstation"),
+				Value: aws.String("Prism"),
 			},
 		},
 	})
@@ -1869,10 +1781,30 @@ func (m *Manager) checkIAMInstanceProfileExists(profileName string) bool {
 		return false
 	}
 
-	// Wait a moment for IAM changes to propagate
-	time.Sleep(2 * time.Second)
-
 	log.Printf("✅ Successfully created IAM instance profile '%s' with SSM access and idle detection permissions", profileName)
+
+	// Wait for IAM eventual consistency - poll until profile is accessible
+	log.Printf("⏳ Waiting for IAM profile to be ready (eventual consistency)...")
+	maxAttempts := 10
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		_, err := m.iam.GetInstanceProfile(ctx, &iam.GetInstanceProfileInput{
+			InstanceProfileName: aws.String(profileName),
+		})
+		if err == nil {
+			log.Printf("✅ IAM profile verified and ready for use")
+			return true
+		}
+
+		// Profile not ready yet, wait and retry
+		if attempt < maxAttempts-1 {
+			waitTime := time.Duration(attempt+1) * 1 * time.Second
+			log.Printf("   Retry %d/%d - waiting %v...", attempt+1, maxAttempts, waitTime)
+			time.Sleep(waitTime)
+		}
+	}
+
+	log.Printf("⚠️  Warning: IAM profile created but not yet accessible after %d attempts", maxAttempts)
+	log.Printf("   The profile should become available shortly - AWS eventual consistency delay")
 	return true
 }
 
@@ -2051,7 +1983,7 @@ func (m *Manager) findInstanceByName(name string) (string, error) {
 				Values: []string{name},
 			},
 			{
-				Name:   aws.String("tag:CloudWorkstation"),
+				Name:   aws.String("tag:Prism"),
 				Values: []string{"true"},
 			},
 			{
@@ -2090,7 +2022,7 @@ func (l *StateLoader) LoadLocalState() *ctypes.State {
 // InstanceTagExtractor extracts tags from EC2 instances (Single Responsibility - SOLID)
 type InstanceTagExtractor struct{}
 
-// ExtractTags extracts CloudWorkstation-specific tags from EC2 instance
+// ExtractTags extracts Prism-specific tags from EC2 instance
 func (e *InstanceTagExtractor) ExtractTags(ec2Instance ec2types.Instance) (name, template, project string) {
 	for _, tag := range ec2Instance.Tags {
 		if tag.Key != nil && tag.Value != nil {
@@ -2107,10 +2039,10 @@ func (e *InstanceTagExtractor) ExtractTags(ec2Instance ec2types.Instance) (name,
 	return name, template, project
 }
 
-// InstanceStateConverter converts AWS states to CloudWorkstation states (Single Responsibility - SOLID)
+// InstanceStateConverter converts AWS states to Prism states (Single Responsibility - SOLID)
 type InstanceStateConverter struct{}
 
-// ConvertState converts EC2 instance state to CloudWorkstation state
+// ConvertState converts EC2 instance state to Prism state
 func (c *InstanceStateConverter) ConvertState(ec2Instance ec2types.Instance) string {
 	if ec2Instance.State == nil {
 		return "unknown"
@@ -2134,7 +2066,7 @@ func (c *InstanceStateConverter) isHibernationConfigured(ec2Instance ec2types.In
 	return ec2Instance.HibernationOptions != nil && *ec2Instance.HibernationOptions.Configured
 }
 
-// InstanceBuilder builds CloudWorkstation instance objects (Builder Pattern - SOLID)
+// InstanceBuilder builds Prism instance objects (Builder Pattern - SOLID)
 type InstanceBuilder struct {
 	tagExtractor   *InstanceTagExtractor
 	stateConverter *InstanceStateConverter
@@ -2154,7 +2086,7 @@ func NewInstanceBuilder(ec2Client EC2ClientInterface, pricingClient *PricingClie
 	}
 }
 
-// BuildInstance creates CloudWorkstation instance from EC2 instance
+// BuildInstance creates Prism instance from EC2 instance
 func (b *InstanceBuilder) BuildInstance(ec2Instance ec2types.Instance, localState *ctypes.State) *ctypes.Instance {
 	// Extract tags
 	name, template, project := b.tagExtractor.ExtractTags(ec2Instance)
@@ -2205,6 +2137,40 @@ func (b *InstanceBuilder) BuildInstance(ec2Instance ec2types.Instance, localStat
 		}
 	}
 
+	// Parse StateTransitionReason to get exact running state start time (for accurate billing)
+	// AWS only bills for time in "running" state, not "pending" state
+	var runningStateStartTime *time.Time
+	if ec2Instance.StateTransitionReason != nil && *ec2Instance.StateTransitionReason != "" {
+		// StateTransitionReason format: "User initiated (2025-10-27 22:36:06 GMT)"
+		// For running instances, this tells us when they entered running state
+		if strings.ToLower(state) == instanceStateRunning {
+			if parsedTime, err := parseStateTransitionReason(*ec2Instance.StateTransitionReason); err == nil {
+				runningStateStartTime = &parsedTime
+				log.Printf("Instance %s entered running state at %s (billing start)", name, parsedTime.Format(time.RFC3339))
+			} else {
+				log.Printf("Warning: Failed to parse StateTransitionReason for %s: %v", name, err)
+			}
+		}
+	}
+
+	// If StateTransitionReason not available or parsing failed, estimate running state start
+	// by adding typical pending duration (30-60 seconds) to LaunchTime
+	if runningStateStartTime == nil {
+		// Use cached value if available (preserves across refreshes)
+		if localState != nil {
+			if localInstance, exists := localState.Instances[name]; exists && localInstance.RunningStateStartTime != nil {
+				runningStateStartTime = localInstance.RunningStateStartTime
+			}
+		}
+
+		// If still no cached value, estimate (LaunchTime + 45 seconds for pending state)
+		if runningStateStartTime == nil && strings.ToLower(state) == instanceStateRunning {
+			estimated := launchTime.Add(45 * time.Second) // Conservative estimate
+			runningStateStartTime = &estimated
+			log.Printf("Warning: StateTransitionReason not available for %s, estimating running state start", name)
+		}
+	}
+
 	// Calculate cost metrics based on instance type and runtime
 	instanceType := string(ec2Instance.InstanceType)
 
@@ -2220,26 +2186,42 @@ func (b *InstanceBuilder) BuildInstance(ec2Instance ec2types.Instance, localStat
 	// Calculate EBS storage costs using AWS API (persist when stopped/hibernated)
 	ebsStorageCostPerHour := b.calculateInstanceEBSCosts(*ec2Instance.InstanceId)
 
-	// Calculate actual costs using state history for accurate tracking
-	currentSpend, effectiveRate := calculateActualCosts(hourlyRate, ebsStorageCostPerHour, launchTime, state, stateHistory)
+	// Get hibernation status from local state for accurate billing calculation
+	// Hibernation exception: "stopping" state IS billable during hibernation
+	isHibernating := false
+	if localState != nil {
+		if localInstance, exists := localState.Instances[name]; exists {
+			isHibernating = localInstance.IsHibernating
+		}
+	}
+
+	// Calculate actual costs using state history and running state start time for accurate billing
+	// AWS only bills for time in "running" state, not "pending" state
+	// Hibernation exception: "stopping" state IS billable during hibernation
+	billingStartTime := launchTime
+	if runningStateStartTime != nil {
+		billingStartTime = *runningStateStartTime
+	}
+	currentSpend, effectiveRate := calculateActualCosts(hourlyRate, ebsStorageCostPerHour, billingStartTime, state, stateHistory, isHibernating)
 
 	// Create instance
 	instance := &ctypes.Instance{
-		ID:                *ec2Instance.InstanceId,
-		Name:              name,
-		Template:          template,
-		State:             state,
-		PublicIP:          publicIP,
-		AvailabilityZone:  availabilityZone,
-		ProjectID:         project,
-		InstanceLifecycle: instanceLifecycle,
-		KeyName:           keyName,
-		LaunchTime:        launchTime,
-		InstanceType:      instanceType,
-		HourlyRate:        hourlyRate,
-		CurrentSpend:      currentSpend,
-		EffectiveRate:     effectiveRate,
-		StateHistory:      stateHistory,
+		ID:                    *ec2Instance.InstanceId,
+		Name:                  name,
+		Template:              template,
+		State:                 state,
+		PublicIP:              publicIP,
+		AvailabilityZone:      availabilityZone,
+		ProjectID:             project,
+		InstanceLifecycle:     instanceLifecycle,
+		KeyName:               keyName,
+		LaunchTime:            launchTime,
+		RunningStateStartTime: runningStateStartTime,
+		InstanceType:          instanceType,
+		HourlyRate:            hourlyRate,
+		CurrentSpend:          currentSpend,
+		EffectiveRate:         effectiveRate,
+		StateHistory:          stateHistory,
 	}
 
 	// Merge remaining metadata from local state if available
@@ -2247,13 +2229,27 @@ func (b *InstanceBuilder) BuildInstance(ec2Instance ec2types.Instance, localStat
 	if localState != nil {
 		if localInstance, exists := localState.Instances[name]; exists {
 			instance.DeletionTime = localInstance.DeletionTime
+
+			// Manage IsHibernating flag for accurate hibernation billing
+			// - If instance was hibernating and is now "stopped", clear the flag (hibernation complete)
+			// - If instance is "stopping" or still marked as hibernating, preserve the flag
+			if localInstance.IsHibernating {
+				if strings.ToLower(state) == instanceStateStopped {
+					// Hibernation complete - clear flag (stopped state is not billable)
+					instance.IsHibernating = false
+					log.Printf("Instance %s hibernation complete (stopped state reached, no longer billable)", name)
+				} else if strings.ToLower(state) == instanceStateStopping {
+					// Still hibernating - preserve flag (stopping state IS billable during hibernation)
+					instance.IsHibernating = true
+				}
+			}
 		}
 	}
 
 	return instance
 }
 
-// InstanceListProcessor processes EC2 reservations into CloudWorkstation instances (Strategy Pattern - SOLID)
+// InstanceListProcessor processes EC2 reservations into Prism instances (Strategy Pattern - SOLID)
 type InstanceListProcessor struct {
 	stateLoader     *StateLoader
 	instanceBuilder *InstanceBuilder
@@ -2267,7 +2263,7 @@ func NewInstanceListProcessor(ec2Client EC2ClientInterface, pricingClient *Prici
 	}
 }
 
-// ProcessReservations converts EC2 reservations to CloudWorkstation instances
+// ProcessReservations converts EC2 reservations to Prism instances
 func (p *InstanceListProcessor) ProcessReservations(reservations []ec2types.Reservation) []ctypes.Instance {
 	localState := p.stateLoader.LoadLocalState()
 	var instances []ctypes.Instance
@@ -2310,7 +2306,7 @@ func (m *Manager) GetInstance(instanceID string) (*ctypes.Instance, error) {
 	return &instances[0], nil
 }
 
-// ListInstances returns all CloudWorkstation instances using Strategy Pattern (SOLID: Single Responsibility)
+// ListInstances returns all Prism instances using Strategy Pattern (SOLID: Single Responsibility)
 func (m *Manager) ListInstances() ([]ctypes.Instance, error) {
 	// Load state to get all instances and their regions
 	state, err := m.stateManager.LoadState()
@@ -2348,18 +2344,23 @@ func (m *Manager) ListInstances() ([]ctypes.Instance, error) {
 			regionalClient = ec2.NewFromConfig(regionalCfg)
 		}
 
-		// Query instances in this region
-		result, err := regionalClient.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-			Filters: []ec2types.Filter{
-				{
-					Name:   aws.String("tag:CloudWorkstation"),
-					Values: []string{"true"},
+		// Query instances in this region with retry logic (v0.5.12)
+		var result *ec2.DescribeInstancesOutput
+		err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+			var describeErr error
+			result, describeErr = regionalClient.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+				Filters: []ec2types.Filter{
+					{
+						Name:   aws.String("tag:Prism"),
+						Values: []string{"true"},
+					},
+					{
+						Name:   aws.String("instance-state-name"),
+						Values: []string{"pending", instanceStateRunning, "shutting-down", "stopping", instanceStateStopped, "terminating", "terminated"},
+					},
 				},
-				{
-					Name:   aws.String("instance-state-name"),
-					Values: []string{"pending", instanceStateRunning, "shutting-down", "stopping", instanceStateStopped, "terminating", "terminated"},
-				},
-			},
+			})
+			return describeErr
 		})
 		if err != nil {
 			// Log error but continue with other regions
@@ -2773,7 +2774,7 @@ func (m *Manager) findVolumeByName(name string) (string, error) {
 				Values: []string{name},
 			},
 			{
-				Name:   aws.String("tag:CloudWorkstation"),
+				Name:   aws.String("tag:Prism"),
 				Values: []string{"true"},
 			},
 		},
@@ -2811,7 +2812,7 @@ func (m *Manager) EnsureKeyPairExists(keyName, publicKeyContent string) error {
 				ResourceType: ec2types.ResourceTypeKeyPair,
 				Tags: []ec2types.Tag{
 					{
-						Key:   aws.String("CloudWorkstation"),
+						Key:   aws.String("Prism"),
 						Value: aws.String("true"),
 					},
 					{
@@ -2842,13 +2843,13 @@ func (m *Manager) DeleteKeyPair(keyName string) error {
 	return nil
 }
 
-// ListCloudWorkstationKeyPairs lists all SSH key pairs managed by CloudWorkstation
-func (m *Manager) ListCloudWorkstationKeyPairs() ([]string, error) {
+// ListPrismKeyPairs lists all SSH key pairs managed by Prism
+func (m *Manager) ListPrismKeyPairs() ([]string, error) {
 	ctx := context.Background()
 	result, err := m.ec2.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{
 		Filters: []ec2types.Filter{
 			{
-				Name:   aws.String("tag:CloudWorkstation"),
+				Name:   aws.String("tag:Prism"),
 				Values: []string{"true"},
 			},
 		},
@@ -2869,7 +2870,7 @@ func (m *Manager) ListCloudWorkstationKeyPairs() ([]string, error) {
 
 // getSSHKeyPathFromKeyName maps an AWS key pair name to local SSH key path
 func (m *Manager) getSSHKeyPathFromKeyName(keyName string) (string, error) {
-	// CloudWorkstation key naming pattern: cws-<profile>-key
+	// Prism key naming pattern: cws-<profile>-key
 	if strings.HasPrefix(keyName, "cws-") && strings.HasSuffix(keyName, "-key") {
 		// Extract safe name from key name (it's already safe for filesystem)
 		safeName := strings.TrimPrefix(keyName, "cws-")
@@ -2892,7 +2893,7 @@ func (m *Manager) getSSHKeyPathFromKeyName(keyName string) (string, error) {
 		return keyPath, nil
 	}
 
-	// For non-CloudWorkstation keys, try to find default SSH keys
+	// For non-Prism keys, try to find default SSH keys
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
@@ -3076,8 +3077,8 @@ func (m *Manager) isSubnetPublic(subnetID string) (bool, error) {
 	return false, nil
 }
 
-// GetOrCreateCloudWorkstationSecurityGroup creates or finds the CloudWorkstation security group
-func (m *Manager) GetOrCreateCloudWorkstationSecurityGroup(vpcID string) (string, error) {
+// GetOrCreatePrismSecurityGroup creates or finds the Prism security group
+func (m *Manager) GetOrCreatePrismSecurityGroup(vpcID string) (string, error) {
 	securityGroupName := "cloudworkstation-access"
 
 	ctx := context.Background()
@@ -3106,14 +3107,14 @@ func (m *Manager) GetOrCreateCloudWorkstationSecurityGroup(vpcID string) (string
 	// Create new security group
 	createResult, err := m.ec2.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(securityGroupName),
-		Description: aws.String("CloudWorkstation SSH and web access"),
+		Description: aws.String("Prism SSH and web access"),
 		VpcId:       aws.String(vpcID),
 		TagSpecifications: []ec2types.TagSpecification{
 			{
 				ResourceType: ec2types.ResourceTypeSecurityGroup,
 				Tags: []ec2types.Tag{
 					{Key: aws.String("Name"), Value: aws.String(securityGroupName)},
-					{Key: aws.String("CloudWorkstation"), Value: aws.String("true")},
+					{Key: aws.String("Prism"), Value: aws.String("true")},
 					{Key: aws.String("Purpose"), Value: aws.String("Research workstation access")},
 				},
 			},
@@ -3400,10 +3401,12 @@ func estimateInstanceCost(instanceType string) float64 {
 	return baseRate * multiplier
 }
 
-// calculateActualCosts calculates current spend and effective rate based on actual usage
-func calculateActualCosts(computeHourlyRate float64, storageHourlyRate float64, launchTime time.Time, currentState string, stateHistory []ctypes.StateTransition) (currentSpend, effectiveRate float64) {
+// calculateActualCosts calculates actual costs based on instance running time
+// billingStartTime should be the running state start time (not launch time) for accuracy
+// AWS only bills for "running" state, not "pending" state before running
+func calculateActualCosts(computeHourlyRate float64, storageHourlyRate float64, billingStartTime time.Time, currentState string, stateHistory []ctypes.StateTransition, isHibernating bool) (currentSpend, effectiveRate float64) {
 	now := time.Now()
-	totalHours := now.Sub(launchTime).Hours()
+	totalHours := now.Sub(billingStartTime).Hours()
 
 	if totalHours <= 0 {
 		return 0, 0
@@ -3413,7 +3416,7 @@ func calculateActualCosts(computeHourlyRate float64, storageHourlyRate float64, 
 	var runningHours float64
 	if len(stateHistory) > 0 {
 		// Use state history for accurate cost calculation
-		runningHours = calculateRunningHoursFromHistory(launchTime, currentState, stateHistory)
+		runningHours = calculateRunningHoursFromHistory(billingStartTime, currentState, stateHistory, isHibernating)
 	} else {
 		// Fallback to estimation if no state history (legacy instances or first launch)
 		switch strings.ToLower(currentState) {
@@ -3449,31 +3452,33 @@ func calculateActualCosts(computeHourlyRate float64, storageHourlyRate float64, 
 }
 
 // calculateRunningHoursFromHistory calculates actual running hours from state transition history
-func calculateRunningHoursFromHistory(launchTime time.Time, currentState string, history []ctypes.StateTransition) float64 {
+// billingStartTime is the time when billing started (running state start, not launch time)
+// isHibernating indicates if instance is currently hibernating (stopping state IS billable during hibernation)
+func calculateRunningHoursFromHistory(billingStartTime time.Time, currentState string, history []ctypes.StateTransition, isHibernating bool) float64 {
 	if len(history) == 0 {
 		// No history - use simple calculation based on current state
 		now := time.Now()
-		totalHours := now.Sub(launchTime).Hours()
+		totalHours := now.Sub(billingStartTime).Hours()
 		if strings.ToLower(currentState) == instanceStateRunning || currentState == "pending" {
 			return totalHours
 		}
 		return 0
 	}
 
-	// Filter out transitions that happened before current launch time
+	// Filter out transitions that happened before current billing start time
 	// This handles the case where an instance was stopped and restarted,
-	// and the launch time was updated but old state history remains
+	// and the billing start time was updated but old state history remains
 	var relevantHistory []ctypes.StateTransition
 	for _, transition := range history {
-		if transition.Timestamp.After(launchTime) {
+		if transition.Timestamp.After(billingStartTime) {
 			relevantHistory = append(relevantHistory, transition)
 		}
 	}
 
-	// If no relevant history after launch time, use simple calculation
+	// If no relevant history after billing start time, use simple calculation
 	if len(relevantHistory) == 0 {
 		now := time.Now()
-		totalHours := now.Sub(launchTime).Hours()
+		totalHours := now.Sub(billingStartTime).Hours()
 		if strings.ToLower(currentState) == instanceStateRunning || currentState == "pending" {
 			return totalHours
 		}
@@ -3481,7 +3486,7 @@ func calculateRunningHoursFromHistory(launchTime time.Time, currentState string,
 	}
 
 	var runningHours float64
-	lastStateTime := launchTime
+	lastStateTime := billingStartTime
 	lastState := instanceStateRunning // Instances start in running/pending state
 
 	// Process each state transition to calculate running time
@@ -3489,8 +3494,13 @@ func calculateRunningHoursFromHistory(launchTime time.Time, currentState string,
 		// Calculate duration in previous state
 		duration := transition.Timestamp.Sub(lastStateTime).Hours()
 
-		// Add to running hours if previous state was a "running" state
+		// Add to running hours if previous state was billable
+		// AWS billing rule: "running" and "pending" are always billable
+		// Hibernation exception: "stopping" is also billable during hibernation
 		if lastState == instanceStateRunning || lastState == "pending" {
+			runningHours += duration
+		} else if isHibernating && lastState == instanceStateStopping {
+			// Hibernation exception: stopping state IS billable during hibernation
 			runningHours += duration
 		}
 
@@ -3504,9 +3514,44 @@ func calculateRunningHoursFromHistory(launchTime time.Time, currentState string,
 	finalDuration := now.Sub(lastStateTime).Hours()
 	if lastState == instanceStateRunning || lastState == "pending" {
 		runningHours += finalDuration
+	} else if isHibernating && lastState == instanceStateStopping {
+		// Hibernation exception: stopping state IS billable during hibernation
+		runningHours += finalDuration
 	}
 
 	return runningHours
+}
+
+// parseStateTransitionReason extracts the timestamp from AWS StateTransitionReason field
+// Format: "User initiated (2025-10-27 22:36:06 GMT)" or "User initiated (2025-10-27 22:36:06 UTC)"
+// Returns the timestamp when the instance transitioned to the current state
+func parseStateTransitionReason(reason string) (time.Time, error) {
+	if reason == "" {
+		return time.Time{}, fmt.Errorf("empty state transition reason")
+	}
+
+	// Find timestamp within parentheses: (YYYY-MM-DD HH:MM:SS GMT/UTC)
+	start := strings.Index(reason, "(")
+	end := strings.Index(reason, ")")
+	if start == -1 || end == -1 || start >= end {
+		return time.Time{}, fmt.Errorf("invalid format: missing parentheses")
+	}
+
+	// Extract timestamp string (between parentheses)
+	timestampStr := reason[start+1 : end]
+
+	// Parse timestamp - AWS uses format "2006-01-02 15:04:05 GMT" or "2006-01-02 15:04:05 UTC"
+	// Try GMT first (most common)
+	t, err := time.Parse("2006-01-02 15:04:05 GMT", timestampStr)
+	if err != nil {
+		// Try UTC format
+		t, err = time.Parse("2006-01-02 15:04:05 UTC", timestampStr)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("failed to parse timestamp '%s': %w", timestampStr, err)
+		}
+	}
+
+	return t, nil
 }
 
 // calculateStorageCosts calculates hourly EBS storage costs for this instance
@@ -4084,10 +4129,69 @@ func (m *Manager) ResizeInstance(resizeRequest ctypes.ResizeRequest) (*ctypes.Re
 // Instance Readiness Waiting
 // ==========================================
 
+// waitForStatusChecks waits for both AWS system and instance status checks to pass
+// This ensures the instance is fully initialized before use
+func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2ClientInterface, instanceID string, progressCallback func(stage string, progress float64, description string)) error {
+	maxAttempts := 60 // 5 minutes at 5-second intervals
+	attemptDelay := 5 * time.Second
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		output, err := regionalClient.DescribeInstanceStatus(ctx, &ec2.DescribeInstanceStatusInput{
+			InstanceIds: []string{instanceID},
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to describe instance status: %w", err)
+		}
+
+		// Status checks may not be available immediately
+		if len(output.InstanceStatuses) == 0 {
+			if progressCallback != nil {
+				progress := float64(attempt) / float64(maxAttempts)
+				progressCallback("status_checks", progress, fmt.Sprintf("Initializing status checks (attempt %d/%d)...", attempt, maxAttempts))
+			}
+			time.Sleep(attemptDelay)
+			continue
+		}
+
+		status := output.InstanceStatuses[0]
+		systemOK := status.SystemStatus != nil && status.SystemStatus.Status == ec2types.SummaryStatusOk
+		instanceOK := status.InstanceStatus != nil && status.InstanceStatus.Status == ec2types.SummaryStatusOk
+
+		// Both checks must pass
+		if systemOK && instanceOK {
+			log.Printf("✅ Instance %s system status checks passed (2/2)", instanceID)
+			return nil
+		}
+
+		// Report progress with current status
+		if progressCallback != nil {
+			progress := float64(attempt) / float64(maxAttempts)
+			systemStatus := "initializing"
+			instanceStatus := "initializing"
+			if status.SystemStatus != nil {
+				systemStatus = string(status.SystemStatus.Status)
+			}
+			if status.InstanceStatus != nil {
+				instanceStatus = string(status.InstanceStatus.Status)
+			}
+			description := fmt.Sprintf("Status checks: system=%s, instance=%s (attempt %d/%d)", systemStatus, instanceStatus, attempt, maxAttempts)
+			progressCallback("status_checks", progress, description)
+		}
+
+		if attempt < maxAttempts {
+			time.Sleep(attemptDelay)
+		}
+	}
+
+	return fmt.Errorf("timeout: status checks did not pass within 5 minutes")
+}
+
 // waitForInstanceReadyWithProgress waits for an instance to be fully ready for use with progress reporting
 // This includes:
 // 1. Instance reaching "running" state
-// 2. SSH port (22) being accessible
+// 2. AWS system status checks (2/2 passing)
+// 3. SSH port (22) being accessible
 func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, progressCallback func(stage string, progress float64, description string)) error {
 	ctx := context.Background()
 
@@ -4111,7 +4215,21 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 		progressCallback("instance_ready", 1.0, "Instance is running")
 	}
 
-	// Step 2: Get public IP address for SSH check
+	// Step 2: Wait for AWS system status checks (2/2 passing)
+	if progressCallback != nil {
+		progressCallback("status_checks", 0.0, "Waiting for system status checks...")
+	}
+
+	err = m.waitForStatusChecks(ctx, regionalClient, instanceID, progressCallback)
+	if err != nil {
+		return fmt.Errorf("system status checks failed: %w", err)
+	}
+
+	if progressCallback != nil {
+		progressCallback("status_checks", 1.0, "System status checks passed (2/2)")
+	}
+
+	// Step 3: Get public IP address for SSH check
 	result, err := regionalClient.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
 		InstanceIds: []string{instanceID},
 	})
@@ -4130,7 +4248,7 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 
 	publicIP := *instance.PublicIpAddress
 
-	// Step 3: Wait for SSH to be accessible (typically 10-30 more seconds)
+	// Step 4: Wait for SSH to be accessible (typically 10-30 more seconds)
 	if progressCallback != nil {
 		progressCallback("ssh_ready", 0.0, "Waiting for SSH to be accessible...")
 	}
@@ -4164,17 +4282,11 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 	return fmt.Errorf("timeout waiting for SSH to become accessible after %d attempts", maxAttempts)
 }
 
-// waitForInstanceReady is a wrapper that calls waitForInstanceReadyWithProgress without progress callbacks
-// This maintains backward compatibility for code that doesn't use progress reporting yet
-func (m *Manager) waitForInstanceReady(instanceID, region string) error {
-	return m.waitForInstanceReadyWithProgress(instanceID, region, nil)
-}
-
 // ==========================================
 // Instance Snapshot Management
 // ==========================================
 
-// CreateInstanceAMISnapshot creates an AMI snapshot from a CloudWorkstation instance
+// CreateInstanceAMISnapshot creates an AMI snapshot from a Prism instance
 func (m *Manager) CreateInstanceAMISnapshot(instanceName, snapshotName, description string, noReboot bool) (*ctypes.InstanceSnapshotResult, error) {
 	ctx := context.Background()
 
@@ -4209,11 +4321,11 @@ func (m *Manager) CreateInstanceAMISnapshot(instanceName, snapshotName, descript
 				ResourceType: ec2types.ResourceTypeImage,
 				Tags: []ec2types.Tag{
 					{Key: aws.String("Name"), Value: aws.String(snapshotName)},
-					{Key: aws.String("CloudWorkstation"), Value: aws.String("true")},
+					{Key: aws.String("Prism"), Value: aws.String("true")},
 					{Key: aws.String("SourceInstance"), Value: aws.String(instanceName)},
 					{Key: aws.String("SourceInstanceId"), Value: aws.String(instanceData.ID)},
 					{Key: aws.String("SourceTemplate"), Value: aws.String(instanceData.Template)},
-					{Key: aws.String("CreatedBy"), Value: aws.String("cloudworkstation-snapshot")},
+					{Key: aws.String("CreatedBy"), Value: aws.String("prism-snapshot")},
 				},
 			},
 		},
@@ -4241,21 +4353,21 @@ func (m *Manager) CreateInstanceAMISnapshot(instanceName, snapshotName, descript
 	}, nil
 }
 
-// ListInstanceSnapshots lists all CloudWorkstation instance snapshots (AMIs)
+// ListInstanceSnapshots lists all Prism instance snapshots (AMIs)
 func (m *Manager) ListInstanceSnapshots() ([]ctypes.InstanceSnapshotInfo, error) {
 	ctx := context.Background()
 
-	// List all AMIs created by CloudWorkstation
+	// List all AMIs created by Prism
 	input := &ec2.DescribeImagesInput{
 		Owners: []string{"self"},
 		Filters: []ec2types.Filter{
 			{
-				Name:   aws.String("tag:CloudWorkstation"),
+				Name:   aws.String("tag:Prism"),
 				Values: []string{"true"},
 			},
 			{
 				Name:   aws.String("tag:CreatedBy"),
-				Values: []string{"cloudworkstation-snapshot"},
+				Values: []string{"prism-snapshot"},
 			},
 		},
 	}
@@ -4319,7 +4431,7 @@ func (m *Manager) RestoreInstanceFromSnapshot(snapshotName, newInstanceName stri
 		Owners: []string{"self"},
 		Filters: []ec2types.Filter{
 			{
-				Name:   aws.String("tag:CloudWorkstation"),
+				Name:   aws.String("tag:Prism"),
 				Values: []string{"true"},
 			},
 			{
@@ -4382,7 +4494,7 @@ func (m *Manager) RestoreInstanceFromSnapshot(snapshotName, newInstanceName stri
 	}, nil
 }
 
-// DeleteInstanceSnapshot deletes a CloudWorkstation instance snapshot (AMI)
+// DeleteInstanceSnapshot deletes a Prism instance snapshot (AMI)
 func (m *Manager) DeleteInstanceSnapshot(snapshotName string) (*ctypes.InstanceSnapshotDeleteResult, error) {
 	ctx := context.Background()
 
@@ -4391,7 +4503,7 @@ func (m *Manager) DeleteInstanceSnapshot(snapshotName string) (*ctypes.InstanceS
 		Owners: []string{"self"},
 		Filters: []ec2types.Filter{
 			{
-				Name:   aws.String("tag:CloudWorkstation"),
+				Name:   aws.String("tag:Prism"),
 				Values: []string{"true"},
 			},
 			{
@@ -4469,7 +4581,7 @@ func (m *Manager) GetInstanceSnapshotInfo(snapshotName string) (*ctypes.Instance
 		Owners: []string{"self"},
 		Filters: []ec2types.Filter{
 			{
-				Name:   aws.String("tag:CloudWorkstation"),
+				Name:   aws.String("tag:Prism"),
 				Values: []string{"true"},
 			},
 			{
@@ -4587,19 +4699,44 @@ func (m *Manager) calculateAMIStorageCost(image ec2types.Image) float64 {
 	return totalCost
 }
 
-// GetIdleScheduler returns the idle scheduler for direct access
-func (m *Manager) GetIdleScheduler() *idle.Scheduler {
-	return m.idleScheduler
+// GetInstanceNames returns a list of all instance names (implements idle.AWSInstanceManager interface)
+func (m *Manager) GetInstanceNames() ([]string, error) {
+	state, err := m.stateManager.LoadState()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load state: %w", err)
+	}
+
+	names := make([]string, 0, len(state.Instances))
+	for name := range state.Instances {
+		names = append(names, name)
+	}
+
+	return names, nil
 }
 
-// GetPolicyManager returns the policy manager for direct access
-func (m *Manager) GetPolicyManager() *idle.PolicyManager {
-	return m.policyManager
+// GetInstanceID returns the AWS instance ID for a given instance name (implements idle.AWSInstanceManager interface)
+func (m *Manager) GetInstanceID(name string) (string, error) {
+	state, err := m.stateManager.LoadState()
+	if err != nil {
+		return "", fmt.Errorf("failed to load state: %w", err)
+	}
+
+	instance, ok := state.Instances[name]
+	if !ok {
+		return "", fmt.Errorf("instance %s not found", name)
+	}
+
+	return instance.ID, nil
 }
 
 // GetAWSConfig returns the AWS config for creating additional service clients
 func (m *Manager) GetAWSConfig() aws.Config {
 	return m.cfg
+}
+
+// CreateS3Client creates a new S3 client using the manager's AWS config (v0.5.7)
+func (m *Manager) CreateS3Client() (*s3.Client, error) {
+	return s3.NewFromConfig(m.cfg), nil
 }
 
 // CheckAMIFreshness validates static AMI IDs against latest SSM values (v0.5.4)

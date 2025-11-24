@@ -43,12 +43,12 @@ jobs:
           fi
 
       - name: Build CLI
-        run: go build -o bin/cws ./cmd/cws
+        run: go build -o bin/prism ./cmd/prism
 
       - name: Build Daemon
-        run: go build -o bin/cwsd ./cmd/cwsd
+        run: go build -o bin/prismd ./cmd/prismd
 
       - name: Verify binaries
         run: |
-          ./bin/cws --version
-          ./bin/cwsd --version
+          ./bin/prism --version
+          ./bin/prismd --version

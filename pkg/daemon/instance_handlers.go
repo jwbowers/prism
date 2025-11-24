@@ -1,16 +1,18 @@
 package daemon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/aws"
-	"github.com/scttfrdmn/cloudworkstation/pkg/profile"
-	"github.com/scttfrdmn/cloudworkstation/pkg/templates"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/aws"
+	"github.com/scttfrdmn/prism/pkg/profile"
+	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // resolveInstanceIdentifier resolves an instance identifier (name or ID) to the instance name stored in state
@@ -157,13 +159,78 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		return // Error response already written by validateLaunchRequest
 	}
 
-	// Check instance name uniqueness
-	if s.checkInstanceNameUniqueness(&req, w, r) {
+	// Check launch rate limit (v0.5.12)
+	if s.rateLimiter != nil {
+		if err := s.rateLimiter.CheckAndRecordLaunch(); err != nil {
+			if rateLimitErr, ok := err.(*RateLimitError); ok {
+				// Get remaining quota for enhanced error message
+				status := s.rateLimiter.GetStatus()
+				remaining := status.MaxLaunches - rateLimitErr.Current
+
+				// Format retry time in user-friendly way
+				retrySeconds := int(rateLimitErr.RetryAfter.Seconds())
+				var retryTime string
+				if retrySeconds < 60 {
+					retryTime = fmt.Sprintf("%d seconds", retrySeconds)
+				} else {
+					retryMin := retrySeconds / 60
+					retrySec := retrySeconds % 60
+					if retrySec > 0 {
+						retryTime = fmt.Sprintf("%d minutes %d seconds", retryMin, retrySec)
+					} else {
+						retryTime = fmt.Sprintf("%d minutes", retryMin)
+					}
+				}
+
+				s.writeError(w, http.StatusTooManyRequests, fmt.Sprintf(
+					"⛔ Launch rate limit exceeded\n\n"+
+						"Current Usage: %d/%d launches in last %d minute(s)\n"+
+						"Remaining Quota: %d launches available\n"+
+						"Next Available: %s\n\n"+
+						"💡 Actions:\n"+
+						"  • Wait %s and try again\n"+
+						"  • Check status: prism admin rate-limit status\n"+
+						"  • Adjust limits: prism admin rate-limit configure --max-launches <num>\n\n"+
+						"This limit prevents accidental cost overruns and AWS API throttling.",
+					rateLimitErr.Current,
+					rateLimitErr.Limit,
+					int(rateLimitErr.Window.Minutes()),
+					remaining,
+					retryTime,
+					retryTime,
+				))
+				return
+			}
+			s.writeError(w, http.StatusTooManyRequests, err.Error())
+			return
+		}
+	}
+
+	// Check advanced launch throttling (v0.6.0)
+	// Multi-scope throttling with per-user, per-project limits and budget awareness
+	if !s.checkLaunchThrottling(&req, w) {
+		return // Error response already written by checkLaunchThrottling
+	}
+
+	// Resolve funding allocation (v0.5.10+)
+	if req.ProjectID != "" {
+		if err := s.resolveFundingAllocation(&req, w); err != nil {
+			return // Error response already written by resolveFundingAllocation
+		}
+	}
+
+	// Check budget hard cap if this launch is associated with a project
+	if s.isLaunchBlockedByBudget(&req, w) {
+		return // Error response already written by isLaunchBlockedByBudget
+	}
+
+	// Check instance name uniqueness (skip in test mode)
+	if !s.testMode && s.checkInstanceNameUniqueness(&req, w, r) {
 		return // Error response already written if name exists
 	}
 
-	// Handle SSH key management if not provided in request
-	if req.SSHKeyName == "" {
+	// Handle SSH key management if not provided in request (skip in test mode)
+	if req.SSHKeyName == "" && !s.testMode {
 		if err := s.setupSSHKeyForLaunch(&req); err != nil {
 			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("SSH key setup failed: %v", err))
 			return
@@ -172,38 +239,58 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 
 	// Use AWS manager from request and handle launch
 	var instance *types.Instance
-	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
-		// Ensure SSH key exists in AWS if specified
-		if req.SSHKeyName != "" {
-			if err := s.ensureSSHKeyInAWS(awsManager, &req); err != nil {
-				return fmt.Errorf("failed to ensure SSH key in AWS: %w", err)
+
+	// In test mode, skip AWS entirely and return mock instance
+	if s.testMode {
+		// Return mock instance for testing
+		instance = &types.Instance{
+			ID:            "i-test123456",
+			Name:          req.Name,
+			State:         "running",
+			PublicIP:      "203.0.113.1",
+			PrivateIP:     "10.0.1.100",
+			InstanceType:  "t3.micro",
+			Template:      req.Template,
+			Username:      "ubuntu",
+			HourlyRate:    0.0104,
+			EffectiveRate: 0.0104,
+			LaunchTime:    time.Now(),
+		}
+	} else {
+		// Production mode: use AWS manager
+		s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
+			// Ensure SSH key exists in AWS if specified
+			if req.SSHKeyName != "" {
+				if err := s.ensureSSHKeyInAWS(awsManager, &req); err != nil {
+					return fmt.Errorf("failed to ensure SSH key in AWS: %w", err)
+				}
 			}
-		}
 
-		// Track launch start time
-		launchStart := time.Now()
+			// Track launch start time
+			launchStart := time.Now()
 
-		// Delegate to AWS manager
-		var err error
-		instance, err = awsManager.LaunchInstance(req)
+			// Launch instance via AWS
+			var err error
+			instance, err = awsManager.LaunchInstance(req)
 
-		// Record usage stats
-		launchDuration := int(time.Since(launchStart).Seconds())
-		templates.GetUsageStats().RecordLaunch(req.Template, err == nil, launchDuration)
+			// Record usage stats
+			launchDuration := int(time.Since(launchStart).Seconds())
+			templates.GetUsageStats().RecordLaunch(req.Template, err == nil, launchDuration)
 
-		if err != nil {
-			return err
-		}
+			if err != nil {
+				return err
+			}
 
-		// Immediately query AWS to get actual current state (may have transitioned from pending to running)
-		// This keeps our cache fresh and prevents showing stale "pending" state for hours
-		refreshedInstance := s.refreshInstanceStateFromAWS(awsManager, instance.Name)
-		if refreshedInstance != nil {
-			instance = refreshedInstance
-		}
+			// Immediately query AWS to get actual current state
+			// This keeps our cache fresh and prevents showing stale "pending" state for hours
+			refreshedInstance := s.refreshInstanceStateFromAWS(awsManager, instance.Name)
+			if refreshedInstance != nil {
+				instance = refreshedInstance
+			}
 
-		return nil
-	})
+			return nil
+		})
+	}
 
 	// If instance is nil, withAWSManager already wrote an error response
 	if instance == nil {
@@ -278,14 +365,16 @@ func (s *Server) handleDirectInstanceOperation(w http.ResponseWriter, r *http.Re
 
 func (s *Server) handleInstanceSubOperation(w http.ResponseWriter, r *http.Request, instanceName, operation string) {
 	operationHandlers := map[string]func(http.ResponseWriter, *http.Request, string){
-		"start":              s.handleStartInstance,
-		"stop":               s.handleStopInstance,
-		"hibernate":          s.handleHibernateInstance,
-		"resume":             s.handleResumeInstance,
-		"hibernation-status": s.handleInstanceHibernationStatus,
-		"connect":            s.handleConnectInstance,
-		"exec":               s.handleExecInstance,
-		"resize":             s.handleResizeInstance,
+		"start":                 s.handleStartInstance,
+		"stop":                  s.handleStopInstance,
+		"hibernate":             s.handleHibernateInstance,
+		"resume":                s.handleResumeInstance,
+		"hibernation-status":    s.handleInstanceHibernationStatus,
+		"connect":               s.handleConnectInstance,
+		"exec":                  s.handleExecInstance,
+		"resize":                s.handleResizeInstance,
+		"idle-policies":         s.handleInstanceIdlePolicies,
+		"recommend-idle-policy": s.handleInstanceRecommendIdlePolicy,
 	}
 
 	if handler, exists := operationHandlers[operation]; exists {
@@ -933,6 +1022,13 @@ func (s *Server) validateLaunchRequest(req *types.LaunchRequest, w http.Response
 		}
 	}
 
+	// Validate package manager if provided
+	if req.PackageManager != "" {
+		if err := s.validatePackageManager(req.PackageManager, w); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -947,6 +1043,19 @@ func (s *Server) validateInstanceSize(size string, w http.ResponseWriter) error 
 
 	s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid size '%s'. Valid sizes: %v", size, validSizes))
 	return fmt.Errorf("invalid size")
+}
+
+// validatePackageManager validates the package manager parameter
+func (s *Server) validatePackageManager(packageManager string, w http.ResponseWriter) error {
+	validPackageManagers := []string{"apt", "yum", "dnf", "conda", "brew"}
+	for _, valid := range validPackageManagers {
+		if packageManager == valid {
+			return nil
+		}
+	}
+
+	s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid package manager '%s'. Valid package managers: %v", packageManager, validPackageManagers))
+	return fmt.Errorf("invalid package manager")
 }
 
 // checkInstanceNameUniqueness checks if the instance name is already taken
@@ -976,4 +1085,152 @@ func (s *Server) checkInstanceNameUniqueness(req *types.LaunchRequest, w http.Re
 		return true
 	}
 	return false
+}
+
+// isLaunchBlockedByBudget checks if the launch is blocked by budget hard cap
+// Returns true if launch is blocked (error already written), false if allowed
+func (s *Server) isLaunchBlockedByBudget(req *types.LaunchRequest, w http.ResponseWriter) bool {
+	// If no project is associated, budget cap doesn't apply
+	if req.ProjectID == "" {
+		return false
+	}
+
+	// Check if launches are prevented for this project
+	ctx := context.Background()
+	launchPrevented, err := s.projectManager.IsLaunchPrevented(ctx, req.ProjectID)
+	if err != nil {
+		// Log the error but don't block the launch (fail open for safety)
+		log.Printf("Warning: Failed to check budget hard cap for project %s: %v", req.ProjectID, err)
+		return false
+	}
+
+	// If launch is not prevented, allow it
+	if !launchPrevented {
+		return false
+	}
+
+	// Launch is prevented by budget hard cap - get budget status for error message
+	budgetStatus, err := s.projectManager.CheckBudgetStatus(ctx, req.ProjectID)
+	if err != nil {
+		// Fallback error message if we can't get budget details
+		s.writeError(w, http.StatusForbidden,
+			fmt.Sprintf("Instance launch blocked: Project '%s' has reached its budget hard cap. Contact project owner to increase budget or clear hard cap.", req.ProjectID))
+		return true
+	}
+
+	// Build detailed error message with budget information
+	errorMsg := fmt.Sprintf("Instance launch blocked: Project '%s' budget hard cap reached.\n\n", req.ProjectID)
+	errorMsg += "Budget Status:\n"
+	errorMsg += fmt.Sprintf("  Total Budget: $%.2f\n", budgetStatus.TotalBudget)
+	errorMsg += fmt.Sprintf("  Spent: $%.2f (%.1f%%)\n", budgetStatus.SpentAmount, budgetStatus.SpentPercentage*100)
+	errorMsg += fmt.Sprintf("  Remaining: $%.2f\n", budgetStatus.RemainingBudget)
+
+	if len(budgetStatus.TriggeredActions) > 0 {
+		errorMsg += "\nTriggered Actions:\n"
+		for _, action := range budgetStatus.TriggeredActions {
+			errorMsg += fmt.Sprintf("  - %s\n", action)
+		}
+	}
+
+	errorMsg += "\nTo continue launching instances:\n"
+	errorMsg += "  1. Contact project owner to increase the budget\n"
+	errorMsg += "  2. Stop or hibernate running instances to reduce costs\n"
+	errorMsg += fmt.Sprintf("  3. Clear the hard cap temporarily with: prism project allow-launches %s\n", req.ProjectID)
+
+	s.writeError(w, http.StatusForbidden, errorMsg)
+	return true
+}
+
+// resolveFundingAllocation resolves the funding allocation for a launch request (v0.5.10+)
+// Priority: 1) Explicit --funding flag, 2) Project's default allocation, 3) Error if neither
+func (s *Server) resolveFundingAllocation(req *types.LaunchRequest, w http.ResponseWriter) error {
+	ctx := context.Background()
+
+	// If funding allocation is already specified, validate it
+	if req.FundingAllocationID != "" {
+		// Verify allocation exists and belongs to this project
+		allocation, err := s.budgetManager.GetAllocation(ctx, req.FundingAllocationID)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid funding allocation: %v", err))
+			return fmt.Errorf("invalid funding allocation")
+		}
+
+		// Verify allocation belongs to the project
+		if allocation.ProjectID != req.ProjectID {
+			s.writeError(w, http.StatusBadRequest,
+				fmt.Sprintf("Funding allocation %q does not belong to project %q", req.FundingAllocationID, req.ProjectID))
+			return fmt.Errorf("allocation project mismatch")
+		}
+
+		// Allocation is valid, continue
+		return nil
+	}
+
+	// No explicit funding specified - use project's default allocation
+	project, err := s.projectManager.GetProject(ctx, req.ProjectID)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to get project: %v", err))
+		return fmt.Errorf("project not found")
+	}
+
+	// Check if project has a default allocation
+	if project.DefaultAllocationID == nil || *project.DefaultAllocationID == "" {
+		// No default allocation - check if project has any allocations
+		allocations, err := s.budgetManager.GetProjectAllocations(ctx, req.ProjectID)
+		if err != nil || len(allocations) == 0 {
+			s.writeError(w, http.StatusBadRequest,
+				fmt.Sprintf("Project %q has no budget allocations. Please:\n"+
+					"  1. Create a budget: prism budget create <name> <amount>\n"+
+					"  2. Allocate to project: prism budget allocate <budget-name> --project %s --amount <amount>\n"+
+					"  3. Set as default: prism project set-default-funding %s <allocation-id>\n"+
+					"Or specify funding explicitly: --funding <allocation-id>",
+					req.ProjectID, req.ProjectID, req.ProjectID))
+			return fmt.Errorf("no project allocations")
+		}
+
+		// Project has allocations but no default - require explicit selection
+		allocationNames := []string{}
+		for _, alloc := range allocations {
+			if budget, err := s.budgetManager.GetBudget(ctx, alloc.BudgetID); err == nil {
+				allocationNames = append(allocationNames, fmt.Sprintf("%s (ID: %s, $%.2f allocated)",
+					budget.Name, alloc.ID, alloc.AllocatedAmount))
+			}
+		}
+
+		s.writeError(w, http.StatusBadRequest,
+			fmt.Sprintf("Project %q has multiple funding sources but no default set.\n\n"+
+				"Available allocations:\n  %s\n\n"+
+				"Please either:\n"+
+				"  1. Set default: prism project set-default-funding %s <allocation-id>\n"+
+				"  2. Specify funding: --funding <allocation-id>",
+				req.ProjectID,
+				strings.Join(allocationNames, "\n  "),
+				req.ProjectID))
+		return fmt.Errorf("no default allocation")
+	}
+
+	// Use project's default allocation
+	defaultAllocationID := *project.DefaultAllocationID
+
+	// Verify default allocation still exists
+	allocation, err := s.budgetManager.GetAllocation(ctx, defaultAllocationID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError,
+			fmt.Sprintf("Project's default allocation %q not found. "+
+				"Please update default allocation or specify --funding explicitly", defaultAllocationID))
+		return fmt.Errorf("default allocation not found")
+	}
+
+	// Verify allocation belongs to this project (defensive check)
+	if allocation.ProjectID != req.ProjectID {
+		s.writeError(w, http.StatusInternalServerError,
+			fmt.Sprintf("Project's default allocation %q does not belong to this project (data integrity issue)",
+				defaultAllocationID))
+		return fmt.Errorf("allocation integrity error")
+	}
+
+	// Set the resolved allocation ID in the request
+	req.FundingAllocationID = defaultAllocationID
+
+	return nil
 }

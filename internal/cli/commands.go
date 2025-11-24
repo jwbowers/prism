@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/pricing"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/pricing"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // LaunchCommand represents a launch operation using Command Pattern (SOLID)
@@ -36,6 +36,7 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&SubnetCommand{})
 	dispatcher.RegisterCommand(&VpcCommand{})
 	dispatcher.RegisterCommand(&ProjectCommand{})
+	dispatcher.RegisterCommand(&FundingCommand{})
 	dispatcher.RegisterCommand(&PackageManagerCommand{})
 	dispatcher.RegisterCommand(&SpotCommand{})
 	dispatcher.RegisterCommand(&IdlePolicyCommand{})
@@ -185,6 +186,21 @@ func (p *ProjectCommand) Execute(req *types.LaunchRequest, args []string, index 
 		return index, fmt.Errorf("--project requires a value")
 	}
 	req.ProjectID = args[index+1]
+	return index + 1, nil
+}
+
+// FundingCommand handles --funding flag (v0.5.10+)
+type FundingCommand struct{}
+
+func (f *FundingCommand) CanHandle(arg string) bool {
+	return arg == "--funding"
+}
+
+func (f *FundingCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	if index+1 >= len(args) {
+		return index, fmt.Errorf("--funding requires a value (budget allocation ID or name)")
+	}
+	req.FundingAllocationID = args[index+1]
 	return index + 1, nil
 }
 
@@ -660,7 +676,7 @@ func NewTemplateSnapshotArgParser() *TemplateSnapshotArgParser {
 // Parse parses command line arguments into configuration (Single Responsibility)
 func (p *TemplateSnapshotArgParser) Parse(args []string) (*TemplateSnapshotConfig, error) {
 	if len(args) < 2 {
-		return nil, fmt.Errorf(`usage: cws templates snapshot <instance-name> <template-name> [options]
+		return nil, fmt.Errorf(`usage: prism templates snapshot <workspace-name> <template-name> [options]
 
 Create a template from a running workstation's current configuration.
 
@@ -674,9 +690,9 @@ Options:
   dry-run                  Show what would be captured without creating template
 
 Examples:
-  cws templates snapshot my-ml-workstation custom-ml-env
-  cws templates snapshot research-instance my-research-template description="Customized research environment"
-  cws templates snapshot data-science-box ds-template base="Python Machine Learning" dry-run`)
+  prism templates snapshot my-ml-workstation custom-ml-env
+  prism templates snapshot research-instance my-research-template description="Customized research environment"
+  prism templates snapshot data-science-box ds-template base="Python Machine Learning" dry-run`)
 	}
 
 	// Parse arguments using helper methods
@@ -752,7 +768,7 @@ func (s *TemplateSnapshotValidationService) ValidateInstance(config *TemplateSna
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(context.Context) error }); ok {
 		if err := pingable.Ping(context.Background()); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: cws daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
 		}
 	}
 
@@ -888,7 +904,7 @@ func (s *TemplateSnapshotSaveService) displayDryRunResults(config *TemplateSnaps
 
 	fmt.Printf("💡 **Next Steps**:\n")
 	fmt.Printf("   Run without dry-run to save template:\n")
-	fmt.Printf("   cws templates snapshot %s %s", config.InstanceName, config.TemplateName)
+	fmt.Printf("   prism templates snapshot %s %s", config.InstanceName, config.TemplateName)
 	if config.Description != "" {
 		fmt.Printf(" description=\"%s\"", config.Description)
 	}
@@ -907,7 +923,7 @@ func (s *TemplateSnapshotSaveService) saveTemplateAndDisplayResults(config *Temp
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
-	templatesDir := filepath.Join(homeDir, ".cloudworkstation", "templates")
+	templatesDir := filepath.Join(homeDir, ".prism", "templates")
 
 	// Create templates directory if it doesn't exist
 	if err := os.MkdirAll(templatesDir, 0755); err != nil {
@@ -928,9 +944,9 @@ func (s *TemplateSnapshotSaveService) saveTemplateAndDisplayResults(config *Temp
 	fmt.Printf("   Location: %s\n\n", templateFile)
 
 	fmt.Printf("🚀 **Usage**:\n")
-	fmt.Printf("   Launch new instance: cws launch \"%s\" new-instance\n", config.TemplateName)
-	fmt.Printf("   View template info: cws templates info \"%s\"\n", config.TemplateName)
-	fmt.Printf("   Validate template: cws templates validate \"%s\"\n", config.TemplateName)
+	fmt.Printf("   Launch new instance: prism launch \"%s\" new-instance\n", config.TemplateName)
+	fmt.Printf("   View template info: prism templates info \"%s\"\n", config.TemplateName)
+	fmt.Printf("   Validate template: prism templates validate \"%s\"\n", config.TemplateName)
 
 	return nil
 }
@@ -1001,7 +1017,7 @@ func NewTemplateApplyArgParser() *TemplateApplyArgParser {
 // Parse parses command line arguments into apply configuration (Single Responsibility)
 func (p *TemplateApplyArgParser) Parse(args []string) (*TemplateApplyConfig, error) {
 	if len(args) < 2 {
-		return nil, fmt.Errorf("usage: cws apply <template> <instance-name> [options]\n" +
+		return nil, fmt.Errorf("usage: prism apply <template> <workspace-name> [options]\n" +
 			"  options: --dry-run --force --with <package-manager>")
 	}
 
@@ -1067,7 +1083,7 @@ func (s *TemplateApplyValidationService) ValidateTemplateAndDaemon(config *Templ
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(context.Context) error }); ok {
 		if err := pingable.Ping(context.Background()); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: cws daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
 		}
 	}
 
@@ -1207,8 +1223,8 @@ func (s *TemplateApplyDisplayService) displaySuccessResults(config *TemplateAppl
 	}
 
 	fmt.Printf("\n⏱️  Execution time: %v\n", response.ExecutionTime)
-	fmt.Printf("\n💡 Use 'cws layers %s' to see all applied templates\n", config.InstanceName)
-	fmt.Printf("💡 Use 'cws rollback %s' to undo these changes if needed\n", config.InstanceName)
+	fmt.Printf("\n💡 Use 'prism layers %s' to see all applied templates\n", config.InstanceName)
+	fmt.Printf("💡 Use 'prism rollback %s' to undo these changes if needed\n", config.InstanceName)
 
 	return nil
 }
@@ -1276,7 +1292,7 @@ func NewTemplateDiffArgParser() *TemplateDiffArgParser {
 // Parse parses command line arguments into diff configuration (Single Responsibility)
 func (p *TemplateDiffArgParser) Parse(args []string) (*TemplateDiffConfig, error) {
 	if len(args) < 2 {
-		return nil, fmt.Errorf("usage: cws diff <template> <instance-name>")
+		return nil, fmt.Errorf("usage: prism diff <template> <workspace-name>")
 	}
 
 	return &TemplateDiffConfig{
@@ -1302,7 +1318,7 @@ func (s *TemplateDiffValidationService) ValidateTemplateAndDaemon(config *Templa
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(context.Context) error }); ok {
 		if err := pingable.Ping(context.Background()); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: cws daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
 		}
 	}
 
@@ -1550,8 +1566,8 @@ func (s *TemplateDiffDisplayService) displaySummary(config *TemplateDiffConfig, 
 		fmt.Println("✅ No changes needed - instance already matches template")
 	} else {
 		fmt.Printf("📊 Summary: %s\n", diff.Summary())
-		fmt.Printf("\n💡 Use 'cws apply %s %s' to apply these changes\n", config.TemplateName, config.InstanceName)
-		fmt.Printf("💡 Use 'cws apply %s %s --dry-run' to preview the application\n", config.TemplateName, config.InstanceName)
+		fmt.Printf("\n💡 Use 'prism apply %s %s' to apply these changes\n", config.TemplateName, config.InstanceName)
+		fmt.Printf("💡 Use 'prism apply %s %s --dry-run' to preview the application\n", config.TemplateName, config.InstanceName)
 	}
 
 	return nil

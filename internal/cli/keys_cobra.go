@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/profile"
+	"github.com/scttfrdmn/prism/pkg/profile"
 	"github.com/spf13/cobra"
 )
 
@@ -26,9 +26,9 @@ func (k *KeysCobraCommands) CreateKeysCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "keys",
 		Short: "Manage SSH keys",
-		Long: `Manage CloudWorkstation SSH keys for instance access.
+		Long: `Manage Prism SSH keys for instance access.
 
-CloudWorkstation automatically manages SSH keys for secure instance access.
+Prism automatically manages SSH keys for secure instance access.
 Use these commands to view, export, or manage your SSH keys.`,
 	}
 
@@ -47,7 +47,7 @@ func (k *KeysCobraCommands) createListCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List all SSH keys",
-		Long:  `List all CloudWorkstation SSH keys with their associated instances.`,
+		Long:  `List all Prism SSH keys with their associated instances.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return k.handleListKeys()
 		},
@@ -94,7 +94,7 @@ func (k *KeysCobraCommands) createImportCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import <profile>",
 		Short: "Import an existing SSH key",
-		Long: `Import an existing SSH private key for use with CloudWorkstation.
+		Long: `Import an existing SSH private key for use with Prism.
 
 This is useful for:
 • Team sharing - import a shared team key
@@ -169,7 +169,7 @@ func (k *KeysCobraCommands) handleListKeys() error {
 		return nil
 	}
 
-	fmt.Printf("🔑 CloudWorkstation SSH Keys\n\n")
+	fmt.Printf("🔑 Prism SSH Keys\n\n")
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "PROFILE\tAWS KEY NAME\tREGION\tINSTANCES\tCREATED")
@@ -189,8 +189,8 @@ func (k *KeysCobraCommands) handleListKeys() error {
 
 	w.Flush()
 
-	fmt.Printf("\n💡 Use 'cws keys show <profile>' for detailed information\n")
-	fmt.Printf("💡 Use 'cws keys export <profile> -o <file>' to backup a key\n")
+	fmt.Printf("\n💡 Use 'prism keys show <profile>' for detailed information\n")
+	fmt.Printf("💡 Use 'prism keys export <profile> -o <file>' to backup a key\n")
 
 	return nil
 }
@@ -236,8 +236,8 @@ func (k *KeysCobraCommands) handleShowKey(profileName string) error {
 	}
 
 	fmt.Printf("\n💡 Commands:\n")
-	fmt.Printf("   Export key:       cws keys export %s -o ~/backup/%s.pem\n", profileName, profileName)
-	fmt.Printf("   Show public key:  cws keys public %s\n", profileName)
+	fmt.Printf("   Export key:       prism keys export %s -o ~/backup/%s.pem\n", profileName, profileName)
+	fmt.Printf("   Show public key:  prism keys public %s\n", profileName)
 
 	return nil
 }
@@ -318,9 +318,9 @@ func (k *KeysCobraCommands) handleImportKey(profileName, region, keyFilePath str
 	fmt.Printf("   Profile:     %s\n", profileName)
 	fmt.Printf("   Region:      %s\n", region)
 	fmt.Printf("   Source File: %s\n", keyFilePath)
-	fmt.Printf("\n💡 The key is now ready to use with CloudWorkstation\n")
-	fmt.Printf("💡 View details: cws keys show %s\n", profileName)
-	fmt.Printf("💡 Launch an instance: cws launch <template> <name>\n")
+	fmt.Printf("\n💡 The key is now ready to use with Prism\n")
+	fmt.Printf("💡 View details: prism keys show %s\n", profileName)
+	fmt.Printf("💡 Launch an instance: prism launch <template> <name>\n")
 
 	return nil
 }
@@ -342,7 +342,7 @@ func (k *KeysCobraCommands) handleShowPublicKey(profileName string) error {
 	fmt.Printf("\n💡 You can add this public key to:\n")
 	fmt.Printf("   • GitHub/GitLab for repository access\n")
 	fmt.Printf("   • Other servers' ~/.ssh/authorized_keys\n")
-	fmt.Printf("   • Team members' CloudWorkstation instances\n")
+	fmt.Printf("   • Team members' Prism instances\n")
 
 	return nil
 }
@@ -368,8 +368,8 @@ func (k *KeysCobraCommands) handleDeleteKey(profileName string, force bool) erro
 		}
 		fmt.Printf("\n❌ Cannot delete key while instances are using it\n")
 		fmt.Printf("💡 Options:\n")
-		fmt.Printf("   1. Delete the instances first: cws delete <instance-name>\n")
-		fmt.Printf("   2. Force deletion (DANGEROUS): cws keys delete %s --force\n", profileName)
+		fmt.Printf("   1. Delete the instances first: prism delete <workspace-name>\n")
+		fmt.Printf("   2. Force deletion (DANGEROUS): prism keys delete %s --force\n", profileName)
 		return fmt.Errorf("key is in use")
 	}
 

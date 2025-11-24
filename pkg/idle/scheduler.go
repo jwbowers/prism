@@ -51,6 +51,7 @@ type Schedule struct {
 	Description string       `json:"description"`
 	Type        ScheduleType `json:"type"`
 	Enabled     bool         `json:"enabled"`
+	PolicyID    string       `json:"policy_id,omitempty"` // Track which policy created this schedule
 
 	// Target instances
 	TargetInstances []string `json:"target_instances,omitempty"` // Specific instance names, empty means all
@@ -388,6 +389,15 @@ func (s *Scheduler) AddSchedule(schedule *Schedule) error {
 	schedule.EstimatedMonthlySavings = s.calculateEstimatedSavings(schedule)
 
 	s.schedules[schedule.ID] = schedule
+
+	// Update instance-to-schedule mapping for quick lookup (Issue #289)
+	for _, instanceName := range schedule.TargetInstances {
+		if s.instanceSchedules[instanceName] == nil {
+			s.instanceSchedules[instanceName] = []string{}
+		}
+		s.instanceSchedules[instanceName] = append(s.instanceSchedules[instanceName], schedule.ID)
+	}
+
 	return nil
 }
 

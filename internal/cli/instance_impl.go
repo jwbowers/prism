@@ -18,11 +18,12 @@ package cli
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // InstanceCommands handles all instance management operations (implementation layer)
@@ -39,7 +40,7 @@ func NewInstanceCommands(app *App) *InstanceCommands {
 func (ic *InstanceCommands) Connect(args []string) error {
 	// Validate arguments
 	if len(args) < 1 {
-		return NewUsageError("cws connect <workspace-name>", "cws connect my-workspace")
+		return NewUsageError("prism connect <workspace-name>", "prism connect my-workspace")
 	}
 
 	// Parse flags
@@ -53,20 +54,30 @@ func (ic *InstanceCommands) Connect(args []string) error {
 		return err
 	}
 
-	// Get instance and setup tunnels
-	_, err = ic.setupInstanceConnection(name)
+	// Get instance to check connection type
+	instance, err := ic.setupInstanceConnection(name)
 	if err != nil {
 		return err
 	}
 
-	// Get connection info
-	connectionInfo, err := ic.getConnectionInfo(name, userOverride, verbose)
-	if err != nil {
-		return err
+	// Route to appropriate connection handler based on connection type
+	switch instance.ConnectionType {
+	case "desktop":
+		return ic.connectDesktopInstance(instance, name, verbose)
+	case "web":
+		return ic.connectWebInstance(instance, name, verbose)
+	case "ssh", "":
+		// Default to SSH for backwards compatibility
+		return ic.connectSSHInstance(instance, name, userOverride, verbose)
+	case "both":
+		// For "both", prefer web if available, otherwise SSH
+		if len(instance.Services) > 0 {
+			return ic.connectWebInstance(instance, name, verbose)
+		}
+		return ic.connectSSHInstance(instance, name, userOverride, verbose)
+	default:
+		return fmt.Errorf("unknown connection type: %s", instance.ConnectionType)
 	}
-
-	// Execute or display connection
-	return ic.executeConnection(connectionInfo, name, verbose)
 }
 
 // parseConnectFlags parses connect command flags
@@ -164,10 +175,153 @@ func (ic *InstanceCommands) executeConnection(connectionInfo, name string, verbo
 	return ic.app.executeSSHCommand(connectionInfo, name)
 }
 
+// connectSSHInstance handles SSH connections
+func (ic *InstanceCommands) connectSSHInstance(instance *types.Instance, name, userOverride string, verbose bool) error {
+	// Get connection info
+	connectionInfo, err := ic.getConnectionInfo(name, userOverride, verbose)
+	if err != nil {
+		return err
+	}
+
+	// Execute or display connection
+	return ic.executeConnection(connectionInfo, name, verbose)
+}
+
+// connectWebInstance handles web-based connections
+func (ic *InstanceCommands) connectWebInstance(instance *types.Instance, name string, verbose bool) error {
+	// Setup web service tunnels (already done in setupInstanceConnection)
+	// Just display connection information
+	if verbose {
+		fmt.Printf("🌐 Web services available for %s\n", name)
+		if len(instance.Services) > 0 {
+			fmt.Printf("   Services will be tunneled automatically when accessed\n")
+			fmt.Printf("   Use: prism connect %s\n", name)
+		}
+	}
+	return nil
+}
+
+// connectDesktopInstance handles DCV desktop connections
+func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, name string, verbose bool) error {
+	fmt.Printf("🖥️  Connecting to desktop workspace: %s\n", name)
+
+	// Check instance state
+	if instance.State != "running" {
+		return fmt.Errorf("workspace must be running to connect (current state: %s)", instance.State)
+	}
+
+	// Get DCV port from instance metadata (default to 8443)
+	dcvPort := 8443
+	if instance.WebPort != 0 {
+		dcvPort = instance.WebPort
+	}
+
+	// Start SSM port forwarding
+	localPort := 8443
+	fmt.Printf("📡 Starting secure tunnel to DCV server (port %d → localhost:%d)...\n", dcvPort, localPort)
+
+	// Display connection details if verbose
+	if verbose {
+		fmt.Printf("\n🔧 Connection Details:\n")
+		fmt.Printf("   Remote DCV Port: %d\n", dcvPort)
+		fmt.Printf("   Local Port: %d\n", localPort)
+		fmt.Printf("   Instance ID: %s\n", instance.ID)
+		fmt.Printf("   DCV URL: https://localhost:%d\n", localPort)
+	}
+
+	// Start SSM port forwarding session in background
+	if err := ic.startSSMPortForwarding(instance.ID, dcvPort, localPort, verbose); err != nil {
+		return fmt.Errorf("failed to start SSM port forwarding: %w", err)
+	}
+
+	// Wait a moment for tunnel to establish
+	fmt.Printf("⏳ Waiting for tunnel to establish...\n")
+	time.Sleep(2 * time.Second)
+
+	// Display credentials
+	fmt.Printf("\n🔑 DCV Connection Credentials:\n")
+	fmt.Printf("   Username: %s\n", instance.Username)
+	fmt.Printf("   Password: (check instance console output or user-data for initial password)\n")
+
+	// Open browser to DCV
+	dcvURL := fmt.Sprintf("https://localhost:%d", localPort)
+	fmt.Printf("\n🌐 Opening DCV session in browser...\n")
+	fmt.Printf("   URL: %s\n", dcvURL)
+
+	// Open browser
+	if err := openBrowser(dcvURL); err != nil {
+		fmt.Printf("⚠️  Could not auto-open browser: %v\n", err)
+		fmt.Printf("   Please open manually: %s\n", dcvURL)
+	} else {
+		fmt.Printf("✅ Browser opened\n")
+	}
+
+	// Display usage instructions
+	fmt.Printf("\n💡 Connection Instructions:\n")
+	fmt.Printf("   1. Your browser will warn about self-signed certificate - click 'Advanced' and proceed\n")
+	fmt.Printf("   2. Login with username: %s\n", instance.Username)
+	fmt.Printf("   3. Your desktop environment will appear in the browser window\n")
+	fmt.Printf("   4. The tunnel will stay open until you close it with Ctrl+C\n")
+
+	if verbose {
+		fmt.Printf("\n📚 DCV Features:\n")
+		fmt.Printf("   • Browser-based remote desktop (no client needed)\n")
+		fmt.Printf("   • Full desktop environment with GPU support\n")
+		fmt.Printf("   • Copy/paste between local and remote\n")
+		fmt.Printf("   • File transfer via browser\n")
+	}
+
+	// Keep the connection open
+	fmt.Printf("\n🔒 Tunnel is active. Press Ctrl+C to disconnect...\n")
+
+	// Block until user interrupts (Ctrl+C)
+	// The SSM session will be terminated when the process exits
+	select {}
+}
+
+// startSSMPortForwarding starts an AWS SSM port forwarding session in the current process
+func (ic *InstanceCommands) startSSMPortForwarding(instanceID string, remotePort, localPort int, verbose bool) error {
+	// Build SSM parameters JSON
+	parameters := fmt.Sprintf(`{"portNumber":["%d"],"localPortNumber":["%d"]}`, remotePort, localPort)
+
+	// Build AWS SSM command
+	cmd := exec.Command("aws", "ssm", "start-session",
+		"--target", instanceID,
+		"--document-name", "AWS-StartPortForwardingSession",
+		"--parameters", parameters,
+	)
+
+	if verbose {
+		fmt.Printf("🔧 SSM Command: %s %s\n", cmd.Path, strings.Join(cmd.Args[1:], " "))
+	}
+
+	// Set up output
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start SSM session: %w", err)
+	}
+
+	// Wait for the command to complete (this will block until Ctrl+C)
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			// Only print error if it's not due to user interrupt
+			if !strings.Contains(err.Error(), "signal: interrupt") {
+				fmt.Printf("\n⚠️  SSM session ended: %v\n", err)
+			}
+		}
+	}()
+
+	fmt.Printf("✅ SSM tunnel started\n")
+	return nil
+}
+
 // Stop handles the stop command
 func (ic *InstanceCommands) Stop(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws stop <name>", "cws stop my-workspace")
+		return NewUsageError("prism stop <name>", "prism stop my-workspace")
 	}
 
 	name := args[0]
@@ -189,7 +343,7 @@ func (ic *InstanceCommands) Stop(args []string) error {
 // Start handles the start command with intelligent state management
 func (ic *InstanceCommands) Start(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws start <name>", "cws start my-workspace")
+		return NewUsageError("prism start <name>", "prism start my-workspace")
 	}
 
 	name := args[0]
@@ -214,7 +368,7 @@ func (ic *InstanceCommands) Start(args []string) error {
 	}
 
 	if targetInstance == nil {
-		return NewNotFoundError("workspace", name, "Use 'cws list' to see available instances")
+		return NewNotFoundError("workspace", name, "Use 'prism list' to see available instances")
 	}
 
 	// Check current state and handle appropriately
@@ -223,8 +377,8 @@ func (ic *InstanceCommands) Start(args []string) error {
 		fmt.Printf("✅ Workspace %s is already running\n", name)
 		return nil
 	case "hibernated":
-		fmt.Printf("🛌 Workspace %s is hibernated - use 'cws resume %s' for instant startup\n", name, name)
-		fmt.Printf("   Or use 'cws start %s' for regular boot (slower)\n", name)
+		fmt.Printf("🛌 Workspace %s is hibernated - use 'prism resume %s' for instant startup\n", name, name)
+		fmt.Printf("   Or use 'prism start %s' for regular boot (slower)\n", name)
 		fmt.Printf("   Proceeding with regular start...\n")
 	case "stopped", "stopping":
 		// Normal case - proceed with start
@@ -244,7 +398,7 @@ func (ic *InstanceCommands) Start(args []string) error {
 // Delete handles the delete command
 func (ic *InstanceCommands) Delete(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws delete <name>", "cws delete my-workspace")
+		return NewUsageError("prism delete <name>", "prism delete my-workspace")
 	}
 
 	name := args[0]
@@ -266,7 +420,7 @@ func (ic *InstanceCommands) Delete(args []string) error {
 // Hibernate handles the hibernate command
 func (ic *InstanceCommands) Hibernate(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws hibernate <name>", "cws hibernate my-workspace")
+		return NewUsageError("prism hibernate <name>", "prism hibernate my-workspace")
 	}
 
 	name := args[0]
@@ -307,7 +461,7 @@ func (ic *InstanceCommands) Hibernate(args []string) error {
 // Resume handles the resume command
 func (ic *InstanceCommands) Resume(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws resume <name>", "cws resume my-workspace")
+		return NewUsageError("prism resume <name>", "prism resume my-workspace")
 	}
 
 	name := args[0]
@@ -349,7 +503,7 @@ func (ic *InstanceCommands) Resume(args []string) error {
 func (ic *InstanceCommands) Exec(args []string) error {
 	// Validate arguments
 	if len(args) < 2 {
-		return NewUsageError("cws exec <workspace-name> <command>", "cws exec my-workspace \"ls -la\"")
+		return NewUsageError("prism exec <workspace-name> <command>", "prism exec my-workspace \"ls -la\"")
 	}
 
 	// Parse command arguments and flags
@@ -500,8 +654,8 @@ func (ic *InstanceCommands) displayStdErr(stderr string, exitCode int, verbose b
 func (ic *InstanceCommands) Resize(args []string) error {
 	// Validate arguments
 	if len(args) < 2 {
-		return NewUsageError("cws resize <workspace-name> --size <size> [options]",
-			"cws resize my-workspace --size L")
+		return NewUsageError("prism resize <workspace-name> --size <size> [options]",
+			"prism resize my-workspace --size L")
 	}
 
 	// Parse flags
@@ -594,7 +748,7 @@ func (ic *InstanceCommands) getInstanceForResize(instanceName string) (*types.In
 		}
 	}
 
-	return nil, NewNotFoundError("workspace", instanceName, "Use 'cws list' to see available instances")
+	return nil, NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
 }
 
 // resolveTargetInstanceType determines the target workspace type from options
@@ -610,8 +764,8 @@ func (ic *InstanceCommands) resolveTargetInstanceType(opts resizeOptions) (strin
 		return "", NewValidationError("size", opts.newSize, "valid t-shirt size (XS, S, M, L, XL)")
 	}
 
-	return "", NewUsageError("cws resize <workspace-name> --size <size> OR --instance-type <type>",
-		"cws resize my-workspace --size L")
+	return "", NewUsageError("prism resize <workspace-name> --size <size> OR --instance-type <type>",
+		"prism resize my-workspace --size L")
 }
 
 // displayResizeInfo displays resize operation details and handles validation
@@ -745,8 +899,8 @@ func (ic *InstanceCommands) executeResize(instanceName, targetType string, opts 
 		return ic.monitorResizeProgress(instanceName)
 	}
 
-	fmt.Printf("💡 Monitor progress with: cws list\n")
-	fmt.Printf("💡 Check when ready: cws connect %s\n", instanceName)
+	fmt.Printf("💡 Monitor progress with: prism list\n")
+	fmt.Printf("💡 Check when ready: prism connect %s\n", instanceName)
 	return nil
 }
 
@@ -798,7 +952,7 @@ func (ic *InstanceCommands) monitorResizeProgress(instanceName string) error {
 		switch instance.State {
 		case "running":
 			fmt.Printf("✅ Resize complete! Instance is running with new configuration.\n")
-			fmt.Printf("🔗 Connect: cws connect %s\n", instanceName)
+			fmt.Printf("🔗 Connect: prism connect %s\n", instanceName)
 			return nil
 		case "stopped", "stopping":
 			fmt.Printf("⏳ Instance stopping for resize... (%ds)\n", i*5)
@@ -814,6 +968,6 @@ func (ic *InstanceCommands) monitorResizeProgress(instanceName string) error {
 	}
 
 	fmt.Printf("⚠️  Resize monitoring timeout. Instance may still be resizing.\n")
-	fmt.Printf("💡 Check status with: cws list\n")
+	fmt.Printf("💡 Check status with: prism list\n")
 	return nil
 }

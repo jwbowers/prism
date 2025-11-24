@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/templates"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/templates"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
-// UniversalAMIResolver implements multi-tier AMI resolution for CloudWorkstation templates
+// UniversalAMIResolver implements multi-tier AMI resolution for Prism templates
 type UniversalAMIResolver struct {
 	// AWS clients
 	ec2Client EC2ClientInterface
@@ -375,11 +375,6 @@ type AMISearchCriteria struct {
 func (r *UniversalAMIResolver) searchAMIByCriteria(ctx context.Context, criteria *AMISearchCriteria) (*types.AMIInfo, error) {
 	// This would implement actual AWS EC2 DescribeImages call with filters
 	return nil, fmt.Errorf("dynamic AMI search not yet implemented")
-}
-
-func (r *UniversalAMIResolver) searchMarketplaceAMI(ctx context.Context, search *templates.MarketplaceSearchConfig, region string) (*types.AMIInfo, error) {
-	// This would implement AWS Marketplace API calls
-	return nil, fmt.Errorf("marketplace AMI search not yet implemented")
 }
 
 func (r *UniversalAMIResolver) copyAMIToRegion(ctx context.Context, ami *types.AMIInfo, sourceRegion, targetRegion string) (*types.AMIInfo, error) {

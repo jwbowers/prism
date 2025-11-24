@@ -134,6 +134,11 @@ func TestGetResearchUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			profileMgr := &MockProfileManager{}
 
+			// Configure mock to return profile error if specified
+			if tt.profileError != nil {
+				profileMgr.SetProfileError(tt.profileError)
+			}
+
 			config := &ResearchUserServiceConfig{
 				ConfigDir:  "/tmp/test-research",
 				ProfileMgr: profileMgr,

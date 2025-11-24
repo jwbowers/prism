@@ -107,33 +107,33 @@ build_binaries() {
         log_info "Building for Intel (amd64)..."
         GOOS=darwin GOARCH=amd64 make build-cli build-daemon
         mv bin/cws "$temp_dir/cws-amd64"
-        mv bin/cwsd "$temp_dir/cwsd-amd64"
+        mv bin/prismd "$temp_dir/cwsd-amd64"
         
         # Build GUI for Intel (if not dev build)
         if [[ "$DEV_BUILD" == false ]]; then
             GOOS=darwin GOARCH=amd64 make build-gui
-            mv bin/cws-gui "$temp_dir/cws-gui-amd64"
+            mv bin/prism-gui "$temp_dir/cws-gui-amd64"
         fi
         
         # Build for Apple Silicon
         log_info "Building for Apple Silicon (arm64)..."
         GOOS=darwin GOARCH=arm64 make build-cli build-daemon
         mv bin/cws "$temp_dir/cws-arm64"
-        mv bin/cwsd "$temp_dir/cwsd-arm64"
+        mv bin/prismd "$temp_dir/cwsd-arm64"
         
         # Build GUI for Apple Silicon (if not dev build)
         if [[ "$DEV_BUILD" == false ]]; then
             GOOS=darwin GOARCH=arm64 make build-gui
-            mv bin/cws-gui "$temp_dir/cws-gui-arm64"
+            mv bin/prism-gui "$temp_dir/cws-gui-arm64"
         fi
         
         # Create universal binaries
         mkdir -p bin
         lipo -create "$temp_dir/cws-amd64" "$temp_dir/cws-arm64" -output "bin/cws"
-        lipo -create "$temp_dir/cwsd-amd64" "$temp_dir/cwsd-arm64" -output "bin/cwsd"
+        lipo -create "$temp_dir/cwsd-amd64" "$temp_dir/cwsd-arm64" -output "bin/prismd"
         
         if [[ "$DEV_BUILD" == false ]]; then
-            lipo -create "$temp_dir/cws-gui-amd64" "$temp_dir/cws-gui-arm64" -output "bin/cws-gui"
+            lipo -create "$temp_dir/cws-gui-amd64" "$temp_dir/cws-gui-arm64" -output "bin/prism-gui"
         fi
         
         # Clean up temp directory
@@ -151,12 +151,12 @@ build_binaries() {
     fi
     
     # Verify binaries
-    if [[ ! -f "bin/cws" ]] || [[ ! -f "bin/cwsd" ]]; then
+    if [[ ! -f "bin/cws" ]] || [[ ! -f "bin/prismd" ]]; then
         log_error "Failed to build required binaries"
         exit 1
     fi
     
-    if [[ "$DEV_BUILD" == false ]] && [[ ! -f "bin/cws-gui" ]]; then
+    if [[ "$DEV_BUILD" == false ]] && [[ ! -f "bin/prism-gui" ]]; then
         log_error "Failed to build GUI binary"
         exit 1
     fi
@@ -180,9 +180,9 @@ create_app_bundle() {
     
     # Copy binaries
     cp "$PROJECT_ROOT/bin/cws" "$macos_path/"
-    cp "$PROJECT_ROOT/bin/cwsd" "$macos_path/"
+    cp "$PROJECT_ROOT/bin/prismd" "$macos_path/"
     if [[ "$DEV_BUILD" == false ]]; then
-        cp "$PROJECT_ROOT/bin/cws-gui" "$macos_path/"
+        cp "$PROJECT_ROOT/bin/prism-gui" "$macos_path/"
     fi
     
     # Create main launcher script
@@ -366,7 +366,7 @@ create_info_plist() {
     <string>CloudWorkstation</string>
     
     <key>CFBundleIdentifier</key>
-    <string>com.cloudworkstation.app</string>
+    <string>com.prism.app</string>
     
     <key>CFBundleVersion</key>
     <string>$VERSION</string>
@@ -475,7 +475,7 @@ create_app_icon() {
         # Generate a simple programmatic icon
         log_warning "No icon file found, generating simple icon"
         
-        local temp_icon="/tmp/cloudworkstation_temp_icon.png"
+        local temp_icon="/tmp/prism_temp_icon.png"
         
         # Create a simple icon using built-in tools
         python3 << 'PYTHON_EOF'
@@ -516,7 +516,7 @@ except:
     draw.text((center_x - 30, center_y + 20), "CW", fill='#1e40af')
 
 # Save
-img.save('/tmp/cloudworkstation_temp_icon.png')
+img.save('/tmp/prism_temp_icon.png')
 PYTHON_EOF
         
         if [[ ! -f "$temp_icon" ]]; then
@@ -697,14 +697,14 @@ SYSTEM REQUIREMENTS:
 • Internet connection
 
 SUPPORT:
-• Documentation: https://github.com/scttfrdmn/cloudworkstation
-• Issues: https://github.com/scttfrdmn/cloudworkstation/issues
+• Documentation: https://github.com/scttfrdmn/prism
+• Issues: https://github.com/scttfrdmn/prism/issues
 • User Guide: Open CloudWorkstation → Help → User Guide
 
 UNINSTALLATION:
 • Remove CloudWorkstation.app from Applications
-• Remove CLI tools: sudo rm /usr/local/bin/cws /usr/local/bin/cwsd
-• Remove preferences: ~/Library/Preferences/com.cloudworkstation.*
+• Remove CLI tools: sudo rm /usr/local/bin/cws /usr/local/bin/prismd
+• Remove preferences: ~/Library/Preferences/com.prism.*
 
 CloudWorkstation helps academic researchers launch pre-configured
 cloud workstations in seconds rather than spending hours setting
