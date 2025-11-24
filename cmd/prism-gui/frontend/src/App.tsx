@@ -9037,7 +9037,7 @@ export default function PrismApp() {
               {
                 type: "link",
                 text: "My Workspaces",
-                href: "/instances",
+                href: "/workspaces",
                 info: state.instances.length > 0 ?
                       <Badge color={state.instances.some(i => i.state === 'running') ? 'green' : 'grey'}>
                         {state.instances.length}
@@ -9058,6 +9058,11 @@ export default function PrismApp() {
                 type: "link",
                 text: "Projects",
                 href: "/projects"
+              },
+              {
+                type: "link",
+                text: "Users",
+                href: "/users"
               },
               {
                 type: "link",
