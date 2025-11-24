@@ -3499,7 +3499,7 @@ export default function PrismApp() {
             <Button onClick={loadApplicationData} disabled={state.loading}>
               {state.loading ? <Spinner /> : 'Refresh'}
             </Button>
-            <Button variant="primary">
+            <Button variant="primary" data-testid="create-project-button">
               Create Project
             </Button>
           </SpaceBetween>
@@ -3551,6 +3551,7 @@ export default function PrismApp() {
         }
       >
         <Table
+          data-testid="projects-table"
           columnDefinitions={[
             {
               id: "name",
@@ -3648,6 +3649,7 @@ export default function PrismApp() {
               header: "Actions",
               cell: (item: Project) => (
                 <ButtonDropdown
+                  data-testid={`project-actions-${item.id}`}
                   expandToViewport
                   items={[
                     { text: "View Details", id: "view" },
@@ -4153,7 +4155,7 @@ export default function PrismApp() {
             <Button onClick={loadApplicationData} disabled={state.loading}>
               {state.loading ? <Spinner /> : 'Refresh'}
             </Button>
-            <Button variant="primary">
+            <Button variant="primary" data-testid="create-user-button">
               Create User
             </Button>
           </SpaceBetween>
@@ -4205,6 +4207,7 @@ export default function PrismApp() {
         }
       >
         <Table
+          data-testid="users-table"
           columnDefinitions={[
             {
               id: "username",
@@ -4285,6 +4288,7 @@ export default function PrismApp() {
               header: "Actions",
               cell: (item: User) => (
                 <ButtonDropdown
+                  data-testid={`user-actions-${item.username}`}
                   expandToViewport
                   items={[
                     { text: "View Details", id: "view" },
@@ -4818,6 +4822,7 @@ export default function PrismApp() {
 
                     {/* Invitations Table */}
                     <Table
+                      data-testid="invitations-table"
                       columnDefinitions={[
                         {
                           id: 'project',
