@@ -1,4 +1,4 @@
-// Package cli implements user management commands for CloudWorkstation CLI.
+// Package cli implements user management commands for Prism CLI.
 //
 // This module provides comprehensive user management functionality including
 // user creation, SSH key management, and provisioning across instances.
@@ -13,10 +13,10 @@
 //
 // Examples:
 //
-//	cws user create alice
-//	cws user ssh-key generate alice
-//	cws user provision alice my-ml-instance
-//	cws user list
+//	prism user create alice
+//	prism user ssh-key generate alice
+//	prism user provision alice my-ml-instance
+//	prism user list
 package cli
 
 import (
@@ -27,9 +27,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/profile"
-	"github.com/scttfrdmn/cloudworkstation/pkg/research"
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/profile"
+	"github.com/scttfrdmn/prism/pkg/research"
+	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +43,7 @@ type UserCommands struct {
 func NewUserCommands(app *App) *UserCommands {
 	// Initialize user service with full functionality
 	homeDir, _ := os.UserHomeDir()
-	configDir := filepath.Join(homeDir, ".cloudworkstation")
+	configDir := filepath.Join(homeDir, ".prism")
 
 	// Create profile manager adapter
 	profileAdapter := &CLIProfileManagerAdapter{manager: app.profileManager}
@@ -79,17 +79,17 @@ func (r *UserCommands) createMainCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "user",
 		Short: "Manage users with persistent identity across instances",
-		Long: `Manage users with persistent identity across CloudWorkstation workspaces.
+		Long: `Manage users with persistent identity across Prism workspaces.
 
 Users provide consistent UID/GID mapping, SSH key management, and EFS home
 directories that persist across different template environments. This enables seamless
 collaboration and workflow continuity.
 
 Examples:
-  cws user create alice              # Create user 'alice'
-  cws user list                      # List all users
-  cws user ssh-key generate alice   # Generate SSH keys for alice
-  cws user provision alice my-instance # Provision alice on workspace`,
+  prism user create alice              # Create user 'alice'
+  prism user list                      # List all users
+  prism user ssh-key generate alice   # Generate SSH keys for alice
+  prism user provision alice my-instance # Provision alice on workspace`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
@@ -122,11 +122,11 @@ func (r *UserCommands) createCreateCommand() *cobra.Command {
 		Long: `Create a new user with consistent UID/GID across instances.
 
 The user will be assigned a deterministic UID/GID based on your profile,
-ensuring consistent file ownership across all CloudWorkstation workspaces.
+ensuring consistent file ownership across all Prism workspaces.
 
 Examples:
-  cws user create alice
-  cws user create bob --full-name "Bob Smith" --email bob@university.edu`,
+  prism user create alice
+  prism user create bob --full-name "Bob Smith" --email bob@university.edu`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			username := args[0]
@@ -180,8 +180,8 @@ Examples:
 			fmt.Printf("   Docker Access: %t\n", user.DockerAccess)
 
 			fmt.Printf("\n💡 Next Steps:\n")
-			fmt.Printf("   1. Generate SSH keys: cws user ssh-key generate %s\n", username)
-			fmt.Printf("   2. Provision on workspace: cws user provision %s <workspace-name>\n", username)
+			fmt.Printf("   1. Generate SSH keys: prism user ssh-key generate %s\n", username)
+			fmt.Printf("   2. Provision on workspace: prism user provision %s <workspace-name>\n", username)
 
 			return nil
 		},
@@ -203,7 +203,7 @@ func (r *UserCommands) createListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List users for the current profile",
-		Long: `List all users configured for the current CloudWorkstation profile.
+		Long: `List all users configured for the current Prism profile.
 
 Shows username, UID, creation date, and SSH key status for each user.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -220,7 +220,7 @@ Shows username, UID, creation date, and SSH key status for each user.`,
 
 			if len(users) == 0 {
 				fmt.Printf("📭 No users found for current profile.\n\n")
-				fmt.Printf("💡 Create a user: cws user create <username>\n")
+				fmt.Printf("💡 Create a user: prism user create <username>\n")
 				return nil
 			}
 
@@ -322,7 +322,7 @@ func (r *UserCommands) createSSHKeyGenerateCommand() *cobra.Command {
 		Long: `Generate a new SSH key pair for the specified user.
 
 Keys are generated using Ed25519 (recommended) or RSA algorithms and stored
-securely in the CloudWorkstation configuration directory.`,
+securely in the Prism configuration directory.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			username := args[0]
@@ -348,7 +348,7 @@ securely in the CloudWorkstation configuration directory.`,
 				fmt.Printf("   Size: %d bits\n", keySize)
 			}
 			fmt.Printf("   Private key length: %d bytes\n", len(privateKey))
-			fmt.Printf("\n💡 Keys are stored in: ~/.cloudworkstation/ssh-keys/%s/\n", username)
+			fmt.Printf("\n💡 Keys are stored in: ~/.prism/ssh-keys/%s/\n", username)
 
 			return nil
 		},
@@ -429,8 +429,8 @@ func (r *UserCommands) createProvisionCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "provision <username> <workspace-name>",
-		Short: "Provision user on CloudWorkstation workspace",
-		Long: `Provision a user on a running CloudWorkstation workspace.
+		Short: "Provision user on Prism workspace",
+		Long: `Provision a user on a running Prism workspace.
 
 This will:
 - Create the user with consistent UID/GID
@@ -462,7 +462,7 @@ func (r *UserCommands) createStatusCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status <username>",
 		Short: "Show user status across instances",
-		Long: `Show the status of a user across all CloudWorkstation workspaces.
+		Long: `Show the status of a user across all Prism workspaces.
 
 Displays where the user is provisioned, SSH key status, and EFS mount information.`,
 		Args: cobra.ExactArgs(1),
@@ -633,8 +633,8 @@ func (r *UserCommands) outputUsersAsTable(users []*research.ResearchUserConfig) 
 	_ = w.Flush()
 
 	fmt.Printf("\n💡 Usage:\n")
-	fmt.Printf("   cws user status <username>     # Detailed user status\n")
-	fmt.Printf("   cws user provision <username> <workspace>  # Provision on workspace\n")
+	fmt.Printf("   prism user status <username>     # Detailed user status\n")
+	fmt.Printf("   prism user provision <username> <workspace>  # Provision on workspace\n")
 
 	return nil
 }

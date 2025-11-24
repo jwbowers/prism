@@ -18,9 +18,9 @@ log() {
 
 # Installation paths
 INSTALL_PREFIX="/usr/local"
-DAEMON_PATH="$INSTALL_PREFIX/bin/cwsd"
+DAEMON_PATH="$INSTALL_PREFIX/bin/prismd"
 CLI_PATH="$INSTALL_PREFIX/bin/cws"
-SERVICE_MANAGER="$INSTALL_PREFIX/share/cloudworkstation/macos-service-manager.sh"
+SERVICE_MANAGER="$INSTALL_PREFIX/share/prism/macos-service-manager.sh"
 
 # Check if binaries were installed
 check_installation() {
@@ -55,10 +55,10 @@ create_directories() {
     log "Creating necessary directories..."
     
     # User configuration directory
-    mkdir -p "$HOME/.cloudworkstation"
+    mkdir -p "$HOME/.prism"
     
     # User log directory
-    mkdir -p "$HOME/Library/Logs/cloudworkstation"
+    mkdir -p "$HOME/Library/Logs/prism"
     
     green "✅ Created user directories"
 }
@@ -95,8 +95,8 @@ show_completion() {
     echo "  • CloudWorkstation CLI: $CLI_PATH"
     echo "  • CloudWorkstation Daemon: $DAEMON_PATH"
     echo "  • Service Manager: $SERVICE_MANAGER"
-    echo "  • Configuration: $HOME/.cloudworkstation/"
-    echo "  • Logs: $HOME/Library/Logs/cloudworkstation/"
+    echo "  • Configuration: $HOME/.prism/"
+    echo "  • Logs: $HOME/Library/Logs/prism/"
     echo
     blue "🚀 Getting Started:"
     echo "  cws --help                    # Show CLI help"

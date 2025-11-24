@@ -6,21 +6,37 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/aws"
+	"github.com/scttfrdmn/prism/pkg/aws"
 )
 
 // createAWSManagerFromRequest creates a new AWS manager from the request context
 func (s *Server) createAWSManagerFromRequest(r *http.Request) (*aws.Manager, error) {
 	// Get AWS credentials from request context
 	options := aws.ManagerOptions{}
+	hasProfile := false
+	hasRegion := false
+
 	if profile := getAWSProfile(r.Context()); profile != "" {
 		options.Profile = profile
+		hasProfile = true
 	}
 	if region := getAWSRegion(r.Context()); region != "" {
 		options.Region = region
+		hasRegion = true
 	}
 
-	// Create AWS manager with credentials
+	// If no profile/region in request context, use daemon's initialized manager
+	// This allows daemon to respect environment variables (AWS_PROFILE, AWS_REGION)
+	// when clients don't send explicit credentials in HTTP headers
+	if !hasProfile && !hasRegion {
+		if s.awsManager != nil {
+			log.Printf("No AWS credentials in request headers, using daemon's initialized manager")
+			return s.awsManager, nil
+		}
+		log.Printf("No AWS credentials in request headers and daemon manager not initialized, using AWS SDK defaults")
+	}
+
+	// Create AWS manager with credentials from request headers
 	return aws.NewManager(options)
 }
 

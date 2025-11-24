@@ -32,13 +32,13 @@ func NewStorageCobraCommands(app *App) *StorageCobraCommands {
 func (sc *StorageCobraCommands) CreateStorageCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "storage",
-		Short: "Manage CloudWorkstation storage (all types)",
+		Short: "Manage Prism storage (all types)",
 		Long: `Manage all storage types (workspace and shared).
 
-'cws storage list' shows all storage volumes (both workspace EBS and shared EFS).
-'cws storage create' creates workspace storage (EBS volumes).
+'prism storage list' shows all storage volumes (both workspace EBS and shared EFS).
+'prism storage create' creates workspace storage (EBS volumes).
 
-For shared storage (EFS), use 'cws volume' commands.`,
+For shared storage (EFS), use 'prism volume' commands.`,
 	}
 
 	// Create commands separately to add flags
@@ -81,7 +81,7 @@ For shared storage (EFS), use 'cws volume' commands.`,
 	cmd.AddCommand(
 		createCmd,
 		&cobra.Command{
-			Use:   "attach <volume> <instance>",
+			Use:   "attach <volume> <workspace>",
 			Short: "Attach volume to instance",
 			Args:  cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -111,6 +111,45 @@ For shared storage (EFS), use 'cws volume' commands.`,
 				return sc.app.Storage([]string{"info", args[0]})
 			},
 		},
+		&cobra.Command{
+			Use:   "upload <local-file> <s3-bucket> <s3-key>",
+			Short: "Upload file to S3 with progress tracking",
+			Args:  cobra.ExactArgs(3),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"upload", args[0], args[1], args[2]})
+			},
+		},
+		&cobra.Command{
+			Use:   "download <s3-bucket> <s3-key> <local-file>",
+			Short: "Download file from S3 with progress tracking",
+			Args:  cobra.ExactArgs(3),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"download", args[0], args[1], args[2]})
+			},
+		},
+		&cobra.Command{
+			Use:   "transfers",
+			Short: "List active file transfers",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"transfers"})
+			},
+		},
+		&cobra.Command{
+			Use:   "transfer <transfer-id>",
+			Short: "Show transfer status",
+			Args:  cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"transfer", args[0]})
+			},
+		},
+		&cobra.Command{
+			Use:   "cancel <transfer-id>",
+			Short: "Cancel an active transfer",
+			Args:  cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return sc.app.Storage([]string{"cancel", args[0]})
+			},
+		},
 		deleteCmd,
 	)
 
@@ -127,7 +166,7 @@ func (sc *StorageCobraCommands) CreateVolumeCommand() *cobra.Command {
 Shared storage can be mounted to multiple workspaces simultaneously,
 making it ideal for collaborative projects and shared datasets.
 
-Use 'cws storage' for local storage (EBS volumes).`,
+Use 'prism storage' for local storage (EBS volumes).`,
 	}
 
 	// Create command with flags
@@ -170,7 +209,7 @@ Use 'cws storage' for local storage (EBS volumes).`,
 			},
 		},
 		&cobra.Command{
-			Use:   "mount <volume> <instance> [mount-point]",
+			Use:   "mount <volume> <workspace> [mount-point]",
 			Short: "Mount volume to instance",
 			Args:  cobra.RangeArgs(2, 3),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -182,7 +221,7 @@ Use 'cws storage' for local storage (EBS volumes).`,
 			},
 		},
 		&cobra.Command{
-			Use:   "unmount <volume> <instance>",
+			Use:   "unmount <volume> <workspace>",
 			Short: "Unmount volume from instance",
 			Args:  cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {

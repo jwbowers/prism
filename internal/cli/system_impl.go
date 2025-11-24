@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/version"
+	"github.com/scttfrdmn/prism/pkg/version"
 )
 
 // SystemCommands handles all system and daemon-related operations
@@ -43,7 +43,7 @@ func NewSystemCommands(app *App) *SystemCommands {
 // Daemon handles daemon management commands
 func (s *SystemCommands) Daemon(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("cws daemon <action>", "cws daemon start")
+		return NewUsageError("prism daemon <action>", "prism daemon start")
 	}
 
 	action := args[0]
@@ -96,11 +96,11 @@ func (s *SystemCommands) daemonStart() error {
 
 	// Message already printed by auto-start caller
 
-	// Find cwsd binary - try same directory as cws first, then PATH
-	cwsdPath := findCwsdBinary()
+	// Find prismd binary - try same directory as prism first, then PATH
+	prismdPath := findPrismdBinary()
 
 	// Start daemon in the background
-	cmd := exec.Command(cwsdPath)
+	cmd := exec.Command(prismdPath)
 	if err := cmd.Start(); err != nil {
 		return WrapAPIError("start daemon process", err)
 	}
@@ -166,7 +166,7 @@ func (s *SystemCommands) daemonStop() error {
 	if err := s.app.apiClient.Shutdown(s.app.ctx); err != nil {
 		fmt.Println("❌ Failed to stop daemon via API:", err)
 		fmt.Println("Find the daemon process and stop it manually:")
-		fmt.Println("  ps aux | grep cwsd")
+		fmt.Println("  ps aux | grep prismd")
 		fmt.Println("  kill <PID>")
 		return err
 	}
@@ -179,7 +179,7 @@ func (s *SystemCommands) daemonStatus() error {
 	// Check if daemon is running
 	if err := s.app.apiClient.Ping(s.app.ctx); err != nil {
 		fmt.Println("❌ Daemon is not running")
-		fmt.Println("Start with: cws daemon start")
+		fmt.Println("Start with: prism daemon start")
 		return nil
 	}
 
@@ -234,7 +234,7 @@ func (s *SystemCommands) daemonLogs() error {
 	}
 
 	fmt.Println("💡 To view specific instance logs:")
-	fmt.Println("   cws logs <workspace-name>")
+	fmt.Println("   prism logs <workspace-name>")
 
 	return nil
 }
@@ -264,7 +264,7 @@ func (s *SystemCommands) daemonConfigShow() error {
 		return fmt.Errorf("failed to load daemon configuration: %w", err)
 	}
 
-	fmt.Printf("🔧 CloudWorkstation Daemon Configuration\n\n")
+	fmt.Printf("🔧 Prism Daemon Configuration\n\n")
 	fmt.Printf("Instance Retention:\n")
 	if daemonConfig.InstanceRetentionMinutes == 0 {
 		fmt.Printf("  • Retention Period: ♾️  Indefinite (until AWS removes instances)\n")
@@ -278,8 +278,8 @@ func (s *SystemCommands) daemonConfigShow() error {
 	fmt.Printf("  • Port: %s\n", daemonConfig.Port)
 
 	fmt.Printf("\n💡 Configuration Commands:\n")
-	fmt.Printf("  cws daemon config set retention <minutes>  # Set retention period (0=indefinite)\n")
-	fmt.Printf("  cws daemon config reset                     # Reset to defaults (5 minutes)\n")
+	fmt.Printf("  prism daemon config set retention <minutes>  # Set retention period (0=indefinite)\n")
+	fmt.Printf("  prism daemon config reset                     # Reset to defaults (5 minutes)\n")
 
 	return nil
 }
@@ -287,7 +287,7 @@ func (s *SystemCommands) daemonConfigShow() error {
 // daemonConfigSet sets daemon configuration values
 func (s *SystemCommands) daemonConfigSet(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: cws daemon config set <setting> <value>\nAvailable settings: retention")
+		return fmt.Errorf("usage: prism daemon config set <setting> <value>\nAvailable settings: retention")
 	}
 
 	setting := args[0]
@@ -326,7 +326,7 @@ func (s *SystemCommands) daemonConfigSet(args []string) error {
 			fmt.Printf("   Terminated instances will be cleaned up after %d minutes\n", retentionMinutes)
 		}
 
-		fmt.Printf("\n⚠️  Changes take effect after daemon restart: cws daemon stop && cws daemon start\n")
+		fmt.Printf("\n⚠️  Changes take effect after daemon restart: prism daemon stop && prism daemon start\n")
 
 	default:
 		return fmt.Errorf("unknown setting: %s\nAvailable settings: retention", setting)
@@ -347,7 +347,7 @@ func (s *SystemCommands) daemonConfigReset() error {
 	fmt.Printf("   Instance retention: %d minutes\n", defaultConfig.InstanceRetentionMinutes)
 	fmt.Printf("   Port: %s\n", defaultConfig.Port)
 
-	fmt.Printf("\n⚠️  Changes take effect after daemon restart: cws daemon stop && cws daemon start\n")
+	fmt.Printf("\n⚠️  Changes take effect after daemon restart: prism daemon stop && prism daemon start\n")
 
 	return nil
 }
@@ -435,7 +435,7 @@ func (s *SystemCommands) getDaemonConfigPath() string {
 
 // daemonProcesses lists all daemon processes
 func (s *SystemCommands) daemonProcesses() error {
-	fmt.Println("🔍 Scanning for CloudWorkstation daemon processes...")
+	fmt.Println("🔍 Scanning for Prism daemon processes...")
 
 	// Make API call to get daemon processes
 	response, err := s.app.apiClient.MakeRequest("GET", "/api/v1/daemon/processes", nil)
@@ -484,8 +484,8 @@ func (s *SystemCommands) daemonProcesses() error {
 	}
 
 	fmt.Printf("💡 Management Commands:\n")
-	fmt.Printf("  cws daemon stop      # Graceful shutdown\n")
-	fmt.Printf("  cws daemon cleanup   # Force cleanup all processes\n")
+	fmt.Printf("  prism daemon stop      # Graceful shutdown\n")
+	fmt.Printf("  prism daemon cleanup   # Force cleanup all processes\n")
 
 	return nil
 }
@@ -493,7 +493,7 @@ func (s *SystemCommands) daemonProcesses() error {
 // directProcessScan performs direct process scanning when daemon API is unavailable
 func (s *SystemCommands) directProcessScan() error {
 	// Use system commands to find processes
-	cmd := exec.Command("pgrep", "-f", "cwsd")
+	cmd := exec.Command("pgrep", "-f", "prismd")
 	output, err := cmd.Output()
 	if err != nil {
 		// pgrep returns exit code 1 when no processes found
@@ -531,8 +531,8 @@ func (s *SystemCommands) directProcessScan() error {
 	}
 
 	fmt.Printf("💡 Management Commands:\n")
-	fmt.Printf("  cws daemon stop      # Graceful shutdown\n")
-	fmt.Printf("  cws daemon cleanup   # Force cleanup all processes\n")
+	fmt.Printf("  prism daemon stop      # Graceful shutdown\n")
+	fmt.Printf("  prism daemon cleanup   # Force cleanup all processes\n")
 	fmt.Printf("  kill -TERM <pid>     # Manual graceful termination\n")
 	fmt.Printf("  kill -KILL <pid>     # Manual force termination\n")
 
@@ -552,29 +552,29 @@ func (s *SystemCommands) daemonCleanup(args []string) error {
 		case "--yes", "-y":
 			confirmed = true
 		case "--help", "-h":
-			fmt.Printf("Usage: cws daemon cleanup [OPTIONS]\n\n")
+			fmt.Printf("Usage: prism daemon cleanup [OPTIONS]\n\n")
 			fmt.Printf("Options:\n")
 			fmt.Printf("  --force    Force kill processes instead of graceful shutdown\n")
 			fmt.Printf("  --yes, -y  Skip confirmation prompts\n")
 			fmt.Printf("  --help, -h Show this help message\n\n")
 			fmt.Printf("Description:\n")
-			fmt.Printf("  Performs comprehensive cleanup of all CloudWorkstation daemon processes\n")
+			fmt.Printf("  Performs comprehensive cleanup of all Prism daemon processes\n")
 			fmt.Printf("  and related files. This is useful for troubleshooting or uninstallation.\n\n")
 			fmt.Printf("Examples:\n")
-			fmt.Printf("  cws daemon cleanup           # Interactive cleanup with confirmations\n")
-			fmt.Printf("  cws daemon cleanup --yes     # Non-interactive cleanup\n")
-			fmt.Printf("  cws daemon cleanup --force   # Force kill all processes\n")
+			fmt.Printf("  prism daemon cleanup           # Interactive cleanup with confirmations\n")
+			fmt.Printf("  prism daemon cleanup --yes     # Non-interactive cleanup\n")
+			fmt.Printf("  prism daemon cleanup --force   # Force kill all processes\n")
 			return nil
 		default:
 			return fmt.Errorf("unknown cleanup option: %s\nUse --help for usage information", arg)
 		}
 	}
 
-	fmt.Println("🧹 CloudWorkstation Daemon Cleanup")
+	fmt.Println("🧹 Prism Daemon Cleanup")
 	fmt.Println("====================================")
 
 	// Check for running processes first
-	cmd := exec.Command("pgrep", "-f", "cwsd")
+	cmd := exec.Command("pgrep", "-f", "prismd")
 	output, err := cmd.Output()
 	processCount := 0
 	if err == nil {
@@ -599,7 +599,7 @@ func (s *SystemCommands) daemonCleanup(args []string) error {
 	// Confirmation prompt
 	if !confirmed {
 		fmt.Println("\nThis will:")
-		fmt.Printf("  • Stop all CloudWorkstation daemon processes (%d found)\n", processCount)
+		fmt.Printf("  • Stop all Prism daemon processes (%d found)\n", processCount)
 		fmt.Println("  • Clean up daemon configuration files")
 		fmt.Println("  • Remove process ID files and locks")
 		fmt.Print("\nContinue with cleanup? [y/N]: ")
@@ -636,7 +636,7 @@ func (s *SystemCommands) daemonCleanup(args []string) error {
 	} else {
 		fmt.Println("⚠️  Some processes may still be running")
 		fmt.Println("💡 You may need to manually kill remaining processes:")
-		fmt.Println("   ps aux | grep cwsd")
+		fmt.Println("   ps aux | grep prismd")
 		fmt.Println("   kill <PID>")
 	}
 
@@ -687,8 +687,8 @@ func (s *SystemCommands) performAPICleanup(forceKill bool) bool {
 
 // performDirectCleanup performs direct process cleanup when API is unavailable
 func (s *SystemCommands) performDirectCleanup(forceKill bool) error {
-	// Find all cwsd processes
-	cmd := exec.Command("pgrep", "-f", "cwsd")
+	// Find all prismd processes
+	cmd := exec.Command("pgrep", "-f", "prismd")
 	output, err := cmd.Output()
 	if err != nil {
 		// No processes found
@@ -755,7 +755,7 @@ func (s *SystemCommands) cleanupDaemonFiles() {
 		return
 	}
 
-	configDir := filepath.Join(homeDir, ".cloudworkstation")
+	configDir := filepath.Join(homeDir, ".prism")
 	filesToRemove := []string{
 		filepath.Join(configDir, "daemon.pid"),
 		filepath.Join(configDir, "daemon_registry.json"),
@@ -781,25 +781,25 @@ func (s *SystemCommands) cleanupDaemonFiles() {
 	}
 }
 
-// findCwsdBinary finds the cwsd binary, trying same directory as cws first, then PATH
-func findCwsdBinary() string {
-	// Get the path of the current executable (cws)
-	cwsPath, err := os.Executable()
+// findPrismdBinary finds the prismd binary, trying same directory as prism first, then PATH
+func findPrismdBinary() string {
+	// Get the path of the current executable (prism)
+	prismPath, err := os.Executable()
 	if err == nil {
-		// Try cwsd in the same directory as cws
-		cwsDir := filepath.Dir(cwsPath)
-		cwsdInSameDir := filepath.Join(cwsDir, "cwsd")
-		if _, err := os.Stat(cwsdInSameDir); err == nil {
-			return cwsdInSameDir
+		// Try prismd in the same directory as prism
+		prismDir := filepath.Dir(prismPath)
+		prismdInSameDir := filepath.Join(prismDir, "prismd")
+		if _, err := os.Stat(prismdInSameDir); err == nil {
+			return prismdInSameDir
 		}
 	}
 
 	// Fall back to looking in PATH
-	cwsdPath, err := exec.LookPath("cwsd")
+	prismdPath, err := exec.LookPath("prismd")
 	if err == nil {
-		return cwsdPath
+		return prismdPath
 	}
 
-	// If nothing found, return "cwsd" and let exec.Command handle the error
-	return "cwsd"
+	// If nothing found, return "prismd" and let exec.Command handle the error
+	return "prismd"
 }

@@ -19,7 +19,7 @@ func (ac *AMICobraCommands) CreateAMICommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ami",
 		Short: "Manage AMIs for fast workspace launching",
-		Long: `Build, manage, and deploy AMIs for faster CloudWorkstation deployments.
+		Long: `Build, manage, and deploy AMIs for faster Prism deployments.
 
 AMIs enable fast launching by pre-building template environments, reducing
 launch times from 5-8 minutes to under 30 seconds.`,
@@ -51,7 +51,7 @@ func (ac *AMICobraCommands) createBuildCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "build <template-name>",
 		Short: "Build a new AMI from a template",
-		Long: `Build a new AMI from a CloudWorkstation template for faster launching.
+		Long: `Build a new AMI from a Prism template for faster launching.
 
 This creates a pre-configured AMI that reduces launch times from 5-8 minutes
 to under 30 seconds for subsequent launches.`,
@@ -147,8 +147,8 @@ func (ac *AMICobraCommands) createPublishCommand() *cobra.Command {
 func (ac *AMICobraCommands) createSaveCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "save <workspace-name> <ami-name>",
-		Short: "Save instance as AMI",
-		Long:  `Save a running instance as an AMI for faster future launches.`,
+		Short: "Save workspace as AMI",
+		Long:  `Save a running workspace as an AMI for faster future launches.`,
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return ac.app.AMI([]string{"save", args[0], args[1]})
@@ -172,7 +172,7 @@ func (ac *AMICobraCommands) createTestCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "test <ami-id>",
 		Short: "Test AMI functionality",
-		Long:  `Test an AMI by launching a temporary instance and validating functionality.`,
+		Long:  `Test an AMI by launching a temporary workspace and validating functionality.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return ac.app.AMI([]string{"test", args[0]})

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // ActionExecutor defines the interface for executing budget auto actions
@@ -68,7 +68,7 @@ func NewBudgetTracker() (*BudgetTracker, error) {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	stateDir := filepath.Join(homeDir, ".cloudworkstation")
+	stateDir := filepath.Join(homeDir, ".prism")
 	budgetPath := filepath.Join(stateDir, "budget_data.json")
 
 	costCalculator := &CostCalculator{}
@@ -544,7 +544,7 @@ func (bt *BudgetTracker) triggerAlert(projectID string, budgetData *ProjectBudge
 
 // executeAutoAction performs automatic budget actions
 func (bt *BudgetTracker) executeAutoAction(projectID string, budgetData *ProjectBudgetData, action types.BudgetAutoAction, actionAlertType types.BudgetAlertType) {
-	actionErr, actionMessage := bt.performActionExecution(projectID, action)
+	actionMessage, actionErr := bt.performActionExecution(projectID, action)
 
 	actionEvent := AlertEvent{
 		Timestamp:   time.Now(),
@@ -558,10 +558,10 @@ func (bt *BudgetTracker) executeAutoAction(projectID string, budgetData *Project
 }
 
 // performActionExecution executes the specific action type
-func (bt *BudgetTracker) performActionExecution(projectID string, action types.BudgetAutoAction) (error, string) {
+func (bt *BudgetTracker) performActionExecution(projectID string, action types.BudgetAutoAction) (string, error) {
 	if bt.actionExecutor == nil {
 		fmt.Printf("Warning: Budget auto action executor not set, skipping action %s for project %s\n", action.Action, projectID)
-		return nil, fmt.Sprintf("Auto action skipped: %s at %.1f%% budget (no executor)", action.Action, action.Threshold*100)
+		return fmt.Sprintf("Auto action skipped: %s at %.1f%% budget (no executor)", action.Action, action.Threshold*100), nil
 	}
 
 	switch action.Action {
@@ -572,35 +572,35 @@ func (bt *BudgetTracker) performActionExecution(projectID string, action types.B
 	case types.BudgetActionPreventLaunch:
 		return bt.executePreventLaunchAction(projectID, action.Threshold)
 	case types.BudgetActionNotifyOnly:
-		return nil, fmt.Sprintf("Budget notification: %.1f%% budget reached", action.Threshold*100)
+		return fmt.Sprintf("Budget notification: %.1f%% budget reached", action.Threshold*100), nil
 	default:
 		err := fmt.Errorf("unknown action type: %s", action.Action)
-		return err, fmt.Sprintf("Auto action failed: unknown action %s at %.1f%% budget", action.Action, action.Threshold*100)
+		return fmt.Sprintf("Auto action failed: unknown action %s at %.1f%% budget", action.Action, action.Threshold*100), err
 	}
 }
 
 // executeHibernateAllAction performs hibernate all instances action
-func (bt *BudgetTracker) executeHibernateAllAction(projectID string, threshold float64) (error, string) {
+func (bt *BudgetTracker) executeHibernateAllAction(projectID string, threshold float64) (string, error) {
 	if err := bt.actionExecutor.ExecuteHibernateAll(projectID); err != nil {
-		return err, fmt.Sprintf("Auto action failed: hibernate_all at %.1f%% budget - %v", threshold*100, err)
+		return fmt.Sprintf("Auto action failed: hibernate_all at %.1f%% budget - %v", threshold*100, err), err
 	}
-	return nil, fmt.Sprintf("Auto action executed: hibernated all instances at %.1f%% budget", threshold*100)
+	return fmt.Sprintf("Auto action executed: hibernated all instances at %.1f%% budget", threshold*100), nil
 }
 
 // executeStopAllAction performs stop all instances action
-func (bt *BudgetTracker) executeStopAllAction(projectID string, threshold float64) (error, string) {
+func (bt *BudgetTracker) executeStopAllAction(projectID string, threshold float64) (string, error) {
 	if err := bt.actionExecutor.ExecuteStopAll(projectID); err != nil {
-		return err, fmt.Sprintf("Auto action failed: stop_all at %.1f%% budget - %v", threshold*100, err)
+		return fmt.Sprintf("Auto action failed: stop_all at %.1f%% budget - %v", threshold*100, err), err
 	}
-	return nil, fmt.Sprintf("Auto action executed: stopped all instances at %.1f%% budget", threshold*100)
+	return fmt.Sprintf("Auto action executed: stopped all instances at %.1f%% budget", threshold*100), nil
 }
 
 // executePreventLaunchAction performs prevent launch action
-func (bt *BudgetTracker) executePreventLaunchAction(projectID string, threshold float64) (error, string) {
+func (bt *BudgetTracker) executePreventLaunchAction(projectID string, threshold float64) (string, error) {
 	if err := bt.actionExecutor.ExecutePreventLaunch(projectID); err != nil {
-		return err, fmt.Sprintf("Auto action failed: prevent_launch at %.1f%% budget - %v", threshold*100, err)
+		return fmt.Sprintf("Auto action failed: prevent_launch at %.1f%% budget - %v", threshold*100, err), err
 	}
-	return nil, fmt.Sprintf("Auto action executed: prevented new launches at %.1f%% budget", threshold*100)
+	return fmt.Sprintf("Auto action executed: prevented new launches at %.1f%% budget", threshold*100), nil
 }
 
 func (bt *BudgetTracker) getActiveAlerts(budgetData *ProjectBudgetData) []string {
@@ -821,7 +821,7 @@ func (bt *BudgetTracker) sendEmailAlert(projectID string, alertEvent AlertEvent,
 	// Supports: SMTP, SendGrid, Mailgun, AWS SES via API
 
 	subject := fmt.Sprintf("🚨 Budget Alert: Project %s (%s)", projectID, alertEvent.AlertType)
-	body := fmt.Sprintf(`CloudWorkstation Budget Alert
+	body := fmt.Sprintf(`Prism Budget Alert
 
 Project: %s
 Current Spending: $%.2f
@@ -829,7 +829,7 @@ Budget Threshold: %.1f%% reached
 Alert Type: %s
 Timestamp: %s
 
-This is an automated alert from CloudWorkstation budget tracking system.
+This is an automated alert from Prism budget tracking system.
 `, projectID, alertEvent.SpentAmount, alertEvent.Threshold*100, alertEvent.AlertType, alertEvent.Timestamp.Format("2006-01-02 15:04:05"))
 
 	// Check for email webhook URL in environment (e.g., SendGrid, Mailgun API)
@@ -1009,7 +1009,7 @@ func (bt *BudgetTracker) sendWebhookAlert(projectID string, alertEvent AlertEven
 		}
 
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("User-Agent", "CloudWorkstation/0.5.1")
+		req.Header.Set("User-Agent", "Prism/0.5.1")
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {

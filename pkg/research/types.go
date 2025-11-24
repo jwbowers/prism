@@ -1,4 +1,4 @@
-// Package research provides the multi-user foundation for CloudWorkstation Phase 5A.
+// Package research provides the multi-user foundation for Prism Phase 5A.
 //
 // This package implements the research user architecture with dual-user system
 // supporting both system users (from templates) and research users (persistent
@@ -6,6 +6,7 @@
 package research
 
 import (
+	"sync"
 	"time"
 )
 
@@ -125,6 +126,9 @@ type ResearchUserManager struct {
 
 	// Storage
 	configPath string // Where research user configs are stored
+
+	// Concurrency control
+	mu sync.RWMutex // Protects file operations
 }
 
 // ProfileManager interface for integration with existing profile system

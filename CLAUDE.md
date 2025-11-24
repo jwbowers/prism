@@ -4,18 +4,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Cloud Workstation Platform - Claude Development Context
 
-## ⚠️ **IMPORTANT: Project Rename in v0.5.6**
-**This project will be renamed from "CloudWorkStation" to "Prism" in v0.5.6 (Q4 2025 - Q1 2026)**
-
-- **New Project Name**: Prism
-- **New Binaries**: `prism`, `prismd`, `prism-gui` (replacing `cws`, `cwsd`, `cws-gui`)
-- **New Repository**: `github.com/scttfrdmn/prism` (from `github.com/scttfrdmn/cloudworkstation`)
-- **New Config Directory**: `~/.prism` (from `~/.cloudworkstation`)
-- **Automatic Migration**: User data automatically migrated on first v0.5.6 launch
-- **See Issue #65** for complete implementation plan
-
-Until v0.5.6 is released, continue using "CloudWorkStation" terminology and binary names.
-
 ## Project Overview
 
 This is a command-line tool that provides academic researchers with pre-configured cloud workstations, eliminating the need for manual environment configuration.
@@ -26,7 +14,7 @@ These principles guide every design decision and feature implementation:
 
 ### 🎯 **Default to Success**
 Every template must work out of the box in every supported region. No configuration should be required for basic usage.
-- `cws launch python-ml my-project` should always work
+- `prism launch python-ml my-project` should always work
 - Smart fallbacks handle regional/architecture limitations transparently
 - Templates include battle-tested defaults for their specific use cases
 
@@ -59,294 +47,28 @@ Users should never be surprised by what they get - clear communication about wha
 
 ### 📈 **Progressive Disclosure**
 Simple by default, detailed when needed. Power users can access advanced features without cluttering basic workflows.
-- Basic: `cws launch template-name project-name`
-- Intermediate: `cws launch template-name project-name --size L`
-- Advanced: `cws launch template-name project-name --instance-type c5.2xlarge --spot`
+- Basic: `prism launch template-name project-name`
+- Intermediate: `prism launch template-name project-name --size L`
+- Advanced: `prism launch template-name project-name --instance-type c5.2xlarge --spot`
 - Expert: Full template customization and regional optimization
 
-## Current Status: Production-Ready Enterprise Platform (Phase 4.6 COMPLETE)
+## Current Status
 
-**Phase 1 COMPLETED**: Distributed Architecture (daemon + CLI client)
-**Phase 2 COMPLETED**: Multi-modal access with CLI/TUI/GUI parity
-**Phase 3 COMPLETED**: Comprehensive cost optimization with hibernation ecosystem
-**Phase 4 COMPLETED**: Project-based budget management and enterprise features
-**Phase 4.6 COMPLETED**: Professional AWS-native Cloudscape GUI migration
-**Phase 5A COMPLETED**: Multi-user research foundation with persistent identity
+**Production-Ready Enterprise Platform** (Phase 5 - November 2025)
+- Multi-modal access: CLI, TUI, GUI with full feature parity
+- Distributed architecture: Backend daemon (prismd) + client interfaces
+- AWS-native: Cloudscape Design System for GUI
 
-**🎉 PHASE 4 COMPLETE: Enterprise Research Management Platform**
-- ✅ **Project-Based Organization**: Complete project lifecycle management with role-based access control
-- ✅ **Advanced Budget Management**: Project-specific budgets with real-time tracking and automated controls
-- ✅ **Cost Analytics**: Detailed cost breakdowns, hibernation savings, and resource utilization metrics  
-- ✅ **Multi-User Collaboration**: Project member management with granular permissions (Owner/Admin/Member/Viewer)
-- ✅ **Enterprise API**: Full REST API for project management, budget monitoring, and cost analysis
-- ✅ **Budget Automation**: Configurable alerts and automated actions (hibernate/stop instances, prevent launches)
-
-CloudWorkstation is now a full **enterprise research platform** supporting collaborative projects, grant-funded budgets, and institutional research management while maintaining its core simplicity for individual researchers.
-
-**🎉 PHASE 4.6 COMPLETE: Professional AWS-Native GUI (September 29, 2025)**
-✅ **Cloudscape Design System Migration Complete**:
-- ✅ 60+ battle-tested AWS components integrated
-- ✅ Professional template selection with Cards, PropertyFilter, and Badges
-- ✅ Enterprise-grade instance management with Table, StatusIndicator, and ButtonDropdown
-- ✅ Built-in accessibility (WCAG AA), responsive design, and mobile support
-- ✅ 8-10x faster development velocity achieved with pre-built components
-- ✅ Command structure updated: `research-user` → `user`, `admin` hierarchy
-- ✅ Build optimization: 925KB → 225KB + 697KB Cloudscape chunk
-- ✅ Ready for institutional deployments
-
-**Phase 5: v0.5.x Incremental Release Series** (October 2025 - Q1 2026)
-
-### **v0.5.0: Multi-User Foundation** ✅ **COMPLETE (September 28, 2025)**
-**STATUS**: Research User Architecture Complete - Production Ready
-- ✅ **Dual User System**: Complete architecture (system users + persistent research users)
-- ✅ **UID/GID Consistency**: Deterministic mapping across all instances
-- ✅ **SSH Key Management**: Complete Ed25519/RSA generation and distribution (500+ lines)
-- ✅ **User Provisioning**: Remote user creation via SSH (450+ lines)
-- ✅ **EFS Integration**: Persistent home directories with collaboration support
-- ✅ **CLI Integration**: Complete `cws user` command suite (600+ lines)
-
-### **v0.5.1: Command Structure & GUI Polish** ✅ **COMPLETE (October 2025)**
-**FOCUS**: CLI consistency and professional user experience
-- ✅ **Command Restructure**: `research-user` → `user`, `admin` hierarchy
-- ✅ **TUI Integration**: User management in terminal interface with BubbleTea
-- ✅ **CLI Integration**: Complete `cws user` command suite (create, list, delete, provision, ssh-key)
-- ✅ **Template Extensions**: Research user YAML configuration for collaborative-workspace, r-research
-- ✅ **Policy Framework**: `cws admin policy` commands for access control and governance
-
-### **v0.5.2: Template Marketplace Foundation** ✅ **COMPLETE (October 2025)**
-**FOCUS**: Community template sharing and discovery
-- ✅ **Template Registry**: Complete registry system with multi-registry support and authentication
-- ✅ **Community Templates**: Comprehensive CLI commands for template discovery and installation
-- ✅ **Template Validation**: Advanced security scanning and quality analysis system
-- ✅ **Marketplace Architecture**: Full type system with ratings, badges, dependencies, and validation
-
-### **v0.5.3: Advanced Storage Integration** 🔄 **PLANNED (December 2025)**
-**FOCUS**: FSx and specialized storage for research workloads
-- 🔄 **FSx Integration**: High-performance filesystem support
-- 🔄 **S3 Mount Points**: Direct S3 access from instances
-- 🔄 **Storage Analytics**: Usage patterns and cost optimization
-
-### **v0.5.4: Policy Framework Enhancement** 🔄 **PLANNED (January 2026)**
-**FOCUS**: Institutional governance and compliance
-- 🔄 **Advanced Policies**: Template access, resource limits, compliance rules
-- 🔄 **Audit Logging**: Comprehensive activity tracking and reporting
-- 🔄 **Compliance Dashboards**: NIST 800-171, SOC 2, institutional requirements
-
-### **v0.5.5: AWS Research Services Integration** 🔄 **PLANNED (February 2026)**
-**FOCUS**: Native AWS research tool integration
-- 🔄 **EMR Studio**: Big data analytics and Spark-based research
-- 🔄 **Amazon Braket**: Quantum computing research access
-- 🔄 **SageMaker Integration**: ML workflow integration (pending AWS partnership)
-
-### **v0.5.6: Project Rename to "Prism" + Template Provisioning** 🔄 **PLANNED (Q4 2025 - Q1 2026)**
-**PRIMARY FOCUS**: Complete project rebrand from CloudWorkStation to Prism (Issue #65)
-- 🔄 **Project Rename**: CloudWorkStation → Prism (complete rebrand)
-- 🔄 **Binary Rename**: `cws`/`cwsd`/`cws-gui` → `prism`/`prismd`/`prism-gui`
-- 🔄 **Repository Rename**: `cloudworkstation` → `prism` on GitHub
-- 🔄 **Automatic Migration**: User config/state migrated from `~/.cloudworkstation` to `~/.prism`
-- 🔄 **Module Path Update**: `github.com/scttfrdmn/cloudworkstation` → `github.com/scttfrdmn/prism`
-
-**SECONDARY FOCUS**: Advanced template capabilities (Issue #64)
-- 🔄 **SSM File Operations**: S3-backed file transfer for template provisioning
-- 🔄 **Large File Handling**: Progress reporting for multi-GB file transfers
-- 🔄 **Template Asset Management**: Binary and configuration file distribution
-
-**CRITICAL BUG FIX**: EBS volume size tracking (Issue #68)
-- 🔴 **Storage Cost Bug**: Fix `Instance.EBSSize` not being set during launch
-- 🔴 **Cost Calculation Fix**: Ensure accurate storage cost tracking and reporting
-- 🔴 **Data Migration**: Backfill EBS sizes for existing instances
-
-**Phase 6: Enterprise Authentication & Security** (v0.6.0 - Q2 2026)
-
-### **v0.6.0: Multi-User Authentication & IAM**
-**FOCUS**: Institutional authentication and AWS security
-- 🎯 **OAuth/OIDC Integration**: Google, Microsoft, institutional SSO providers
-- 🎯 **LDAP/Active Directory**: Enterprise directory service authentication
-- 🎯 **SAML Support**: Federated SSO for enterprise deployments
-- 🎯 **IAM Profile Validation**: Pre-launch validation of IAM instance profiles
-- 🎯 **Token Validation**: Secure session management and token validation
-- 🎯 **RBAC System**: Role-based access control for multi-tenant deployments
-
-### **v0.6.1: TUI Feature Completeness**
-**FOCUS**: Terminal interface polish and feature parity
-- 🎯 **Project Member Management**: Paginated member list with add/remove dialogs
-- 🎯 **Project Instance Filtering**: Project-specific instance views with actions
-- 🎯 **Cost Breakdown Visualization**: Service-level cost charts in TUI
-- 🎯 **Hibernation Savings Display**: Savings trends and forecasts in terminal
-
-**Phase 7: Advanced UI & Code Modernization** (v0.7.0-0.8.0 - Q3-Q4 2026)
-
-### **v0.7.0: TUI Advanced Features**
-- 🎯 **TUI Project Creation**: Multi-step form dialogs for project creation
-- 🎯 **TUI Budget Creation**: Complex budget configuration in terminal interface
-- 🎯 **Multi-User Auth Phase 2**: Complete authentication system rollout
-
-### **v0.8.0: Code Modernization**
-- 🎯 **Cobra Migration**: Remove legacy flag parsing, full Cobra integration
-- 🎯 **API Cleanup**: Deprecate backwards compatibility layers
-- 🎯 **Code Consolidation**: Unify duplicate functionality paths
-
-**📋 Technical Debt Tracking**: See [docs/TECHNICAL_DEBT_BACKLOG.md](docs/TECHNICAL_DEBT_BACKLOG.md) for detailed implementation plans, effort estimates, and priority assignments for all deferred features.
-
-🎉 **PHASE 5A COMPLETE: Full Research User Multi-Modal Integration**
-- ✅ **Dual User System**: Complete architecture separating system users (template-created) from research users (persistent identity)
-- ✅ **Consistent UID/GID Mapping**: Deterministic allocation ensuring same profile+username = same UID across all instances
-- ✅ **SSH Key Management**: Complete key generation, storage, and distribution system with Ed25519 and RSA support
-- ✅ **User Provisioning Pipeline**: Remote user creation via SSH with script generation and EFS integration
-- ✅ **EFS Home Directory Integration**: Persistent home directories with proper permissions and collaboration support
-- ✅ **CLI Integration Complete**: Full `cws user` command suite (create, list, delete, provision, ssh-key, status)
-- ✅ **TUI Integration Complete**: Research user management interface in terminal with BubbleTea framework
-- ✅ **Template System Extended**: Multi-language collaborative templates with research user configurations
-- ✅ **Policy Framework**: Complete `cws admin policy` system for institutional governance and access control
-- ✅ **Multi-Modal Parity**: Research user management available across CLI, TUI, and prepared for GUI integration
-
-**Phase 5A Technical Components**:
-- **pkg/research/types.go**: Core research user data structures and interfaces (330+ lines)
-- **pkg/research/manager.go**: Research user lifecycle management (280+ lines)
-- **pkg/research/uid_mapping.go**: Consistent UID/GID allocation system (330+ lines)
-- **pkg/research/provisioner.go**: Remote provisioning via SSH (450+ lines)
-- **pkg/research/ssh_keys.go**: Complete SSH key management system (480+ lines)
-- **pkg/research/integration.go**: High-level service integration layer (420+ lines)
-- **internal/cli/user_commands.go**: Complete CLI research user management (845+ lines)
-- **internal/tui/models/users.go**: TUI research user interface with BubbleTea framework
-- **templates/collaborative-workspace.yml**: Multi-language collaborative template with research users
-- **templates/r-research.yml**: R statistical environment with research user integration
-- **internal/cli/policy_cobra.go**: Policy framework CLI commands for institutional governance
-- **pkg/daemon/policy_handlers.go**: REST API endpoints for policy management
-
-🎉 **PHASE 5B COMPLETE: Template Marketplace Foundation**
-- ✅ **Registry Architecture**: Complete multi-registry system supporting community, institutional, and private registries
-- ✅ **Template Discovery**: Advanced search with filters for categories, domains, complexity, ratings, and features
-- ✅ **Security Validation**: Comprehensive security scanning with vulnerability detection and policy enforcement
-- ✅ **Quality Analysis**: Automated quality scoring with documentation, metadata, and complexity analysis
-- ✅ **CLI Integration**: Complete `cws marketplace` command suite (search, browse, show, install, registries)
-- ✅ **Community Features**: Ratings, reviews, badges, verification status, and usage analytics
-- ✅ **Dependency Management**: Template dependency tracking with license compatibility checking
-
-**Phase 5B Technical Components**:
-- **pkg/templates/types.go**: Enhanced with comprehensive MarketplaceConfig and validation types (180+ new lines)
-- **pkg/templates/registry.go**: Complete registry client system with authentication and search (450+ lines)
-- **pkg/templates/marketplace_validator.go**: Advanced security and quality validation system (650+ lines)
-- **internal/cli/marketplace_commands.go**: Full marketplace CLI interface with rich filtering and display (400+ lines)
-
-**Documentation Delivered**:
-- **Technical Architecture**: [Phase 5A Research User Architecture](docs/PHASE_5A_RESEARCH_USER_ARCHITECTURE.md)
-- **User Guide**: [Research Users User Guide](docs/USER_GUIDE_RESEARCH_USERS.md)
-- **Architecture Benefits**: [Dual User Architecture](docs/DUAL_USER_ARCHITECTURE.md)
-- **Management Guide**: [Research User Management Guide](docs/RESEARCH_USER_MANAGEMENT_GUIDE.md)
-
-**Phase 5A Complete Implementation**:
-✅ **CLI Integration**: Complete `cws user` command suite for full user management (Phase 5A.1)
-✅ **TUI Integration**: Research user management screens in terminal interface (Phase 5A.2)
-✅ **REST API Integration**: Complete daemon API endpoints for research user operations (Phase 5A.3)
-✅ **Template Integration**: Automatic research user provisioning via template system (Phase 5A.3+)
-  - 7 REST API endpoints: user CRUD, SSH key management, status monitoring
-  - Service layer integration with automatic SSH key generation
-  - Template schema extension with research user configuration support
-  - CLI `--research-user` flag with complete backend processing
-  - Enhanced template info display with research user capabilities
-  - Example research-enabled template with complete integration
-  - Profile-aware operations with comprehensive error handling
-  - Full JSON request/response API compliance
-✅ **Multi-Modal Foundation**: Full research user management across CLI, TUI, and API layers
-
-**Phase 5A+ Extensions** (COMPLETED ✅):
-✅ **Template Integration**: Complete template system extension with research user configuration
-✅ **Policy Framework**: Comprehensive policy framework foundation with CLI interface
-🎯 **GUI Interface**: Professional Cloudscape-based research user management interface
-🎯 **API Integration**: Connect policy CLI commands to daemon service endpoints
-
-### **Phase 5B: Commercial Software & Configuration Sync** (v0.5.2-0.5.4 - Q1 2026)
-
-**🔧 PRIORITY: Partial Implementations First**
-
-**v0.5.2: Commercial Software Templates** (HIGH IMPACT):
-- ✅ **Direct AMI Reference System**: Enable templates to specify AMI IDs directly for licensed software
-- ✅ **AMI Auto-Discovery**: Intelligent AMI resolution via AWS Marketplace and naming patterns
-- ✅ **BYOL License Integration**: Template-based license server configuration and validation
-- ✅ **Commercial Template Schema**: Extended template system for commercial software requirements
-- 🎯 **Initial Templates**: MATLAB R2024a, ArcGIS Desktop, Mathematica 14, Stata 18
-
-**v0.5.3: Template-Based Configuration Sync** (MEDIUM IMPACT):
-- ✅ **Configuration Templates**: Template-based system for RStudio, Jupyter, VS Code, Git settings
-- ✅ **Local Config Capture**: Scan and template-ize local development environment configurations
-- ✅ **SSH-Based Sync**: Secure configuration deployment to CloudWorkstation instances
-- ✅ **Community Config Sharing**: Template-based configuration sharing and discovery
-- 🎯 **Applications**: RStudio (packages, themes), Jupyter (extensions, kernels), VS Code (settings, extensions)
-
-**v0.5.4: Template Marketplace Foundation** (MEDIUM-HIGH IMPACT):
-- ✅ **Decentralized Repository System**: Support multiple template repositories beyond core
-- ✅ **Repository Authentication**: SSH keys and token-based access for private/institutional repos
-- ✅ **Template Discovery**: Search and browse templates across multiple repositories
-- ✅ **Basic Security**: Optional authentication for private template collections
-- 🎯 **Repository Types**: Core, Community, Institutional, Private with appropriate access controls
-
-### **Phase 5C: Advanced Sync & Storage** (v0.5.5-0.5.6 - Q2 2026)
-
-**v0.5.5: Directory Sync System** (HIGH IMPACT):
-- ✅ **EFS-Backed Bidirectional Sync**: Real-time directory synchronization between local and cloud
-- ✅ **Research-Optimized Rules**: Smart file filtering for code, datasets, results, and outputs
-- ✅ **Conflict Resolution**: Intelligent handling of simultaneous edits with user control
-- ✅ **Multi-Instance Support**: Single sync directory accessible across multiple CloudWorkstation instances
-- 🎯 **Integration**: Google Drive/Dropbox-like experience optimized for research workflows
-
-**v0.5.6: AWS Research Services Integration** (STRATEGIC):
-- 🎯 **EMR Studio** for big data analytics and Spark-based research
-- 🎯 **SageMaker Studio Lab** (free) for educational ML use cases
-- 🎯 **Amazon Braket** for quantum computing research and education
-- 🎯 **AWS CloudShell** integration for web-based terminal access
-- 🎯 **Web Service Framework**: Unified interface for EC2 + AWS research services
-- ⚠️ **RISK ASSESSMENT**: Full SageMaker Studio integration pending AWS partnership feasibility
-
-### **Phase 5D: Enterprise Research Ecosystem** (v0.6.0 - Q3 2026)
-🎯 **Advanced Storage**: OpenZFS/FSx integration for specialized research workloads
-🎯 **Enterprise Policy Engine**: Digital signatures and institutional governance controls
-🎯 **HPC Integration**: ParallelCluster, Batch scheduling, and EMR Studio big data
-🎯 **Research Workflows**: Integration with research data management and CI/CD systems
-🎯 **Autonomous Idle Detection Enhancements** (from findings):
-   - GPU usage monitoring and optimization
-   - Research workload pattern recognition
-   - Cost optimization through intelligent hibernation
-   - Multi-instance coordinated idle detection
-
-**Phase 6: Extensibility & Ecosystem** (v0.7.0 - Q4 2026)
-🎯 **Plugin Architecture**: Unified CLI + daemon plugin system for custom functionality
-- Research analytics plugins (usage tracking, cost analysis, reporting)
-- HPC integration plugins (SLURM, PBS, LSF job submission)
-- Custom authentication providers (institutional SSO, LDAP, OAuth)
-- Third-party service integrations (specialized research tools)
-
-🎯 **Auto-AMI System**: Intelligent template compilation and security updates
-- Popularity-driven auto-compilation for faster launch times (30s vs 5-8 minutes)
-- Automated security rebuilds when base OS images are patched
-- Cost-optimized scheduling during off-peak hours
-- Institutional semester preparation automation
-
-🎯 **GUI Skinning & Theming**: Institutional branding and accessibility
-- University branding themes with logos, colors, and custom layouts
-- Accessibility themes (high contrast, large fonts, screen reader optimization)  
-- Research workflow-optimized layouts and component arrangements
-- Custom component development for specialized research interfaces
-
-🎯 **Web Services Integration Framework**: Third-party research tool integration
-- Template-based integration guide for custom research platforms
-- JupyterHub, RStudio Server, Galaxy, and specialized tool examples
-- OAuth/OIDC authentication integration with research user identity
-- EFS sharing integration for collaborative research environments
-
-**STRATEGIC FOCUS FOR SCHOOL PARTNERSHIPS**:
-- **Cloudscape Migration**: Professional AWS-quality interface using battle-tested design system
-- **Immediate UX Improvements**: 8-10x faster development with enterprise-grade components
-- **Institutional Deployment**: Professional interface increases school adoption confidence
-- Template marketplace moved to Phase 5C to enable community contributions
-- AWS partnership feasibility study to de-risk SageMaker integration
-- Multi-cloud support (Azure, GCP) postponed to maintain AWS-native focus
+**For detailed features, roadmap, and architecture**:
+- [Project Roadmap](docs/TECHNICAL_DEBT_BACKLOG.md)
+- [Architecture Docs](docs/architecture/)
+- [User Guides](docs/)
 
 **Multi-Modal Access Strategy**:
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │ CLI Client  │  │ TUI Client  │  │ GUI Client  │
-│ (cmd/cws)   │  │ (cws tui)   │  │ (cmd/cws-gui)│
+│ (cmd/prism) │  │ (prism tui) │  │(cmd/prism-gui)│
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │                │                │
        └────────────────┼────────────────┘
@@ -354,20 +76,20 @@ CloudWorkstation is now a full **enterprise research platform** supporting colla
                  ┌─────────────┐
                  │ Backend     │
                  │ Daemon      │
-                 │ (cwsd:8947) │
+                 │(prismd:8947)│
                  └─────────────┘
 ```
 
 **Current Architecture**:
 ```
 cmd/
-├── cws/          # CLI client binary
-├── cws-gui/      # GUI client binary (Wails v3-based)
-└── cwsd/         # Backend daemon binary
+├── prism/        # CLI client binary
+├── prism-gui/    # GUI client binary (Wails v3-based)
+└── prismd/       # Backend daemon binary
 
 pkg/
 ├── api/          # API client interface
-├── daemon/       # Daemon core logic  
+├── daemon/       # Daemon core logic
 ├── aws/          # AWS operations
 ├── state/        # State management
 ├── project/      # Project & budget management (Phase 4)
@@ -378,7 +100,7 @@ pkg/
 internal/
 ├── cli/          # CLI application logic
 ├── tui/          # TUI application (BubbleTea-based)
-└── gui/          # (GUI logic is in cmd/cws-gui/)
+└── gui/          # (GUI logic is in cmd/prism-gui/)
 ```
 
 **Phase 4 Enterprise Components**:
@@ -422,6 +144,83 @@ pkg/types/
 - **Profile Integration**: Integrated AWS credential and region management
 - **Graceful Operations**: Proper shutdown, error handling, progress reporting
 
+### Frontend API Client Pattern (SafePrismAPI)
+
+**CRITICAL**: The frontend follows a **specific method pattern** for API calls - NOT generic HTTP methods.
+
+**✅ CORRECT Pattern - Specific Methods:**
+```typescript
+// SafePrismAPI class (cmd/prism-gui/frontend/src/App.tsx)
+class SafePrismAPI {
+  // Feature-specific methods that call safeRequest internally
+  async getTemplates(): Promise<Template[]> { ... }
+  async getInstances(): Promise<Instance[]> { ... }
+  async getProfiles(): Promise<Profile[]> { ... }
+  async createProfile(profile: ProfileData): Promise<Profile> { ... }
+  async updateProfile(id: string, updates: Partial<ProfileData>): Promise<Profile> { ... }
+  async deleteProfile(id: string): Promise<void> { ... }
+  async switchProfile(id: string): Promise<void> { ... }
+}
+
+// Components use specific methods
+const profiles = await api.getProfiles();
+await api.createProfile({ name, aws_profile, region });
+```
+
+**❌ INCORRECT Pattern - Generic HTTP Methods:**
+```typescript
+// DO NOT ADD these to SafePrismAPI:
+async get(endpoint: string) { ... }    // ❌ No
+async post(endpoint: string) { ... }   // ❌ No
+async put(endpoint: string) { ... }    // ❌ No
+async delete(endpoint: string) { ... } // ❌ No
+
+// DO NOT use generic calls in components:
+await api.get('/api/v1/profiles');     // ❌ No
+await api.post('/api/v1/profiles', data); // ❌ No
+```
+
+**Why This Pattern?**
+1. **Architectural Consistency**: All features (Templates, Instances, Storage, Profiles) use specific methods
+2. **Type Safety**: Specific methods provide better TypeScript typing
+3. **Maintainability**: Changes to API structure are isolated to method implementations
+4. **Discoverability**: IDE autocomplete shows available operations
+
+**When Adding New Features:**
+1. Add specific methods to SafePrismAPI for the feature (e.g., `getProfiles()`, `createProfile()`)
+2. Each method calls the private `safeRequest()` helper internally
+3. Components use these specific methods, never direct HTTP calls
+4. Follow the same error handling pattern as existing methods
+
+### API Authentication
+The daemon uses header-based authentication with test mode bypass:
+
+**Production Mode:**
+- API key required via `X-API-Key` header
+- Key stored in daemon state configuration (`~/.prism/state.json`)
+- Constant-time comparison prevents timing attacks (pkg/daemon/middleware.go:94)
+- Applies to all endpoints except `/api/v1/ping`, `/api/v1/auth`, `/api/v1/authenticate`
+
+**Test Mode (E2E Tests):**
+- Set `PRISM_TEST_MODE=true` environment variable
+- Authentication middleware bypasses all key checks (middleware.go:73-76)
+- GUI frontend does NOT send API key in test mode (App.tsx loadAPIKey disabled)
+- E2E test setup script (`tests/e2e/setup-daemon.js`) automatically sets test mode
+
+**Implementation Reference:**
+```go
+// pkg/daemon/middleware.go
+if os.Getenv("PRISM_TEST_MODE") == "true" {
+    next(w, r)  // Skip authentication
+    return
+}
+```
+
+**Testing Pattern:**
+- E2E tests use setup-daemon.js to launch daemon with PRISM_TEST_MODE
+- No API key configuration needed for tests
+- Frontend disables loadAPIKey() to avoid keychain prompts
+
 ### Streamlined User Experience
 - **Auto-Start Daemon**: All interfaces automatically start daemon as needed - no manual setup required
 - **Zero Keychain Prompts**: Basic profiles work without macOS keychain password requests
@@ -432,7 +231,7 @@ pkg/types/
 
 **✅ IMPLEMENTED: Template Inheritance System**
 
-CloudWorkstation now supports template stacking and inheritance, allowing templates to build upon each other:
+Prism now supports template stacking and inheritance, allowing templates to build upon each other:
 
 ```bash
 # Base template provides foundation
@@ -445,7 +244,7 @@ CloudWorkstation now supports template stacking and inheritance, allowing templa
 #   adds: conda packages, datascientist user, jupyter service
 
 # Launch stacked template
-cws launch "Rocky Linux 9 + Conda Stack" my-analysis
+prism launch "Rocky Linux 9 + Conda Stack" my-analysis
 # ↳ Gets: rocky user + datascientist user, system packages + conda packages, ports 22 + 8888
 ```
 
@@ -467,11 +266,11 @@ cws launch "Rocky Linux 9 + Conda Stack" my-analysis
 **Future Multi-Stack Architecture**:
 ```bash  
 # Planned: Complex inheritance chains
-cws launch gpu-ml-workstation my-training
+prism launch gpu-ml-workstation my-training
 # ↳ Inherits: Base OS → GPU Drivers → Conda ML → Desktop GUI
 
 # Power users can override at launch
-cws launch "Rocky Linux 9 + Conda Stack" my-project --with spack
+prism launch "Rocky Linux 9 + Conda Stack" my-project --with spack
 ```
 
 **Design Benefits**:
@@ -479,6 +278,26 @@ cws launch "Rocky Linux 9 + Conda Stack" my-project --with spack
 - **Maintainable Library**: Base template updates propagate to children
 - **Clear Relationships**: Explicit parent-child dependencies
 - **Flexible Override**: Change any aspect while preserving inheritance
+
+### Desktop Applications (Nice DCV)
+
+**Future Feature (v0.6.1+)**: Desktop GUI applications (MATLAB, QGIS, Mathematica) via AWS Nice DCV
+
+**Reference Implementation**: [Lens project](https://github.com/scttfrdmn/lens) has complete DCV implementation
+
+**Documentation**: [docs/architecture/NICE_DCV_ARCHITECTURE.md](docs/architecture/NICE_DCV_ARCHITECTURE.md)
+
+**Template Pattern**:
+```yaml
+# Desktop template (planned)
+name: "MATLAB Workstation"
+connection_type: "desktop"
+desktop:
+  environment: "mate"
+  dcv_port: 8443
+ports:
+  - 8443
+```
 
 ### State Management
 Enhanced state management with profile integration:
@@ -532,12 +351,12 @@ Enhanced state management with profile integration:
 ```bash
 # Build all components
 make build
-# Builds: cws (CLI), cwsd (daemon), cws-gui (GUI)
+# Builds: prism (CLI), prismd (daemon), prism-gui (GUI)
 
 # Build specific components
-go build -o bin/cws ./cmd/cws/        # CLI
-go build -o bin/cwsd ./cmd/cwsd/      # Daemon  
-go build -o bin/cws-gui ./cmd/cws-gui/ # GUI
+go build -o bin/prism ./cmd/prism/        # CLI
+go build -o bin/prismd ./cmd/prismd/      # Daemon
+go build -o bin/prism-gui ./cmd/prism-gui/ # GUI
 
 # Run tests
 make test
@@ -552,38 +371,38 @@ make clean
 ### Running Different Interfaces
 ```bash
 # CLI interface (traditional) - daemon auto-starts as needed
-./bin/cws launch python-ml my-project
+./bin/prism launch python-ml my-project
 
 # TUI interface (interactive terminal) - daemon auto-starts as needed
-./bin/cws tui
+./bin/prism tui
 # Navigation: 1=Dashboard, 2=Instances, 3=Templates, 4=Storage, 5=Settings, 6=Profiles
 
 # GUI interface (desktop application) - daemon auto-starts as needed
-./bin/cws-gui
+./bin/prism-gui
 # System tray integration with professional tabbed interface
 
 # Manual daemon control (optional)
-./bin/cws daemon start    # Manually start daemon
-./bin/cws daemon stop     # Stop daemon
-./bin/cws daemon status   # Check daemon status
+./bin/prism admin daemon start    # Manually start daemon
+./bin/prism admin daemon stop     # Stop daemon
+./bin/prism admin daemon status   # Check daemon status
 ```
 
 ### Development Workflow
 ```bash
 # Test CLI functionality (daemon auto-starts)
-./bin/cws templates
-./bin/cws list
+./bin/prism templates
+./bin/prism list
 
 # Test TUI functionality (daemon auto-starts if needed)
-./bin/cws tui
+./bin/prism tui
 
 # Test GUI functionality (daemon auto-starts if needed)
-./bin/cws-gui
+./bin/prism-gui
 
 # Optional: Manual daemon control for development
-./bin/cwsd &                    # Start daemon manually (for debugging)
-./bin/cws daemon stop           # Graceful shutdown
-./bin/cws daemon status         # Check status
+./bin/prismd &                        # Start daemon manually (for debugging)
+./bin/prism admin daemon stop         # Graceful shutdown
+./bin/prism admin daemon status       # Check status
 ```
 
 ## Key Implementation Details
@@ -618,7 +437,7 @@ apiClient := api.NewClientWithOptions(daemonURL, client.Options{
 - Shared profile and configuration system
 - Consistent error handling and user feedback
 
-### GUI Specific (cmd/cws-gui/main.go)
+### GUI Specific (cmd/prism-gui/main.go)
 - **Wails v3 Framework**: Cross-platform web-based native GUI with React frontend
 - **Cloudscape Design System**: AWS-native professional UI components
 - **Tabbed Interface**: Templates, Instances, Storage, Settings
@@ -634,163 +453,184 @@ apiClient := api.NewClientWithOptions(daemonURL, client.Options{
 
 ## Testing Strategy
 
-All components tested with:
-- **Unit Tests**: Core functionality and API integration
-- **Integration Tests**: Cross-interface compatibility
-- **Manual Testing**: Real AWS integration and user workflows
-- **Build Testing**: Zero compilation errors across all platforms
-
-## Recent Major Achievements
-
-### ✅ PHASE 3: Complete Hibernation & Cost Optimization Ecosystem
-
-**🎉 FULLY IMPLEMENTED: Comprehensive hibernation system with automated policy integration**
-
-Successfully implemented the complete hibernation ecosystem providing intelligent cost optimization through both manual hibernation controls and automated hibernation policies across CLI, GUI, and API interfaces.
-
-#### Complete Hibernation Architecture
-
-**🏗️ Full Technical Stack**:
-- **AWS Hibernation Engine**: Full hibernation lifecycle with intelligent fallback to regular stop
-- **REST API Layer**: Complete endpoint coverage for hibernation operations + idle policy management
-- **API Client Layer**: Type-safe client methods with proper error handling for all hibernation features
-- **GUI Interface**: Smart controls with educational confirmation dialogs
-- **CLI Interface**: Educational commands with cost optimization messaging + policy management
-- **Idle Detection System**: Automated hibernation policies with configurable thresholds and actions
-
-**🎯 Complete Interface Coverage**:
-- ✅ **AWS Layer** (`pkg/aws/manager.go`): `HibernateInstance()`, `ResumeInstance()`, `GetInstanceHibernationStatus()`
-- ✅ **API Layer** (`pkg/daemon/instance_handlers.go`): REST endpoints `/hibernate`, `/resume`, `/hibernation-status`
-- ✅ **Idle API Layer** (`pkg/daemon/idle_handlers.go`): 7 REST endpoints for complete idle policy management
-- ✅ **Client Layer** (`pkg/api/client/`): Complete API client integration with hibernation + idle methods  
-- ✅ **Types Layer** (`pkg/types/runtime.go`): Complete type system for hibernation status + idle policies
-- ✅ **GUI Layer** (`cmd/cws-gui/main.go`): Smart hibernation controls with educational confirmation dialogs
-- ✅ **CLI Layer** (`cmd/cws/main.go`, `internal/cli/app.go`): Manual hibernation + automated policy commands
-
-**💡 Dual-Mode Hibernation System**:
+### Unit and Integration Tests
 ```bash
-# Manual Hibernation Controls
-cws hibernate my-instance    # Intelligent hibernation with support detection
-cws resume my-instance       # Smart resume with automatic fallback logic
+# Run all tests
+make test
+go test ./...
 
-# Automated Hibernation Policies  
-cws idle profile list        # Show hibernation policies (batch: 60min hibernate)
-cws idle profile create cost-optimized --idle-minutes 10 --action hibernate
-cws idle instance my-gpu-workstation --profile gpu  # GPU-optimized hibernation
-cws idle history            # Audit trail of automated hibernation actions
-
-# Pre-configured hibernation profiles:
-# - batch: 60min idle → hibernate (long-running research jobs)
-# - gpu: 15min idle → stop (expensive GPU instances)  
-# - cost-optimized: 10min idle → hibernate (maximum cost savings)
+# Run specific package tests
+go test ./pkg/templates/...
+go test ./pkg/research/...
 ```
 
-**🎨 Intelligent Cost Optimization**:
-- **Hibernation-First**: Policies prefer hibernation when possible (preserves RAM state)
-- **Smart Fallback**: Automatic degradation to stop when hibernation unsupported
-- **Configurable Thresholds**: Fine-tuned idle detection (CPU, memory, network, disk, GPU usage)
-- **Domain Mapping**: Research domains automatically mapped to hibernation-optimized policies
-- **Instance Overrides**: Per-instance hibernation policy customization
+### Integration Testing with Fixtures
 
-**📊 Research Impact**:
-- **Manual Control**: Direct hibernation/resume for immediate cost optimization
-- **Automated Policies**: Hands-off hibernation based on actual usage patterns
-- **Session Preservation**: Complete work environment state maintained through hibernation
-- **Cost Transparency**: Clear audit trail of hibernation actions and cost savings
-- **Domain Intelligence**: ML/GPU workloads get hibernation-optimized policies automatically
+**Prism uses a fixture pattern for integration tests** that create real AWS resources with automatic cleanup.
 
-#### Implementation Statistics
-- **🔧 16 files modified** across 3 major hibernation implementations
-- **🔧 7 new REST API endpoints** for idle detection and hibernation policy management
-- **📝 850+ lines** of hibernation functionality across all layers and policy integration
-- **🧪 Complete API coverage** for manual hibernation + automated policy operations
-- **🎨 Full UX integration** with educational messaging and policy management
-- **📚 Comprehensive documentation** of hibernation benefits, policies, and cost optimization
+Key benefits:
+- ✅ Automatic cleanup via `t.Cleanup()` - no orphaned resources
+- ✅ Proper dependency ordering (backups → instances → EBS → EFS)
+- ✅ Production-ready pattern used across all integration tests
 
-#### Cost Optimization Achievement
-- **Manual Hibernation**: Immediate hibernation/resume for session-preserving cost savings
-- **Automated Hibernation**: Policy-driven hibernation after configurable idle periods (10-60 minutes)
-- **Intelligent Actions**: Hibernation preferred over stop when supported (preserves RAM state)
-- **Research-Optimized**: Domain-specific policies (batch jobs hibernate longer, GPU instances hibernate faster)
-- **Comprehensive Audit**: Complete history tracking of automated hibernation cost savings
+**Quick Example**:
+```go
+func TestBackupWorkflow(t *testing.T) {
+    registry := fixtures.NewFixtureRegistry(t, client)
 
-This represents **CloudWorkstation's complete cost optimization achievement**, providing researchers with the most comprehensive hibernation system available - combining immediate manual control with intelligent automated policies for maximum cost savings while preserving work session continuity.
+    instance, _ := fixtures.CreateTestInstance(t, registry, opts)
+    backup, _ := fixtures.CreateTestBackup(t, registry, opts)
 
-### ✅ FULLY IMPLEMENTED: Template Inheritance & Validation System
-
-Successfully completed the comprehensive template system addressing the original user request: *"Can the templates be stacked? That is reference each other? Say I want a Rocky9 linux but install some conda software on it."*
-
-#### Implementation Summary
-
-**🎯 User Request**: 100% Satisfied
-- ✅ Templates can be stacked and reference each other via `inherits` field
-- ✅ Rocky9 Linux + conda software use case fully working
-- ✅ Example: `Rocky Linux 9 Base` + `Rocky Linux 9 + Conda Stack` 
-- ✅ Launch produces combined environment: 2 users, system + conda packages, ports 22 + 8888
-
-**🏗️ Technical Architecture**:
-- **Template Inheritance Engine**: Multi-level inheritance with intelligent merging
-- **Comprehensive Validation**: 8+ validation rules with clear error messages  
-- **CLI Integration**: `cws templates validate` command with full validation suite
-- **Clean Implementation**: Removed legacy "auto" package manager, cleaned dead code
-
-**📊 Working Example**:
-```bash
-# Base template: Rocky Linux 9 + DNF + system tools + rocky user
-# Stacked template: inherits base + adds conda packages + datascientist user + jupyter
-
-cws launch "Rocky Linux 9 + Conda Stack" my-analysis
-# Result: Both users, all packages, combined ports [22, 8888]
+    // Test your logic...
+    // Cleanup happens automatically!
+}
 ```
 
-**🧪 Validation Results**:
-- ✅ All templates pass validation
-- ✅ Error detection: invalid package managers, self-reference, invalid ports/users
-- ✅ Template consistency: package manager matching, inheritance rules
-- ✅ Build system integration: validation prevents invalid templates
+**Running**:
+```bash
+go test -tags integration ./test/integration/... -v
+```
 
-**📚 Documentation**:
-- **docs/TEMPLATE_SYSTEM_IMPLEMENTATION.md**: Complete implementation summary
-- **docs/TEMPLATE_INHERITANCE.md**: Technical inheritance and validation guide
-- **Working Examples**: base-rocky9.yml and rocky9-conda-stack.yml templates
+**📚 Complete documentation**: See **[docs/TESTING.md](docs/TESTING.md)** for:
+- Detailed fixture usage patterns
+- E2E testing guide (Playwright)
+- CLI integration tests
+- Configuration and troubleshooting
 
-This represents a major advancement in CloudWorkstation's template capabilities, enabling researchers to build complex environments through simple template composition - exactly the "stackable architecture" envisioned for research computing.
+### E2E Testing (Playwright)
+```bash
+cd cmd/prism-gui/frontend
 
-## Success Criteria
+# Run all E2E tests
+npx playwright test
 
-Phase 2 Successfully Achieved:
-- ✅ All three interfaces (CLI/TUI/GUI) fully functional
-- ✅ Complete feature parity across all interfaces
-- ✅ Professional user experience with consistent theming
-- ✅ Zero compilation errors and comprehensive testing
-- ✅ Production-ready deployment capabilities
+# Run specific test suite
+npx playwright test backup-workflows.spec.ts
+npx playwright test instance-workflows.spec.ts
 
-## Common Issues to Watch
+# Debug mode
+npx playwright test --debug
+```
 
-1. **Profile Integration**: Ensure consistent AWS credential handling across interfaces
-2. **API Compatibility**: Maintain backward compatibility when updating daemon API
-3. **Cross-Platform**: Test GUI and TUI on different operating systems
-4. **Error Handling**: Provide consistent, helpful error messages across interfaces
-5. **Performance**: Ensure real-time updates don't impact system performance
+**Critical E2E Pattern**: All tests MUST set onboarding modal flag before navigation:
+```typescript
+test.beforeEach(async ({ page, context }) => {
+  // Set localStorage BEFORE navigating
+  await context.addInitScript(() => {
+    localStorage.setItem('cws_onboarding_complete', 'true');
+  });
+  // ... rest of setup
+});
+```
 
-## Next Development Session Focus
+**Test Configuration**:
+- AWS Profile: `aws`
+- AWS Region: `us-west-2`
+- Daemon auto-starts via `setup-daemon.js`
+- Tests run against real AWS integration
 
-With Phase 2 complete, future development should focus on:
-1. **Phase 3 Planning**: Advanced research features and multi-package managers
-2. **User Feedback**: Gather researcher feedback on multi-modal interface design
-3. **Performance Optimization**: Optimize real-time updates and API efficiency
-4. **Documentation**: User guides for CLI, TUI, and GUI interfaces
-5. **Template Expansion**: Additional research environment templates
+**📚 For detailed E2E patterns, configuration, and troubleshooting**: See [docs/TESTING.md](docs/TESTING.md)
 
-## Research User Feedback Integration
+### Build Testing
+```bash
+# Ensure zero compilation errors
+make build
 
-Key validation points for multi-modal access:
-- **Interface Preference**: Do researchers prefer CLI, TUI, or GUI for different tasks?
-- **Feature Completeness**: Are all necessary research workflows supported?
-- **Performance**: Are real-time updates and interface switching smooth?
-- **Learning Curve**: Can researchers easily switch between interfaces?
-- **Workflow Integration**: How does CloudWorkstation fit into existing research workflows?
+# Cross-platform compilation
+make cross-compile
+```
 
-**Phase 2 Status: 🎉 COMPLETE**  
-**Multi-Modal Access: CLI ✅ TUI ✅ GUI ✅**  
-**Production Ready: Zero errors, comprehensive testing, professional quality**
+## Common Development Issues & Debugging
+
+### 1. Profile and AWS Credential Issues
+**Problem**: API client can't find AWS credentials or uses wrong region
+
+**Solution**: Ensure profile integration in API client:
+```go
+// Get current profile
+currentProfile, err := profile.GetCurrentProfile()
+
+// Create API client with profile
+client := api.NewClientWithOptions(daemonURL, api.Options{
+    AWSProfile: currentProfile.AWSProfile,
+    AWSRegion:  currentProfile.Region,
+})
+```
+
+**Testing**: Use `aws` profile and `us-west-2` region for tests
+
+### 2. Daemon Connection Issues
+**Problem**: CLI/TUI/GUI can't connect to daemon
+
+**Debug Steps**:
+```bash
+# Check daemon status
+./bin/prism admin daemon status
+
+# Manually start daemon for debugging
+./bin/prismd &
+
+# Check daemon logs
+# (logs location varies by OS)
+
+# Verify daemon is listening
+curl http://localhost:8947/api/v1/ping
+```
+
+### 3. Template Validation Errors
+**Problem**: Template fails to load or validate
+
+**Debug**:
+```bash
+# Validate all templates
+./bin/prism templates validate
+
+# Check specific template
+./bin/prism templates info "template-name"
+```
+
+**Common Issues**:
+- Invalid package manager in template inheritance
+- Missing required fields (name, base_os, etc.)
+- Invalid port numbers or user specifications
+
+### 4. E2E Test Failures
+**Problem**: GUI tests fail with "TimeoutError: locator.click"
+
+**Cause**: Onboarding modal blocking interactions
+
+**Fix**: Always use `context.addInitScript()` BEFORE page navigation (see Testing Strategy section)
+
+### 5. Cross-Platform Build Issues
+**Problem**: Build fails on specific platform
+
+**Solution**:
+```bash
+# Clean and rebuild
+make clean
+make build
+
+# Check for platform-specific code
+grep -r "// +build" .
+
+# Test cross-compilation
+make cross-compile
+```
+
+### 6. API Compatibility Issues
+**Problem**: Daemon API changes break client interfaces
+
+**Best Practice**:
+- Maintain backward compatibility in REST API
+- Version API endpoints when making breaking changes
+- Update all three interfaces (CLI/TUI/GUI) together
+- Test cross-interface compatibility
+
+## Development Best Practices
+
+1. **Multi-modal first**: Every feature must work across CLI, TUI, and GUI
+2. **API-driven**: All interfaces use the same backend API
+3. **Profile-aware**: Integrated AWS credential and region management
+4. **Real-time sync**: Changes reflect across all interfaces automatically
+5. **Professional quality**: Zero compilation errors, comprehensive testing
+6. **Test before commit**: Run `make test` and verify E2E tests pass

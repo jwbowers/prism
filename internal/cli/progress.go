@@ -1,4 +1,4 @@
-// Package cli provides enhanced progress reporting for CloudWorkstation launch operations.
+// Package cli provides enhanced progress reporting for Prism launch operations.
 package cli
 
 import (
@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
-// ProgressReporter provides enhanced real-time progress reporting for CloudWorkstation operations
+// ProgressReporter provides enhanced real-time progress reporting for Prism operations
 type ProgressReporter struct {
 	instanceName   string
 	templateName   string
@@ -244,7 +244,7 @@ func (pr *ProgressReporter) ShowCompletion(instance *types.Instance) {
 		fmt.Printf("🌐 Public IP: %s\n", instance.PublicIP)
 	}
 
-	fmt.Printf("🔗 Connect: cws connect %s\n", pr.instanceName)
+	fmt.Printf("🔗 Connect: prism connect %s\n", pr.instanceName)
 
 	// Show setup summary
 	if pr.templateType == "package" {
@@ -269,8 +269,8 @@ func (pr *ProgressReporter) ShowError(err error, instance *types.Instance) {
 	}
 
 	fmt.Printf("💡 Troubleshooting:\n")
-	fmt.Printf("   • Check logs: cws daemon logs\n")
-	fmt.Printf("   • Retry with: cws launch %s %s\n", pr.templateName, pr.instanceName)
+	fmt.Printf("   • Check logs: prism daemon logs\n")
+	fmt.Printf("   • Retry with: prism launch %s %s\n", pr.templateName, pr.instanceName)
 	fmt.Printf("   • Try different region: --region us-west-2\n")
 	fmt.Printf("   • Try smaller size: --size S\n")
 }
@@ -385,6 +385,8 @@ func (s *Spinner) Start() {
 	go func() {
 		defer s.wg.Done()
 		frameIndex := 0
+		ticker := time.NewTicker(s.delay)
+		defer ticker.Stop()
 
 		for {
 			select {
@@ -392,12 +394,14 @@ func (s *Spinner) Start() {
 				// Clear the spinner line
 				fmt.Fprintf(s.writer, "\r%s\r", strings.Repeat(" ", len(s.message)+5))
 				return
-			default:
+			case <-ticker.C:
 				// Print current frame
 				frame := s.frames[frameIndex%len(s.frames)]
-				fmt.Fprintf(s.writer, "\r%s %s", frame, s.message)
+				s.mu.Lock()
+				msg := s.message
+				s.mu.Unlock()
+				fmt.Fprintf(s.writer, "\r%s %s", frame, msg)
 				frameIndex++
-				time.Sleep(s.delay)
 			}
 		}
 	}()

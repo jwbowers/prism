@@ -6,9 +6,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/scttfrdmn/cloudworkstation/internal/tui/components"
-	"github.com/scttfrdmn/cloudworkstation/internal/tui/styles"
-	"github.com/scttfrdmn/cloudworkstation/pkg/version"
+	"github.com/scttfrdmn/prism/internal/tui/components"
+	"github.com/scttfrdmn/prism/internal/tui/styles"
+	"github.com/scttfrdmn/prism/pkg/version"
 )
 
 // SettingsModel represents the settings view
@@ -24,7 +24,7 @@ type SettingsModel struct {
 // NewSettingsModel creates a new settings model
 func NewSettingsModel(apiClient apiClient) SettingsModel {
 	// Create status bar
-	statusBar := components.NewStatusBar("CloudWorkstation Settings", "")
+	statusBar := components.NewStatusBar("Prism Settings", "")
 
 	return SettingsModel{
 		apiClient:    apiClient,
@@ -92,7 +92,7 @@ func (m SettingsModel) View() string {
 	theme := styles.CurrentTheme
 
 	// Title section
-	title := theme.Title.Render("CloudWorkstation Settings")
+	title := theme.Title.Render("Prism Settings")
 
 	// Build settings content
 	var content string
@@ -106,20 +106,22 @@ func (m SettingsModel) View() string {
 	// Configuration
 	configInfo := "\nConfiguration:\n"
 	configInfo += "  Profile system is managed via CLI commands:\n"
-	configInfo += "  cws config profile <name>     # Set AWS profile\n"
-	configInfo += "  cws config region <region>    # Set AWS region\n"
-	configInfo += "  cws config show               # Show current config\n"
+	configInfo += "  prism config profile <name>     # Set AWS profile\n"
+	configInfo += "  prism config region <region>    # Set AWS region\n"
+	configInfo += "  prism config show               # Show current config\n"
 
 	// Daemon Management
 	daemonInfo := "\nDaemon Management:\n"
-	daemonInfo += "  cws daemon start              # Start daemon\n"
-	daemonInfo += "  cws daemon stop               # Stop daemon\n"
-	daemonInfo += "  cws daemon status             # Check daemon status\n"
+	daemonInfo += "  prism daemon start              # Start daemon\n"
+	daemonInfo += "  prism daemon stop               # Stop daemon\n"
+	daemonInfo += "  prism daemon status             # Check daemon status\n"
 
 	// TUI Controls
 	tuiInfo := "\nTUI Navigation:\n"
 	tuiInfo += "  1: Dashboard    2: Instances    3: Templates\n"
-	tuiInfo += "  4: Storage      5: Settings     6: Profiles\n"
+	tuiInfo += "  4: Storage      5: Projects     6: Budget\n"
+	tuiInfo += "  7: Users        8: Settings     9: Profiles\n"
+	tuiInfo += "  a: Advanced Settings (AMI, Rightsizing, Idle, Policy, Marketplace, Logs)\n"
 	tuiInfo += "  q: Quit         r: Refresh\n"
 
 	// Error display

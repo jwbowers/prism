@@ -43,14 +43,14 @@ func NewAMIConfigValidator() *AMIConfigValidator {
 		"sa-east-1":      true,
 	}
 
-	// Trusted AWS accounts (CloudWorkstation, major vendors, etc.)
+	// Trusted AWS accounts (Prism, major vendors, etc.)
 	trustedAccounts := map[string]string{
 		"099720109477":     "Canonical (Ubuntu)",
 		"137112412989":     "Amazon Web Services",
 		"309956199498":     "Red Hat",
 		"679593333241":     "MathWorks",
 		"aws-marketplace":  "AWS Marketplace",
-		"cloudworkstation": "CloudWorkstation Community",
+		"cloudworkstation": "Prism Community",
 	}
 
 	// AMI ID regex pattern
@@ -373,10 +373,10 @@ func (v *AMIConfigValidator) validateTemplateAMIStrategy(template *Template) []T
 }
 
 func (v *AMIConfigValidator) hasResolutionMethod(config *AMIConfig) bool {
-	return (config.AMIMappings != nil && len(config.AMIMappings) > 0) ||
+	return len(config.AMIMappings) > 0 ||
 		config.AMISearch != nil ||
 		config.MarketplaceSearch != nil ||
-		(config.AMIs != nil && len(config.AMIs) > 0)
+		len(config.AMIs) > 0
 }
 
 func (v *AMIConfigValidator) validatePackageManagerCompatibility(template *Template) []TemplateValidationError {
@@ -410,7 +410,7 @@ func (v *AMIConfigValidator) validateSSHUserRequirement(template *Template) []Te
 }
 
 func (v *AMIConfigValidator) hasAMIMappings(config *AMIConfig) bool {
-	return config.AMIMappings != nil && len(config.AMIMappings) > 0
+	return len(config.AMIMappings) > 0
 }
 
 // GetAMIConfigSummary returns a human-readable summary of AMI configuration

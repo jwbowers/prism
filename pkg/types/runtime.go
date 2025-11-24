@@ -3,7 +3,7 @@ package types
 import (
 	"time"
 
-	"github.com/scttfrdmn/cloudworkstation/pkg/research"
+	"github.com/scttfrdmn/prism/pkg/research"
 )
 
 // RuntimeTemplate defines a cloud workstation template for launching instances
@@ -166,9 +166,10 @@ const (
 type ConnectionType string
 
 const (
-	ConnectionTypeSSH  ConnectionType = "ssh"
-	ConnectionTypeWeb  ConnectionType = "web"
-	ConnectionTypeBoth ConnectionType = "both"
+	ConnectionTypeSSH     ConnectionType = "ssh"
+	ConnectionTypeWeb     ConnectionType = "web"
+	ConnectionTypeDesktop ConnectionType = "desktop" // Nice DCV remote desktop
+	ConnectionTypeBoth    ConnectionType = "both"
 )
 
 // IdleDetectionConfig represents idle detection configuration in templates
@@ -185,37 +186,40 @@ type DualUserIntegration = research.DualUserIntegration
 
 // Instance represents a running cloud workstation
 type Instance struct {
-	ID                 string                  `json:"id"`
-	Name               string                  `json:"name"`
-	Template           string                  `json:"template"`
-	Region             string                  `json:"region"`            // AWS region where instance is running
-	AvailabilityZone   string                  `json:"availability_zone"` // AWS availability zone within region
-	PublicIP           string                  `json:"public_ip"`
-	PrivateIP          string                  `json:"private_ip"`
-	State              string                  `json:"state"`
-	LaunchTime         time.Time               `json:"launch_time"`
-	DeletionTime       *time.Time              `json:"deletion_time,omitempty"` // When user initiated deletion
-	HourlyRate         float64                 `json:"hourly_rate"`             // AWS list price per hour
-	CurrentSpend       float64                 `json:"current_spend"`           // Actual accumulated cost since launch
-	EffectiveRate      float64                 `json:"effective_rate"`          // Current spend ÷ hours since launch
-	AttachedVolumes    []string                `json:"attached_volumes"`        // EFS volume names
-	AttachedEBSVolumes []string                `json:"attached_ebs_volumes"`    // EBS volume IDs
-	InstanceType       string                  `json:"instance_type"`
-	InstanceLifecycle  string                  `json:"instance_lifecycle"` // "spot" or "on-demand"
-	KeyName            string                  `json:"key_name"`           // EC2 key pair name
-	Username           string                  `json:"username"`
-	WebPort            int                     `json:"web_port"`             // Deprecated: Use Services instead
-	HasWebInterface    bool                    `json:"has_web_interface"`    // Deprecated: Use Services instead
-	Services           []Service               `json:"services,omitempty"`   // Web services available on this instance
-	ProjectID          string                  `json:"project_id,omitempty"` // Associated project ID
-	IdleDetection      *IdleDetection          `json:"idle_detection,omitempty"`
-	AppliedTemplates   []AppliedTemplateRecord `json:"applied_templates,omitempty"` // Template application history
+	ID                    string                  `json:"id"`
+	Name                  string                  `json:"name"`
+	Template              string                  `json:"template"`
+	Region                string                  `json:"region"`            // AWS region where instance is running
+	AvailabilityZone      string                  `json:"availability_zone"` // AWS availability zone within region
+	PublicIP              string                  `json:"public_ip"`
+	PrivateIP             string                  `json:"private_ip"`
+	State                 string                  `json:"state"`
+	LaunchTime            time.Time               `json:"launch_time"`
+	RunningStateStartTime *time.Time              `json:"running_state_start_time,omitempty"` // When instance entered running state (billing starts)
+	DeletionTime          *time.Time              `json:"deletion_time,omitempty"`            // When user initiated deletion
+	HourlyRate            float64                 `json:"hourly_rate"`                        // AWS list price per hour
+	CurrentSpend          float64                 `json:"current_spend"`                      // Actual accumulated cost since launch
+	EffectiveRate         float64                 `json:"effective_rate"`                     // Current spend ÷ hours since launch
+	AttachedVolumes       []string                `json:"attached_volumes"`                   // EFS volume names
+	AttachedEBSVolumes    []string                `json:"attached_ebs_volumes"`               // EBS volume IDs
+	InstanceType          string                  `json:"instance_type"`
+	InstanceLifecycle     string                  `json:"instance_lifecycle"` // "spot" or "on-demand"
+	KeyName               string                  `json:"key_name"`           // EC2 key pair name
+	Username              string                  `json:"username"`
+	ConnectionType        ConnectionType          `json:"connection_type,omitempty"` // How users connect (ssh, web, desktop)
+	WebPort               int                     `json:"web_port"`                  // Deprecated: Use Services instead
+	HasWebInterface       bool                    `json:"has_web_interface"`         // Deprecated: Use Services instead
+	Services              []Service               `json:"services,omitempty"`        // Web services available on this instance
+	ProjectID             string                  `json:"project_id,omitempty"`      // Associated project ID
+	IdleDetection         *IdleDetection          `json:"idle_detection,omitempty"`
+	AppliedTemplates      []AppliedTemplateRecord `json:"applied_templates,omitempty"` // Template application history
 
 	// Cost optimization fields
 	EstimatedCost     float64 `json:"estimated_cost,omitempty"` // Daily cost estimate
 	IdlePolicyEnabled bool    `json:"idle_policy_enabled,omitempty"`
 	SpotEligible      bool    `json:"spot_eligible,omitempty"`
 	IsSpot            bool    `json:"is_spot,omitempty"`
+	IsHibernating     bool    `json:"is_hibernating,omitempty"` // Currently in stopping state due to hibernation (stopping IS billable during hibernation)
 	ARMCompatible     bool    `json:"arm_compatible,omitempty"`
 	Architecture      string  `json:"architecture,omitempty"`
 	AlwaysOn          bool    `json:"always_on,omitempty"`

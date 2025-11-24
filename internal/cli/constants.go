@@ -1,4 +1,4 @@
-// Package cli provides constants for CloudWorkstation's command-line interface.
+// Package cli provides constants for Prism's command-line interface.
 //
 // This file centralizes all hardcoded values used across CLI modules to improve
 // maintainability and make configuration changes easier. Constants are organized
@@ -15,10 +15,10 @@ import (
 // =============================================================================
 
 const (
-	// DefaultDaemonURL is the default URL for the CloudWorkstation daemon
+	// DefaultDaemonURL is the default URL for the Prism daemon
 	DefaultDaemonURL = "http://localhost:8947"
 
-	// DefaultDaemonPort is the default port for the CloudWorkstation daemon
+	// DefaultDaemonPort is the default port for the Prism daemon
 	DefaultDaemonPort = "8947"
 
 	// DaemonURLEnvVar is the environment variable for daemon URL override
@@ -43,7 +43,7 @@ const (
 	DefaultMountPointPrefix = "/mnt/"
 
 	// DefaultConfigDir is the default configuration directory name
-	DefaultConfigDir = ".cloudworkstation"
+	DefaultConfigDir = ".prism"
 
 	// DefaultConfigFile is the default daemon configuration file name
 	DefaultConfigFile = "daemon_config.json"
@@ -88,28 +88,28 @@ const (
 
 const (
 	// DaemonNotRunningMessage is the standard message when daemon is not running
-	DaemonNotRunningMessage = "daemon not running - this is unusual since daemon auto-starts. Try: cws daemon status"
+	DaemonNotRunningMessage = "daemon not running - this is unusual since daemon auto-starts. Try: prism daemon status"
 
 	// DaemonAutoStartMessage is displayed when auto-starting the daemon
-	DaemonAutoStartMessage = "🚀 Starting CloudWorkstation daemon..."
+	DaemonAutoStartMessage = "🚀 Starting Prism daemon..."
 
 	// DaemonAutoStartSuccessMessage is displayed when auto-start succeeds
 	DaemonAutoStartSuccessMessage = "✅ Daemon ready"
 
 	// DaemonAutoStartFailedMessage is displayed when auto-start fails
-	DaemonAutoStartFailedMessage = "❌ Failed to auto-start daemon. Please start manually with: cws daemon start"
+	DaemonAutoStartFailedMessage = "❌ Failed to auto-start daemon. Please start manually with: prism daemon start"
 
 	// NoInstancesFoundMessage is displayed when no instances are found
-	NoInstancesFoundMessage = "No workstations found. Launch one with: cws launch <template> <name>"
+	NoInstancesFoundMessage = "No workstations found. Launch one with: prism launch <template> <name>"
 
 	// NoInstancesFoundProjectMessage is displayed when no instances are found in a project
-	NoInstancesFoundProjectMessage = "No workstations found in project '%s'. Launch one with: cws launch <template> <name> --project %s"
+	NoInstancesFoundProjectMessage = "No workstations found in project '%s'. Launch one with: prism launch <template> <name> --project %s"
 
 	// NoEFSVolumesFoundMessage is displayed when no EFS volumes are found
-	NoEFSVolumesFoundMessage = "No EFS volumes found. Create one with: cws volume create <name>"
+	NoEFSVolumesFoundMessage = "No EFS volumes found. Create one with: prism volume create <name>"
 
 	// NoEBSVolumesFoundMessage is displayed when no EBS volumes are found
-	NoEBSVolumesFoundMessage = "No EBS volumes found. Create one with: cws storage create <name> <size>"
+	NoEBSVolumesFoundMessage = "No EBS volumes found. Create one with: prism storage create <name> <size>"
 )
 
 // =============================================================================
@@ -118,10 +118,10 @@ const (
 
 const (
 	// AnalyticsLogFile is the path to the analytics log file on instances
-	AnalyticsLogFile = "/var/log/cloudworkstation-analytics.json"
+	AnalyticsLogFile = "/var/log/prism-analytics.json"
 
 	// RightsizingLogFile is the path to the rightsizing recommendations file on instances
-	RightsizingLogFile = "/var/log/cloudworkstation-rightsizing.json"
+	RightsizingLogFile = "/var/log/prism-rightsizing.json"
 
 	// DefaultTemplateDir is the default directory for template files
 	DefaultTemplateDir = "./templates"
@@ -193,13 +193,13 @@ const (
 	SetupTimeoutMessage = "⚠️  Setup monitoring timeout (20 min). Instance may still be setting up."
 
 	// SetupTimeoutHelpMessage provides help when setup times out
-	SetupTimeoutHelpMessage = "💡 Check status with: cws list"
+	SetupTimeoutHelpMessage = "💡 Check status with: prism list"
 
 	// SetupTimeoutConnectMessage suggests connecting when setup times out
-	SetupTimeoutConnectMessage = "💡 Try connecting: cws connect %s"
+	SetupTimeoutConnectMessage = "💡 Try connecting: prism connect %s"
 
 	// AMITimeoutMessage is displayed when AMI launch monitoring times out
-	AMITimeoutMessage = "⚠️  Timeout waiting for instance to start (5 min). Check status with: cws list"
+	AMITimeoutMessage = "⚠️  Timeout waiting for instance to start (5 min). Check status with: prism list"
 )
 
 // =============================================================================
@@ -217,7 +217,7 @@ const (
 	StateMessageRunningReady = "✅ Instance running! Ready to connect."
 
 	// StateMessageConnectCommand provides the connect command template
-	StateMessageConnectCommand = "🔗 Connect: cws connect %s"
+	StateMessageConnectCommand = "🔗 Connect: prism connect %s"
 
 	// StateMessageDryRunSuccess is displayed for successful dry runs
 	StateMessageDryRunSuccess = "✅ Dry-run validation successful! No actual instance launched."

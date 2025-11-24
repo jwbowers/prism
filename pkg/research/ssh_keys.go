@@ -65,6 +65,9 @@ func (skm *SSHKeyManager) GenerateSSHKeyPair(profileID, username, keyType string
 	// Create key config
 	keyConfig := &SSHKeyConfig{
 		KeyID:         keyID,
+		ProfileID:     profileID,
+		Username:      username,
+		KeyType:       SSHKeyType(keyType),
 		Fingerprint:   fingerprint,
 		PublicKey:     string(publicKey),
 		Comment:       fmt.Sprintf("%s@cloudworkstation-%s", username, profileID),
@@ -95,12 +98,33 @@ func (skm *SSHKeyManager) ImportSSHPublicKey(profileID, username, publicKeyData,
 		return nil, fmt.Errorf("failed to get fingerprint: %w", err)
 	}
 
+	// Detect key type from public key
+	parsedKey, _, _, _, err := ssh.ParseAuthorizedKey(publicKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	// Determine key type from parsed key
+	var keyType SSHKeyType
+	switch parsedKey.Type() {
+	case "ssh-rsa":
+		keyType = SSHKeyTypeRSA
+	case "ssh-ed25519":
+		keyType = SSHKeyTypeEd25519
+	default:
+		// Default to ed25519 if unknown type
+		keyType = SSHKeyTypeEd25519
+	}
+
 	// Create key ID from fingerprint
 	keyID := fmt.Sprintf("imported-%s", fingerprint[:8])
 
 	// Create key config
 	keyConfig := &SSHKeyConfig{
 		KeyID:         keyID,
+		ProfileID:     profileID,
+		Username:      username,
+		KeyType:       keyType,
 		Fingerprint:   fingerprint,
 		PublicKey:     publicKeyData,
 		Comment:       comment,
