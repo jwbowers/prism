@@ -74,22 +74,21 @@ func parseProfilePath(path string) (string, []string, error) {
 func (s *Server) handleListProfiles(w http.ResponseWriter, r *http.Request) {
 	// Operation tracking removed for consistency
 
-	// Create profile manager
-	profileManager, err := profile.NewManagerEnhanced()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize profile manager: %w: %v", err))
+	// Use daemon's singleton profile manager (prevents race conditions)
+	if s.profileManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "profile manager not initialized")
 		return
 	}
 
 	// Get profiles with IDs
-	profilesWithIDs, err := profileManager.ListProfilesWithIDs()
+	profilesWithIDs, err := s.profileManager.ListProfilesWithIDs()
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to list profiles: %w: %v", err))
 		return
 	}
 
 	// Get current profile ID
-	currentProfileID, _ := profileManager.GetCurrentProfileID()
+	currentProfileID, _ := s.profileManager.GetCurrentProfileID()
 
 	// Convert to response format
 	var responses []ProfileResponse
@@ -109,22 +108,21 @@ func (s *Server) handleListProfiles(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetCurrentProfile(w http.ResponseWriter, r *http.Request) {
 	// Operation tracking removed for consistency
 
-	// Create profile manager
-	profileManager, err := profile.NewManagerEnhanced()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize profile manager: %w: %v", err))
+	// Use daemon's singleton profile manager (prevents race conditions)
+	if s.profileManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "profile manager not initialized")
 		return
 	}
 
 	// Get current profile
-	currentProfile, err := profileManager.GetCurrentProfile()
+	currentProfile, err := s.profileManager.GetCurrentProfile()
 	if err != nil {
 		s.writeError(w, http.StatusNotFound, fmt.Sprintf("failed to get current profile: %w: %v", err))
 		return
 	}
 
 	// Get current profile ID
-	currentProfileID, _ := profileManager.GetCurrentProfileID()
+	currentProfileID, _ := s.profileManager.GetCurrentProfileID()
 
 	resp := profileToResponse(currentProfileID, *currentProfile)
 	resp.Default = true
@@ -168,22 +166,21 @@ func (s *Server) handleProfileOperations(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleGetProfile(w http.ResponseWriter, r *http.Request, profileID string) {
 	// Operation tracking removed for consistency)
 
-	// Create profile manager
-	profileManager, err := profile.NewManagerEnhanced()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize profile manager: %w: %v", err))
+	// Use daemon's singleton profile manager (prevents race conditions)
+	if s.profileManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "profile manager not initialized")
 		return
 	}
 
 	// Get profile
-	prof, err := profileManager.GetProfile(profileID)
+	prof, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
 		s.writeError(w, http.StatusNotFound, fmt.Sprintf("profile not found: %w: %v", err))
 		return
 	}
 
 	// Get current profile ID to check if this is the active one
-	currentProfileID, _ := profileManager.GetCurrentProfileID()
+	currentProfileID, _ := s.profileManager.GetCurrentProfileID()
 
 	resp := profileToResponse(profileID, *prof)
 	if profileID == currentProfileID {
@@ -227,10 +224,9 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create profile manager
-	profileManager, err := profile.NewManagerEnhanced()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize profile manager: %w: %v", err))
+	// Use daemon's singleton profile manager (prevents race conditions)
+	if s.profileManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "profile manager not initialized")
 		return
 	}
 
@@ -246,7 +242,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add profile (manager will generate ID and timestamps)
-	if err := profileManager.AddProfile(newProfile); err != nil {
+	if err := s.profileManager.AddProfile(newProfile); err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			s.writeError(w, http.StatusConflict, err.Error())
 		} else {
@@ -256,7 +252,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the newly created profile to return its ID
-	profilesWithIDs, err := profileManager.ListProfilesWithIDs()
+	profilesWithIDs, err := s.profileManager.ListProfilesWithIDs()
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile created but failed to retrieve: %w: %v", err))
 		return
@@ -293,15 +289,14 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request, pro
 		return
 	}
 
-	// Create profile manager
-	profileManager, err := profile.NewManagerEnhanced()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize profile manager: %w: %v", err))
+	// Use daemon's singleton profile manager (prevents race conditions)
+	if s.profileManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "profile manager not initialized")
 		return
 	}
 
 	// Get existing profile
-	existingProfile, err := profileManager.GetProfile(profileID)
+	existingProfile, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
 		s.writeError(w, http.StatusNotFound, fmt.Sprintf("profile not found: %w: %v", err))
 		return
@@ -329,20 +324,20 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request, pro
 	}
 
 	// Update profile
-	if err := profileManager.UpdateProfile(profileID, updates); err != nil {
+	if err := s.profileManager.UpdateProfile(profileID, updates); err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to update profile: %w: %v", err))
 		return
 	}
 
 	// Get updated profile
-	updatedProfile, err := profileManager.GetProfile(profileID)
+	updatedProfile, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile updated but failed to retrieve: %w: %v", err))
 		return
 	}
 
 	// Check if this is the current profile
-	currentProfileID, _ := profileManager.GetCurrentProfileID()
+	currentProfileID, _ := s.profileManager.GetCurrentProfileID()
 	resp := profileToResponse(profileID, *updatedProfile)
 	if profileID == currentProfileID {
 		resp.Default = true
@@ -356,22 +351,21 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request, pro
 func (s *Server) handleDeleteProfile(w http.ResponseWriter, r *http.Request, profileID string) {
 	// Operation tracking removed for consistency)
 
-	// Create profile manager
-	profileManager, err := profile.NewManagerEnhanced()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize profile manager: %w: %v", err))
+	// Use daemon's singleton profile manager (prevents race conditions)
+	if s.profileManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "profile manager not initialized")
 		return
 	}
 
 	// Check if this is the current profile
-	currentProfileID, _ := profileManager.GetCurrentProfileID()
+	currentProfileID, _ := s.profileManager.GetCurrentProfileID()
 	if profileID == currentProfileID {
 		s.writeError(w, http.StatusBadRequest, "cannot delete the currently active profile")
 		return
 	}
 
 	// Delete profile
-	if err := profileManager.RemoveProfile(profileID); err != nil {
+	if err := s.profileManager.RemoveProfile(profileID); err != nil {
 		if err == profile.ErrProfileNotFound {
 			s.writeError(w, http.StatusNotFound, err.Error())
 		} else {
@@ -387,15 +381,14 @@ func (s *Server) handleDeleteProfile(w http.ResponseWriter, r *http.Request, pro
 func (s *Server) handleActivateProfile(w http.ResponseWriter, r *http.Request, profileID string) {
 	// Operation tracking removed for consistency)
 
-	// Create profile manager
-	profileManager, err := profile.NewManagerEnhanced()
-	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize profile manager: %w: %v", err))
+	// Use daemon's singleton profile manager (prevents race conditions)
+	if s.profileManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "profile manager not initialized")
 		return
 	}
 
 	// Switch profile
-	if err := profileManager.SwitchProfile(profileID); err != nil {
+	if err := s.profileManager.SwitchProfile(profileID); err != nil {
 		if err == profile.ErrProfileNotFound {
 			s.writeError(w, http.StatusNotFound, err.Error())
 		} else {
@@ -405,7 +398,7 @@ func (s *Server) handleActivateProfile(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Get the activated profile
-	activatedProfile, err := profileManager.GetProfile(profileID)
+	activatedProfile, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile activated but failed to retrieve: %w: %v", err))
 		return

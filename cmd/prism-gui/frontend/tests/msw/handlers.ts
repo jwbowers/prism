@@ -17,6 +17,7 @@ import {
   createMockConnectionInfo,
   createMockHibernationStatus,
   createMockIdlePolicies,
+  createMockBackups,
   createMockError,
 } from '../utils/mock-data-factories';
 
@@ -246,23 +247,27 @@ export const handlers = [
 
   // Backup & Snapshot
   http.get(`${DAEMON_URL}/api/v1/backups`, () => {
-    return HttpResponse.json([
-      {
-        id: 'backup-123',
-        instance_id: 'i-1234567890abcdef0',
-        name: 'my-ml-research-backup',
-        created_at: '2025-11-15T10:00:00Z',
-        size_gb: 50,
-        status: 'available',
-      },
-    ]);
+    return HttpResponse.json(createMockBackups());
+  }),
+
+  http.get(`${DAEMON_URL}/api/v1/backups/:id`, ({ params }) => {
+    const backups = createMockBackups();
+    const backup = backups.find((b) => b.id === params.id);
+    if (backup) {
+      return HttpResponse.json(backup);
+    }
+    return HttpResponse.json(createMockError('Backup not found', 404), { status: 404 });
   }),
 
   http.post(`${DAEMON_URL}/api/v1/backups`, async ({ request }) => {
     const body = await request.json() as any;
     return HttpResponse.json({
-      id: `backup-${Date.now()}`,
+      id: `snap-${Date.now()}`,
+      instance_id: body.instance_id,
+      name: body.name || `backup-${Date.now()}`,
       status: 'creating',
+      created_at: new Date().toISOString(),
+      size_gb: 0, // Size determined after creation
     });
   }),
 
@@ -270,8 +275,24 @@ export const handlers = [
     return HttpResponse.json({ status: 'deleting' });
   }),
 
-  http.post(`${DAEMON_URL}/api/v1/backups/:id/restore`, () => {
-    return HttpResponse.json({ status: 'restoring', instance_id: 'i-restored123' });
+  http.post(`${DAEMON_URL}/api/v1/backups/:id/restore`, async ({ request }) => {
+    const body = await request.json() as any;
+    return HttpResponse.json({
+      status: 'restoring',
+      instance_id: `i-restored${Date.now()}`,
+      instance_name: body.instance_name,
+      estimated_time_minutes: 15,
+    });
+  }),
+
+  http.post(`${DAEMON_URL}/api/v1/backups/:id/clone`, async ({ request }) => {
+    const body = await request.json() as any;
+    return HttpResponse.json({
+      status: 'cloning',
+      instance_id: `i-clone${Date.now()}`,
+      instance_name: body.instance_name,
+      estimated_time_minutes: 12,
+    });
   }),
 ];
 
@@ -313,6 +334,10 @@ export const emptyHandlers = [
   }),
 
   http.get(`${DAEMON_URL}/api/v1/storage`, () => {
+    return HttpResponse.json([]);
+  }),
+
+  http.get(`${DAEMON_URL}/api/v1/backups`, () => {
     return HttpResponse.json([]);
   }),
 ];

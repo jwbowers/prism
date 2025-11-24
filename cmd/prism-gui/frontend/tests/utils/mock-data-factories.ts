@@ -8,6 +8,22 @@
 import type { Template, Instance, Profile, Volume, EBSStorage } from '../../src/types';
 
 /**
+ * Backup type definition
+ */
+export interface Backup {
+  id: string;
+  instance_id: string;
+  instance_name?: string;
+  name: string;
+  template?: string;
+  created_at: string;
+  size_gb: number;
+  status: 'available' | 'creating' | 'pending' | 'deleting';
+  monthly_cost?: number;
+  description?: string;
+}
+
+/**
  * Template Mock Data Factory
  */
 export const createMockTemplate = (overrides?: Partial<Template>): Template => ({
@@ -287,3 +303,67 @@ export const createMockError = (message: string = 'An error occurred', code: num
   code,
   timestamp: new Date().toISOString(),
 });
+
+/**
+ * Backup Mock Data Factory
+ */
+export const createMockBackup = (overrides?: Partial<Backup>): Backup => ({
+  id: 'snap-1234567890abcdef0',
+  instance_id: 'i-1234567890abcdef0',
+  instance_name: 'my-ml-research',
+  name: 'my-ml-research-backup-2025-11-15',
+  template: 'Python Machine Learning',
+  created_at: '2025-11-15T10:00:00Z',
+  size_gb: 50,
+  status: 'available',
+  monthly_cost: 2.50, // $0.05/GB-month for snapshots
+  description: 'Automatic backup before major upgrade',
+  ...overrides,
+});
+
+export const createMockBackups = (): Backup[] => [
+  createMockBackup({
+    id: 'snap-1234567890abcdef0',
+    name: 'my-ml-research-backup-2025-11-15',
+    instance_name: 'my-ml-research',
+    created_at: '2025-11-15T10:00:00Z',
+    size_gb: 50,
+    status: 'available',
+    monthly_cost: 2.50,
+  }),
+  createMockBackup({
+    id: 'snap-0987654321fedcba0',
+    instance_id: 'i-0987654321fedcba0',
+    instance_name: 'my-r-analysis',
+    name: 'r-analysis-weekly-backup',
+    template: 'R Research Environment',
+    created_at: '2025-11-10T08:30:00Z',
+    size_gb: 30,
+    status: 'available',
+    monthly_cost: 1.50,
+  }),
+  createMockBackup({
+    id: 'snap-abcdef1234567890',
+    instance_id: 'i-abcdef1234567890',
+    instance_name: 'web-dev-environment',
+    name: 'web-dev-snapshot-before-deploy',
+    template: 'Web Development',
+    created_at: '2025-11-18T14:45:00Z',
+    size_gb: 20,
+    status: 'creating',
+    monthly_cost: 1.00,
+    description: 'Pre-deployment snapshot for rollback',
+  }),
+  createMockBackup({
+    id: 'snap-fedcba0987654321',
+    instance_id: 'i-1234567890abcdef0',
+    instance_name: 'my-ml-research',
+    name: 'emergency-backup-2025-11-01',
+    template: 'Python Machine Learning',
+    created_at: '2025-11-01T03:00:00Z',
+    size_gb: 75,
+    status: 'available',
+    monthly_cost: 3.75,
+    description: 'Emergency backup before disk migration',
+  }),
+];

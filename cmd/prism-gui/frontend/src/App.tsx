@@ -525,6 +525,11 @@ class SafePrismAPI {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      // Handle HTTP 204 No Content (empty response)
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        return {} as T;
+      }
+
       const data = await response.json();
       return data;
     } catch (error) {
@@ -1351,8 +1356,8 @@ class SafePrismAPI {
     await this.safeRequest(`/api/v1/profiles/${profileId}`, 'DELETE');
   }
 
-  async switchProfile(profileId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/profiles/${profileId}/activate`, 'POST');
+  async switchProfile(profileId: string): Promise<any> {
+    return this.safeRequest(`/api/v1/profiles/${profileId}/activate`, 'POST');
   }
 }
 
@@ -3770,8 +3775,8 @@ export default function PrismApp() {
         const response = await api.getProfiles();
         setProfiles(response);
 
-        // Find current profile
-        const current = response.find((p: any) => p.default);
+        // Find current profile (backend returns "default" - case-sensitive)
+        const current = response.find((p: any) => p.default || p.Default);
         if (current) {
           setCurrentProfileId(current.id);
         }
@@ -3856,15 +3861,20 @@ export default function PrismApp() {
 
     // Switch profile
     const handleSwitchProfile = async (profileId: string) => {
-      setLoading(true);
       try {
-        await api.switchProfile(profileId);
-        setCurrentProfileId(profileId);
+        // Backend returns the activated profile with Default: true
+        const activatedProfile = await api.switchProfile(profileId);
+
+        // Update current profile ID immediately from the response (avoids race condition)
+        setCurrentProfileId(activatedProfile.id);
+
+        // Small delay to ensure filesystem sync (backend writes profile to disk)
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Reload profiles to include any newly created ones and update default flags
         await loadProfiles();
       } catch (error) {
         console.error('Failed to switch profile:', error);
-      } finally {
-        setLoading(false);
       }
     };
 

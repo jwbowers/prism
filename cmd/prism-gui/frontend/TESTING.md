@@ -347,6 +347,54 @@ test.describe('Profile Management Workflows', () => {
 });
 ```
 
+### E2E Integration Test with Real Fixtures Pattern
+
+```typescript
+// tests/e2e/backup-integration.spec.ts
+import { test, expect } from '@playwright/test';
+import { createFixtureRegistry, createBackupTestEnvironment } from './fixtures';
+
+let fixtures;
+
+test.describe('Backup Integration Tests', () => {
+  test.beforeAll(async () => {
+    // Create fixture registry for cleanup tracking
+    fixtures = createFixtureRegistry();
+
+    // Create real test environment (instance + backup)
+    // This takes 5-15 minutes but tests real AWS integration
+    const { instance, backup } = await createBackupTestEnvironment(fixtures);
+
+    console.log(`Created test instance: ${instance.instance_id}`);
+    console.log(`Created test backup: ${backup.id}`);
+  });
+
+  test.afterAll(async () => {
+    // Cleanup all created resources automatically
+    await fixtures.cleanup();
+  });
+
+  test('complete backup lifecycle', async ({ page }) => {
+    await page.goto('/');
+
+    // Navigate to backups
+    await page.click('text=Backups');
+
+    // Verify backup appears in table
+    await expect(page.locator('[data-testid="backups-table"]')).toContainText('test-backup');
+
+    // Test restore workflow
+    await page.click('[data-backup-id] button:has-text("Actions")');
+    await page.click('text=Restore');
+    await page.fill('input[name="instance-name"]', 'restored-instance');
+    await page.click('button:has-text("Restore")');
+
+    // Verify restore initiated
+    await expect(page.locator('text=Restore initiated')).toBeVisible();
+  });
+});
+```
+
 ### Backend Service Test Pattern
 
 ```go
@@ -387,6 +435,234 @@ func TestProfileManagement(t *testing.T) {
     })
 }
 ```
+
+---
+
+## Dual-Strategy Testing Approach
+
+For features that require AWS resources (backups, instances, volumes), we use a **dual-strategy** approach:
+
+### Strategy A: Fast Component Tests (MSW Mocks)
+
+**Use For**: Unit tests, component tests, UI behavior validation
+**Speed**: Instant (no AWS calls)
+**Reliability**: 100% (no external dependencies)
+
+```typescript
+// src/components/__tests__/BackupManager.test.tsx
+import { describe, test, expect } from 'vitest';
+import { render, screen, waitFor } from 'tests/utils';
+import { setupMSW } from 'tests/msw/server';
+import { BackupManager } from '../BackupManager';
+
+describe('BackupManager', () => {
+  setupMSW(); // Automatically returns mock backups
+
+  test('displays list of backups', async () => {
+    render(<BackupManager />);
+
+    // MSW returns 4 mock backups instantly
+    await waitFor(() => {
+      expect(screen.getByText('my-ml-research-backup-2025-11-15')).toBeInTheDocument();
+      expect(screen.getByText('50 GB')).toBeInTheDocument();
+      expect(screen.getByText('$2.50')).toBeInTheDocument();
+    });
+  });
+
+  test('creates backup', async () => {
+    const { user } = render(<BackupManager />);
+
+    await user.click(screen.getByRole('button', { name: /create backup/i }));
+    await user.type(screen.getByLabelText(/backup name/i), 'test-backup');
+    await user.click(screen.getByRole('button', { name: /create/i }));
+
+    // MSW intercepts POST and returns mock response
+    await waitFor(() => {
+      expect(screen.getByText(/backup created/i)).toBeInTheDocument();
+    });
+  });
+});
+```
+
+**Advantages**:
+- ✅ Tests run in milliseconds
+- ✅ No AWS credentials needed
+- ✅ Perfect for TDD and rapid iteration
+- ✅ Tests UI logic and user interactions
+- ✅ No cleanup required
+
+**Limitations**:
+- ❌ Doesn't test real AWS integration
+- ❌ Doesn't test actual daemon API
+- ❌ Mock data may drift from reality
+
+### Strategy B: Slow Integration Tests (Real AWS Fixtures)
+
+**Use For**: E2E integration tests, full workflow validation
+**Speed**: Slow (5-15 minutes to create real backups)
+**Reliability**: Tests real AWS integration
+
+```typescript
+// tests/e2e/backup-integration.spec.ts
+import { test, expect } from '@playwright/test';
+import {
+  createFixtureRegistry,
+  createTestInstance,
+  createTestBackup
+} from './fixtures';
+
+let fixtures;
+
+test.describe('Backup Integration Tests', () => {
+  test.beforeAll(async () => {
+    fixtures = createFixtureRegistry();
+
+    // Create real AWS resources
+    const instance = await createTestInstance({
+      template: 'Ubuntu Basic',
+      name: `test-backup-${Date.now()}`,
+    }, fixtures);
+
+    const backup = await createTestBackup({
+      instanceId: instance.instance_id,
+      name: `integration-test-backup`,
+    }, fixtures);
+  });
+
+  test.afterAll(async () => {
+    // Automatic cleanup of all AWS resources
+    await fixtures.cleanup();
+  });
+
+  test('restores backup to new instance', async ({ page }) => {
+    // Test uses real backup created in beforeAll
+    await page.goto('/');
+    await page.click('text=Backups');
+
+    // Real backup appears in table
+    await expect(page.locator('[data-testid="backups-table"]'))
+      .toContainText('integration-test-backup');
+  });
+});
+```
+
+**Advantages**:
+- ✅ Tests complete AWS integration
+- ✅ Tests real daemon API
+- ✅ Catches real-world issues
+- ✅ Validates actual AWS behavior
+
+**Limitations**:
+- ❌ Slow (5-15 minutes per test suite)
+- ❌ Requires AWS credentials
+- ❌ Not suitable for TDD
+- ❌ Costs real money (minimal)
+
+### When to Use Each Strategy
+
+| Scenario | Strategy | Reason |
+|----------|----------|--------|
+| Component behavior | A (MSW) | Fast feedback, no AWS needed |
+| Form validation | A (MSW) | UI logic only |
+| Error handling | A (MSW) | Easy to simulate errors |
+| Loading states | A (MSW) | Control timing precisely |
+| E2E workflows | B (Real) | Test full integration |
+| Backup restore | B (Real) | AWS-specific behavior |
+| Cost calculations | B (Real) | Real AWS pricing data |
+| Regional differences | B (Real) | AWS regional behavior |
+
+### Profile Testing
+
+Profile tests are simpler than backup tests because profiles are configuration-based, not AWS resources:
+
+```javascript
+import { createFixtureRegistry, createTestProfile } from './fixtures';
+
+test.describe('Profile Workflows', () => {
+  let fixtures;
+
+  test.beforeAll(async () => {
+    fixtures = createFixtureRegistry();
+
+    // Create test profiles for multi-profile scenarios
+    await createTestProfile({
+      name: 'test-profile-1',
+      region: 'us-west-2',
+      awsProfile: 'aws',
+    }, fixtures);
+
+    await createTestProfile({
+      name: 'test-profile-2',
+      region: 'us-east-1',
+      awsProfile: 'aws',
+    }, fixtures);
+  });
+
+  test.afterAll(async () => {
+    await fixtures.cleanup(); // Removes all test profiles
+  });
+
+  test('should switch between profiles', async ({ page }) => {
+    // Test uses real profiles created in beforeAll
+  });
+});
+```
+
+**Profile Fixture Features**:
+- ✅ Fast creation (config-based, no AWS resources)
+- ✅ Automatic cleanup via FixtureRegistry
+- ✅ No polling needed (profiles are immediately available)
+- ✅ Supports multiple profiles for switch/comparison tests
+
+### Fixture Utilities Reference
+
+Located in `tests/e2e/fixtures.js`:
+
+```javascript
+import {
+  createFixtureRegistry,
+  createTestInstance,
+  createTestBackup,
+  createBackupTestEnvironment, // One-call setup
+  createTestProfile
+} from './fixtures';
+
+// Create fixture registry
+const fixtures = createFixtureRegistry();
+
+// Create instance (takes ~5 minutes)
+const instance = await createTestInstance({
+  template: 'Ubuntu Basic',
+  name: 'my-test-instance',
+}, fixtures);
+
+// Create backup from instance (takes ~10 minutes)
+const backup = await createTestBackup({
+  instanceId: instance.instance_id,
+  name: 'my-test-backup',
+}, fixtures);
+
+// Or create both at once
+const { instance, backup } = await createBackupTestEnvironment(fixtures);
+
+// Create test profile (fast, config-based)
+const profile = await createTestProfile({
+  name: 'my-test-profile',
+  region: 'us-east-1',
+  awsProfile: 'aws',
+}, fixtures);
+
+// Cleanup (always call in afterAll)
+await fixtures.cleanup();
+```
+
+**Fixture Features**:
+- Automatic resource tracking
+- Proper cleanup ordering (backups → instances → volumes → profiles)
+- Polling until resources are ready (for AWS resources)
+- Error handling and retries
+- Cost-efficient (uses smallest instance sizes)
+- Fast profile creation (no AWS resources)
 
 ---
 

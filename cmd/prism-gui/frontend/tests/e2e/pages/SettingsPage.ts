@@ -83,12 +83,17 @@ export class SettingsPage extends BasePage {
   async updateProfile(name: string, newRegion: string) {
     await this.switchToProfiles();
     const profile = this.getProfileByName(name);
-    const editButton = profile.getByTestId(`edit-profile-${name}`);
+    // Use generic Edit button selector instead of profile-specific test ID
+    const editButton = profile.getByRole('button', { name: /edit/i });
     await editButton.click();
-    await this.page.waitForTimeout(500); // Wait for dialog
+
+    // Wait for dialog to be visible and input to be interactable
+    const regionInput = this.page.getByTestId('region-input').locator('input');
+    await regionInput.waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.waitForTimeout(500); // Additional wait for full render
 
     // Cloudscape Input wraps input in a div
-    await this.page.getByTestId('region-input').locator('input').fill(newRegion);
+    await regionInput.fill(newRegion);
     await this.clickButton('save');
   }
 
@@ -101,11 +106,84 @@ export class SettingsPage extends BasePage {
   }
 
   /**
-   * Switch profile
+   * Switch profile and wait for it to become current
    */
   async switchProfile(name: string) {
     await this.switchToProfiles();
     await this.page.getByTestId(`switch-profile-${name}`).click();
+
+    // Poll until the profile becomes current (max 10 seconds)
+    await this.waitForProfileToBeCurrent(name, 10000);
+  }
+
+  /**
+   * Poll until a specific profile becomes the current profile
+   */
+  async waitForProfileToBeCurrent(profileName: string, timeout: number = 15000) {
+    // First wait for any dialogs to close
+    await this.waitForDialogClose();
+
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      try {
+        const currentProfile = await this.getCurrentProfile();
+        if (currentProfile && currentProfile.includes(profileName)) {
+          return; // Success!
+        }
+      } catch (error) {
+        // Continue polling even if getCurrentProfile() fails
+      }
+      await this.page.waitForTimeout(500); // Wait 500ms before next poll
+    }
+    throw new Error(`Profile "${profileName}" did not become current within ${timeout}ms`);
+  }
+
+  /**
+   * Poll until a profile is removed from the list
+   */
+  async waitForProfileToBeRemoved(profileName: string, timeout: number = 15000) {
+    // First wait for any dialogs to close
+    await this.waitForDialogClose();
+
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      try {
+        const exists = await this.verifyProfileExists(profileName);
+        if (!exists) {
+          return; // Success - profile is gone!
+        }
+      } catch (error) {
+        // Continue polling even if verifyProfileExists() fails
+      }
+      await this.page.waitForTimeout(500); // Wait 500ms before next poll
+    }
+    throw new Error(`Profile "${profileName}" was not removed within ${timeout}ms`);
+  }
+
+  /**
+   * Poll until a profile shows the expected region
+   */
+  async waitForProfileRegion(profileName: string, expectedRegion: string, timeout: number = 15000) {
+    // First wait for any dialogs to close
+    await this.waitForDialogClose();
+
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      try {
+        const profileRow = this.getProfileByName(profileName);
+        const exists = await this.elementExists(profileRow);
+        if (exists) {
+          const profileText = await profileRow.textContent();
+          if (profileText && profileText.includes(expectedRegion)) {
+            return; // Success - region updated!
+          }
+        }
+      } catch (error) {
+        // Continue polling even if row query fails
+      }
+      await this.page.waitForTimeout(500); // Wait 500ms before next poll
+    }
+    throw new Error(`Profile "${profileName}" did not show region "${expectedRegion}" within ${timeout}ms`);
   }
 
   /**
@@ -141,11 +219,25 @@ export class SettingsPage extends BasePage {
     // Wait for profiles table to load
     await this.page.waitForSelector('[data-testid="profiles-table"]', { timeout: 5000 });
 
-    // Wait a moment for the API call to complete and profiles to render
-    await this.page.waitForTimeout(1000);
+    // Wait for the "Current" badge to appear (profile switching is instant - local operation)
+    try {
+      await this.page.waitForSelector('[data-testid="profiles-table"] tr:has-text("Current")', {
+        timeout: 2000,
+        state: 'visible'
+      });
+    } catch {
+      // No current profile found
+      return null;
+    }
 
-    const currentBadge = this.page.getByTestId('current-profile-badge');
-    return await this.getTextContent(currentBadge);
+    // Find the row that contains "Current" badge and extract the profile name
+    // The structure is: badge "Current" + profile name text in the same cell
+    const currentRow = this.page.locator('[data-testid="profiles-table"] tr:has-text("Current")').first();
+    const profileNameCell = currentRow.locator('td').first();
+    const fullText = await this.getTextContent(profileNameCell);
+
+    // Remove "Current" badge text to get just the profile name
+    return fullText ? fullText.replace(/^Current\s*/, '') : null;
   }
 
   /**
@@ -262,7 +354,15 @@ export class SettingsPage extends BasePage {
   async cleanupTestProfiles(namePattern: RegExp) {
     await this.switchToProfiles();
 
-    // Get all profile rows
+    // Step 1: Get current profile to know if we need to switch
+    const currentProfile = await this.getCurrentProfile();
+    let needsSwitch = false;
+    if (currentProfile && namePattern.test(currentProfile)) {
+      needsSwitch = true;
+    }
+
+    // Step 2: Collect all test profile names
+    const testProfiles: string[] = [];
     const rows = this.getProfileRows();
     const count = await rows.count();
 
@@ -271,33 +371,73 @@ export class SettingsPage extends BasePage {
       const text = await row.textContent();
 
       if (text && namePattern.test(text)) {
-        // Extract profile name from the row
-        const match = text.match(/^([a-zA-Z0-9\-_]+)/);
+        // Extract profile name from the row (get first word before space)
+        const match = text.match(/^Current\s+([a-zA-Z0-9\-_]+)|^([a-zA-Z0-9\-_]+)/);
         if (match) {
-          const profileName = match[1];
-          try {
-            // Try to delete it
-            await this.deleteProfile(profileName);
-            await this.page.waitForTimeout(200);
+          const profileName = match[1] || match[2];
+          if (profileName) {
+            testProfiles.push(profileName);
+          }
+        }
+      }
+    }
 
-            // Confirm deletion
-            const confirmButton = this.page.getByRole('button', { name: /delete|confirm/i });
-            if (await confirmButton.isVisible({ timeout: 1000 })) {
-              await confirmButton.click();
-              await this.page.waitForTimeout(500);
-            }
-          } catch (error) {
-            // Profile might not be deletable (could be current), skip it
-            // Try to close any dialog
+    // Step 3: If current profile is a test profile, switch to a non-test profile first
+    if (needsSwitch && testProfiles.length > 0) {
+      // Find first non-test profile
+      for (let i = 0; i < count; i++) {
+        const row = rows.nth(i);
+        const text = await row.textContent();
+        if (text && !namePattern.test(text)) {
+          const match = text.match(/^([a-zA-Z0-9\-_]+)/);
+          if (match) {
+            const safeProfile = match[1];
             try {
-              const cancelButton = this.page.getByRole('button', { name: /cancel/i });
-              if (await cancelButton.isVisible({ timeout: 500 })) {
-                await cancelButton.click();
-              }
+              // Switch to safe profile
+              await this.page.getByTestId(`switch-profile-${safeProfile}`).click();
+              await this.page.waitForTimeout(1000);
+              break;
             } catch {
-              // Ignore
+              // Continue to next profile
             }
           }
+        }
+      }
+    }
+
+    // Step 4: Delete all test profiles
+    for (const profileName of testProfiles) {
+      try {
+        // Refresh the page to get updated profile list
+        await this.switchToProfiles();
+        await this.page.waitForTimeout(300);
+
+        // Check if profile still exists
+        const exists = await this.verifyProfileExists(profileName);
+        if (!exists) {
+          continue; // Already deleted
+        }
+
+        // Delete profile
+        await this.deleteProfile(profileName);
+        await this.page.waitForTimeout(300);
+
+        // Confirm deletion
+        const confirmButton = this.page.getByRole('button', { name: /delete|confirm/i });
+        if (await confirmButton.isVisible({ timeout: 1000 })) {
+          await confirmButton.click();
+          await this.page.waitForTimeout(500);
+        }
+      } catch (error) {
+        // Skip profiles that can't be deleted
+        try {
+          const cancelButton = this.page.getByRole('button', { name: /cancel/i });
+          if (await cancelButton.isVisible({ timeout: 500 })) {
+            await cancelButton.click();
+            await this.page.waitForTimeout(300);
+          }
+        } catch {
+          // Ignore
         }
       }
     }
@@ -308,12 +448,21 @@ export class SettingsPage extends BasePage {
    */
   async waitForDialogClose(timeout: number = 5000) {
     try {
-      await this.page.waitForSelector('[role="dialog"]', {
-        state: 'hidden',
-        timeout
-      });
+      // First check if a dialog is currently visible
+      const dialog = this.page.locator('[role="dialog"]').first();
+      const isVisible = await dialog.isVisible({ timeout: 500 });
+
+      if (isVisible) {
+        // Wait for it to close
+        await this.page.waitForSelector('[role="dialog"]', {
+          state: 'hidden',
+          timeout
+        });
+        // Additional wait to ensure dialog animation completes
+        await this.page.waitForTimeout(500);
+      }
     } catch {
-      // Dialog might already be closed
+      // Dialog might already be closed or check timed out
     }
   }
 

@@ -84,6 +84,9 @@ type Server struct {
 	// Idle detection components (daemon singletons - Issue #289)
 	idleScheduler *idle.Scheduler
 	policyManager *idle.PolicyManager
+
+	// Profile management singleton (prevents filesystem race conditions)
+	profileManager *profile.ManagerEnhanced
 }
 
 // NewServer creates a new daemon server
@@ -357,6 +360,7 @@ func NewServer(port string) (*Server, error) {
 		cloudwatchClient:    cloudwatchClient,
 		idleScheduler:       idleScheduler,
 		policyManager:       policyManager,
+		profileManager:      profileManager, // Singleton for filesystem consistency
 	}
 
 	// Configure budget tracker with action executor

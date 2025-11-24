@@ -13,6 +13,7 @@ import { test, expect, Page } from '@playwright/test';
 /**
  * Helper: Wait for AWS API calls to complete and table loading to finish
  * AWS API calls can take 8-15 seconds, especially when querying multiple regions
+ * Also handles empty state when no backups exist
  */
 async function waitForBackupsToLoad(page: Page, timeoutMs: number = 30000) {
   // First, wait for the Backups view heading to appear (confirms view rendered)
@@ -21,19 +22,26 @@ async function waitForBackupsToLoad(page: Page, timeoutMs: number = 30000) {
   // Give React time to fully render the view components
   await page.waitForTimeout(1000);
 
-  // Now wait for the table to exist
-  await page.waitForSelector('[data-testid="backups-table"]', { timeout: timeoutMs });
+  // Now wait for either the table or empty state to exist
+  await Promise.race([
+    page.waitForSelector('[data-testid="backups-table"]', { timeout: timeoutMs }),
+    page.waitForSelector('[data-testid="empty-backups"]', { timeout: timeoutMs }),
+  ]);
 
-  // Wait for loading text to disappear (critical - table shows "Loading backups from AWS" while loading)
-  // Use polling: true to check every 200ms instead of waiting for mutations
-  await page.waitForFunction(
-    () => {
-      const table = document.querySelector('[data-testid="backups-table"]');
-      const tableText = table?.textContent || '';
-      return !tableText.includes('Loading backups');
-    },
-    { timeout: timeoutMs, polling: 200 }
-  );
+  // If table exists, wait for loading to complete
+  const hasTable = await page.locator('[data-testid="backups-table"]').isVisible();
+  if (hasTable) {
+    // Wait for loading text to disappear (critical - table shows "Loading backups from AWS" while loading)
+    // Use polling: true to check every 200ms instead of waiting for mutations
+    await page.waitForFunction(
+      () => {
+        const table = document.querySelector('[data-testid="backups-table"]');
+        const tableText = table?.textContent || '';
+        return !tableText.includes('Loading backups');
+      },
+      { timeout: timeoutMs, polling: 200 }
+    );
+  }
 
   // Give a longer buffer for AWS responses and React re-renders
   await page.waitForTimeout(2000);
@@ -127,11 +135,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        // Skip: No backups available for display testing
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available for display testing');
 
       const firstBackup = backupRows[0];
       const backupText = await firstBackup.textContent();
@@ -154,10 +159,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Check that backup name cell has data-testid
       const backupNameCell = page.locator('[data-testid="backup-name"]').first();
@@ -169,10 +172,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Check for status badge
       const statusBadge = page.locator('[data-testid="status-badge"]').first();
@@ -260,10 +261,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Click Actions dropdown and select Delete
       await clickDropdownAction(page, 0, 'Delete');
@@ -281,10 +280,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Open delete dialog
       await clickDropdownAction(page, 0, 'Delete');
@@ -303,10 +300,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Open delete dialog
       await clickDropdownAction(page, 0, 'Delete');
@@ -328,10 +323,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Click Actions dropdown and select Restore
       await clickDropdownAction(page, 0, 'Restore');
@@ -349,10 +342,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Open restore dialog
       await clickDropdownAction(page, 0, 'Restore');
@@ -369,10 +360,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Open restore dialog
       await clickDropdownAction(page, 0, 'Restore');
@@ -390,18 +379,16 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        // Verify empty state is shown
-        const emptyState = page.locator('[data-testid="empty-backups"]');
-        expect(await emptyState.isVisible()).toBe(true);
+      // Skip if backups exist (can't test empty state)
+      test.skip(backupRows.length > 0, 'Backups exist, cannot test empty state');
 
-        // Should have helpful message
-        const emptyStateText = await emptyState.textContent();
-        expect(emptyStateText).toContain('No backups');
-      } else {
-        // Skip: Backups exist, can't test empty state
-        test.skip();
-      }
+      // Verify empty state is shown
+      const emptyState = page.locator('[data-testid="empty-backups"]');
+      expect(await emptyState.isVisible()).toBe(true);
+
+      // Should have helpful message
+      const emptyStateText = await emptyState.textContent();
+      expect(emptyStateText).toContain('No backups');
     });
 
     test('should have create backup button in all states', async ({ page }) => {
@@ -419,10 +406,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Each row should have Actions button
       const firstRow = backupRows[0];
@@ -435,10 +420,8 @@ test.describe('Backup Management Workflows', () => {
 
       const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
 
-      if (backupRows.length === 0) {
-        test.skip();
-        return;
-      }
+      // Skip test if no backups available
+      test.skip(backupRows.length === 0, 'No backups available');
 
       // Click Actions dropdown
       const firstRow = backupRows[0];
