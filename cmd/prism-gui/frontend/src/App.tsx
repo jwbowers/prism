@@ -392,6 +392,99 @@ interface BulkInviteResponse {
   errors?: Array<{email: string; error: string}>;
 }
 
+// Additional type definitions for API integration
+interface Invitation {
+  id: string;
+  project_id: string;
+  project_name: string;
+  email: string;
+  role: 'viewer' | 'member' | 'admin';
+  token: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  invited_by: string;
+  invited_at: string;
+  expires_at: string;
+  responded_at?: string;
+  message?: string;
+}
+
+interface ProjectDetails extends Project {
+  members: ProjectMember[];
+  cost_breakdown: CostBreakdown;
+}
+
+interface ProjectMember {
+  user_id: string;
+  username: string;
+  role: string;
+  joined_at: string;
+}
+
+interface CostBreakdown {
+  instances: number;
+  storage: number;
+  data_transfer: number;
+  total: number;
+}
+
+interface CreateProjectRequest {
+  name: string;
+  description: string;
+  budget_limit?: number;
+}
+
+interface CreateUserRequest {
+  username: string;
+  email: string;
+  full_name: string;
+}
+
+interface SendInvitationRequest {
+  email: string;
+  role: 'viewer' | 'member' | 'admin';
+  message?: string;
+}
+
+interface BulkInvitationRequest {
+  emails: string[];
+  role: 'viewer' | 'member' | 'admin';
+  message?: string;
+}
+
+interface BulkInvitationResponse {
+  sent: number;
+  failed: number;
+  invitations: Invitation[];
+  errors: { email: string; error: string }[];
+}
+
+interface CreateSharedTokenRequest {
+  name: string;
+  role: 'viewer' | 'member' | 'admin';
+  redemption_limit: number;
+  expires_in: '1d' | '7d' | '30d' | '90d';
+  message?: string;
+}
+
+interface ExtendTokenRequest {
+  expires_in: '1d' | '7d' | '30d' | '90d';
+}
+
+interface SharedInvitationToken {
+  token: string;
+  project_id: string;
+  project_name: string;
+  name: string;
+  role: 'viewer' | 'member' | 'admin';
+  redemption_limit: number;
+  redemptions: number;
+  created_at: string;
+  created_by: string;
+  expires_at: string;
+  revoked: boolean;
+  qr_code_url?: string;
+}
+
 interface AppState {
   activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
@@ -1040,6 +1133,37 @@ class SafePrismAPI {
       logger.error('Failed to redeem shared token:', error);
       throw error;
     }
+  }
+
+  // Additional Invitation Management APIs
+  async getMyInvitations(): Promise<Invitation[]> {
+    try {
+      const data = await this.safeRequest('/api/v1/invitations/my');
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      logger.error('Failed to fetch my invitations:', error);
+      return [];
+    }
+  }
+
+  async getProjectInvitations(projectId: string): Promise<Invitation[]> {
+    try {
+      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations`);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      logger.error('Failed to fetch project invitations:', error);
+      return [];
+    }
+  }
+
+  // Project Details API
+  async getProjectDetails(projectId: string): Promise<ProjectDetails> {
+    return this.safeRequest(`/api/v1/projects/${projectId}`);
+  }
+
+  // User Provisioning API
+  async provisionUserOnWorkspace(username: string, instanceId: string): Promise<void> {
+    await this.safeRequest(`/api/v1/research-users/${username}/provision`, 'POST', { instance_id: instanceId });
   }
 
   // AMI Management APIs
@@ -1822,14 +1946,24 @@ export default function PrismApp() {
     }
 
     try {
-      // TODO: Will be implemented in Phase 3 (Backend API)
-      // For now, just show success notification
+      // Call API to create project
+      await api.createProject({
+        name: projectName.trim(),
+        description: projectDescription.trim(),
+        budget_limit: budget
+      });
+
+      // Refresh projects list
+      const projects = await api.getProjects();
+      setState(prev => ({ ...prev, projects }));
+
+      // Show success notification
       setState(prev => ({
         ...prev,
         notifications: [{
           type: 'success',
           header: 'Project Created',
-          content: `Project "${projectName}" created successfully (API integration pending)`,
+          content: `Project "${projectName}" created successfully`,
           dismissible: true,
           id: Date.now().toString()
         }, ...prev.notifications]
@@ -1841,7 +1975,7 @@ export default function PrismApp() {
       setProjectDescription('');
       setProjectBudget('');
     } catch (error: any) {
-      setProjectValidationError(`Failed to create project: ${error.message}`);
+      setProjectValidationError(`Failed to create project: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -1860,13 +1994,24 @@ export default function PrismApp() {
     }
 
     try {
-      // TODO: Phase 3 - Backend API integration
+      // Call API to create user
+      await api.createUser({
+        username: username.trim(),
+        email: userEmail.trim(),
+        full_name: userFullName.trim()
+      });
+
+      // Refresh users list
+      const users = await api.getUsers();
+      setState(prev => ({ ...prev, users }));
+
+      // Show success notification
       setState(prev => ({
         ...prev,
         notifications: [{
           type: 'success',
           header: 'User Created',
-          content: `User "${username}" created successfully (API integration pending)`,
+          content: `User "${username}" created successfully`,
           dismissible: true,
           id: Date.now().toString()
         }, ...prev.notifications]
@@ -1878,7 +2023,11 @@ export default function PrismApp() {
       setUserEmail('');
       setUserFullName('');
     } catch (error: any) {
-      setUserValidationError(`Failed to create user: ${error.message}`);
+      if (error.response?.status === 409) {
+        setUserValidationError('A user with this username already exists');
+      } else {
+        setUserValidationError(`Failed to create user: ${error.message || 'Unknown error'}`);
+      }
     }
   };
 
