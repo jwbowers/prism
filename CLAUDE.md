@@ -464,6 +464,39 @@ go test ./pkg/templates/...
 go test ./pkg/research/...
 ```
 
+### Integration Testing with Fixtures
+
+**Prism uses a fixture pattern for integration tests** that create real AWS resources with automatic cleanup.
+
+Key benefits:
+- ✅ Automatic cleanup via `t.Cleanup()` - no orphaned resources
+- ✅ Proper dependency ordering (backups → instances → EBS → EFS)
+- ✅ Production-ready pattern used across all integration tests
+
+**Quick Example**:
+```go
+func TestBackupWorkflow(t *testing.T) {
+    registry := fixtures.NewFixtureRegistry(t, client)
+
+    instance, _ := fixtures.CreateTestInstance(t, registry, opts)
+    backup, _ := fixtures.CreateTestBackup(t, registry, opts)
+
+    // Test your logic...
+    // Cleanup happens automatically!
+}
+```
+
+**Running**:
+```bash
+go test -tags integration ./test/integration/... -v
+```
+
+**📚 Complete documentation**: See **[docs/TESTING.md](docs/TESTING.md)** for:
+- Detailed fixture usage patterns
+- E2E testing guide (Playwright)
+- CLI integration tests
+- Configuration and troubleshooting
+
 ### E2E Testing (Playwright)
 ```bash
 cd cmd/prism-gui/frontend
@@ -495,6 +528,8 @@ test.beforeEach(async ({ page, context }) => {
 - AWS Region: `us-west-2`
 - Daemon auto-starts via `setup-daemon.js`
 - Tests run against real AWS integration
+
+**📚 For detailed E2E patterns, configuration, and troubleshooting**: See [docs/TESTING.md](docs/TESTING.md)
 
 ### Build Testing
 ```bash
