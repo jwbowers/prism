@@ -9,6 +9,7 @@ import Terminal from './Terminal';
 import WebView from './WebView';
 import { ValidationError } from './components/ValidationError';
 import { ProjectDetailView } from './components/ProjectDetailView';
+import { SSHKeyModal } from './components/SSHKeyModal';
 
 import {
   AppLayout,
@@ -1616,6 +1617,10 @@ export default function PrismApp() {
   const [userFullName, setUserFullName] = useState('');
   const [userValidationError, setUserValidationError] = useState('');
 
+  // SSH Key modal state
+  const [sshKeyModalVisible, setSshKeyModalVisible] = useState(false);
+  const [selectedUsername, setSelectedUsername] = useState<string>('');
+
   // Safe data loading with comprehensive error handling
   // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
   const loadApplicationData = React.useCallback(async () => {
@@ -2035,6 +2040,33 @@ export default function PrismApp() {
       } else {
         setUserValidationError(`Failed to create user: ${error.message || 'Unknown error'}`);
       }
+    }
+  };
+
+  // SSH Key generation handler
+  const handleGenerateSSHKey = async (username: string): Promise<any> => {
+    try {
+      const response = await api.generateSSHKey(username);
+
+      // Refresh users list to update SSH key status
+      const users = await api.getUsers();
+      setState(prev => ({ ...prev, users }));
+
+      // Show success notification
+      setState(prev => ({
+        ...prev,
+        notifications: [{
+          type: 'success',
+          header: 'SSH Key Generated',
+          content: `SSH key pair generated successfully for user "${username}". Download the private key before closing the dialog.`,
+          dismissible: true,
+          id: Date.now().toString()
+        }, ...prev.notifications]
+      }));
+
+      return response;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to generate SSH key');
     }
   };
 
@@ -4555,19 +4587,24 @@ export default function PrismApp() {
                     { text: "Delete User", id: "delete" }
                   ]}
                   onItemClick={(detail) => {
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        {
-                          type: 'info',
-                          header: 'User Action',
-                          content: `${detail.detail.text} for user "${item.username}" - Feature coming soon!`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
+                    if (detail.detail.id === 'ssh-key') {
+                      setSelectedUsername(item.username);
+                      setSshKeyModalVisible(true);
+                    } else {
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [
+                          {
+                            type: 'info',
+                            header: 'User Action',
+                            content: `${detail.detail.text} for user "${item.username}" - Feature coming soon!`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          },
+                          ...prev.notifications
+                        ]
+                      }));
+                    }
                   }}
                 >
                   Actions
@@ -9531,6 +9568,15 @@ export default function PrismApp() {
       <QuickStartWizard />
       <CreateProjectModal />
       <CreateUserModal />
+      <SSHKeyModal
+        visible={sshKeyModalVisible}
+        username={selectedUsername}
+        onDismiss={() => {
+          setSshKeyModalVisible(false);
+          setSelectedUsername('');
+        }}
+        onGenerate={handleGenerateSSHKey}
+      />
     </>
   );
 }
