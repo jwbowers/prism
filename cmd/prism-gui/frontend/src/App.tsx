@@ -7,6 +7,7 @@ import '@cloudscape-design/global-styles/index.css';
 import './index.css';
 import Terminal from './Terminal';
 import WebView from './WebView';
+import { ValidationError } from './components/ValidationError';
 
 import {
   AppLayout,
@@ -1470,6 +1471,20 @@ export default function PrismApp() {
   const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<InstanceSnapshot | null>(null);
   const [restoreInstanceName, setRestoreInstanceName] = useState('');
 
+  // Create Project modal state
+  const [projectModalVisible, setProjectModalVisible] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [projectBudget, setProjectBudget] = useState('');
+  const [projectValidationError, setProjectValidationError] = useState('');
+
+  // Create User modal state
+  const [userModalVisible, setUserModalVisible] = useState(false);
+  const [username, setUsername] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userFullName, setUserFullName] = useState('');
+  const [userValidationError, setUserValidationError] = useState('');
+
   // Safe data loading with comprehensive error handling
   // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
   const loadApplicationData = React.useCallback(async () => {
@@ -1789,6 +1804,81 @@ export default function PrismApp() {
           ...prev.notifications
         ]
       }));
+    }
+  };
+
+  // Handle Create Project
+  const handleCreateProject = async () => {
+    // Validate
+    if (!projectName.trim()) {
+      setProjectValidationError('Project name is required');
+      return;
+    }
+
+    const budget = projectBudget ? parseFloat(projectBudget) : undefined;
+    if (budget !== undefined && (isNaN(budget) || budget < 0)) {
+      setProjectValidationError('Budget must be a positive number');
+      return;
+    }
+
+    try {
+      // TODO: Will be implemented in Phase 3 (Backend API)
+      // For now, just show success notification
+      setState(prev => ({
+        ...prev,
+        notifications: [{
+          type: 'success',
+          header: 'Project Created',
+          content: `Project "${projectName}" created successfully (API integration pending)`,
+          dismissible: true,
+          id: Date.now().toString()
+        }, ...prev.notifications]
+      }));
+
+      setProjectValidationError('');
+      setProjectModalVisible(false);
+      setProjectName('');
+      setProjectDescription('');
+      setProjectBudget('');
+    } catch (error: any) {
+      setProjectValidationError(`Failed to create project: ${error.message}`);
+    }
+  };
+
+  // Handle Create User
+  const handleCreateUser = async () => {
+    // Validate
+    if (!username.trim()) {
+      setUserValidationError('Username is required');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (userEmail && !emailRegex.test(userEmail)) {
+      setUserValidationError('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      // TODO: Phase 3 - Backend API integration
+      setState(prev => ({
+        ...prev,
+        notifications: [{
+          type: 'success',
+          header: 'User Created',
+          content: `User "${username}" created successfully (API integration pending)`,
+          dismissible: true,
+          id: Date.now().toString()
+        }, ...prev.notifications]
+      }));
+
+      setUserValidationError('');
+      setUserModalVisible(false);
+      setUsername('');
+      setUserEmail('');
+      setUserFullName('');
+    } catch (error: any) {
+      setUserValidationError(`Failed to create user: ${error.message}`);
     }
   };
 
@@ -3499,7 +3589,11 @@ export default function PrismApp() {
             <Button onClick={loadApplicationData} disabled={state.loading}>
               {state.loading ? <Spinner /> : 'Refresh'}
             </Button>
-            <Button variant="primary" data-testid="create-project-button">
+            <Button
+              variant="primary"
+              data-testid="create-project-button"
+              onClick={() => setProjectModalVisible(true)}
+            >
               Create Project
             </Button>
           </SpaceBetween>
@@ -4155,7 +4249,11 @@ export default function PrismApp() {
             <Button onClick={loadApplicationData} disabled={state.loading}>
               {state.loading ? <Spinner /> : 'Refresh'}
             </Button>
-            <Button variant="primary" data-testid="create-user-button">
+            <Button
+              variant="primary"
+              data-testid="create-user-button"
+              onClick={() => setUserModalVisible(true)}
+            >
               Create User
             </Button>
           </SpaceBetween>
@@ -9010,6 +9108,108 @@ export default function PrismApp() {
     );
   };
 
+  // Create Project Modal
+  const CreateProjectModal = () => (
+    <Modal
+      visible={projectModalVisible}
+      onDismiss={() => {
+        setProjectModalVisible(false);
+        setProjectValidationError('');
+      }}
+      header="Create New Project"
+      footer={
+        <Box float="right">
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button onClick={() => setProjectModalVisible(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleCreateProject}>Create</Button>
+          </SpaceBetween>
+        </Box>
+      }
+    >
+      <SpaceBetween size="m">
+        {projectValidationError && (
+          <ValidationError message={projectValidationError} visible={true} />
+        )}
+
+        <FormField label="Project Name" description="Unique identifier for the project">
+          <Input
+            value={projectName}
+            onChange={({ detail }) => setProjectName(detail.value)}
+            placeholder="e.g., ML Research 2024"
+          />
+        </FormField>
+
+        <FormField label="Description" description="Brief description of the project">
+          <Textarea
+            value={projectDescription}
+            onChange={({ detail }) => setProjectDescription(detail.value)}
+            placeholder="Describe the project purpose..."
+          />
+        </FormField>
+
+        <FormField label="Budget Limit (optional)" description="Maximum spending limit in USD">
+          <Input
+            type="number"
+            value={projectBudget}
+            onChange={({ detail }) => setProjectBudget(detail.value)}
+            placeholder="1000.00"
+          />
+        </FormField>
+      </SpaceBetween>
+    </Modal>
+  );
+
+  // Create User Modal
+  const CreateUserModal = () => (
+    <Modal
+      visible={userModalVisible}
+      onDismiss={() => {
+        setUserModalVisible(false);
+        setUserValidationError('');
+      }}
+      header="Create New User"
+      footer={
+        <Box float="right">
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button onClick={() => setUserModalVisible(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleCreateUser}>Create</Button>
+          </SpaceBetween>
+        </Box>
+      }
+    >
+      <SpaceBetween size="m">
+        {userValidationError && (
+          <ValidationError message={userValidationError} visible={true} />
+        )}
+
+        <FormField label="Username" description="Unique username for the user">
+          <Input
+            value={username}
+            onChange={({ detail }) => setUsername(detail.value)}
+            placeholder="e.g., jsmith"
+          />
+        </FormField>
+
+        <FormField label="Email" description="User's email address">
+          <Input
+            type="email"
+            value={userEmail}
+            onChange={({ detail }) => setUserEmail(detail.value)}
+            placeholder="user@example.com"
+          />
+        </FormField>
+
+        <FormField label="Full Name" description="User's full name">
+          <Input
+            value={userFullName}
+            onChange={({ detail }) => setUserFullName(detail.value)}
+            placeholder="John Smith"
+          />
+        </FormField>
+      </SpaceBetween>
+    </Modal>
+  );
+
   // Main render
   return (
     <>
@@ -9162,6 +9362,8 @@ export default function PrismApp() {
       <DeleteConfirmationModal />
       <OnboardingWizard />
       <QuickStartWizard />
+      <CreateProjectModal />
+      <CreateUserModal />
     </>
   );
 }
