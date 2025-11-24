@@ -4432,6 +4432,8 @@ export default function PrismApp() {
     const [bulkMessage, setBulkMessage] = useState('');
     const [bulkSending, setBulkSending] = useState(false);
     const [bulkResults, setBulkResults] = useState<BulkInviteResponse | null>(null);
+    const [bulkProjects, setBulkProjects] = useState<Array<{ id: string; name: string }>>([]);
+    const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
     // Shared token state
     const [sharedTokens, setSharedTokens] = useState<SharedToken[]>([]);
@@ -4569,16 +4571,15 @@ export default function PrismApp() {
         return;
       }
 
-      // For now, use the first project as context (TODO: add project selector)
-      const projects = await api.getProjects();
-      if (projects.length === 0) {
-        addNotification('error', 'No Projects', 'You must create a project before sending invitations');
+      // Validate project selection
+      if (!selectedProjectId) {
+        addNotification('error', 'Project Required', 'Please select a project for the invitations');
         return;
       }
 
       setBulkSending(true);
       try {
-        const result = await api.bulkInvite(projects[0].id, emails, bulkRole, bulkMessage || undefined);
+        const result = await api.bulkInvite(selectedProjectId, emails, bulkRole, bulkMessage || undefined);
         setBulkResults(result);
         addNotification('success', 'Bulk Invitations Sent',
           `Sent: ${result.sent}, Failed: ${result.failed}, Skipped: ${result.skipped}`);
@@ -4591,6 +4592,22 @@ export default function PrismApp() {
         addNotification('error', 'Failed to Send', String(error));
       } finally {
         setBulkSending(false);
+      }
+    };
+
+    // Load projects for bulk invite selector
+    const loadBulkProjects = async () => {
+      try {
+        const projects = await api.getProjects();
+        setBulkProjects(projects.map(p => ({ id: p.id, name: p.name })));
+
+        // Auto-select first project if available and none selected
+        if (projects.length > 0 && !selectedProjectId) {
+          setSelectedProjectId(projects[0].id);
+        }
+      } catch (error) {
+        logger.error('Failed to load projects:', error);
+        addNotification('error', 'Failed to Load Projects', String(error));
       }
     };
 
@@ -4690,6 +4707,8 @@ export default function PrismApp() {
       setActiveTabId(detail.activeTabId);
       if (detail.activeTabId === 'shared') {
         loadSharedTokens();
+      } else if (detail.activeTabId === 'bulk') {
+        loadBulkProjects();
       }
     };
 
@@ -4937,6 +4956,24 @@ export default function PrismApp() {
                               { label: 'admin', value: 'admin' }
                             ]}
                             disabled={bulkSending}
+                          />
+                        </FormField>
+
+                        <FormField
+                          label="Project"
+                          description="Select the project for these invitations"
+                        >
+                          <Select
+                            selectedOption={
+                              bulkProjects.find(p => p.id === selectedProjectId)
+                                ? { label: bulkProjects.find(p => p.id === selectedProjectId)!.name, value: selectedProjectId }
+                                : null
+                            }
+                            onChange={({ detail }) => setSelectedProjectId(detail.selectedOption.value || '')}
+                            options={bulkProjects.map(p => ({ label: p.name, value: p.id }))}
+                            placeholder="Choose a project"
+                            disabled={bulkSending || bulkProjects.length === 0}
+                            data-testid="bulk-invite-project-select"
                           />
                         </FormField>
 
