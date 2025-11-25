@@ -173,9 +173,11 @@ export class ProjectsPage extends BasePage {
     await this.page.getByTestId('create-user-button').click();
     await this.page.waitForTimeout(500);
 
-    await this.fillInput('username', username);
-    await this.fillInput('email', email);
-    await this.fillInput('full name', fullName);
+    // Use test IDs to avoid strict mode violations with multiple email fields
+    // Cloudscape wraps inputs in divs, so we need to find the input inside
+    await this.page.getByTestId('user-username-input').locator('input').fill(username);
+    await this.page.getByTestId('user-email-input').locator('input').fill(email);
+    await this.page.getByTestId('user-fullname-input').locator('input').fill(fullName);
 
     await this.clickButton('create');
     await this.waitForDialogClose();
@@ -183,10 +185,9 @@ export class ProjectsPage extends BasePage {
 
   /**
    * Delete a user
+   * Note: Assumes we're already on the Users page
    */
   async deleteUser(username: string) {
-    await this.navigateToUsers();
-
     const userRow = this.getUserByUsername(username);
     const actionsButton = userRow.getByRole('button', { name: /actions/i });
     await actionsButton.click();
@@ -531,34 +532,49 @@ export class ProjectsPage extends BasePage {
 
   /**
    * Clean up test users by pattern
+   * Note: Assumes we're already on the Users page
+   * Repeatedly finds and deletes the first matching user until none remain
    */
   async cleanupTestUsers(namePattern: RegExp) {
-    await this.navigateToUsers();
+    let attempts = 0;
+    const maxAttempts = 50; // Safety limit to prevent infinite loops
 
-    const rows = this.getUserRows();
-    const count = await rows.count();
+    while (attempts < maxAttempts) {
+      const rows = this.getUserRows();
+      const count = await rows.count();
+      let found = false;
 
-    for (let i = 0; i < count; i++) {
-      const row = rows.nth(i);
-      const text = await row.textContent();
+      // Find the first matching user
+      for (let i = 0; i < count; i++) {
+        const row = rows.nth(i);
+        const text = await row.textContent();
 
-      if (text && namePattern.test(text)) {
-        const match = text.match(/^([a-zA-Z0-9\-_]+)/);
-        if (match) {
-          const username = match[1];
-          try {
-            await this.deleteUser(username);
-            await this.clickButton('delete');
-            await this.page.waitForTimeout(500);
-          } catch {
+        if (text && namePattern.test(text)) {
+          const match = text.match(/^([a-zA-Z0-9\-_]+)/);
+          if (match) {
+            const username = match[1];
             try {
-              await this.clickButton('cancel');
+              await this.deleteUser(username);
+              await this.clickButton('delete');
+              await this.page.waitForTimeout(500);
+              found = true;
+              break; // Exit loop to refresh row list after deletion
             } catch {
-              // Ignore
+              try {
+                await this.clickButton('cancel');
+              } catch {
+                // Ignore
+              }
             }
           }
         }
       }
+
+      if (!found) {
+        // No more matching users found
+        break;
+      }
+      attempts++;
     }
   }
 }

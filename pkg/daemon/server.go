@@ -741,10 +741,6 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/profiles/current", applyMiddleware(s.handleGetCurrentProfile))
 	mux.HandleFunc("/api/v1/profiles/", applyMiddleware(s.handleProfileOperations))
 
-	// User management
-	mux.HandleFunc("/api/v1/users", applyMiddleware(s.handleUsers))
-	mux.HandleFunc("/api/v1/users/", applyMiddleware(s.handleUserOperations))
-
 	// Group management
 	mux.HandleFunc("/api/v1/groups", applyMiddleware(s.handleGroups))
 	mux.HandleFunc("/api/v1/groups/", applyMiddleware(s.handleGroupOperations))
@@ -784,9 +780,9 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/snapshots", applyMiddleware(s.handleSnapshots))
 	mux.HandleFunc("/api/v1/snapshots/", applyMiddleware(s.handleSnapshotOperations))
 
-	// Research user operations (Phase 5A.3: REST API Integration)
-	mux.HandleFunc("/api/v1/research-users", applyMiddleware(s.handleResearchUsers))
-	mux.HandleFunc("/api/v1/research-users/", applyMiddleware(s.handleResearchUserOperations))
+	// User operations (Phase 5A.3: REST API Integration)
+	mux.HandleFunc("/api/v1/users", applyMiddleware(s.handleResearchUsers))
+	mux.HandleFunc("/api/v1/users/", applyMiddleware(s.handleResearchUserOperations))
 
 	// Idle policy operations
 	s.RegisterIdleRoutes(mux, applyMiddleware)

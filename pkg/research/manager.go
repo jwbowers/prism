@@ -134,7 +134,7 @@ func (rum *ResearchUserManager) ListResearchUsersForProfile(profileID string) ([
 	rum.mu.RLock()
 	defer rum.mu.RUnlock()
 
-	profileDir := filepath.Join(rum.configPath, "research-users", profileID)
+	profileDir := filepath.Join(rum.configPath, "users", profileID)
 
 	entries, err := os.ReadDir(profileDir)
 	if err != nil {
@@ -352,7 +352,7 @@ func (rum *ResearchUserManager) saveResearchUser(profileID string, user *Researc
 }
 
 func (rum *ResearchUserManager) getResearchUserConfigPath(profileID, username string) string {
-	return filepath.Join(rum.configPath, "research-users", profileID, username+".json")
+	return filepath.Join(rum.configPath, "users", profileID, username+".json")
 }
 
 func (rum *ResearchUserManager) generateGroupCreationCommands() []string {

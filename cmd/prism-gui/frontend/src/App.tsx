@@ -903,7 +903,10 @@ class SafePrismAPI {
   async getUsers(): Promise<User[]> {
     try {
       const data = await this.safeRequest('/api/v1/users');
-      return Array.isArray(data?.users) ? data.users : [];
+      // Handle both direct array response and wrapped object response
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.users)) return data.users;
+      return [];
     } catch (error) {
       logger.error('Failed to fetch users:', error);
       return [];
@@ -1165,7 +1168,7 @@ class SafePrismAPI {
 
   // User Provisioning API
   async provisionUserOnWorkspace(username: string, instanceId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/research-users/${username}/provision`, 'POST', { instance_id: instanceId });
+    await this.safeRequest(`/api/v1/users/${username}/provision`, 'POST', { instance_id: instanceId });
   }
 
   // AMI Management APIs
@@ -4705,7 +4708,50 @@ export default function PrismApp() {
                     if (detail.detail.id === 'ssh-key') {
                       setSelectedUsername(item.username);
                       setSshKeyModalVisible(true);
-                    } else {
+                    } else if (detail.detail.id === 'delete') {
+                      // Open delete confirmation modal
+                      setDeleteModalConfig({
+                        type: 'user',
+                        name: item.username,
+                        requireNameConfirmation: false,
+                        onConfirm: async () => {
+                          try {
+                            await api.deleteUser(item.username);
+                            setState(prev => ({
+                              ...prev,
+                              users: prev.users.filter(u => u.username !== item.username),
+                              notifications: [
+                                {
+                                  type: 'success',
+                                  header: 'User Deleted',
+                                  content: `User "${item.username}" deleted successfully`,
+                                  dismissible: true,
+                                  id: Date.now().toString()
+                                },
+                                ...prev.notifications
+                              ]
+                            }));
+                            setDeleteModalVisible(false);
+                          } catch (error: any) {
+                            setState(prev => ({
+                              ...prev,
+                              notifications: [
+                                {
+                                  type: 'error',
+                                  header: 'Delete Failed',
+                                  content: error.message || 'Failed to delete user',
+                                  dismissible: true,
+                                  id: Date.now().toString()
+                                },
+                                ...prev.notifications
+                              ]
+                            }));
+                            setDeleteModalVisible(false);
+                          }
+                        }
+                      });
+                      setDeleteModalVisible(true);
+                    } else if (detail.detail.id && detail.detail.text) {
                       setState(prev => ({
                         ...prev,
                         notifications: [
@@ -9526,6 +9572,7 @@ export default function PrismApp() {
 
         <FormField label="Username" description="Unique username for the user">
           <Input
+            data-testid="user-username-input"
             value={username}
             onChange={({ detail }) => setUsername(detail.value)}
             placeholder="e.g., jsmith"
@@ -9534,6 +9581,7 @@ export default function PrismApp() {
 
         <FormField label="Email" description="User's email address">
           <Input
+            data-testid="user-email-input"
             type="email"
             value={userEmail}
             onChange={({ detail }) => setUserEmail(detail.value)}
@@ -9543,6 +9591,7 @@ export default function PrismApp() {
 
         <FormField label="Full Name" description="User's full name">
           <Input
+            data-testid="user-fullname-input"
             value={userFullName}
             onChange={({ detail }) => setUserFullName(detail.value)}
             placeholder="John Smith"

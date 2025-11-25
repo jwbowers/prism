@@ -93,7 +93,7 @@ func (s *Server) handleCreateResearchUser(w http.ResponseWriter, r *http.Request
 
 // handleResearchUserOperations handles individual research user operations
 func (s *Server) handleResearchUserOperations(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path[len("/api/v1/research-users/"):]
+	path := r.URL.Path[len("/api/v1/users/"):]
 	parts := splitPath(path)
 	if len(parts) == 0 {
 		s.writeError(w, http.StatusBadRequest, "Missing username")
@@ -103,7 +103,7 @@ func (s *Server) handleResearchUserOperations(w http.ResponseWriter, r *http.Req
 	username := parts[0]
 
 	if len(parts) == 1 {
-		// Operations on the user itself: GET /api/v1/research-users/{username}
+		// Operations on the user itself: GET /api/v1/users/{username}
 		switch r.Method {
 		case http.MethodGet:
 			s.handleGetResearchUser(w, r, username)
@@ -113,7 +113,7 @@ func (s *Server) handleResearchUserOperations(w http.ResponseWriter, r *http.Req
 			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		}
 	} else if len(parts) == 2 {
-		// Sub-operations: /api/v1/research-users/{username}/{operation}
+		// Sub-operations: /api/v1/users/{username}/{operation}
 		operation := parts[1]
 		switch operation {
 		case "ssh-key":

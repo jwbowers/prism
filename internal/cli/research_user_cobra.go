@@ -85,7 +85,7 @@ func (ruc *ResearchUserCobraCommands) createListCommand() *cobra.Command {
 		Long:  "Display all research users in the current profile with their basic information",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Make API request to list research users
-			resp, err := ruc.app.apiClient.MakeRequest("GET", "/api/v1/research-users", nil)
+			resp, err := ruc.app.apiClient.MakeRequest("GET", "/api/v1/users", nil)
 			if err != nil {
 				return fmt.Errorf("failed to list research users: %w", err)
 			}
@@ -173,7 +173,7 @@ func (ruc *ResearchUserCobraCommands) createCreateCommand() *cobra.Command {
 			}
 
 			// Make API request to create research user
-			resp, err := ruc.app.apiClient.MakeRequest("POST", "/api/v1/research-users", request)
+			resp, err := ruc.app.apiClient.MakeRequest("POST", "/api/v1/users", request)
 			if err != nil {
 				return fmt.Errorf("failed to create research user: %w", err)
 			}
@@ -234,7 +234,7 @@ func (ruc *ResearchUserCobraCommands) createInfoCommand() *cobra.Command {
 			username := args[0]
 
 			// Make API request to get research user info
-			resp, err := ruc.app.apiClient.MakeRequest("GET", fmt.Sprintf("/api/v1/research-users/%s", username), nil)
+			resp, err := ruc.app.apiClient.MakeRequest("GET", fmt.Sprintf("/api/v1/users/%s", username), nil)
 			if err != nil {
 				return fmt.Errorf("failed to get research user info: %w", err)
 			}
@@ -361,7 +361,7 @@ func (ruc *ResearchUserCobraCommands) createUpdateCommand() *cobra.Command {
 			fmt.Printf("🔄 Updating research user '%s'...\n", username)
 
 			// Make API request to update research user (currently returns method not implemented)
-			_, err := ruc.app.apiClient.MakeRequest("PATCH", fmt.Sprintf("/api/v1/research-users/%s", username), updates)
+			_, err := ruc.app.apiClient.MakeRequest("PATCH", fmt.Sprintf("/api/v1/users/%s", username), updates)
 			if err != nil {
 				if strings.Contains(err.Error(), "not implemented") {
 					fmt.Printf("⚠️  User update API not yet implemented in daemon\n")
@@ -449,7 +449,7 @@ func (ruc *ResearchUserCobraCommands) createDeleteCommand() *cobra.Command {
 			fmt.Printf("🔄 Deleting research user '%s'...\n", username)
 
 			// Make API request to delete research user
-			_, err := ruc.app.apiClient.MakeRequest("DELETE", fmt.Sprintf("/api/v1/research-users/%s", username), nil)
+			_, err := ruc.app.apiClient.MakeRequest("DELETE", fmt.Sprintf("/api/v1/users/%s", username), nil)
 			if err != nil {
 				if strings.Contains(err.Error(), "not implemented") {
 					fmt.Printf("⚠️  User deletion API not yet implemented in daemon\n")
@@ -501,7 +501,7 @@ func (ruc *ResearchUserCobraCommands) createKeysListCommand() *cobra.Command {
 			username := args[0]
 
 			// Make API request to list SSH keys
-			resp, err := ruc.app.apiClient.MakeRequest("GET", fmt.Sprintf("/api/v1/research-users/%s/ssh-key", username), nil)
+			resp, err := ruc.app.apiClient.MakeRequest("GET", fmt.Sprintf("/api/v1/users/%s/ssh-key", username), nil)
 			if err != nil {
 				return fmt.Errorf("failed to list SSH keys: %w", err)
 			}
@@ -583,7 +583,7 @@ func (ruc *ResearchUserCobraCommands) createKeysGenerateCommand() *cobra.Command
 			}
 
 			// Make API request to generate SSH key
-			resp, err := ruc.app.apiClient.MakeRequest("POST", fmt.Sprintf("/api/v1/research-users/%s/ssh-key", username), request)
+			resp, err := ruc.app.apiClient.MakeRequest("POST", fmt.Sprintf("/api/v1/users/%s/ssh-key", username), request)
 			if err != nil {
 				return fmt.Errorf("failed to generate SSH key: %w", err)
 			}

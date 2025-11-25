@@ -585,7 +585,7 @@ func (s *PrismService) RestartDaemon(_ context.Context) error {
 
 // GetResearchUsers fetches all research users from daemon
 func (s *PrismService) GetResearchUsers(_ context.Context) ([]ResearchUser, error) {
-	resp, err := s.client.Get(s.daemonURL + "/api/v1/research-users")
+	resp, err := s.client.Get(s.daemonURL + "/api/v1/users")
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch research users: %w", err)
 	}
@@ -614,7 +614,7 @@ func (s *PrismService) CreateResearchUser(ctx context.Context, req CreateResearc
 		return fmt.Errorf("failed to marshal create request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", s.daemonURL+"/api/v1/research-users", strings.NewReader(string(jsonData)))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", s.daemonURL+"/api/v1/users", strings.NewReader(string(jsonData)))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -639,7 +639,7 @@ func (s *PrismService) DeleteResearchUser(ctx context.Context, username string) 
 		return fmt.Errorf("username is required")
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "DELETE", s.daemonURL+"/api/v1/research-users/"+username, nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "DELETE", s.daemonURL+"/api/v1/users/"+username, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -673,7 +673,7 @@ func (s *PrismService) GenerateResearchUserSSHKey(ctx context.Context, req Resea
 		return fmt.Errorf("failed to marshal SSH key request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/v1/research-users/%s/ssh-key", s.daemonURL, req.Username)
+	url := fmt.Sprintf("%s/api/v1/users/%s/ssh-key", s.daemonURL, req.Username)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(jsonData)))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -699,7 +699,7 @@ func (s *PrismService) GetResearchUserStatus(_ context.Context, username string)
 		return nil, fmt.Errorf("username is required")
 	}
 
-	url := fmt.Sprintf("%s/api/v1/research-users/%s/status", s.daemonURL, username)
+	url := fmt.Sprintf("%s/api/v1/users/%s/status", s.daemonURL, username)
 	resp, err := s.client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch research user status: %w", err)

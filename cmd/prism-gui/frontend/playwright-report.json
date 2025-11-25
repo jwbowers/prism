@@ -10,7 +10,9 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
     "reporter": [
       [
@@ -38,7 +40,9 @@
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "chromium",
         "name": "chromium",
         "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
@@ -52,7 +56,9 @@
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "firefox",
         "name": "firefox",
         "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
@@ -66,7 +72,9 @@
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "webkit",
         "name": "webkit",
         "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
@@ -89,19 +97,1010 @@
       "timeout": 120000
     }
   },
-  "suites": [],
-  "errors": [
+  "suites": [
     {
-      "message": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
-      "stack": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments."
+      "title": "user-workflows.spec.ts",
+      "file": "user-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "User Management Workflows",
+          "file": "user-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Create User Workflow",
+              "file": "user-workflows.spec.ts",
+              "line": 34,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create a new research user",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 8249,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:45:26",
+                            "location": {
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                              "column": 26,
+                              "line": 45
+                            },
+                            "snippet": "  43 |       // Verify user appears in list\n  44 |       const userExists = await projectsPage.verifyUserExists(uniqueUsername);\n> 45 |       expect(userExists).toBe(true);\n     |                          ^\n  46 |\n  47 |       // Cleanup\n  48 |       await projectsPage.deleteUser(uniqueUsername);"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                                "column": 26,
+                                "line": 45
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  43 |       // Verify user appears in list\n  44 |       const userExists = await projectsPage.verifyUserExists(uniqueUsername);\n> 45 |       expect(userExists).toBe(true);\n     |                          ^\n  46 |\n  47 |       // Cleanup\n  48 |       await projectsPage.deleteUser(uniqueUsername);\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:45:26"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:16.492Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-fb534--create-a-new-research-user-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-fb534--create-a-new-research-user-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-fb534--create-a-new-research-user-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "column": 26,
+                            "line": 45
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-2abe2e01bb117815477b",
+                  "file": "user-workflows.spec.ts",
+                  "line": 35,
+                  "column": 5
+                },
+                {
+                  "title": "should create user with full name",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 16770,
+                          "error": {
+                            "message": "TimeoutError: locator.textContent: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"testuser-1764013890299\")').first()\u001b[22m\n",
+                            "stack": "TimeoutError: locator.textContent: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"testuser-1764013890299\")').first()\u001b[22m\n\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:63:38",
+                            "location": {
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                              "column": 38,
+                              "line": 63
+                            },
+                            "snippet": "  61 |       // Verify user exists and full name is shown\n  62 |       const userRow = projectsPage.getUserByUsername(uniqueUsername);\n> 63 |       const userText = await userRow.textContent();\n     |                                      ^\n  64 |       expect(userText).toContain(fullName);\n  65 |\n  66 |       // Cleanup"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                                "column": 38,
+                                "line": 63
+                              },
+                              "message": "TimeoutError: locator.textContent: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"testuser-1764013890299\")').first()\u001b[22m\n\n\n  61 |       // Verify user exists and full name is shown\n  62 |       const userRow = projectsPage.getUserByUsername(uniqueUsername);\n> 63 |       const userText = await userRow.textContent();\n     |                                      ^\n  64 |       expect(userText).toContain(fullName);\n  65 |\n  66 |       // Cleanup\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:63:38"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:25.235Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-b7142--create-user-with-full-name-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-b7142--create-user-with-full-name-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-b7142--create-user-with-full-name-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "column": 38,
+                            "line": 63
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-e97d34400e79c952e612",
+                  "file": "user-workflows.spec.ts",
+                  "line": 51,
+                  "column": 5
+                },
+                {
+                  "title": "should validate username is required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 69,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.107Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-45a63a7a2cbd6ac4a898",
+                  "file": "user-workflows.spec.ts",
+                  "line": 69,
+                  "column": 10
+                },
+                {
+                  "title": "should validate email format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 88,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.107Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-9ffdc1542d68edc66a1a",
+                  "file": "user-workflows.spec.ts",
+                  "line": 88,
+                  "column": 10
+                },
+                {
+                  "title": "should prevent duplicate usernames",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 107,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.107Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-72b9fda6cd0035f6c481",
+                  "file": "user-workflows.spec.ts",
+                  "line": 107,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "SSH Key Management",
+              "file": "user-workflows.spec.ts",
+              "line": 134,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should generate SSH key for user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 135,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.107Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-7468f34ce7059f499cc4",
+                  "file": "user-workflows.spec.ts",
+                  "line": 135,
+                  "column": 10
+                },
+                {
+                  "title": "should display existing SSH keys",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 171,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.107Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-2c04a1755ee0677534dd",
+                  "file": "user-workflows.spec.ts",
+                  "line": 171,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Workspace Provisioning",
+              "file": "user-workflows.spec.ts",
+              "line": 200,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should provision user on workspace",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 201,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.107Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-a88864563ccd8a29e242",
+                  "file": "user-workflows.spec.ts",
+                  "line": 201,
+                  "column": 10
+                },
+                {
+                  "title": "should show provisioned workspaces for user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 240,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.107Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-9db00b835d3f1ddca5fa",
+                  "file": "user-workflows.spec.ts",
+                  "line": 240,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Delete User Workflow",
+              "file": "user-workflows.spec.ts",
+              "line": 269,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should delete user with confirmation",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 7317,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:272:26",
+                            "location": {
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                              "column": 26,
+                              "line": 272
+                            },
+                            "snippet": "  270 |       // Verify exists\n  271 |       let userExists = await projectsPage.verifyUserExists(uniqueUsername);\n> 272 |       expect(userExists).toBe(true);\n      |                          ^\n  273 |\n  274 |       // Delete user\n  275 |       await projectsPage.deleteUser(uniqueUsername);"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                                "column": 26,
+                                "line": 272
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  270 |       // Verify exists\n  271 |       let userExists = await projectsPage.verifyUserExists(uniqueUsername);\n> 272 |       expect(userExists).toBe(true);\n      |                          ^\n  273 |\n  274 |       // Delete user\n  275 |       await projectsPage.deleteUser(uniqueUsername);\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:272:26"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:42.436Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-fdfdf-lete-user-with-confirmation-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-fdfdf-lete-user-with-confirmation-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-fdfdf-lete-user-with-confirmation-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "column": 26,
+                            "line": 272
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-17ef68b9b57437999867",
+                  "file": "user-workflows.spec.ts",
+                  "line": 270,
+                  "column": 5
+                },
+                {
+                  "title": "should cancel user deletion",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 18417,
+                          "error": {
+                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"cancel-delete-test-1764013915260\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n",
+                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"cancel-delete-test-1764013915260\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n\n    at ProjectsPage.deleteUser (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:194:25)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:296:7",
+                            "location": {
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
+                              "column": 25,
+                              "line": 194
+                            },
+                            "snippet": "\u001b[90m   at \u001b[39mpages/ProjectsPage.ts:194\n\n  192 |     const userRow = this.getUserByUsername(username);\n  193 |     const actionsButton = userRow.getByRole('button', { name: /actions/i });\n> 194 |     await actionsButton.click();\n      |                         ^\n  195 |     await this.page.waitForTimeout(300);\n  196 |\n  197 |     await this.page.getByRole('menuitem', { name: /delete/i }).click();"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
+                                "column": 25,
+                                "line": 194
+                              },
+                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"cancel-delete-test-1764013915260\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n\n\n   at pages/ProjectsPage.ts:194\n\n  192 |     const userRow = this.getUserByUsername(username);\n  193 |     const actionsButton = userRow.getByRole('button', { name: /actions/i });\n> 194 |     await actionsButton.click();\n      |                         ^\n  195 |     await this.page.waitForTimeout(300);\n  196 |\n  197 |     await this.page.getByRole('menuitem', { name: /delete/i }).click();\n    at ProjectsPage.deleteUser (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:194:25)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:296:7"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:51:50.180Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-ab46b-should-cancel-user-deletion-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-ab46b-should-cancel-user-deletion-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-ab46b-should-cancel-user-deletion-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
+                            "column": 25,
+                            "line": 194
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-b17f22d97c40c2dd3531",
+                  "file": "user-workflows.spec.ts",
+                  "line": 293,
+                  "column": 5
+                },
+                {
+                  "title": "should warn when deleting user with active workspaces",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 315,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:52:08.698Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-525d28047f2ec8b6d6f0",
+                  "file": "user-workflows.spec.ts",
+                  "line": 315,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "User Listing and Display",
+              "file": "user-workflows.spec.ts",
+              "line": 333,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display all users in list",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 9802,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m3\u001b[39m\nReceived: \u001b[31m1\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m3\u001b[39m\nReceived: \u001b[31m1\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:344:24",
+                            "location": {
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                              "column": 24,
+                              "line": 344
+                            },
+                            "snippet": "  342 |       // Verify count increased\n  343 |       const newCount = await projectsPage.getUserCount();\n> 344 |       expect(newCount).toBe(initialCount + 2);\n      |                        ^\n  345 |\n  346 |       // Cleanup\n  347 |       await projectsPage.deleteUser(name1);"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                                "column": 24,
+                                "line": 344
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m3\u001b[39m\nReceived: \u001b[31m1\u001b[39m\n\n  342 |       // Verify count increased\n  343 |       const newCount = await projectsPage.getUserCount();\n> 344 |       expect(newCount).toBe(initialCount + 2);\n      |                        ^\n  345 |\n  346 |       // Cleanup\n  347 |       await projectsPage.deleteUser(name1);\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:344:24"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:52:09.022Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-d0b01-d-display-all-users-in-list-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-d0b01-d-display-all-users-in-list-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-d0b01-d-display-all-users-in-list-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "column": 24,
+                            "line": 344
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-75a3b85f77553685aae0",
+                  "file": "user-workflows.spec.ts",
+                  "line": 334,
+                  "column": 5
+                },
+                {
+                  "title": "should show user statistics",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 357,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:52:18.927Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-dca566302ca0dd1e5310",
+                  "file": "user-workflows.spec.ts",
+                  "line": 357,
+                  "column": 10
+                },
+                {
+                  "title": "should display UID for each user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 365,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:52:18.927Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-4b9ff76ac3d6ff46028d",
+                  "file": "user-workflows.spec.ts",
+                  "line": 365,
+                  "column": 10
+                },
+                {
+                  "title": "should filter users by status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 379,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:52:18.927Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-89ae89f3a4b8f8a86b15",
+                  "file": "user-workflows.spec.ts",
+                  "line": 379,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "User Status Management",
+              "file": "user-workflows.spec.ts",
+              "line": 397,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should view user status details",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 398,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:52:18.927Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-5bc3333a1af8a2d3f747",
+                  "file": "user-workflows.spec.ts",
+                  "line": 398,
+                  "column": 10
+                },
+                {
+                  "title": "should update user status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 425,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": -1,
+                          "parallelIndex": -1,
+                          "status": "skipped",
+                          "duration": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-24T19:52:18.927Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-65bed67c63858064df6d",
+                  "file": "user-workflows.spec.ts",
+                  "line": 425,
+                  "column": 10
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
+  "errors": [],
   "stats": {
-    "startTime": "2025-11-23T19:24:14.902Z",
-    "duration": 2553.942,
+    "startTime": "2025-11-24T19:51:13.775Z",
+    "duration": 65172.356,
     "expected": 0,
-    "skipped": 0,
-    "unexpected": 0,
+    "skipped": 13,
+    "unexpected": 5,
     "flaky": 0
   }
 }

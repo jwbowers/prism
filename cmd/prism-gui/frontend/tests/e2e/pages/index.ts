@@ -13,6 +13,7 @@ export { TemplatesPage } from './TemplatesPage';
 export { InstancesPage } from './InstancesPage';
 export { StoragePage } from './StoragePage';
 export { SettingsPage } from './SettingsPage';
+export { ProjectsPage } from './ProjectsPage';
 
 // Dialog exports
 export { LaunchDialog } from './dialogs/LaunchDialog';
