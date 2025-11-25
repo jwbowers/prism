@@ -25,7 +25,7 @@ static inline void sleepWakeCallbackC(void *refcon, io_service_t service, natura
 
 // Register for sleep/wake notifications
 static inline IOReturn registerSleepWake(io_connect_t *connection, IONotificationPortRef *notifyPort, io_object_t *notifier, uintptr_t refcon) {
-    *notifyPort = IONotificationPortCreate(kIOMasterPortDefault);
+    *notifyPort = IONotificationPortCreate(kIOMainPortDefault);
     if (*notifyPort == NULL) {
         return kIOReturnError;
     }

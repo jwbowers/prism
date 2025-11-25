@@ -137,7 +137,12 @@ func (m *UserManager) CreateUser(ctx context.Context, user *usermgmt.User) (*use
 	}
 
 	err := m.service.CreateUser(user)
-	return user, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the created user from storage with all fields populated
+	return m.service.GetUser(user.ID)
 }
 
 // UpdateUser updates an existing user
@@ -150,7 +155,12 @@ func (m *UserManager) UpdateUser(ctx context.Context, user *usermgmt.User) (*use
 	}
 
 	err := m.service.UpdateUser(user)
-	return user, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the updated user from storage with all fields populated
+	return m.service.GetUser(user.ID)
 }
 
 // DeleteUser deletes a user

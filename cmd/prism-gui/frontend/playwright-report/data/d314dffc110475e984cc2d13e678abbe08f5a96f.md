@@ -1,0 +1,253 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - main [ref=e5]:
+    - navigation [ref=e6]:
+      - generic [ref=e7]:
+        - button [ref=e9] [cursor=pointer]:
+          - generic [ref=e10]:
+            - img
+        - generic [ref=e11]:
+          - heading "Prism" [level=2] [ref=e12]:
+            - link "Prism" [ref=e13] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e14]: Prism
+          - generic [ref=e15]:
+            - list [ref=e16]:
+              - listitem [ref=e17]:
+                - link "Dashboard" [ref=e18] [cursor=pointer]:
+                  - /url: /dashboard
+            - separator [ref=e21]
+            - list [ref=e22]:
+              - listitem [ref=e23]:
+                - link "Templates" [ref=e24] [cursor=pointer]:
+                  - /url: /templates
+                - generic [ref=e26]: "29"
+              - listitem [ref=e27]:
+                - link "My Workspaces" [ref=e28] [cursor=pointer]:
+                  - /url: /workspaces
+                - generic [ref=e30]: "1"
+            - separator [ref=e33]
+            - list [ref=e34]:
+              - listitem [ref=e35]:
+                - link "Storage" [ref=e36] [cursor=pointer]:
+                  - /url: /storage
+              - listitem [ref=e37]:
+                - link "Backups" [ref=e38] [cursor=pointer]:
+                  - /url: /backups
+              - listitem [ref=e39]:
+                - link "Projects" [ref=e40] [cursor=pointer]:
+                  - /url: /projects
+              - listitem [ref=e41]:
+                - link "Users" [ref=e42] [cursor=pointer]:
+                  - /url: /users
+              - listitem [ref=e43]:
+                - link "Invitations" [ref=e44] [cursor=pointer]:
+                  - /url: /invitations
+            - separator [ref=e47]
+            - list [ref=e48]:
+              - listitem [ref=e49]:
+                - link "Settings" [ref=e50] [cursor=pointer]:
+                  - /url: /settings
+                - generic [ref=e52]: Advanced
+    - region:
+      - generic:
+        - generic:
+          - list
+    - main [ref=e54]:
+      - generic [ref=e55]:
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - heading "Project Management (2 projects)" [level=1] [ref=e60]:
+              - text: Project Management
+              - generic [ref=e61]: (2 projects)
+            - generic [ref=e63]:
+              - button "Refresh" [ref=e65] [cursor=pointer]
+              - button "Create Project" [ref=e67] [cursor=pointer]
+          - paragraph [ref=e68]: Manage research projects, budgets, and collaboration
+        - generic [ref=e70]:
+          - generic:
+            - generic [ref=e73]:
+              - heading "Total Projects" [level=3] [ref=e78]
+              - generic [ref=e81]: "2"
+            - generic [ref=e84]:
+              - heading "Active Projects" [level=3] [ref=e89]
+              - generic [ref=e92]: "2"
+            - generic [ref=e95]:
+              - heading "Total Budget" [level=3] [ref=e100]
+              - generic [ref=e103]: $0.00
+            - generic [ref=e106]:
+              - heading "Current Spend" [level=3] [ref=e111]
+              - generic [ref=e114]: $0.00
+        - generic [ref=e117]:
+          - generic [ref=e119]:
+            - generic [ref=e120]:
+              - heading "Projects (2)" [level=2] [ref=e122]:
+                - text: Projects
+                - generic [ref=e123]: (2)
+              - generic [ref=e125]:
+                - button "Export Data" [ref=e127] [cursor=pointer]
+                - button "Create Project" [ref=e129] [cursor=pointer]
+            - paragraph [ref=e130]: Research projects with budget tracking and member management
+          - generic [ref=e134]:
+            - generic [ref=e137]:
+              - generic [ref=e138]:
+                - heading "All Projects (2)" [level=2] [ref=e141]:
+                  - text: All Projects
+                  - generic [ref=e142]: (2)
+                - paragraph [ref=e143]: Research projects with comprehensive budget and collaboration management
+              - generic [ref=e147]: Showing all 2 projects
+            - region "All Projects" [ref=e150]:
+              - table "All Projects" [ref=e151]:
+                - rowgroup [ref=e152]:
+                  - row "Project Name Description Owner Budget Current Spend Members Status Created Actions" [ref=e153]:
+                    - columnheader "Project Name" [ref=e154]:
+                      - button "Project Name" [ref=e155] [cursor=pointer]:
+                        - generic [ref=e156]: Project Name
+                        - generic [ref=e158]:
+                          - img
+                    - columnheader "Description" [ref=e159]:
+                      - button "Description" [ref=e160] [cursor=pointer]:
+                        - generic [ref=e161]: Description
+                        - generic [ref=e163]:
+                          - img
+                    - columnheader "Owner" [ref=e164]:
+                      - button "Owner" [ref=e165] [cursor=pointer]:
+                        - generic [ref=e166]: Owner
+                        - generic [ref=e168]:
+                          - img
+                    - columnheader "Budget" [ref=e169]:
+                      - button "Budget" [ref=e170] [cursor=pointer]:
+                        - generic [ref=e171]: Budget
+                        - generic [ref=e173]:
+                          - img
+                    - columnheader "Current Spend" [ref=e174]:
+                      - generic [ref=e176]: Current Spend
+                    - columnheader "Members" [ref=e177]:
+                      - button "Members" [ref=e178] [cursor=pointer]:
+                        - generic [ref=e179]: Members
+                        - generic [ref=e181]:
+                          - img
+                    - columnheader "Status" [ref=e182]:
+                      - button "Status" [ref=e183] [cursor=pointer]:
+                        - generic [ref=e184]: Status
+                        - generic [ref=e186]:
+                          - img
+                    - columnheader "Created" [ref=e187]:
+                      - button "Created" [ref=e188] [cursor=pointer]:
+                        - generic [ref=e189]: Created
+                        - generic [ref=e191]:
+                          - img
+                    - columnheader "Actions" [ref=e192]:
+                      - generic [ref=e194]: Actions
+                - rowgroup [ref=e195]:
+                  - row "test-workshop No description Unknown $0.00 $0.00 1 active 11/8/2025 Actions" [ref=e196]:
+                    - cell "test-workshop" [ref=e197]:
+                      - button "test-workshop" [ref=e199]
+                    - cell "No description" [ref=e200]:
+                      - generic [ref=e201]: No description
+                    - cell "Unknown" [ref=e202]:
+                      - generic [ref=e203]: Unknown
+                    - cell "$0.00" [ref=e204]:
+                      - generic [ref=e205]: $0.00
+                    - cell "$0.00" [ref=e206]:
+                      - generic [ref=e211]:
+                        - generic [ref=e213]:
+                          - img
+                        - text: $0.00
+                    - cell "1" [ref=e214]:
+                      - generic [ref=e215]: "1"
+                    - cell "active" [ref=e216]:
+                      - generic [ref=e219]:
+                        - generic [ref=e221]:
+                          - img
+                        - text: active
+                    - cell "11/8/2025" [ref=e222]:
+                      - generic [ref=e223]: 11/8/2025
+                    - cell "Actions" [ref=e224]:
+                      - button "Actions" [ref=e230] [cursor=pointer]:
+                        - text: Actions
+                        - generic [ref=e231]:
+                          - img
+                  - row "bulk-test No description Unknown $0.00 $0.00 1 active 11/8/2025 Actions" [ref=e232]:
+                    - cell "bulk-test" [ref=e233]:
+                      - button "bulk-test" [ref=e235]
+                    - cell "No description" [ref=e236]:
+                      - generic [ref=e237]: No description
+                    - cell "Unknown" [ref=e238]:
+                      - generic [ref=e239]: Unknown
+                    - cell "$0.00" [ref=e240]:
+                      - generic [ref=e241]: $0.00
+                    - cell "$0.00" [ref=e242]:
+                      - generic [ref=e247]:
+                        - generic [ref=e249]:
+                          - img
+                        - text: $0.00
+                    - cell "1" [ref=e250]:
+                      - generic [ref=e251]: "1"
+                    - cell "active" [ref=e252]:
+                      - generic [ref=e255]:
+                        - generic [ref=e257]:
+                          - img
+                        - text: active
+                    - cell "11/8/2025" [ref=e258]:
+                      - generic [ref=e259]: 11/8/2025
+                    - cell "Actions" [ref=e260]:
+                      - button "Actions" [ref=e266] [cursor=pointer]:
+                        - text: Actions
+                        - generic [ref=e267]:
+                          - img
+        - generic [ref=e273]:
+          - generic [ref=e275]:
+            - heading "Project Analytics" [level=2] [ref=e278]
+            - paragraph [ref=e279]: Project analytics and budget insights
+          - generic [ref=e282]:
+            - generic:
+              - generic [ref=e284]:
+                - heading "Budget Utilization" [level=3] [ref=e289]
+                - generic [ref=e292]:
+                  - generic [ref=e294]: "test-workshop:"
+                  - generic [ref=e297]:
+                    - generic [ref=e299]:
+                      - img
+                    - text: $0.00 / $0.00 (0.0%)
+                - generic [ref=e302]:
+                  - generic [ref=e304]: "bulk-test:"
+                  - generic [ref=e307]:
+                    - generic [ref=e309]:
+                      - img
+                    - text: $0.00 / $0.00 (0.0%)
+              - generic [ref=e311]:
+                - heading "Recent Activity" [level=3] [ref=e316]
+                - generic [ref=e318]: Project activity and cost tracking metrics will be displayed here. Connect projects to instances and storage for detailed analytics.
+  - dialog "Create New Project" [ref=e319] [cursor=pointer]:
+    - generic [ref=e321]:
+      - generic [ref=e324]:
+        - heading "Create New Project" [level=2] [ref=e326]:
+          - generic [ref=e327]: Create New Project
+        - button [active] [ref=e330]:
+          - generic [ref=e331]:
+            - img
+      - generic [ref=e333]:
+        - generic [ref=e335]:
+          - generic [ref=e336]: Project Name
+          - generic [ref=e337]: Unique identifier for the project
+          - textbox "Project Name" [ref=e342]:
+            - /placeholder: e.g., ML Research 2024
+            - text: cancel-delete-test-1764103222540
+        - generic [ref=e344]:
+          - generic [ref=e345]: Description
+          - generic [ref=e346]: Brief description of the project
+          - textbox "Description" [ref=e351]:
+            - /placeholder: Describe the project purpose...
+        - generic [ref=e353]:
+          - generic [ref=e354]: Budget Limit (optional)
+          - generic [ref=e355]: Maximum spending limit in USD
+          - spinbutton "Budget Limit (optional)" [ref=e360]
+      - generic [ref=e363]:
+        - button "Cancel" [ref=e365]
+        - button "Create" [ref=e367]
+```

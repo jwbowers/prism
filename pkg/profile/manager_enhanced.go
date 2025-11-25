@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/profile/security"
@@ -26,6 +27,7 @@ var ErrProfileExpired = errors.New("profile invitation has expired")
 
 // ManagerEnhanced extends the Manager with additional functionality for v0.4.2
 type ManagerEnhanced struct {
+	mu                 sync.RWMutex // Protects concurrent access to profiles
 	configPath         string
 	profiles           *Profiles
 	credentialProvider CredentialProvider
@@ -116,6 +118,9 @@ func (m *ManagerEnhanced) save() error {
 
 // GetCurrentProfile returns the currently active profile
 func (m *ManagerEnhanced) GetCurrentProfile() (*Profile, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	profile, exists := m.profiles.Profiles[m.profiles.CurrentProfile]
 	if !exists {
 		return nil, ErrProfileNotFound
@@ -133,6 +138,9 @@ func (m *ManagerEnhanced) GetCurrentProfile() (*Profile, error) {
 
 // GetCurrentProfileID returns the ID of the currently active profile
 func (m *ManagerEnhanced) GetCurrentProfileID() (string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	if m.profiles.CurrentProfile == "" {
 		return "", ErrProfileNotFound
 	}
@@ -144,6 +152,9 @@ func (m *ManagerEnhanced) GetCurrentProfileID() (string, error) {
 
 // GetProfile returns a specific profile by ID
 func (m *ManagerEnhanced) GetProfile(id string) (*Profile, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	profile, exists := m.profiles.Profiles[id]
 	if !exists {
 		return nil, ErrProfileNotFound
@@ -160,6 +171,9 @@ type ProfileWithID struct {
 
 // ListProfiles returns all available profiles
 func (m *ManagerEnhanced) ListProfiles() ([]Profile, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	result := make([]Profile, 0, len(m.profiles.Profiles))
 	for _, profile := range m.profiles.Profiles {
 		result = append(result, profile)
@@ -169,6 +183,9 @@ func (m *ManagerEnhanced) ListProfiles() ([]Profile, error) {
 
 // ListProfilesWithIDs returns all available profiles with their IDs
 func (m *ManagerEnhanced) ListProfilesWithIDs() ([]ProfileWithID, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	result := make([]ProfileWithID, 0, len(m.profiles.Profiles))
 	for id, profile := range m.profiles.Profiles {
 		result = append(result, ProfileWithID{
@@ -181,6 +198,9 @@ func (m *ManagerEnhanced) ListProfilesWithIDs() ([]ProfileWithID, error) {
 
 // SwitchProfile activates a profile by ID
 func (m *ManagerEnhanced) SwitchProfile(id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	profile, exists := m.profiles.Profiles[id]
 	if !exists {
 		return ErrProfileNotFound
@@ -219,6 +239,9 @@ func (m *ManagerEnhanced) SwitchProfile(id string) error {
 
 // AddProfile creates a new profile
 func (m *ManagerEnhanced) AddProfile(profile Profile) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	// Validate profile
 	if profile.Name == "" {
 		return fmt.Errorf("profile name cannot be empty")
@@ -254,6 +277,9 @@ func (m *ManagerEnhanced) AddProfile(profile Profile) error {
 
 // UpdateProfile modifies an existing profile
 func (m *ManagerEnhanced) UpdateProfile(id string, updates Profile) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	profile, exists := m.profiles.Profiles[id]
 	if !exists {
 		return ErrProfileNotFound
@@ -272,6 +298,9 @@ func (m *ManagerEnhanced) UpdateProfile(id string, updates Profile) error {
 
 // RemoveProfile deletes a profile and its associated credentials
 func (m *ManagerEnhanced) RemoveProfile(id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if _, exists := m.profiles.Profiles[id]; !exists {
 		return ErrProfileNotFound
 	}
@@ -293,15 +322,21 @@ func (m *ManagerEnhanced) RemoveProfile(id string) error {
 
 // ProfileExists checks if a profile exists
 func (m *ManagerEnhanced) ProfileExists(id string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	_, exists := m.profiles.Profiles[id]
 	return exists
 }
 
 // StoreProfileCredentials stores credentials for a profile
 func (m *ManagerEnhanced) StoreProfileCredentials(profileID string, creds *Credentials) error {
+	m.mu.RLock()
 	if _, exists := m.profiles.Profiles[profileID]; !exists {
+		m.mu.RUnlock()
 		return ErrProfileNotFound
 	}
+	m.mu.RUnlock()
 
 	if m.credentialProvider == nil {
 		return fmt.Errorf("credential storage not available - use AWS CLI credentials instead")
@@ -312,9 +347,12 @@ func (m *ManagerEnhanced) StoreProfileCredentials(profileID string, creds *Crede
 
 // GetProfileCredentials retrieves credentials for a profile
 func (m *ManagerEnhanced) GetProfileCredentials(profileID string) (*Credentials, error) {
+	m.mu.RLock()
 	if _, exists := m.profiles.Profiles[profileID]; !exists {
+		m.mu.RUnlock()
 		return nil, ErrProfileNotFound
 	}
+	m.mu.RUnlock()
 
 	if m.credentialProvider == nil {
 		return nil, fmt.Errorf("credential storage not available - use AWS CLI credentials instead")

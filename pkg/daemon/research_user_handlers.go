@@ -13,7 +13,10 @@ import (
 
 // ResearchUserRequest represents a request to create a research user
 type ResearchUserRequest struct {
-	Username string `json:"username"`
+	Username    string `json:"username"`
+	FullName    string `json:"full_name,omitempty"`
+	DisplayName string `json:"display_name,omitempty"` // Accept display_name from frontend
+	Email       string `json:"email,omitempty"`
 }
 
 // ResearchUserSSHKeyRequest represents a request to manage SSH keys
@@ -78,8 +81,16 @@ func (s *Server) handleCreateResearchUser(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Use DisplayName if FullName is not provided (for frontend compatibility)
+	fullName := req.FullName
+	if fullName == "" && req.DisplayName != "" {
+		fullName = req.DisplayName
+	}
+
 	// Create new user
 	user, err := service.CreateResearchUser(req.Username, &research.CreateResearchUserOptions{
+		FullName:       fullName,
+		Email:          req.Email,
 		GenerateSSHKey: true, // Generate SSH key by default
 	})
 	if err != nil {

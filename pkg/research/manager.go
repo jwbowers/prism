@@ -43,11 +43,11 @@ func (rum *ResearchUserManager) GetOrCreateResearchUser(username string) (*Resea
 	}
 
 	// Create new research user
-	return rum.CreateResearchUser(currentProfile, username)
+	return rum.CreateResearchUser(currentProfile, username, "", "")
 }
 
 // CreateResearchUser creates a new research user for the specified profile
-func (rum *ResearchUserManager) CreateResearchUser(profileID, username string) (*ResearchUserConfig, error) {
+func (rum *ResearchUserManager) CreateResearchUser(profileID, username string, fullName, email string) (*ResearchUserConfig, error) {
 	rum.mu.Lock()
 	defer rum.mu.Unlock()
 
@@ -62,15 +62,22 @@ func (rum *ResearchUserManager) CreateResearchUser(profileID, username string) (
 		return nil, fmt.Errorf("failed to allocate UID/GID: %w", err)
 	}
 
-	// Generate email if not provided
-	email := fmt.Sprintf("%s@cloudworkstation.local", username)
+	// Use provided full name or generate from username
+	if fullName == "" {
+		fullName = cases.Title(language.English).String(username)
+	}
+
+	// Use provided email or generate default
+	if email == "" {
+		email = fmt.Sprintf("%s@cloudworkstation.local", username)
+	}
 
 	// Create research user config
 	researchUser := &ResearchUserConfig{
 		Username:        username,
 		UID:             uid,
 		GID:             gid,
-		FullName:        cases.Title(language.English).String(username),
+		FullName:        fullName,
 		Email:           email,
 		HomeDirectory:   fmt.Sprintf("/efs/home/%s", username),
 		EFSMountPoint:   "/efs",

@@ -2,7 +2,7 @@
 import { logger } from './utils/logger';
 // Complete error handling, real API integration, professional UX
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '@cloudscape-design/global-styles/index.css';
 import './index.css';
 import Terminal from './Terminal';
@@ -60,7 +60,8 @@ interface Project {
 interface User {
   username: string;
   uid: number;
-  full_name: string;
+  display_name?: string;  // Frontend sends this
+  full_name?: string;     // Backend returns this
   email: string;
   ssh_keys: number;
   created_at: string;
@@ -374,7 +375,7 @@ interface MemberData {
 
 interface UserData {
   username: string;
-  full_name: string;
+  display_name: string;
   email: string;
   [key: string]: unknown;
 }
@@ -438,7 +439,7 @@ interface CreateProjectRequest {
 interface CreateUserRequest {
   username: string;
   email: string;
-  full_name: string;
+  display_name: string;
 }
 
 interface SendInvitationRequest {
@@ -1619,10 +1620,15 @@ export default function PrismApp() {
   const [userEmail, setUserEmail] = useState('');
   const [userFullName, setUserFullName] = useState('');
   const [userValidationError, setUserValidationError] = useState('');
+  const [creatingUser, setCreatingUser] = useState(false);
 
   // SSH Key modal state
   const [sshKeyModalVisible, setSshKeyModalVisible] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState<string>('');
+
+  // Track users data version to prevent stale data overwrites
+  // This prevents initial page load getUsers() from overwriting optimistic updates
+  const usersVersionRef = useRef(0);
 
   // Individual invitation states
   const [sendInvitationModalVisible, setSendInvitationModalVisible] = useState(false);
@@ -1642,6 +1648,10 @@ export default function PrismApp() {
   const loadApplicationData = React.useCallback(async () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
+
+      // Capture current users version BEFORE starting async API calls
+      // This allows us to detect if optimistic updates occurred during the API call
+      const usersVersionBeforeLoad = usersVersionRef.current;
 
       // Use Promise.allSettled to allow individual API calls to fail without breaking the entire load
       // This is essential for test environments where some endpoints may not have AWS credentials
@@ -1705,7 +1715,9 @@ export default function PrismApp() {
         ebsVolumes: ebsVolumesData,
         snapshots: snapshotsData,
         projects: projectsData,
-        users: usersData,
+        // Only update users if version hasn't changed (no optimistic updates occurred)
+        // This prevents stale API data from overwriting fresh optimistic updates
+        users: usersVersionRef.current === usersVersionBeforeLoad ? usersData : prev.users,
         budgets: budgetsData,
         amis: amisData,
         amiBuilds: amiBuildsData,
@@ -2001,11 +2013,11 @@ export default function PrismApp() {
 
       // Refresh projects list
       const projects = await api.getProjects();
-      setState(prev => ({ ...prev, projects }));
 
-      // Show success notification
+      // Update state with both projects and notification in single atomic operation
       setState(prev => ({
         ...prev,
+        projects,
         notifications: [{
           type: 'success',
           header: 'Project Created',
@@ -2039,21 +2051,24 @@ export default function PrismApp() {
       return;
     }
 
+    setCreatingUser(true);
     try {
-      // Call API to create user
-      await api.createUser({
+      // Call API to create user - it returns the created user object
+      const newUser = await api.createUser({
         username: username.trim(),
         email: userEmail.trim(),
-        full_name: userFullName.trim()
+        display_name: userFullName.trim()
       });
 
-      // Refresh users list
-      const users = await api.getUsers();
-      setState(prev => ({ ...prev, users }));
+      // Increment users version to mark data as fresh
+      // This prevents stale API responses from overwriting our optimistic update
+      usersVersionRef.current++;
 
-      // Show success notification
+      // Optimistic UI update: Add the new user directly to state
+      // This eliminates race conditions from concurrent getUsers() calls
       setState(prev => ({
         ...prev,
+        users: [...prev.users, newUser], // Add new user to existing list
         notifications: [{
           type: 'success',
           header: 'User Created',
@@ -2074,6 +2089,8 @@ export default function PrismApp() {
       } else {
         setUserValidationError(`Failed to create user: ${error.message || 'Unknown error'}`);
       }
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -2084,11 +2101,15 @@ export default function PrismApp() {
 
       // Refresh users list to update SSH key status
       const users = await api.getUsers();
-      setState(prev => ({ ...prev, users }));
 
-      // Show success notification
+      // Increment users version to mark this data as fresh
+      // This prevents stale data from overwriting our updated list
+      usersVersionRef.current++;
+
+      // Update state with both users and notification in single atomic operation
       setState(prev => ({
         ...prev,
+        users,
         notifications: [{
           type: 'success',
           header: 'SSH Key Generated',
@@ -4630,7 +4651,7 @@ export default function PrismApp() {
             {
               id: "full_name",
               header: "Full Name",
-              cell: (item: User) => item.full_name || 'Not provided',
+              cell: (item: User) => item.full_name || item.display_name || 'Not provided',
               sortingField: "full_name"
             },
             {
@@ -4717,6 +4738,10 @@ export default function PrismApp() {
                         onConfirm: async () => {
                           try {
                             await api.deleteUser(item.username);
+
+                            // Increment users version to mark data as fresh
+                            usersVersionRef.current++;
+
                             setState(prev => ({
                               ...prev,
                               users: prev.users.filter(u => u.username !== item.username),
@@ -9559,8 +9584,10 @@ export default function PrismApp() {
       footer={
         <Box float="right">
           <SpaceBetween direction="horizontal" size="xs">
-            <Button onClick={() => setUserModalVisible(false)}>Cancel</Button>
-            <Button variant="primary" onClick={handleCreateUser}>Create</Button>
+            <Button onClick={() => setUserModalVisible(false)} disabled={creatingUser}>Cancel</Button>
+            <Button variant="primary" onClick={handleCreateUser} disabled={creatingUser} loading={creatingUser}>
+              {creatingUser ? 'Creating...' : 'Create'}
+            </Button>
           </SpaceBetween>
         </Box>
       }

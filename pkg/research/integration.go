@@ -63,7 +63,7 @@ func (rus *ResearchUserService) CreateResearchUser(username string, options *Cre
 	}
 
 	// Create research user
-	researchUser, err := rus.userManager.CreateResearchUser(profileID, username)
+	researchUser, err := rus.userManager.CreateResearchUser(profileID, username, options.FullName, options.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create research user: %w", err)
 	}
@@ -104,6 +104,8 @@ func (rus *ResearchUserService) CreateResearchUser(username string, options *Cre
 
 // CreateResearchUserOptions provides options for creating research users
 type CreateResearchUserOptions struct {
+	FullName       string // Full name for the user (auto-generated from username if empty)
+	Email          string // Email address for the user (auto-generated if empty)
 	GenerateSSHKey bool   // Automatically generate SSH key pair
 	ImportSSHKey   string // Import existing public key
 	SSHKeyComment  string // Comment for imported SSH key

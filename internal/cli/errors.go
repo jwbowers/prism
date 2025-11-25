@@ -234,7 +234,7 @@ The operation failed validation checks. To fix this:
 2. Verify your inputs are correct
 3. Try with different parameters
 
-Need help? Check: https://github.com/scttfrdmn/prism/blob/main/TROUBLESHOOTING.md
+Need help? Check: https://github.com/scttfrdmn/prism/blob/main/docs/user-guides/TROUBLESHOOTING.md
 
 Original error: %v`, err)
 }
@@ -379,7 +379,7 @@ func (h *DefaultErrorHandler) Handle(err error, context string) error {
 
 Need help?
 1. Check our troubleshooting guide:
-   https://github.com/scttfrdmn/prism/blob/main/TROUBLESHOOTING.md
+   https://github.com/scttfrdmn/prism/blob/main/docs/user-guides/TROUBLESHOOTING.md
 
 2. Verify daemon status:
    prism daemon status

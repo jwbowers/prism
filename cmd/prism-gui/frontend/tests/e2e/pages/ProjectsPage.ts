@@ -151,9 +151,12 @@ export class ProjectsPage extends BasePage {
 
   /**
    * Get all user rows from the users table
+   * Excludes empty state rows that show "No users found"
    */
   getUserRows(): Locator {
-    return this.page.locator('[data-testid="users-table"] tbody tr, table tbody tr').filter({ hasText: /.+/ });
+    return this.page.locator('[data-testid="users-table"] tbody tr, table tbody tr')
+      .filter({ hasText: /.+/ })
+      .filter({ hasNotText: /No users found/ });
   }
 
   /**
@@ -165,10 +168,9 @@ export class ProjectsPage extends BasePage {
 
   /**
    * Create a new user
+   * Note: Caller must ensure they are on the Users page first
    */
   async createUser(username: string, email: string, fullName: string) {
-    await this.navigateToUsers();
-
     // Click Create User button using test ID
     await this.page.getByTestId('create-user-button').click();
     await this.page.waitForTimeout(500);
@@ -181,6 +183,10 @@ export class ProjectsPage extends BasePage {
 
     await this.clickButton('create');
     await this.waitForDialogClose();
+
+    // Wait for the newly created user to appear in the list
+    // This ensures state has fully updated before returning
+    await this.page.waitForSelector(`tr:has-text("${username}")`, { timeout: 5000 });
   }
 
   /**
@@ -210,8 +216,38 @@ export class ProjectsPage extends BasePage {
    * Get user count
    */
   async getUserCount(): Promise<number> {
-    await this.navigateToUsers();
+    // Don't navigate - just count the rows currently displayed
+    // This avoids triggering another data refresh which could return stale data
     return await this.getUserRows().count();
+  }
+
+  /**
+   * Wait for user count to reach expected value
+   * Polls until count stabilizes at the expected value
+   */
+  async waitForUserCount(expectedCount: number, timeout: number = 10000): Promise<void> {
+    const startTime = Date.now();
+    let lastCount = -1;
+    let stableCount = 0;
+
+    while (Date.now() - startTime < timeout) {
+      const currentCount = await this.getUserRows().count();
+
+      if (currentCount === expectedCount) {
+        // Count matches - verify it stays stable for 2 checks
+        stableCount++;
+        if (stableCount >= 2) {
+          return; // Success - count is stable at expected value
+        }
+      } else {
+        stableCount = 0; // Reset stability counter
+      }
+
+      lastCount = currentCount;
+      await this.page.waitForTimeout(200);
+    }
+
+    throw new Error(`User count did not reach ${expectedCount} within ${timeout}ms. Last count: ${lastCount}`);
   }
 
   /**
