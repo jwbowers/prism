@@ -613,4 +613,78 @@ export class ProjectsPage extends BasePage {
       attempts++;
     }
   }
+
+  // ==================== INVITATION TEST HELPERS ====================
+
+  /**
+   * Create test project via API for invitation testing
+   */
+  async createTestProject(name: string): Promise<string> {
+    const projectId = await this.page.evaluate(async (projectName) => {
+      const api = (window as any).__apiClient;
+      const project = await api.createProject({
+        name: projectName,
+        description: 'Test project for invitation workflows',
+        owner: 'test-owner',
+        budget_limit: 1000,
+        budget_period: 'monthly',
+        status: 'active'
+      });
+      return project.id;
+    }, name);
+
+    return projectId;
+  }
+
+  /**
+   * Send invitation to test user and return invitation token
+   */
+  async sendTestInvitation(
+    projectId: string,
+    email: string,
+    role: 'viewer' | 'member' | 'admin'
+  ): Promise<string> {
+    const token = await this.page.evaluate(async (args) => {
+      const api = (window as any).__apiClient;
+      const invitation = await api.sendInvitation(
+        args.projectId,
+        args.email,
+        args.role,
+        'Test invitation message'
+      );
+      return invitation.token;
+    }, { projectId, email, role });
+
+    return token;
+  }
+
+  /**
+   * Delete test project via API
+   */
+  async deleteTestProject(projectId: string): Promise<void> {
+    await this.page.evaluate(async (id) => {
+      const api = (window as any).__apiClient;
+      try {
+        await api.deleteProject(id);
+      } catch (err) {
+        console.error('Failed to delete test project:', err);
+      }
+    }, projectId);
+  }
+
+  /**
+   * Verify user appears in project members list
+   */
+  async verifyProjectMember(projectName: string, username: string): Promise<boolean> {
+    await this.viewProjectDetails(projectName);
+    await this.page.waitForTimeout(1000);
+
+    const membersSection = this.page.locator('[data-testid="project-members"]');
+    if (await membersSection.isVisible({ timeout: 5000 })) {
+      const membersText = await membersSection.textContent();
+      return membersText?.includes(username) || false;
+    }
+
+    return false;
+  }
 }

@@ -84,25 +84,42 @@ test.describe('Invitation Management Workflows', () => {
   });
 
   test.describe('Accept Invitation Workflow', () => {
-    test.skip('should accept invitation with confirmation', async () => {
-      // TODO: Requires pending invitation
-      await projectsPage.switchToIndividualInvitations();
+    test('should accept invitation with confirmation', async () => {
+      // Create test project and invitation
+      const testProjectName = `Accept Test ${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(testProjectName);
+      const testEmail = 'accept-test@example.com';
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'member');
 
-      const projectName = 'Test Research Project';
+      // Add invitation to Individual Invitations tab
+      await projectsPage.navigateToInvitations();
+      await projectsPage.switchToIndividualInvitations();
+      await projectsPage.addInvitationToken(invitationToken);
 
       // Accept invitation
-      await projectsPage.acceptInvitation(projectName);
+      await projectsPage.acceptInvitation(testProjectName);
 
       // Verify status changed to Accepted
       await projectsPage.page.waitForTimeout(1000);
-      const invitationRow = projectsPage.page.locator(`tr:has-text("${projectName}")`).first();
+      const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
       const invitationText = await invitationRow.textContent();
       expect(invitationText).toContain('Accepted');
+
+      // Cleanup
+      await projectsPage.deleteTestProject(testProjectId);
     });
 
-    test.skip('should show acceptance confirmation dialog', async () => {
-      // TODO: Requires pending invitation
+    test('should show acceptance confirmation dialog', async () => {
+      // Create test project and invitation
+      const testProjectName = `Dialog Test ${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(testProjectName);
+      const testEmail = 'dialog-test@example.com';
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'admin');
+
+      // Add invitation to Individual Invitations tab
+      await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
+      await projectsPage.addInvitationToken(invitationToken);
 
       const invitationRow = projectsPage.getInvitationRows().first();
       const acceptButton = invitationRow.getByRole('button', { name: /accept/i });
@@ -116,50 +133,77 @@ test.describe('Invitation Management Workflows', () => {
       const dialogText = await dialog.textContent();
       expect(dialogText).toMatch(/project.*role/i);
 
-      // Cancel for now
+      // Cancel
       await projectsPage.clickButton('cancel');
+
+      // Cleanup
+      await projectsPage.deleteTestProject(testProjectId);
     });
 
-    test.skip('should add user to project after acceptance', async () => {
-      // TODO: Requires full flow from invitation to project membership
-      await projectsPage.switchToIndividualInvitations();
+    test('should add user to project after acceptance', async () => {
+      // Create test project and invitation
+      const testProjectName = `Membership Test ${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(testProjectName);
+      const testEmail = 'membership-test@example.com';
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'viewer');
 
-      const projectName = 'Test Project';
+      // Add invitation to Individual Invitations tab
+      await projectsPage.navigateToInvitations();
+      await projectsPage.switchToIndividualInvitations();
+      await projectsPage.addInvitationToken(invitationToken);
 
       // Accept invitation
-      await projectsPage.acceptInvitation(projectName);
+      await projectsPage.acceptInvitation(testProjectName);
 
       // Navigate to projects and verify membership
       await projectsPage.navigate();
-      await projectsPage.viewProjectDetails(projectName);
+      const isMember = await projectsPage.verifyProjectMember(testProjectName, testEmail);
+      expect(isMember).toBe(true);
 
-      // Check members list
-      const membersSection = projectsPage.page.locator('text=/members/i');
-      expect(await membersSection.isVisible()).toBe(true);
+      // Cleanup
+      await projectsPage.deleteTestProject(testProjectId);
     });
   });
 
   test.describe('Decline Invitation Workflow', () => {
-    test.skip('should decline invitation with reason', async () => {
-      // TODO: Requires pending invitation
-      await projectsPage.switchToIndividualInvitations();
+    test('should decline invitation with reason', async () => {
+      // Create test project and invitation
+      const testProjectName = `Decline Test ${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(testProjectName);
+      const testEmail = 'decline-test@example.com';
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'member');
 
-      const projectName = 'Test Project';
+      // Add invitation to Individual Invitations tab
+      await projectsPage.navigateToInvitations();
+      await projectsPage.switchToIndividualInvitations();
+      await projectsPage.addInvitationToken(invitationToken);
+
       const declineReason = 'Not interested in this project at the moment';
 
       // Decline invitation
-      await projectsPage.declineInvitation(projectName, declineReason);
+      await projectsPage.declineInvitation(testProjectName, declineReason);
 
       // Verify status changed to Declined
       await projectsPage.page.waitForTimeout(1000);
-      const invitationRow = projectsPage.page.locator(`tr:has-text("${projectName}")`).first();
+      const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
       const invitationText = await invitationRow.textContent();
       expect(invitationText).toContain('Declined');
+
+      // Cleanup
+      await projectsPage.deleteTestProject(testProjectId);
     });
 
-    test.skip('should show decline confirmation dialog', async () => {
-      // TODO: Requires pending invitation
+    test('should show decline confirmation dialog', async () => {
+      // Create test project and invitation
+      const testProjectName = `Decline Dialog Test ${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(testProjectName);
+      const testEmail = 'decline-dialog-test@example.com';
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'viewer');
+
+      // Add invitation to Individual Invitations tab
+      await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
+      await projectsPage.addInvitationToken(invitationToken);
 
       const invitationRow = projectsPage.getInvitationRows().first();
       const declineButton = invitationRow.getByRole('button', { name: /decline/i });
@@ -175,22 +219,34 @@ test.describe('Invitation Management Workflows', () => {
 
       // Cancel
       await projectsPage.clickButton('cancel');
+
+      // Cleanup
+      await projectsPage.deleteTestProject(testProjectId);
     });
 
-    test.skip('should allow declining without reason', async () => {
-      // TODO: Requires pending invitation
-      await projectsPage.switchToIndividualInvitations();
+    test('should allow declining without reason', async () => {
+      // Create test project and invitation
+      const testProjectName = `Decline No Reason Test ${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(testProjectName);
+      const testEmail = 'decline-no-reason-test@example.com';
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'admin');
 
-      const projectName = 'Test Project';
+      // Add invitation to Individual Invitations tab
+      await projectsPage.navigateToInvitations();
+      await projectsPage.switchToIndividualInvitations();
+      await projectsPage.addInvitationToken(invitationToken);
 
       // Decline without reason
-      await projectsPage.declineInvitation(projectName);
+      await projectsPage.declineInvitation(testProjectName);
 
       // Verify status changed
       await projectsPage.page.waitForTimeout(1000);
-      const invitationRow = projectsPage.page.locator(`tr:has-text("${projectName}")`).first();
+      const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
       const invitationText = await invitationRow.textContent();
       expect(invitationText).toContain('Declined');
+
+      // Cleanup
+      await projectsPage.deleteTestProject(testProjectId);
     });
   });
 
