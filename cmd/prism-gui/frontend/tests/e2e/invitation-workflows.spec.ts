@@ -26,8 +26,8 @@ test.describe('Invitation Management Workflows', () => {
   });
 
   test.describe('Individual Invitations Workflow', () => {
-    test.skip('should add invitation by token', async () => {
-      // TODO: Requires valid invitation token (likely from API/backend)
+    test('should add invitation by token', async () => {
+      // Individual Invitations UI now implemented
       await projectsPage.switchToIndividualInvitations();
 
       const testToken = 'test-invitation-token-12345';
@@ -40,8 +40,8 @@ test.describe('Invitation Management Workflows', () => {
       expect(invitationExists).toBe(true);
     });
 
-    test.skip('should display invitation details', async () => {
-      // TODO: Requires invitation in list
+    test('should display invitation details', async () => {
+      // Individual Invitations UI now implemented
       await projectsPage.switchToIndividualInvitations();
 
       const invitationRow = projectsPage.getInvitationRows().first();
@@ -52,8 +52,8 @@ test.describe('Invitation Management Workflows', () => {
       expect(invitationText).toMatch(/viewer|member|admin/i);
     });
 
-    test.skip('should show invitation status badges', async () => {
-      // TODO: Requires invitations with different statuses
+    test('should show invitation status badges', async () => {
+      // Individual Invitations UI now implemented
       await projectsPage.switchToIndividualInvitations();
 
       const invitationRow = projectsPage.getInvitationRows().first();
@@ -63,8 +63,8 @@ test.describe('Invitation Management Workflows', () => {
       expect(invitationText).toMatch(/pending|accepted|declined|expired/i);
     });
 
-    test.skip('should filter by invitation status', async () => {
-      // TODO: Requires filter functionality
+    test('should filter by invitation status', async () => {
+      // Individual Invitations UI now implemented
       await projectsPage.switchToIndividualInvitations();
 
       // Apply pending filter

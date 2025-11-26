@@ -2,13 +2,14 @@
 import { logger } from './utils/logger';
 // Complete error handling, real API integration, professional UX
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import '@cloudscape-design/global-styles/index.css';
 import './index.css';
 import Terminal from './Terminal';
 import WebView from './WebView';
 import { ValidationError } from './components/ValidationError';
 import { ProjectDetailView } from './components/ProjectDetailView';
+import { InvitationManagementView } from './components/InvitationManagementView';
 import { SSHKeyModal } from './components/SSHKeyModal';
 
 import {
@@ -545,8 +546,9 @@ interface UserProvisionResponse {
 
 interface SSHKeyResponse {
   public_key: string;
+  private_key: string;
   fingerprint: string;
-  created_at: string;
+  generated_at: string;
 }
 
 interface ProjectUsageResponse {
@@ -931,7 +933,7 @@ class SafePrismAPI {
   }
 
   async generateSSHKey(username: string): Promise<SSHKeyResponse> {
-    return this.safeRequest(`/api/v1/users/${username}/ssh-keys`, 'POST');
+    return this.safeRequest(`/api/v1/users/${username}/ssh-key`, 'POST');
   }
 
   // Helper function to calculate budget status
@@ -3905,29 +3907,41 @@ export default function PrismApp() {
 
   // Placeholder views for other sections
   // Project Management View
-  const ProjectManagementView = () => (
-    <SpaceBetween size="l">
-      <Header
-        variant="h1"
-        description="Manage research projects, budgets, and collaboration"
-        counter={`(${state.projects.length} projects)`}
-        actions={
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button onClick={loadApplicationData} disabled={state.loading}>
-              {state.loading ? <Spinner /> : 'Refresh'}
-            </Button>
-            <Button
-              variant="primary"
-              data-testid="create-project-button"
-              onClick={() => setProjectModalVisible(true)}
-            >
-              Create Project
-            </Button>
-          </SpaceBetween>
-        }
-      >
-        Project Management
-      </Header>
+  const ProjectManagementView = () => {
+    // Filter state for projects
+    const [projectFilter, setProjectFilter] = useState<string>('all');
+
+    // Filtered projects using useMemo for performance
+    const filteredProjects = useMemo(() => {
+      if (projectFilter === 'all') return state.projects;
+      if (projectFilter === 'active') return state.projects.filter(p => p.status === 'active');
+      if (projectFilter === 'suspended') return state.projects.filter(p => p.status === 'suspended');
+      return state.projects;
+    }, [state.projects, projectFilter]);
+
+    return (
+      <SpaceBetween size="l">
+        <Header
+          variant="h1"
+          description="Manage research projects, budgets, and collaboration"
+          counter={`(${state.projects.length} projects)`}
+          actions={
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button onClick={loadApplicationData} disabled={state.loading}>
+                {state.loading ? <Spinner /> : 'Refresh'}
+              </Button>
+              <Button
+                variant="primary"
+                data-testid="create-project-button"
+                onClick={() => setProjectModalVisible(true)}
+              >
+                Create Project
+              </Button>
+            </SpaceBetween>
+          }
+        >
+          Project Management
+        </Header>
 
       {/* Project Overview Stats */}
       <ColumnLayout columns={4} variant="text-grid">
@@ -3959,9 +3973,19 @@ export default function PrismApp() {
           <Header
             variant="h2"
             description="Research projects with budget tracking and member management"
-            counter={`(${state.projects.length})`}
+            counter={`(${filteredProjects.length})`}
             actions={
               <SpaceBetween direction="horizontal" size="xs">
+                <Select
+                  selectedOption={{ label: projectFilter === 'all' ? 'All Projects' : projectFilter === 'active' ? 'Active Only' : 'Suspended', value: projectFilter }}
+                  onChange={({ detail }) => setProjectFilter(detail.selectedOption.value!)}
+                  options={[
+                    { label: 'All Projects', value: 'all' },
+                    { label: 'Active Only', value: 'active' },
+                    { label: 'Suspended', value: 'suspended' }
+                  ]}
+                  data-testid="project-filter-select"
+                />
                 <Button>Export Data</Button>
                 <Button variant="primary">Create Project</Button>
               </SpaceBetween>
@@ -4105,7 +4129,7 @@ export default function PrismApp() {
               )
             }
           ]}
-          items={state.projects}
+          items={filteredProjects}
           loadingText="Loading projects..."
           empty={
             <Box textAlign="center" color="text-body-secondary">
@@ -4120,13 +4144,13 @@ export default function PrismApp() {
           }
           header={
             <Header
-              counter={`(${state.projects.length})`}
+              counter={`(${filteredProjects.length})`}
               description="Research projects with comprehensive budget and collaboration management"
             >
               All Projects
             </Header>
           }
-          pagination={<Box>Showing all {state.projects.length} projects</Box>}
+          pagination={<Box>Showing {filteredProjects.length} of {state.projects.length} projects</Box>}
         />
       </Container>
 
@@ -4179,7 +4203,8 @@ export default function PrismApp() {
         </ColumnLayout>
       </Container>
     </SpaceBetween>
-  );
+    );
+  };
 
   // Profile Management View
   const ProfileSelectorView = () => {
@@ -9546,6 +9571,7 @@ export default function PrismApp() {
 
         <FormField label="Project Name" description="Unique identifier for the project">
           <Input
+            data-testid="project-name-input"
             value={projectName}
             onChange={({ detail }) => setProjectName(detail.value)}
             placeholder="e.g., ML Research 2024"
@@ -9554,6 +9580,7 @@ export default function PrismApp() {
 
         <FormField label="Description" description="Brief description of the project">
           <Textarea
+            data-testid="project-description-input"
             value={projectDescription}
             onChange={({ detail }) => setProjectDescription(detail.value)}
             placeholder="Describe the project purpose..."
@@ -9562,6 +9589,7 @@ export default function PrismApp() {
 
         <FormField label="Budget Limit (optional)" description="Maximum spending limit in USD">
           <Input
+            data-testid="project-budget-input"
             type="number"
             value={projectBudget}
             onChange={({ detail }) => setProjectBudget(detail.value)}
@@ -9768,8 +9796,8 @@ export default function PrismApp() {
                 <ProjectManagementView />
               )
             )}
+            {state.activeView === 'invitations' && <InvitationManagementView />}
             {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
-            {state.activeView === 'invitations' && <InvitationView />}
             {state.activeView === 'users' && <UserManagementView />}
             {state.activeView === 'ami' && <AMIManagementView />}
             {state.activeView === 'rightsizing' && <RightsizingView />}
