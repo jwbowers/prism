@@ -76,10 +76,10 @@
                 - generic:
                   - generic [ref=e89]:
                     - generic [ref=e90]: Total
-                    - generic [ref=e91]: "20"
+                    - generic [ref=e91]: "24"
                   - generic [ref=e93]:
                     - generic [ref=e94]: Pending
-                    - generic [ref=e95]: "20"
+                    - generic [ref=e95]: "24"
                   - generic [ref=e97]:
                     - generic [ref=e98]: Accepted
                     - generic [ref=e99]: "0"
@@ -532,6 +532,86 @@
                           - text: Accept
                         - button "Decline" [ref=e611] [cursor=pointer]:
                           - generic [ref=e612]:
+                            - img
+                          - text: Decline
+                  - row "viewer test-user 6 days Pending Accept Decline" [ref=e613]:
+                    - cell [ref=e614]
+                    - cell "viewer" [ref=e616]:
+                      - generic [ref=e618]: viewer
+                    - cell "test-user" [ref=e619]:
+                      - generic [ref=e620]: test-user
+                    - cell "6 days" [ref=e621]:
+                      - generic [ref=e622]: 6 days
+                    - cell "Pending" [ref=e623]:
+                      - generic [ref=e625]: Pending
+                    - cell "Accept Decline" [ref=e626]:
+                      - generic [ref=e628]:
+                        - button "Accept" [ref=e630] [cursor=pointer]:
+                          - generic [ref=e631]:
+                            - img
+                          - text: Accept
+                        - button "Decline" [ref=e633] [cursor=pointer]:
+                          - generic [ref=e634]:
+                            - img
+                          - text: Decline
+                  - row "viewer test-user 6 days Pending Accept Decline" [ref=e635]:
+                    - cell [ref=e636]
+                    - cell "viewer" [ref=e638]:
+                      - generic [ref=e640]: viewer
+                    - cell "test-user" [ref=e641]:
+                      - generic [ref=e642]: test-user
+                    - cell "6 days" [ref=e643]:
+                      - generic [ref=e644]: 6 days
+                    - cell "Pending" [ref=e645]:
+                      - generic [ref=e647]: Pending
+                    - cell "Accept Decline" [ref=e648]:
+                      - generic [ref=e650]:
+                        - button "Accept" [ref=e652] [cursor=pointer]:
+                          - generic [ref=e653]:
+                            - img
+                          - text: Accept
+                        - button "Decline" [ref=e655] [cursor=pointer]:
+                          - generic [ref=e656]:
+                            - img
+                          - text: Decline
+                  - row "viewer test-user 6 days Pending Accept Decline" [ref=e657]:
+                    - cell [ref=e658]
+                    - cell "viewer" [ref=e660]:
+                      - generic [ref=e662]: viewer
+                    - cell "test-user" [ref=e663]:
+                      - generic [ref=e664]: test-user
+                    - cell "6 days" [ref=e665]:
+                      - generic [ref=e666]: 6 days
+                    - cell "Pending" [ref=e667]:
+                      - generic [ref=e669]: Pending
+                    - cell "Accept Decline" [ref=e670]:
+                      - generic [ref=e672]:
+                        - button "Accept" [ref=e674] [cursor=pointer]:
+                          - generic [ref=e675]:
+                            - img
+                          - text: Accept
+                        - button "Decline" [ref=e677] [cursor=pointer]:
+                          - generic [ref=e678]:
+                            - img
+                          - text: Decline
+                  - row "viewer test-user 6 days Pending Accept Decline" [ref=e679]:
+                    - cell [ref=e680]
+                    - cell "viewer" [ref=e682]:
+                      - generic [ref=e684]: viewer
+                    - cell "test-user" [ref=e685]:
+                      - generic [ref=e686]: test-user
+                    - cell "6 days" [ref=e687]:
+                      - generic [ref=e688]: 6 days
+                    - cell "Pending" [ref=e689]:
+                      - generic [ref=e691]: Pending
+                    - cell "Accept Decline" [ref=e692]:
+                      - generic [ref=e694]:
+                        - button "Accept" [ref=e696] [cursor=pointer]:
+                          - generic [ref=e697]:
+                            - img
+                          - text: Accept
+                        - button "Decline" [ref=e699] [cursor=pointer]:
+                          - generic [ref=e700]:
                             - img
                           - text: Decline
 ```
