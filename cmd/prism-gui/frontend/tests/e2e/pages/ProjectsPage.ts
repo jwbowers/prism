@@ -627,10 +627,7 @@ export class ProjectsPage extends BasePage {
       const project = await api.createProject({
         name: projectName,
         description: 'Test project for invitation workflows',
-        owner: 'test-owner',
-        budget_limit: 1000,
-        budget_period: 'monthly',
-        status: 'active'
+        owner: 'test-owner'
       });
       return project.id;
     }, name);

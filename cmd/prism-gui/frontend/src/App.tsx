@@ -1063,6 +1063,7 @@ class SafePrismAPI {
       const body: Record<string, string> = {
         email,
         role,
+        invited_by: 'test-user', // Required by backend API
       };
       if (message) body.message = message;
       if (expiresAt) body.expires_at = expiresAt;

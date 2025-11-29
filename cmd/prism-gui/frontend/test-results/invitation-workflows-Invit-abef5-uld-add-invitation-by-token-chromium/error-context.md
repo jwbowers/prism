@@ -1,0 +1,142 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - main [ref=e5]:
+    - navigation [ref=e6]:
+      - generic [ref=e7]:
+        - button [ref=e9] [cursor=pointer]:
+          - generic [ref=e10]:
+            - img
+        - generic [ref=e11]:
+          - heading "Prism" [level=2] [ref=e12]:
+            - link "Prism" [ref=e13] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e14]: Prism
+          - generic [ref=e15]:
+            - list [ref=e16]:
+              - listitem [ref=e17]:
+                - link "Dashboard" [ref=e18] [cursor=pointer]:
+                  - /url: /dashboard
+            - separator [ref=e21]
+            - list [ref=e22]:
+              - listitem [ref=e23]:
+                - link "Templates" [ref=e24] [cursor=pointer]:
+                  - /url: /templates
+                - generic [ref=e26]: "29"
+              - listitem [ref=e27]:
+                - link "My Workspaces" [ref=e28] [cursor=pointer]:
+                  - /url: /workspaces
+                - generic [ref=e30]: "1"
+            - separator [ref=e33]
+            - list [ref=e34]:
+              - listitem [ref=e35]:
+                - link "Storage" [ref=e36] [cursor=pointer]:
+                  - /url: /storage
+              - listitem [ref=e37]:
+                - link "Backups" [ref=e38] [cursor=pointer]:
+                  - /url: /backups
+              - listitem [ref=e39]:
+                - link "Projects" [ref=e40] [cursor=pointer]:
+                  - /url: /projects
+              - listitem [ref=e41]:
+                - link "Users" [ref=e42] [cursor=pointer]:
+                  - /url: /users
+              - listitem [ref=e43]:
+                - link "Invitations" [active] [ref=e44] [cursor=pointer]:
+                  - /url: /invitations
+            - separator [ref=e47]
+            - list [ref=e48]:
+              - listitem [ref=e49]:
+                - link "Settings" [ref=e50] [cursor=pointer]:
+                  - /url: /settings
+                - generic [ref=e52]: Advanced
+    - region:
+      - generic:
+        - generic:
+          - list
+    - main [ref=e54]:
+      - generic [ref=e57]:
+        - tablist [ref=e60]:
+          - tab "Individual" [selected] [ref=e62] [cursor=pointer]:
+            - generic [ref=e64]: Individual
+          - tab "Bulk" [ref=e66] [cursor=pointer]:
+            - generic [ref=e68]: Bulk
+          - tab "Shared Tokens" [ref=e70] [cursor=pointer]:
+            - generic [ref=e72]: Shared Tokens
+        - tabpanel "Individual" [ref=e74]:
+          - generic [ref=e76]:
+            - generic [ref=e78]:
+              - heading "My Invitations" [level=2] [ref=e81]
+              - paragraph [ref=e82]: View and respond to project invitations you've received
+            - generic [ref=e85]:
+              - generic [ref=e87]:
+                - generic:
+                  - generic [ref=e89]:
+                    - generic [ref=e90]: Total
+                    - generic [ref=e91]: "0"
+                  - generic [ref=e93]:
+                    - generic [ref=e94]: Pending
+                    - generic [ref=e95]: "0"
+                  - generic [ref=e97]:
+                    - generic [ref=e98]: Accepted
+                    - generic [ref=e99]: "0"
+                  - generic [ref=e101]:
+                    - generic [ref=e102]: Declined
+                    - generic [ref=e103]: "0"
+                  - generic [ref=e105]:
+                    - generic [ref=e106]: Expired
+                    - generic [ref=e107]: "0"
+              - generic [ref=e111]:
+                - generic [ref=e112]: Add Invitation by Token
+                - generic [ref=e113]: Enter an invitation token you received
+                - generic [ref=e116]:
+                  - generic:
+                    - textbox "Add Invitation by Token" [ref=e119]:
+                      - /placeholder: Enter invitation token
+                    - button "Add Invitation" [disabled] [ref=e121]
+              - generic [ref=e123]:
+                - generic [ref=e124]: Filter by Status
+                - button "Filter by Status All" [ref=e131]:
+                  - generic [ref=e132]: All
+                  - generic [ref=e134]:
+                    - img
+              - table [ref=e141]:
+                - rowgroup [ref=e142]:
+                  - row "Project Role Invited By Expires Status Actions" [ref=e143]:
+                    - columnheader "Project" [ref=e144]:
+                      - button "Project" [ref=e145] [cursor=pointer]:
+                        - generic [ref=e146]: Project
+                        - generic [ref=e148]:
+                          - img
+                    - columnheader "Role" [ref=e149]:
+                      - button "Role" [ref=e150] [cursor=pointer]:
+                        - generic [ref=e151]: Role
+                        - generic [ref=e153]:
+                          - img
+                    - columnheader "Invited By" [ref=e154]:
+                      - button "Invited By" [ref=e155] [cursor=pointer]:
+                        - generic [ref=e156]: Invited By
+                        - generic [ref=e158]:
+                          - img
+                    - columnheader "Expires" [ref=e159]:
+                      - button "Expires" [ref=e160] [cursor=pointer]:
+                        - generic [ref=e161]: Expires
+                        - generic [ref=e163]:
+                          - img
+                    - columnheader "Status" [ref=e164]:
+                      - button "Status" [ref=e165] [cursor=pointer]:
+                        - generic [ref=e166]: Status
+                        - generic [ref=e168]:
+                          - img
+                    - columnheader "Actions" [ref=e169]:
+                      - generic [ref=e171]: Actions
+                - rowgroup [ref=e172]:
+                  - row "No invitations You don't have any project invitations yet." [ref=e173]:
+                    - cell "No invitations You don't have any project invitations yet." [ref=e174]:
+                      - generic [ref=e177]:
+                        - text: No invitations
+                        - paragraph [ref=e178]: You don't have any project invitations yet.
+```
