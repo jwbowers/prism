@@ -29,7 +29,9 @@ test.describe('Invitation Management Workflows', () => {
     // Create test invitation for tests that expect existing invitations
     test.beforeEach(async () => {
       // Create test project and invitation for viewing tests
-      const testProjectId = await projectsPage.createTestProject('Test Project');
+      // Use unique name to avoid conflicts between test runs
+      const uniqueName = `Test-Project-${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(uniqueName);
       await projectsPage.sendTestInvitation(testProjectId, 'viewer@example.com', 'viewer');
 
       // Refresh the page to see the new invitation

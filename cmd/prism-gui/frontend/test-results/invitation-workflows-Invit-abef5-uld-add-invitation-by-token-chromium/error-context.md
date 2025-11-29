@@ -45,7 +45,7 @@
                 - link "Users" [ref=e42] [cursor=pointer]:
                   - /url: /users
               - listitem [ref=e43]:
-                - link "Invitations" [active] [ref=e44] [cursor=pointer]:
+                - link "Invitations" [ref=e44] [cursor=pointer]:
                   - /url: /invitations
             - separator [ref=e47]
             - list [ref=e48]:
@@ -60,7 +60,7 @@
     - main [ref=e54]:
       - generic [ref=e57]:
         - tablist [ref=e60]:
-          - tab "Individual" [selected] [ref=e62] [cursor=pointer]:
+          - tab "Individual" [active] [selected] [ref=e62] [cursor=pointer]:
             - generic [ref=e64]: Individual
           - tab "Bulk" [ref=e66] [cursor=pointer]:
             - generic [ref=e68]: Bulk
