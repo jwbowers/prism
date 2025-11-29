@@ -626,6 +626,72 @@ make cross-compile
 - Update all three interfaces (CLI/TUI/GUI) together
 - Test cross-interface compatibility
 
+### 7. API Request/Response Signature Mismatches ⚠️ CRITICAL
+**Problem**: Tests or frontend fail with HTTP 400/500 errors even though backend code exists
+
+**Common Symptoms**:
+- "HTTP 400: Bad Request" on API calls that should work
+- "HTTP 500: Internal Server Error" from validation failures
+- Test data setup fails silently
+- "No data" shown in UI despite setup code running
+
+**Root Cause**: Frontend/tests sending fields that don't exist in backend types, or missing required fields
+
+**Debugging Process**:
+```bash
+# 1. Check the actual error in test output
+npx playwright test tests/e2e/your-test.spec.ts --reporter=list 2>&1 | grep "Error:"
+
+# 2. Find the backend type definition
+grep -r "type.*Request" pkg/
+
+# 3. Compare frontend API call to backend type
+# Frontend: cmd/prism-gui/frontend/src/App.tsx or tests/e2e/pages/*.ts
+# Backend: pkg/*/types.go or pkg/*/manager.go
+```
+
+**Example Case** (Issue #322, Commit d0852b674):
+
+Frontend was sending:
+```typescript
+// ❌ WRONG - fields don't exist in backend
+await api.createProject({
+  name: 'Test',
+  budget_limit: 1000,      // Not in CreateProjectRequest
+  budget_period: 'monthly', // Not in CreateProjectRequest
+  status: 'active'          // Not in CreateProjectRequest
+});
+```
+
+Backend expects:
+```go
+// pkg/project/types.go:11
+type CreateProjectRequest struct {
+    Name        string   `json:"name"`
+    Description string   `json:"description"`
+    Owner       string   `json:"owner"`
+    // No budget_limit, budget_period, or status fields!
+}
+```
+
+**Solution Pattern**:
+1. ✅ Read backend type definition (`pkg/*/types.go`)
+2. ✅ Match frontend API call exactly to backend struct
+3. ✅ Include ALL required fields (non-omitempty without defaults)
+4. ✅ Exclude fields that don't exist in backend
+5. ✅ Test with curl to verify API works: `curl -X POST http://localhost:8947/api/v1/endpoint -d '{"field":"value"}'`
+
+**Prevention**:
+- Always check backend type definitions before writing frontend API calls
+- Use TypeScript interfaces that match backend Go structs
+- Add API integration tests that validate request/response schemas
+- Don't assume field names - verify against source code
+
+**Key Files to Check**:
+- Backend types: `pkg/project/types.go`, `pkg/invitation/manager.go`, `pkg/types/*.go`
+- Frontend API: `cmd/prism-gui/frontend/src/App.tsx` (SafePrismAPI class)
+- Test helpers: `cmd/prism-gui/frontend/tests/e2e/pages/*.ts`
+
 ## Development Best Practices
 
 1. **Multi-modal first**: Every feature must work across CLI, TUI, and GUI
