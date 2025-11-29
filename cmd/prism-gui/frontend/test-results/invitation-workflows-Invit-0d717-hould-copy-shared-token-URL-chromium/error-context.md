@@ -1,0 +1,115 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - main [ref=e5]:
+    - navigation [ref=e6]:
+      - generic [ref=e7]:
+        - button [ref=e9] [cursor=pointer]:
+          - generic [ref=e10]:
+            - img
+        - generic [ref=e11]:
+          - heading "Prism" [level=2] [ref=e12]:
+            - link "Prism" [ref=e13] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e14]: Prism
+          - generic [ref=e15]:
+            - list [ref=e16]:
+              - listitem [ref=e17]:
+                - link "Dashboard" [ref=e18] [cursor=pointer]:
+                  - /url: /dashboard
+            - separator [ref=e21]
+            - list [ref=e22]:
+              - listitem [ref=e23]:
+                - link "Templates" [ref=e24] [cursor=pointer]:
+                  - /url: /templates
+                - generic [ref=e26]: "29"
+              - listitem [ref=e27]:
+                - link "My Workspaces" [ref=e28] [cursor=pointer]:
+                  - /url: /workspaces
+                - generic [ref=e30]: "1"
+            - separator [ref=e33]
+            - list [ref=e34]:
+              - listitem [ref=e35]:
+                - link "Storage" [ref=e36] [cursor=pointer]:
+                  - /url: /storage
+              - listitem [ref=e37]:
+                - link "Backups" [ref=e38] [cursor=pointer]:
+                  - /url: /backups
+              - listitem [ref=e39]:
+                - link "Projects" [ref=e40] [cursor=pointer]:
+                  - /url: /projects
+              - listitem [ref=e41]:
+                - link "Users" [ref=e42] [cursor=pointer]:
+                  - /url: /users
+              - listitem [ref=e43]:
+                - link "Invitations" [ref=e44] [cursor=pointer]:
+                  - /url: /invitations
+            - separator [ref=e47]
+            - list [ref=e48]:
+              - listitem [ref=e49]:
+                - link "Settings" [ref=e50] [cursor=pointer]:
+                  - /url: /settings
+                - generic [ref=e52]: Advanced
+    - region:
+      - generic:
+        - generic:
+          - list
+    - main [ref=e54]:
+      - generic [ref=e57]:
+        - tablist [ref=e60]:
+          - tab "Individual" [ref=e62] [cursor=pointer]:
+            - generic [ref=e64]: Individual
+          - tab "Bulk" [ref=e66] [cursor=pointer]:
+            - generic [ref=e68]: Bulk
+          - tab "Shared Tokens" [selected] [ref=e70] [cursor=pointer]:
+            - generic [ref=e72]: Shared Tokens
+        - tabpanel "Shared Tokens" [ref=e74]:
+          - generic [ref=e76]:
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - heading "Shared Invitation Tokens" [level=2] [ref=e81]
+                - button "Create Shared Token" [active] [ref=e83] [cursor=pointer]:
+                  - generic [ref=e84]:
+                    - img
+                  - text: Create Shared Token
+              - paragraph [ref=e85]: Create reusable invitation links with QR codes
+            - table [ref=e93]:
+              - rowgroup [ref=e94]:
+                - row "Name Project Role Redemptions Expires Status Actions" [ref=e95]:
+                  - columnheader "Name" [ref=e96]:
+                    - button "Name" [ref=e97] [cursor=pointer]:
+                      - generic [ref=e98]: Name
+                      - generic [ref=e100]:
+                        - img
+                  - columnheader "Project" [ref=e101]:
+                    - button "Project" [ref=e102] [cursor=pointer]:
+                      - generic [ref=e103]: Project
+                      - generic [ref=e105]:
+                        - img
+                  - columnheader "Role" [ref=e106]:
+                    - button "Role" [ref=e107] [cursor=pointer]:
+                      - generic [ref=e108]: Role
+                      - generic [ref=e110]:
+                        - img
+                  - columnheader "Redemptions" [ref=e111]:
+                    - generic [ref=e113]: Redemptions
+                  - columnheader "Expires" [ref=e114]:
+                    - button "Expires" [ref=e115] [cursor=pointer]:
+                      - generic [ref=e116]: Expires
+                      - generic [ref=e118]:
+                        - img
+                  - columnheader "Status" [ref=e119]:
+                    - generic [ref=e121]: Status
+                  - columnheader "Actions" [ref=e122]:
+                    - generic [ref=e124]: Actions
+              - rowgroup [ref=e125]:
+                - row "No shared tokens Create a shared invitation token to generate a reusable link with QR code." [ref=e126]:
+                  - cell "No shared tokens Create a shared invitation token to generate a reusable link with QR code." [ref=e127]:
+                    - generic [ref=e130]:
+                      - text: No shared tokens
+                      - paragraph [ref=e131]: Create a shared invitation token to generate a reusable link with QR code.
+  - generic [ref=e133]: Workspace name is required
+```
