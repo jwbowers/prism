@@ -100,12 +100,14 @@ test.describe('Project Management Workflows', () => {
 
       // Try to create second project with same name
       await projectsPage.page.getByRole('button', { name: /create project/i }).click();
-      await projectsPage.fillInput('project name', uniqueName);
-      await projectsPage.fillInput('description', 'Second project');
-      await projectsPage.clickButton('create');
+
+      // Scope all selectors to the dialog to avoid strict mode violations
+      const dialog = projectsPage.page.locator('[role="dialog"]').first();
+      await dialog.getByLabel(/project name/i).fill(uniqueName);
+      await dialog.getByLabel(/description/i).fill('Second project');
+      await dialog.getByRole('button', { name: /^create$/i }).click();
 
       // Should show duplicate error
-      const dialog = projectsPage.page.locator('[role="dialog"]').first();
       const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/already exists|duplicate/i);
 

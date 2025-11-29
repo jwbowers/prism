@@ -1,83 +1,154 @@
 # E2E Test Validation Report - November 28, 2025
 
 **Date**: 2025-11-28
-**Session**: E2E Test Validation
+**Session**: E2E Test Validation + Port Conflict Resolution
 **Tests Validated**: 30 tests (28 Phase 4 + 2 Phase 5)
-**Overall Result**: ✅ 28 PASSED, ❌ 2 FAILED (Navigation Issue)
+**Overall Result**: ✅ Infrastructure Fixed, ❌ 26 Tests Need Selector Fixes
+
+**⚠️ CORRECTION**: Initial report incorrectly stated "28/28 invitation tests passed". Actual results after infrastructure fix: **4/30 tests passing (13%)**
 
 ---
 
 ## Executive Summary
 
-**Validation Results**:
-- ✅ **invitation-workflows.spec.ts**: 28/28 tests PASSED (100%)
-- ❌ **project-workflows.spec.ts**: 0/1 tests passed (navigation timeout)
-- ❌ **user-workflows.spec.ts**: 0/1 tests passed (navigation timeout)
+**CRITICAL DISCOVERY**: Port 3000 was occupied by Docker container running EndlessFlows (different application), not Prism GUI.
 
-**Key Finding**: Phase 4 invitation tests work perfectly. Phase 5 tests fail due to landing on login page instead of main app.
+**Validation Results (After Infrastructure Fix)**:
+- ✅ **Infrastructure**: Port conflict resolved - Prism GUI now on port 3000
+- ❌ **invitation-workflows.spec.ts**: 4/28 tests passing (strict mode violations)
+- ❌ **project-workflows.spec.ts**: 0/1 tests passed (strict mode violations)
+- ❌ **user-workflows.spec.ts**: 0/1 tests passed (strict mode violations)
 
-**Root Cause**: Different beforeEach navigation setup between invitation tests vs project/user tests.
+**Key Finding**: Initial "28/28 passed" result was UNRELIABLE - tests were running against wrong application.
+
+**Root Cause (Actual)**: Docker container `endless-frontend` (010dfaaeba50) occupying port 3000, serving EndlessFlows instead of Prism.
+
+**Current Status**: Infrastructure fixed ✅, Tests need selector refactoring ❌
 
 ---
 
-## Test Results Detail
+## Port Conflict Discovery & Resolution (Issue #321)
 
-### ✅ Phase 4: Invitation Workflows (28/28 PASSED)
+### Initial Symptoms
+- ALL tests timing out waiting for navigation links
+- Error screenshots showing "Welcome to Endless" / "Sign in to your account"
+- Text "EndlessFlows - AI with Infinite Context" visible in page snapshots
+- No Prism navigation links (Projects, Users, Templates) found
+
+### Investigation Process
+
+1. **Compared beforeEach implementations** (tests/e2e/*.spec.ts)
+   - Result: ALL test files had IDENTICAL setup code
+   - Conclusion: Not a test code difference
+
+2. **Ran tests individually**
+   - Result: Even "working" invitation tests fail when run alone
+   - Conclusion: Previous "28/28 passed" was unreliable
+
+3. **Checked actual port 3000 content**
+   ```bash
+   $ curl -s http://localhost:3000 | grep title
+   <title>EndlessFlows - AI with Infinite Context</title>
+   ```
+   - **EUREKA MOMENT**: Wrong application entirely!
+
+4. **Found Docker container**
+   ```bash
+   $ docker ps | grep 3000
+   010dfaaeba50   endless-frontend   0.0.0.0:3000->3000/tcp
+   ```
+
+### Resolution Steps
+
+1. Stopped conflicting Docker container:
+   ```bash
+   docker stop 010dfaaeba50
+   ```
+
+2. Started actual Prism GUI:
+   ```bash
+   cd cmd/prism-gui/frontend
+   npm run dev  # Vite starts on port 3000
+   ```
+
+3. Verified correct application:
+   ```bash
+   $ curl -s http://localhost:3000 | grep title
+   <title>Prism</title>  ✅
+   ```
+
+### Impact
+- **ALL 30 tests** were affected by this infrastructure issue
+- Previous test results (including "28/28 passed") were UNRELIABLE
+- Tests were interacting with EndlessFlows login page, not Prism GUI
+- Explains why navigation links couldn't be found (they didn't exist in wrong app)
+
+### Prevention (Implemented in #321)
+1. Document port 3000 requirement in README
+2. Add port conflict check to `tests/e2e/setup-daemon.js`
+3. Verify correct application loaded before running tests
+4. CI/CD uses isolated environment
+
+---
+
+## Test Results Detail (After Infrastructure Fix)
+
+### ❌ Phase 4: Invitation Workflows (4/28 PASSING)
 
 **File**: tests/e2e/invitation-workflows.spec.ts
-**Status**: ✅ ALL TESTS PASSED
-**Exit Code**: 0
-**Execution Time**: ~35 seconds
+**Status**: ❌ 24 TESTS FAILING (Strict Mode Violations)
+**Exit Code**: 1
+**Execution Time**: ~3-4 minutes
 
-**Tests Validated**:
+**✅ Passing Tests (4)**:
+1. ✅ should prevent extending expired token
+2. ✅ should display invitation summary stats
+3. ✅ should mark expired invitations
+4. ✅ should remove expired invitations from list
 
-**Individual Invitations** (6 tests):
-- ✅ Display individual invitations tab
-- ✅ Add invitation by token
-- ✅ Accept invitation with confirmation
-- ✅ Decline invitation with confirmation
-- ✅ Display pending invitations
-- ✅ Update invitation status after action
+**❌ Failing Tests (24)** - All with Playwright **strict mode violations**:
 
-**Bulk Invitations** (5 tests):
-- ✅ Send bulk invitations to multiple emails
-- ✅ Validate email format for bulk invitations
-- ✅ Require project selection for bulk
-- ✅ Display bulk invitation results summary
-- ✅ Support optional invitation message
+**Individual Invitations** (6 tests - ALL FAILING):
+- ❌ Add invitation by token - `getByLabel(/invitation token/i)` matches 3 elements
+- ❌ Display invitation details - No invitation data exists ("No invitations")
+- ❌ Show invitation status badges - No invitation data exists
+- ❌ Filter by invitation status - Element is not a `<select>` (Cloudscape dropdown)
+- ❌ Accept invitation with confirmation - Missing test data
+- ❌ Update invitation status after action - Missing test data
 
-**Shared Tokens** (8 tests):
-- ✅ Create shared invitation token
-- ✅ Display QR code for shared token
-- ✅ Copy shared token URL
-- ✅ Show redemption count for token
-- ✅ Extend token expiration
-- ✅ Revoke shared token
-- ✅ Prevent extending expired tokens
-- ✅ Prevent revoking already-revoked tokens
+**Bulk Invitations** (5 tests - ALL FAILING):
+- ❌ Send bulk invitations - Selector issues
+- ❌ Validate email format - Selector issues
+- ❌ Require project selection - Selector issues
+- ❌ Display bulk invitation results summary - Selector issues
+- ❌ Include optional welcome message - Selector issues
 
-**Invitation Statistics** (2 tests):
-- ✅ Display invitation statistics
-- ✅ Update statistics after invitation actions
+**Shared Tokens** (8 tests - 7 FAILING, 1 PASSING):
+- ❌ Create shared invitation token - Timeout (17s)
+- ❌ Display QR code for shared token - Timeout (17s)
+- ❌ Copy shared token URL - Timeout (17s)
+- ❌ Show redemption count for token - Timeout (17s)
+- ❌ Extend token expiration - Timeout (17s)
+- ❌ Revoke shared token - Timeout (17s)
+- ✅ Prevent extending expired tokens - PASSING
+- ❌ Prevent revoking already-revoked tokens - Timeout (17s)
 
-**Invitation Expiration** (3 tests):
-- ✅ Show expiration date for invitations
-- ✅ Mark expired invitations
-- ✅ Remove expired invitations from list
+**Invitation Statistics** (2 tests - 1 FAILING, 1 PASSING):
+- ✅ Display invitation summary stats - PASSING
+- ❌ Update statistics after invitation actions - Missing test data
 
-**Invitation Management** (4 tests):
-- ✅ Display individual invitations tab
-- ✅ Display bulk invitations tab
-- ✅ Display shared tokens tab
-- ✅ Switch between invitation tabs
+**Invitation Expiration** (3 tests - 1 FAILING, 2 PASSING):
+- ❌ Show expiration date for invitations - Missing test data
+- ✅ Mark expired invitations - PASSING
+- ✅ Remove expired invitations from list - PASSING
 
-**Result**: ✅ **Phase 4 is production-ready!**
+**Result**: ❌ **Phase 4 needs selector fixes**
 
-All invitation workflow functionality works correctly:
-- InvitationManagementView component functional
-- API-based test setup pattern works
-- Conditional testing patterns work
-- All test infrastructure validated
+**Root Causes**:
+1. **Strict Mode Violations**: Selectors match multiple elements (needs data-testid)
+2. **Missing Test Data**: Tests expect invitations that don't exist (needs API setup)
+3. **Cloudscape UI Patterns**: Non-standard dropdowns need custom interaction
+4. **Timeouts**: Some tests wait 17+ seconds (likely backend issues)
 
 ---
 

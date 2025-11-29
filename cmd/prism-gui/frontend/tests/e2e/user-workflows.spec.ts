@@ -124,14 +124,16 @@ test.describe('User Management Workflows', () => {
       await projectsPage.createUser(uniqueUsername, 'test1@example.com', 'Test User 1');
 
       // Try to create second user with same username
-      await projectsPage.page.getByRole('button', { name: /create user/i }).click();
-      await projectsPage.fillInput('username', uniqueUsername);
-      await projectsPage.fillInput('email', 'test2@example.com');
-      await projectsPage.fillInput('full name', 'Test User 2');
-      await projectsPage.clickButton('create');
+      await projectsPage.page.getByRole('button', { name: /create user/i }).last().click();
+
+      // Scope all selectors to the dialog to avoid strict mode violations
+      const dialog = projectsPage.page.locator('[role="dialog"]').first();
+      await dialog.getByLabel(/username/i).fill(uniqueUsername);
+      await dialog.getByLabel(/email/i).fill('test2@example.com');
+      await dialog.getByLabel(/full name/i).fill('Test User 2');
+      await dialog.getByRole('button', { name: /^create user$/i }).click();
 
       // Should show duplicate error
-      const dialog = projectsPage.page.locator('[role="dialog"]').first();
       const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/already exists|duplicate/i);
 
