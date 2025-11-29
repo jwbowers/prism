@@ -26,6 +26,18 @@ test.describe('Invitation Management Workflows', () => {
   });
 
   test.describe('Individual Invitations Workflow', () => {
+    // Create test invitation for tests that expect existing invitations
+    test.beforeEach(async () => {
+      // Create test project and invitation for viewing tests
+      const testProjectId = await projectsPage.createTestProject('Test Project');
+      await projectsPage.sendTestInvitation(testProjectId, 'viewer@example.com', 'viewer');
+
+      // Refresh the page to see the new invitation
+      await projectsPage.page.reload();
+      await projectsPage.navigateToInvitations();
+      await projectsPage.switchToIndividualInvitations();
+    });
+
     test('should add invitation by token', async () => {
       // Individual Invitations UI now implemented
       await projectsPage.switchToIndividualInvitations();
