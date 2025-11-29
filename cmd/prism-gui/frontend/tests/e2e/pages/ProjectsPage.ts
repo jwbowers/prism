@@ -326,7 +326,9 @@ export class ProjectsPage extends BasePage {
   async addInvitationToken(token: string) {
     await this.switchToIndividualInvitations();
 
-    await this.fillInput('invitation token', token);
+    // Use placeholder to target the specific input field (not hidden modals)
+    const tokenInput = this.page.getByPlaceholder(/enter.*token/i);
+    await tokenInput.fill(token);
     await this.clickButton('add invitation');
     await this.page.waitForTimeout(500);
   }
