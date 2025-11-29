@@ -324,6 +324,10 @@ export class ProjectsPage extends BasePage {
    * Add invitation by token
    */
   async addInvitationToken(token: string) {
+    if (!token) {
+      throw new Error('Token parameter is required for addInvitationToken()');
+    }
+
     await this.switchToIndividualInvitations();
 
     // Scope to the Individual tab panel to avoid modal conflicts
