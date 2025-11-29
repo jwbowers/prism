@@ -17,6 +17,9 @@ type Invitation struct {
 	// ProjectID is the project being invited to
 	ProjectID string `json:"project_id"`
 
+	// ProjectName is the name of the project (enriched for display)
+	ProjectName string `json:"project_name,omitempty"`
+
 	// Email is the invitee's email address
 	Email string `json:"email"`
 

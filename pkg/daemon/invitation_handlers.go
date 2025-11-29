@@ -245,6 +245,13 @@ func (s *Server) handleListMyInvitations(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Enrich invitations with project names
+	for _, inv := range invitations {
+		if project, err := s.projectManager.GetProject(r.Context(), inv.ProjectID); err == nil {
+			inv.ProjectName = project.Name
+		}
+	}
+
 	response := map[string]interface{}{
 		"invitations": invitations,
 		"email":       email,
