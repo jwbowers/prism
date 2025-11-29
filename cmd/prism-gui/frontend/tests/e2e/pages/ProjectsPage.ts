@@ -326,10 +326,17 @@ export class ProjectsPage extends BasePage {
   async addInvitationToken(token: string) {
     await this.switchToIndividualInvitations();
 
-    // Use placeholder to target the specific input field (not hidden modals)
-    const tokenInput = this.page.getByPlaceholder(/enter.*token/i);
+    // Scope to the Individual tab panel to avoid modal conflicts
+    const individualPanel = this.page.getByRole('tabpanel', { name: 'Individual' });
+
+    // Find the actual input element inside the Cloudscape Input component
+    // data-testid is on the wrapper div, need to find the <input> inside
+    const tokenInput = individualPanel.getByTestId('invitation-token-input').locator('input');
     await tokenInput.fill(token);
-    await this.clickButton('add invitation');
+
+    // Use data-testid for the button scoped to the tab panel
+    const addButton = individualPanel.getByTestId('add-invitation-button');
+    await addButton.click();
     await this.page.waitForTimeout(500);
   }
 
