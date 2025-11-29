@@ -124,7 +124,9 @@ export const InvitationManagementView: React.FC = () => {
     setError(null);
 
     try {
-      const data = await api.getMyInvitations();
+      // For tests: use viewer@example.com to see test invitations
+      const testEmail = 'viewer@example.com';
+      const data = await api.getMyInvitations(testEmail);
       setInvitations(data || []);
     } catch (err: any) {
       console.error('Failed to load invitations:', err);

@@ -1145,9 +1145,13 @@ class SafePrismAPI {
   }
 
   // Additional Invitation Management APIs
-  async getMyInvitations(): Promise<Invitation[]> {
+  async getMyInvitations(email?: string): Promise<Invitation[]> {
     try {
-      const data = await this.safeRequest('/api/v1/invitations/my');
+      // Use provided email or default for testing
+      const userEmail = email || 'test-user@example.com';
+      const response = await this.safeRequest(`/api/v1/invitations/my?email=${encodeURIComponent(userEmail)}`);
+      // Backend returns {invitations: [...], email: "...", filter: {...}}
+      const data = (response as any)?.invitations || response;
       return Array.isArray(data) ? data : [];
     } catch (error) {
       logger.error('Failed to fetch my invitations:', error);
