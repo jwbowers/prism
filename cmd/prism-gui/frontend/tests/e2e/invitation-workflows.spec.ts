@@ -19,6 +19,14 @@ test.describe('Invitation Management Workflows', () => {
 
     projectsPage = new ProjectsPage(page);
     await projectsPage.goto();
+
+    // Clear invitation cache by directly manipulating localStorage and reloading
+    // This ensures React state gets reset with empty invitations
+    await page.evaluate(() => {
+      localStorage.removeItem('cws_invitations');
+    });
+    await page.reload();
+
     await projectsPage.navigateToInvitations();
 
     // Force close any open dialogs from previous tests
@@ -119,10 +127,10 @@ test.describe('Invitation Management Workflows', () => {
       const testEmail = 'accept-test@example.com';
       const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'member');
 
-      // Add invitation to Individual Invitations tab
+      // Add invitation to Individual Invitations tab and wait for it to appear (deterministic!)
       await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken);
+      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Accept invitation
       await projectsPage.acceptInvitation(testProjectName);

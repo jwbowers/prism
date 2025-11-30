@@ -321,11 +321,14 @@ export class ProjectsPage extends BasePage {
   }
 
   /**
-   * Add invitation by token
+   * Add invitation by token and wait for it to appear
    */
-  async addInvitationToken(token: string) {
+  async addInvitationToken(token: string, expectedProjectName: string) {
     if (!token) {
       throw new Error('Token parameter is required for addInvitationToken()');
+    }
+    if (!expectedProjectName) {
+      throw new Error('expectedProjectName parameter is required for addInvitationToken()');
     }
 
     await this.switchToIndividualInvitations();
@@ -340,8 +343,14 @@ export class ProjectsPage extends BasePage {
 
     // Use data-testid for the button scoped to the tab panel
     const addButton = individualPanel.getByTestId('add-invitation-button');
+
+    // Click and wait for the invitation row to appear in the table
     await addButton.click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for the specific invitation row to appear in the table (deterministic!)
+    // This proves the API call completed AND React state updated AND table re-rendered
+    const invitationRow = this.page.locator(`tr:has-text("${expectedProjectName}")`).first();
+    await invitationRow.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**
@@ -350,7 +359,11 @@ export class ProjectsPage extends BasePage {
   async acceptInvitation(projectName: string) {
     await this.switchToIndividualInvitations();
 
+    // Wait for the invitation row to be visible
+    // This handles cases where the invitation was just added and may not be immediately visible
     const invitationRow = this.page.locator(`tr:has-text("${projectName}")`).first();
+    await invitationRow.waitFor({ state: 'visible', timeout: 10000 });
+
     const acceptButton = invitationRow.getByRole('button', { name: /accept/i });
     await acceptButton.click();
     await this.page.waitForTimeout(500);
