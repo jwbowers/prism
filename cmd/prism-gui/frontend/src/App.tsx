@@ -1068,8 +1068,9 @@ class SafePrismAPI {
       if (message) body.message = message;
       if (expiresAt) body.expires_at = expiresAt;
 
-      const data = await this.safeRequest<Invitation>(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
-      return data;
+      // Backend returns nested response: {invitation, project, message}
+      const data = await this.safeRequest<{invitation: Invitation, project: unknown, message: string}>(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
+      return data.invitation;
     } catch (error) {
       logger.error('Failed to send invitation:', error);
       throw error;
