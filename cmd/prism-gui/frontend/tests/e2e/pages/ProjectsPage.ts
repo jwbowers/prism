@@ -63,9 +63,11 @@ export class ProjectsPage extends BasePage {
     await this.page.getByTestId('create-project-button').click();
     await this.page.waitForTimeout(500);
 
-    // Fill form fields
+    // Fill form fields using data-testids
     await this.fillInput('project name', name);
-    await this.fillInput('description', description);
+
+    // Use data-testid for description (Cloudscape wraps textarea)
+    await this.page.getByTestId('project-description-input').locator('textarea').fill(description);
 
     if (budget !== undefined) {
       await this.fillInput('budget', budget.toString());
