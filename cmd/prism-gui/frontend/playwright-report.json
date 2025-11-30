@@ -99,27 +99,27 @@
   },
   "suites": [
     {
-      "title": "user-workflows.spec.ts",
-      "file": "user-workflows.spec.ts",
+      "title": "invitation-workflows.spec.ts",
+      "file": "invitation-workflows.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "User Management Workflows",
-          "file": "user-workflows.spec.ts",
+          "title": "Invitation Management Workflows",
+          "file": "invitation-workflows.spec.ts",
           "line": 10,
           "column": 6,
           "specs": [],
           "suites": [
             {
-              "title": "SSH Key Management",
-              "file": "user-workflows.spec.ts",
-              "line": 144,
+              "title": "Accept Invitation Workflow",
+              "file": "invitation-workflows.spec.ts",
+              "line": 110,
               "column": 8,
               "specs": [
                 {
-                  "title": "should generate SSH key for user",
+                  "title": "should add user to project after acceptance",
                   "ok": false,
                   "tags": [],
                   "tests": [
@@ -134,62 +134,62 @@
                           "workerIndex": 0,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 11888,
+                          "duration": 23661,
                           "error": {
-                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
-                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:173:50",
+                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"Membership Test 1764468733144\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n",
+                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"Membership Test 1764468733144\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n\n    at ProjectsPage.viewProjectDetails (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:105:25)\n    at ProjectsPage.verifyProjectMember (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:689:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:188:24",
                             "location": {
-                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
-                              "column": 50,
-                              "line": 173
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
+                              "column": 25,
+                              "line": 105
                             },
-                            "snippet": "  171 |       // Verify key data is displayed\n  172 |       const publicKeyDisplay = projectsPage.page.getByTestId('ssh-public-key-display');\n> 173 |       expect(await publicKeyDisplay.isVisible()).toBe(true);\n      |                                                  ^\n  174 |\n  175 |       const privateKeyDisplay = projectsPage.page.getByTestId('ssh-private-key-display');\n  176 |       expect(await privateKeyDisplay.isVisible()).toBe(true);"
+                            "snippet": "\u001b[90m   at \u001b[39mpages/ProjectsPage.ts:105\n\n  103 |     const projectRow = this.getProjectByName(projectName);\n  104 |     const actionsButton = projectRow.getByRole('button', { name: /actions/i });\n> 105 |     await actionsButton.click();\n      |                         ^\n  106 |     await this.page.waitForTimeout(300);\n  107 |\n  108 |     await this.page.getByRole('menuitem', { name: /view details/i }).click();"
                           },
                           "errors": [
                             {
                               "location": {
-                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
-                                "column": 50,
-                                "line": 173
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
+                                "column": 25,
+                                "line": 105
                               },
-                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  171 |       // Verify key data is displayed\n  172 |       const publicKeyDisplay = projectsPage.page.getByTestId('ssh-public-key-display');\n> 173 |       expect(await publicKeyDisplay.isVisible()).toBe(true);\n      |                                                  ^\n  174 |\n  175 |       const privateKeyDisplay = projectsPage.page.getByTestId('ssh-private-key-display');\n  176 |       expect(await privateKeyDisplay.isVisible()).toBe(true);\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts:173:50"
+                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"Membership Test 1764468733144\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n\n\n   at pages/ProjectsPage.ts:105\n\n  103 |     const projectRow = this.getProjectByName(projectName);\n  104 |     const actionsButton = projectRow.getByRole('button', { name: /actions/i });\n> 105 |     await actionsButton.click();\n      |                         ^\n  106 |     await this.page.waitForTimeout(300);\n  107 |\n  108 |     await this.page.getByRole('menuitem', { name: /view details/i }).click();\n    at ProjectsPage.viewProjectDetails (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:105:25)\n    at ProjectsPage.verifyProjectMember (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:689:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:188:24"
                             }
                           ],
                           "stdout": [],
                           "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-26T00:29:39.009Z",
+                          "startTime": "2025-11-30T02:12:07.269Z",
                           "annotations": [],
                           "attachments": [
                             {
                               "name": "screenshot",
                               "contentType": "image/png",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-27e67-d-generate-SSH-key-for-user-chromium/test-failed-1.png"
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-18968-to-project-after-acceptance-chromium/test-failed-1.png"
                             },
                             {
                               "name": "video",
                               "contentType": "video/webm",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-27e67-d-generate-SSH-key-for-user-chromium/video.webm"
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-18968-to-project-after-acceptance-chromium/video.webm"
                             },
                             {
                               "name": "error-context",
                               "contentType": "text/markdown",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/user-workflows-User-Manage-27e67-d-generate-SSH-key-for-user-chromium/error-context.md"
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-18968-to-project-after-acceptance-chromium/error-context.md"
                             }
                           ],
                           "errorLocation": {
-                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
-                            "column": 50,
-                            "line": 173
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
+                            "column": 25,
+                            "line": 105
                           }
                         }
                       ],
                       "status": "unexpected"
                     }
                   ],
-                  "id": "a6a647dfb9a4c813362b-7468f34ce7059f499cc4",
-                  "file": "user-workflows.spec.ts",
-                  "line": 145,
+                  "id": "ce9e05a89da8ed622f12-807e2fdb2e92ac7a87bc",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 168,
                   "column": 5
                 }
               ]
@@ -201,8 +201,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-11-26T00:29:36.226Z",
-    "duration": 14925.17,
+    "startTime": "2025-11-30T02:12:04.354Z",
+    "duration": 26846.786,
     "expected": 0,
     "skipped": 0,
     "unexpected": 1,

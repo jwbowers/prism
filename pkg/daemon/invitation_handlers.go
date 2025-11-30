@@ -293,6 +293,9 @@ func (s *Server) handleGetInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Enrich invitation with project name for display
+	inv.ProjectName = project.Name
+
 	response := map[string]interface{}{
 		"invitation": inv,
 		"project":    project,
