@@ -664,7 +664,7 @@ export class ProjectsPage extends BasePage {
    */
   async sendTestInvitation(
     projectId: string,
-    email: string,
+    email: string = 'test-user@example.com',
     role: 'viewer' | 'member' | 'admin'
   ): Promise<string> {
     const token = await this.page.evaluate(async (args) => {

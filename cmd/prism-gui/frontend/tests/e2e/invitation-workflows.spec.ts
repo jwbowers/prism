@@ -40,7 +40,7 @@ test.describe('Invitation Management Workflows', () => {
       // Use unique name to avoid conflicts between test runs
       const uniqueName = `Test-Project-${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(uniqueName);
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, 'viewer@example.com', 'viewer');
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, 'test-user@example.com', 'viewer');
 
       // Refresh the page to see the new invitation
       await projectsPage.page.reload();
@@ -121,25 +121,42 @@ test.describe('Invitation Management Workflows', () => {
 
   test.describe('Accept Invitation Workflow', () => {
     test('should accept invitation with confirmation', async () => {
-      // Create test project and invitation
+      // Create test project and send invitation to test user (test-user@example.com)
       const testProjectName = `Accept Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'accept-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'member');
+      const token = await projectsPage.sendTestInvitation(testProjectId, undefined, 'member');
 
-      // Add invitation to Individual Invitations tab and wait for it to appear (deterministic!)
+      // Reload page to fetch invitations from backend (invitation should appear automatically)
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
-      // Accept invitation
-      await projectsPage.acceptInvitation(testProjectName);
+      // Wait for API call and React rendering: table body should have at least one row
+      await projectsPage.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+
+      // Find the row containing our test project (table may not be sorted by creation time)
+      const testRow = projectsPage.page.locator(`table tbody tr:has-text("${testProjectName}")`);
+      await testRow.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Accept the invitation for our test project
+      const acceptButton = testRow.getByRole('button', { name: /accept/i });
+      await acceptButton.click();
+
+      // Wait for confirmation dialog to appear and click Accept
+      // Use heading to identify the specific "Accept Invitation" dialog
+      const confirmDialog = projectsPage.page.getByRole('dialog').filter({ hasText: 'Accept Invitation' });
+      await confirmDialog.waitFor({ state: 'visible', timeout: 5000 });
+
+      const dialogAcceptButton = confirmDialog.getByRole('button', { name: 'Accept' });
+      await dialogAcceptButton.click();
+
+      // Wait for dialog to close and status to update
+      await confirmDialog.waitFor({ state: 'hidden', timeout: 5000 });
+      await projectsPage.page.waitForTimeout(1000);
 
       // Verify status changed to Accepted
-      await projectsPage.page.waitForTimeout(1000);
-      const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
-      const invitationText = await invitationRow.textContent();
-      expect(invitationText).toContain('Accepted');
+      const updatedRowText = await testRow.textContent();
+      expect(updatedRowText).toContain('Accepted');
 
       // Cleanup
       await projectsPage.deleteTestProject(testProjectId);
@@ -203,26 +220,47 @@ test.describe('Invitation Management Workflows', () => {
 
   test.describe('Decline Invitation Workflow', () => {
     test('should decline invitation with reason', async () => {
-      // Create test project and invitation
+      // Create test project and send invitation to test user (test-user@example.com)
       const testProjectName = `Decline Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'decline-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'member');
+      const token = await projectsPage.sendTestInvitation(testProjectId, undefined, 'member');
 
-      // Add invitation to Individual Invitations tab
+      // Reload page to fetch invitations from backend (invitation should appear automatically)
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken);
 
       const declineReason = 'Not interested in this project at the moment';
 
-      // Decline invitation
-      await projectsPage.declineInvitation(testProjectName, declineReason);
+      // Wait for API call and React rendering: table body should have at least one row
+      await projectsPage.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+
+      // Find row with test project
+      const testRow = projectsPage.page.locator(`table tbody tr:has-text("${testProjectName}")`);
+      await testRow.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Click decline button
+      const declineButton = testRow.getByRole('button', { name: /decline/i });
+      await declineButton.click();
+
+      // Handle confirmation dialog
+      const confirmDialog = projectsPage.page.getByRole('dialog').filter({ hasText: 'Decline Invitation' });
+      await confirmDialog.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Enter reason
+      const reasonInput = confirmDialog.getByLabel(/reason/i);
+      await reasonInput.fill(declineReason);
+
+      // Click Decline in dialog
+      const dialogDeclineButton = confirmDialog.getByRole('button', { name: 'Decline' });
+      await dialogDeclineButton.click();
+
+      // Wait for dialog to close
+      await confirmDialog.waitFor({ state: 'hidden', timeout: 5000 });
+      await projectsPage.page.waitForTimeout(1000);
 
       // Verify status changed to Declined
-      await projectsPage.page.waitForTimeout(1000);
-      const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
-      const invitationText = await invitationRow.textContent();
+      const invitationText = await testRow.textContent();
       expect(invitationText).toContain('Declined');
 
       // Cleanup

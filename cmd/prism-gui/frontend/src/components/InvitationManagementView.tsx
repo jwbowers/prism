@@ -124,8 +124,8 @@ export const InvitationManagementView: React.FC = () => {
     setError(null);
 
     try {
-      // For tests: use viewer@example.com to see test invitations
-      const testEmail = 'viewer@example.com';
+      // For tests: use test-user@example.com to match test invitation recipient
+      const testEmail = 'test-user@example.com';
       const data = await api.getMyInvitations(testEmail);
       setInvitations(data || []);
     } catch (err: any) {
