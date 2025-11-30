@@ -45,7 +45,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
       await projectsPage.waitForProjectToBeRemoved(uniqueName);
     });
 
@@ -66,7 +66,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
       await projectsPage.waitForProjectToBeRemoved(uniqueName);
     });
 
@@ -114,7 +114,7 @@ test.describe('Project Management Workflows', () => {
       // Cleanup
       await projectsPage.clickButton('cancel');
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
     });
   });
 
@@ -149,7 +149,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
     });
 
     test('should show budget utilization in project details', async () => {
@@ -181,7 +181,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
     });
   });
 
@@ -200,7 +200,7 @@ test.describe('Project Management Workflows', () => {
       await projectsPage.deleteProject(uniqueName);
 
       // Confirm deletion
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
 
       // Wait for removal
       await projectsPage.waitForProjectToBeRemoved(uniqueName);
@@ -230,7 +230,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
     });
 
     test.skip('should prevent deleting project with active resources', async () => {
@@ -265,11 +265,11 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(name1);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
       await projectsPage.waitForProjectToBeRemoved(name1);
 
       await projectsPage.deleteProject(name2);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
       await projectsPage.waitForProjectToBeRemoved(name2);
     });
 
@@ -329,11 +329,11 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(activeName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
       await projectsPage.waitForProjectToBeRemoved(activeName);
 
       await projectsPage.deleteProject(suspendedName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
       await projectsPage.waitForProjectToBeRemoved(suspendedName);
     });
   });
@@ -357,7 +357,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
     });
 
     test.skip('should alert when approaching budget limit', async () => {
@@ -375,7 +375,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
     });
 
     test.skip('should prevent operations when budget exceeded', async () => {
@@ -393,7 +393,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.deleteProject(uniqueName);
-      await projectsPage.clickButton('delete');
+      await projectsPage.page.getByTestId('confirm-delete-button').click();
     });
   });
 });

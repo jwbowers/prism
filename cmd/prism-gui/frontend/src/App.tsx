@@ -8422,6 +8422,7 @@ export default function PrismApp() {
                 variant="primary"
                 onClick={deleteModalConfig.onConfirm}
                 disabled={!isConfirmationValid}
+                data-testid="confirm-delete-button"
               >
                 Delete
               </Button>
