@@ -93,7 +93,12 @@ export class ProjectsPage extends BasePage {
 
     // Click delete option
     await this.page.getByRole('menuitem', { name: /delete/i }).click();
-    await this.page.waitForTimeout(300);
+
+    // Wait for delete confirmation modal to be visible
+    await this.page.waitForSelector('[data-testid="confirm-delete-button"]', {
+      state: 'visible',
+      timeout: 5000
+    });
   }
 
   /**
