@@ -32,12 +32,20 @@ test.describe('Invitation Management Workflows', () => {
       // Use unique name to avoid conflicts between test runs
       const uniqueName = `Test-Project-${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(uniqueName);
-      await projectsPage.sendTestInvitation(testProjectId, 'viewer@example.com', 'viewer');
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, 'viewer@example.com', 'viewer');
 
       // Refresh the page to see the new invitation
       await projectsPage.page.reload();
       await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
+
+      // Wait for invitation to appear in the UI before tests proceed
+      // This prevents race conditions where tests start before invitation is rendered
+      await projectsPage.page.waitForTimeout(1000); // Give UI time to load data
+
+      // Verify invitation row exists (wait up to 10 seconds)
+      const invitationRows = projectsPage.getInvitationRows();
+      await expect(invitationRows.first()).toBeVisible({ timeout: 10000 });
     });
 
     test('should add invitation by token', async () => {
@@ -145,9 +153,9 @@ test.describe('Invitation Management Workflows', () => {
       const acceptButton = invitationRow.getByRole('button', { name: /accept/i });
       await acceptButton.click();
 
-      // Verify confirmation dialog
-      const dialog = projectsPage.page.locator('[role="dialog"]').first();
-      expect(await dialog.isVisible()).toBe(true);
+      // Verify confirmation dialog appears (use :visible to skip hidden dialogs like SSH key modal)
+      const dialog = projectsPage.page.locator('[role="dialog"]:visible');
+      await expect(dialog).toBeVisible({ timeout: 10000 });
 
       // Dialog should show project details
       const dialogText = await dialog.textContent();
