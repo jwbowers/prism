@@ -621,7 +621,9 @@ class SafePrismAPI {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const error: any = new Error(`HTTP ${response.status}: ${response.statusText}`);
+        error.response = { status: response.status, statusText: response.statusText };
+        throw error;
       }
 
       // Handle HTTP 204 No Content (empty response)
@@ -917,7 +919,15 @@ class SafePrismAPI {
   }
 
   async createUser(userData: UserData): Promise<User> {
-    return this.safeRequest<User>('/api/v1/users', 'POST', userData);
+    console.log('[DEBUG] createUser called with:', userData);
+    try {
+      const result = await this.safeRequest<User>('/api/v1/users', 'POST', userData);
+      console.log('[DEBUG] createUser success:', result);
+      return result;
+    } catch (error) {
+      console.error('[DEBUG] createUser error:', error);
+      throw error;
+    }
   }
 
   async deleteUser(username: string): Promise<void> {
@@ -933,7 +943,10 @@ class SafePrismAPI {
   }
 
   async generateSSHKey(username: string): Promise<SSHKeyResponse> {
-    return this.safeRequest(`/api/v1/users/${username}/ssh-key`, 'POST');
+    return this.safeRequest(`/api/v1/users/${username}/ssh-key`, 'POST', {
+      username: username,
+      key_type: 'ed25519'
+    });
   }
 
   // Helper function to calculate budget status
@@ -2005,27 +2018,22 @@ export default function PrismApp() {
       return;
     }
 
-    const budget = projectBudget ? parseFloat(projectBudget) : undefined;
-    if (budget !== undefined && (isNaN(budget) || budget < 0)) {
-      setProjectValidationError('Budget must be a positive number');
-      return;
-    }
+    // Note: Budget validation removed - budget field is deprecated in v0.5.10
+    // Budget configuration is now managed separately via Budget/Allocation system
 
     try {
       // Call API to create project
-      await api.createProject({
+      // Note: budget_limit is not sent - budget configuration is managed separately via Budget/Allocation system
+      const createdProject = await api.createProject({
         name: projectName.trim(),
-        description: projectDescription.trim(),
-        budget_limit: budget
+        description: projectDescription.trim()
       });
 
-      // Refresh projects list
-      const projects = await api.getProjects();
-
-      // Update state with both projects and notification in single atomic operation
+      // Optimistic UI update: add project directly to state without re-fetching
+      // This matches the user creation pattern and avoids race conditions
       setState(prev => ({
         ...prev,
-        projects,
+        projects: [...prev.projects, createdProject],
         notifications: [{
           type: 'success',
           header: 'Project Created',
@@ -2092,7 +2100,12 @@ export default function PrismApp() {
       setUserEmail('');
       setUserFullName('');
     } catch (error: any) {
-      if (error.response?.status === 409) {
+      // Check for duplicate error - backend returns HTTP 409
+      // Error format: "HTTP 409: Conflict" or error.response.status === 409
+      const is409 = error.response?.status === 409 ||
+                   (error.message && error.message.includes('HTTP 409'));
+
+      if (is409) {
         setUserValidationError('A user with this username already exists');
       } else {
         setUserValidationError(`Failed to create user: ${error.message || 'Unknown error'}`);
@@ -2526,7 +2539,7 @@ export default function PrismApp() {
     if (state.loading) {
       return (
         <Container>
-          <Box textAlign="center" padding="xl">
+          <Box data-testid="loading" textAlign="center" padding="xl">
             <Spinner size="large" />
             <Box variant="p" color="text-body-secondary">
               Loading templates from AWS...
@@ -2991,6 +3004,7 @@ export default function PrismApp() {
           </SpaceBetween>
         )}
         <Table
+          data-testid="instances-table"
           selectionType="multi"
           selectedItems={selectedInstances}
           onSelectionChange={({ detail }) => setSelectedInstances(detail.selectedItems)}
@@ -3058,7 +3072,7 @@ export default function PrismApp() {
           loading={state.loading}
           trackBy="id"
           empty={
-            <Box textAlign="center" color="inherit">
+            <Box data-testid="empty-instances" textAlign="center" color="inherit">
               <Box variant="strong" textAlign="center" color="inherit">
                 No workspaces running
               </Box>
@@ -4112,6 +4126,53 @@ export default function PrismApp() {
                     if (detail.detail.id === 'view') {
                       // Navigate to project detail view
                       setSelectedProjectId(item.id);
+                    } else if (detail.detail.id === 'delete') {
+                      // Open delete confirmation modal
+                      setDeleteModalConfig({
+                        type: 'project',
+                        name: item.name,
+                        requireNameConfirmation: false,
+                        onConfirm: async () => {
+                          try {
+                            await api.deleteProject(item.id);
+
+                            // Optimistic UI update: remove project directly from state without re-fetching
+                            // This matches the user deletion pattern and avoids race conditions
+                            setState(prev => ({
+                              ...prev,
+                              projects: prev.projects.filter(p => p.id !== item.id),
+                              notifications: [
+                                {
+                                  type: 'success',
+                                  header: 'Project Deleted',
+                                  content: `Project "${item.name}" has been successfully deleted.`,
+                                  dismissible: true,
+                                  id: Date.now().toString()
+                                },
+                                ...prev.notifications
+                              ]
+                            }));
+
+                            // Close modal
+                            setDeleteModalVisible(false);
+                          } catch (error: any) {
+                            setState(prev => ({
+                              ...prev,
+                              notifications: [
+                                {
+                                  type: 'error',
+                                  header: 'Delete Failed',
+                                  content: `Failed to delete project: ${error.message || 'Unknown error'}`,
+                                  dismissible: true,
+                                  id: Date.now().toString()
+                                },
+                                ...prev.notifications
+                              ]
+                            }));
+                          }
+                        }
+                      });
+                      setDeleteModalVisible(true);
                     } else {
                       // Show "coming soon" notification for other actions
                       setState(prev => ({
@@ -4321,16 +4382,14 @@ export default function PrismApp() {
         // Backend returns the activated profile with Default: true
         const activatedProfile = await api.switchProfile(profileId);
 
-        // Update current profile ID immediately from the response (avoids race condition)
-        setCurrentProfileId(activatedProfile.id);
-
-        // Small delay to ensure filesystem sync (backend writes profile to disk)
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Reload profiles to include any newly created ones and update default flags
+        // Reload profiles from backend to get updated default status
+        // This ensures we have the correct state regardless of timing issues
         await loadProfiles();
+
+        toast({ type: 'success', content: `Switched to profile: ${activatedProfile.name}` });
       } catch (error) {
         console.error('Failed to switch profile:', error);
+        toast({ type: 'error', content: `Failed to switch profile: ${error}` });
       }
     };
 
@@ -4540,18 +4599,21 @@ export default function PrismApp() {
               <Input
                 value={formData.name}
                 onChange={({ detail }) => setFormData({ ...formData, name: detail.value })}
+                data-testid="edit-profile-name-input"
               />
             </FormField>
             <FormField label="AWS Profile">
               <Input
                 value={formData.aws_profile}
                 onChange={({ detail }) => setFormData({ ...formData, aws_profile: detail.value })}
+                data-testid="edit-aws-profile-input"
               />
             </FormField>
             <FormField label="Region">
               <Input
                 value={formData.region}
                 onChange={({ detail }) => setFormData({ ...formData, region: detail.value })}
+                data-testid="edit-region-input"
               />
             </FormField>
           </SpaceBetween>
@@ -6342,7 +6404,7 @@ export default function PrismApp() {
                     </Header>
                   }
                 >
-                  <Box textAlign="center" padding={{ vertical: 'xl' }}>
+                  <Box data-testid="project-members" textAlign="center" padding={{ vertical: 'xl' }}>
                     <SpaceBetween size="m">
                       <Box variant="strong">Member management coming soon</Box>
                       <Box color="text-body-secondary">
@@ -7785,6 +7847,7 @@ export default function PrismApp() {
               content: (
                 <Container>
                   <Table
+                    data-testid="idle-policies-table"
                     columnDefinitions={[
                       {
                         id: 'name',
@@ -9469,7 +9532,7 @@ export default function PrismApp() {
                       </div>
                       <div>
                         <Box variant="awsui-key-label">Estimated Cost</Box>
-                        <Box>
+                        <Box data-testid="cost-estimate">
                           {quickStartConfig.size === 'S' && '~$0.08/hour (~$58/month)'}
                           {quickStartConfig.size === 'M' && '~$0.16/hour (~$115/month)'}
                           {quickStartConfig.size === 'L' && '~$0.32/hour (~$230/month)'}
@@ -9566,7 +9629,7 @@ export default function PrismApp() {
         <Box float="right">
           <SpaceBetween direction="horizontal" size="xs">
             <Button onClick={() => setProjectModalVisible(false)}>Cancel</Button>
-            <Button variant="primary" onClick={handleCreateProject}>Create</Button>
+            <Button variant="primary" data-testid="create-project-submit-button" onClick={handleCreateProject}>Create</Button>
           </SpaceBetween>
         </Box>
       }
