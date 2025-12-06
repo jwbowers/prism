@@ -31,22 +31,25 @@ export default defineConfig({
     // For Wails apps, we test against the served frontend
     // The frontend will connect to the daemon API at localhost:8947
     baseURL: 'http://localhost:3000', // Vite dev server
-    
+
     // Browser context options
     viewport: { width: 1280, height: 720 },
-    
+
     // Capture screenshot on failure
     screenshot: 'only-on-failure',
-    
+
     // Record video on failure
     video: 'retain-on-failure',
-    
+
     // Collect trace on failure
     trace: 'on-first-retry',
-    
-    // Timeout for each test
+
+    // Timeout for individual actions
     actionTimeout: 10000
   },
+
+  // Global timeout for each test (includes setup, test body, and cleanup)
+  timeout: 60000, // 60s per test
 
   // Configure projects for major browsers (desktop only - CloudWorkstation is not mobile)
   projects: [
