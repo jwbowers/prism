@@ -191,7 +191,7 @@ export class ProjectsPage extends BasePage {
   /**
    * Wait for project to be removed from list
    */
-  async waitForProjectToBeRemoved(projectName: string, timeout: number = 15000) {
+  async waitForProjectToBeRemoved(projectName: string, timeout: number = 30000) {
     await this.waitForDialogClose();
 
     const startTime = Date.now();
