@@ -174,7 +174,8 @@ export class StoragePage extends BasePage {
   async searchVolumes(query: string) {
     const searchInput = this.page.getByPlaceholder(/search/i);
     await searchInput.fill(query);
-    await this.page.waitForTimeout(500);
+    // Wait for the table to update after search filter
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**

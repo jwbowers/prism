@@ -377,8 +377,8 @@ test.describe('Invitation Management Workflows', () => {
         await projectOption.click();
       }
 
-      // Fill emails
-      const emailTextarea = projectsPage.page.getByTestId('bulk-emails-textarea');
+      // Fill emails - target the actual textarea within the Cloudscape wrapper
+      const emailTextarea = projectsPage.page.getByTestId('bulk-emails-textarea').locator('textarea');
       await emailTextarea.fill(invalidEmails.join('\n'));
 
       // Select role
@@ -404,8 +404,8 @@ test.describe('Invitation Management Workflows', () => {
 
       const emails = ['test@example.com'];
 
-      // Fill emails but no project
-      const emailTextarea = projectsPage.page.getByTestId('bulk-emails-textarea');
+      // Fill emails but no project - target the actual textarea within the Cloudscape wrapper
+      const emailTextarea = projectsPage.page.getByTestId('bulk-emails-textarea').locator('textarea');
       await emailTextarea.fill(emails.join('\n'));
 
       // Try to click send button - should be disabled

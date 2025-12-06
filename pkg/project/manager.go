@@ -688,3 +688,179 @@ func (m *Manager) ClearDefaultAllocation(ctx context.Context, projectID string) 
 
 	return nil
 }
+
+// ===========================================================================
+// Project Transfer and Forecast Operations (Issue #326)
+// ===========================================================================
+
+// TransferProject transfers project ownership to a new owner
+func (m *Manager) TransferProject(ctx context.Context, projectID string, req *TransferProjectRequest) (*types.Project, error) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	// Validate request
+	if err := req.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid transfer request: %w", err)
+	}
+
+	// Get project
+	project, exists := m.projects[projectID]
+	if !exists {
+		return nil, fmt.Errorf("project %q not found", projectID)
+	}
+
+	// Verify current ownership (transferredBy must be current owner)
+	if project.Owner != req.TransferredBy {
+		return nil, fmt.Errorf("only project owner can transfer ownership")
+	}
+
+	// Prevent transfer to same owner
+	if project.Owner == req.NewOwnerID {
+		return nil, fmt.Errorf("project already owned by user %q", req.NewOwnerID)
+	}
+
+	// Update owner
+	oldOwner := project.Owner
+	project.Owner = req.NewOwnerID
+	project.UpdatedAt = time.Now()
+
+	// Update members list - demote old owner to admin, promote new owner
+	var updatedMembers []types.ProjectMember
+	newOwnerFound := false
+
+	for _, member := range project.Members {
+		if member.UserID == oldOwner {
+			// Demote old owner to admin
+			member.Role = types.ProjectRoleAdmin
+			member.AddedAt = time.Now()
+			updatedMembers = append(updatedMembers, member)
+		} else if member.UserID == req.NewOwnerID {
+			// Promote new owner
+			member.Role = types.ProjectRoleOwner
+			member.AddedAt = time.Now()
+			updatedMembers = append(updatedMembers, member)
+			newOwnerFound = true
+		} else {
+			updatedMembers = append(updatedMembers, member)
+		}
+	}
+
+	// If new owner wasn't already a member, add them
+	if !newOwnerFound {
+		updatedMembers = append(updatedMembers, types.ProjectMember{
+			UserID:  req.NewOwnerID,
+			Role:    types.ProjectRoleOwner,
+			AddedAt: time.Now(),
+			AddedBy: oldOwner,
+		})
+	}
+
+	project.Members = updatedMembers
+
+	// Save changes
+	if err := m.saveProjects(); err != nil {
+		return nil, fmt.Errorf("failed to save project transfer: %w", err)
+	}
+
+	projectCopy := *project
+	return &projectCopy, nil
+}
+
+// GetProjectForecast generates cost forecast data for a project
+func (m *Manager) GetProjectForecast(ctx context.Context, projectID string, req *ProjectForecastRequest) (*ProjectForecastResponse, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	// Get project
+	project, exists := m.projects[projectID]
+	if !exists {
+		return nil, fmt.Errorf("project %q not found", projectID)
+	}
+
+	// Default to 6 months forecast
+	months := req.Months
+	if months <= 0 {
+		months = 6
+	}
+
+	// Get current spending data from budget tracker
+	currentRate := m.budgetTracker.GetCurrentMonthlyRate(projectID)
+
+	// Generate forecast data points
+	now := time.Now()
+	forecastData := make([]ForecastDataPoint, 0, months)
+	cumulativeCost := 0.0
+
+	for i := 1; i <= months; i++ {
+		futureMonth := now.AddDate(0, i, 0)
+		monthStr := futureMonth.Format("2006-01")
+
+		// Simple linear projection (could be enhanced with trending)
+		projectedCost := currentRate
+
+		cumulativeCost += projectedCost
+
+		forecastData = append(forecastData, ForecastDataPoint{
+			Month:          monthStr,
+			ProjectedCost:  projectedCost,
+			CumulativeCost: cumulativeCost,
+		})
+	}
+
+	// Calculate projected exhaustion if budget exists
+	var projectedExhaustion *time.Time
+	if project.Budget != nil && currentRate > 0 {
+		remainingBudget := project.Budget.TotalBudget - project.Budget.SpentAmount
+		if remainingBudget > 0 {
+			monthsUntilExhaustion := remainingBudget / currentRate
+			exhaustionTime := now.AddDate(0, 0, int(monthsUntilExhaustion*30))
+			projectedExhaustion = &exhaustionTime
+		}
+	}
+
+	// Historical data if requested
+	var historicalData []ForecastDataPoint
+	if req.IncludeHistorical {
+		historicalData = m.buildHistoricalData(projectID, 6)
+	}
+
+	// Confidence based on data availability (simplified)
+	confidence := 0.7
+	if currentRate > 0 {
+		confidence = 0.85
+	}
+
+	return &ProjectForecastResponse{
+		ProjectID:           projectID,
+		GeneratedAt:         time.Now(),
+		CurrentMonthlyRate:  currentRate,
+		ForecastData:        forecastData,
+		HistoricalData:      historicalData,
+		ProjectedExhaustion: projectedExhaustion,
+		Confidence:          confidence,
+	}, nil
+}
+
+// buildHistoricalData builds historical spending data (simplified implementation)
+func (m *Manager) buildHistoricalData(projectID string, months int) []ForecastDataPoint {
+	// This is a simplified implementation
+	// In a full implementation, this would pull actual historical data from cost tracking
+	now := time.Now()
+	historicalData := make([]ForecastDataPoint, 0, months)
+
+	// For now, return empty historical data
+	// TODO: Implement actual historical data retrieval
+	for i := months; i > 0; i-- {
+		pastMonth := now.AddDate(0, -i, 0)
+		monthStr := pastMonth.Format("2006-01")
+
+		historicalData = append(historicalData, ForecastDataPoint{
+			Month:          monthStr,
+			ProjectedCost:  0,
+			CumulativeCost: 0,
+			ActualCost:     nil,
+		})
+	}
+
+	return historicalData
+}

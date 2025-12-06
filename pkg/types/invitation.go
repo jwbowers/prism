@@ -344,8 +344,8 @@ type SharedTokenRedemption struct {
 
 // CreateSharedTokenRequest represents a request to create a shared token
 type CreateSharedTokenRequest struct {
-	// ProjectID is the project this token grants access to
-	ProjectID string `json:"project_id"`
+	// ProjectID is the project this token grants access to (inferred from URL path if not provided)
+	ProjectID string `json:"project_id,omitempty"`
 
 	// Name is the display name for this token
 	Name string `json:"name"`
@@ -365,8 +365,8 @@ type CreateSharedTokenRequest struct {
 	// ExpiresAt is an absolute expiration time
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	// CreatedBy is the user ID creating the token
-	CreatedBy string `json:"created_by"`
+	// CreatedBy is the user ID creating the token (inferred from auth context if not provided)
+	CreatedBy string `json:"created_by,omitempty"`
 }
 
 // RedeemSharedTokenRequest represents a request to redeem a shared token

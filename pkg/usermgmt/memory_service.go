@@ -2,7 +2,9 @@ package usermgmt
 
 import (
 	"fmt"
+	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +15,7 @@ import (
 type userManagementService struct {
 	storage   UserStorage
 	providers map[Provider]UserManagementProvider
+	mu        sync.Mutex // Protects critical sections like CreateUser to prevent race conditions
 }
 
 // NewUserManagementService creates a new user management service with real implementations
@@ -25,6 +28,16 @@ func NewUserManagementService(storage UserStorage) UserManagementService {
 
 // CreateUser creates a new user
 func (s *userManagementService) CreateUser(user *User) error {
+	// Protect the entire check-then-store operation with a mutex to prevent race conditions
+	// This ensures that duplicate checking and user creation are atomic
+	log.Printf("[DEBUG SERVICE] CreateUser: Attempting to acquire service lock for username=%s\n", user.Username)
+	s.mu.Lock()
+	log.Printf("[DEBUG SERVICE] CreateUser: Service lock acquired for username=%s\n", user.Username)
+	defer func() {
+		log.Printf("[DEBUG SERVICE] CreateUser: Releasing service lock for username=%s\n", user.Username)
+		s.mu.Unlock()
+	}()
+
 	// Validate required fields
 	if user.Username == "" {
 		return fmt.Errorf("username is required")
@@ -33,19 +46,22 @@ func (s *userManagementService) CreateUser(user *User) error {
 		return fmt.Errorf("email is required")
 	}
 
-	// Check for duplicate username
-	existingUsers, err := s.storage.ListUsers(&UserFilter{Username: user.Username})
+	// Check for duplicate username - get ALL users to avoid issues with substring filtering
+	existingUsers, err := s.storage.ListUsers(nil)
 	if err != nil {
 		return fmt.Errorf("failed to check for duplicate username: %w", err)
 	}
+	fmt.Printf("[DEBUG] CreateUser: Checking %d existing users for duplicates of username=%s\n", len(existingUsers), user.Username)
 	for _, existing := range existingUsers {
 		if strings.EqualFold(existing.Username, user.Username) {
+			fmt.Printf("[DEBUG] CreateUser: Found duplicate username=%s, returning error\n", user.Username)
 			return ErrDuplicateUsername
 		}
 		if strings.EqualFold(existing.Email, user.Email) {
 			return ErrDuplicateEmail
 		}
 	}
+	fmt.Printf("[DEBUG] CreateUser: No duplicates found, proceeding to store username=%s\n", user.Username)
 
 	// Generate ID if not provided
 	if user.ID == "" {
@@ -157,6 +173,10 @@ func (s *userManagementService) ListUsers(filter *UserFilter, pagination *Pagina
 
 // CreateGroup creates a new group
 func (s *userManagementService) CreateGroup(group *Group) error {
+	// Protect the entire check-then-store operation with a mutex to prevent race conditions
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// Validate required fields
 	if group.Name == "" {
 		return fmt.Errorf("group name is required")

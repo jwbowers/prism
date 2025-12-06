@@ -1044,3 +1044,41 @@ func (bt *BudgetTracker) logAlert(projectID string, alertEvent AlertEvent) error
 		alertEvent.Threshold*100)
 	return nil
 }
+
+// GetCurrentMonthlyRate calculates the current monthly spending rate for a project
+// This is a simplified implementation for Issue #326
+func (bt *BudgetTracker) GetCurrentMonthlyRate(projectID string) float64 {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+
+	data, exists := bt.budgetData[projectID]
+	if !exists || len(data.CostHistory) == 0 {
+		return 0.0
+	}
+
+	// Simple calculation: average of recent data points
+	// In a full implementation, this would calculate actual monthly rate
+	// based on time-series analysis of cost history
+
+	// Take last 30 days of data if available
+	now := time.Now()
+	thirtyDaysAgo := now.AddDate(0, 0, -30)
+
+	totalCost := 0.0
+	count := 0
+
+	for _, point := range data.CostHistory {
+		if point.Timestamp.After(thirtyDaysAgo) {
+			totalCost += point.TotalCost
+			count++
+		}
+	}
+
+	if count == 0 {
+		return 0.0
+	}
+
+	// Return average as monthly rate
+	// This is simplified - full implementation would normalize to 30-day period
+	return totalCost / float64(count)
+}

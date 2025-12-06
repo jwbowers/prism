@@ -129,7 +129,8 @@ export class InstancesPage extends BasePage {
   async searchInstances(query: string) {
     const searchInput = this.page.getByPlaceholder(/search.*instances/i);
     await searchInput.fill(query);
-    await this.page.waitForTimeout(500); // Allow search to filter
+    // Wait for the table to update after search filter
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**
@@ -167,7 +168,13 @@ export class InstancesPage extends BasePage {
       if (status && status.toLowerCase().includes(expectedStatus.toLowerCase())) {
         return true;
       }
-      await this.page.waitForTimeout(2000); // Check every 2 seconds
+      // Wait for next API refresh response
+      await this.page.waitForResponse(
+        response => response.url().includes('/api/v1/instances'),
+        { timeout: 3000 }
+      ).catch(() => {
+        // Timeout is acceptable, continue polling
+      });
     }
     return false;
   }

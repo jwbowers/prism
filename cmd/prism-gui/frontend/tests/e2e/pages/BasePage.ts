@@ -32,10 +32,38 @@ export class BasePage {
       const skipButton = this.page.getByRole('button', { name: /skip tour/i });
       if (await skipButton.isVisible({ timeout: 2000 })) {
         await skipButton.click();
-        await this.page.waitForTimeout(500); // Wait for dialog to close
+        // Wait for the dialog to actually close using proper Playwright selector
+        await this.page.getByRole('dialog').filter({ hasText: /tour/i }).waitFor({ state: 'hidden', timeout: 5000 });
       }
     } catch {
       // Welcome tour not present, that's okay
+    }
+  }
+
+  /**
+   * Wait for dialog to close
+   * Cloudscape-specific: Wait for visible dialogs to become hidden
+   */
+  async waitForDialogClose(timeout: number = 5000) {
+    try {
+      // Find all dialogs and check which are visible
+      const dialogs = this.page.getByRole('dialog');
+      const count = await dialogs.count();
+
+      // Check each dialog to see if it's visible
+      for (let i = 0; i < count; i++) {
+        const dialog = dialogs.nth(i);
+        const isVisible = await dialog.isVisible();
+        if (isVisible) {
+          // Wait for this visible dialog to be hidden
+          await dialog.waitFor({ state: 'hidden', timeout });
+          // INCREASED delay for Cloudscape animation to fully complete
+          await this.page.waitForTimeout(1000);
+          return; // Exit after first visible dialog closes
+        }
+      }
+    } catch {
+      // Dialog already closed or timeout - safe to continue
     }
   }
 
@@ -49,11 +77,11 @@ export class BasePage {
       // Wait for the templates API call which is one of the key indicators
       await this.waitForApiCall('/api/v1/templates', 15000);
 
-      // Wait a bit more for React state to update and render
-      await this.page.waitForTimeout(2000);
+      // Wait for React to finish rendering - look for any tab content to be visible
+      await this.page.locator('[role="tabpanel"]').first().waitFor({ state: 'visible', timeout: 10000 });
     } catch {
-      // If API call doesn't complete, just wait a reasonable amount
-      await this.page.waitForTimeout(5000);
+      // If API call doesn't complete or rendering takes longer, wait for load state
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
   }
 
@@ -67,12 +95,34 @@ export class BasePage {
   }
 
   /**
-   * Navigate to a specific tab using accessible link navigation
+   * Navigate to a specific tab using Cloudscape SideNavigation links
    */
   async navigateToTab(tabName: string) {
-    const link = this.page.getByRole('link', { name: new RegExp(tabName, 'i') });
+    // First, ensure no dialogs are blocking the navigation
+    await this.waitForDialogClose(3000);
+
+    // Map common tab names to actual SideNavigation link text
+    const linkTextMap: Record<string, string> = {
+      'dashboard': 'Dashboard',
+      'templates': 'Templates',
+      'instances': 'My Workspaces',
+      'workspaces': 'My Workspaces',
+      'storage': 'Storage',
+      'backups': 'Backups',
+      'projects': 'Projects',
+      'settings': 'Settings',
+      'profiles': 'Profiles',
+      'idle': 'Idle Management',
+      'users': 'Users',
+      'invitations': 'Invitations'
+    };
+
+    const linkText = linkTextMap[tabName.toLowerCase()] || tabName;
+    const link = this.page.getByRole('link', { name: new RegExp(linkText, 'i') });
     await link.click();
-    await this.page.waitForTimeout(500); // Allow tab transition
+    // Wait for the DOM to update after tab switch
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await this.waitForLoadingComplete();
   }
 
   /**
@@ -198,7 +248,13 @@ export class BasePage {
       } catch {
         // Daemon not ready yet
       }
-      await this.page.waitForTimeout(500);
+      // Wait for network response or 500ms, whichever comes first
+      await this.page.waitForResponse(
+        response => response.url().includes('/api/v1/health'),
+        { timeout: 500 }
+      ).catch(() => {
+        // Timeout is expected when daemon not ready yet
+      });
     }
     throw new Error('Daemon not ready after maximum attempts');
   }

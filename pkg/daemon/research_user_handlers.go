@@ -74,10 +74,10 @@ func (s *Server) handleCreateResearchUser(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if user already exists
-	existingUser, err := service.GetResearchUser(req.Username)
+	_, err = service.GetResearchUser(req.Username)
 	if err == nil {
-		// User already exists, return it
-		_ = json.NewEncoder(w).Encode(existingUser)
+		// User already exists, return 409 Conflict
+		s.writeError(w, http.StatusConflict, fmt.Sprintf("User with username '%s' already exists", req.Username))
 		return
 	}
 
@@ -212,7 +212,7 @@ func (s *Server) handleGenerateResearchUserSSHKey(w http.ResponseWriter, r *http
 		return
 	}
 
-	keyPair, _, err := service.ManageSSHKeys().GenerateKeyPair(username, req.KeyType)
+	keyPair, privateKey, err := service.ManageSSHKeys().GenerateKeyPair(username, req.KeyType)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to generate SSH key: %v", err))
 		return
@@ -223,6 +223,7 @@ func (s *Server) handleGenerateResearchUserSSHKey(w http.ResponseWriter, r *http
 		"username":    username,
 		"key_type":    req.KeyType,
 		"public_key":  keyPair.PublicKey,
+		"private_key": string(privateKey),
 		"fingerprint": keyPair.Fingerprint,
 	})
 }

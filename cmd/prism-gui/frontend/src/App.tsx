@@ -466,7 +466,7 @@ interface CreateSharedTokenRequest {
   name: string;
   role: 'viewer' | 'member' | 'admin';
   redemption_limit: number;
-  expires_in: '1d' | '7d' | '30d' | '90d';
+  expires_in?: string;
   message?: string;
 }
 
@@ -621,7 +621,17 @@ class SafePrismAPI {
       });
 
       if (!response.ok) {
-        const error: any = new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Try to parse error message from response body
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.text();
+          if (errorData) {
+            errorMessage = errorData;
+          }
+        } catch (e) {
+          // If parsing fails, use the default message
+        }
+        const error: any = new Error(errorMessage);
         error.response = { status: response.status, statusText: response.statusText };
         throw error;
       }
@@ -4639,7 +4649,7 @@ export default function PrismApp() {
         >
           <SpaceBetween size="m">
             {validationError && (
-              <Alert type="error">
+              <Alert type="error" data-testid="validation-error">
                 {validationError}
               </Alert>
             )}
@@ -5645,7 +5655,7 @@ export default function PrismApp() {
                           variant="h2"
                           description="Reusable invitation tokens for workshops and classes"
                           actions={
-                            <Button variant="primary" onClick={() => setTokenModalVisible(true)}>
+                            <Button data-testid="create-shared-token-button" variant="primary" onClick={() => setTokenModalVisible(true)}>
                               Create Shared Token
                             </Button>
                           }
@@ -5658,6 +5668,7 @@ export default function PrismApp() {
                         <Spinner />
                       ) : (
                         <Table
+                          data-testid="shared-tokens-table"
                           columnDefinitions={[
                             {
                               id: 'name',
@@ -5698,17 +5709,20 @@ export default function PrismApp() {
                               cell: (item: SharedInvitationToken) => (
                                 <SpaceBetween direction="horizontal" size="xs">
                                   <Button
+                                    data-testid="view-qr-code-button"
                                     variant="icon"
                                     iconName="view-full"
                                     onClick={() => handleShowQRCode(item)}
                                   />
                                   <Button
+                                    data-testid="extend-token-button"
                                     variant="icon"
                                     iconName="add-plus"
                                     onClick={() => handleExtendToken(item)}
                                     disabled={item.status !== 'active'}
                                   />
                                   <Button
+                                    data-testid="revoke-token-button"
                                     variant="icon"
                                     iconName="close"
                                     onClick={() => handleRevokeToken(item)}
@@ -5741,6 +5755,7 @@ export default function PrismApp() {
 
         {/* Action Modal */}
         <Modal
+          data-testid={actionModalConfig.type === 'accept' ? 'accept-invitation-dialog' : 'decline-invitation-dialog'}
           visible={actionModalVisible}
           onDismiss={() => setActionModalVisible(false)}
           header={actionModalConfig.type === 'accept' ? 'Accept Invitation' : 'Decline Invitation'}
@@ -5751,6 +5766,7 @@ export default function PrismApp() {
                   Cancel
                 </Button>
                 <Button
+                  data-testid={actionModalConfig.type === 'accept' ? 'confirm-accept-button' : 'confirm-decline-button'}
                   variant={actionModalConfig.type === 'accept' ? 'primary' : 'normal'}
                   onClick={() => {
                     if (actionModalConfig.invitation) {
@@ -5788,6 +5804,7 @@ export default function PrismApp() {
                   </Box>
                   <FormField label="Reason (optional)" description="Provide a reason for declining">
                     <Input
+                      data-testid="decline-reason-input"
                       value={actionModalConfig.reason}
                       onChange={({ detail }) => setActionModalConfig(prev => ({ ...prev, reason: detail.value }))}
                       placeholder="Not interested in this project"
@@ -5801,16 +5818,18 @@ export default function PrismApp() {
 
         {/* Token Creation Modal */}
         <Modal
+          data-testid="create-shared-token-modal"
           visible={tokenModalVisible}
           onDismiss={() => setTokenModalVisible(false)}
           header="Create Shared Token"
           footer={
             <Box float="right">
               <SpaceBetween direction="horizontal" size="xs">
-                <Button onClick={() => setTokenModalVisible(false)}>
+                <Button data-testid="cancel-create-token-button" onClick={() => setTokenModalVisible(false)}>
                   Cancel
                 </Button>
                 <Button
+                  data-testid="create-token-button"
                   variant="primary"
                   onClick={handleCreateSharedToken}
                   loading={creatingToken}
@@ -5855,18 +5874,19 @@ export default function PrismApp() {
               />
             </FormField>
 
-            <FormField label="Expires In" description="How long until token expires">
+            <FormField label="Expires In" description="When this token will expire">
               <Select
+                data-testid="expires-in-select"
                 selectedOption={{ label: newTokenConfig.expires_in, value: newTokenConfig.expires_in }}
                 onChange={({ detail }) => setNewTokenConfig(prev => ({
                   ...prev,
                   expires_in: detail.selectedOption.value || '7d'
                 }))}
                 options={[
-                  { label: '1d', value: '1d' },
-                  { label: '7d', value: '7d' },
-                  { label: '30d', value: '30d' },
-                  { label: '90d', value: '90d' }
+                  { label: '1 day', value: '1d' },
+                  { label: '7 days', value: '7d' },
+                  { label: '30 days', value: '30d' },
+                  { label: 'Never', value: 'never' }
                 ]}
                 disabled={creatingToken}
               />
@@ -5874,6 +5894,7 @@ export default function PrismApp() {
 
             <FormField label="Role" description="Role for all users who redeem this token">
               <Select
+                data-testid="role-select"
                 selectedOption={{ label: newTokenConfig.role, value: newTokenConfig.role }}
                 onChange={({ detail }) => setNewTokenConfig(prev => ({
                   ...prev,
@@ -5905,6 +5926,7 @@ export default function PrismApp() {
 
         {/* QR Code Modal */}
         <Modal
+          data-testid="qr-code-modal"
           visible={qrModalVisible}
           onDismiss={() => setQrModalVisible(false)}
           header={`QR Code: ${selectedTokenForQR?.name || ''}`}
@@ -9636,7 +9658,9 @@ export default function PrismApp() {
     >
       <SpaceBetween size="m">
         {projectValidationError && (
-          <ValidationError message={projectValidationError} visible={true} />
+          <Alert type="error" data-testid="validation-error">
+            {projectValidationError}
+          </Alert>
         )}
 
         <FormField label="Project Name" description="Unique identifier for the project">

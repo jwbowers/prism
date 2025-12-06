@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 
 	"github.com/scttfrdmn/prism/pkg/usermgmt"
@@ -129,14 +130,21 @@ func (m *UserManager) GetUsers(ctx context.Context, filter *usermgmt.UserFilter,
 
 // CreateUser creates a new user
 func (m *UserManager) CreateUser(ctx context.Context, user *usermgmt.User) (*usermgmt.User, error) {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
+	log.Printf("[DEBUG USER MANAGER] CreateUser: Attempting to acquire manager lock for username=%s\n", user.Username)
+	m.mutex.Lock() // Use write lock to prevent race conditions during user creation
+	log.Printf("[DEBUG USER MANAGER] CreateUser: Manager lock acquired for username=%s\n", user.Username)
+	defer func() {
+		log.Printf("[DEBUG USER MANAGER] CreateUser: Releasing manager lock for username=%s\n", user.Username)
+		m.mutex.Unlock()
+	}()
 
 	if !m.initialized {
 		return nil, ErrUserManagerNotInitialized
 	}
 
+	log.Printf("[DEBUG USER MANAGER] CreateUser: Calling service.CreateUser for username=%s\n", user.Username)
 	err := m.service.CreateUser(user)
+	log.Printf("[DEBUG USER MANAGER] CreateUser: service.CreateUser returned err=%v for username=%s\n", err, user.Username)
 	if err != nil {
 		return nil, err
 	}

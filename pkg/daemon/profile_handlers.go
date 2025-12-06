@@ -419,7 +419,7 @@ func profileToResponse(id string, p profile.Profile) ProfileResponse {
 		Type:          string(p.Type),
 		AWSProfile:    p.AWSProfile,
 		Region:        p.Region,
-		Default:       p.Default,
+		Default:       false, // Always false - caller must set based on CurrentProfile
 		CreatedAt:     p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		SSHKeyName:    p.SSHKeyName,
 		SSHKeyPath:    p.SSHKeyPath,

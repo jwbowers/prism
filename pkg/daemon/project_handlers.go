@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -74,6 +75,12 @@ func (s *Server) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 	case "invitations":
 		// Delegate to invitation handler (v0.5.11)
 		s.handleInvitationOperations(w, r)
+	case "transfer":
+		// Project ownership transfer (Issue #326)
+		s.handleProjectTransfer(w, r, projectID)
+	case "forecast":
+		// Cost forecast chart (Issue #326)
+		s.handleProjectForecast(w, r, projectID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
 	}
@@ -178,6 +185,11 @@ func (s *Server) buildProjectSummary(proj *types.Project) project.ProjectSummary
 }
 
 func (s *Server) calculateActiveInstances(projectID string) int {
+	// Skip AWS calls in test mode
+	if os.Getenv("PRISM_TEST_MODE") == "true" {
+		return 0
+	}
+
 	activeInstances := 0
 	if instances, err := s.awsManager.ListInstances(); err == nil {
 		for _, instance := range instances {
@@ -823,4 +835,66 @@ func (s *Server) handleAllowLaunches(w http.ResponseWriter, r *http.Request, pro
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// ===========================================================================
+// Project Transfer and Forecast Handlers (Issue #326)
+// ===========================================================================
+
+// handleProjectTransfer transfers project ownership to a new owner (PUT)
+func (s *Server) handleProjectTransfer(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodPut {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req project.TransferProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
+		return
+	}
+
+	ctx := context.Background()
+	updatedProject, err := s.projectManager.TransferProject(ctx, projectID, &req)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to transfer project: %v", err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(updatedProject)
+}
+
+// handleProjectForecast generates cost forecast data for a project (GET/POST)
+func (s *Server) handleProjectForecast(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Default request (GET supports no body, POST supports optional parameters)
+	req := &project.ProjectForecastRequest{
+		Months:            6,
+		IncludeHistorical: false,
+	}
+
+	// Parse request body if POST
+	if r.Method == http.MethodPost {
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
+			return
+		}
+	}
+
+	ctx := context.Background()
+	forecast, err := s.projectManager.GetProjectForecast(ctx, projectID, req)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to generate forecast: %v", err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(forecast)
 }

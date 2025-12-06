@@ -737,3 +737,84 @@ type AllocationSummary struct {
 	// HasBackup indicates if backup funding is configured
 	HasBackup bool `json:"has_backup"`
 }
+
+// ============================================================================
+// Project Transfer and Forecast Types (Issue #326)
+// ============================================================================
+
+// TransferProjectRequest represents a request to transfer project ownership
+type TransferProjectRequest struct {
+	// NewOwnerID is the user ID of the new project owner
+	NewOwnerID string `json:"new_owner_id"`
+
+	// TransferredBy is the user making the transfer (must be current owner)
+	TransferredBy string `json:"transferred_by"`
+
+	// Reason provides context for the transfer (optional)
+	Reason string `json:"reason,omitempty"`
+}
+
+// Validate validates the transfer project request
+func (r *TransferProjectRequest) Validate() error {
+	if r.NewOwnerID == "" {
+		return fmt.Errorf("new_owner_id is required")
+	}
+
+	if r.TransferredBy == "" {
+		return fmt.Errorf("transferred_by is required")
+	}
+
+	if len(r.Reason) > 500 {
+		return fmt.Errorf("reason cannot exceed 500 characters")
+	}
+
+	return nil
+}
+
+// ProjectForecastRequest represents a request for cost forecast data
+type ProjectForecastRequest struct {
+	// Months is the number of months to forecast (default: 6)
+	Months int `json:"months,omitempty"`
+
+	// IncludeHistorical includes historical spending data in response
+	IncludeHistorical bool `json:"include_historical,omitempty"`
+}
+
+// ProjectForecastResponse provides cost forecast information
+type ProjectForecastResponse struct {
+	// ProjectID is the project identifier
+	ProjectID string `json:"project_id"`
+
+	// GeneratedAt is when this forecast was generated
+	GeneratedAt time.Time `json:"generated_at"`
+
+	// CurrentMonthlyRate is the current monthly spending rate
+	CurrentMonthlyRate float64 `json:"current_monthly_rate"`
+
+	// ForecastData contains month-by-month projections
+	ForecastData []ForecastDataPoint `json:"forecast_data"`
+
+	// HistoricalData contains past spending (if requested)
+	HistoricalData []ForecastDataPoint `json:"historical_data,omitempty"`
+
+	// ProjectedExhaustion estimates when budget will be exhausted (if applicable)
+	ProjectedExhaustion *time.Time `json:"projected_exhaustion,omitempty"`
+
+	// Confidence indicates forecast confidence level (0.0-1.0)
+	Confidence float64 `json:"confidence"`
+}
+
+// ForecastDataPoint represents a single month's forecast
+type ForecastDataPoint struct {
+	// Month is the month for this data point (YYYY-MM format)
+	Month string `json:"month"`
+
+	// ProjectedCost is the projected spending for this month
+	ProjectedCost float64 `json:"projected_cost"`
+
+	// CumulativeCost is the cumulative cost to date
+	CumulativeCost float64 `json:"cumulative_cost"`
+
+	// ActualCost is the actual cost (for historical data only)
+	ActualCost *float64 `json:"actual_cost,omitempty"`
+}

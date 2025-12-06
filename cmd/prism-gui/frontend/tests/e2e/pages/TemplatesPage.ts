@@ -50,7 +50,8 @@ export class TemplatesPage extends BasePage {
   async searchTemplates(query: string) {
     const searchInput = this.page.getByPlaceholder(/search.*templates/i);
     await searchInput.fill(query);
-    await this.page.waitForTimeout(500); // Allow search to filter
+    // Wait for the template cards to update after search filter
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**

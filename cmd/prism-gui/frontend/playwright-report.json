@@ -10,9 +10,7 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
+    "metadata": {},
     "preserveOutput": "always",
     "reporter": [
       [
@@ -40,9 +38,7 @@
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "chromium",
         "name": "chromium",
         "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
@@ -56,9 +52,7 @@
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "firefox",
         "name": "firefox",
         "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
@@ -72,9 +66,7 @@
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "webkit",
         "name": "webkit",
         "testDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e",
@@ -97,115 +89,25 @@
       "timeout": 120000
     }
   },
-  "suites": [
+  "suites": [],
+  "errors": [
     {
-      "title": "invitation-workflows.spec.ts",
-      "file": "invitation-workflows.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Invitation Management Workflows",
-          "file": "invitation-workflows.spec.ts",
-          "line": 10,
-          "column": 6,
-          "specs": [],
-          "suites": [
-            {
-              "title": "Accept Invitation Workflow",
-              "file": "invitation-workflows.spec.ts",
-              "line": 110,
-              "column": 8,
-              "specs": [
-                {
-                  "title": "should add user to project after acceptance",
-                  "ok": false,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 30000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "failed",
-                          "duration": 23661,
-                          "error": {
-                            "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"Membership Test 1764468733144\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n",
-                            "stack": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"Membership Test 1764468733144\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n\n    at ProjectsPage.viewProjectDetails (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:105:25)\n    at ProjectsPage.verifyProjectMember (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:689:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:188:24",
-                            "location": {
-                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
-                              "column": 25,
-                              "line": 105
-                            },
-                            "snippet": "\u001b[90m   at \u001b[39mpages/ProjectsPage.ts:105\n\n  103 |     const projectRow = this.getProjectByName(projectName);\n  104 |     const actionsButton = projectRow.getByRole('button', { name: /actions/i });\n> 105 |     await actionsButton.click();\n      |                         ^\n  106 |     await this.page.waitForTimeout(300);\n  107 |\n  108 |     await this.page.getByRole('menuitem', { name: /view details/i }).click();"
-                          },
-                          "errors": [
-                            {
-                              "location": {
-                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
-                                "column": 25,
-                                "line": 105
-                              },
-                              "message": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr:has-text(\"Membership Test 1764468733144\")').first().getByRole('button', { name: /actions/i })\u001b[22m\n\n\n   at pages/ProjectsPage.ts:105\n\n  103 |     const projectRow = this.getProjectByName(projectName);\n  104 |     const actionsButton = projectRow.getByRole('button', { name: /actions/i });\n> 105 |     await actionsButton.click();\n      |                         ^\n  106 |     await this.page.waitForTimeout(300);\n  107 |\n  108 |     await this.page.getByRole('menuitem', { name: /view details/i }).click();\n    at ProjectsPage.viewProjectDetails (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:105:25)\n    at ProjectsPage.verifyProjectMember (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts:689:5)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:188:24"
-                            }
-                          ],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2025-11-30T02:12:07.269Z",
-                          "annotations": [],
-                          "attachments": [
-                            {
-                              "name": "screenshot",
-                              "contentType": "image/png",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-18968-to-project-after-acceptance-chromium/test-failed-1.png"
-                            },
-                            {
-                              "name": "video",
-                              "contentType": "video/webm",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-18968-to-project-after-acceptance-chromium/video.webm"
-                            },
-                            {
-                              "name": "error-context",
-                              "contentType": "text/markdown",
-                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-18968-to-project-after-acceptance-chromium/error-context.md"
-                            }
-                          ],
-                          "errorLocation": {
-                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/ProjectsPage.ts",
-                            "column": 25,
-                            "line": 105
-                          }
-                        }
-                      ],
-                      "status": "unexpected"
-                    }
-                  ],
-                  "id": "ce9e05a89da8ed622f12-807e2fdb2e92ac7a87bc",
-                  "file": "invitation-workflows.spec.ts",
-                  "line": 168,
-                  "column": 5
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      "message": "Error: Another test suite is already running",
+      "stack": "Error: Another test suite is already running\n    at globalSetup (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/global-setup.js:18:13)",
+      "location": {
+        "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/global-setup.js",
+        "column": 13,
+        "line": 18
+      },
+      "snippet": "\u001b[90m   at \u001b[39mglobal-setup.js:18\n\n  16 |       console.error('   Process IDs:', stdout.trim())\n  17 |       console.error('   Use \"npm run test:e2e\" instead of \"npx playwright test\" to enforce single-test execution.')\n> 18 |       throw new Error('Another test suite is already running')\n     |             ^\n  19 |     }\n  20 |   } catch (error) {\n  21 |     if (error.message.includes('already running')) {"
     }
   ],
-  "errors": [],
   "stats": {
-    "startTime": "2025-11-30T02:12:04.354Z",
-    "duration": 26846.786,
+    "startTime": "2025-12-06T22:27:56.147Z",
+    "duration": 938.074,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

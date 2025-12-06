@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/usermgmt"
@@ -12,11 +14,31 @@ import (
 
 // handleUsers handles user management operations
 func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
+	// Check for special operations first
+	path := r.URL.Path
+
+	// Bulk import: POST /api/v1/users/import (Issue #330)
+	if r.Method == http.MethodPost && path == "/api/v1/users/import" {
+		s.handleBulkImportUsers(w, r)
+		return
+	}
+
+	// Export: GET /api/v1/users/export (Issue #330)
+	if r.Method == http.MethodGet && path == "/api/v1/users/export" {
+		s.handleExportUsers(w, r)
+		return
+	}
+
+	// Standard operations
 	switch r.Method {
 	case http.MethodGet:
 		s.handleListUsers(w, r)
 	case http.MethodPost:
+		fmt.Fprintf(os.Stderr, "====== [STDERR DEBUG] About to call handleCreateUser ======\n")
+		log.Printf("[DEBUG HANDLER SWITCH] About to call handleCreateUser\n")
 		s.handleCreateUser(w, r)
+		fmt.Fprintf(os.Stderr, "====== [STDERR DEBUG] Returned from handleCreateUser ======\n")
+		log.Printf("[DEBUG HANDLER SWITCH] Returned from handleCreateUser\n")
 	default:
 		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
@@ -56,6 +78,9 @@ func (s *Server) handleUserOperations(w http.ResponseWriter, r *http.Request) {
 			s.handleDisableUser(w, r, userID)
 		case "groups":
 			s.handleUserGroups(w, r, userID)
+		case "permissions":
+			// Granular permissions management (Issue #330)
+			s.handleUserPermissions(w, r, userID)
 		default:
 			s.writeError(w, http.StatusNotFound, "Unknown operation")
 		}
@@ -140,12 +165,16 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var user usermgmt.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		s.writeError(w, http.StatusBadRequest, "Invalid request body")
+		s.writeError(w, http.StatusBadRequest, "COMPILE_TEST_MARKER_12345_Invalid request body")
 		return
 	}
 
+	log.Printf("[DEBUG HTTP HANDLER] CreateUser request received for username=%s email=%s\n", user.Username, user.Email)
+
 	// Create user
+	log.Printf("[DEBUG HTTP HANDLER] Calling userManager.CreateUser for username=%s\n", user.Username)
 	newUser, err := s.userManager.CreateUser(context.Background(), &user)
+	log.Printf("[DEBUG HTTP HANDLER] userManager.CreateUser returned err=%v for username=%s\n", err, user.Username)
 	if err != nil {
 		if err == usermgmt.ErrDuplicateUsername || err == usermgmt.ErrDuplicateEmail {
 			s.writeError(w, http.StatusConflict, err.Error())
@@ -706,4 +735,192 @@ func (s *Server) handleAuthenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// ==============================================================================
+// User Management Features (Issue #330)
+// ==============================================================================
+
+// handleBulkImportUsers handles bulk user import from CSV/JSON (Issue #330)
+func (s *Server) handleBulkImportUsers(w http.ResponseWriter, r *http.Request) {
+	// Parse multipart form
+	err := r.ParseMultipartForm(10 << 20) // 10 MB max
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse form: %v", err))
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, "Missing file parameter")
+		return
+	}
+	defer file.Close()
+
+	// Read file content
+	content := make([]byte, header.Size)
+	_, err = file.Read(content)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to read file: %v", err))
+		return
+	}
+
+	// Parse based on content type or file extension
+	var users []usermgmt.User
+	if header.Header.Get("Content-Type") == "application/json" || len(header.Filename) > 5 && header.Filename[len(header.Filename)-5:] == ".json" {
+		err = json.Unmarshal(content, &users)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to parse JSON: %v", err))
+			return
+		}
+	} else {
+		s.writeError(w, http.StatusBadRequest, "Only JSON format is currently supported")
+		return
+	}
+
+	// Import users one by one
+	importedCount := 0
+	failedCount := 0
+	errors := []string{}
+
+	for _, user := range users {
+		_, err := s.userManager.CreateUser(context.Background(), &user)
+		if err != nil {
+			failedCount++
+			errors = append(errors, fmt.Sprintf("User %s: %v", user.Username, err))
+		} else {
+			importedCount++
+		}
+	}
+
+	response := map[string]interface{}{
+		"imported_count": importedCount,
+		"failed_count":   failedCount,
+		"errors":         errors,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handleExportUsers handles user list export to CSV/JSON (Issue #330)
+func (s *Server) handleExportUsers(w http.ResponseWriter, r *http.Request) {
+	// Get format from query parameter (default: json)
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "json"
+	}
+
+	// Get all users
+	filter := &usermgmt.UserFilter{}
+	pagination := &usermgmt.PaginationOptions{
+		Page:     1,
+		PageSize: 10000, // Large page size to get all users
+	}
+
+	users, err := s.userManager.GetUsers(context.Background(), filter, pagination)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get users: %v", err))
+		return
+	}
+
+	if format == "json" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", "attachment; filename=users.json")
+		_ = json.NewEncoder(w).Encode(users)
+	} else if format == "csv" {
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", "attachment; filename=users.csv")
+
+		// Write CSV header
+		w.Write([]byte("ID,Username,Email,DisplayName,Provider,Enabled,CreatedAt\n"))
+
+		// Write user data
+		for _, user := range users.Users {
+			line := fmt.Sprintf("%s,%s,%s,%s,%s,%v,%s\n",
+				user.ID,
+				user.Username,
+				user.Email,
+				user.DisplayName,
+				user.Provider,
+				user.Enabled,
+				user.CreatedAt.Format(time.RFC3339),
+			)
+			w.Write([]byte(line))
+		}
+	} else {
+		s.writeError(w, http.StatusBadRequest, "Unsupported format. Use 'json' or 'csv'")
+	}
+}
+
+// handleUserPermissions handles granular permission management (Issue #330)
+func (s *Server) handleUserPermissions(w http.ResponseWriter, r *http.Request, userID string) {
+	switch r.Method {
+	case http.MethodGet:
+		// Get user to retrieve their permissions
+		user, err := s.userManager.GetUser(context.Background(), userID)
+		if err != nil {
+			if err == usermgmt.ErrUserNotFound {
+				s.writeError(w, http.StatusNotFound, "User not found")
+			} else {
+				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get user: %v", err))
+			}
+			return
+		}
+
+		// Return permissions from user attributes
+		permissions := make(map[string]interface{})
+		if user.Attributes != nil {
+			if perms, ok := user.Attributes["permissions"]; ok {
+				permissions = perms.(map[string]interface{})
+			}
+		}
+
+		response := map[string]interface{}{
+			"user_id":     userID,
+			"permissions": permissions,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+
+	case http.MethodPut:
+		// Parse permission updates
+		var req map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "Invalid request body")
+			return
+		}
+
+		// Get user
+		user, err := s.userManager.GetUser(context.Background(), userID)
+		if err != nil {
+			if err == usermgmt.ErrUserNotFound {
+				s.writeError(w, http.StatusNotFound, "User not found")
+			} else {
+				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get user: %v", err))
+			}
+			return
+		}
+
+		// Update permissions in user attributes
+		if user.Attributes == nil {
+			user.Attributes = make(map[string]interface{})
+		}
+		user.Attributes["permissions"] = req
+
+		// Save updated user
+		_, err = s.userManager.UpdateUser(context.Background(), user)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update permissions: %v", err))
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
 }

@@ -27,6 +27,13 @@ export class ProjectsPage extends BasePage {
   async navigateToUsers() {
     await this.navigateToTab('users');
     await this.waitForLoadingComplete();
+
+    // Wait for the Create User button to be visible (deterministic wait)
+    // This ensures the UserManagementView has fully rendered
+    await this.page.waitForSelector('[data-testid="create-user-button"]', {
+      state: 'visible',
+      timeout: 10000
+    });
   }
 
   /**
@@ -61,7 +68,9 @@ export class ProjectsPage extends BasePage {
 
     // Click Create Project button using test ID
     await this.page.getByTestId('create-project-button').click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for Create Project dialog to appear by name (deterministic, avoids strict mode violation)
+    await this.page.getByRole('dialog', { name: /create.*project/i }).waitFor({ state: 'visible', timeout: 5000 });
 
     // Fill form fields using data-testids
     await this.fillInput('project name', name);
@@ -70,35 +79,65 @@ export class ProjectsPage extends BasePage {
     await this.page.getByTestId('project-description-input').locator('textarea').fill(description);
 
     if (budget !== undefined) {
-      await this.fillInput('budget', budget.toString());
+      // Use data-testid for budget input (Cloudscape wraps input)
+      await this.page.getByTestId('project-budget-input').locator('input').fill(budget.toString());
     }
 
-    // Submit
-    await this.clickButton('create');
-    await this.waitForDialogClose();
+    // Submit - use data-testid for the Create button in the dialog footer
+    const createButton = this.page.getByTestId('create-project-submit-button');
+
+    // Ensure button is ready and clickable
+    await createButton.waitFor({ state: 'visible' });
+
+    // Click the button to submit the form
+    await createButton.click();
+
+    // Wait for dialog to close by checking that it's no longer visible
+    await this.page.locator('[role="dialog"]:has-text("Create New Project")').waitFor({ state: 'hidden', timeout: 10000 });
+
+    // Wait for the project to appear in the table by looking for the project name
+    // This ensures the POST succeeded and the table refreshed
+    await this.page.getByRole('cell', { name, exact: true }).waitFor({ state: 'visible', timeout: 10000 });
+
+    // Extra wait to ensure Cloudscape table has fully rendered
+    await this.page.waitForTimeout(500);
   }
 
   /**
-   * Delete a project
+   * Delete a project - opens confirmation modal, test must confirm deletion
+   * @param projectName Name of the project to delete
    */
   async deleteProject(projectName: string) {
     await this.navigate();
+
+    // Wait for the project to appear in the table before trying to interact with it
+    await this.page.getByRole('cell', { name: projectName, exact: true }).waitFor({ state: 'visible', timeout: 10000 });
 
     const projectRow = this.getProjectByName(projectName);
 
     // Click actions dropdown
     const actionsButton = projectRow.getByRole('button', { name: /actions/i });
+    await actionsButton.waitFor({ state: 'visible', timeout: 5000 });
     await actionsButton.click();
-    await this.page.waitForTimeout(300);
 
-    // Click delete option
-    await this.page.getByRole('menuitem', { name: /delete/i }).click();
+    // Wait for menu to appear (deterministic)
+    const deleteOption = this.page.getByRole('menuitem', { name: /delete/i });
+    await deleteOption.waitFor({ state: 'visible', timeout: 3000 });
+    await deleteOption.click();
 
-    // Wait for delete confirmation modal to be visible
-    await this.page.waitForSelector('[data-testid="confirm-delete-button"]', {
-      state: 'visible',
-      timeout: 5000
-    });
+    // Wait for delete confirmation modal dialog to be visible
+    await this.page.getByRole('dialog').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.getByTestId('confirm-delete-button').waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  /**
+   * Confirm project deletion by clicking delete button in modal
+   * Note: Projects don't require name confirmation, just a simple click
+   */
+  async confirmDeletion() {
+    // deleteProject() already waited for modal and button to be visible
+    const deleteButton = this.page.getByTestId('confirm-delete-button');
+    await deleteButton.click();
   }
 
   /**
@@ -110,19 +149,35 @@ export class ProjectsPage extends BasePage {
     const projectRow = this.getProjectByName(projectName);
     const actionsButton = projectRow.getByRole('button', { name: /actions/i });
     await actionsButton.click();
-    await this.page.waitForTimeout(300);
 
-    await this.page.getByRole('menuitem', { name: /view details/i }).click();
+    // Wait for menu to appear
+    const viewDetailsOption = this.page.getByRole('menuitem', { name: /view details/i });
+    await viewDetailsOption.waitFor({ state: 'visible', timeout: 3000 });
+    await viewDetailsOption.click();
     await this.waitForLoadingComplete();
   }
 
   /**
    * Verify project exists
+   * Note: Does NOT navigate - assumes we're already on the Projects page
+   * Waits/polls for the project to appear in the table (handles async UI updates)
    */
   async verifyProjectExists(name: string): Promise<boolean> {
-    await this.navigate();
-    const project = this.getProjectByName(name);
-    return await this.elementExists(project);
+    // Don't navigate - just check if the project exists in the current table
+    // Poll for the project to appear (table may take time to refresh after creation)
+    const maxWait = 10000; // 10 seconds
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWait) {
+      const project = this.getProjectByName(name);
+      if (await this.elementExists(project)) {
+        return true; // Project found!
+      }
+      // Wait a bit before checking again
+      await this.page.waitForTimeout(200);
+    }
+
+    return false; // Project not found after waiting
   }
 
   /**
@@ -149,7 +204,9 @@ export class ProjectsPage extends BasePage {
       } catch (error) {
         // Continue polling
       }
-      await this.page.waitForTimeout(500);
+      // Wait for DOM to update or short timeout
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 500 }).catch(() => {});
+      await this.page.waitForTimeout(200); // Small delay between polls
     }
     throw new Error(`Project "${projectName}" was not removed within ${timeout}ms`);
   }
@@ -180,7 +237,12 @@ export class ProjectsPage extends BasePage {
   async createUser(username: string, email: string, fullName: string) {
     // Click Create User button using test ID
     await this.page.getByTestId('create-user-button').click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for the specific Create User modal to be visible
+    // Cloudscape renders all modals in DOM but hides them with CSS
+    // We need to target the visible one by its header text
+    const dialog = this.page.getByRole('dialog', { name: /create new user/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     // Use test IDs to avoid strict mode violations with multiple email fields
     // Cloudscape wraps inputs in divs, so we need to find the input inside
@@ -204,10 +266,16 @@ export class ProjectsPage extends BasePage {
     const userRow = this.getUserByUsername(username);
     const actionsButton = userRow.getByRole('button', { name: /actions/i });
     await actionsButton.click();
-    await this.page.waitForTimeout(300);
 
-    await this.page.getByRole('menuitem', { name: /delete/i }).click();
-    await this.page.waitForTimeout(300);
+    // Wait for menu to appear
+    const deleteOption = this.page.getByRole('menuitem', { name: /delete/i });
+    await deleteOption.waitFor({ state: 'visible', timeout: 3000 });
+    await deleteOption.click();
+
+    // Wait for confirmation dialog - Cloudscape renders all modals in DOM but hides them with CSS
+    // Target the specific delete user dialog by its header text
+    const dialog = this.page.getByRole('dialog', { name: /delete user\?/i });
+    await dialog.waitFor({ state: 'visible', timeout: 3000 });
   }
 
   /**
@@ -251,7 +319,8 @@ export class ProjectsPage extends BasePage {
       }
 
       lastCount = currentCount;
-      await this.page.waitForTimeout(200);
+      // Wait for DOM to update or short timeout
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 200 }).catch(() => {});
     }
 
     throw new Error(`User count did not reach ${expectedCount} within ${timeout}ms. Last count: ${lastCount}`);
@@ -273,7 +342,9 @@ export class ProjectsPage extends BasePage {
       } catch (error) {
         // Continue polling
       }
-      await this.page.waitForTimeout(500);
+      // Wait for DOM to update or short timeout
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 500 }).catch(() => {});
+      await this.page.waitForTimeout(200); // Small delay between polls
     }
     throw new Error(`User "${username}" was not removed within ${timeout}ms`);
   }
@@ -290,7 +361,8 @@ export class ProjectsPage extends BasePage {
     const individualTab = this.page.getByRole('tab', { name: /individual/i });
     if (await this.elementExists(individualTab)) {
       await individualTab.click();
-      await this.page.waitForTimeout(300);
+      // Wait for tab panel to be visible
+      await this.page.getByRole('tabpanel', { name: /individual/i }).waitFor({ state: 'visible', timeout: 3000 });
     }
   }
 
@@ -303,7 +375,8 @@ export class ProjectsPage extends BasePage {
     const bulkTab = this.page.getByRole('tab', { name: /bulk/i });
     if (await this.elementExists(bulkTab)) {
       await bulkTab.click();
-      await this.page.waitForTimeout(300);
+      // Wait for tab panel to be visible
+      await this.page.getByRole('tabpanel', { name: /bulk/i }).waitFor({ state: 'visible', timeout: 3000 });
     }
   }
 
@@ -316,7 +389,8 @@ export class ProjectsPage extends BasePage {
     const sharedTab = this.page.getByRole('tab', { name: /shared/i });
     if (await this.elementExists(sharedTab)) {
       await sharedTab.click();
-      await this.page.waitForTimeout(300);
+      // Wait for tab panel to be visible
+      await this.page.getByRole('tabpanel', { name: /shared/i }).waitFor({ state: 'visible', timeout: 3000 });
     }
   }
 
@@ -328,14 +402,13 @@ export class ProjectsPage extends BasePage {
   }
 
   /**
-   * Add invitation by token and wait for it to appear
+   * Add invitation by token and optionally wait for it to appear
+   * @param token - The invitation token to add
+   * @param expectedProjectName - Optional project name to wait for. If provided, waits for the invitation row to appear.
    */
-  async addInvitationToken(token: string, expectedProjectName: string) {
+  async addInvitationToken(token: string, expectedProjectName?: string) {
     if (!token) {
       throw new Error('Token parameter is required for addInvitationToken()');
-    }
-    if (!expectedProjectName) {
-      throw new Error('expectedProjectName parameter is required for addInvitationToken()');
     }
 
     await this.switchToIndividualInvitations();
@@ -354,10 +427,12 @@ export class ProjectsPage extends BasePage {
     // Click and wait for the invitation row to appear in the table
     await addButton.click();
 
-    // Wait for the specific invitation row to appear in the table (deterministic!)
+    // If expectedProjectName is provided, wait for the specific invitation row to appear
     // This proves the API call completed AND React state updated AND table re-rendered
-    const invitationRow = this.page.locator(`tr:has-text("${expectedProjectName}")`).first();
-    await invitationRow.waitFor({ state: 'visible', timeout: 10000 });
+    if (expectedProjectName) {
+      const invitationRow = this.page.locator(`tr:has-text("${expectedProjectName}")`).first();
+      await invitationRow.waitFor({ state: 'visible', timeout: 10000 });
+    }
   }
 
   /**
@@ -373,7 +448,10 @@ export class ProjectsPage extends BasePage {
 
     const acceptButton = invitationRow.getByRole('button', { name: /accept/i });
     await acceptButton.click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for confirmation modal - Cloudscape-specific targeting
+    const dialog = this.page.getByRole('dialog', { name: /accept invitation/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     // Confirm in modal
     await this.clickButton('accept');
@@ -389,7 +467,10 @@ export class ProjectsPage extends BasePage {
     const invitationRow = this.page.locator(`tr:has-text("${projectName}")`).first();
     const declineButton = invitationRow.getByRole('button', { name: /decline/i });
     await declineButton.click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for confirmation modal - Cloudscape-specific targeting
+    const dialog = this.page.getByRole('dialog', { name: /decline invitation/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     if (reason) {
       await this.fillInput('reason', reason);
@@ -414,20 +495,18 @@ export class ProjectsPage extends BasePage {
     const emailTextarea = this.page.getByLabel(/email.*addresses/i);
     await emailTextarea.fill(emails.join('\n'));
 
-    // Select role
-    const roleSelect = this.page.getByLabel(/role/i);
+    // Select role - use specific test ID to avoid strict mode violation (multiple role selectors on page)
+    const roleSelect = this.page.getByTestId('bulk-role-select');
     await roleSelect.selectOption(role);
 
     // Select project using the test ID
     const projectSelect = this.page.getByTestId('bulk-invite-project-select');
     await projectSelect.click();
-    await this.page.waitForTimeout(300);
 
-    // Select the option with the matching project ID
+    // Wait for dropdown options to appear
     const projectOption = this.page.locator(`[data-value="${projectId}"]`);
-    if (await this.elementExists(projectOption)) {
-      await projectOption.click();
-    }
+    await projectOption.waitFor({ state: 'visible', timeout: 3000 });
+    await projectOption.click();
 
     // Optional message
     if (message) {
@@ -453,18 +532,26 @@ export class ProjectsPage extends BasePage {
     await this.switchToSharedTokens();
 
     await this.page.getByRole('button', { name: /create shared token/i }).click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for dialog to appear using data-testid
+    const dialog = this.page.locator('[data-testid="create-shared-token-modal"]');
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     await this.fillInput('token name', name);
     await this.fillInput('redemption limit', redemptionLimit.toString());
-    await this.selectOption('expires in', expiresIn);
-    await this.selectOption('role', role);
+
+    // Use data-testid for Cloudscape Select components
+    await this.page.locator('[data-testid="expires-in-select"]').click();
+    await this.page.locator(`[data-value="${expiresIn}"]`).click();
+
+    await this.page.locator('[data-testid="role-select"]').click();
+    await this.page.locator(`[data-value="${role}"]`).click();
 
     if (message) {
       await this.fillInput('welcome message', message);
     }
 
-    await this.clickButton('create token');
+    await this.page.locator('[data-testid="create-token-button"]').click();
     await this.waitForDialogClose();
   }
 
@@ -479,7 +566,11 @@ export class ProjectsPage extends BasePage {
     // Click revoke icon button (close icon)
     const revokeButton = tokenRow.getByRole('button', { name: /revoke|close/i });
     await revokeButton.click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for confirmation modal - Cloudscape-specific targeting
+    // Note: The revoke confirmation dialog may have various header texts
+    const dialog = this.page.getByRole('dialog').first();
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     // Confirm
     await this.clickButton('revoke');
@@ -495,7 +586,10 @@ export class ProjectsPage extends BasePage {
     const tokenRow = this.page.locator(`tr:has-text("${tokenName}")`).first();
     const viewButton = tokenRow.getByRole('button', { name: /view/i });
     await viewButton.click();
-    await this.page.waitForTimeout(500);
+
+    // Wait for QR code dialog to appear
+    const dialog = this.page.getByRole('dialog', { name: /qr code/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   /**
@@ -519,40 +613,53 @@ export class ProjectsPage extends BasePage {
 
   /**
    * Wait for dialog to close
+   * Cloudscape-specific: Check for visible modals rather than waiting for all dialogs to be hidden
+   * since Cloudscape renders all modals in DOM but hides them with CSS
    */
   async waitForDialogClose(timeout: number = 5000) {
     try {
-      const dialog = this.page.locator('[role="dialog"]').first();
-      const isVisible = await dialog.isVisible({ timeout: 500 });
+      // Check if any dialog is currently visible (not just in DOM)
+      const visibleDialogs = this.page.locator('[role="dialog"]:visible');
+      const count = await visibleDialogs.count();
 
-      if (isVisible) {
-        await this.page.waitForSelector('[role="dialog"]', {
-          state: 'hidden',
-          timeout
-        });
-        await this.page.waitForTimeout(500);
+      if (count > 0) {
+        // Wait for visible dialogs to become hidden
+        await visibleDialogs.first().waitFor({ state: 'hidden', timeout });
+        // Wait for animation to complete
+        await this.page.waitForTimeout(300);
       }
     } catch {
-      // Dialog already closed
+      // Dialog already closed or timeout - safe to continue
     }
   }
 
   /**
    * Force close any open dialogs
+   * Cloudscape-specific: Only target visible dialogs, not all dialogs in DOM
    */
   async forceCloseDialogs() {
     try {
+      // Check for visible dialogs (not just dialogs in DOM)
+      const visibleDialogs = this.page.locator('[role="dialog"]:visible');
+      const count = await visibleDialogs.count();
+
+      if (count === 0) {
+        return; // No visible dialogs to close
+      }
+
+      // Try to find and click close button in the visible dialog
       const closeSelectors = [
         'button[aria-label="Close dialog"]',
         'button[aria-label="Close modal"]',
-        '[role="dialog"] button:has-text("Cancel")',
-        '[role="dialog"] button:has-text("Close")'
+        '[role="dialog"]:visible button:has-text("Cancel")',
+        '[role="dialog"]:visible button:has-text("Close")'
       ];
 
       for (const selector of closeSelectors) {
         const button = this.page.locator(selector).first();
         if (await button.isVisible({ timeout: 500 })) {
           await button.click();
+          // Wait for animation
           await this.page.waitForTimeout(500);
           break;
         }
@@ -560,7 +667,7 @@ export class ProjectsPage extends BasePage {
 
       await this.waitForDialogClose(2000);
     } catch {
-      // No dialogs to close
+      // No dialogs to close or already closed
     }
   }
 
@@ -585,7 +692,7 @@ export class ProjectsPage extends BasePage {
           try {
             await this.deleteProject(projectName);
             await this.clickButton('delete');
-            await this.page.waitForTimeout(500);
+            await this.waitForDialogClose();
           } catch {
             // Skip if deletion fails
             try {
@@ -625,7 +732,7 @@ export class ProjectsPage extends BasePage {
             try {
               await this.deleteUser(username);
               await this.clickButton('delete');
-              await this.page.waitForTimeout(500);
+              await this.waitForDialogClose();
               found = true;
               break; // Exit loop to refresh row list after deletion
             } catch {
@@ -707,14 +814,69 @@ export class ProjectsPage extends BasePage {
    */
   async verifyProjectMember(projectName: string, username: string): Promise<boolean> {
     await this.viewProjectDetails(projectName);
-    await this.page.waitForTimeout(1000);
 
+    // Wait for members section to load
     const membersSection = this.page.locator('[data-testid="project-members"]');
-    if (await membersSection.isVisible({ timeout: 5000 })) {
-      const membersText = await membersSection.textContent();
-      return membersText?.includes(username) || false;
-    }
+    await membersSection.waitFor({ state: 'visible', timeout: 5000 });
 
-    return false;
+    const membersText = await membersSection.textContent();
+    return membersText?.includes(username) || false;
+  }
+
+  // ==================== CLEANUP UTILITIES ====================
+
+  /**
+   * Clean up all test projects (names starting with common test prefixes)
+   * Similar to cleanupTestInvitations for invitations
+   */
+  async cleanupTestProjects() {
+    await this.navigate();
+
+    const testPrefixes = [
+      'test-project',
+      'budget-test',
+      'delete-test',
+      'duplicate-test',
+      'view-test',
+      'active-project',
+      'suspended-project',
+      'budget-view-test',
+      'cancel-delete-test',
+      'list-test',
+      'alert-test',
+      'exceeded-test',
+      'spend-test'
+    ];
+
+    // Get all project rows
+    const rows = this.getProjectRows();
+    const count = await rows.count();
+
+    for (let i = 0; i < count; i++) {
+      const row = rows.nth(i);
+      const rowText = await row.textContent();
+
+      // Check if row matches any test prefix
+      const isTestProject = testPrefixes.some(prefix =>
+        rowText?.toLowerCase().includes(prefix.toLowerCase())
+      );
+
+      if (isTestProject && rowText) {
+        // Extract project name from the row (first cell/link usually)
+        const nameLink = row.locator('a').first();
+        const projectName = await nameLink.textContent();
+
+        if (projectName) {
+          try {
+            await this.deleteProject(projectName.trim());
+            await this.confirmDeletion();
+            await this.waitForProjectToBeRemoved(projectName.trim());
+          } catch (error) {
+            // Project might already be deleted or not found, continue
+            console.log(`Failed to delete project ${projectName}:`, error);
+          }
+        }
+      }
+    }
   }
 }

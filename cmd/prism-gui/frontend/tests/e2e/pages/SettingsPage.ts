@@ -65,7 +65,9 @@ export class SettingsPage extends BasePage {
   async createProfile(name: string, awsProfile: string, region: string) {
     await this.switchToProfiles();
     await this.page.getByTestId('create-profile-button').click();
-    await this.page.waitForTimeout(500); // Wait for dialog to open
+
+    // Wait for dialog to be visible (use :visible and .last() to handle multiple dialogs in DOM)
+    await this.page.locator('[role="dialog"]:visible').last().waitFor({ state: 'visible', timeout: 5000 });
 
     // Cloudscape Input wraps input in a div, so we need to find the input inside
     await this.page.getByTestId('profile-name-input').locator('input').fill(name);
@@ -87,10 +89,14 @@ export class SettingsPage extends BasePage {
     const editButton = profile.getByRole('button', { name: /edit/i });
     await editButton.click();
 
-    // Wait for dialog to be visible and input to be interactable
-    const regionInput = this.page.getByTestId('region-input').locator('input');
+    // Wait for dialog to be visible (use :visible and .last() to handle multiple dialogs in DOM)
+    const dialog = this.page.locator('[role="dialog"]:visible').last();
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Use edit-specific test ID to avoid conflicts with create dialog
+    const regionInput = dialog.getByTestId('edit-region-input').locator('input');
     await regionInput.waitFor({ state: 'visible', timeout: 5000 });
-    await this.page.waitForTimeout(500); // Additional wait for full render
+    await regionInput.waitFor({ state: 'attached', timeout: 2000 });
 
     // Cloudscape Input wraps input in a div
     await regionInput.fill(newRegion);
@@ -133,7 +139,9 @@ export class SettingsPage extends BasePage {
       } catch (error) {
         // Continue polling even if getCurrentProfile() fails
       }
-      await this.page.waitForTimeout(500); // Wait 500ms before next poll
+      // Wait for table to update or short timeout
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 500 }).catch(() => {});
+      await this.page.waitForTimeout(200); // Small delay between polls
     }
     throw new Error(`Profile "${profileName}" did not become current within ${timeout}ms`);
   }
@@ -155,7 +163,9 @@ export class SettingsPage extends BasePage {
       } catch (error) {
         // Continue polling even if verifyProfileExists() fails
       }
-      await this.page.waitForTimeout(500); // Wait 500ms before next poll
+      // Wait for table to update or short timeout
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 500 }).catch(() => {});
+      await this.page.waitForTimeout(200); // Small delay between polls
     }
     throw new Error(`Profile "${profileName}" was not removed within ${timeout}ms`);
   }
@@ -181,9 +191,35 @@ export class SettingsPage extends BasePage {
       } catch (error) {
         // Continue polling even if row query fails
       }
-      await this.page.waitForTimeout(500); // Wait 500ms before next poll
+      // Wait for table to update or short timeout
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 500 }).catch(() => {});
+      await this.page.waitForTimeout(200); // Small delay between polls
     }
     throw new Error(`Profile "${profileName}" did not show region "${expectedRegion}" within ${timeout}ms`);
+  }
+
+  /**
+   * Poll until a profile appears in the list after creation
+   */
+  async waitForProfileToExist(profileName: string, timeout: number = 10000) {
+    // First wait for any dialogs to close
+    await this.waitForDialogClose();
+
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      try {
+        const exists = await this.verifyProfileExists(profileName);
+        if (exists) {
+          return; // Success - profile exists!
+        }
+      } catch (error) {
+        // Continue polling even if query fails
+      }
+      // Wait for table to update or short timeout
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 500 }).catch(() => {});
+      await this.page.waitForTimeout(200); // Small delay between polls
+    }
+    throw new Error(`Profile "${profileName}" did not appear within ${timeout}ms`);
   }
 
   /**
@@ -220,8 +256,9 @@ export class SettingsPage extends BasePage {
     await this.page.waitForSelector('[data-testid="profiles-table"]', { timeout: 5000 });
 
     // Wait for the "Current" badge to appear (profile switching is instant - local operation)
+    // Use the data-testid to find the actual badge, not just text containing "Current"
     try {
-      await this.page.waitForSelector('[data-testid="profiles-table"] tr:has-text("Current")', {
+      await this.page.waitForSelector('[data-testid="current-profile-badge"]', {
         timeout: 2000,
         state: 'visible'
       });
@@ -230,14 +267,14 @@ export class SettingsPage extends BasePage {
       return null;
     }
 
-    // Find the row that contains "Current" badge and extract the profile name
-    // The structure is: badge "Current" + profile name text in the same cell
-    const currentRow = this.page.locator('[data-testid="profiles-table"] tr:has-text("Current")').first();
-    const profileNameCell = currentRow.locator('td').first();
+    // Find the row that contains the "Current" badge and extract the profile name
+    // Use the badge's test ID to ensure we match the actual badge, not profile names containing "current"
+    const currentBadge = this.page.getByTestId('current-profile-badge');
+    const profileNameCell = currentBadge.locator('..'); // Get parent Box element
     const fullText = await this.getTextContent(profileNameCell);
 
     // Remove "Current" badge text to get just the profile name
-    return fullText ? fullText.replace(/^Current\s*/, '') : null;
+    return fullText ? fullText.replace(/^Current\s*/, '').trim() : null;
   }
 
   /**
@@ -395,7 +432,8 @@ export class SettingsPage extends BasePage {
             try {
               // Switch to safe profile
               await this.page.getByTestId(`switch-profile-${safeProfile}`).click();
-              await this.page.waitForTimeout(1000);
+              // Wait for profile to become current
+              await this.waitForProfileToBeCurrent(safeProfile, 5000);
               break;
             } catch {
               // Continue to next profile
@@ -410,7 +448,7 @@ export class SettingsPage extends BasePage {
       try {
         // Refresh the page to get updated profile list
         await this.switchToProfiles();
-        await this.page.waitForTimeout(300);
+        await this.waitForLoadingComplete();
 
         // Check if profile still exists
         const exists = await this.verifyProfileExists(profileName);
@@ -420,13 +458,12 @@ export class SettingsPage extends BasePage {
 
         // Delete profile
         await this.deleteProfile(profileName);
-        await this.page.waitForTimeout(300);
 
-        // Confirm deletion
+        // Wait for confirmation dialog to appear
         const confirmButton = this.page.getByRole('button', { name: /delete|confirm/i });
         if (await confirmButton.isVisible({ timeout: 1000 })) {
           await confirmButton.click();
-          await this.page.waitForTimeout(500);
+          await this.waitForDialogClose();
         }
       } catch (error) {
         // Skip profiles that can't be deleted
@@ -434,7 +471,7 @@ export class SettingsPage extends BasePage {
           const cancelButton = this.page.getByRole('button', { name: /cancel/i });
           if (await cancelButton.isVisible({ timeout: 500 })) {
             await cancelButton.click();
-            await this.page.waitForTimeout(300);
+            await this.waitForDialogClose();
           }
         } catch {
           // Ignore
@@ -445,45 +482,54 @@ export class SettingsPage extends BasePage {
 
   /**
    * Wait for any dialog to close
+   * Cloudscape-specific: Check for visible modals rather than waiting for all dialogs to be hidden
+   * since Cloudscape renders all modals in DOM but hides them with CSS
    */
   async waitForDialogClose(timeout: number = 5000) {
     try {
-      // First check if a dialog is currently visible
-      const dialog = this.page.locator('[role="dialog"]').first();
-      const isVisible = await dialog.isVisible({ timeout: 500 });
+      // Check if any dialog is currently visible (not just in DOM)
+      const visibleDialogs = this.page.locator('[role="dialog"]:visible');
+      const count = await visibleDialogs.count();
 
-      if (isVisible) {
-        // Wait for it to close
-        await this.page.waitForSelector('[role="dialog"]', {
-          state: 'hidden',
-          timeout
-        });
-        // Additional wait to ensure dialog animation completes
-        await this.page.waitForTimeout(500);
+      if (count > 0) {
+        // Wait for visible dialogs to become hidden
+        await visibleDialogs.first().waitFor({ state: 'hidden', timeout });
+        // Wait for animation to complete
+        await this.page.waitForTimeout(300);
       }
     } catch {
-      // Dialog might already be closed or check timed out
+      // Dialog already closed or timeout - safe to continue
     }
   }
 
   /**
    * Force close any open dialogs
+   * Cloudscape-specific: Only target visible dialogs, not all dialogs in DOM
    */
   async forceCloseDialogs() {
     try {
-      // Try multiple methods to close dialogs
+      // Check for visible dialogs (not just dialogs in DOM)
+      const visibleDialogs = this.page.locator('[role="dialog"]:visible');
+      const count = await visibleDialogs.count();
+
+      if (count === 0) {
+        return; // No visible dialogs to close
+      }
+
+      // Try to find and click close button in the visible dialog
       const closeSelectors = [
         'button[aria-label="Close dialog"]',
         'button[aria-label="Close modal"]',
         '.awsui_dismiss-control button',
-        '[role="dialog"] button:has-text("Cancel")',
-        '[role="dialog"] button:has-text("Close")'
+        '[role="dialog"]:visible button:has-text("Cancel")',
+        '[role="dialog"]:visible button:has-text("Close")'
       ];
 
       for (const selector of closeSelectors) {
         const button = this.page.locator(selector).first();
         if (await button.isVisible({ timeout: 500 })) {
           await button.click();
+          // Wait for animation
           await this.page.waitForTimeout(500);
           break;
         }
