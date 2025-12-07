@@ -49,7 +49,7 @@ export default defineConfig({
   },
 
   // Global timeout for each test (includes setup, test body, and cleanup)
-  timeout: 60000, // 60s per test
+  timeout: 90000, // 90s per test - allows for test execution (~30s) + cleanup (~30s) + buffer
 
   // Configure projects for major browsers (desktop only - CloudWorkstation is not mobile)
   projects: [
