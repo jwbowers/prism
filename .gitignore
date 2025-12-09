@@ -67,3 +67,8 @@ daemon_debug.log
 # MkDocs
 site/
 .cache/
+
+# Playwright test artifacts
+cmd/prism-gui/frontend/playwright-report/
+cmd/prism-gui/frontend/playwright-report.json
+cmd/prism-gui/frontend/test-results/
