@@ -497,7 +497,9 @@ export class ProjectsPage extends BasePage {
 
     // Select role - use specific test ID to avoid strict mode violation (multiple role selectors on page)
     const roleSelect = this.page.getByTestId('bulk-role-select');
-    await roleSelect.selectOption(role);
+    await roleSelect.click();
+    await this.page.waitForTimeout(300);
+    await this.page.locator(`[data-value="${role}"]`).click();
 
     // Select project using the test ID
     const projectSelect = this.page.getByTestId('bulk-invite-project-select');

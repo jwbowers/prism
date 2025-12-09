@@ -574,6 +574,11 @@ interface SharedToken {
   status: 'active' | 'expired' | 'exhausted';
 }
 
+interface QRCodeData {
+  qr_code: string;  // base64 encoded image or URL
+  url: string;
+}
+
 interface RedeemTokenResponse {
   success: boolean;
   project_id: string;
@@ -1093,6 +1098,10 @@ class SafePrismAPI {
 
       // Backend returns nested response: {invitation, project, message}
       const data = await this.safeRequest<{invitation: Invitation, project: unknown, message: string}>(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
+
+      // Emit event to notify UI components that a new invitation was created
+      window.dispatchEvent(new CustomEvent('invitation-created'));
+
       return data.invitation;
     } catch (error) {
       logger.error('Failed to send invitation:', error);
@@ -1120,7 +1129,7 @@ class SafePrismAPI {
   // Shared Token APIs (Issue #241)
   async getSharedTokens(projectId: string): Promise<SharedToken[]> {
     try {
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens`);
+      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations/shared`);
       return Array.isArray(data?.tokens) ? data.tokens : [];
     } catch (error) {
       logger.error('Failed to fetch shared tokens:', error);
@@ -1130,7 +1139,9 @@ class SafePrismAPI {
 
   async createSharedToken(projectId: string, config: SharedTokenConfig): Promise<SharedInvitationToken> {
     try {
-      const data = await this.safeRequest<SharedInvitationToken>(`/api/v1/projects/${projectId}/shared-tokens`, 'POST', config);
+      const data = await this.safeRequest<SharedInvitationToken>(`/api/v1/projects/${projectId}/invitations/shared`, 'POST', config);
+      // Emit event to notify UI that shared token was created
+      window.dispatchEvent(new CustomEvent('shared-token-created'));
       return data;
     } catch (error) {
       logger.error('Failed to create shared token:', error);
@@ -1138,10 +1149,10 @@ class SafePrismAPI {
     }
   }
 
-  async extendSharedToken(projectId: string, tokenId: string, expiresIn: string): Promise<void> {
+  async extendSharedToken(token: string, expiresIn: string): Promise<void> {
     try {
-      await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens/${tokenId}/extend`, 'POST', {
-        expires_in: expiresIn
+      await this.safeRequest(`/api/v1/invitations/shared/${token}/extend`, 'PATCH', {
+        add_days: parseInt(expiresIn)
       });
     } catch (error) {
       logger.error('Failed to extend shared token:', error);
@@ -1149,9 +1160,9 @@ class SafePrismAPI {
     }
   }
 
-  async revokeSharedToken(projectId: string, tokenId: string): Promise<void> {
+  async revokeSharedToken(token: string): Promise<void> {
     try {
-      await this.safeRequest(`/api/v1/projects/${projectId}/shared-tokens/${tokenId}/revoke`, 'POST');
+      await this.safeRequest(`/api/v1/invitations/shared/${token}`, 'DELETE');
     } catch (error) {
       logger.error('Failed to revoke shared token:', error);
       throw error;
@@ -1160,10 +1171,20 @@ class SafePrismAPI {
 
   async redeemSharedToken(token: string): Promise<RedeemTokenResponse> {
     try {
-      const data = await this.safeRequest(`/api/v1/shared-tokens/${token}/redeem`, 'POST');
+      const data = await this.safeRequest(`/api/v1/invitations/shared/redeem`, 'POST', { token });
       return data;
     } catch (error) {
       logger.error('Failed to redeem shared token:', error);
+      throw error;
+    }
+  }
+
+  async getSharedTokenQRCode(token: string, format: 'json' | 'png' = 'json'): Promise<QRCodeData> {
+    try {
+      const data = await this.safeRequest(`/api/v1/invitations/shared/${token}/qr?format=${format}`);
+      return data;
+    } catch (error) {
+      logger.error('Failed to get QR code:', error);
       throw error;
     }
   }
@@ -1699,7 +1720,7 @@ export default function PrismApp() {
         api.getAMIBuilds(),
         api.getAMIRegions(),
         api.getRightsizingRecommendations(),
-        api.getRightsizingStats(),
+        // api.getRightsizingStats() - Removed: requires instance name parameter, called per-instance instead
         api.getPolicyStatus(),
         api.getPolicySets(),
         api.getMarketplaceTemplates(),
@@ -1710,17 +1731,19 @@ export default function PrismApp() {
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, rightsizingStatsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData] = results.map((result, index) => {
+      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData] = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
           // Return appropriate empty fallback based on expected type
           if (index === 0) return {}; // templates (object)
-          if (index === 12) return null; // rightsizingStats (nullable)
-          if (index === 13) return null; // policyStatus (nullable)
+          if (index === 11) return null; // policyStatus (nullable, was index 13, now 12)
           return []; // everything else (arrays)
         }
       });
+
+      // Initialize rightsizingStatsData since api.getRightsizingStats() was removed (requires instance name parameter)
+      const rightsizingStatsData = null;
 
       // Convert Invitation[] to CachedInvitation[] format
       const cachedInvitations: CachedInvitation[] = (invitationsData || []).map((inv: Invitation) => ({
