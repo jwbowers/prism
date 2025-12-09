@@ -9,9 +9,25 @@ import { Page, Locator, expect } from '@playwright/test';
 
 export class BasePage {
   readonly page: Page;
+  private consoleMessages: string[] = [];
+  private pageErrors: string[] = [];
 
   constructor(page: Page) {
     this.page = page;
+
+    // Capture browser console messages
+    this.page.on('console', msg => {
+      const text = `[BROWSER ${msg.type().toUpperCase()}] ${msg.text()}`;
+      this.consoleMessages.push(text);
+      console.log(text);
+    });
+
+    // Capture JavaScript errors
+    this.page.on('pageerror', err => {
+      const text = `[PAGE ERROR] ${err.message}\n${err.stack || ''}`;
+      this.pageErrors.push(text);
+      console.error(text);
+    });
   }
 
   /**
@@ -72,16 +88,65 @@ export class BasePage {
    */
   async waitForAppReady() {
     try {
+      console.log('[waitForAppReady] Waiting for React root to mount...');
+      // Wait for React root to mount
+      await this.page.waitForSelector('#root > *', { state: 'visible', timeout: 15000 });
+      console.log('[waitForAppReady] React root mounted successfully');
+
+      console.log('[waitForAppReady] Waiting for Cloudscape side navigation...');
+      // Wait for Cloudscape side navigation to be present and visible
+      // Cloudscape renders multiple navigation elements (some hidden), so we wait for actual navigation links
+      // which will only be present in the visible navigation
+      await this.page.waitForSelector('a[href="/dashboard"]', { state: 'visible', timeout: 10000 });
+      console.log('[waitForAppReady] Side navigation is visible');
+
       // Wait for initial API calls to complete
       // The app makes several API calls on load: templates, instances, storage, etc.
       // Wait for the templates API call which is one of the key indicators
-      await this.waitForApiCall('/api/v1/templates', 15000);
+      await this.waitForApiCall('/api/v1/templates', 15000).catch(() => {
+        console.log('[waitForAppReady] Templates API call did not complete (non-critical)');
+      });
 
       // Wait for React to finish rendering - look for any tab content to be visible
-      await this.page.locator('[role="tabpanel"]').first().waitFor({ state: 'visible', timeout: 10000 });
-    } catch {
-      // If API call doesn't complete or rendering takes longer, wait for load state
+      await this.page.locator('[role="tabpanel"]').first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
+        console.log('[waitForAppReady] Tab content not visible (may be on different page)');
+      });
+
+      console.log('[waitForAppReady] App is ready');
+    } catch (error) {
+      // If rendering fails, log detailed diagnostics
+      console.error('[waitForAppReady] React app may not be rendering:', error);
+
+      // Capture page HTML for debugging
+      const html = await this.page.content();
+      console.log('[waitForAppReady] Page HTML length:', html.length, 'characters');
+      console.log('[waitForAppReady] Page title:', await this.page.title());
+      console.log('[waitForAppReady] Page URL:', this.page.url());
+
+      // Check for specific elements
+      const rootCount = await this.page.locator('#root').count();
+      const rootChildren = await this.page.locator('#root > *').count();
+      const navCount = await this.page.locator('a[href="/dashboard"]').count();
+
+      console.log('[waitForAppReady] Elements found:');
+      console.log('  - #root elements:', rootCount);
+      console.log('  - #root children:', rootChildren);
+      console.log('  - navigation links (a[href="/dashboard"]):', navCount);
+
+      // Check if there are any errors collected
+      if (this.pageErrors.length > 0) {
+        console.error('[waitForAppReady] Page errors detected:');
+        this.pageErrors.forEach(err => console.error('  -', err));
+      }
+
       await this.page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+
+      // Re-throw if navigation still isn't present - this indicates a serious problem
+      // Check for actual navigation links (which will only be present in visible navigation)
+      const navExists = await this.page.locator('a[href="/dashboard"]').count();
+      if (navExists === 0) {
+        throw new Error('React app failed to render: side navigation not present');
+      }
     }
   }
 
@@ -101,6 +166,19 @@ export class BasePage {
     // First, ensure no dialogs are blocking the navigation
     await this.waitForDialogClose(3000);
 
+    // CRITICAL: Wait for navigation to be fully rendered and interactive
+    // This is essential for tests that call navigateToTab() immediately after page load
+    // Wait for actual navigation links (Dashboard link) which will only be present in visible navigation
+    console.log(`[navigateToTab] Ensuring navigation is ready for "${tabName}"...`);
+    await this.page.waitForSelector('a[href="/dashboard"]', {
+      state: 'visible',
+      timeout: 15000
+    }).catch(async (error) => {
+      console.error('[navigateToTab] Navigation not visible - attempting recovery...');
+      await this.waitForAppReady();
+      throw error;
+    });
+
     // Map common tab names to actual SideNavigation link text
     const linkTextMap: Record<string, string> = {
       'dashboard': 'Dashboard',
@@ -118,8 +196,17 @@ export class BasePage {
     };
 
     const linkText = linkTextMap[tabName.toLowerCase()] || tabName;
+    console.log(`[navigateToTab] Looking for link: "${linkText}"`);
+
     const link = this.page.getByRole('link', { name: new RegExp(linkText, 'i') });
+
+    // Wait for the link to be both visible and enabled before clicking
+    await link.waitFor({ state: 'visible', timeout: 10000 });
+    console.log(`[navigateToTab] Link "${linkText}" is visible, clicking...`);
+
     await link.click();
+    console.log(`[navigateToTab] Successfully clicked "${linkText}"`);
+
     // Wait for the DOM to update after tab switch
     await this.page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
     await this.waitForLoadingComplete();

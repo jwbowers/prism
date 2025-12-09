@@ -90,6 +90,13 @@ export const InvitationManagementView: React.FC = () => {
 
   // Bulk invitations state
   const [bulkProjectId, setBulkProjectId] = useState('');
+
+  // Load shared tokens when switching to shared tab and project is selected
+  useEffect(() => {
+    if (activeTabId === 'shared' && bulkProjectId) {
+      loadSharedTokens(bulkProjectId);
+    }
+  }, [activeTabId, bulkProjectId]);
   const [bulkEmails, setBulkEmails] = useState('');
   const [bulkRole, setBulkRole] = useState<'viewer' | 'member' | 'admin'>('member');
   const [bulkMessage, setBulkMessage] = useState('');
@@ -114,8 +121,25 @@ export const InvitationManagementView: React.FC = () => {
 
   useEffect(() => {
     loadInvitations();
-    // Shared tokens would be loaded separately per project
-  }, []);
+
+    // Listen for invitation-created events to refresh the list
+    const handleInvitationCreated = () => loadInvitations();
+    window.addEventListener('invitation-created', handleInvitationCreated);
+
+    // Listen for shared-token-created events to refresh shared tokens
+    const handleSharedTokenCreated = () => {
+      if (bulkProjectId) {
+        loadSharedTokens(bulkProjectId);
+      }
+    };
+    window.addEventListener('shared-token-created', handleSharedTokenCreated);
+
+    // Cleanup function to remove event listeners
+    return () => {
+      window.removeEventListener('invitation-created', handleInvitationCreated);
+      window.removeEventListener('shared-token-created', handleSharedTokenCreated);
+    };
+  }, [bulkProjectId]);
 
   const loadInvitations = async () => {
     if (!api) return;
@@ -131,6 +155,23 @@ export const InvitationManagementView: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to load invitations:', err);
       setError(err.message || 'Failed to load invitations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSharedTokens = async (projectId: string) => {
+    if (!api || !projectId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await api.getSharedTokens(projectId);
+      setSharedTokens(data || []);
+    } catch (err: any) {
+      console.error('Failed to load shared tokens:', err);
+      setError(err.message || 'Failed to load shared tokens');
     } finally {
       setLoading(false);
     }
@@ -311,9 +352,30 @@ export const InvitationManagementView: React.FC = () => {
     }
   };
 
-  const handleViewQRCode = (token: SharedInvitationToken) => {
+  const handleViewQRCode = async (token: SharedInvitationToken) => {
+    if (!api) return;
+
     setSelectedToken(token);
-    setQRModalVisible(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch QR code data from backend
+      const qrData = await api.getSharedTokenQRCode(token.token, 'json');
+
+      // Update token with QR code URL (base64 data URL)
+      setSelectedToken({
+        ...token,
+        qr_code_url: `data:image/png;base64,${qrData.qr_code}`
+      });
+
+      setQRModalVisible(true);
+    } catch (err: any) {
+      console.error('Failed to fetch QR code:', err);
+      setError(err.message || 'Failed to fetch QR code');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCopyTokenURL = () => {
