@@ -20,15 +20,6 @@ test.describe('Invitation Management Workflows', () => {
     projectsPage = new ProjectsPage(page);
     await projectsPage.goto();
 
-    // Clear invitation cache by directly manipulating localStorage and reloading
-    // This ensures React state gets reset with empty invitations
-    await page.evaluate(() => {
-      localStorage.removeItem('cws_invitations');
-    });
-    await page.reload();
-
-    await projectsPage.navigateToInvitations();
-
     // Force close any open dialogs from previous tests
     await projectsPage.forceCloseDialogs();
   });
