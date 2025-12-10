@@ -31,7 +31,7 @@ test.describe('Instance Management Workflows', () => {
   });
 
   test.describe('Instance Launch Workflows', () => {
-    test('should launch instance with basic configuration', async () => {
+    test('should launch instance with basic configuration @localstack', async () => {
       // Step 1: Navigate to Instances tab
       await instancesPage.navigate();
 
@@ -81,7 +81,7 @@ test.describe('Instance Management Workflows', () => {
       expect(successMessage).toBe(true);
     });
 
-    test('should validate instance name is required', async () => {
+    test('should validate instance name is required @localstack', async () => {
       await instancesPage.navigate();
       await instancesPage.openLaunchDialog();
       await launchDialog.waitForDialog();
@@ -95,7 +95,7 @@ test.describe('Instance Management Workflows', () => {
       expect(validationError).toMatch(/name.*required/i);
     });
 
-    test('should validate template is selected', async () => {
+    test('should validate template is selected @localstack', async () => {
       await instancesPage.navigate();
       await instancesPage.openLaunchDialog();
       await launchDialog.waitForDialog();

@@ -19,6 +19,13 @@ export class InstancesPage extends BasePage {
   async navigate() {
     await this.navigateToTab('workspaces');
     await this.waitForLoadingComplete();
+
+    // Wait for the Launch New Workspace button to be visible (deterministic wait)
+    // This ensures the InstancesView has fully rendered
+    await this.page.getByRole('button', { name: /launch.*workspace/i }).waitFor({
+      state: 'visible',
+      timeout: 10000
+    });
   }
 
   /**
@@ -146,7 +153,7 @@ export class InstancesPage extends BasePage {
    * Open launch dialog
    */
   async openLaunchDialog() {
-    const launchButton = this.page.getByRole('button', { name: /launch.*instance/i });
+    const launchButton = this.page.getByRole('button', { name: /launch.*workspace/i });
     await launchButton.click();
   }
 

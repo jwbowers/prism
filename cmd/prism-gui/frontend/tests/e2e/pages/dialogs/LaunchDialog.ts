@@ -16,9 +16,10 @@ export class LaunchDialog {
 
   /**
    * Get dialog container
+   * Uses "Launch Research Environment" to distinguish from "Quick Start - Launch Workspace"
    */
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]', { hasText: /launch/i });
+    return this.page.getByLabel(/launch research environment/i);
   }
 
   /**
