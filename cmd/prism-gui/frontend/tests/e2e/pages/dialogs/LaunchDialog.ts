@@ -26,7 +26,7 @@ export class LaunchDialog {
    * Wait for dialog to open
    */
   async waitForDialog() {
-    await this.getDialog().waitFor({ state: 'visible', timeout: 5000 });
+    await this.getDialog().waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**

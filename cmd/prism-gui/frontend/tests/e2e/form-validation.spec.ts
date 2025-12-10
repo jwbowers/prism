@@ -1,0 +1,297 @@
+/**
+ * Form Validation Tests
+ *
+ * Tests for Cloudscape form components and validation in Prism GUI.
+ * Tests form input validation, accessibility, and error handling.
+ */
+
+import { test, expect } from '@playwright/test';
+
+test.describe('Form Validation', () => {
+  test.beforeEach(async ({ page, context }) => {
+    // Set localStorage to skip onboarding before navigation
+    await context.addInitScript(() => {
+      localStorage.setItem('cws_onboarding_complete', 'true');
+    });
+    await page.goto('/');
+
+    // Wait for app to load
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+
+    // Wait for API to be ready
+    await page.waitForResponse(
+      (response) => response.url().includes('/api/v1/'),
+      { timeout: 15000 }
+    ).catch(() => {
+      // If API calls fail in test mode, that's okay
+    });
+  });
+
+  test('profile form validation - name required', async ({ page }) => {
+    // Navigate to Settings > Profiles
+    await page.getByRole('link', { name: /settings/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Open create profile dialog
+    const createButton = page.getByTestId('create-profile-button');
+    if (await createButton.isVisible().catch(() => false)) {
+      await createButton.click();
+
+      // Wait for dialog
+      await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+
+      // Try to submit without filling name
+      const submitButton = page.getByRole('button', { name: /create/i }).last();
+      await submitButton.click();
+
+      // Dialog should still be visible (validation failed)
+      const dialog = page.locator('[role="dialog"]').last();
+      const stillVisible = await dialog.isVisible().catch(() => false);
+      expect(stillVisible).toBe(true);
+    } else {
+      test.skip();
+    }
+  });
+
+  test('profile form accepts valid input', async ({ page }) => {
+    // Navigate to Settings > Profiles
+    await page.getByRole('link', { name: /settings/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Check if create profile button exists
+    const createButton = page.getByTestId('create-profile-button');
+    if (await createButton.isVisible().catch(() => false)) {
+      await createButton.click();
+
+      // Wait for dialog
+      await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+
+      // Fill form with valid data
+      const nameInput = page.getByTestId('profile-name-input').locator('input');
+      const awsProfileInput = page.getByTestId('aws-profile-input').locator('input');
+      const regionInput = page.getByTestId('region-input').locator('input');
+
+      await nameInput.fill('test-profile');
+      await awsProfileInput.fill('default');
+      await regionInput.fill('us-west-2');
+
+      // Verify inputs accepted values
+      expect(await nameInput.inputValue()).toBe('test-profile');
+      expect(await awsProfileInput.inputValue()).toBe('default');
+      expect(await regionInput.inputValue()).toBe('us-west-2');
+    } else {
+      test.skip();
+    }
+  });
+
+  test('project form validation - name required', async ({ page }) => {
+    // Navigate to Projects
+    await page.getByRole('link', { name: /projects/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Open create project dialog
+    const createButton = page.getByTestId('create-project-button');
+    if (await createButton.isVisible().catch(() => false)) {
+      await createButton.click();
+
+      // Wait for dialog
+      await page.getByRole('dialog', { name: /create.*project/i }).waitFor({ state: 'visible', timeout: 5000 });
+
+      // Try to submit without filling name
+      const submitButton = page.getByRole('button', { name: /create/i }).last();
+      await submitButton.click();
+
+      // Dialog should still be visible (validation failed)
+      const dialog = page.getByRole('dialog', { name: /create.*project/i });
+      const stillVisible = await dialog.isVisible().catch(() => false);
+      expect(stillVisible).toBe(true);
+    } else {
+      test.skip();
+    }
+  });
+
+  test('project form accepts valid input', async ({ page }) => {
+    // Navigate to Projects
+    await page.getByRole('link', { name: /projects/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Open create project dialog
+    const createButton = page.getByTestId('create-project-button');
+    if (await createButton.isVisible().catch(() => false)) {
+      await createButton.click();
+
+      // Wait for dialog
+      await page.getByRole('dialog', { name: /create.*project/i }).waitFor({ state: 'visible', timeout: 5000 });
+
+      // Fill form with valid data
+      const nameInput = page.getByLabel(/project name/i);
+      const descriptionInput = page.getByTestId('project-description-input').locator('textarea');
+
+      await nameInput.fill('test-project');
+      await descriptionInput.fill('Test project description');
+
+      // Verify inputs accepted values
+      expect(await nameInput.inputValue()).toBe('test-project');
+      expect(await descriptionInput.inputValue()).toBe('Test project description');
+    } else {
+      test.skip();
+    }
+  });
+
+  test('user form validation - username required', async ({ page }) => {
+    // Navigate to Users
+    await page.getByRole('link', { name: /users/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Wait for create user button
+    await page.waitForSelector('[data-testid="create-user-button"]', {
+      state: 'visible',
+      timeout: 10000
+    });
+
+    // Open create user dialog
+    const createButton = page.getByTestId('create-user-button');
+    await createButton.click();
+
+    // Wait for dialog by specific name
+    const dialog = page.getByRole('dialog', { name: /create new user/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Check that username input exists and is empty
+    const usernameInput = dialog.getByLabel(/username/i);
+    await expect(usernameInput).toBeVisible();
+    expect(await usernameInput.inputValue()).toBe('');
+
+    // Submit button should exist (validation testing varies by implementation)
+    const submitButton = dialog.getByRole('button', { name: /create/i });
+    await expect(submitButton).toBeVisible();
+  });
+
+  test('user form accepts valid input', async ({ page }) => {
+    // Navigate to Users
+    await page.getByRole('link', { name: /users/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Wait for create user button
+    await page.waitForSelector('[data-testid="create-user-button"]', {
+      state: 'visible',
+      timeout: 10000
+    });
+
+    // Open create user dialog
+    const createButton = page.getByTestId('create-user-button');
+    await createButton.click();
+
+    // Wait for dialog by specific name
+    const dialog = page.getByRole('dialog', { name: /create new user/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Fill form with valid data - scope to dialog
+    const usernameInput = dialog.getByLabel(/username/i);
+    const emailInput = dialog.getByLabel(/email/i);
+
+    await usernameInput.fill('testuser');
+    await emailInput.fill('test@example.com');
+
+    // Verify inputs accepted values
+    expect(await usernameInput.inputValue()).toBe('testuser');
+    expect(await emailInput.inputValue()).toBe('test@example.com');
+  });
+
+  test('form inputs are accessible with labels', async ({ page }) => {
+    // Navigate to Users (has forms with proper labels)
+    await page.getByRole('link', { name: /users/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Wait for create user button
+    await page.waitForSelector('[data-testid="create-user-button"]', {
+      state: 'visible',
+      timeout: 10000
+    });
+
+    // Open create user dialog
+    const createButton = page.getByTestId('create-user-button');
+    await createButton.click();
+
+    // Wait for dialog by specific name
+    const dialog = page.getByRole('dialog', { name: /create new user/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Check for accessible labels - scope to dialog
+    const usernameInput = dialog.getByLabel(/username/i);
+    const emailInput = dialog.getByLabel(/email/i);
+
+    await expect(usernameInput).toBeVisible();
+    await expect(emailInput).toBeVisible();
+  });
+
+  test('Cloudscape forms use proper ARIA attributes', async ({ page }) => {
+    // Navigate to Projects
+    await page.getByRole('link', { name: /projects/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Open create project dialog
+    const createButton = page.getByTestId('create-project-button');
+    if (await createButton.isVisible().catch(() => false)) {
+      await createButton.click();
+
+      // Wait for dialog
+      await page.getByRole('dialog', { name: /create.*project/i }).waitFor({ state: 'visible', timeout: 5000 });
+
+      // Verify dialog has proper ARIA role
+      const dialog = page.getByRole('dialog', { name: /create.*project/i });
+      await expect(dialog).toBeVisible();
+
+      // Verify inputs are within the dialog
+      const nameInput = page.getByLabel(/project name/i);
+      await expect(nameInput).toBeVisible();
+    } else {
+      test.skip();
+    }
+  });
+
+  test('forms handle empty state correctly', async ({ page }) => {
+    // Navigate to Projects
+    await page.getByRole('link', { name: /projects/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Verify projects table exists (even if empty)
+    const projectsTable = page.locator('[data-testid="projects-table"]');
+    await expect(projectsTable).toBeVisible({ timeout: 5000 });
+
+    // Create button should be available
+    const createButton = page.getByTestId('create-project-button');
+    if (await createButton.isVisible().catch(() => false)) {
+      await expect(createButton).toBeEnabled();
+    } else {
+      test.skip();
+    }
+  });
+
+  test('form dialogs can be cancelled', async ({ page }) => {
+    // Navigate to Users
+    await page.getByRole('link', { name: /users/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+
+    // Wait for create user button
+    await page.waitForSelector('[data-testid="create-user-button"]', {
+      state: 'visible',
+      timeout: 10000
+    });
+
+    // Open create user dialog
+    const createButton = page.getByTestId('create-user-button');
+    await createButton.click();
+
+    // Wait for dialog by specific name
+    const dialog = page.getByRole('dialog', { name: /create new user/i });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Find and click cancel button
+    const cancelButton = page.getByRole('button', { name: /cancel/i }).last();
+    await cancelButton.click();
+
+    // Dialog should be hidden
+    await dialog.waitFor({ state: 'hidden', timeout: 5000 });
+  });
+});

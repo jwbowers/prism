@@ -12,7 +12,6 @@ export class InstancesPage extends BasePage {
   constructor(page: Page) {
     super(page);
   }
-
   /**
    * Navigate to Instances tab (labeled "My Workspaces" in UI)
    */
@@ -155,6 +154,10 @@ export class InstancesPage extends BasePage {
   async openLaunchDialog() {
     const launchButton = this.page.getByRole('button', { name: /launch.*workspace/i });
     await launchButton.click();
+
+    // Give Cloudscape a moment to start the dialog animation
+    // The dialog exists immediately but needs time to remove awsui_hidden class
+    await this.page.waitForTimeout(500);
   }
 
   /**
