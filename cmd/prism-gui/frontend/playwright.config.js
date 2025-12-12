@@ -66,16 +66,6 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-    },
-
-    // LocalStack testing project
-    {
-      name: 'chromium-localstack',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
-      testMatch: /.*\.spec\.ts/,
-      grep: /@localstack/, // Only run tests tagged with @localstack
     }
   ],
 
