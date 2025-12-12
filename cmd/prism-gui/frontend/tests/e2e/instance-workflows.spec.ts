@@ -31,11 +31,7 @@ test.describe('Instance Management Workflows', () => {
   });
 
   test.describe('Instance Launch Workflows', () => {
-    // SKIP: LocalStack environment-specific navigation issue
-    // See: /tmp/LOCALSTACK_INVESTIGATION_UPDATE.md for details
-    // The app uses state-based navigation which doesn't work reliably in LocalStack
-    // Same tests pass in regular chromium project
-    test.skip('should launch instance with basic configuration @localstack', async () => {
+    test('should launch instance with basic configuration', async () => {
       // Step 1: Navigate to Instances tab
       await instancesPage.navigate();
 
@@ -85,8 +81,7 @@ test.describe('Instance Management Workflows', () => {
       expect(successMessage).toBe(true);
     });
 
-    // SKIP: LocalStack environment-specific navigation issue (see above)
-    test.skip('should validate instance name is required @localstack', async () => {
+    test('should validate instance name is required', async () => {
       await instancesPage.navigate();
       await instancesPage.openLaunchDialog();
       await launchDialog.waitForDialog();
@@ -100,8 +95,7 @@ test.describe('Instance Management Workflows', () => {
       expect(validationError).toMatch(/name.*required/i);
     });
 
-    // SKIP: LocalStack environment-specific navigation issue (see above)
-    test.skip('should validate template is selected @localstack', async () => {
+    test('should validate template is selected', async () => {
       await instancesPage.navigate();
       await instancesPage.openLaunchDialog();
       await launchDialog.waitForDialog();
