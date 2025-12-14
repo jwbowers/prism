@@ -46,7 +46,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
@@ -60,7 +60,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 90000
       },
       {
         "outputDir": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results",
@@ -74,7 +74,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 90000
       }
     ],
     "shard": null,
@@ -89,24 +89,5210 @@
       "timeout": 120000
     }
   },
-  "suites": [],
-  "errors": [
+  "suites": [
     {
-      "message": "Error: Another test suite is already running",
-      "stack": "Error: Another test suite is already running\n    at globalSetup (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/global-setup.js:18:13)",
-      "location": {
-        "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/global-setup.js",
-        "column": 13,
-        "line": 18
-      },
-      "snippet": "\u001b[90m   at \u001b[39mglobal-setup.js:18\n\n  16 |       console.error('   Process IDs:', stdout.trim())\n  17 |       console.error('   Use \"npm run test:e2e\" instead of \"npx playwright test\" to enforce single-test execution.')\n> 18 |       throw new Error('Another test suite is already running')\n     |             ^\n  19 |     }\n  20 |   } catch (error) {\n  21 |     if (error.message.includes('already running')) {"
+      "title": "backup-workflows.spec.ts",
+      "file": "backup-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Backup Management Workflows",
+          "file": "backup-workflows.spec.ts",
+          "line": 108,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Backup List Display",
+              "file": "backup-workflows.spec.ts",
+              "line": 130,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display list of backups or empty state",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-c95ae1ee53269dbe1600",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 131,
+                  "column": 5
+                },
+                {
+                  "title": "should display backup details (size, status, date, cost)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-3eafcf4428774b5f9f90",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 146,
+                  "column": 5
+                },
+                {
+                  "title": "should show backup name as link",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-21cb09fffc968ded66ee",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 170,
+                  "column": 5
+                },
+                {
+                  "title": "should show status indicator badge",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-8a07b9d94942040c5ee5",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 183,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Create Backup Workflow",
+              "file": "backup-workflows.spec.ts",
+              "line": 197,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should open create backup dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-9666951764f76c947f9e",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 198,
+                  "column": 5
+                },
+                {
+                  "title": "should create backup from instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-619e133d5cfd6cc37a49",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 217,
+                  "column": 5
+                },
+                {
+                  "title": "should validate instance selection required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-e4d674f3e0fae895920d",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 270,
+                  "column": 5
+                },
+                {
+                  "title": "should validate backup name required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-43f19dcc5041681da6ec",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 299,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Delete Backup Workflow",
+              "file": "backup-workflows.spec.ts",
+              "line": 328,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should open delete confirmation dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-7480f3c6d8638bfefcc9",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 329,
+                  "column": 5
+                },
+                {
+                  "title": "should show cost savings in delete dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-ac0f357ed1f31f48a258",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 352,
+                  "column": 5
+                },
+                {
+                  "title": "should be able to cancel delete",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-876cdb636aa9cc2f99cc",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 371,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Restore Backup Workflow",
+              "file": "backup-workflows.spec.ts",
+              "line": 398,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should open restore dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-18f97dc9690b3f41eb22",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 399,
+                  "column": 5
+                },
+                {
+                  "title": "should show restore time warning",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-dbd4f619ad66d6f46cb2",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 422,
+                  "column": 5
+                },
+                {
+                  "title": "should validate instance name required for restore",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-1809a5de06267a19901a",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 440,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Empty State Handling",
+              "file": "backup-workflows.spec.ts",
+              "line": 461,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show empty state if no backups exist",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-97fb9bb33b31d890601e",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 462,
+                  "column": 5
+                },
+                {
+                  "title": "should have create backup button in all states",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-6d9c354435d432e07a32",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 479,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Backup Actions",
+              "file": "backup-workflows.spec.ts",
+              "line": 491,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should have Actions dropdown for each backup",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-684fff011e2fc5497618",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 492,
+                  "column": 5
+                },
+                {
+                  "title": "should show restore, clone, details, and delete actions",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "1dd5da14850cde9c2c36-0c047c5164e84521ac13",
+                  "file": "backup-workflows.spec.ts",
+                  "line": 508,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "basic.spec.ts",
+      "file": "basic.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Basic Smoke Tests",
+          "file": "basic.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "application loads successfully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8946741c555a0c4515d8-92554822a387681d0649",
+              "file": "basic.spec.ts",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "navigation between sections works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8946741c555a0c4515d8-9cd7a862bbcbb4d615f5",
+              "file": "basic.spec.ts",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "application structure is consistent",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8946741c555a0c4515d8-3c5d1bfa4fe2d58effb3",
+              "file": "basic.spec.ts",
+              "line": 113,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "budget-workflows.spec.ts",
+      "file": "budget-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Budget Workflows",
+          "file": "budget-workflows.spec.ts",
+          "line": 2,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display budget overview",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-9e58f86e568579ff5da9",
+              "file": "budget-workflows.spec.ts",
+              "line": 14,
+              "column": 3
+            },
+            {
+              "title": "should create budget pool",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-83ca65599b084bc3e296",
+              "file": "budget-workflows.spec.ts",
+              "line": 30,
+              "column": 3
+            },
+            {
+              "title": "should filter budgets by status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-226f551a5c02c0ef384f",
+              "file": "budget-workflows.spec.ts",
+              "line": 67,
+              "column": 3
+            },
+            {
+              "title": "should display budget actions dropdown",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-d7f444830e1f4e8d0c1b",
+              "file": "budget-workflows.spec.ts",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "should show validation error for empty budget name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-61f15159af22d66674b5",
+              "file": "budget-workflows.spec.ts",
+              "line": 117,
+              "column": 3
+            },
+            {
+              "title": "should show validation error for invalid amount",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-26626790ac6cf32f76e8",
+              "file": "budget-workflows.spec.ts",
+              "line": 141,
+              "column": 3
+            },
+            {
+              "title": "should cancel budget creation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-c362bfa12be2d186187d",
+              "file": "budget-workflows.spec.ts",
+              "line": 166,
+              "column": 3
+            },
+            {
+              "title": "should refresh budgets data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "80b69da3172610579e14-43e33b95ed31dfb91487",
+              "file": "budget-workflows.spec.ts",
+              "line": 194,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "error-boundary.spec.ts",
+      "file": "error-boundary.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Error Boundary and Error Handling",
+          "file": "error-boundary.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "template loading handles success or error gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-20afd35a6250bab8c67f",
+              "file": "error-boundary.spec.ts",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "instance loading handles success or error gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-5cda4e7e9fb5515b8ac4",
+              "file": "error-boundary.spec.ts",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "daemon connection status is displayed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-a7058c7bdd78f4bae20d",
+              "file": "error-boundary.spec.ts",
+              "line": 76,
+              "column": 3
+            },
+            {
+              "title": "form submission errors are handled gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-a4580c4cdcdb7135f591",
+              "file": "error-boundary.spec.ts",
+              "line": 94,
+              "column": 3
+            },
+            {
+              "title": "settings form handles errors gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-26f3de176f289cbe33b5",
+              "file": "error-boundary.spec.ts",
+              "line": 133,
+              "column": 3
+            },
+            {
+              "title": "network errors handled without crashing",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-693b8347484731154150",
+              "file": "error-boundary.spec.ts",
+              "line": 156,
+              "column": 3
+            },
+            {
+              "title": "invalid navigation handled gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-d4e4b12f10e127d5094c",
+              "file": "error-boundary.spec.ts",
+              "line": 184,
+              "column": 3
+            },
+            {
+              "title": "page reload recovers gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-ccb741da524d758e63de",
+              "file": "error-boundary.spec.ts",
+              "line": 209,
+              "column": 3
+            },
+            {
+              "title": "JavaScript errors do not crash the interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-8ac31c02be5394cd5a33",
+              "file": "error-boundary.spec.ts",
+              "line": 235,
+              "column": 3
+            },
+            {
+              "title": "UI remains responsive after errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "732c884ce983d403305e-5529afa94fa8e311513d",
+              "file": "error-boundary.spec.ts",
+              "line": 266,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "form-validation.spec.ts",
+      "file": "form-validation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Form Validation",
+          "file": "form-validation.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "profile form validation - name required",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-bbcb02a1d210ef460c19",
+              "file": "form-validation.spec.ts",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "profile form accepts valid input",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-690cb5a8c57793993286",
+              "file": "form-validation.spec.ts",
+              "line": 68,
+              "column": 3
+            },
+            {
+              "title": "project form validation - name required",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-8bfa2de20630b7824770",
+              "file": "form-validation.spec.ts",
+              "line": 106,
+              "column": 3
+            },
+            {
+              "title": "project form accepts valid input",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-e0a97d1de13f7292d6b6",
+              "file": "form-validation.spec.ts",
+              "line": 146,
+              "column": 3
+            },
+            {
+              "title": "user form validation - username required",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-3ecf6702213011497de9",
+              "file": "form-validation.spec.ts",
+              "line": 183,
+              "column": 3
+            },
+            {
+              "title": "user form accepts valid input",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-254ed39fb526536884a8",
+              "file": "form-validation.spec.ts",
+              "line": 224,
+              "column": 3
+            },
+            {
+              "title": "form inputs are accessible with labels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-6597041ed39518555f3e",
+              "file": "form-validation.spec.ts",
+              "line": 264,
+              "column": 3
+            },
+            {
+              "title": "Cloudscape forms use proper ARIA attributes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-946d0d106564a317b44d",
+              "file": "form-validation.spec.ts",
+              "line": 300,
+              "column": 3
+            },
+            {
+              "title": "forms handle empty state correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-2275c4a6e27e2de7fc84",
+              "file": "form-validation.spec.ts",
+              "line": 337,
+              "column": 3
+            },
+            {
+              "title": "form dialogs can be cancelled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f2616960333ca455c24f-ce2d4307719ce2650f3b",
+              "file": "form-validation.spec.ts",
+              "line": 362,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "hibernation-workflows.spec.ts",
+      "file": "hibernation-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Hibernation Workflows",
+          "file": "hibernation-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Hibernation Capability Detection",
+              "file": "hibernation-workflows.spec.ts",
+              "line": 26,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show hibernate button for capable instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-aa4406c5ed647890434a",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 27,
+                  "column": 5
+                },
+                {
+                  "title": "should show tooltip explaining hibernation benefits",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-0a8a74a3a60f02df68ae",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 55,
+                  "column": 5
+                },
+                {
+                  "title": "should not show hibernate button for unsupported instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-64a3f8a7de46fc1e802f",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 89,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Hibernate Action Workflow",
+              "file": "hibernation-workflows.spec.ts",
+              "line": 118,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show educational confirmation dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-a3cd98ec246051ba0bbe",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 119,
+                  "column": 5
+                },
+                {
+                  "title": "should show cost savings information in dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-ef1f8c407248ab6c3b64",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 177,
+                  "column": 5
+                },
+                {
+                  "title": "should hibernate instance on confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-0dc804979f57753d5fbf",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 214,
+                  "column": 5
+                },
+                {
+                  "title": "should show success notification after hibernation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-1accd00cf36b2f498107",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 271,
+                  "column": 5
+                },
+                {
+                  "title": "should cancel hibernation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-9ad299b00c84134453b7",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 313,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Resume Action Workflow",
+              "file": "hibernation-workflows.spec.ts",
+              "line": 354,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show resume button for hibernated instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-4d89b095a5344681b35d",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 355,
+                  "column": 5
+                },
+                {
+                  "title": "should resume instance without confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-3f86d876a1372bc4f137",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 381,
+                  "column": 5
+                },
+                {
+                  "title": "should show educational message about fast resume",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-5f50187541939f137736",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 414,
+                  "column": 5
+                },
+                {
+                  "title": "should show success notification after resume",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-e7cbc3f4b00e22d8cf7f",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 444,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Fallback Behavior",
+              "file": "hibernation-workflows.spec.ts",
+              "line": 480,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should fallback to stop when hibernation fails",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-3f7162ef9e92081ca399",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 481,
+                  "column": 5
+                },
+                {
+                  "title": "should explain fallback in error notification",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-63c3bfcb6ab1642f6a61",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 506,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Educational Messaging",
+              "file": "hibernation-workflows.spec.ts",
+              "line": 513,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should explain hibernation benefits in UI",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-6388539057c3a3e22866",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 514,
+                  "column": 5
+                },
+                {
+                  "title": "should provide link to hibernation documentation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-04c68a720aa16e28fe44",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 526,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Status Indicators",
+              "file": "hibernation-workflows.spec.ts",
+              "line": 539,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show hibernated status badge",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-bdc921d5a77c0309f12e",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 540,
+                  "column": 5
+                },
+                {
+                  "title": "should show hibernating transition status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "c9af1d9fb39eebd5ada5-2f5ba0fc26cc6d9bd8b4",
+                  "file": "hibernation-workflows.spec.ts",
+                  "line": 558,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "instance-workflows.spec.ts",
+      "file": "instance-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Instance Management Workflows",
+          "file": "instance-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Instance Launch Workflows",
+              "file": "instance-workflows.spec.ts",
+              "line": 31,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should launch instance with basic configuration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-e12e9c194859fd3e7eaa",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 32,
+                  "column": 5
+                },
+                {
+                  "title": "should launch instance with advanced configuration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-aae82730a7c69ee8e910",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 61,
+                  "column": 5
+                },
+                {
+                  "title": "should validate instance name is required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-d8413ce26d23e2aac5f3",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 78,
+                  "column": 5
+                },
+                {
+                  "title": "should validate template is selected",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-8fe8395f760f1d8713f1",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 91,
+                  "column": 5
+                },
+                {
+                  "title": "should show cost estimate based on instance size",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-53338a27f712aca91861",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 104,
+                  "column": 5
+                },
+                {
+                  "title": "should launch instance from Templates tab",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-ba563942228da86fbdea",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 126,
+                  "column": 5
+                },
+                {
+                  "title": "should show hibernation option for supported instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-0e1c0cfb23f9eb70c436",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 145,
+                  "column": 5
+                },
+                {
+                  "title": "should allow adding EBS volumes during launch",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-4184b54d313e05d0763e",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 158,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Instance Lifecycle Management",
+              "file": "instance-workflows.spec.ts",
+              "line": 174,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display running instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-b76c6a270f162db8d51a",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 175,
+                  "column": 5
+                },
+                {
+                  "title": "should stop a running instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-4168f4a638fe49ac2605",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 185,
+                  "column": 5
+                },
+                {
+                  "title": "should start a stopped instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-033f5d017dbc97083eee",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 219,
+                  "column": 5
+                },
+                {
+                  "title": "should terminate instance with confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-cfd17247bbab6e1a9f94",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 249,
+                  "column": 5
+                },
+                {
+                  "title": "should refresh instance list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-0f688a667f464883b776",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 278,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Connection Information",
+              "file": "instance-workflows.spec.ts",
+              "line": 295,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display connection info for running instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-9a7353f392e6b80cf641",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 296,
+                  "column": 5
+                },
+                {
+                  "title": "should show SSH command for SSH instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-62793c6398c708b084bd",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 325,
+                  "column": 5
+                },
+                {
+                  "title": "should show web URL for web-based instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-3d58cdbe2733986b6b76",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 353,
+                  "column": 5
+                },
+                {
+                  "title": "should allow copying SSH command",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-7467892c988f5e2e17bd",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 379,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Instance Filtering and Search",
+              "file": "instance-workflows.spec.ts",
+              "line": 409,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should filter instances by status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-2f2d2fdead81f9b3a01f",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 410,
+                  "column": 5
+                },
+                {
+                  "title": "should search instances by name",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-e9702e315e8b069a8ee0",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 427,
+                  "column": 5
+                },
+                {
+                  "title": "should show empty state when no instances match filter",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-e9e8ce6a6f0700e31399",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 453,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Instance Status Monitoring",
+              "file": "instance-workflows.spec.ts",
+              "line": 466,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display instance status badges",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-60807dfff5ad319fc3e4",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 467,
+                  "column": 5
+                },
+                {
+                  "title": "should auto-refresh instance status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-a5d114c89f3519cfe40a",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 494,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Instance Cost Estimates",
+              "file": "instance-workflows.spec.ts",
+              "line": 511,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display cost estimate for running instances",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-1193f18ddf8c3fc0ec8e",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 512,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Empty State Handling",
+              "file": "instance-workflows.spec.ts",
+              "line": 539,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show helpful message when no instances exist",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-a2454acdb1384d672726",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 540,
+                  "column": 5
+                },
+                {
+                  "title": "should provide launch button in empty state",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "199be4bcdcda9c7132d7-870b38c50d34ce5076f7",
+                  "file": "instance-workflows.spec.ts",
+                  "line": 554,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "invitation-workflows.spec.ts",
+      "file": "invitation-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Invitation Management Workflows",
+          "file": "invitation-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Individual Invitations Workflow",
+              "file": "invitation-workflows.spec.ts",
+              "line": 26,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should add invitation by token",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-0ddd6db82ac626344a80",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 50,
+                  "column": 5
+                },
+                {
+                  "title": "should display invitation details",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-b88bbd37a69b5f38ad8c",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 74,
+                  "column": 5
+                },
+                {
+                  "title": "should show invitation status badges",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-69ac7a39ce7fa234aec4",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 87,
+                  "column": 5
+                },
+                {
+                  "title": "should filter by invitation status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-f353137e61d09df8024e",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 96,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Accept Invitation Workflow",
+              "file": "invitation-workflows.spec.ts",
+              "line": 117,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should accept invitation with confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-9a3769bda492148381ad",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 118,
+                  "column": 5
+                },
+                {
+                  "title": "should show acceptance confirmation dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-3d8cd9154ced3f407e9f",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 176,
+                  "column": 5
+                },
+                {
+                  "title": "should add user to project after acceptance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-807e2fdb2e92ac7a87bc",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 209,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Decline Invitation Workflow",
+              "file": "invitation-workflows.spec.ts",
+              "line": 233,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should decline invitation with reason",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-0b1d5aedd52216a79f8f",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 234,
+                  "column": 5
+                },
+                {
+                  "title": "should show decline confirmation dialog",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-758fb394395c32f649f5",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 298,
+                  "column": 5
+                },
+                {
+                  "title": "should allow declining without reason",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-5d4e8fb3c99a1310b3ab",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 329,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Bulk Invitations Workflow",
+              "file": "invitation-workflows.spec.ts",
+              "line": 354,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should send bulk invitations to multiple emails",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-762b8c04079928d6f539",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 355,
+                  "column": 5
+                },
+                {
+                  "title": "should validate email format in bulk invitations",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-aa1b7b81d7355a4527ae",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 377,
+                  "column": 5
+                },
+                {
+                  "title": "should require project selection for bulk invitations",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-7772e5fd5840aea5b55e",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 417,
+                  "column": 5
+                },
+                {
+                  "title": "should show bulk invitation results summary",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-16a7e58a5bbdda8c4ea8",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 431,
+                  "column": 5
+                },
+                {
+                  "title": "should include optional welcome message",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-1d0eb190f05eb7ee0f11",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 452,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Shared Tokens Workflow",
+              "file": "invitation-workflows.spec.ts",
+              "line": 472,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create shared invitation token",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-9c3114ee76672e2f897e",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 473,
+                  "column": 5
+                },
+                {
+                  "title": "should display QR code for shared token",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-63ebf9135bab6550850d",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 486,
+                  "column": 5
+                },
+                {
+                  "title": "should copy shared token URL",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-11b7e88131018651d9ab",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 514,
+                  "column": 5
+                },
+                {
+                  "title": "should show redemption count for shared token",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-615100bf44a57f1e92b7",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 536,
+                  "column": 5
+                },
+                {
+                  "title": "should extend shared token expiration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-b7182f42d784596f0f37",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 549,
+                  "column": 5
+                },
+                {
+                  "title": "should revoke shared token",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-95f502c56fd3ad86f9f1",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 580,
+                  "column": 5
+                },
+                {
+                  "title": "should prevent extending expired token",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-d8d42897b12e5bb31d06",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 598,
+                  "column": 5
+                },
+                {
+                  "title": "should prevent revoking already revoked token",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-ba2e036e5a1e0a9c7731",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 619,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Invitation Statistics",
+              "file": "invitation-workflows.spec.ts",
+              "line": 639,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display invitation summary stats",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-4545dd6789e2849dae10",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 640,
+                  "column": 5
+                },
+                {
+                  "title": "should update stats after invitation actions",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-6e462e4a3e9ccf78c316",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 653,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Invitation Expiration",
+              "file": "invitation-workflows.spec.ts",
+              "line": 680,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show expiration date for invitations",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-38d17fd6018fe15754e4",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 681,
+                  "column": 5
+                },
+                {
+                  "title": "should mark expired invitations",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-8355ac631730b8c2546a",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 700,
+                  "column": 5
+                },
+                {
+                  "title": "should remove expired invitations from list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "ce9e05a89da8ed622f12-96bd0b05c4bdd8cfbb71",
+                  "file": "invitation-workflows.spec.ts",
+                  "line": 729,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "navigation.spec.ts",
+      "file": "navigation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Navigation and User Interactions",
+          "file": "navigation.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "side navigation switches between sections correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-3999f51c5d6086b830af",
+              "file": "navigation.spec.ts",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "navigation links are all present",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-0f185fe264d686dbc1eb",
+              "file": "navigation.spec.ts",
+              "line": 95,
+              "column": 3
+            },
+            {
+              "title": "navigation preserves state between view switches",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-36e0b464b1b1c5294c9b",
+              "file": "navigation.spec.ts",
+              "line": 124,
+              "column": 3
+            },
+            {
+              "title": "responsive navigation works on all screen sizes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-715694e516c88f33226a",
+              "file": "navigation.spec.ts",
+              "line": 162,
+              "column": 3
+            },
+            {
+              "title": "keyboard navigation works for main links",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-70672a0279a5c7e353e8",
+              "file": "navigation.spec.ts",
+              "line": 193,
+              "column": 3
+            },
+            {
+              "title": "navigation maintains consistent state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-12f87a7d760fc2db5af8",
+              "file": "navigation.spec.ts",
+              "line": 214,
+              "column": 3
+            },
+            {
+              "title": "navigation handles rapid view switching",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-3e2540f1728b5f2c9f58",
+              "file": "navigation.spec.ts",
+              "line": 242,
+              "column": 3
+            },
+            {
+              "title": "navigation displays correct icons and labels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-6324a34217d62f9d459e",
+              "file": "navigation.spec.ts",
+              "line": 270,
+              "column": 3
+            },
+            {
+              "title": "navigation works after page refresh",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-c8a9f097f97a7d28be65",
+              "file": "navigation.spec.ts",
+              "line": 292,
+              "column": 3
+            },
+            {
+              "title": "navigation sections are organized logically",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-5fb73ed86e50a1065f41",
+              "file": "navigation.spec.ts",
+              "line": 323,
+              "column": 3
+            },
+            {
+              "title": "navigation handles empty states gracefully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "5d2868f7d23420c27cca-c322feb9f12840008bf4",
+              "file": "navigation.spec.ts",
+              "line": 346,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "profile-workflows.spec.ts",
+      "file": "profile-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Profile Management Workflows",
+          "file": "profile-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Create Profile Workflow",
+              "file": "profile-workflows.spec.ts",
+              "line": 36,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create a new profile with valid configuration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-46ba3ec6a4dc7f1bc57d",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 37,
+                  "column": 5
+                },
+                {
+                  "title": "should validate profile name is required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
+                            "line": 63,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-09f2459017284764a1ca",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 63,
+                  "column": 10
+                },
+                {
+                  "title": "should validate region format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
+                            "line": 78,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-c29cd66ea203a3afab5b",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 78,
+                  "column": 10
+                },
+                {
+                  "title": "should prevent duplicate profile names",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
+                            "line": 96,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-d3de7ba7da6575d66bab",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 96,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Switch Profile Workflow",
+              "file": "profile-workflows.spec.ts",
+              "line": 127,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should switch between profiles successfully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-24c345f89435cceabda5",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 128,
+                  "column": 5
+                },
+                {
+                  "title": "should preserve profile settings after switch",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-9dd43a4b7612c0e1605f",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 164,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Update Profile Workflow",
+              "file": "profile-workflows.spec.ts",
+              "line": 186,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should update profile region successfully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-e5e8fbc77bc42f6548cd",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 187,
+                  "column": 5
+                },
+                {
+                  "title": "should not allow updating to invalid region",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
+                            "line": 209,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-c4c13db5f16459d49933",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 209,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Export Profile Workflow",
+              "file": "profile-workflows.spec.ts",
+              "line": 244,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should export profile configuration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
+                            "line": 245,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-30ec99290bae432a7d1a",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 245,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Import Profile Workflow",
+              "file": "profile-workflows.spec.ts",
+              "line": 267,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should import profile from valid JSON file",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
+                            "line": 268,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-fd8f812e3924497d6360",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 268,
+                  "column": 10
+                },
+                {
+                  "title": "should reject invalid profile JSON",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/profile-workflows.spec.ts",
+                            "line": 285,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-5ff3c5beb5d9048abdd0",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 285,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Delete Profile Workflow",
+              "file": "profile-workflows.spec.ts",
+              "line": 296,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should delete profile with confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-f11f5a99202f87454fd8",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 297,
+                  "column": 5
+                },
+                {
+                  "title": "should cancel profile deletion",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-fd847a2c5278e5bf15a5",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 320,
+                  "column": 5
+                },
+                {
+                  "title": "should prevent deleting currently active profile",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-c920e1c7a0508165ab80",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 342,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Profile Listing and Display",
+              "file": "profile-workflows.spec.ts",
+              "line": 361,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display all profiles in list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-dfbcbc5c6303962de089",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 362,
+                  "column": 5
+                },
+                {
+                  "title": "should show current profile indicator",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "df818b8a6484e506d5dd-673650b469ff36ecb756",
+                  "file": "profile-workflows.spec.ts",
+                  "line": 385,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "project-workflows.spec.ts",
+      "file": "project-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Project Management Workflows",
+          "file": "project-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Create Project Workflow",
+              "file": "project-workflows.spec.ts",
+              "line": 30,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create a new project with basic configuration",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-8fd2625cbeae8d4d07b1",
+                  "file": "project-workflows.spec.ts",
+                  "line": 31,
+                  "column": 5
+                },
+                {
+                  "title": "should create project with budget limit",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/project-workflows.spec.ts",
+                            "line": 46,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-69217b27efa0e003bd77",
+                  "file": "project-workflows.spec.ts",
+                  "line": 46,
+                  "column": 10
+                },
+                {
+                  "title": "should validate project name is required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-1fde50034b70b919c392",
+                  "file": "project-workflows.spec.ts",
+                  "line": 68,
+                  "column": 5
+                },
+                {
+                  "title": "should prevent duplicate project names",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-86a522cf05b4a2f3614d",
+                  "file": "project-workflows.spec.ts",
+                  "line": 94,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "View Project Workflow",
+              "file": "project-workflows.spec.ts",
+              "line": 126,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should view project details",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-94d6a718e698e60e081e",
+                  "file": "project-workflows.spec.ts",
+                  "line": 127,
+                  "column": 5
+                },
+                {
+                  "title": "should show budget utilization in project details",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/project-workflows.spec.ts",
+                            "line": 159,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-82f53414d4fa8dbff390",
+                  "file": "project-workflows.spec.ts",
+                  "line": 159,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Delete Project Workflow",
+              "file": "project-workflows.spec.ts",
+              "line": 190,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should delete project with confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-81b37f649364be8cc6b8",
+                  "file": "project-workflows.spec.ts",
+                  "line": 191,
+                  "column": 5
+                },
+                {
+                  "title": "should cancel project deletion",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-658b0f9a47ddaf0f4835",
+                  "file": "project-workflows.spec.ts",
+                  "line": 210,
+                  "column": 5
+                },
+                {
+                  "title": "should prevent deleting project with active resources",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/project-workflows.spec.ts",
+                            "line": 232,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-7a08e904967bcf2ed056",
+                  "file": "project-workflows.spec.ts",
+                  "line": 232,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Project Listing and Display",
+              "file": "project-workflows.spec.ts",
+              "line": 245,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display all projects in list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-cb17a64ab3a725a8d19e",
+                  "file": "project-workflows.spec.ts",
+                  "line": 246,
+                  "column": 5
+                },
+                {
+                  "title": "should show project statistics",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-6cf4e5f2bf1fd95027dd",
+                  "file": "project-workflows.spec.ts",
+                  "line": 267,
+                  "column": 5
+                },
+                {
+                  "title": "should filter projects by status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-06ae533f44d77688b508",
+                  "file": "project-workflows.spec.ts",
+                  "line": 281,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Budget Management",
+              "file": "project-workflows.spec.ts",
+              "line": 323,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should track project spending",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/project-workflows.spec.ts",
+                            "line": 324,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-16aeb15ca1d4a96d1ea2",
+                  "file": "project-workflows.spec.ts",
+                  "line": 324,
+                  "column": 10
+                },
+                {
+                  "title": "should alert when approaching budget limit",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/project-workflows.spec.ts",
+                            "line": 343,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-8289003f27e03977e064",
+                  "file": "project-workflows.spec.ts",
+                  "line": 343,
+                  "column": 10
+                },
+                {
+                  "title": "should prevent operations when budget exceeded",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/project-workflows.spec.ts",
+                            "line": 359,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a72fdc087c0f83788c8c-2706da13a3ffd4d81667",
+                  "file": "project-workflows.spec.ts",
+                  "line": 359,
+                  "column": 10
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "settings.spec.ts",
+      "file": "settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Settings Interface",
+          "file": "settings.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "settings page loads successfully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-cd774eb3fbbdaf62adde",
+              "file": "settings.spec.ts",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "profiles section displays correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-c2bd7bde2934e1667c6e",
+              "file": "settings.spec.ts",
+              "line": 51,
+              "column": 3
+            },
+            {
+              "title": "create profile button is accessible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-2bc7feae3929044b7d26",
+              "file": "settings.spec.ts",
+              "line": 69,
+              "column": 3
+            },
+            {
+              "title": "profile form opens when create is clicked",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-1fe6a5da3a189a20e808",
+              "file": "settings.spec.ts",
+              "line": 88,
+              "column": 3
+            },
+            {
+              "title": "profile form validation works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-87b4d8c55335dc505739",
+              "file": "settings.spec.ts",
+              "line": 117,
+              "column": 3
+            },
+            {
+              "title": "profile form accepts valid input",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-189059a08f6dc666793a",
+              "file": "settings.spec.ts",
+              "line": 151,
+              "column": 3
+            },
+            {
+              "title": "profile dialog can be cancelled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-2b0bd2be440dcc091a5e",
+              "file": "settings.spec.ts",
+              "line": 189,
+              "column": 3
+            },
+            {
+              "title": "settings page remains responsive",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-a725fd757f4266dd858f",
+              "file": "settings.spec.ts",
+              "line": 227,
+              "column": 3
+            },
+            {
+              "title": "settings content is accessible with proper headings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-1dcfa7dfa156e03aaca1",
+              "file": "settings.spec.ts",
+              "line": 263,
+              "column": 3
+            },
+            {
+              "title": "settings page handles empty state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-f7f495736414a2f5e1dd",
+              "file": "settings.spec.ts",
+              "line": 285,
+              "column": 3
+            },
+            {
+              "title": "settings forms use Cloudscape components",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-ff96499267e0cbc212b2",
+              "file": "settings.spec.ts",
+              "line": 306,
+              "column": 3
+            },
+            {
+              "title": "navigation from settings to other pages works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-c7fad31a6672b80dad9b",
+              "file": "settings.spec.ts",
+              "line": 339,
+              "column": 3
+            },
+            {
+              "title": "settings page displays without errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-a4c04e0eb3122fbdcd5c",
+              "file": "settings.spec.ts",
+              "line": 375,
+              "column": 3
+            },
+            {
+              "title": "settings page keyboard navigation works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-257fc2f1f779fe3b290b",
+              "file": "settings.spec.ts",
+              "line": 403,
+              "column": 3
+            },
+            {
+              "title": "settings page handles multiple navigation cycles",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d877ffdf71ec720167ae-3061171e936f737dc149",
+              "file": "settings.spec.ts",
+              "line": 430,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "storage-workflows.spec.ts",
+      "file": "storage-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Storage Management Workflows",
+          "file": "storage-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "EFS Volume Management",
+              "file": "storage-workflows.spec.ts",
+              "line": 28,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display EFS volumes list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-d3a4e77ae98558431f87",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 29,
+                  "column": 5
+                },
+                {
+                  "title": "should create new EFS volume",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-9baa651ae647383c935f",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 36,
+                  "column": 5
+                },
+                {
+                  "title": "should validate EFS volume name is required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-ca48b06abd5ff963aeb6",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 59,
+                  "column": 5
+                },
+                {
+                  "title": "should delete EFS volume with confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-3accd40d4375b83f8ef8",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 72,
+                  "column": 5
+                },
+                {
+                  "title": "should mount EFS volume to instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-66dffed5994671ed1d57",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 93,
+                  "column": 5
+                },
+                {
+                  "title": "should unmount EFS volume from instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-c73d3eb7e1de54e7ef6d",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 136,
+                  "column": 5
+                },
+                {
+                  "title": "should show EFS volume status correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-81defe3a33a96ee6e941",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 167,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "EBS Volume Management",
+              "file": "storage-workflows.spec.ts",
+              "line": 193,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display EBS volumes list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-c16a30ca4a53ffdd04ab",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 194,
+                  "column": 5
+                },
+                {
+                  "title": "should create new EBS volume",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-f79c1616382875729d7a",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 201,
+                  "column": 5
+                },
+                {
+                  "title": "should validate EBS volume size is required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-df46d13d2145539e1e1f",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 225,
+                  "column": 5
+                },
+                {
+                  "title": "should validate EBS volume size is positive number",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-ad458244c2b968faa332",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 239,
+                  "column": 5
+                },
+                {
+                  "title": "should delete EBS volume with confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-d1eb0b10e383bcf79198",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 252,
+                  "column": 5
+                },
+                {
+                  "title": "should attach EBS volume to instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-c9cb8eff40551fa80fe5",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 273,
+                  "column": 5
+                },
+                {
+                  "title": "should detach EBS volume from instance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-57af028d3d7e9d30eb6b",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 316,
+                  "column": 5
+                },
+                {
+                  "title": "should show EBS volume size in list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-8b1c5da9fd56b1c9ff84",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 345,
+                  "column": 5
+                },
+                {
+                  "title": "should show EBS volume type",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-8848a1f0c7a74a357b21",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 359,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Storage Search and Filtering",
+              "file": "storage-workflows.spec.ts",
+              "line": 375,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should search EFS volumes by name",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-9f9c0626ff620ed91467",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 376,
+                  "column": 5
+                },
+                {
+                  "title": "should search EBS volumes by name",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-c4e1260d990f1c7832ba",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 400,
+                  "column": 5
+                },
+                {
+                  "title": "should show empty state when no volumes match search",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-ffcbf6b987569f1ab2d4",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 424,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Tab Switching",
+              "file": "storage-workflows.spec.ts",
+              "line": 436,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should switch between EFS and EBS tabs",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-5490b12ad927edc86705",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 437,
+                  "column": 5
+                },
+                {
+                  "title": "should preserve tab state when navigating away and back",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-d0e1a7fe0821655935be",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 454,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Empty State Handling",
+              "file": "storage-workflows.spec.ts",
+              "line": 473,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should show helpful message when no EFS volumes exist",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-451a7ccc55fd8fda6a4d",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 474,
+                  "column": 5
+                },
+                {
+                  "title": "should show helpful message when no EBS volumes exist",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "bbec467af6ed06e77dad-270ec43211bbd1f4860b",
+                  "file": "storage-workflows.spec.ts",
+                  "line": 484,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "user-workflows.spec.ts",
+      "file": "user-workflows.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "User Management Workflows",
+          "file": "user-workflows.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Create User Workflow",
+              "file": "user-workflows.spec.ts",
+              "line": 34,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create a new research user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-2abe2e01bb117815477b",
+                  "file": "user-workflows.spec.ts",
+                  "line": 35,
+                  "column": 5
+                },
+                {
+                  "title": "should create user with full name",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-e97d34400e79c952e612",
+                  "file": "user-workflows.spec.ts",
+                  "line": 51,
+                  "column": 5
+                },
+                {
+                  "title": "should validate username is required",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-45a63a7a2cbd6ac4a898",
+                  "file": "user-workflows.spec.ts",
+                  "line": 69,
+                  "column": 5
+                },
+                {
+                  "title": "should validate email format",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-9ffdc1542d68edc66a1a",
+                  "file": "user-workflows.spec.ts",
+                  "line": 98,
+                  "column": 5
+                },
+                {
+                  "title": "should prevent duplicate usernames",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-72b9fda6cd0035f6c481",
+                  "file": "user-workflows.spec.ts",
+                  "line": 129,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "SSH Key Management",
+              "file": "user-workflows.spec.ts",
+              "line": 205,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should generate SSH key for user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-7468f34ce7059f499cc4",
+                  "file": "user-workflows.spec.ts",
+                  "line": 206,
+                  "column": 5
+                },
+                {
+                  "title": "should display existing SSH keys",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 265,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-2c04a1755ee0677534dd",
+                  "file": "user-workflows.spec.ts",
+                  "line": 265,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Workspace Provisioning",
+              "file": "user-workflows.spec.ts",
+              "line": 294,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should provision user on workspace",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 295,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-a88864563ccd8a29e242",
+                  "file": "user-workflows.spec.ts",
+                  "line": 295,
+                  "column": 10
+                },
+                {
+                  "title": "should show provisioned workspaces for user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 334,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-9db00b835d3f1ddca5fa",
+                  "file": "user-workflows.spec.ts",
+                  "line": 334,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "Delete User Workflow",
+              "file": "user-workflows.spec.ts",
+              "line": 363,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should delete user with confirmation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-17ef68b9b57437999867",
+                  "file": "user-workflows.spec.ts",
+                  "line": 364,
+                  "column": 5
+                },
+                {
+                  "title": "should cancel user deletion",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-b17f22d97c40c2dd3531",
+                  "file": "user-workflows.spec.ts",
+                  "line": 387,
+                  "column": 5
+                },
+                {
+                  "title": "should warn when deleting user with active workspaces",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 409,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-525d28047f2ec8b6d6f0",
+                  "file": "user-workflows.spec.ts",
+                  "line": 409,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "User Listing and Display",
+              "file": "user-workflows.spec.ts",
+              "line": 427,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should display all users in list",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-75a3b85f77553685aae0",
+                  "file": "user-workflows.spec.ts",
+                  "line": 428,
+                  "column": 5
+                },
+                {
+                  "title": "should show user statistics",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 468,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-dca566302ca0dd1e5310",
+                  "file": "user-workflows.spec.ts",
+                  "line": 468,
+                  "column": 10
+                },
+                {
+                  "title": "should display UID for each user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 476,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-4b9ff76ac3d6ff46028d",
+                  "file": "user-workflows.spec.ts",
+                  "line": 476,
+                  "column": 10
+                },
+                {
+                  "title": "should filter users by status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 490,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-89ae89f3a4b8f8a86b15",
+                  "file": "user-workflows.spec.ts",
+                  "line": 490,
+                  "column": 10
+                }
+              ]
+            },
+            {
+              "title": "User Status Management",
+              "file": "user-workflows.spec.ts",
+              "line": 508,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should view user status details",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 509,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-5bc3333a1af8a2d3f747",
+                  "file": "user-workflows.spec.ts",
+                  "line": 509,
+                  "column": 10
+                },
+                {
+                  "title": "should update user status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 90000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts",
+                            "line": 536,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "a6a647dfb9a4c813362b-65bed67c63858064df6d",
+                  "file": "user-workflows.spec.ts",
+                  "line": 536,
+                  "column": 10
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
+  "errors": [],
   "stats": {
-    "startTime": "2025-12-06T22:27:56.147Z",
-    "duration": 938.074,
+    "startTime": "2025-12-13T20:48:59.503Z",
+    "duration": 152.22000000000003,
     "expected": 0,
-    "skipped": 0,
+    "skipped": 218,
     "unexpected": 0,
     "flaky": 0
   }

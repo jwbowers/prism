@@ -48,19 +48,26 @@ test.describe('Invitation Management Workflows', () => {
     });
 
     test('should add invitation by token', async () => {
-      // Individual Invitations UI now implemented
+      // Create test project and invitation to get a valid token
+      const testProjectName = `Add Token Test ${Date.now()}`;
+      const testProjectId = await projectsPage.createTestProject(testProjectName);
+      const testEmail = 'add-token-test@example.com';
+      const testToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'viewer');
+
+      // Navigate to Individual Invitations tab
+      await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
 
-      const testToken = 'test-invitation-token-12345';
-
-      // Add invitation - this should complete without error
-      // The token lookup API call should succeed (even if token is invalid)
+      // Add invitation by token - this should complete without error
       await projectsPage.addInvitationToken(testToken);
 
       // Verify the button is still present (UI didn't crash)
       const individualPanel = projectsPage.page.getByRole('tabpanel', { name: 'Individual' });
       const addButton = individualPanel.getByTestId('add-invitation-button');
       await expect(addButton).toBeVisible();
+
+      // Cleanup
+      await projectsPage.deleteTestProject(testProjectId);
     });
 
     test('should display invitation details', async () => {

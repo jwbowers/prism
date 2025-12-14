@@ -50,7 +50,7 @@ func TestResearchUserFunctionalWorkflows(t *testing.T) {
 		manager := NewResearchUserManager(profileMgr, "/tmp/test-research-config")
 
 		// Professor creates research user
-		professorUser, err := manager.CreateResearchUser("cs-department", "prof-johnson")
+		professorUser, err := manager.CreateResearchUser("cs-department", "prof-johnson", "Professor Johnson", "prof.johnson@university.edu")
 		require.NoError(t, err, "Should create professor research user")
 		require.NotNil(t, professorUser, "Professor user should exist")
 
@@ -66,7 +66,7 @@ func TestResearchUserFunctionalWorkflows(t *testing.T) {
 		t.Logf("📁 Home: %s", professorUser.HomeDirectory)
 
 		// Student joins the same project
-		studentUser, err := manager.CreateResearchUser("cs-department", "phd-student-kim")
+		studentUser, err := manager.CreateResearchUser("cs-department", "phd-student-kim", "Kim Student", "kim.student@university.edu")
 		require.NoError(t, err, "Should create student research user")
 
 		// Verify different UIDs for different users
@@ -84,7 +84,7 @@ func TestResearchUserFunctionalWorkflows(t *testing.T) {
 		manager2 := NewResearchUserManager(profileMgr, "/tmp/test-research-config")
 
 		// Create user with first manager (simulates first instance)
-		user1, err := manager1.CreateResearchUser("ml-lab", "researcher-alice")
+		user1, err := manager1.CreateResearchUser("ml-lab", "researcher-alice", "Alice Researcher", "alice@ml-lab.edu")
 		require.NoError(t, err, "Should create user on first instance")
 
 		// Get same user with second manager (simulates second instance)
@@ -118,7 +118,7 @@ func TestResearchUserFunctionalWorkflows(t *testing.T) {
 		}
 
 		for _, username := range validUsernames {
-			user, err := manager.CreateResearchUser("test-profile", username)
+			user, err := manager.CreateResearchUser("test-profile", username, "Test User", "test@example.com")
 			if err == nil {
 				assert.Equal(t, username, user.Username, "Username should match input")
 				t.Logf("✅ Valid username accepted: %s", username)
@@ -136,7 +136,7 @@ func TestResearchUserFunctionalWorkflows(t *testing.T) {
 		}
 
 		for _, username := range invalidUsernames {
-			user, err := manager.CreateResearchUser("test-profile", username)
+			user, err := manager.CreateResearchUser("test-profile", username, "Test User", "test@example.com")
 			if err != nil {
 				t.Logf("✅ Invalid username rejected: '%s' - %v", username, err)
 			} else if user != nil {
@@ -157,7 +157,7 @@ func TestResearchUserFunctionalWorkflows(t *testing.T) {
 		usernames := []string{"user1", "user2", "user3", "user4", "user5"}
 
 		for _, username := range usernames {
-			user, err := manager.CreateResearchUser("uid-test-profile", username)
+			user, err := manager.CreateResearchUser("uid-test-profile", username, "Test User", "test@example.com")
 			if err == nil {
 				users[username] = user
 
@@ -189,7 +189,7 @@ func TestResearchUserIntegrationScenarios(t *testing.T) {
 		profileMgr := &MockProfileManager{}
 		manager := NewResearchUserManager(profileMgr, "/tmp/test-efs-config")
 
-		user, err := manager.CreateResearchUser("research-group", "data-scientist")
+		user, err := manager.CreateResearchUser("research-group", "data-scientist", "Data Scientist", "datascientist@research.edu")
 
 		if err == nil {
 			// Verify home directory path structure
@@ -210,8 +210,8 @@ func TestResearchUserIntegrationScenarios(t *testing.T) {
 		manager := NewResearchUserManager(profileMgr, "/tmp/test-isolation-config")
 
 		// Create users in different profiles
-		user1, err1 := manager.CreateResearchUser("profile-a", "researcher")
-		user2, err2 := manager.CreateResearchUser("profile-b", "researcher")
+		user1, err1 := manager.CreateResearchUser("profile-a", "researcher", "Researcher A", "researcher@profile-a.edu")
+		user2, err2 := manager.CreateResearchUser("profile-b", "researcher", "Researcher B", "researcher@profile-b.edu")
 
 		if err1 == nil && err2 == nil {
 			// Same username in different profiles should be allowed

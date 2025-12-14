@@ -1,25 +1,30 @@
 # Prism Development Roadmap
 
-**Current Version**: v0.5.16 (Planned)
-**Last Released**: v0.5.15 (November 12, 2025)
-**Next Version**: v0.5.16 (Planned - December 2025)
-**Last Updated**: November 12, 2025
+**Current Version**: v0.5.15 (Released)
+**Last Released**: v0.5.15 (November 13, 2025)
+**Next Version**: v0.6.0 (Planned - January 2026)
+**Last Updated**: December 13, 2025
 **Status**: Active Development
 
 This roadmap outlines planned features and enhancements for Prism. All items are tracked in [GitHub Issues](https://github.com/scttfrdmn/prism/issues) and the [Prism Development Project](https://github.com/scttfrdmn/prism/projects).
 
 ---
 
-## 🎯 Current Focus: Phase 5.0 - UX Redesign
+## 🎯 Current Focus: Test Infrastructure & Quality (v0.6.0)
 
-**Priority**: CRITICAL - HIGHEST PRIORITY
-**Target**: v0.5.8 and v0.5.9 (December 2025 - January 2026)
+**Priority**: HIGH
+**Target**: v0.6.0 (January 2026)
 
-Prism is shifting focus from feature development to user experience optimization. The current 15-minute learning curve for first workspace needs to be reduced to 30 seconds.
+Following the successful completion of v0.5.8-v0.5.15 releases and Budget GUI implementation, Prism is now focused on test infrastructure improvements and quality assurance.
 
-**Why This Matters**: New researchers face cognitive overload before completing basic tasks. UX redesign will dramatically improve first-time user experience.
+**Recently Completed**:
+- ✅ Issue #369: Budget GUI Implementation - Budget Overview dashboard with full E2E test coverage (December 2025)
+- ✅ E2E Test Infrastructure - Achieved 100% pass rate (28 passed, 3 skipped, 0 failed)
 
-**Track Progress**: [GitHub Milestone: Phase 5.0 UX Redesign](https://github.com/scttfrdmn/prism/milestone/1)
+**Current Work**: [GitHub Milestone: Phase 0.6.0 - Test Infrastructure](https://github.com/scttfrdmn/prism/milestone/X)
+- Backend unit test coverage analysis (targeting 80%)
+- API documentation updates
+- Release preparation for v0.6.0
 
 ---
 
@@ -57,8 +62,8 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.8 (December 2025): Quick Start Experience ✅ FEATURE COMPLETE
-**Release Date**: Target December 13, 2025
+### v0.5.8 (November 2025): Quick Start Experience ✅ RELEASED
+**Release Date**: November 8, 2025
 **Focus**: First-time user experience - zero to workspace in <30 seconds
 **Release Plan**: [RELEASE_PLAN_v0.5.8.md](releases/RELEASE_PLAN_v0.5.8.md)
 **Release Notes**: [RELEASE_NOTES_v0.5.8.md](releases/RELEASE_NOTES_v0.5.8.md)
@@ -128,18 +133,20 @@ Prism is shifting focus from feature development to user experience optimization
 
 ---
 
-### v0.5.10 (November 2025): Multi-Project Budgets ✅ RELEASED
+### v0.5.10 (November 2025): Multi-Project Budgets ✅ RELEASED (Core Infrastructure)
 **Release Date**: November 8, 2025
-**Focus**: Budget system redesign for multi-project allocation
+**Focus**: Budget system core infrastructure for multi-project allocation
 **Release Plan**: [RELEASE_PLAN_v0.5.10.md](releases/RELEASE_PLAN_v0.5.10.md)
 
-#### Budget Redesign
-**Goal**: Allow budgets to be allocated across multiple projects
+**Note**: v0.5.10 delivered the **core budget tracking backend** (5,300+ lines). GUI completion and soft warnings will be added in v0.6.0 (Issue #369).
+
+#### Budget Core Infrastructure
+**Goal**: Backend foundation for multi-project budget allocation
 
 **Current State**: 1 budget : 1 project relationship (pre-v0.5.10)
 **New State**: Many-to-many relationships via allocations
 
-**Features Implemented**:
+**Backend Features Implemented**:
 - ✅ Shared budget pools allocable to multiple projects (#97)
 - ✅ Project-level budget allocation tracking (#98)
 - ✅ Budget reallocation between projects with audit trail (#99)

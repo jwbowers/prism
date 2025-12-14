@@ -83,7 +83,7 @@ func (s *Server) handleListProfiles(w http.ResponseWriter, r *http.Request) {
 	// Get profiles with IDs
 	profilesWithIDs, err := s.profileManager.ListProfilesWithIDs()
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to list profiles: %w: %v", err))
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to list profiles: %v", err))
 		return
 	}
 
@@ -117,7 +117,7 @@ func (s *Server) handleGetCurrentProfile(w http.ResponseWriter, r *http.Request)
 	// Get current profile
 	currentProfile, err := s.profileManager.GetCurrentProfile()
 	if err != nil {
-		s.writeError(w, http.StatusNotFound, fmt.Sprintf("failed to get current profile: %w: %v", err))
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("failed to get current profile: %v", err))
 		return
 	}
 
@@ -175,7 +175,7 @@ func (s *Server) handleGetProfile(w http.ResponseWriter, r *http.Request, profil
 	// Get profile
 	prof, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
-		s.writeError(w, http.StatusNotFound, fmt.Sprintf("profile not found: %w: %v", err))
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("profile not found: %v", err))
 		return
 	}
 
@@ -210,7 +210,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	// Parse request
 	var req ProfileCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %w: %v", err))
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %v", err))
 		return
 	}
 
@@ -246,7 +246,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(err.Error(), "already exists") {
 			s.writeError(w, http.StatusConflict, err.Error())
 		} else {
-			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create profile: %w: %v", err))
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create profile: %v", err))
 		}
 		return
 	}
@@ -254,7 +254,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	// Get the newly created profile to return its ID
 	profilesWithIDs, err := s.profileManager.ListProfilesWithIDs()
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile created but failed to retrieve: %w: %v", err))
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile created but failed to retrieve: %v", err))
 		return
 	}
 
@@ -285,7 +285,7 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request, pro
 	// Parse request
 	var req ProfileUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %w: %v", err))
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %v", err))
 		return
 	}
 
@@ -298,7 +298,7 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request, pro
 	// Get existing profile
 	existingProfile, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
-		s.writeError(w, http.StatusNotFound, fmt.Sprintf("profile not found: %w: %v", err))
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("profile not found: %v", err))
 		return
 	}
 
@@ -325,14 +325,14 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request, pro
 
 	// Update profile
 	if err := s.profileManager.UpdateProfile(profileID, updates); err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to update profile: %w: %v", err))
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to update profile: %v", err))
 		return
 	}
 
 	// Get updated profile
 	updatedProfile, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile updated but failed to retrieve: %w: %v", err))
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile updated but failed to retrieve: %v", err))
 		return
 	}
 
@@ -369,7 +369,7 @@ func (s *Server) handleDeleteProfile(w http.ResponseWriter, r *http.Request, pro
 		if err == profile.ErrProfileNotFound {
 			s.writeError(w, http.StatusNotFound, err.Error())
 		} else {
-			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to delete profile: %w: %v", err))
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to delete profile: %v", err))
 		}
 		return
 	}
@@ -392,7 +392,7 @@ func (s *Server) handleActivateProfile(w http.ResponseWriter, r *http.Request, p
 		if err == profile.ErrProfileNotFound {
 			s.writeError(w, http.StatusNotFound, err.Error())
 		} else {
-			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to switch profile: %w: %v", err))
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to switch profile: %v", err))
 		}
 		return
 	}
@@ -400,7 +400,7 @@ func (s *Server) handleActivateProfile(w http.ResponseWriter, r *http.Request, p
 	// Get the activated profile
 	activatedProfile, err := s.profileManager.GetProfile(profileID)
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile activated but failed to retrieve: %w: %v", err))
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("profile activated but failed to retrieve: %v", err))
 		return
 	}
 

@@ -211,6 +211,53 @@ interface CostBreakdown {
   total: number;
 }
 
+interface Budget {
+  id: string;
+  name: string;
+  description: string;
+  total_amount: number;
+  allocated_amount: number;
+  spent_amount: number;
+  period: string;
+  start_date: string;
+  end_date?: string;
+  alert_threshold: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BudgetAllocation {
+  id: string;
+  budget_id: string;
+  project_id: string;
+  allocated_amount: number;
+  spent_amount: number;
+  alert_threshold?: number;
+  notes?: string;
+  allocated_at: string;
+  allocated_by: string;
+}
+
+interface BudgetSummary {
+  budget: Budget;
+  allocations: BudgetAllocation[];
+  project_names: Record<string, string>;
+  remaining_amount: number;
+  utilization_rate: number;
+}
+
+interface CreateBudgetRequest {
+  name: string;
+  description: string;
+  total_amount: number;
+  period: string;
+  start_date: string;
+  end_date?: string;
+  alert_threshold: number;
+  created_by: string;
+}
+
 interface AMI {
   id: string;
   name: string;
@@ -490,7 +537,7 @@ interface SharedInvitationToken {
 }
 
 interface AppState {
-  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview';
+  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview' | 'budgets';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
   templates: Record<string, Template>;
   instances: Instance[];
@@ -500,6 +547,8 @@ interface AppState {
   projects: Project[];
   users: User[];
   budgets: BudgetData[];
+  budgetPools: Budget[];
+  selectedBudgetId: string | null;
   amis: AMI[];
   amiBuilds: AMIBuild[];
   amiRegions: AMIRegion[];
@@ -1056,6 +1105,47 @@ class SafePrismAPI {
     });
   }
 
+  // Budget Pool Operations (v0.6.0+)
+  async getBudgetPools(): Promise<Budget[]> {
+    try {
+      const data = await this.safeRequest('/api/v1/budgets');
+      return Array.isArray(data?.budgets) ? data.budgets : [];
+    } catch (error) {
+      logger.error('Failed to fetch budget pools:', error);
+      return [];
+    }
+  }
+
+  async getBudgetPool(budgetId: string): Promise<Budget> {
+    return this.safeRequest<Budget>(`/api/v1/budgets/${budgetId}`);
+  }
+
+  async getBudgetSummary(budgetId: string): Promise<BudgetSummary> {
+    return this.safeRequest<BudgetSummary>(`/api/v1/budgets/${budgetId}/summary`);
+  }
+
+  async createBudgetPool(budgetData: CreateBudgetRequest): Promise<Budget> {
+    return this.safeRequest<Budget>('/api/v1/budgets', 'POST', budgetData);
+  }
+
+  async updateBudgetPool(budgetId: string, updates: Partial<CreateBudgetRequest>): Promise<Budget> {
+    return this.safeRequest<Budget>(`/api/v1/budgets/${budgetId}`, 'PUT', updates);
+  }
+
+  async deleteBudgetPool(budgetId: string): Promise<void> {
+    await this.safeRequest(`/api/v1/budgets/${budgetId}`, 'DELETE');
+  }
+
+  async getBudgetAllocations(budgetId: string): Promise<BudgetAllocation[]> {
+    try {
+      const data = await this.safeRequest(`/api/v1/budgets/${budgetId}/allocations`);
+      return Array.isArray(data?.allocations) ? data.allocations : [];
+    } catch (error) {
+      logger.error('Failed to fetch budget allocations:', error);
+      return [];
+    }
+  }
+
   // Invitation Management APIs (v0.5.11+)
   async getInvitationByToken(token: string): Promise<CachedInvitation> {
     try {
@@ -1561,6 +1651,8 @@ export default function PrismApp() {
     projects: [],
     users: [],
     budgets: [],
+    budgetPools: [],
+    selectedBudgetId: null,
     amis: [],
     amiBuilds: [],
     amiRegions: [],
@@ -1678,6 +1770,15 @@ export default function PrismApp() {
   const [sshKeyModalVisible, setSshKeyModalVisible] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState<string>('');
 
+  // Create Budget Pool modal state
+  const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
+  const [budgetName, setBudgetName] = useState('');
+  const [budgetDescription, setBudgetDescription] = useState('');
+  const [totalAmount, setTotalAmount] = useState('');
+  const [period, setPeriod] = useState('monthly');
+  const [alertThreshold, setAlertThreshold] = useState('80');
+  const [budgetValidationError, setBudgetValidationError] = useState('');
+
   // Track users data version to prevent stale data overwrites
   // This prevents initial page load getUsers() from overwriting optimistic updates
   const usersVersionRef = useRef(0);
@@ -1716,6 +1817,7 @@ export default function PrismApp() {
         api.getProjects(),
         api.getUsers(),
         api.getBudgets(),
+        api.getBudgetPools(),
         api.getAMIs(),
         api.getAMIBuilds(),
         api.getAMIRegions(),
@@ -1731,13 +1833,13 @@ export default function PrismApp() {
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData] = results.map((result, index) => {
+      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, budgetPoolsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData] = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
           // Return appropriate empty fallback based on expected type
           if (index === 0) return {}; // templates (object)
-          if (index === 11) return null; // policyStatus (nullable, was index 13, now 12)
+          if (index === 12) return null; // policyStatus (nullable, updated index after adding budgetPoolsData)
           return []; // everything else (arrays)
         }
       });
@@ -1773,6 +1875,7 @@ export default function PrismApp() {
         // This prevents stale API data from overwriting fresh optimistic updates
         users: usersVersionRef.current === usersVersionBeforeLoad ? usersData : prev.users,
         budgets: budgetsData,
+        budgetPools: budgetPoolsData,
         amis: amisData,
         amiBuilds: amiBuildsData,
         amiRegions: amiRegionsData,
@@ -2145,6 +2248,90 @@ export default function PrismApp() {
       }
     } finally {
       setCreatingUser(false);
+    }
+  };
+
+  // Handle Create Budget Pool
+  const handleCreateBudget = async () => {
+    // Validation
+    if (!budgetName.trim()) {
+      setBudgetValidationError('Budget name is required');
+      return;
+    }
+    if (!totalAmount || parseFloat(totalAmount) <= 0) {
+      setBudgetValidationError('Total amount must be greater than 0');
+      return;
+    }
+
+    try {
+      const createdBudget = await api.createBudgetPool({
+        name: budgetName.trim(),
+        description: budgetDescription.trim(),
+        total_amount: parseFloat(totalAmount),
+        period: period,
+        start_date: new Date().toISOString(),
+        alert_threshold: parseFloat(alertThreshold) / 100,
+        created_by: 'current-user'  // TODO: Get from auth context
+      });
+
+      // Optimistic UI update (don't re-fetch)
+      setState(prev => ({
+        ...prev,
+        budgetPools: [...prev.budgetPools, createdBudget],
+        notifications: [{
+          type: 'success',
+          header: 'Budget Created',
+          content: `Budget pool "${budgetName}" created successfully`,
+          dismissible: true,
+          id: Date.now().toString()
+        }, ...prev.notifications]
+      }));
+
+      // Reset and close
+      setBudgetValidationError('');
+      setCreateBudgetModalVisible(false);
+      setBudgetName('');
+      setBudgetDescription('');
+      setTotalAmount('');
+      setPeriod('monthly');
+      setAlertThreshold('80');
+    } catch (error: any) {
+      setBudgetValidationError(`Failed to create budget: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  // Handle Delete Budget Pool
+  const handleDeleteBudget = async (budgetId: string, budgetName: string) => {
+    if (!window.confirm(`Delete budget pool "${budgetName}"? This will remove all project allocations.`)) {
+      return;
+    }
+
+    try {
+      await api.deleteBudgetPool(budgetId);
+
+      // Optimistic UI update
+      setState(prev => ({
+        ...prev,
+        budgetPools: prev.budgetPools.filter(b => b.id !== budgetId),
+        notifications: [{
+          type: 'success',
+          header: 'Budget Deleted',
+          content: `Budget pool "${budgetName}" has been deleted`,
+          dismissible: true,
+          id: Date.now().toString()
+        }, ...prev.notifications]
+      }));
+    } catch (error: any) {
+      setState(prev => ({
+        ...prev,
+        notifications: [{
+          type: 'error',
+          header: 'Delete Failed',
+          content: `Failed to delete budget: ${error.message || 'Unknown error'}`,
+          dismissible: true,
+          id: Date.now().toString()
+        }, ...prev.notifications]
+      }));
     }
   };
 
@@ -6028,6 +6215,275 @@ export default function PrismApp() {
     );
   };
 
+  // Budget Pool Management View (v0.6.0+)
+  const BudgetPoolManagementView = () => {
+    // Filter state for budget pools
+    const [budgetFilter, setBudgetFilter] = useState<string>('all');
+
+    // Enrich budgets with status and percentages using useMemo
+    const enrichedBudgets = useMemo(() => {
+      return state.budgetPools.map(budget => {
+        const spentPercent = budget.allocated_amount > 0
+          ? (budget.spent_amount / budget.allocated_amount) * 100
+          : 0;
+
+        const status: 'ok' | 'warning' | 'critical' =
+          spentPercent >= 95 ? 'critical' :
+          spentPercent >= 80 ? 'warning' : 'ok';
+
+        return { ...budget, spentPercent, status };
+      });
+    }, [state.budgetPools]);
+
+    // Filtered budgets using useMemo for performance
+    const filteredBudgets = useMemo(() => {
+      if (budgetFilter === 'all') return enrichedBudgets;
+      if (budgetFilter === 'warning') return enrichedBudgets.filter(b => b.status === 'warning');
+      if (budgetFilter === 'critical') return enrichedBudgets.filter(b => b.status === 'critical');
+      return enrichedBudgets;
+    }, [enrichedBudgets, budgetFilter]);
+
+    // Calculate aggregate statistics
+    const totalBudgetAmount = enrichedBudgets.reduce((sum, b) => sum + b.total_amount, 0);
+    const totalAllocated = enrichedBudgets.reduce((sum, b) => sum + b.allocated_amount, 0);
+    const totalSpent = enrichedBudgets.reduce((sum, b) => sum + b.spent_amount, 0);
+    const criticalCount = enrichedBudgets.filter(b => b.status === 'critical').length;
+
+    return (
+      <SpaceBetween size="l">
+        <Header
+          variant="h1"
+          description="Manage budget pools, project allocations, and spending forecasts"
+          counter={`(${state.budgetPools.length} budget pools)`}
+          actions={
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button onClick={loadApplicationData} disabled={state.loading}>
+                {state.loading ? <Spinner /> : 'Refresh'}
+              </Button>
+              <Button
+                variant="primary"
+                data-testid="create-budget-button"
+                onClick={() => setCreateBudgetModalVisible(true)}
+              >
+                Create Budget Pool
+              </Button>
+            </SpaceBetween>
+          }
+        >
+          Budget Overview
+        </Header>
+
+        {/* Budget Overview Stats */}
+        <ColumnLayout columns={4} variant="text-grid">
+          <Container header={<Header variant="h3">Total Budgets</Header>}>
+            <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
+              {state.budgetPools.length}
+            </Box>
+          </Container>
+          <Container header={<Header variant="h3">Total Allocated</Header>}>
+            <Box fontSize="display-l" fontWeight="bold" color="text-body-secondary">
+              ${totalAllocated.toFixed(2)}
+            </Box>
+            <Box variant="small" color="text-body-secondary">
+              of ${totalBudgetAmount.toFixed(2)} total
+            </Box>
+          </Container>
+          <Container header={<Header variant="h3">Total Spent</Header>}>
+            <Box fontSize="display-l" fontWeight="bold" color={totalSpent / totalAllocated > 0.8 ? 'text-status-error' : 'text-status-success'}>
+              ${totalSpent.toFixed(2)}
+            </Box>
+            <Box variant="small" color="text-body-secondary">
+              {totalAllocated > 0 ? ((totalSpent / totalAllocated) * 100).toFixed(1) : 0}% of allocated
+            </Box>
+          </Container>
+          <Container header={<Header variant="h3">Active Alerts</Header>}>
+            <Box fontSize="display-l" fontWeight="bold" color={criticalCount > 0 ? 'text-status-error' : 'text-status-success'}>
+              {criticalCount}
+            </Box>
+            <Box variant="small" color="text-body-secondary">
+              Critical budget alerts
+            </Box>
+          </Container>
+        </ColumnLayout>
+
+        {/* Budget Pools Table */}
+        <Container
+          header={
+            <Header
+              variant="h2"
+              description="Budget pools with project allocations and spending status"
+              counter={`(${filteredBudgets.length})`}
+              actions={
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Select
+                    selectedOption={{
+                      label: budgetFilter === 'all' ? 'All Budgets' :
+                             budgetFilter === 'warning' ? 'Warning (80-95%)' : 'Critical (≥95%)',
+                      value: budgetFilter
+                    }}
+                    onChange={({ detail }) => setBudgetFilter(detail.selectedOption.value!)}
+                    options={[
+                      { label: 'All Budgets', value: 'all' },
+                      { label: 'Warning (80-95%)', value: 'warning' },
+                      { label: 'Critical (≥95%)', value: 'critical' }
+                    ]}
+                    data-testid="budget-filter-select"
+                  />
+                </SpaceBetween>
+              }
+            >
+              Budget Pools
+            </Header>
+          }
+        >
+          <Table
+            data-testid="budgets-table"
+            columnDefinitions={[
+              {
+                id: "name",
+                header: "Budget Name",
+                cell: (item: Budget & { spentPercent: number; status: string }) => (
+                  <Link
+                    fontSize="body-m"
+                    onFollow={() => {
+                      setState(prev => ({ ...prev, selectedBudgetId: item.id }));
+                    }}
+                  >
+                    {item.name}
+                  </Link>
+                ),
+                sortingField: "name"
+              },
+              {
+                id: "total",
+                header: "Total Amount",
+                cell: (item: Budget) => `$${item.total_amount.toFixed(2)}`,
+                sortingField: "total_amount"
+              },
+              {
+                id: "allocated",
+                header: "Allocated",
+                cell: (item: Budget) => {
+                  const utilization = item.total_amount > 0 ? (item.allocated_amount / item.total_amount) * 100 : 0;
+                  return (
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <span>${item.allocated_amount.toFixed(2)}</span>
+                      <Badge color={utilization > 90 ? 'red' : utilization > 70 ? 'blue' : 'green'}>
+                        {utilization.toFixed(1)}%
+                      </Badge>
+                    </SpaceBetween>
+                  );
+                },
+                sortingField: "allocated_amount"
+              },
+              {
+                id: "spent",
+                header: "Spent",
+                cell: (item: Budget & { spentPercent: number; status: string }) => {
+                  const colorType = item.status === 'critical' ? 'error' :
+                                   item.status === 'warning' ? 'warning' : 'success';
+                  return (
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <StatusIndicator
+                        type={colorType}
+                        ariaLabel={getStatusLabel('budget', item.status, `$${item.spent_amount.toFixed(2)}`)}
+                      >
+                        ${item.spent_amount.toFixed(2)}
+                      </StatusIndicator>
+                      <Badge color={item.status === 'critical' ? 'red' :
+                                    item.status === 'warning' ? 'blue' : 'green'}>
+                        {item.spentPercent.toFixed(1)}%
+                      </Badge>
+                    </SpaceBetween>
+                  );
+                }
+              },
+              {
+                id: "remaining",
+                header: "Remaining",
+                cell: (item: Budget) => {
+                  const remaining = item.allocated_amount - item.spent_amount;
+                  return `$${remaining.toFixed(2)}`;
+                }
+              },
+              {
+                id: "period",
+                header: "Period",
+                cell: (item: Budget) => item.period,
+                sortingField: "period"
+              },
+              {
+                id: "actions",
+                header: "Actions",
+                cell: (item: Budget) => (
+                  <ButtonDropdown
+                    data-testid={`budget-actions-${item.id}`}
+                    expandToViewport
+                    items={[
+                      { text: "View Summary", id: "view" },
+                      { text: "Manage Allocations", id: "allocations" },
+                      { text: "Spending Report", id: "report" },
+                      { text: "Edit Budget", id: "edit" },
+                      { text: "Delete", id: "delete" }
+                    ]}
+                    onItemClick={(detail) => {
+                      if (detail.detail.id === 'view') {
+                        setState(prev => ({ ...prev, selectedBudgetId: item.id }));
+                      } else if (detail.detail.id === 'delete') {
+                        handleDeleteBudget(item.id, item.name);
+                      } else {
+                        // Show "coming soon" notification for other actions
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            {
+                              type: 'info',
+                              header: 'Budget Action',
+                              content: `${detail.detail.text} for budget "${item.name}" - Feature coming soon!`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            },
+                            ...prev.notifications
+                          ]
+                        }));
+                      }
+                    }}
+                  >
+                    Actions
+                  </ButtonDropdown>
+                )
+              }
+            ]}
+            items={filteredBudgets}
+            loadingText="Loading budget pools..."
+            empty={
+              <Box textAlign="center" color="text-body-secondary">
+                <Box variant="strong" textAlign="center" color="text-body-secondary">
+                  No budget pools found
+                </Box>
+                <Box variant="p" padding={{ bottom: 's' }} color="text-body-secondary">
+                  Create your first budget pool to track spending across projects.
+                </Box>
+                <Button variant="primary" onClick={() => setCreateBudgetModalVisible(true)}>
+                  Create Budget Pool
+                </Button>
+              </Box>
+            }
+            header={
+              <Header
+                counter={`(${filteredBudgets.length})`}
+                description="Budget pools for managing research funding and project allocations"
+              >
+                All Budget Pools
+              </Header>
+            }
+            pagination={<Box>Showing {filteredBudgets.length} of {state.budgetPools.length} budget pools</Box>}
+          />
+        </Container>
+      </SpaceBetween>
+    );
+  };
+
   // Project Detail View with Integrated Budget (Legacy - kept for backward compatibility)
   const ProjectDetailViewLegacy = () => {
     // Hooks must be called at the top level before any conditional returns
@@ -9773,6 +10229,86 @@ export default function PrismApp() {
     </Modal>
   );
 
+  // Create Budget Pool Modal
+  const CreateBudgetModal = () => (
+    <Modal
+      visible={createBudgetModalVisible}
+      onDismiss={() => {
+        setCreateBudgetModalVisible(false);
+        setBudgetValidationError('');
+      }}
+      header="Create Budget Pool"
+      footer={
+        <Box float="right">
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button onClick={() => setCreateBudgetModalVisible(false)}>Cancel</Button>
+            <Button variant="primary" data-testid="create-budget-submit-button" onClick={handleCreateBudget}>Create Budget</Button>
+          </SpaceBetween>
+        </Box>
+      }
+    >
+      <SpaceBetween size="m">
+        {budgetValidationError && (
+          <Alert type="error" data-testid="budget-validation-error">
+            {budgetValidationError}
+          </Alert>
+        )}
+
+        <FormField label="Budget Name" description="E.g., 'NSF Grant CISE-2024-12345'">
+          <Input
+            data-testid="budget-name-input"
+            value={budgetName}
+            onChange={({ detail }) => setBudgetName(detail.value)}
+            placeholder="Enter budget pool name"
+          />
+        </FormField>
+
+        <FormField label="Description" description="Brief description of the funding source">
+          <Textarea
+            data-testid="budget-description-input"
+            value={budgetDescription}
+            onChange={({ detail }) => setBudgetDescription(detail.value)}
+            placeholder="Describe the budget source..."
+          />
+        </FormField>
+
+        <FormField label="Total Amount (USD)" description="Total funding available">
+          <Input
+            data-testid="budget-amount-input"
+            value={totalAmount}
+            onChange={({ detail }) => setTotalAmount(detail.value)}
+            type="number"
+            placeholder="50000.00"
+          />
+        </FormField>
+
+        <FormField label="Budget Period" description="Timeframe for this budget">
+          <Select
+            data-testid="budget-period-select"
+            selectedOption={{ label: period.charAt(0).toUpperCase() + period.slice(1), value: period }}
+            onChange={({ detail }) => setPeriod(detail.selectedOption.value!)}
+            options={[
+              { label: 'Monthly', value: 'monthly' },
+              { label: 'Quarterly', value: 'quarterly' },
+              { label: 'Yearly', value: 'yearly' },
+              { label: 'Project Lifetime', value: 'project' }
+            ]}
+          />
+        </FormField>
+
+        <FormField label="Alert Threshold (%)" description="Alert when spending exceeds this percentage">
+          <Input
+            data-testid="budget-threshold-input"
+            value={alertThreshold}
+            onChange={({ detail }) => setAlertThreshold(detail.value)}
+            type="number"
+            placeholder="80"
+          />
+        </FormField>
+      </SpaceBetween>
+    </Modal>
+  );
+
   // Main render
   return (
     <>
@@ -9833,6 +10369,13 @@ export default function PrismApp() {
                 href: "/invitations",
                 info: state.invitations.filter(i => i.status === 'pending').length > 0 ?
                       <Badge color="blue">{state.invitations.filter(i => i.status === 'pending').length}</Badge> : undefined
+              },
+              {
+                type: "link",
+                text: "Budgets",
+                href: "/budgets",
+                info: state.budgetPools.length > 0 ?
+                      <Badge color="blue">{state.budgetPools.length}</Badge> : undefined
               },
               { type: "divider" },
               {
@@ -9914,6 +10457,7 @@ export default function PrismApp() {
               )
             )}
             {state.activeView === 'invitations' && <InvitationManagementView />}
+            {state.activeView === 'budgets' && <BudgetPoolManagementView />}
             {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
             {state.activeView === 'users' && <UserManagementView />}
             {state.activeView === 'ami' && <AMIManagementView />}
@@ -9936,6 +10480,7 @@ export default function PrismApp() {
       <QuickStartWizard />
       <CreateProjectModal />
       <CreateUserModal />
+      <CreateBudgetModal />
       <SSHKeyModal
         visible={sshKeyModalVisible}
         username={selectedUsername}

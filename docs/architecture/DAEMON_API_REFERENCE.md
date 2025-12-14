@@ -1,7 +1,7 @@
 # Prism Daemon API Reference
 
-## Version: v0.5.8
-**Last Updated**: October 20, 2025
+## Version: v0.5.10
+**Last Updated**: December 13, 2025
 **Port**: 8947 (CWS on phone keypad)
 **Base URL**: `http://localhost:8947`
 **Protocol**: REST API with JSON
@@ -468,6 +468,434 @@ Get comprehensive cost analysis and optimization recommendations.
       "instance": "web-scraper-micro",
       "potential_savings": 180.40,
       "recommendation": "Downsize from t3.medium to t3.small - current CPU usage <10%"
+    }
+  ]
+}
+```
+
+---
+
+### **Budget Management** (v0.5.10+)
+
+Budget pools allow institutions to allocate research funding across multiple projects with automated tracking, alerts, and reallocation capabilities.
+
+#### `GET /api/v1/budgets`
+List all budget pools with allocation and spending summaries.
+
+**Response**:
+```json
+{
+  "budgets": [
+    {
+      "id": "budget_nsf_grant_2024",
+      "name": "NSF Grant CISE-2024-12345",
+      "description": "3-year NSF grant for ML research",
+      "total_amount": 150000.0,
+      "allocated_amount": 120000.0,
+      "spent_amount": 45320.50,
+      "remaining_amount": 104679.50,
+      "period": "project",
+      "start_date": "2024-01-01T00:00:00Z",
+      "end_date": "2026-12-31T23:59:59Z",
+      "alert_threshold": 0.80,
+      "created_by": "admin@university.edu",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-12-10T15:30:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+#### `POST /api/v1/budgets`
+Create a new budget pool.
+
+**Request**:
+```json
+{
+  "name": "NIH Grant R01-2025-67890",
+  "description": "5-year NIH R01 for cancer genomics research",
+  "total_amount": 250000.0,
+  "period": "project",
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2029-12-31T23:59:59Z",
+  "alert_threshold": 0.85,
+  "created_by": "pi@medical-school.edu"
+}
+```
+
+**Response**:
+```json
+{
+  "id": "budget_nih_r01_2025",
+  "name": "NIH Grant R01-2025-67890",
+  "description": "5-year NIH R01 for cancer genomics research",
+  "total_amount": 250000.0,
+  "allocated_amount": 0.0,
+  "spent_amount": 0.0,
+  "remaining_amount": 250000.0,
+  "period": "project",
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2029-12-31T23:59:59Z",
+  "alert_threshold": 0.85,
+  "created_by": "pi@medical-school.edu",
+  "created_at": "2025-01-01T10:00:00Z",
+  "updated_at": "2025-01-01T10:00:00Z"
+}
+```
+
+#### `GET /api/v1/budgets/{budget_id}`
+Get detailed information about a specific budget pool.
+
+**Response**:
+```json
+{
+  "id": "budget_nsf_grant_2024",
+  "name": "NSF Grant CISE-2024-12345",
+  "description": "3-year NSF grant for ML research",
+  "total_amount": 150000.0,
+  "allocated_amount": 120000.0,
+  "spent_amount": 45320.50,
+  "remaining_amount": 104679.50,
+  "utilization_rate": 0.3021,
+  "period": "project",
+  "start_date": "2024-01-01T00:00:00Z",
+  "end_date": "2026-12-31T23:59:59Z",
+  "alert_threshold": 0.80,
+  "created_by": "admin@university.edu",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-12-10T15:30:00Z"
+}
+```
+
+#### `PUT /api/v1/budgets/{budget_id}`
+Update budget pool details (name, description, total amount, alert threshold).
+
+**Request**:
+```json
+{
+  "total_amount": 175000.0,
+  "alert_threshold": 0.90,
+  "description": "3-year NSF grant (supplemental funding added)"
+}
+```
+
+**Response**: Updated budget object (same format as GET).
+
+#### `DELETE /api/v1/budgets/{budget_id}`
+Delete a budget pool. All project allocations must be removed first.
+
+**Response**:
+```json
+{
+  "message": "Budget deleted successfully"
+}
+```
+
+#### `GET /api/v1/budgets/{budget_id}/summary`
+Get comprehensive budget summary with allocations and spending breakdown.
+
+**Response**:
+```json
+{
+  "budget": {
+    "id": "budget_nsf_grant_2024",
+    "name": "NSF Grant CISE-2024-12345",
+    "total_amount": 150000.0,
+    "allocated_amount": 120000.0,
+    "spent_amount": 45320.50,
+    "remaining_amount": 104679.50,
+    "utilization_rate": 0.3021
+  },
+  "allocations": [
+    {
+      "id": "alloc_cancer_research",
+      "project_id": "proj_cancer_research",
+      "project_name": "Cancer Genomics Study",
+      "allocated_amount": 75000.0,
+      "spent_amount": 32150.25,
+      "remaining": 42849.75,
+      "utilization_rate": 0.4287
+    },
+    {
+      "id": "alloc_ml_platform",
+      "project_id": "proj_ml_platform",
+      "project_name": "ML Infrastructure",
+      "allocated_amount": 45000.0,
+      "spent_amount": 13170.25,
+      "remaining": 31829.75,
+      "utilization_rate": 0.2927
+    }
+  ],
+  "status": "ok",
+  "alerts": [],
+  "top_spending_projects": [
+    {
+      "project_id": "proj_cancer_research",
+      "project_name": "Cancer Genomics Study",
+      "spent": 32150.25,
+      "percentage": 70.9
+    }
+  ]
+}
+```
+
+#### `GET /api/v1/budgets/{budget_id}/allocations`
+List all project allocations for a budget pool.
+
+**Response**:
+```json
+{
+  "allocations": [
+    {
+      "id": "alloc_cancer_research",
+      "budget_id": "budget_nsf_grant_2024",
+      "project_id": "proj_cancer_research",
+      "allocated_amount": 75000.0,
+      "spent_amount": 32150.25,
+      "alert_threshold": 0.80,
+      "allocated_at": "2024-01-15T00:00:00Z",
+      "allocated_by": "admin@university.edu"
+    }
+  ],
+  "count": 2
+}
+```
+
+---
+
+### **Project Invitations** (v0.5.11+)
+
+Invitation system allows project owners to invite collaborators via email with role-based access control.
+
+#### `POST /api/v1/invitations/send`
+Send an invitation to join a project.
+
+**Request**:
+```json
+{
+  "project_id": "proj_cancer_research",
+  "email": "researcher@partner-university.edu",
+  "role": "admin",
+  "message": "We'd like you to join our cancer genomics research project. You'll have admin access to manage instances and storage.",
+  "invited_by": "pi@university.edu"
+}
+```
+
+**Response**:
+```json
+{
+  "id": "inv_abc123def456",
+  "project_id": "proj_cancer_research",
+  "email": "researcher@partner-university.edu",
+  "role": "admin",
+  "token": "secure-invitation-token-xyz789",
+  "invited_by": "pi@university.edu",
+  "invited_at": "2025-01-15T10:30:00Z",
+  "expires_at": "2025-01-22T10:30:00Z",
+  "status": "pending",
+  "message": "We'd like you to join our cancer genomics research project..."
+}
+```
+
+#### `GET /api/v1/invitations/project/{project_id}`
+List all invitations for a specific project (all statuses: pending, accepted, declined, expired).
+
+**Query Parameters**:
+- `status` (optional): Filter by status (pending, accepted, declined, expired, revoked)
+
+**Response**:
+```json
+{
+  "invitations": [
+    {
+      "id": "inv_abc123def456",
+      "email": "researcher@partner-university.edu",
+      "role": "admin",
+      "status": "pending",
+      "invited_by": "pi@university.edu",
+      "invited_at": "2025-01-15T10:30:00Z",
+      "expires_at": "2025-01-22T10:30:00Z"
+    },
+    {
+      "id": "inv_def789ghi012",
+      "email": "student@university.edu",
+      "role": "viewer",
+      "status": "accepted",
+      "invited_by": "pi@university.edu",
+      "invited_at": "2025-01-10T14:00:00Z",
+      "accepted_at": "2025-01-10T16:30:00Z"
+    }
+  ],
+  "count": 2
+}
+```
+
+#### `GET /api/v1/invitations/me`
+List all invitations for the current user (invitations where you are the invitee).
+
+**Query Parameters**:
+- `status` (optional): Filter by status (pending, accepted, declined)
+
+**Response**:
+```json
+{
+  "invitations": [
+    {
+      "id": "inv_abc123def456",
+      "project_id": "proj_cancer_research",
+      "project_name": "Cancer Genomics Study",
+      "role": "admin",
+      "status": "pending",
+      "invited_by": "pi@university.edu",
+      "invited_at": "2025-01-15T10:30:00Z",
+      "expires_at": "2025-01-22T10:30:00Z",
+      "message": "We'd like you to join..."
+    }
+  ],
+  "count": 1
+}
+```
+
+#### `GET /api/v1/invitations/{invitation_id}`
+Get detailed information about a specific invitation.
+
+**Response**:
+```json
+{
+  "id": "inv_abc123def456",
+  "project_id": "proj_cancer_research",
+  "project_name": "Cancer Genomics Study",
+  "email": "researcher@partner-university.edu",
+  "role": "admin",
+  "token": "secure-invitation-token-xyz789",
+  "invited_by": "pi@university.edu",
+  "invited_at": "2025-01-15T10:30:00Z",
+  "expires_at": "2025-01-22T10:30:00Z",
+  "status": "pending",
+  "resend_count": 0,
+  "message": "We'd like you to join our cancer genomics research project..."
+}
+```
+
+#### `POST /api/v1/invitations/{invitation_id}/accept`
+Accept a project invitation.
+
+**Request**:
+```json
+{
+  "token": "secure-invitation-token-xyz789"
+}
+```
+
+**Response**:
+```json
+{
+  "id": "inv_abc123def456",
+  "project_id": "proj_cancer_research",
+  "status": "accepted",
+  "accepted_at": "2025-01-15T14:00:00Z",
+  "message": "Successfully joined project as admin"
+}
+```
+
+#### `POST /api/v1/invitations/{invitation_id}/decline`
+Decline a project invitation.
+
+**Request**:
+```json
+{
+  "token": "secure-invitation-token-xyz789",
+  "reason": "Currently unavailable due to other commitments"
+}
+```
+
+**Response**:
+```json
+{
+  "id": "inv_abc123def456",
+  "status": "declined",
+  "declined_at": "2025-01-15T14:00:00Z",
+  "decline_reason": "Currently unavailable due to other commitments"
+}
+```
+
+#### `POST /api/v1/invitations/{invitation_id}/resend`
+Resend an invitation email (for pending invitations only).
+
+**Response**:
+```json
+{
+  "id": "inv_abc123def456",
+  "status": "pending",
+  "resend_count": 1,
+  "last_resent": "2025-01-16T10:00:00Z",
+  "message": "Invitation resent successfully"
+}
+```
+
+#### `DELETE /api/v1/invitations/{invitation_id}`
+Revoke a pending invitation (project owner/admin only).
+
+**Response**:
+```json
+{
+  "message": "Invitation revoked successfully"
+}
+```
+
+#### `POST /api/v1/invitations/bulk`
+Send invitations to multiple users at once.
+
+**Request**:
+```json
+{
+  "project_id": "proj_ml_course",
+  "invitations": [
+    {
+      "email": "student1@university.edu",
+      "role": "viewer"
+    },
+    {
+      "email": "student2@university.edu",
+      "role": "viewer"
+    },
+    {
+      "email": "ta@university.edu",
+      "role": "admin",
+      "message": "TA access for ML course"
+    }
+  ],
+  "default_role": "viewer",
+  "default_message": "Welcome to the ML course project!",
+  "invited_by": "professor@university.edu"
+}
+```
+
+**Response**:
+```json
+{
+  "summary": {
+    "total": 3,
+    "sent": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "email": "student1@university.edu",
+      "status": "sent",
+      "invitation_id": "inv_student1_abc"
+    },
+    {
+      "email": "student2@university.edu",
+      "status": "sent",
+      "invitation_id": "inv_student2_def"
+    },
+    {
+      "email": "ta@university.edu",
+      "status": "sent",
+      "invitation_id": "inv_ta_ghi"
     }
   ]
 }

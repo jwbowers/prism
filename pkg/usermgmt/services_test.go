@@ -40,25 +40,38 @@ func TestMemoryUserStorageUserOperations(t *testing.T) {
 	err := storage.StoreUser(user)
 	assert.NoError(t, err)
 
-	// Test RetrieveUser - placeholder returns error
+	// Test RetrieveUser - should successfully retrieve stored user
 	retrievedUser, err := storage.RetrieveUser("test-user-1")
-	assert.Error(t, err)
-	assert.Equal(t, ErrUserNotFound, err)
-	assert.Nil(t, retrievedUser)
+	assert.NoError(t, err)
+	assert.NotNil(t, retrievedUser)
+	assert.Equal(t, "test-user-1", retrievedUser.ID)
+	assert.Equal(t, "testuser", retrievedUser.Username)
 
-	// Test UpdateUser - should not error for placeholder implementation
+	// Test UpdateUser - should update existing user
+	user.Email = "updated@example.com"
 	err = storage.UpdateUser(user)
 	assert.NoError(t, err)
 
-	// Test DeleteUser - should not error for placeholder implementation
-	err = storage.DeleteUser("test-user-1")
+	// Verify update
+	retrievedUser, err = storage.RetrieveUser("test-user-1")
 	assert.NoError(t, err)
+	assert.Equal(t, "updated@example.com", retrievedUser.Email)
 
-	// Test ListUsers - placeholder returns empty list
+	// Test ListUsers - should return stored user
 	users, err := storage.ListUsers(&UserFilter{})
 	assert.NoError(t, err)
 	assert.NotNil(t, users)
-	assert.Empty(t, users)
+	assert.Len(t, users, 1)
+
+	// Test DeleteUser - should delete the user
+	err = storage.DeleteUser("test-user-1")
+	assert.NoError(t, err)
+
+	// Verify deletion - should now return error
+	retrievedUser, err = storage.RetrieveUser("test-user-1")
+	assert.Error(t, err)
+	assert.Equal(t, ErrUserNotFound, err)
+	assert.Nil(t, retrievedUser)
 }
 
 // TestMemoryUserStorageGroupOperations tests group operations on memory storage
@@ -74,50 +87,84 @@ func TestMemoryUserStorageGroupOperations(t *testing.T) {
 	err := storage.StoreGroup(group)
 	assert.NoError(t, err)
 
-	// Test RetrieveGroup - placeholder returns error
+	// Test RetrieveGroup - should successfully retrieve stored group
 	retrievedGroup, err := storage.RetrieveGroup("test-group-1")
-	assert.Error(t, err)
-	assert.Equal(t, ErrGroupNotFound, err)
-	assert.Nil(t, retrievedGroup)
+	assert.NoError(t, err)
+	assert.NotNil(t, retrievedGroup)
+	assert.Equal(t, "test-group-1", retrievedGroup.ID)
+	assert.Equal(t, "Test Group", retrievedGroup.Name)
 
-	// Test UpdateGroup - should not error for placeholder implementation
+	// Test UpdateGroup - should update existing group
+	group.Description = "Updated description"
 	err = storage.UpdateGroup(group)
 	assert.NoError(t, err)
 
-	// Test DeleteGroup - should not error for placeholder implementation
-	err = storage.DeleteGroup("test-group-1")
+	// Verify update
+	retrievedGroup, err = storage.RetrieveGroup("test-group-1")
 	assert.NoError(t, err)
+	assert.Equal(t, "Updated description", retrievedGroup.Description)
 
-	// Test ListGroups - placeholder returns empty list
+	// Test ListGroups - should return stored group
 	groups, err := storage.ListGroups(&GroupFilter{})
 	assert.NoError(t, err)
 	assert.NotNil(t, groups)
-	assert.Empty(t, groups)
+	assert.Len(t, groups, 1)
+
+	// Test DeleteGroup - should delete the group
+	err = storage.DeleteGroup("test-group-1")
+	assert.NoError(t, err)
+
+	// Verify deletion - should now return error
+	retrievedGroup, err = storage.RetrieveGroup("test-group-1")
+	assert.Error(t, err)
+	assert.Equal(t, ErrGroupNotFound, err)
+	assert.Nil(t, retrievedGroup)
 }
 
 // TestMemoryUserStorageGroupMembership tests group membership operations
 func TestMemoryUserStorageGroupMembership(t *testing.T) {
 	storage := NewMemoryUserStorage()
 
-	// Test StoreUserGroupMembership - should not error for placeholder implementation
-	err := storage.StoreUserGroupMembership("user-1", "group-1")
+	// Create user and group first
+	user := &User{
+		ID:       "user-1",
+		Username: "testuser",
+		Email:    "test@example.com",
+	}
+	err := storage.StoreUser(user)
 	assert.NoError(t, err)
 
-	// Test RemoveUserGroupMembership - should not error for placeholder implementation
-	err = storage.RemoveUserGroupMembership("user-1", "group-1")
+	group := &Group{
+		ID:   "group-1",
+		Name: "Test Group",
+	}
+	err = storage.StoreGroup(group)
 	assert.NoError(t, err)
 
-	// Test GetUserGroups - placeholder returns empty list
+	// Test StoreUserGroupMembership - should add membership
+	err = storage.StoreUserGroupMembership("user-1", "group-1")
+	assert.NoError(t, err)
+
+	// Test GetUserGroups - should return the group
 	userGroups, err := storage.GetUserGroups("user-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, userGroups)
-	assert.Empty(t, userGroups)
+	assert.Len(t, userGroups, 1)
 
-	// Test GetGroupUsers - placeholder returns empty list
+	// Test GetGroupUsers - should return the user
 	groupUsers, err := storage.GetGroupUsers("group-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, groupUsers)
-	assert.Empty(t, groupUsers)
+	assert.Len(t, groupUsers, 1)
+
+	// Test RemoveUserGroupMembership - should remove membership
+	err = storage.RemoveUserGroupMembership("user-1", "group-1")
+	assert.NoError(t, err)
+
+	// Verify removal
+	userGroups, err = storage.GetUserGroups("user-1")
+	assert.NoError(t, err)
+	assert.Empty(t, userGroups)
 }
 
 // TestUserManagementServiceUserOperations tests user operations on service
@@ -136,33 +183,35 @@ func TestUserManagementServiceUserOperations(t *testing.T) {
 	err := service.CreateUser(user)
 	assert.NoError(t, err)
 
-	// Test GetUser - placeholder returns error
+	// Test GetUser - should successfully retrieve created user
 	retrievedUser, err := service.GetUser("service-user-1")
-	assert.Error(t, err)
-	assert.Equal(t, ErrUserNotFound, err)
-	assert.Nil(t, retrievedUser)
+	assert.NoError(t, err)
+	assert.NotNil(t, retrievedUser)
+	assert.Equal(t, "service-user-1", retrievedUser.ID)
 
-	// Test GetUserByUsername - placeholder returns error
+	// Test GetUserByUsername - should retrieve by username
 	userByUsername, err := service.GetUserByUsername("serviceuser")
-	assert.Error(t, err)
-	assert.Equal(t, ErrUserNotFound, err)
-	assert.Nil(t, userByUsername)
+	assert.NoError(t, err)
+	assert.NotNil(t, userByUsername)
+	assert.Equal(t, "serviceuser", userByUsername.Username)
 
-	// Test GetUserByEmail - placeholder returns error
+	// Test GetUserByEmail - should retrieve by email
 	userByEmail, err := service.GetUserByEmail("service@example.com")
-	assert.Error(t, err)
-	assert.Equal(t, ErrUserNotFound, err)
-	assert.Nil(t, userByEmail)
+	assert.NoError(t, err)
+	assert.NotNil(t, userByEmail)
+	assert.Equal(t, "service@example.com", userByEmail.Email)
 
-	// Test UpdateUser - should not error for placeholder implementation
+	// Test UpdateUser - should update the user
+	user.Email = "updated@example.com"
 	err = service.UpdateUser(user)
 	assert.NoError(t, err)
 
-	// Test DeleteUser - should not error for placeholder implementation
-	err = service.DeleteUser("service-user-1")
+	// Verify update
+	retrievedUser, err = service.GetUser("service-user-1")
 	assert.NoError(t, err)
+	assert.Equal(t, "updated@example.com", retrievedUser.Email)
 
-	// Test ListUsers - placeholder returns empty paginated result
+	// Test ListUsers - should return created user
 	pagination := &PaginationOptions{
 		Page:     1,
 		PageSize: 10,
@@ -170,8 +219,17 @@ func TestUserManagementServiceUserOperations(t *testing.T) {
 	paginatedUsers, err := service.ListUsers(&UserFilter{}, pagination)
 	assert.NoError(t, err)
 	assert.NotNil(t, paginatedUsers)
-	assert.Empty(t, paginatedUsers.Users)
-	assert.Equal(t, 0, paginatedUsers.Total)
+	assert.Len(t, paginatedUsers.Users, 1)
+	assert.Equal(t, 1, paginatedUsers.Total)
+
+	// Test DeleteUser - should delete the user
+	err = service.DeleteUser("service-user-1")
+	assert.NoError(t, err)
+
+	// Verify deletion
+	retrievedUser, err = service.GetUser("service-user-1")
+	assert.Error(t, err)
+	assert.Equal(t, ErrUserNotFound, err)
 }
 
 // TestUserManagementServiceGroupOperations tests group operations on service
@@ -188,27 +246,29 @@ func TestUserManagementServiceGroupOperations(t *testing.T) {
 	err := service.CreateGroup(group)
 	assert.NoError(t, err)
 
-	// Test GetGroup - placeholder returns error
+	// Test GetGroup - should successfully retrieve created group
 	retrievedGroup, err := service.GetGroup("service-group-1")
-	assert.Error(t, err)
-	assert.Equal(t, ErrGroupNotFound, err)
-	assert.Nil(t, retrievedGroup)
+	assert.NoError(t, err)
+	assert.NotNil(t, retrievedGroup)
+	assert.Equal(t, "service-group-1", retrievedGroup.ID)
 
-	// Test GetGroupByName - placeholder returns error
+	// Test GetGroupByName - should retrieve by name
 	groupByName, err := service.GetGroupByName("Service Group")
-	assert.Error(t, err)
-	assert.Equal(t, ErrGroupNotFound, err)
-	assert.Nil(t, groupByName)
+	assert.NoError(t, err)
+	assert.NotNil(t, groupByName)
+	assert.Equal(t, "Service Group", groupByName.Name)
 
-	// Test UpdateGroup - should not error for placeholder implementation
+	// Test UpdateGroup - should update the group
+	group.Description = "Updated description"
 	err = service.UpdateGroup(group)
 	assert.NoError(t, err)
 
-	// Test DeleteGroup - should not error for placeholder implementation
-	err = service.DeleteGroup("service-group-1")
+	// Verify update
+	retrievedGroup, err = service.GetGroup("service-group-1")
 	assert.NoError(t, err)
+	assert.Equal(t, "Updated description", retrievedGroup.Description)
 
-	// Test ListGroups - placeholder returns empty paginated result
+	// Test ListGroups - should return created group
 	pagination := &PaginationOptions{
 		Page:     1,
 		PageSize: 10,
@@ -216,14 +276,23 @@ func TestUserManagementServiceGroupOperations(t *testing.T) {
 	paginatedGroups, err := service.ListGroups(&GroupFilter{}, pagination)
 	assert.NoError(t, err)
 	assert.NotNil(t, paginatedGroups)
-	assert.Empty(t, paginatedGroups.Groups)
-	assert.Equal(t, 0, paginatedGroups.Total)
+	assert.Len(t, paginatedGroups.Groups, 1)
+	assert.Equal(t, 1, paginatedGroups.Total)
 
 	// Test GetGroups - simplified list method
 	groups, err := service.GetGroups()
 	assert.NoError(t, err)
 	assert.NotNil(t, groups)
-	assert.Empty(t, groups)
+	assert.Len(t, groups, 1)
+
+	// Test DeleteGroup - should delete the group
+	err = service.DeleteGroup("service-group-1")
+	assert.NoError(t, err)
+
+	// Verify deletion
+	retrievedGroup, err = service.GetGroup("service-group-1")
+	assert.Error(t, err)
+	assert.Equal(t, ErrGroupNotFound, err)
 }
 
 // TestUserManagementServiceUserGroupOperations tests user-group operations
@@ -231,25 +300,47 @@ func TestUserManagementServiceUserGroupOperations(t *testing.T) {
 	storage := NewMemoryUserStorage()
 	service := NewUserManagementService(storage)
 
-	// Test AddUserToGroup - should not error for placeholder implementation
-	err := service.AddUserToGroup("user-1", "group-1")
+	// Create user and group first
+	user := &User{
+		ID:       "user-1",
+		Username: "testuser",
+		Email:    "test@example.com",
+		Enabled:  true,
+	}
+	err := service.CreateUser(user)
 	assert.NoError(t, err)
 
-	// Test RemoveUserFromGroup - should not error for placeholder implementation
-	err = service.RemoveUserFromGroup("user-1", "group-1")
+	group := &Group{
+		ID:   "group-1",
+		Name: "Test Group",
+	}
+	err = service.CreateGroup(group)
 	assert.NoError(t, err)
 
-	// Test GetUserGroups - placeholder returns empty list
+	// Test AddUserToGroup - should add user to group
+	err = service.AddUserToGroup("user-1", "group-1")
+	assert.NoError(t, err)
+
+	// Test GetUserGroups - should return the group
 	userGroups, err := service.GetUserGroups("user-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, userGroups)
-	assert.Empty(t, userGroups)
+	assert.Len(t, userGroups, 1)
 
-	// Test GetGroupUsers - placeholder returns empty list
+	// Test GetGroupUsers - should return the user
 	groupUsers, err := service.GetGroupUsers("group-1")
 	assert.NoError(t, err)
 	assert.NotNil(t, groupUsers)
-	assert.Empty(t, groupUsers)
+	assert.Len(t, groupUsers, 1)
+
+	// Test RemoveUserFromGroup - should remove user from group
+	err = service.RemoveUserFromGroup("user-1", "group-1")
+	assert.NoError(t, err)
+
+	// Verify removal
+	userGroups, err = service.GetUserGroups("user-1")
+	assert.NoError(t, err)
+	assert.Empty(t, userGroups)
 }
 
 // TestUserManagementServiceSyncOperations tests sync operations
@@ -276,7 +367,7 @@ func TestUserManagementServiceSyncOperations(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, syncResult2)
 
-	// Test ProvisionUser - placeholder returns error
+	// Test ProvisionUser - returns error for unimplemented provisioning
 	provisionedUser, err := service.ProvisionUser(map[string]interface{}{
 		"username": "provisioned",
 		"email":    "provisioned@example.com",
@@ -284,7 +375,7 @@ func TestUserManagementServiceSyncOperations(t *testing.T) {
 		DefaultRole: UserRoleUser,
 	})
 	assert.Error(t, err)
-	assert.Equal(t, ErrUserNotFound, err)
+	assert.Contains(t, err.Error(), "not implemented")
 	assert.Nil(t, provisionedUser)
 }
 
@@ -312,12 +403,12 @@ func TestUserManagementServiceAuthentication(t *testing.T) {
 	storage := NewMemoryUserStorage()
 	service := NewUserManagementService(storage)
 
-	// Test Authenticate - placeholder returns failure
+	// Test Authenticate - returns failure for invalid credentials
 	authResult, err := service.Authenticate("testuser", "password123")
 	assert.NoError(t, err)
 	assert.NotNil(t, authResult)
 	assert.False(t, authResult.Success)
-	assert.Equal(t, "authentication not implemented", authResult.ErrorMessage)
+	assert.Contains(t, authResult.ErrorMessage, "invalid username or password")
 	assert.Nil(t, authResult.User)
 	assert.Empty(t, authResult.Token)
 }
@@ -327,13 +418,33 @@ func TestUserManagementServiceUserManagement(t *testing.T) {
 	storage := NewMemoryUserStorage()
 	service := NewUserManagementService(storage)
 
-	// Test EnableUser - should not error for placeholder implementation
-	err := service.EnableUser("user-1")
+	// Create user first
+	user := &User{
+		ID:       "user-1",
+		Username: "testuser",
+		Email:    "test@example.com",
+		Enabled:  true,
+	}
+	err := service.CreateUser(user)
 	assert.NoError(t, err)
 
-	// Test DisableUser - should not error for placeholder implementation
+	// Test DisableUser - should disable the user
 	err = service.DisableUser("user-1")
 	assert.NoError(t, err)
+
+	// Verify user is disabled
+	retrievedUser, err := service.GetUser("user-1")
+	assert.NoError(t, err)
+	assert.False(t, retrievedUser.Enabled)
+
+	// Test EnableUser - should enable the user
+	err = service.EnableUser("user-1")
+	assert.NoError(t, err)
+
+	// Verify user is enabled
+	retrievedUser, err = service.GetUser("user-1")
+	assert.NoError(t, err)
+	assert.True(t, retrievedUser.Enabled)
 }
 
 // TestUserManagementServiceProvisionOptions tests provision options management
