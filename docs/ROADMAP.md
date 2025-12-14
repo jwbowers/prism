@@ -1,8 +1,8 @@
 # Prism Development Roadmap
 
-**Current Version**: v0.5.15 (Released)
-**Last Released**: v0.5.15 (November 13, 2025)
-**Next Version**: v0.6.0 (Planned - January 2026)
+**Current Version**: v0.6.0 (Released)
+**Last Released**: v0.6.0 (December 13, 2025)
+**Next Version**: v0.6.1 (Planned - December 27, 2025)
 **Last Updated**: December 13, 2025
 **Status**: Active Development
 
@@ -10,25 +10,227 @@ This roadmap outlines planned features and enhancements for Prism. All items are
 
 ---
 
-## 🎯 Current Focus: Test Infrastructure & Quality (v0.6.0)
+## 🎯 Current Focus: Critical Path Hardening (v0.6.1)
 
 **Priority**: HIGH
-**Target**: v0.6.0 (January 2026)
+**Target**: v0.6.1 (December 27, 2025)
 
-Following the successful completion of v0.5.8-v0.5.15 releases and Budget GUI implementation, Prism is now focused on test infrastructure improvements and quality assurance.
+Following the v0.6.0 release which established baseline test infrastructure, Prism is now focused on hardening critical path reliability through comprehensive error recovery testing and core package coverage improvements.
 
-**Recently Completed**:
-- ✅ Issue #369: Budget GUI Implementation - Budget Overview dashboard with full E2E test coverage (December 2025)
-- ✅ E2E Test Infrastructure - Achieved 100% pass rate (28 passed, 3 skipped, 0 failed)
+**v0.6.0 Completed** (December 13, 2025):
+- ✅ 64 unit tests added across 4 packages (invitation, AMI, sleepwake, policy)
+- ✅ Fixed 3 compilation errors blocking test execution
+- ✅ Documented 15 Phase 4/5 API endpoints
+- ✅ Test coverage baselines established
 
-**Current Work**: [GitHub Milestone: Phase 0.6.0 - Test Infrastructure](https://github.com/scttfrdmn/prism/milestone/X)
-- Backend unit test coverage analysis (targeting 80%)
-- API documentation updates
-- Release preparation for v0.6.0
+**Current Work**: [Testing Improvement Roadmap](releases/TESTING_IMPROVEMENT_ROADMAP.md)
+- Core package coverage: daemon (60%+), project (60%+), invitation (60%+)
+- AWS error injection and recovery testing
+- State corruption recovery implementation
+- Comprehensive CLI integration test suite
 
 ---
 
 ## 📅 Release Schedule
+
+### v0.6.0 (December 2025): Test Infrastructure & API Documentation ✅ RELEASED
+**Release Date**: December 13, 2025
+**Focus**: Backend unit test foundation and Phase 4/5 API documentation
+**Release Notes**: [RELEASE_NOTES_v0.6.0.md](releases/RELEASE_NOTES_v0.6.0.md)
+
+#### Features Delivered
+
+**Backend Unit Test Coverage**:
+- ✅ pkg/invitation: 0% → 33.6% (15 tests)
+- ✅ pkg/ami: 0% → 1.8% (19 tests)
+- ✅ pkg/sleepwake: 0% → 18.0% (17 tests)
+- ✅ pkg/policy: 0% → 0.0% (13 tests, types validated)
+- **Total**: 64 new unit tests
+
+**Build Stability Fixes**:
+- ✅ Fixed pkg/daemon: 13 fmt.Sprintf compilation errors
+- ✅ Fixed pkg/research: 9 function signature mismatches
+- ✅ Fixed pkg/usermgmt: 9 failing tests (coverage: 70.9% → 82.3%)
+
+**API Documentation**:
+- ✅ Budget Management (v0.5.10+): 7 endpoints documented
+- ✅ Project Invitations (v0.5.11+): 8 endpoints documented
+- ✅ Updated DAEMON_API_REFERENCE.md (v0.5.8 → v0.5.10)
+
+**Success Metrics Achieved**:
+- ✅ All packages compile successfully
+- ✅ Test baseline established for 4 critical packages
+- ✅ 15 enterprise API endpoints fully documented
+- ✅ CI/CD test execution unblocked
+
+**Status**: ✅ RELEASED (December 13, 2025) - [View Release](https://github.com/scttfrdmn/prism/releases/tag/v0.6.0)
+
+---
+
+### v0.6.1 (December 2025): Critical Path Hardening 🚧 IN PROGRESS
+**Release Date**: Target December 27, 2025 (2 weeks)
+**Focus**: Core package coverage, error recovery, CLI integration testing
+**Planning Doc**: [TESTING_IMPROVEMENT_ROADMAP.md](releases/TESTING_IMPROVEMENT_ROADMAP.md)
+
+#### Goals
+
+**Phase 1.1: Core Package Coverage** (Week 1)
+- [ ] pkg/daemon: 14.9% → **60%+** (900+ lines of tests)
+  - Server initialization, shutdown, API authentication
+  - REST endpoint handlers with request validation
+  - State management with corruption recovery
+- [ ] pkg/project: 0% → **60%+** (600+ lines of tests)
+  - Project CRUD with validation
+  - Member management and permissions
+  - Budget allocation tracking
+- [ ] pkg/invitation: 33.6% → **60%+** (400+ lines of tests)
+  - Email failure scenarios
+  - Token expiration edge cases
+  - Concurrent invitation acceptance
+
+**Phase 1.2: Error Recovery Testing** (Week 2)
+- [ ] AWS error injection tests (500+ lines)
+  - Throttling recovery with backoff
+  - Capacity issues and fallbacks
+  - Credential/network failures
+- [ ] State corruption recovery (300+ lines)
+  - Atomic writes with rollback
+  - State file versioning
+  - Automatic backups
+
+**Phase 1.3: CLI Integration Tests** (Week 2)
+- [ ] Core command tests (400+ lines)
+  - Full workflow: launch → connect → stop → delete
+  - List/info with all filters and states
+- [ ] Project management tests (300+ lines)
+- [ ] Template validation tests (250+ lines)
+
+**Phase 1.4: CI/CD Improvements**
+- [ ] GitHub Actions workflow for unit + integration tests
+- [ ] Coverage tracking with Codecov integration
+- [ ] Coverage threshold checks (60%+ on core packages)
+
+**Success Metrics**:
+- ✅ Core packages at 60%+ coverage
+- ✅ 20+ CLI integration test scenarios passing
+- ✅ AWS error recovery validated (95%+ success rate)
+- ✅ All tests pass with -race detector
+
+**Deliverables**: ~4,650 lines of new test code
+
+**Status**: 🚧 Planned - [Create GitHub Milestone](https://github.com/scttfrdmn/prism/milestones)
+
+---
+
+### v0.6.2 (January 2026): Enterprise Feature Reliability 📋 PLANNED
+**Release Date**: Target January 10, 2026 (3 weeks)
+**Focus**: Integration tests for enterprise features, concurrency validation, performance benchmarks
+**Planning Doc**: [TESTING_IMPROVEMENT_ROADMAP.md](releases/TESTING_IMPROVEMENT_ROADMAP.md#-v062-enterprise-feature-reliability)
+
+#### Goals
+
+**Phase 2.1: Integration Test Suite** (Week 1)
+- [ ] Project + Budget integration tests (600+ lines)
+  - Multi-source funding (N budgets → 1 project)
+  - Shared budget pools (1 budget → N projects)
+  - Real-time cost tracking with live instances
+  - Alert thresholds and overspend prevention
+- [ ] Invitation + Project integration tests (500+ lines)
+  - Full accept/decline workflows
+  - Bulk invitations (50+ students)
+  - Research user provisioning (SSH keys, EFS home dirs)
+  - Role-based permissions validation
+- [ ] Multi-project collaboration tests (400+ lines)
+  - Shared storage across projects
+  - User membership in multiple projects
+  - Budget visibility and permissions
+
+**Phase 2.2: Concurrency Testing** (Week 2)
+- [ ] Concurrent API access tests (500+ lines)
+  - 10 users launching 50 instances simultaneously
+  - 20 projects created concurrently
+  - Race conditions on budget allocations
+  - State update conflicts
+- [ ] Load testing
+  - 100 concurrent launches (rate limiting validation)
+  - 50 simultaneous API requests (response time < 200ms)
+
+**Phase 2.3: Performance Benchmarking** (Week 3)
+- [ ] API endpoint benchmarks (300+ lines)
+  - LaunchInstance, ListInstances (100/1000 items)
+  - ProjectList (100 projects), BudgetSummary
+- [ ] State management benchmarks (200+ lines)
+  - Save/load performance (< 10ms target)
+  - Concurrent update handling
+
+**Success Metrics**:
+- ✅ 65%+ overall coverage
+- ✅ 100% enterprise integration test pass rate
+- ✅ Zero race conditions detected
+- ✅ Performance targets met (API < 200ms p95)
+
+**Deliverables**: ~2,500 lines of new test code
+
+**Status**: 📋 Planned
+
+---
+
+### v0.6.3 (January 2026): Production Hardening & Chaos 📋 PLANNED
+**Release Date**: Target January 31, 2026 (3 weeks)
+**Focus**: Chaos engineering, edge case coverage, LocalStack integration
+**Planning Doc**: [TESTING_IMPROVEMENT_ROADMAP.md](releases/TESTING_IMPROVEMENT_ROADMAP.md#-v063-production-hardening--chaos-testing)
+
+#### Goals
+
+**Phase 3.1: Chaos Engineering** (Week 1)
+- [ ] Network chaos tests (500+ lines)
+  - Network down mid-launch, 500ms latency, 20% packet loss
+  - DNS failures, API unavailability (5+ minutes)
+  - Daemon killed mid-operation, OOM, disk full
+- [ ] AWS service outage simulation (400+ lines)
+  - Regional outages (us-west-2 full outage)
+  - Partial outages (EC2-only, EFS-only)
+  - AZ unavailability, instance type exhaustion
+
+**Phase 3.2: Edge Case Coverage** (Week 2)
+- [ ] Template edge cases (400+ lines)
+  - Circular inheritance detection
+  - Deep inheritance (10 levels)
+  - Empty templates, huge templates (10,000 lines)
+  - Provisioning 5GB files, checksum mismatches
+- [ ] Instance management edge cases (500+ lines)
+  - Idempotent stop/delete operations
+  - Connect to terminated instances (graceful errors)
+  - Instances vanished from AWS (state cleanup)
+- [ ] Multi-region testing (300+ lines)
+  - Launch in all 8 supported regions
+  - ARM vs x86 availability per region
+
+**Phase 3.3: LocalStack Integration** (Week 3)
+- [ ] LocalStack test suite (800+ lines)
+  - All core workflows against LocalStack
+  - Fast, offline, cost-free testing
+  - CI/CD integration for rapid iteration
+
+**Success Metrics**:
+- ✅ 70%+ overall coverage
+- ✅ 90%+ chaos test survival rate
+- ✅ 100% edge case test pass rate
+- ✅ LocalStack suite: 100% pass rate
+- ✅ All 8 regions validated
+
+**Deliverables**: ~2,900 lines of new test code
+
+**Final State**:
+- **Total New Tests**: 300+ tests, ~10,000 lines
+- **Confidence Level**:
+  - Academic/Individual: ✅ Very High
+  - Lab/Department: ✅ Very High
+  - Enterprise Production: ✅ High (deploy-with-confidence)
+
+**Status**: 📋 Planned
+
+---
 
 ### v0.5.7 (October 2025): Template Provisioning & Test Infrastructure ✅ RELEASED
 **Release Date**: October 26, 2025
