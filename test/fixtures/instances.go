@@ -12,9 +12,10 @@ import (
 
 // CreateTestInstanceOptions contains options for creating a test instance
 type CreateTestInstanceOptions struct {
-	Template string
-	Name     string
-	Size     string
+	Template  string
+	Name      string
+	Size      string
+	ProjectID string // Optional: Associate instance with a project for budget enforcement
 }
 
 // CreateTestInstance creates a test instance for integration tests
@@ -37,12 +38,17 @@ func CreateTestInstance(t *testing.T, registry *FixtureRegistry, opts CreateTest
 
 	// Launch instance
 	launchReq := types.LaunchRequest{
-		Template: opts.Template,
-		Name:     opts.Name,
-		Size:     opts.Size,
+		Template:  opts.Template,
+		Name:      opts.Name,
+		Size:      opts.Size,
+		ProjectID: opts.ProjectID, // Associate with project if provided
 	}
 
-	t.Logf("Creating test instance: %s (template: %s, size: %s)", opts.Name, opts.Template, opts.Size)
+	if opts.ProjectID != "" {
+		t.Logf("Creating test instance: %s (template: %s, size: %s, project: %s)", opts.Name, opts.Template, opts.Size, opts.ProjectID)
+	} else {
+		t.Logf("Creating test instance: %s (template: %s, size: %s)", opts.Name, opts.Template, opts.Size)
+	}
 	launchResp, err := registry.client.LaunchInstance(ctx, launchReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to launch instance: %w", err)

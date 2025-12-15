@@ -11,6 +11,7 @@ import (
 
 	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/profile"
+	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/templates"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
@@ -1095,8 +1096,9 @@ func (s *Server) isLaunchBlockedByBudget(req *types.LaunchRequest, w http.Respon
 		return false
 	}
 
-	// Check if launches are prevented for this project
 	ctx := context.Background()
+
+	// First check if launches are manually prevented for this project
 	launchPrevented, err := s.projectManager.IsLaunchPrevented(ctx, req.ProjectID)
 	if err != nil {
 		// Log the error but don't block the launch (fail open for safety)
@@ -1104,41 +1106,100 @@ func (s *Server) isLaunchBlockedByBudget(req *types.LaunchRequest, w http.Respon
 		return false
 	}
 
-	// If launch is not prevented, allow it
-	if !launchPrevented {
-		return false
-	}
+	// If launch is manually prevented, block it
+	if launchPrevented {
+		budgetStatus, err := s.projectManager.CheckBudgetStatus(ctx, req.ProjectID)
+		if err != nil {
+			// Fallback error message if we can't get budget details
+			s.writeError(w, http.StatusForbidden,
+				fmt.Sprintf("Instance launch blocked: Project '%s' has reached its budget hard cap. Contact project owner to increase budget or clear hard cap.", req.ProjectID))
+			return true
+		}
 
-	// Launch is prevented by budget hard cap - get budget status for error message
-	budgetStatus, err := s.projectManager.CheckBudgetStatus(ctx, req.ProjectID)
-	if err != nil {
-		// Fallback error message if we can't get budget details
-		s.writeError(w, http.StatusForbidden,
-			fmt.Sprintf("Instance launch blocked: Project '%s' has reached its budget hard cap. Contact project owner to increase budget or clear hard cap.", req.ProjectID))
+		// Build detailed error message with budget information
+		errorMsg := fmt.Sprintf("Instance launch blocked: Project '%s' budget hard cap reached.\n\n", req.ProjectID)
+		errorMsg += "Budget Status:\n"
+		errorMsg += fmt.Sprintf("  Total Budget: $%.2f\n", budgetStatus.TotalBudget)
+		errorMsg += fmt.Sprintf("  Spent: $%.2f (%.1f%%)\n", budgetStatus.SpentAmount, budgetStatus.SpentPercentage*100)
+		errorMsg += fmt.Sprintf("  Remaining: $%.2f\n", budgetStatus.RemainingBudget)
+
+		if len(budgetStatus.TriggeredActions) > 0 {
+			errorMsg += "\nTriggered Actions:\n"
+			for _, action := range budgetStatus.TriggeredActions {
+				errorMsg += fmt.Sprintf("  - %s\n", action)
+			}
+		}
+
+		errorMsg += "\nTo continue launching instances:\n"
+		errorMsg += "  1. Contact project owner to increase the budget\n"
+		errorMsg += "  2. Stop or hibernate running instances to reduce costs\n"
+		errorMsg += fmt.Sprintf("  3. Clear the hard cap temporarily with: prism project allow-launches %s\n", req.ProjectID)
+
+		s.writeError(w, http.StatusForbidden, errorMsg)
 		return true
 	}
 
-	// Build detailed error message with budget information
-	errorMsg := fmt.Sprintf("Instance launch blocked: Project '%s' budget hard cap reached.\n\n", req.ProjectID)
-	errorMsg += "Budget Status:\n"
-	errorMsg += fmt.Sprintf("  Total Budget: $%.2f\n", budgetStatus.TotalBudget)
-	errorMsg += fmt.Sprintf("  Spent: $%.2f (%.1f%%)\n", budgetStatus.SpentAmount, budgetStatus.SpentPercentage*100)
-	errorMsg += fmt.Sprintf("  Remaining: $%.2f\n", budgetStatus.RemainingBudget)
-
-	if len(budgetStatus.TriggeredActions) > 0 {
-		errorMsg += "\nTriggered Actions:\n"
-		for _, action := range budgetStatus.TriggeredActions {
-			errorMsg += fmt.Sprintf("  - %s\n", action)
-		}
+	// NEW: Proactive budget enforcement - check if launch would exceed monthly budget limit
+	proj, err := s.projectManager.GetProject(ctx, req.ProjectID)
+	if err != nil {
+		log.Printf("Warning: Failed to get project for budget enforcement: %v", err)
+		return false // Fail open
 	}
 
-	errorMsg += "\nTo continue launching instances:\n"
-	errorMsg += "  1. Contact project owner to increase the budget\n"
-	errorMsg += "  2. Stop or hibernate running instances to reduce costs\n"
-	errorMsg += fmt.Sprintf("  3. Clear the hard cap temporarily with: prism project allow-launches %s\n", req.ProjectID)
+	// Only enforce if project has a budget with monthly limit
+	if proj.Budget == nil || proj.Budget.MonthlyLimit == nil {
+		return false // No monthly limit configured
+	}
 
-	s.writeError(w, http.StatusForbidden, errorMsg)
-	return true
+	// Determine instance type that will be launched
+	instanceType := s.getInstanceTypeForLaunch(req)
+
+	// Estimate monthly cost for this instance (using cost calculator from project package)
+	var costCalc project.CostCalculator
+	estimatedMonthlyCost := costCalc.EstimateMonthlyCost(instanceType, 20) // 20GB default root volume
+
+	// Get current spending
+	currentSpend := proj.Budget.SpentAmount
+	monthlyLimit := *proj.Budget.MonthlyLimit
+
+	// Check if this launch would exceed the monthly limit
+	projectedSpend := currentSpend + estimatedMonthlyCost
+	if projectedSpend > monthlyLimit {
+		// Block the launch - would exceed budget
+		errorMsg := fmt.Sprintf("⛔ Instance launch blocked: Would exceed monthly budget limit\n\n")
+		errorMsg += "Budget Analysis:\n"
+		errorMsg += fmt.Sprintf("  Monthly Limit: $%.2f\n", monthlyLimit)
+		errorMsg += fmt.Sprintf("  Current Spend: $%.2f (%.1f%% of limit)\n", currentSpend, (currentSpend/monthlyLimit)*100)
+		errorMsg += fmt.Sprintf("  Instance Cost: $%.2f/month (%s)\n", estimatedMonthlyCost, instanceType)
+		errorMsg += fmt.Sprintf("  Projected Total: $%.2f (would exceed limit by $%.2f)\n", projectedSpend, projectedSpend-monthlyLimit)
+		errorMsg += "\n💡 Options:\n"
+		errorMsg += "  • Use a smaller instance size (try --size XS or S)\n"
+		errorMsg += fmt.Sprintf("  • Increase monthly budget: prism project update-budget %s --monthly-limit %.2f\n", req.ProjectID, projectedSpend+10)
+		errorMsg += "  • Stop or hibernate running instances to free up budget\n"
+		errorMsg += "  • Wait for budget period to reset\n"
+
+		s.writeError(w, http.StatusForbidden, errorMsg)
+		return true
+	}
+
+	return false
+}
+
+// getInstanceTypeForLaunch determines the instance type that will be used for a launch request
+func (s *Server) getInstanceTypeForLaunch(req *types.LaunchRequest) string {
+	// If size is specified, map it to instance type
+	if req.Size != "" {
+		return s.getInstanceTypeForSize(req.Size)
+	}
+
+	// Try to get from template defaults
+	template, err := templates.GetTemplateInfo(req.Template)
+	if err == nil && template.InstanceDefaults.Type != "" {
+		return template.InstanceDefaults.Type
+	}
+
+	// Fallback to default
+	return "t3.micro"
 }
 
 // resolveFundingAllocation resolves the funding allocation for a launch request (v0.5.10+)

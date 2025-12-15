@@ -70,7 +70,10 @@ func (s *Server) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Check if running in test mode (bypasses authentication)
-		if os.Getenv("PRISM_TEST_MODE") == "true" {
+		testMode := os.Getenv("PRISM_TEST_MODE")
+		log.Printf("DEBUG: PRISM_TEST_MODE=%q, checking authentication for %s %s", testMode, r.Method, r.URL.Path)
+		if testMode == "true" {
+			log.Printf("DEBUG: Test mode enabled, bypassing authentication")
 			next(w, r)
 			return
 		}
