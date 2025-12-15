@@ -230,18 +230,23 @@ test-resilience:
 # Phase 4: Long-Running Workflows (hours/days, run manually)
 test-long-running:
 	@echo "⏰ Running Phase 4: Long-Running Workflow Tests..."
-	@echo "📋 Tests: Week-long lifecycles, multi-day hibernation, monthly cost accumulation"
+	@echo "📋 Tests: Week-Long Lifecycle, Multi-Day Cost Accumulation, Monthly Budget Rollover"
 	@echo "⚠️  WARNING: These tests take hours to days to complete!"
+	@echo "   - Week-Long Lifecycle: 7 days (168 hours)"
+	@echo "   - Cost Accumulation: 3-5 days (72-120 hours)"
+	@echo "   - Budget Rollover: 30-40 days (720-960 hours)"
+	@echo ""
 	@echo "⚠️  This will create real AWS resources and incur significant costs!"
 	@echo "📋 Ensure you have:"
 	@echo "  - AWS profile 'aws' configured"
 	@echo "  - Daemon running (./bin/prismd)"
 	@echo "  - Appropriate AWS permissions"
-	@echo "  - Sufficient AWS budget for long-running tests"
+	@echo "  - Sufficient AWS budget for extended testing"
+	@echo "  - PRISM_LONG_RUNNING_TESTS=true environment variable set"
 	@echo ""
 	@read -p "Continue? (y/N): " confirm && [ "$$confirm" = "y" ] || exit 1
 	@echo ""
-	@AWS_PROFILE=aws go test -v -tags=integration ./test/integration/phase4_long_running/... -timeout=24h
+	@AWS_PROFILE=aws PRISM_LONG_RUNNING_TESTS=true go test -v -tags="integration longrunning" ./test/integration/phase4_long_running/... -timeout=720h
 
 # Run all tests (unit + integration + e2e + AWS if configured)
 test-all: test-unit test-integration test-e2e test-coverage
