@@ -98,6 +98,7 @@ func (ctx *TestContext) StartDaemon() {
 		fmt.Sprintf("PRISM_STATE_DIR=%s", tempStateDir),
 		fmt.Sprintf("AWS_PROFILE=%s", TestAWSProfile),
 		fmt.Sprintf("AWS_REGION=%s", TestAWSRegion),
+		"PRISM_TEST_MODE=true", // Bypass API authentication for tests
 	)
 	cmd.Env = env
 	cmd.Stdout = os.Stdout
@@ -146,6 +147,7 @@ func (ctx *TestContext) findBinary(name string) string {
 		filepath.Join("bin", name),
 		filepath.Join("..", "..", "bin", name),
 		filepath.Join("../../bin", name),
+		filepath.Join("../../../bin", name), // For phase1_workflows subdirectory
 	}
 
 	for _, path := range paths {

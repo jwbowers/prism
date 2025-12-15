@@ -182,6 +182,67 @@ test-aws-setup:
 	@echo "🔧 Validating AWS integration test setup..."
 	@./scripts/validate-aws-setup.sh
 
+# Integration Testing Strategy (Workflow-Driven)
+# See docs/TESTING.md for full documentation
+
+# Phase 1: Critical Workflows (< 15 minutes, run on-demand)
+test-workflows:
+	@echo "🔥 Running Phase 1: Critical Workflow Tests..."
+	@echo "📋 Tests: Template Provisioning, Idle Detection, Budget Enforcement, Multi-User Collaboration"
+	@echo "⚠️  This will create real AWS resources and may incur costs!"
+	@echo "📋 Ensure you have:"
+	@echo "  - AWS profile 'aws' configured"
+	@echo "  - Daemon running (./bin/prismd)"
+	@echo "  - Appropriate AWS permissions"
+	@echo ""
+	@read -p "Continue? (y/N): " confirm && [ "$$confirm" = "y" ] || exit 1
+	@echo ""
+	@AWS_PROFILE=aws go test -v -tags=integration ./test/integration/phase1_workflows/... -timeout=15m
+
+# Phase 2: Persona-Driven Workflows (< 45 minutes, run on-demand)
+test-personas:
+	@echo "👥 Running Phase 2: Persona Workflow Tests..."
+	@echo "📋 Tests: Solo Researcher, Lab Environment, University Class, Conference Workshop, Cross-Institutional"
+	@echo "⚠️  This will create real AWS resources and may incur costs!"
+	@echo "📋 Ensure you have:"
+	@echo "  - AWS profile 'aws' configured"
+	@echo "  - Daemon running (./bin/prismd)"
+	@echo "  - Appropriate AWS permissions"
+	@echo ""
+	@read -p "Continue? (y/N): " confirm && [ "$$confirm" = "y" ] || exit 1
+	@echo ""
+	@AWS_PROFILE=aws go test -v -tags=integration ./test/integration/phase2_personas/... -timeout=45m
+
+# Phase 3: Failure Recovery & Resilience (< 20 minutes, run on-demand)
+test-resilience:
+	@echo "🛡️ Running Phase 3: Resilience & Failure Recovery Tests..."
+	@echo "📋 Tests: Daemon Failure Recovery, AWS API Errors, Instance Crash Recovery"
+	@echo "⚠️  This will test daemon crashes and AWS error handling!"
+	@echo "📋 Ensure you have:"
+	@echo "  - AWS profile 'aws' configured"
+	@echo "  - Daemon running (./bin/prismd)"
+	@echo "  - Appropriate AWS permissions"
+	@echo ""
+	@read -p "Continue? (y/N): " confirm && [ "$$confirm" = "y" ] || exit 1
+	@echo ""
+	@AWS_PROFILE=aws go test -v -tags=integration ./test/integration/phase3_resilience/... -timeout=20m
+
+# Phase 4: Long-Running Workflows (hours/days, run manually)
+test-long-running:
+	@echo "⏰ Running Phase 4: Long-Running Workflow Tests..."
+	@echo "📋 Tests: Week-long lifecycles, multi-day hibernation, monthly cost accumulation"
+	@echo "⚠️  WARNING: These tests take hours to days to complete!"
+	@echo "⚠️  This will create real AWS resources and incur significant costs!"
+	@echo "📋 Ensure you have:"
+	@echo "  - AWS profile 'aws' configured"
+	@echo "  - Daemon running (./bin/prismd)"
+	@echo "  - Appropriate AWS permissions"
+	@echo "  - Sufficient AWS budget for long-running tests"
+	@echo ""
+	@read -p "Continue? (y/N): " confirm && [ "$$confirm" = "y" ] || exit 1
+	@echo ""
+	@AWS_PROFILE=aws go test -v -tags=integration ./test/integration/phase4_long_running/... -timeout=24h
+
 # Run all tests (unit + integration + e2e + AWS if configured)
 test-all: test-unit test-integration test-e2e test-coverage
 	@if [ "$$RUN_AWS_TESTS" = "true" ]; then \

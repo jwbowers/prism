@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test helper: creates a test server with mock dependencies
+// Test helper: creates a test server with mock dependencies (no AWS)
 func createTestServer(t *testing.T) *Server {
 	// Create temporary directory for testing
 	tempDir := t.TempDir()
@@ -56,6 +56,86 @@ version: "1.0.0"
 	server, err := NewServerForTesting("8948") // Use test mode to skip AWS operations
 	require.NoError(t, err)
 	require.NotNil(t, server)
+
+	// Register cleanup to stop server and prevent goroutine leaks
+	t.Cleanup(func() {
+		if err := server.Stop(); err != nil {
+			t.Logf("Warning: Failed to stop server in cleanup: %v", err)
+		}
+	})
+
+	return server
+}
+
+// Test helper: creates a test server WITH real AWS connectivity
+// Uses AWS_PROFILE=aws and AWS_REGION=us-west-2 for actual AWS testing
+func createTestServerWithAWS(t *testing.T) *Server {
+	// Save original environment variables
+	originalAWSProfile := os.Getenv("AWS_PROFILE")
+	originalAWSRegion := os.Getenv("AWS_REGION")
+	originalHome := os.Getenv("HOME")
+
+	// Create temporary directory for testing
+	tempDir := t.TempDir()
+
+	// Cleanup function to restore original environment
+	t.Cleanup(func() {
+		if originalAWSProfile != "" {
+			_ = os.Setenv("AWS_PROFILE", originalAWSProfile)
+		} else {
+			_ = os.Unsetenv("AWS_PROFILE")
+		}
+		if originalAWSRegion != "" {
+			_ = os.Setenv("AWS_REGION", originalAWSRegion)
+		} else {
+			_ = os.Unsetenv("AWS_REGION")
+		}
+		_ = os.Setenv("HOME", originalHome)
+	})
+
+	// Set AWS testing credentials
+	_ = os.Setenv("AWS_PROFILE", "aws")
+	_ = os.Setenv("AWS_REGION", "us-west-2")
+	_ = os.Setenv("HOME", tempDir)
+
+	// Create test templates directory
+	templatesDir := tempDir + "/.prism/templates"
+	err := os.MkdirAll(templatesDir, 0755)
+	require.NoError(t, err)
+
+	// Create a simple test template
+	testTemplate := `name: "Test Template"
+slug: test-template
+description: "Minimal test template"
+base: ubuntu-22.04
+package_manager: apt
+packages:
+  apt:
+    - curl
+users:
+  - name: ubuntu
+    groups: [sudo]
+    shell: /bin/bash
+instance_defaults:
+  type: t3.micro
+  ports: [22]
+version: "1.0.0"
+`
+	err = os.WriteFile(templatesDir+"/test-template.yml", []byte(testTemplate), 0644)
+	require.NoError(t, err)
+
+	// Create server with REAL AWS initialization (NOT test mode)
+	server, err := NewServer("8948")
+	require.NoError(t, err)
+	require.NotNil(t, server)
+	require.NotNil(t, server.awsManager, "AWS manager should be initialized for AWS tests")
+
+	// Register cleanup to stop server and prevent goroutine leaks
+	t.Cleanup(func() {
+		if err := server.Stop(); err != nil {
+			t.Logf("Warning: Failed to stop server in cleanup: %v", err)
+		}
+	})
 
 	return server
 }

@@ -11,6 +11,88 @@ Prism uses a **multi-layer testing strategy** to ensure reliability:
 3. **E2E Tests** - Browser-based tests of the GUI with real AWS resources
 4. **CLI Tests** - Direct command-line interface testing
 
+**Key Principle**: *"The deadline and the exact % are less important than what the tests are testing and what the tests surface."*
+
+Tests validate **real user workflows**, not just code coverage. Integration tests verify that Prism actually delivers on its core value propositions:
+- Templates provision correctly (Jupyter works, not just "instance running")
+- Hibernation saves money (idle detection triggers, costs stop)
+- Budgets prevent overspend (launches actually blocked)
+- Teams can collaborate (RBAC enforced, shared resources work)
+- Data persists safely (EFS/EBS survive instance lifecycle)
+- System recovers from failures (daemon crash, AWS errors)
+
+---
+
+## Integration Testing Strategy
+
+Prism's integration testing follows a **4-phase workflow-driven approach**:
+
+### Phase 1: Critical Workflows (PRIORITY)
+**Goal**: Validate core value propositions actually work
+
+**Tests** (< 15 minutes, run on-demand):
+- [#396](https://github.com/scttfrdmn/prism/issues/396) - Template Provisioning End-to-End
+- [#397](https://github.com/scttfrdmn/prism/issues/397) - Idle Detection & Hibernation Flow
+- [#398](https://github.com/scttfrdmn/prism/issues/398) - Budget Enforcement & Cost Tracking
+- [#399](https://github.com/scttfrdmn/prism/issues/399) - Multi-User Collaboration Workflows
+
+**Run with**: `make test-workflows`
+
+### Phase 2: Persona-Driven Workflows
+**Goal**: Validate all 5 user personas can accomplish their goals
+
+**Tests** (< 45 minutes, run on-demand):
+- [#400](https://github.com/scttfrdmn/prism/issues/400) - Solo Researcher Persona (Dr. Sarah Chen)
+- [#401](https://github.com/scttfrdmn/prism/issues/401) - Lab Environment Persona (Prof. Martinez)
+- [#402](https://github.com/scttfrdmn/prism/issues/402) - University Class Persona (Prof. Thompson)
+- [#403](https://github.com/scttfrdmn/prism/issues/403) - Conference Workshop Persona (Dr. Patel)
+- [#404](https://github.com/scttfrdmn/prism/issues/404) - Cross-Institutional Persona (Dr. Kim)
+
+**Run with**: `make test-personas`
+
+### Phase 3: Failure Recovery & Resilience
+**Goal**: Validate graceful handling of failures
+
+**Tests** (< 20 minutes, run on-demand):
+- [#405](https://github.com/scttfrdmn/prism/issues/405) - Daemon Failure Recovery
+- [#406](https://github.com/scttfrdmn/prism/issues/406) - AWS API Error Handling
+- [#407](https://github.com/scttfrdmn/prism/issues/407) - Instance Crash Recovery
+
+**Run with**: `make test-resilience`
+
+### Phase 4: Long-Running Workflows
+**Goal**: Validate extended time periods
+
+**Tests** (hours to days, run manually):
+- Week-long instance lifecycle with hibernation cycles
+- Multi-day cost accumulation and forecast accuracy
+- Monthly budget rollover and reporting
+
+**Run with**: `make test-long-running`
+
+### Execution Strategy
+
+**On-Demand**: All integration tests run manually or on-demand (not on every commit)
+
+**AWS Account**: Use `aws` profile with real AWS resources (no mocking)
+
+**Test Organization**:
+```
+test/integration/
+├── phase1_workflows/       # Critical workflows (< 15 min)
+├── phase2_personas/        # User scenarios (< 45 min)
+├── phase3_resilience/      # Failure recovery (< 20 min)
+└── phase4_long_running/    # Extended workflows (hours/days)
+```
+
+**Success Criteria**:
+- Tests catch real bugs (provisioning failures, hibernation not triggering, budget not enforced)
+- Tests validate user experience (SSH verification, actual Jupyter accessibility)
+- Zero resource leaks (fixture pattern cleanup)
+- 95%+ pass rate (allow occasional AWS transient failures)
+
+---
+
 ## Unit Tests
 
 **Location**: Throughout the codebase alongside source files

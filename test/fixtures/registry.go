@@ -19,6 +19,7 @@ type FixtureRegistry struct {
 	volumes       []string
 	ebsStorages   []string
 	profiles      []string
+	projects      []string
 	cleanupCalled bool
 }
 
@@ -57,6 +58,8 @@ func (r *FixtureRegistry) Register(resourceType, id string) {
 		r.ebsStorages = append(r.ebsStorages, id)
 	case "profile":
 		r.profiles = append(r.profiles, id)
+	case "project":
+		r.projects = append(r.projects, id)
 	default:
 		r.t.Logf("Warning: Unknown resource type %q", resourceType)
 	}
@@ -107,6 +110,15 @@ func (r *FixtureRegistry) cleanup() {
 			r.t.Logf("Warning: Failed to cleanup EFS volume %s: %v", volumeName, err)
 		} else {
 			r.t.Logf("Cleaned up EFS volume: %s", volumeName)
+		}
+	}
+
+	// Clean up projects (after all resources that depend on them)
+	for _, projectID := range r.projects {
+		if err := r.client.DeleteProject(ctx, projectID); err != nil {
+			r.t.Logf("Warning: Failed to cleanup project %s: %v", projectID, err)
+		} else {
+			r.t.Logf("Cleaned up project: %s", projectID)
 		}
 	}
 

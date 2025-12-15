@@ -583,6 +583,18 @@ func (s *Server) Stop() error {
 	// Stop state monitor (v0.5.8)
 	s.stateMonitor.Stop()
 
+	// Stop idle scheduler to prevent goroutine leaks
+	if s.idleScheduler != nil {
+		s.idleScheduler.Stop()
+		log.Printf("Idle scheduler stopped")
+	}
+
+	// Stop alert manager to prevent goroutine leaks
+	if s.alertManager != nil {
+		s.alertManager.Stop()
+		log.Printf("Alert manager stopped")
+	}
+
 	// Shutdown HTTP server with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
