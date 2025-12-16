@@ -34,7 +34,6 @@ func TestBudgetEnforcement_PreventsLaunch(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -190,7 +189,6 @@ func TestBudgetEnforcement_AlertThresholds(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -241,7 +239,6 @@ func TestBudgetEnforcement_AutoActions(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -295,7 +292,6 @@ func TestBudgetEnforcement_CostBreakdown(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 

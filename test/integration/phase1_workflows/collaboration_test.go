@@ -33,7 +33,6 @@ func TestCollaboration_SharedProjectAccess(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -182,7 +181,6 @@ func TestCollaboration_RoleBasedPermissions(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -255,7 +253,6 @@ func TestCollaboration_ProjectInvitations(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -322,7 +319,6 @@ func TestCollaboration_ConcurrentAccess(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 

@@ -36,7 +36,6 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -100,7 +99,6 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
@@ -147,7 +145,6 @@ func TestTemplateProvisioning_BaseUbuntu(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 

@@ -66,6 +66,13 @@ func NewTestContext(t *testing.T) *TestContext {
 
 	t.Logf("Test context initialized (profile=%s, region=%s)", TestAWSProfile, TestAWSRegion)
 
+	// Register cleanup with testing framework to ensure proper ordering
+	// This runs AFTER other t.Cleanup() calls (LIFO), so daemon stays alive
+	// until all fixtures are cleaned up
+	t.Cleanup(func() {
+		ctx.Cleanup()
+	})
+
 	return ctx
 }
 
@@ -111,12 +118,36 @@ func (ctx *TestContext) StartDaemon() {
 	ctx.DaemonCmd = cmd
 	ctx.T.Logf("Daemon started (PID: %d)", cmd.Process.Pid)
 
-	// Add cleanup
+	// Add cleanup with graceful shutdown
 	ctx.AddCleanup(func() {
 		if cmd.Process != nil {
 			ctx.T.Log("Stopping daemon...")
-			cmd.Process.Kill()
-			cmd.Wait()
+
+			// Try graceful shutdown first (SIGTERM)
+			if err := cmd.Process.Signal(os.Interrupt); err != nil {
+				ctx.T.Logf("Failed to send interrupt signal: %v", err)
+				cmd.Process.Kill()
+				cmd.Wait()
+				return
+			}
+
+			// Wait up to 5 seconds for graceful shutdown
+			done := make(chan error, 1)
+			go func() {
+				done <- cmd.Wait()
+			}()
+
+			select {
+			case <-done:
+				ctx.T.Log("Daemon stopped gracefully")
+			case <-time.After(5 * time.Second):
+				ctx.T.Log("Daemon shutdown timeout, forcing kill")
+				cmd.Process.Kill()
+				cmd.Wait()
+			}
+
+			// Give OS time to release port and resources
+			time.Sleep(500 * time.Millisecond)
 		}
 	})
 

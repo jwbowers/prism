@@ -34,7 +34,6 @@ func TestIdleDetection_TriggersHibernation(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	// Step 1: DETERMINISTIC CHECK FIRST - Check if automatic idle detection is implemented
 	// DON'T launch expensive instance if feature isn't available
@@ -148,7 +147,6 @@ func TestIdleDetection_ManualHibernation(t *testing.T) {
 
 	// Setup
 	ctx := integration.NewTestContext(t)
-	defer ctx.Cleanup()
 
 	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
 
