@@ -13,9 +13,12 @@ import (
 
 // TestHandleListInstanceSnapshots tests the snapshot listing endpoint
 func TestHandleListInstanceSnapshots(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create instance with snapshots
+	setupTestInstance(t, server, "test-instance")
+	setupTestSnapshot(t, server, "test-instance")
 
 	req := httptest.NewRequest("GET", "/api/v1/snapshots", nil)
 	w := httptest.NewRecorder()
@@ -35,9 +38,11 @@ func TestHandleListInstanceSnapshots(t *testing.T) {
 
 // TestHandleCreateInstanceSnapshot tests the snapshot creation endpoint
 func TestHandleCreateInstanceSnapshot(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create instance for snapshot creation
+	setupTestInstance(t, server, "test-instance")
 
 	tests := []struct {
 		name           string
@@ -328,9 +333,11 @@ func TestSnapshotHandlersConcurrency(t *testing.T) {
 
 // TestSnapshotNamingValidation tests snapshot name validation
 func TestSnapshotNamingValidation(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create instance for snapshot validation tests
+	setupTestInstance(t, server, "test-instance")
 
 	tests := []struct {
 		name         string
@@ -432,9 +439,12 @@ func TestSnapshotErrorScenarios(t *testing.T) {
 
 // TestSnapshotResponseStructure tests response data structures
 func TestSnapshotResponseStructure(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create instance with snapshot for response structure tests
+	setupTestInstance(t, server, "test-instance")
+	setupTestSnapshot(t, server, "test-instance")
 
 	t.Run("list response structure", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/api/v1/snapshots", nil)

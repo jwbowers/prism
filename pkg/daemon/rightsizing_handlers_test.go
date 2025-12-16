@@ -172,9 +172,12 @@ func TestHandleRightsizingExport(t *testing.T) {
 
 // TestHandleRightsizingSummary tests the summary endpoint
 func TestHandleRightsizingSummary(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create test instances for rightsizing analysis
+	setupTestInstance(t, server, "test-instance-1")
+	setupTestInstance(t, server, "test-instance-2")
 
 	req := httptest.NewRequest("GET", "/api/v1/rightsizing/summary", nil)
 	w := httptest.NewRecorder()
@@ -197,9 +200,12 @@ func TestHandleRightsizingSummary(t *testing.T) {
 
 // TestHandleInstanceMetrics tests the instance metrics endpoint
 func TestHandleInstanceMetrics(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create test instances for metrics
+	setupTestInstance(t, server, "test-instance-1")
+	setupTestInstance(t, server, "test-instance-2")
 
 	req := httptest.NewRequest("GET", "/api/v1/instances/metrics", nil)
 	w := httptest.NewRecorder()
