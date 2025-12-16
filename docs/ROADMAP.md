@@ -127,56 +127,62 @@ Following the v0.6.0 release which established baseline test infrastructure, Pri
 
 ---
 
-### v0.6.2 (January 2026): Enterprise Feature Reliability 📋 PLANNED
-**Release Date**: Target January 10, 2026 (3 weeks)
-**Focus**: Integration tests for enterprise features, concurrency validation, performance benchmarks
-**Planning Doc**: [TESTING_IMPROVEMENT_ROADMAP.md](releases/TESTING_IMPROVEMENT_ROADMAP.md#-v062-enterprise-feature-reliability)
+### v0.6.2 (December 2025): Complete Testing Infrastructure Overhaul 🚀 IN PROGRESS
+**Release Date**: Target December 30, 2025 (2 weeks - aggressive timeline)
+**Focus**: Test data setup, integration tests, concurrency validation, performance benchmarks
+**Milestone**: [v0.6.2 Enterprise Feature Reliability](https://github.com/scttfrdmn/prism/milestone/38)
 
-#### Goals
+#### Scope: 6 Issues, ~2,900 Lines of Test Code
 
-**Phase 2.1: Integration Test Suite** (Week 1)
-- [ ] Project + Budget integration tests (600+ lines)
+**Week 1: Foundation & Integration Tests**
+
+- [ ] **Issue #409**: Test data setup architecture (400+ lines)
+  - Create test data helpers (projects, budgets, policies, snapshots, security)
+  - Remove all 14 skip statements from v0.6.1
+  - Achieve 60%+ pkg/daemon coverage
+
+- [ ] **Issue #382**: Project + Budget integration tests (600+ lines)
   - Multi-source funding (N budgets → 1 project)
   - Shared budget pools (1 budget → N projects)
   - Real-time cost tracking with live instances
   - Alert thresholds and overspend prevention
-- [ ] Invitation + Project integration tests (500+ lines)
+
+- [ ] **Issue #383**: Invitation + Project integration tests (500+ lines)
   - Full accept/decline workflows
   - Bulk invitations (50+ students)
-  - Research user provisioning (SSH keys, EFS home dirs)
+  - Research user auto-provisioning (SSH keys, EFS home dirs)
   - Role-based permissions validation
-- [ ] Multi-project collaboration tests (400+ lines)
+
+- [ ] **Issue #384**: Multi-project collaboration tests (400+ lines)
   - Shared storage across projects
   - User membership in multiple projects
   - Budget visibility and permissions
 
-**Phase 2.2: Concurrency Testing** (Week 2)
-- [ ] Concurrent API access tests (500+ lines)
+**Week 2: Concurrency & Performance**
+
+- [ ] **Issue #385**: Concurrent API access & race condition tests (500+ lines) 🔥 **CRITICAL**
   - 10 users launching 50 instances simultaneously
   - 20 projects created concurrently
   - Race conditions on budget allocations
   - State update conflicts
-- [ ] Load testing
-  - 100 concurrent launches (rate limiting validation)
-  - 50 simultaneous API requests (response time < 200ms)
+  - Load testing: 100 concurrent launches, 50 simultaneous API requests
 
-**Phase 2.3: Performance Benchmarking** (Week 3)
-- [ ] API endpoint benchmarks (300+ lines)
-  - LaunchInstance, ListInstances (100/1000 items)
-  - ProjectList (100 projects), BudgetSummary
-- [ ] State management benchmarks (200+ lines)
-  - Save/load performance (< 10ms target)
+- [ ] **Issue #386**: Performance benchmarking suite (500+ lines)
+  - API endpoint benchmarks (LaunchInstance, ListInstances, ProjectList, BudgetSummary)
+  - State management benchmarks (save/load < 10ms target)
   - Concurrent update handling
+  - CI integration for regression detection
 
 **Success Metrics**:
-- ✅ 65%+ overall coverage
+- ✅ pkg/daemon: 29.5% → 60%+ coverage
+- ✅ Overall: ~45% → 65%+ coverage
 - ✅ 100% enterprise integration test pass rate
 - ✅ Zero race conditions detected
-- ✅ Performance targets met (API < 200ms p95)
+- ✅ Performance targets met (API < 200ms p95, state < 10ms)
 
-**Deliverables**: ~2,500 lines of new test code
+**Deliverables**: ~2,900 lines of new test code + test infrastructure documentation
 
-**Status**: 📋 Planned
+**Status**: 🚀 Ready to Start (December 16, 2025)
 
 ---
 
