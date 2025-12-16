@@ -107,6 +107,25 @@ type PrismAPI interface {
 	PreventProjectLaunches(context.Context, string) (map[string]interface{}, error)
 	AllowProjectLaunches(context.Context, string) (map[string]interface{}, error)
 
+	// Budget management operations (v0.6.2)
+	CreateBudget(context.Context, project.CreateBudgetRequest) (*types.Budget, error)
+	GetBudget(context.Context, string) (*types.Budget, error)
+	ListBudgets(context.Context) ([]*types.Budget, error)
+	UpdateBudget(context.Context, string, project.UpdateBudgetRequest) (*types.Budget, error)
+	DeleteBudget(context.Context, string) error
+	GetBudgetSummary(context.Context, string) (*types.BudgetSummary, error)
+	GetBudgetAllocations(context.Context, string) ([]*types.ProjectBudgetAllocation, error)
+
+	// Allocation management operations (v0.6.2)
+	CreateAllocation(context.Context, project.CreateAllocationRequest) (*types.ProjectBudgetAllocation, error)
+	GetAllocation(context.Context, string) (*types.ProjectBudgetAllocation, error)
+	GetProjectAllocations(context.Context, string) ([]*types.ProjectBudgetAllocation, error)
+	UpdateAllocation(context.Context, string, project.UpdateAllocationRequest) (*types.ProjectBudgetAllocation, error)
+	DeleteAllocation(context.Context, string) error
+	RecordSpending(context.Context, string, float64) (*project.SpendingResult, error)
+	CheckAllocationStatus(context.Context, string) (*project.AllocationStatus, error)
+	GetProjectFundingSummary(context.Context, string) (*types.ProjectFundingSummary, error)
+
 	// Invitation operations (v0.5.11)
 	GetInvitationByToken(context.Context, string) (*GetInvitationResponse, error)
 	AcceptInvitation(context.Context, string) (*InvitationActionResponse, error)
