@@ -8,6 +8,7 @@ import (
 
 	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/pkg/types"
+	"github.com/scttfrdmn/prism/test/integration"
 )
 
 // CreateTestInstanceOptions contains options for creating a test instance
@@ -33,6 +34,16 @@ func CreateTestInstance(t *testing.T, registry *FixtureRegistry, opts CreateTest
 	if opts.Size == "" {
 		opts.Size = "S" // Smallest size for cost efficiency
 	}
+
+	// CRITICAL: Acquire instance slot (blocks until available, max 2 concurrent)
+	suiteManager := integration.GetSuiteManager()
+	suiteManager.SetClient(registry.client) // Ensure client available for cleanup
+	suiteManager.AcquireInstanceSlot(t, opts.Name)
+
+	// Ensure slot is released when instance is done (LIFO cleanup via t.Cleanup)
+	t.Cleanup(func() {
+		suiteManager.ReleaseInstanceSlot(t, opts.Name)
+	})
 
 	ctx := context.Background()
 

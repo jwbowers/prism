@@ -83,7 +83,7 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 	// Step 4: Verify API-level instance information is correct
 	instanceInfo, err := ctx.Client.GetInstance(context.Background(), instanceName)
 	integration.AssertNoError(t, err, "Should be able to retrieve instance info")
-	integration.AssertEqual(t, "Python Machine Learning (Simplified)", instanceInfo.Template, "Template name should match")
+	integration.AssertEqual(t, "Python ML Workstation", instanceInfo.Template, "Template name should match")
 	integration.AssertNotEmpty(t, instanceInfo.PublicIP, "Instance should have public IP")
 	integration.AssertEqual(t, "running", instanceInfo.State, "Instance should still be running")
 
