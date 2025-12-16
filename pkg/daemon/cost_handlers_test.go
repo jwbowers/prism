@@ -318,39 +318,40 @@ func TestHandleGetCostTrends(t *testing.T) {
 	handler := server.createHTTPHandler()
 
 	// Set up test data: create project with budget
-	proj := setupTestProject(t, server, "test-project")
-	setupTestBudget(t, server, proj.ID, 1000.0)
+	projectID := setupTestProject(t, server, "test-project")
+	setupTestBudget(t, server, projectID, 1000.0)
 
 	tests := []struct {
-		name           string
-		queryParams    string
-		expectedStatus int
+		name            string
+		queryParamsFunc func(string) string
+		expectedStatus  int
 	}{
 		{
-			name:           "trends with default period",
-			queryParams:    "?project_id=" + proj.ID,
-			expectedStatus: http.StatusOK,
+			name:            "trends with default period",
+			queryParamsFunc: func(id string) string { return "?project_id=" + id },
+			expectedStatus:  http.StatusOK,
 		},
 		{
-			name:           "trends with 7d period",
-			queryParams:    "?project_id=" + proj.ID + "&period=7d",
-			expectedStatus: http.StatusOK,
+			name:            "trends with 7d period",
+			queryParamsFunc: func(id string) string { return "?project_id=" + id + "&period=7d" },
+			expectedStatus:  http.StatusOK,
 		},
 		{
-			name:           "trends with 90d period",
-			queryParams:    "?project_id=" + proj.ID + "&period=90d",
-			expectedStatus: http.StatusOK,
+			name:            "trends with 90d period",
+			queryParamsFunc: func(id string) string { return "?project_id=" + id + "&period=90d" },
+			expectedStatus:  http.StatusOK,
 		},
 		{
-			name:           "missing project_id",
-			queryParams:    "",
-			expectedStatus: http.StatusBadRequest,
+			name:            "missing project_id",
+			queryParamsFunc: func(id string) string { return "" },
+			expectedStatus:  http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/api/v1/cost/trends"+tt.queryParams, nil)
+			queryParams := tt.queryParamsFunc(projectID)
+			req := httptest.NewRequest("GET", "/api/v1/cost/trends"+queryParams, nil)
 			w := httptest.NewRecorder()
 
 			handler.ServeHTTP(w, req)
@@ -366,29 +367,30 @@ func TestHandleGetBudgetStatus(t *testing.T) {
 	handler := server.createHTTPHandler()
 
 	// Set up test data: create project with budget
-	proj := setupTestProject(t, server, "test-project")
-	setupTestBudget(t, server, proj.ID, 1000.0)
+	projectID := setupTestProject(t, server, "test-project")
+	setupTestBudget(t, server, projectID, 1000.0)
 
 	tests := []struct {
-		name           string
-		queryParams    string
-		expectedStatus int
+		name            string
+		queryParamsFunc func(string) string
+		expectedStatus  int
 	}{
 		{
-			name:           "valid project budget status",
-			queryParams:    "?project_id=" + proj.ID,
-			expectedStatus: http.StatusOK,
+			name:            "valid project budget status",
+			queryParamsFunc: func(id string) string { return "?project_id=" + id },
+			expectedStatus:  http.StatusOK,
 		},
 		{
-			name:           "missing project_id",
-			queryParams:    "",
-			expectedStatus: http.StatusBadRequest,
+			name:            "missing project_id",
+			queryParamsFunc: func(id string) string { return "" },
+			expectedStatus:  http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/api/v1/cost/budget/status"+tt.queryParams, nil)
+			queryParams := tt.queryParamsFunc(projectID)
+			req := httptest.NewRequest("GET", "/api/v1/cost/budget/status"+queryParams, nil)
 			w := httptest.NewRecorder()
 
 			handler.ServeHTTP(w, req)
