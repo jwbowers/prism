@@ -314,9 +314,12 @@ func TestHandleGetRecommendations(t *testing.T) {
 
 // TestHandleGetCostTrends tests the cost trends endpoint
 func TestHandleGetCostTrends(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create project with budget
+	proj := setupTestProject(t, server, "test-project")
+	setupTestBudget(t, server, proj.ID, 1000.0)
 
 	tests := []struct {
 		name           string
@@ -325,17 +328,17 @@ func TestHandleGetCostTrends(t *testing.T) {
 	}{
 		{
 			name:           "trends with default period",
-			queryParams:    "?project_id=test-project",
+			queryParams:    "?project_id=" + proj.ID,
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "trends with 7d period",
-			queryParams:    "?project_id=test-project&period=7d",
+			queryParams:    "?project_id=" + proj.ID + "&period=7d",
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "trends with 90d period",
-			queryParams:    "?project_id=test-project&period=90d",
+			queryParams:    "?project_id=" + proj.ID + "&period=90d",
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -359,9 +362,12 @@ func TestHandleGetCostTrends(t *testing.T) {
 
 // TestHandleGetBudgetStatus tests the budget status endpoint
 func TestHandleGetBudgetStatus(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create project with budget
+	proj := setupTestProject(t, server, "test-project")
+	setupTestBudget(t, server, proj.ID, 1000.0)
 
 	tests := []struct {
 		name           string
@@ -370,7 +376,7 @@ func TestHandleGetBudgetStatus(t *testing.T) {
 	}{
 		{
 			name:           "valid project budget status",
-			queryParams:    "?project_id=test-project",
+			queryParams:    "?project_id=" + proj.ID,
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -496,7 +502,6 @@ func TestCostHandlersConcurrency(t *testing.T) {
 
 // TestCostHandlersMethodValidation tests HTTP method validation
 func TestCostHandlersMethodValidation(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
 
