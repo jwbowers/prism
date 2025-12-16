@@ -32,9 +32,11 @@ func TestHandleListIdlePolicies(t *testing.T) {
 
 // TestHandleGetIdlePolicy tests getting a specific idle policy
 func TestHandleGetIdlePolicy(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create a "standard" policy
+	setupTestIdlePolicy(t, server, "standard")
 
 	tests := []struct {
 		name           string
@@ -183,9 +185,12 @@ func TestHandleIdleSavingsReport(t *testing.T) {
 
 // TestHandleIdlePolicyApply tests applying idle policy to instance
 func TestHandleIdlePolicyApply(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create test instance and policy
+	setupTestInstance(t, server, "test-instance")
+	setupTestIdlePolicy(t, server, "standard")
 
 	tests := []struct {
 		name           string
@@ -240,9 +245,11 @@ func TestHandleIdlePolicyApply(t *testing.T) {
 
 // TestHandleInstanceIdlePolicies tests instance-specific idle policy endpoints
 func TestHandleInstanceIdlePolicies(t *testing.T) {
-	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
+
+	// Set up test data: create test instance
+	setupTestInstance(t, server, "test-instance")
 
 	tests := []struct {
 		name           string
