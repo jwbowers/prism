@@ -1186,10 +1186,24 @@ func (s *Server) isLaunchBlockedByBudget(req *types.LaunchRequest, w http.Respon
 }
 
 // getInstanceTypeForLaunch determines the instance type that will be used for a launch request
+// This must match the logic in pkg/aws/manager.go:getInstanceTypeForSize to ensure
+// budget enforcement estimates match actual instance types that will be launched
 func (s *Server) getInstanceTypeForLaunch(req *types.LaunchRequest) string {
 	// If size is specified, map it to instance type
+	// Use the same mapping as AWS manager (t3 instances, not t4g)
 	if req.Size != "" {
-		return s.getInstanceTypeForSize(req.Size)
+		// Map sizes to instance types (must match pkg/aws/manager.go:getInstanceTypeForSize)
+		sizeMap := map[string]string{
+			"XS": "t3.micro",  // 1 vCPU, 2GB RAM
+			"S":  "t3.small",  // 2 vCPU, 4GB RAM
+			"M":  "t3.medium", // 2 vCPU, 8GB RAM
+			"L":  "t3.large",  // 4 vCPU, 16GB RAM
+			"XL": "t3.xlarge", // 8 vCPU, 32GB RAM
+		}
+
+		if instanceType, exists := sizeMap[req.Size]; exists {
+			return instanceType
+		}
 	}
 
 	// Try to get from template defaults
@@ -1239,6 +1253,14 @@ func (s *Server) resolveFundingAllocation(req *types.LaunchRequest, w http.Respo
 		// No default allocation - check if project has any allocations
 		allocations, err := s.budgetManager.GetProjectAllocations(ctx, req.ProjectID)
 		if err != nil || len(allocations) == 0 {
+			// No allocations found - check if project has a simple budget configured
+			// If so, allow launch without funding allocation (simpler budget enforcement)
+			if project.Budget != nil {
+				log.Printf("Project %s has budget but no funding allocations - allowing launch with simple budget enforcement", req.ProjectID)
+				return nil // Allow launch, budget enforcement will check limits
+			}
+
+			// No budget and no allocations - require funding allocation setup
 			s.writeError(w, http.StatusBadRequest,
 				fmt.Sprintf("Project %q has no budget allocations. Please:\n"+
 					"  1. Create a budget: prism budget create <name> <amount>\n"+

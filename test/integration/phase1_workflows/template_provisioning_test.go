@@ -187,29 +187,64 @@ func TestTemplateProvisioning_BaseUbuntu(t *testing.T) {
 // Helper Functions
 
 // waitForProvisioningComplete waits for user data execution to complete
-// This is more thorough than just waiting for "running" state
+// Uses DETERMINISTIC polling when possible, skips gracefully when not verifiable
 func waitForProvisioningComplete(ctx *integration.TestContext, instanceName string, timeout time.Duration) error {
-	// For now, use a simple time-based wait since we can't directly check cloud-init status without SSH
-	// In a production version, this would check cloud-init status via SSM or SSH
-	ctx.T.Logf("Waiting %v for user data execution to complete...", timeout)
+	// Get instance info
+	instance, err := ctx.Client.GetInstance(context.Background(), instanceName)
+	if err != nil {
+		return fmt.Errorf("failed to get instance: %w", err)
+	}
 
-	// Wait for instance to be stable in running state
-	time.Sleep(30 * time.Second)
-
-	// Verify still running
-	if err := ctx.WaitForInstanceState(instanceName, "running", 1*time.Minute); err != nil {
+	// Wait for instance to be stable in running state first
+	if err := ctx.WaitForInstanceState(instanceName, "running", 2*time.Minute); err != nil {
 		return fmt.Errorf("instance not stable: %w", err)
 	}
 
-	// Additional wait for provisioning (conservative estimate)
-	// Real implementation would check: systemctl is-active cloud-init
-	provisioningWait := timeout - 2*time.Minute
-	if provisioningWait > 0 {
-		ctx.T.Logf("Allowing additional %v for package installation...", provisioningWait)
-		time.Sleep(provisioningWait)
+	// If we can SSH, poll for cloud-init completion (DETERMINISTIC)
+	if canSSH(instance.PublicIP) {
+		ctx.T.Log("SSH available - polling for cloud-init completion deterministically")
+		return waitForCloudInitComplete(ctx, instance.PublicIP, timeout)
 	}
 
+	// If we can't SSH, we can't deterministically check provisioning status
+	// Log warning but don't fail - tests will skip deep verification
+	ctx.T.Log("⚠️  SSH not available - cannot verify provisioning status deterministically")
+	ctx.T.Log("Note: Instance is 'running' but user-data execution status is unknown")
+	ctx.T.Log("Deep verification will be skipped (SSH-dependent checks)")
+
 	return nil
+}
+
+// waitForCloudInitComplete polls cloud-init status via SSH until complete
+func waitForCloudInitComplete(ctx *integration.TestContext, publicIP string, timeout time.Duration) error {
+	ctx.T.Log("Polling cloud-init status...")
+
+	deadline := time.Now().Add(timeout)
+	pollInterval := 15 * time.Second
+
+	for time.Now().Before(deadline) {
+		// Check cloud-init status
+		output := runSSHCommandOrEmpty(publicIP, "cloud-init status")
+
+		if strings.Contains(output, "status: done") {
+			ctx.T.Log("✓ Cloud-init completed successfully")
+			return nil
+		}
+
+		if strings.Contains(output, "status: error") {
+			return fmt.Errorf("cloud-init failed: %s", output)
+		}
+
+		if strings.Contains(output, "status: running") {
+			ctx.T.Logf("Cloud-init still running (waiting...)")
+		} else if output != "" {
+			ctx.T.Logf("Cloud-init status: %s (waiting...)", strings.TrimSpace(output))
+		}
+
+		time.Sleep(pollInterval)
+	}
+
+	return fmt.Errorf("cloud-init did not complete within %v (timeout as failsafe)", timeout)
 }
 
 // canSSH checks if SSH access is available to the instance
@@ -408,5 +443,42 @@ func runSSHCommand(t *testing.T, publicIP, command string) string {
 	}
 
 	t.Fatalf("Failed to run SSH command (tried all keys): %v", lastErr)
+	return ""
+}
+
+// runSSHCommandOrEmpty executes a command via SSH and returns the output
+// Returns empty string on error (used for polling where SSH might not be ready yet)
+func runSSHCommandOrEmpty(publicIP, command string) string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+
+	// Try different SSH keys
+	sshKeyPaths := []string{
+		fmt.Sprintf("%s/.ssh/prism-test-key", homeDir),
+		fmt.Sprintf("%s/.ssh/id_rsa", homeDir),
+		fmt.Sprintf("%s/.ssh/id_ed25519", homeDir),
+	}
+
+	for _, keyPath := range sshKeyPaths {
+		if _, err := os.Stat(keyPath); err != nil {
+			continue
+		}
+
+		cmd := exec.Command("ssh",
+			"-i", keyPath,
+			"-o", "StrictHostKeyChecking=no",
+			"-o", "ConnectTimeout=10",
+			"-o", "BatchMode=yes",
+			fmt.Sprintf("ubuntu@%s", publicIP),
+			command)
+
+		output, err := cmd.CombinedOutput()
+		if err == nil {
+			return strings.TrimSpace(string(output))
+		}
+	}
+
 	return ""
 }
