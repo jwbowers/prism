@@ -1530,6 +1530,250 @@ func (c *HTTPClient) AllowProjectLaunches(ctx context.Context, projectID string)
 	return result, nil
 }
 
+// Budget management operations (v0.6.2)
+
+// CreateBudget creates a new budget pool
+func (c *HTTPClient) CreateBudget(ctx context.Context, req project.CreateBudgetRequest) (*types.Budget, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/budgets", req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var budget types.Budget
+	if err := c.handleResponse(resp, &budget); err != nil {
+		return nil, err
+	}
+
+	return &budget, nil
+}
+
+// GetBudget retrieves a specific budget by ID
+func (c *HTTPClient) GetBudget(ctx context.Context, budgetID string) (*types.Budget, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/budgets/%s", budgetID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var budget types.Budget
+	if err := c.handleResponse(resp, &budget); err != nil {
+		return nil, err
+	}
+
+	return &budget, nil
+}
+
+// ListBudgets lists all budget pools
+func (c *HTTPClient) ListBudgets(ctx context.Context) ([]*types.Budget, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/budgets", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Budgets []*types.Budget `json:"budgets"`
+	}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result.Budgets, nil
+}
+
+// UpdateBudget updates an existing budget
+func (c *HTTPClient) UpdateBudget(ctx context.Context, budgetID string, req project.UpdateBudgetRequest) (*types.Budget, error) {
+	resp, err := c.makeRequest(ctx, "PUT", fmt.Sprintf("/api/v1/budgets/%s", budgetID), req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var budget types.Budget
+	if err := c.handleResponse(resp, &budget); err != nil {
+		return nil, err
+	}
+
+	return &budget, nil
+}
+
+// DeleteBudget deletes a budget pool
+func (c *HTTPClient) DeleteBudget(ctx context.Context, budgetID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", fmt.Sprintf("/api/v1/budgets/%s", budgetID), nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return c.handleResponse(resp, nil)
+}
+
+// GetBudgetSummary retrieves a budget summary with allocation details
+func (c *HTTPClient) GetBudgetSummary(ctx context.Context, budgetID string) (*types.BudgetSummary, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/budgets/%s/summary", budgetID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var summary types.BudgetSummary
+	if err := c.handleResponse(resp, &summary); err != nil {
+		return nil, err
+	}
+
+	return &summary, nil
+}
+
+// GetBudgetAllocations retrieves all allocations for a budget
+func (c *HTTPClient) GetBudgetAllocations(ctx context.Context, budgetID string) ([]*types.ProjectBudgetAllocation, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/budgets/%s/allocations", budgetID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Allocations []*types.ProjectBudgetAllocation `json:"allocations"`
+	}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result.Allocations, nil
+}
+
+// Allocation management operations (v0.6.2)
+
+// CreateAllocation creates a new budget allocation to a project
+func (c *HTTPClient) CreateAllocation(ctx context.Context, req project.CreateAllocationRequest) (*types.ProjectBudgetAllocation, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/allocations", req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var allocation types.ProjectBudgetAllocation
+	if err := c.handleResponse(resp, &allocation); err != nil {
+		return nil, err
+	}
+
+	return &allocation, nil
+}
+
+// GetAllocation retrieves a specific allocation by ID
+func (c *HTTPClient) GetAllocation(ctx context.Context, allocationID string) (*types.ProjectBudgetAllocation, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/allocations/%s", allocationID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var allocation types.ProjectBudgetAllocation
+	if err := c.handleResponse(resp, &allocation); err != nil {
+		return nil, err
+	}
+
+	return &allocation, nil
+}
+
+// GetProjectAllocations retrieves all allocations for a project
+func (c *HTTPClient) GetProjectAllocations(ctx context.Context, projectID string) ([]*types.ProjectBudgetAllocation, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/projects/%s/allocations", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Allocations []*types.ProjectBudgetAllocation `json:"allocations"`
+	}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result.Allocations, nil
+}
+
+// UpdateAllocation updates an existing allocation
+func (c *HTTPClient) UpdateAllocation(ctx context.Context, allocationID string, req project.UpdateAllocationRequest) (*types.ProjectBudgetAllocation, error) {
+	resp, err := c.makeRequest(ctx, "PUT", fmt.Sprintf("/api/v1/allocations/%s", allocationID), req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var allocation types.ProjectBudgetAllocation
+	if err := c.handleResponse(resp, &allocation); err != nil {
+		return nil, err
+	}
+
+	return &allocation, nil
+}
+
+// DeleteAllocation deletes an allocation
+func (c *HTTPClient) DeleteAllocation(ctx context.Context, allocationID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", fmt.Sprintf("/api/v1/allocations/%s", allocationID), nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return c.handleResponse(resp, nil)
+}
+
+// RecordSpending records spending against an allocation
+func (c *HTTPClient) RecordSpending(ctx context.Context, allocationID string, amount float64) (*project.SpendingResult, error) {
+	req := map[string]interface{}{
+		"amount": amount,
+	}
+
+	resp, err := c.makeRequest(ctx, "POST", fmt.Sprintf("/api/v1/allocations/%s/spending", allocationID), req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result project.SpendingResult
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// CheckAllocationStatus checks if an allocation is exhausted
+func (c *HTTPClient) CheckAllocationStatus(ctx context.Context, allocationID string) (*AllocationStatus, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/allocations/%s/status", allocationID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var status AllocationStatus
+	if err := c.handleResponse(resp, &status); err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+// GetProjectFundingSummary retrieves a summary of all project funding
+func (c *HTTPClient) GetProjectFundingSummary(ctx context.Context, projectID string) (*types.ProjectFundingSummary, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/projects/%s/funding", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var summary types.ProjectFundingSummary
+	if err := c.handleResponse(resp, &summary); err != nil {
+		return nil, err
+	}
+
+	return &summary, nil
+}
+
 // GetCostTrends retrieves cost trends for analysis
 func (c *HTTPClient) GetCostTrends(ctx context.Context, projectID, period string) (map[string]interface{}, error) {
 	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/cost/trends?project_id=%s&period=%s", projectID, period), nil)

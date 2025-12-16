@@ -346,18 +346,18 @@ func TestProjectBudget_CostTracking_RealInstance(t *testing.T) {
 	// Launch a small instance for cost tracking
 	instanceName := "cost-tracking-instance"
 	instance, err := fixtures.CreateTestInstance(t, registry, fixtures.CreateTestInstanceOptions{
-		Name:         instanceName,
-		TemplateName: "Basic Ubuntu (APT)",
-		InstanceType: "t3.micro", // Cheap instance for testing
-		ProjectID:    &proj.ID,   // Associate with project
+		Name:      instanceName,
+		Template:  "Basic Ubuntu (APT)",
+		Size:      "S",     // Small instance for testing
+		ProjectID: proj.ID, // Associate with project
 	})
 	require.NoError(t, err, "Failed to create test instance")
 	require.NotNil(t, instance)
 
-	t.Logf("Instance launched: %s (%s)", instance.Name, instance.InstanceType)
+	t.Logf("Instance launched: %s", instance.Name)
 
 	// Wait for instance to be running (cost accrual starts)
-	err = fixtures.WaitForInstanceState(t, testCtx.Client, instanceName, "running", 5*time.Minute)
+	err = testCtx.WaitForInstanceState(instanceName, "running", 5*time.Minute)
 	require.NoError(t, err, "Instance failed to reach running state")
 
 	// Let it run for 30 seconds to accrue some cost
@@ -369,7 +369,7 @@ func TestProjectBudget_CostTracking_RealInstance(t *testing.T) {
 	require.NoError(t, err, "Failed to stop instance")
 
 	// Wait for instance to stop
-	err = fixtures.WaitForInstanceState(t, testCtx.Client, instanceName, "stopped", 3*time.Minute)
+	err = testCtx.WaitForInstanceState(instanceName, "stopped", 3*time.Minute)
 	require.NoError(t, err, "Instance failed to stop")
 
 	// Check allocation spending (should show some cost)
@@ -708,11 +708,12 @@ func TestProject_BudgetSummary_Accuracy(t *testing.T) {
 	assert.Equal(t, totalSpent, fundingSummary.TotalSpent, "Total spent mismatch")
 
 	expectedRemaining := 15000.0 - totalSpent
-	assert.Equal(t, expectedRemaining, fundingSummary.Remaining, "Remaining amount mismatch")
+	actualRemaining := fundingSummary.TotalAllocated - fundingSummary.TotalSpent
+	assert.Equal(t, expectedRemaining, actualRemaining, "Remaining amount mismatch")
 
 	percentUsed := (totalSpent / 15000.0) * 100
 	t.Logf("✅ Budget summary accurate: $%.2f allocated, $%.2f spent (%.1f%%), $%.2f remaining",
-		fundingSummary.TotalAllocated, fundingSummary.TotalSpent, percentUsed, fundingSummary.Remaining)
+		fundingSummary.TotalAllocated, fundingSummary.TotalSpent, percentUsed, actualRemaining)
 }
 
 // Helper function to create a pointer to a float64

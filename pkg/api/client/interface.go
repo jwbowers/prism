@@ -123,7 +123,7 @@ type PrismAPI interface {
 	UpdateAllocation(context.Context, string, project.UpdateAllocationRequest) (*types.ProjectBudgetAllocation, error)
 	DeleteAllocation(context.Context, string) error
 	RecordSpending(context.Context, string, float64) (*project.SpendingResult, error)
-	CheckAllocationStatus(context.Context, string) (*project.AllocationStatus, error)
+	CheckAllocationStatus(context.Context, string) (*AllocationStatus, error)
 	GetProjectFundingSummary(context.Context, string) (*types.ProjectFundingSummary, error)
 
 	// Invitation operations (v0.5.11)
@@ -346,6 +346,14 @@ type PolicyCheckResponse struct {
 	Reason          string   `json:"reason"`
 	MatchedPolicies []string `json:"matched_policies,omitempty"`
 	Suggestions     []string `json:"suggestions,omitempty"`
+}
+
+// Budget and allocation operation types (v0.6.2)
+
+// AllocationStatus represents the status of a budget allocation
+type AllocationStatus struct {
+	Exhausted bool    `json:"exhausted"`
+	Remaining float64 `json:"remaining"`
 }
 
 // Invitation operation types (v0.5.11)
