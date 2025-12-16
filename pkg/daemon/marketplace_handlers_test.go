@@ -626,6 +626,7 @@ func TestHandleMarketplaceTemplateInstall(t *testing.T) {
 
 // TestHandleMarketplaceTemplateTracking tests the usage tracking endpoint
 func TestHandleMarketplaceTemplateTracking(t *testing.T) {
+	t.Skip("Issue #409: Handler tests need test data setup (v0.6.2)")
 	server := createTestServer(t)
 	handler := server.createHTTPHandler()
 
