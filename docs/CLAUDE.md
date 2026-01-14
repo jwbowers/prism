@@ -28,8 +28,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Prism is a command-line tool that provides academic researchers with pre-configured cloud workstations, eliminating the need for manual environment configuration.
 
-**Current Version**: v0.5.9 (In Development)
-**Current Focus**: [Phase 5.0 UX Redesign](ROADMAP.md#-current-focus-phase-50---ux-redesign) (HIGHEST PRIORITY)
+**Current Version**: v0.6.3 (Released)
+**Current Focus**: [v0.7.0 Production Hardening & Enterprise Features](ROADMAP.md#v070-march-2026-production-hardening--enterprise-features--planned) (HIGHEST PRIORITY)
 
 ---
 
@@ -70,7 +70,7 @@ See [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md) for full details. Key principle
 
 ## 🚀 Current Development Status
 
-**Current Milestone**: [Phase 5.0: UX Redesign](https://github.com/scttfrdmn/prism/milestone/1)
+**Current Milestone**: [v0.7.0: Production Hardening & Enterprise Features](https://github.com/scttfrdmn/prism/milestone/40)
 
 ### Completed Phases
 - ✅ Phase 1: Distributed Architecture
@@ -80,30 +80,42 @@ See [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md) for full details. Key principle
 - ✅ Phase 5A: Multi-User Foundation
 - ✅ Phase 5B: Template Marketplace
 - ✅ v0.5.7: Template Provisioning & Test Infrastructure
-- ✅ v0.5.8: Quick Start Experience (RELEASED)
+- ✅ v0.5.8: Quick Start Experience
+- ✅ v0.5.9: Navigation Restructure
+- ✅ v0.6.0: Test Infrastructure & API Documentation
+- ✅ v0.6.1: Pragmatic Testing Strategy
+- ✅ v0.6.2: Enterprise Feature Testing & E2E Infrastructure
+- ✅ v0.6.3: Homebrew Template Discovery Fix (RELEASED January 14, 2026)
 
-### Current Priority: v0.5.9 Navigation Restructure
+### Current Priority: v0.7.0 Production Hardening & Enterprise Features
 
-**Status**: 🚀 IMPLEMENTATION COMPLETE
-**Release Target**: January 3, 2026
+**Status**: 📋 PLANNED
+**Release Target**: March 9, 2026 (8 weeks)
+**GitHub Milestone**: [v0.7.0](https://github.com/scttfrdmn/prism/milestone/40)
 
-**Features**:
-- [#14](https://github.com/scttfrdmn/prism/issues/14) - Terminal/WebView merged into Workspaces ✅
-- [#16](https://github.com/scttfrdmn/prism/issues/16) - Advanced Features collapsed under Settings ✅
-- [#18](https://github.com/scttfrdmn/prism/issues/18) - Unified Storage UI (EFS + EBS) ✅
+**Key Features**:
+- [#412](https://github.com/scttfrdmn/prism/issues/412) - Network chaos testing (500+ lines)
+- [#413](https://github.com/scttfrdmn/prism/issues/413) - AWS service outage simulation (400+ lines)
+- [#414](https://github.com/scttfrdmn/prism/issues/414) - Template edge case coverage (400+ lines)
+- [#415](https://github.com/scttfrdmn/prism/issues/415) - Instance management edge cases (500+ lines)
+- [#416](https://github.com/scttfrdmn/prism/issues/416) - Multi-region testing (300+ lines)
+- [#417](https://github.com/scttfrdmn/prism/issues/417) - LocalStack integration (700+ lines)
+- [#418](https://github.com/scttfrdmn/prism/issues/418) - AWS quota management with AZ failover
+- [#419](https://github.com/scttfrdmn/prism/issues/419) - Auto-update Phase 1 (version detection)
+- [#420](https://github.com/scttfrdmn/prism/issues/420) - GUI system tray and auto-start
 
-**Success Metrics Achieved**:
-- 🧭 Navigation complexity: 14 → 6 top-level items ✅
-- 📱 Advanced feature discoverability: >95% (hierarchical navigation) ✅
+**Success Metrics**:
+- ✅ 2,000+ new lines of chaos and edge case tests
+- ✅ LocalStack reduces test execution time to <5 minutes
+- ✅ Pre-launch quota validation prevents 80%+ of launch failures
+- ✅ Update notifications reach 70%+ of users within 7 days
 
 ### Upcoming Releases
 
 See [ROADMAP.md](ROADMAP.md) for detailed release plans:
-- **v0.5.10**: Multi-Project Budgets (February 2026)
-- **v0.5.11**: User Invitation & Role Systems (March 2026)
-- **v0.5.12**: Operational Stability & CLI Consistency (April 2026)
-- **v0.5.13**: UX Re-evaluation & Polish (May 2026)
-- **v0.6.0**: Enterprise Authentication (June 2026)
+- **v0.7.0**: Production Hardening & Enterprise Features (March 2026)
+- **v0.7.1**: Auto-update Phase 2 & Advanced Features (Q2 2026)
+- **v0.8.0**: Multi-user Authentication & Code Cleanup (Q3 2026)
 
 ---
 
