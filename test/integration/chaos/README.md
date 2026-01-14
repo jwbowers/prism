@@ -108,6 +108,23 @@ Chaos tests simulate real-world failure conditions to ensure the system:
 **Expected Runtime**: ~10-15 minutes (creates real AWS instances)
 **Addresses Issue**: [#415](https://github.com/scttfrdmn/prism/issues/415)
 
+### Multi-Region Availability (`multi_region_test.go`)
+
+**800+ lines of chaos tests**
+
+| Test | Chaos Scenario | Validates |
+|------|---------------|-----------|
+| `TestRegionalTemplateAvailability` | Template launches across 8 regions | Regional compatibility, graceful fallbacks, no hard-coded assumptions |
+| `TestARMvsX86Availability` | ARM (Graviton) vs x86 availability | ARM support per region, automatic x86 fallback, cost optimization |
+| `TestInstanceTypeFamilyAvailability` | GPU/specialized instance availability | Family availability by region, clear errors, region recommendations |
+| `TestEFSRegionalAvailability` | EFS availability across regions | EFS vs EBS guidance, regional support, fallback suggestions |
+| `TestCrossRegionPerformance` | Cross-region latency and costs | Performance characteristics, data transfer costs, best practices |
+| `TestConcurrentRegionalLaunches` | Simultaneous launches in multiple regions | Independent operation, no cross-region interference, deployment patterns |
+
+**Expected Runtime**: ~10-15 minutes (creates AWS instances in current region)
+**Addresses Issue**: [#416](https://github.com/scttfrdmn/prism/issues/416)
+**Note**: Full 8-region testing requires AWS credentials configured for each region
+
 ## Running Chaos Tests
 
 ### Prerequisites
@@ -153,6 +170,9 @@ go test -v -tags integration ./test/integration/chaos/ -run "TestCircular|TestDe
 
 # Instance management edge cases only
 go test -v -tags integration ./test/integration/chaos/ -run "TestIdempotent|TestConnectToTerminated|TestInstanceVanished|TestStateConsistency|TestConcurrentInstance"
+
+# Multi-region availability only
+go test -v -tags integration ./test/integration/chaos/ -run "TestRegional|TestARMvsX86|TestInstanceTypeFamily|TestEFS|TestCrossRegion|TestConcurrentRegional"
 ```
 
 ### Run Individual Tests
@@ -253,6 +273,24 @@ go test -v -tags integration ./test/integration/chaos/ -run TestStateConsistency
 
 # Concurrent instance operations
 go test -v -tags integration ./test/integration/chaos/ -run TestConcurrentInstanceOperations
+
+# Regional template availability
+go test -v -tags integration ./test/integration/chaos/ -run TestRegionalTemplateAvailability
+
+# ARM vs x86 availability
+go test -v -tags integration ./test/integration/chaos/ -run TestARMvsX86Availability
+
+# Instance type family availability
+go test -v -tags integration ./test/integration/chaos/ -run TestInstanceTypeFamilyAvailability
+
+# EFS regional availability
+go test -v -tags integration ./test/integration/chaos/ -run TestEFSRegionalAvailability
+
+# Cross-region performance
+go test -v -tags integration ./test/integration/chaos/ -run TestCrossRegionPerformance
+
+# Concurrent regional launches
+go test -v -tags integration ./test/integration/chaos/ -run TestConcurrentRegionalLaunches
 ```
 
 ## Test Output
