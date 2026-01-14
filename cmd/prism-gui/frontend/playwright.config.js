@@ -70,10 +70,12 @@ export default defineConfig({
   ],
 
   // Start the Vite dev server for the frontend
+  // Note: reuseExistingServer set to false for reliability
+  // This ensures tests always have a fresh server and work in all environments
   webServer: {
     command: 'npm run dev',
     port: 3000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120 * 1000,
   }
 })
