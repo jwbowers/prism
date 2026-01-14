@@ -935,6 +935,14 @@ func (m *Manager) DeleteInstance(name string) error {
 		return terminateErr
 	})
 	if err != nil {
+		// Check if instance already doesn't exist (graceful handling for Issue #423)
+		if strings.Contains(err.Error(), "InvalidInstanceID.NotFound") ||
+			strings.Contains(err.Error(), "does not exist") {
+			log.Printf("ℹ️  Instance %s (%s) does not exist in AWS - treating deletion as successful", name, instanceID)
+			log.Printf("    This typically happens when an instance was terminated outside of Prism")
+			return nil // Treat as success - instance is already gone
+		}
+
 		// Enhance error with actionable guidance (v0.5.12)
 		return EnhanceError(err, "Terminate instance")
 	}
