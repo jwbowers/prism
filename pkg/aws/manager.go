@@ -63,6 +63,11 @@ type Manager struct {
 
 	// Architecture cache for instance types
 	architectureCache map[string]string // instance_type -> architecture
+
+	// Quota and Availability Management (v0.7.0)
+	quotaManager        *QuotaManager
+	availabilityManager *AvailabilityManager
+	healthMonitor       *HealthMonitor
 }
 
 // ManagerOptions contains optional parameters for creating a new Manager
@@ -139,22 +144,30 @@ func NewManager(opts ...ManagerOptions) (*Manager, error) {
 	// Initialize AWS Pricing API client with caching
 	pricingClient := NewPricingClient(cfg)
 
+	// Initialize Quota and Availability Management (v0.7.0)
+	quotaManager := NewQuotaManager(cfg, region)
+	availabilityManager := NewAvailabilityManager(cfg, region)
+	healthMonitor := NewHealthMonitor(cfg, region)
+
 	// Create manager first (needed for adapter)
 	manager := &Manager{
-		cfg:               cfg,
-		ec2:               ec2Client,
-		efs:               efsClient,
-		iam:               iamClient,
-		ssm:               ssmClient,
-		sts:               stsClient,
-		region:            region,
-		templates:         getTemplates(),
-		pricingClient:     pricingClient,
-		discountConfig:    ctypes.DiscountConfig{}, // No discounts by default
-		stateManager:      stateManager,
-		amiResolver:       amiResolver,
-		amiDiscovery:      amiDiscovery,
-		architectureCache: make(map[string]string), // Initialize architecture cache
+		cfg:                 cfg,
+		ec2:                 ec2Client,
+		efs:                 efsClient,
+		iam:                 iamClient,
+		ssm:                 ssmClient,
+		sts:                 stsClient,
+		region:              region,
+		templates:           getTemplates(),
+		pricingClient:       pricingClient,
+		discountConfig:      ctypes.DiscountConfig{}, // No discounts by default
+		stateManager:        stateManager,
+		amiResolver:         amiResolver,
+		amiDiscovery:        amiDiscovery,
+		architectureCache:   make(map[string]string), // Initialize architecture cache
+		quotaManager:        quotaManager,
+		availabilityManager: availabilityManager,
+		healthMonitor:       healthMonitor,
 	}
 
 	// Idle detection components moved to daemon level (Issue #289 fix)
@@ -166,6 +179,21 @@ func NewManager(opts ...ManagerOptions) (*Manager, error) {
 // GetDefaultRegion returns the default AWS region
 func (m *Manager) GetDefaultRegion() string {
 	return m.region
+}
+
+// GetQuotaManager returns the quota manager
+func (m *Manager) GetQuotaManager() *QuotaManager {
+	return m.quotaManager
+}
+
+// GetAvailabilityManager returns the availability manager
+func (m *Manager) GetAvailabilityManager() *AvailabilityManager {
+	return m.availabilityManager
+}
+
+// GetHealthMonitor returns the health monitor
+func (m *Manager) GetHealthMonitor() *HealthMonitor {
+	return m.healthMonitor
 }
 
 // GetTemplates returns all available templates
