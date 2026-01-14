@@ -16,8 +16,9 @@ type CreateTestInstanceOptions struct {
 	Template            string
 	Name                string
 	Size                string
-	ProjectID           string // Optional: Associate instance with a project for budget enforcement
-	FundingAllocationID string // Optional: Specific allocation to charge (v0.6.2+)
+	ProjectID           *string         // Optional: Associate instance with a project for budget enforcement
+	FundingAllocationID string          // Optional: Specific allocation to charge (v0.6.2+)
+	Context             context.Context // Optional: Custom context for timeouts/cancellation (chaos tests)
 }
 
 // CreateTestInstance creates a test instance for integration tests
@@ -46,19 +47,29 @@ func CreateTestInstance(t *testing.T, registry *FixtureRegistry, opts CreateTest
 		suiteManager.ReleaseInstanceSlot(t, opts.Name)
 	})
 
-	ctx := context.Background()
+	// Use custom context if provided (for chaos tests with timeouts)
+	// Otherwise use background context
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	// Launch instance
+	projectID := ""
+	if opts.ProjectID != nil {
+		projectID = *opts.ProjectID
+	}
+
 	launchReq := types.LaunchRequest{
 		Template:            opts.Template,
 		Name:                opts.Name,
 		Size:                opts.Size,
-		ProjectID:           opts.ProjectID,           // Associate with project if provided
+		ProjectID:           projectID,                // Associate with project if provided
 		FundingAllocationID: opts.FundingAllocationID, // Specify funding source (v0.6.2+)
 	}
 
-	if opts.ProjectID != "" {
-		t.Logf("Creating test instance: %s (template: %s, size: %s, project: %s)", opts.Name, opts.Template, opts.Size, opts.ProjectID)
+	if projectID != "" {
+		t.Logf("Creating test instance: %s (template: %s, size: %s, project: %s)", opts.Name, opts.Template, opts.Size, projectID)
 	} else {
 		t.Logf("Creating test instance: %s (template: %s, size: %s)", opts.Name, opts.Template, opts.Size)
 	}
