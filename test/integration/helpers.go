@@ -107,6 +107,13 @@ func (ctx *TestContext) StartDaemon() {
 		fmt.Sprintf("AWS_REGION=%s", TestAWSRegion),
 		"PRISM_TEST_MODE=true", // Bypass API authentication for tests
 	)
+
+	// Pass LocalStack environment variable if set
+	if os.Getenv("PRISM_USE_LOCALSTACK") != "" {
+		env = append(env, fmt.Sprintf("PRISM_USE_LOCALSTACK=%s", os.Getenv("PRISM_USE_LOCALSTACK")))
+		ctx.T.Log("LocalStack mode enabled for daemon")
+	}
+
 	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

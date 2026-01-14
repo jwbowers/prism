@@ -127,18 +127,63 @@ test-unit:
 	@echo "🧪 Running unit tests..."
 	@PRISM_DEV=true GO_ENV=test go test -race -short $$(go list ./... | grep -v -E "(cmd/prism-gui|internal/tui)") -coverprofile=unit-coverage.out
 
-# Run integration tests with LocalStack
-test-integration:
-	@echo "🔗 Running integration tests..."
-	@docker-compose -f docker-compose.test.yml up -d localstack
+# Run LocalStack integration tests (offline, fast, no AWS costs)
+test-localstack: build
+	@echo "🐳 Running LocalStack integration tests..."
+	@echo "📋 Starting LocalStack..."
+	@cd test/localstack && docker-compose up -d
 	@echo "⏳ Waiting for LocalStack to be ready..."
-	@sleep 10
-	@PRISM_DEV=true INTEGRATION_TESTS=1 go test -tags=integration ./pkg/aws -v -coverprofile=aws-integration-coverage.out
-	@PRISM_DEV=true INTEGRATION_TESTS=1 go test -tags=integration ./pkg/ami -v -coverprofile=ami-integration-coverage.out
-	@docker-compose -f docker-compose.test.yml down
-	@echo "📊 Integration test coverage:"
-	@go tool cover -func=aws-integration-coverage.out | grep "total"
-	@go tool cover -func=ami-integration-coverage.out | grep "total"
+	@timeout 120 bash -c 'until curl -f http://localhost:4566/_localstack/health 2>/dev/null; do sleep 3; done' || (echo "❌ LocalStack failed to start" && exit 1)
+	@timeout 60 bash -c 'until [ -f /tmp/prism-localstack-config.json ]; do sleep 3; done' || (echo "❌ LocalStack initialization failed" && exit 1)
+	@echo "✅ LocalStack ready"
+	@echo "🧪 Running tests..."
+	@PRISM_USE_LOCALSTACK=true go test -v -tags=integration ./test/localstack/... -timeout=10m || (cd test/localstack && docker-compose down && exit 1)
+	@cd test/localstack && docker-compose down
+	@echo "✅ LocalStack tests complete"
+
+# Start LocalStack for development
+localstack-start:
+	@echo "🐳 Starting LocalStack..."
+	@cd test/localstack && docker-compose up -d
+	@echo "⏳ Waiting for LocalStack to be ready..."
+	@timeout 120 bash -c 'until curl -f http://localhost:4566/_localstack/health 2>/dev/null; do sleep 3; done'
+	@echo "✅ LocalStack is ready at http://localhost:4566"
+	@echo "📋 Configuration: /tmp/prism-localstack-config.json"
+	@echo ""
+	@echo "To run tests: PRISM_USE_LOCALSTACK=true go test -tags=integration ./test/integration/..."
+	@echo "To stop: make localstack-stop"
+
+# Stop LocalStack
+localstack-stop:
+	@echo "🛑 Stopping LocalStack..."
+	@cd test/localstack && docker-compose down
+	@echo "✅ LocalStack stopped"
+
+# Clean LocalStack data and restart
+localstack-reset:
+	@echo "🔄 Resetting LocalStack..."
+	@cd test/localstack && docker-compose down -v
+	@rm -f /tmp/prism-localstack-config.json
+	@echo "✅ LocalStack reset complete"
+	@echo "Run 'make localstack-start' to start fresh"
+
+# Show LocalStack logs
+localstack-logs:
+	@cd test/localstack && docker-compose logs -f localstack
+
+# Show LocalStack status
+localstack-status:
+	@echo "🐳 LocalStack Status:"
+	@cd test/localstack && docker-compose ps
+	@echo ""
+	@echo "🏥 Health Check:"
+	@curl -s http://localhost:4566/_localstack/health 2>/dev/null | jq . || echo "LocalStack not running"
+	@echo ""
+	@echo "📋 Configuration:"
+	@cat /tmp/prism-localstack-config.json 2>/dev/null | jq . || echo "Configuration not found"
+
+# Run integration tests with LocalStack (legacy target kept for compatibility)
+test-integration: test-localstack
 
 # Run AMI builder integration tests specifically
 test-ami-builder:

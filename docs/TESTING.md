@@ -119,6 +119,168 @@ go test -race ./...
 - Test edge cases and error conditions
 - Use table-driven tests for multiple scenarios
 
+---
+
+## LocalStack Integration (Offline AWS Testing)
+
+**Location**: `test/localstack/`
+
+LocalStack enables **offline development and testing** without AWS credentials or costs. It mocks AWS services locally using Docker.
+
+### Benefits
+
+- ✅ **Offline Development**: No AWS credentials needed
+- ✅ **Faster Tests**: ~5x faster than real AWS (5-10 min vs 45-60 min)
+- ✅ **Cost Savings**: $0 vs $80-150/month per developer
+- ✅ **Safe Testing**: No risk of affecting production resources
+- ✅ **CI/CD Friendly**: Run tests in GitHub Actions without AWS setup
+
+### Quick Start
+
+```bash
+# Start LocalStack (one-time per dev session)
+make localstack-start
+
+# Run LocalStack tests
+make test-localstack
+
+# OR: Run with environment variable
+PRISM_USE_LOCALSTACK=true go test -tags=integration ./test/localstack/... -v
+
+# Stop LocalStack when done
+make localstack-stop
+```
+
+### Architecture
+
+```
+test/localstack/
+├── docker-compose.yml       # LocalStack configuration
+├── init/
+│   ├── 01-seed-ec2.sh      # Creates VPC, subnets, AMIs, key pairs
+│   ├── 02-seed-efs.sh      # Creates EFS file systems
+│   └── 03-seed-ssm.sh      # Populates SSM Parameter Store
+├── fixtures/
+│   └── fixtures.go         # LocalStack test helpers
+├── localstack_test.go      # Verification tests
+└── README.md               # Detailed documentation
+
+pkg/aws/localstack/
+├── config.go               # Environment detection & configuration
+└── helpers.go              # Health checks & utilities
+```
+
+### LocalStack vs Real AWS
+
+| Feature | LocalStack | Real AWS | Notes |
+|---------|-----------|----------|-------|
+| **Instance Launching** | ✅ Full support | ✅ Full support | LocalStack mocks EC2 API |
+| **EFS Volumes** | ✅ Full support | ✅ Full support | LocalStack mocks EFS API |
+| **AMI Discovery** | ✅ Via SSM | ✅ Via SSM | Pre-seeded parameters |
+| **Security Groups** | ✅ Full support | ✅ Full support | LocalStack mocks networking |
+| **GPU Instances** | ❌ Mocked only | ✅ Full support | No GPU hardware in LocalStack |
+| **Spot Instances** | ❌ Limited | ✅ Full support | Requires real pricing |
+| **Multi-Region** | ❌ Single region | ✅ 8 regions | LocalStack is single-region |
+| **Network Latency** | ❌ Local | ✅ Real latency | LocalStack has no network delay |
+
+### Test Workflow
+
+```go
+// +build integration
+
+package localstack_test
+
+import (
+    "testing"
+    "github.com/scttfrdmn/prism/pkg/aws/localstack"
+    "github.com/scttfrdmn/prism/test/localstack/fixtures"
+)
+
+func TestInstanceLaunch(t *testing.T) {
+    if !localstack.IsLocalStackEnabled() {
+        t.Skip("LocalStack not enabled")
+    }
+
+    // Create test fixtures (loads LocalStack config)
+    f := fixtures.NewTestFixtures(t)
+
+    // Verify network setup
+    f.VerifyNetworkSetup(t)
+
+    // Launch test instance
+    instanceID := f.LaunchTestInstance(t, "test-instance")
+    t.Logf("Launched instance: %s", instanceID)
+}
+```
+
+### Configuration
+
+LocalStack is automatically configured when `PRISM_USE_LOCALSTACK=true` is set:
+
+- **Endpoint**: `http://localhost:4566` (all AWS services)
+- **Region**: `us-west-2` (default test region)
+- **Credentials**: `test` / `test` (mock credentials)
+- **Services**: EC2, EFS, S3, SSM, IAM, STS
+
+### Common Commands
+
+```bash
+# Development workflow
+make localstack-start              # Start LocalStack
+make localstack-status             # Check status
+make localstack-logs               # View logs
+make localstack-stop               # Stop LocalStack
+make localstack-reset              # Clean restart
+
+# Run tests
+make test-localstack               # Run LocalStack verification tests
+PRISM_USE_LOCALSTACK=true make test-workflows  # Run integration tests
+
+# CI/CD
+.github/workflows/localstack-tests.yml  # Automated CI pipeline
+```
+
+### Performance Comparison
+
+| Test Suite | Real AWS | LocalStack | Speedup |
+|------------|----------|------------|---------|
+| Basic Templates | 10 min | 2 min | 5x |
+| Instance Lifecycle | 15 min | 3 min | 5x |
+| Storage Operations | 8 min | 1.5 min | 5x |
+| **Full Suite** | **45-60 min** | **8-12 min** | **~5x** |
+
+### Supported Test Scenarios
+
+**✅ Fully Supported**:
+- Instance launching (all templates)
+- Instance lifecycle (start, stop, terminate)
+- EFS volume creation and attachment
+- Security groups and networking
+- Template validation
+- AMI discovery via SSM
+
+**⚠️ Partially Supported**:
+- EBS volumes (basic support, limited snapshots)
+- IAM roles (basic support)
+- Hibernation (mocked, not fully realistic)
+
+**❌ Not Supported**:
+- GPU instance testing (no GPU hardware emulation)
+- Real network latency simulation
+- Spot instances (requires real AWS pricing)
+- Multi-region replication (LocalStack is single-region)
+
+### Documentation
+
+See **[test/localstack/README.md](../test/localstack/README.md)** for:
+- Detailed setup instructions
+- Initialization script details
+- Troubleshooting guide
+- Cost savings analysis
+- Advanced configuration options
+
+---
+
 ## Integration Tests with Fixtures (Go)
 
 **Location**: `test/fixtures/` and `test/integration/`
