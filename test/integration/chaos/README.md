@@ -73,6 +73,25 @@ Chaos tests simulate real-world failure conditions to ensure the system:
 **Expected Runtime**: ~5-10 minutes
 **Note**: Run with `-race` flag for full race detection
 
+### Template Edge Cases (`template_edge_cases_test.go`)
+
+**1,500+ lines of chaos tests**
+
+| Test | Chaos Scenario | Validates |
+|------|---------------|-----------|
+| `TestCircularInheritanceDetection` | A→B→C→A circular inheritance | Cycle detection, clear errors, no infinite loops |
+| `TestDeepInheritanceChains` | 15-level deep inheritance chain | Performance (<5s), stack depth handling, property merging |
+| `TestEmptyAndMinimalTemplates` | Empty/minimal template files | Required field enforcement, empty section handling |
+| `TestHugeTemplateFiles` | 10,000+ line YAML templates | Parse/validate performance, memory usage, no crashes |
+| `TestInvalidInheritanceReferences` | Templates with missing parents | Missing parent detection, clear errors, helpful suggestions |
+| `TestConflictingParentConfigurations` | Parents with conflicting settings | Conflict detection, deterministic resolution, merge behavior |
+| `TestLargeFileProvisioning` | Templates with 500MB+ files | Timeout handling, progress reporting, disk space checks |
+| `TestChecksumMismatchDetection` | Downloaded files fail checksum | Corruption detection, clear errors, retry logic |
+| `TestProvisioningFailureRecovery` | Provisioning scripts fail/timeout | Instance remains accessible, clear errors, cleanup |
+
+**Expected Runtime**: ~5-10 minutes
+**Addresses Issue**: [#414](https://github.com/scttfrdmn/prism/issues/414)
+
 ## Running Chaos Tests
 
 ### Prerequisites
@@ -112,6 +131,9 @@ CHAOS_TESTING=true go test -v -tags integration ./test/integration/chaos/ -run T
 
 # Concurrent operations only
 go test -v -tags integration ./test/integration/chaos/ -run TestConcurrent
+
+# Template edge cases only
+go test -v -tags integration ./test/integration/chaos/ -run "TestCircular|TestDeep|TestEmpty|TestHuge|TestInvalid|TestConflicting|TestLargeFile|TestChecksum|TestProvisioning"
 ```
 
 ### Run Individual Tests
@@ -167,6 +189,33 @@ go test -v -tags integration ./test/integration/chaos/ -run TestConcurrentStateM
 
 # Race condition detection (with race detector)
 go test -v -race -tags integration ./test/integration/chaos/ -run TestRaceConditionDetection
+
+# Circular inheritance detection
+go test -v -tags integration ./test/integration/chaos/ -run TestCircularInheritanceDetection
+
+# Deep inheritance chains
+go test -v -tags integration ./test/integration/chaos/ -run TestDeepInheritanceChains
+
+# Empty and minimal templates
+go test -v -tags integration ./test/integration/chaos/ -run TestEmptyAndMinimalTemplates
+
+# Huge template files
+go test -v -tags integration ./test/integration/chaos/ -run TestHugeTemplateFiles
+
+# Invalid inheritance references
+go test -v -tags integration ./test/integration/chaos/ -run TestInvalidInheritanceReferences
+
+# Conflicting parent configurations
+go test -v -tags integration ./test/integration/chaos/ -run TestConflictingParentConfigurations
+
+# Large file provisioning
+go test -v -tags integration ./test/integration/chaos/ -run TestLargeFileProvisioning
+
+# Checksum mismatch detection
+go test -v -tags integration ./test/integration/chaos/ -run TestChecksumMismatchDetection
+
+# Provisioning failure recovery
+go test -v -tags integration ./test/integration/chaos/ -run TestProvisioningFailureRecovery
 ```
 
 ## Test Output
