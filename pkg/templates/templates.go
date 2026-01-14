@@ -72,20 +72,20 @@ func DefaultTemplateDirs() []string {
 	}
 
 	// System templates directory
-	systemTemplatesPath := "/etc/cloudworkstation/templates"
+	systemTemplatesPath := "/etc/prism/templates"
 	if info, err := os.Stat(systemTemplatesPath); err == nil && info.IsDir() {
 		dirs = append(dirs, systemTemplatesPath)
 	}
 
 	// Add Homebrew installation paths
 	if homebrewPrefix := os.Getenv("HOMEBREW_PREFIX"); homebrewPrefix != "" {
-		dirs = append(dirs, filepath.Join(homebrewPrefix, "opt", "cloudworkstation", "share", "templates"))
+		dirs = append(dirs, filepath.Join(homebrewPrefix, "share", "prism", "templates"))
 	}
 
 	// Fallback for common Homebrew installations
 	commonHomebrewPaths := []string{
-		"/opt/homebrew/opt/cloudworkstation/share/templates", // Apple Silicon
-		"/usr/local/opt/cloudworkstation/share/templates",    // Intel
+		"/opt/homebrew/share/prism/templates", // Apple Silicon
+		"/usr/local/share/prism/templates",    // Intel
 	}
 
 	for _, path := range commonHomebrewPaths {
