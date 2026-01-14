@@ -2,7 +2,9 @@
 
 This directory contains chaos engineering tests that validate Prism's resilience to various failure scenarios.
 
-**Issue**: [#412 - Network Chaos Testing Infrastructure](https://github.com/scttfrdmn/prism/issues/412)
+**Issues**:
+- [#412 - Network Chaos Testing Infrastructure](https://github.com/scttfrdmn/prism/issues/412)
+- [#413 - AWS Service Outage Simulation](https://github.com/scttfrdmn/prism/issues/413)
 
 ## Overview
 
@@ -28,6 +30,22 @@ Chaos tests simulate real-world failure conditions to ensure the system:
 | `TestAPIUnavailabilityHandling` | AWS API returns 503 | Fast failure, exponential backoff, clear errors |
 
 **Expected Runtime**: ~5-10 minutes
+
+### AWS Service Outages (`aws_outages_test.go`)
+
+**400+ lines of chaos tests**
+
+| Test | Chaos Scenario | Validates |
+|------|---------------|-----------|
+| `TestRegionalOutageHandling` | Full regional outage (all services down) | Timeout behavior, clear errors, recovery guidance |
+| `TestPartialServiceOutage` | EC2 down, S3/EFS still working | Service isolation, no cascading failures |
+| `TestAvailabilityZoneOutage` | Specific AZ unavailable | AZ failover, retry in healthy AZs |
+| `TestInstanceTypeExhaustion` | InsufficientInstanceCapacity errors | Capacity detection, alternative suggestions |
+| `TestAPIThrottling` | RequestLimitExceeded/throttling | Exponential backoff, eventual success |
+| `TestEventualConsistency` | Resources not immediately visible | Retry logic, consistency delays handled |
+
+**Expected Runtime**: ~10-15 minutes
+**Addresses Issue**: [#413](https://github.com/scttfrdmn/prism/issues/413)
 
 ### System Failures (`system_failures_test.go`)
 
@@ -86,6 +104,9 @@ go test -v -race -tags integration ./test/integration/chaos/
 # Network failures only
 go test -v -tags integration ./test/integration/chaos/ -run TestNetwork
 
+# AWS service outages only
+go test -v -tags integration ./test/integration/chaos/ -run "TestRegional|TestPartial|TestAvailability|TestInstance|TestAPIThrottling|TestEventual"
+
 # System failures only (requires CHAOS_TESTING=true)
 CHAOS_TESTING=true go test -v -tags integration ./test/integration/chaos/ -run TestSystem
 
@@ -110,6 +131,24 @@ go test -v -tags integration ./test/integration/chaos/ -run TestDNSFailureRecove
 
 # API unavailability scenario
 go test -v -tags integration ./test/integration/chaos/ -run TestAPIUnavailabilityHandling
+
+# Regional outage scenario
+go test -v -tags integration ./test/integration/chaos/ -run TestRegionalOutageHandling
+
+# Partial service outage scenario
+go test -v -tags integration ./test/integration/chaos/ -run TestPartialServiceOutage
+
+# Availability zone outage scenario
+go test -v -tags integration ./test/integration/chaos/ -run TestAvailabilityZoneOutage
+
+# Instance type exhaustion scenario
+go test -v -tags integration ./test/integration/chaos/ -run TestInstanceTypeExhaustion
+
+# API throttling scenario
+go test -v -tags integration ./test/integration/chaos/ -run TestAPIThrottling
+
+# Eventual consistency scenario
+go test -v -tags integration ./test/integration/chaos/ -run TestEventualConsistency
 
 # Daemon crash scenario (requires CHAOS_TESTING=true)
 CHAOS_TESTING=true go test -v -tags integration ./test/integration/chaos/ -run TestDaemonCrashDuringOperation
