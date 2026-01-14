@@ -61,8 +61,8 @@ check_binary_version() {
     local name=$2
 
     if [ -f "$binary" ]; then
-        # Run binary with --version and extract version (supports suffixes like -dev, -alpha, -beta)
-        BIN_VERSION=$($binary --version 2>&1 | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?' | sed 's/v//')
+        # Run binary with --version and extract version (supports suffixes like -dev, -alpha, -beta, and 4-part versions like 0.6.2.1)
+        BIN_VERSION=$($binary --version 2>&1 | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?' | sed 's/v//')
 
         if [ -z "$BIN_VERSION" ]; then
             echo -e "  ${RED}✗${NC} $name: Could not extract version"
@@ -93,7 +93,7 @@ if [ -f "bin/cws-gui" ]; then
     fi
 
     if [ -n "$GUI_PKG_JSON" ]; then
-        PKG_VERSION=$(grep '"version"' "$GUI_PKG_JSON" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?' | head -1)
+        PKG_VERSION=$(grep '"version"' "$GUI_PKG_JSON" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?' | head -1)
         if [ "$PKG_VERSION" = "$CODE_VERSION" ]; then
             echo -e "  ${GREEN}✓${NC} GUI (cws-gui): v$PKG_VERSION (from package.json)"
         else
