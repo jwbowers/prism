@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
+	"github.com/scttfrdmn/prism/pkg/update"
 	"github.com/scttfrdmn/prism/pkg/version"
 	"github.com/spf13/cobra"
 )
@@ -756,7 +759,43 @@ environments for data analysis, machine learning, and research computing.
 
 // Run executes the application with the given arguments
 func (a *App) Run(args []string) error {
+	// Check for updates in background (non-blocking)
+	// Only show notification if update is available
+	go a.checkForUpdatesBackground()
+
 	rootCmd := a.NewRootCommand()
 	rootCmd.SetArgs(args[1:]) // Skip the first argument (program name)
 	return rootCmd.Execute()
+}
+
+// checkForUpdatesBackground checks for updates in the background
+// and displays a non-intrusive notification if an update is available
+func (a *App) checkForUpdatesBackground() {
+	// Skip update check for certain commands that shouldn't show notifications
+	if len(os.Args) > 1 {
+		cmd := os.Args[1]
+		// Skip for version command (it has its own --check-update flag)
+		// Skip for help commands
+		if cmd == "version" || cmd == "help" || cmd == "--help" || cmd == "-h" {
+			return
+		}
+	}
+
+	checker, err := update.NewChecker()
+	if err != nil {
+		return // Silently fail - don't interrupt user
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	updateInfo, err := checker.CheckForUpdates(ctx)
+	if err != nil {
+		return // Silently fail - don't interrupt user
+	}
+
+	// Only show notification if update is available
+	if updateInfo.IsUpdateAvailable {
+		fmt.Fprintf(os.Stderr, "\n%s\n\n", update.FormatShortUpdateMessage(updateInfo))
+	}
 }
