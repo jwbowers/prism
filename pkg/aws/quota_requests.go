@@ -282,3 +282,51 @@ func roundToNearestPowerOfTwo(value float64) float64 {
 	// If larger than all powers, return the value rounded up to nearest 1024
 	return float64(int((value+1023)/1024) * 1024)
 }
+
+// FormatQuotaRequest formats a quota increase request for display
+func (qrh *QuotaRequestHelper) FormatQuotaRequest(request *QuotaIncreaseRequest) string {
+	var builder strings.Builder
+
+	builder.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	builder.WriteString("📋 AWS Quota Increase Request\n")
+	builder.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n")
+
+	// Current Status
+	builder.WriteString("📊 Current Status:\n")
+	builder.WriteString(fmt.Sprintf("  • Quota: %s\n", request.QuotaName))
+	builder.WriteString(fmt.Sprintf("  • Region: %s\n", request.Region))
+	builder.WriteString(fmt.Sprintf("  • Current Limit: %.0f vCPUs\n", request.CurrentValue))
+	builder.WriteString(fmt.Sprintf("  • Requested Limit: %.0f vCPUs\n", request.DesiredValue))
+	builder.WriteString(fmt.Sprintf("  • Instance Type: %s\n\n", request.InstanceType))
+
+	// Request Justification
+	builder.WriteString("📝 Justification:\n")
+	builder.WriteString(fmt.Sprintf("  %s\n\n", request.Reason))
+
+	// Request Methods
+	builder.WriteString("🚀 How to Request:\n\n")
+
+	builder.WriteString("Option 1: Service Quotas Console (Recommended)\n")
+	builder.WriteString("  1. Open the Service Quotas console:\n")
+	builder.WriteString(fmt.Sprintf("     %s\n\n", request.QuickRequestURL))
+	builder.WriteString("  2. Click \"Request quota increase\"\n")
+	builder.WriteString(fmt.Sprintf("  3. Enter new quota value: %.0f\n", request.DesiredValue))
+	builder.WriteString("  4. Provide justification and submit\n\n")
+
+	builder.WriteString("Option 2: AWS Support Case\n")
+	builder.WriteString("  1. Open AWS Support Center:\n")
+	builder.WriteString(fmt.Sprintf("     %s\n\n", request.SupportCaseURL))
+	builder.WriteString("  2. Select \"Service limit increase\"\n")
+	builder.WriteString("  3. Fill in the request details\n")
+	builder.WriteString("  4. Submit the case\n\n")
+
+	// Timeline
+	builder.WriteString("⏱️  Expected Timeline:\n")
+	builder.WriteString("  • Automated approval: Minutes to hours\n")
+	builder.WriteString("  • Manual review: 24-48 hours\n")
+	builder.WriteString("  • No charge for quota increases\n\n")
+
+	builder.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+
+	return builder.String()
+}

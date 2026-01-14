@@ -20,7 +20,9 @@ Examples:
   prism admin daemon status          # Check daemon status
   prism admin daemon start           # Start daemon
   prism admin policy list            # List policies
-  prism admin rightsizing analyze    # Analyze instance sizing`,
+  prism admin rightsizing analyze    # Analyze instance sizing
+  prism admin quota show             # Check AWS quotas
+  prism admin aws-health             # Monitor AWS service health`,
 		GroupID: "system",
 	}
 
@@ -33,6 +35,8 @@ Examples:
 	cmd.AddCommand(f.createRateLimitCommand())
 	cmd.AddCommand(f.createThrottlingCommand())
 	cmd.AddCommand(f.createSleepWakeCommand())
+	cmd.AddCommand(f.createQuotaCommand())  // v0.7.0 - Issue #418
+	cmd.AddCommand(f.createHealthCommand()) // v0.7.0 - Issue #418
 
 	return cmd
 }
@@ -95,4 +99,16 @@ func (f *AdminCommandFactory) createThrottlingCommand() *cobra.Command {
 func (f *AdminCommandFactory) createSleepWakeCommand() *cobra.Command {
 	sleepWakeCobra := NewSleepWakeCobraCommands(f.app)
 	return sleepWakeCobra.CreateSleepWakeCommand()
+}
+
+// createQuotaCommand creates the quota subcommand (v0.7.0 - Issue #418)
+func (f *AdminCommandFactory) createQuotaCommand() *cobra.Command {
+	quotaCobra := NewQuotaCobraCommands(f.app)
+	return quotaCobra.CreateQuotaCommand()
+}
+
+// createHealthCommand creates the aws-health subcommand (v0.7.0 - Issue #418)
+func (f *AdminCommandFactory) createHealthCommand() *cobra.Command {
+	healthCobra := NewHealthCobraCommands(f.app)
+	return healthCobra.CreateHealthCommand()
 }

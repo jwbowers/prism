@@ -573,27 +573,59 @@ func (l *InstanceLauncher) createDryRunInstance(req ctypes.LaunchRequest, hourly
 	}
 }
 
-// executeInstanceLaunch performs the actual EC2 instance launch
-func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *ec2.RunInstancesInput) (*ec2types.Instance, error) {
-	// Launch the instance with retry logic for transient failures (v0.5.12)
-	var result *ec2.RunInstancesOutput
+// executeInstanceLaunch performs the actual EC2 instance launch with intelligent AZ failover (v0.7.0)
+func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *ec2.RunInstancesInput, instanceType string) (*ec2types.Instance, error) {
+	// Use AvailabilityManager for intelligent AZ selection and automatic failover
+	instanceID, selectedAZ, err := l.manager.availabilityManager.AttemptLaunchWithFailover(
+		ctx,
+		instanceType,
+		func(ctx context.Context, az string) (string, error) {
+			// Update runInput with the target AZ
+			if runInput.Placement == nil {
+				runInput.Placement = &ec2types.Placement{}
+			}
+			runInput.Placement.AvailabilityZone = aws.String(az)
 
-	err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
-		var runErr error
-		result, runErr = l.manager.ec2.RunInstances(ctx, runInput)
-		return runErr
-	})
+			// Launch the instance with retry logic for transient failures
+			var result *ec2.RunInstancesOutput
+			err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+				var runErr error
+				result, runErr = l.manager.ec2.RunInstances(ctx, runInput)
+				return runErr
+			})
+
+			if err != nil {
+				return "", err
+			}
+
+			if len(result.Instances) == 0 {
+				return "", fmt.Errorf("no instances returned from launch")
+			}
+
+			return *result.Instances[0].InstanceId, nil
+		},
+	)
 
 	if err != nil {
 		// Enhance error with actionable guidance (v0.5.12)
 		return nil, EnhanceError(err, "Launch instance")
 	}
 
-	if len(result.Instances) == 0 {
-		return nil, fmt.Errorf("no instances returned from launch")
+	// Retrieve the launched instance details
+	describeOutput, err := l.manager.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: []string{instanceID},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve launched instance details: %w", err)
 	}
 
-	return &result.Instances[0], nil
+	if len(describeOutput.Reservations) == 0 || len(describeOutput.Reservations[0].Instances) == 0 {
+		return nil, fmt.Errorf("launched instance not found: %s", instanceID)
+	}
+
+	log.Printf("✅ Successfully launched instance %s in AZ %s", instanceID, selectedAZ)
+	return &describeOutput.Reservations[0].Instances[0], nil
 }
 
 // buildInstanceFromEC2 builds Prism instance from EC2 instance
@@ -675,7 +707,7 @@ func (l *InstanceLauncher) waitForInstanceReady(instanceID string) {
 }
 
 // LaunchInstance orchestrates instance launch with extracted helper methods
-func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec2.RunInstancesInput, hourlyRate float64, template *ctypes.RuntimeTemplate, primaryUsername string) (*ctypes.Instance, error) {
+func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec2.RunInstancesInput, hourlyRate float64, template *ctypes.RuntimeTemplate, primaryUsername string, instanceType string) (*ctypes.Instance, error) {
 	// Extract services from template
 	services := l.extractServicesFromTemplate(template)
 
@@ -690,9 +722,9 @@ func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec
 		return l.createDryRunInstance(req, hourlyRate, services, primaryUsername), nil
 	}
 
-	// Launch instance
+	// Launch instance with AZ failover (v0.7.0)
 	ctx := context.Background()
-	instance, err := l.executeInstanceLaunch(ctx, runInput)
+	instance, err := l.executeInstanceLaunch(ctx, runInput, instanceType)
 	if err != nil {
 		return nil, err
 	}
@@ -760,20 +792,72 @@ func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *c
 		return nil, err
 	}
 
-	// Execute launch
-	return o.instanceLauncher.LaunchInstance(req, runInput, dailyCost, template, primaryUsername)
+	// Execute launch with AZ failover (v0.7.0)
+	return o.instanceLauncher.LaunchInstance(req, runInput, dailyCost, template, primaryUsername, instanceType)
 }
 
 // launchWithUnifiedTemplateSystem launches instance using unified template system with SOLID orchestration (SOLID: Single Responsibility)
 func (m *Manager) launchWithUnifiedTemplateSystem(req ctypes.LaunchRequest, arch string) (*ctypes.Instance, error) {
-	// Get template using unified template system
+	ctx := context.Background()
+
+	// PHASE 1: Pre-launch validation (v0.7.0 - Issue #418)
+	// Determine instance type for validation
+	rawTemplate, err := templates.GetTemplateInfo(req.Template)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get template info: %w", err)
+	}
+
+	var instanceType string
+	if req.Size != "" {
+		instanceType = m.getInstanceTypeForSize(req.Size)
+	} else if rawTemplate != nil && rawTemplate.InstanceDefaults.Type != "" {
+		instanceType = rawTemplate.InstanceDefaults.Type
+	} else {
+		instanceType = "t3.micro"
+	}
+
+	// Step 1: Check AWS service health
+	shouldBlock, healthWarning := m.healthMonitor.ShouldBlockLaunch(ctx, m.region)
+	if shouldBlock {
+		return nil, fmt.Errorf("launch blocked due to AWS service issues: %s", healthWarning)
+	}
+	if healthWarning != "" {
+		log.Printf("⚠️  AWS Health Warning: %s", healthWarning)
+	}
+
+	// Step 2: Validate quota availability
+	quotaValidation, err := m.quotaManager.ValidateInstanceLaunch(ctx, instanceType)
+	if err != nil {
+		log.Printf("Warning: Failed to validate quota: %v. Proceeding with launch...", err)
+	} else if !quotaValidation.IsValid {
+		// Quota validation failed - provide helpful error with guidance
+		helper := NewQuotaRequestHelper(m.quotaManager, m.region)
+		request, err := helper.GenerateQuotaIncreaseRequest(ctx, instanceType)
+		if err != nil {
+			// If we can't generate request, at least show the validation error
+			return nil, fmt.Errorf("%s", quotaValidation.Warning)
+		}
+
+		// Show user-friendly error with guidance
+		errorMsg := helper.ExplainQuotaError(ctx, fmt.Errorf("quota exceeded"), instanceType)
+		guidance := helper.GenerateGuidance(request)
+
+		return nil, fmt.Errorf("%s\n\n%s", errorMsg, guidance)
+	} else if quotaValidation.Warning != "" {
+		// Proactive warning (90% usage)
+		log.Printf("⚠️  Quota Warning: %s", quotaValidation.Warning)
+		if quotaValidation.SuggestedAction != "" {
+			log.Printf("💡 Suggested Action: %s", quotaValidation.SuggestedAction)
+		}
+	}
+
+	// PHASE 2: Get template using unified template system
 	packageManager := req.PackageManager
 	if packageManager == "" {
 		packageManager = ""
 	}
 
 	var template *ctypes.RuntimeTemplate
-	var err error
 
 	// Use parameter-aware template processing if parameters are provided
 	if len(req.Parameters) > 0 {
@@ -786,8 +870,8 @@ func (m *Manager) launchWithUnifiedTemplateSystem(req ctypes.LaunchRequest, arch
 		return nil, fmt.Errorf("failed to get template: %w", err)
 	}
 
-	// Get raw template for validation and username extraction
-	rawTemplate, _ := templates.GetTemplateInfo(req.Template)
+	// Get raw template for validation and username extraction (reuse from pre-launch validation)
+	rawTemplate, _ = templates.GetTemplateInfo(req.Template)
 
 	// Extract primary username from template (first user in list)
 	primaryUsername := "ubuntu" // Default fallback
