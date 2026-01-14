@@ -568,6 +568,7 @@ interface AppState {
   notifications: Notification[];
   connected: boolean;
   error: string | null;
+  updateInfo: any | null;
 }
 
 // API Response Interfaces
@@ -1632,6 +1633,10 @@ class SafePrismAPI {
   async switchProfile(profileId: string): Promise<any> {
     return this.safeRequest(`/api/v1/profiles/${profileId}/activate`, 'POST');
   }
+
+  async checkForUpdates(): Promise<any> {
+    return this.safeRequest('/api/v1/update/check');
+  }
 }
 
 export default function PrismApp() {
@@ -1671,7 +1676,8 @@ export default function PrismApp() {
     loading: true,
     notifications: [],
     connected: false,
-    error: null
+    error: null,
+    updateInfo: null
   });
 
   const [navigationOpen, setNavigationOpen] = useState(true);
@@ -1995,6 +2001,20 @@ export default function PrismApp() {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Intentionally run only on mount to set up 30s refresh interval
+
+  // Check for updates on mount
+  useEffect(() => {
+    const checkUpdates = async () => {
+      try {
+        const updateInfo = await api.checkForUpdates();
+        setState(prev => ({ ...prev, updateInfo }));
+      } catch (error) {
+        logger.error('Failed to check for updates:', error);
+      }
+    };
+    checkUpdates();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only on mount
 
   // Show onboarding for first-time users
   useEffect(() => {
@@ -7009,6 +7029,63 @@ export default function PrismApp() {
         </ColumnLayout>
       </Container>
 
+      {/* Update Information Section */}
+      <Container
+        header={
+          <Header
+            variant="h2"
+            description="Check for and install Prism updates"
+          >
+            Update Information
+          </Header>
+        }
+      >
+        {state.updateInfo ? (
+          <SpaceBetween size="m">
+            <ColumnLayout columns={3} variant="text-grid">
+              <SpaceBetween size="m">
+                <Box variant="awsui-key-label">Current Version</Box>
+                <Box fontSize="heading-m">{state.updateInfo.current_version}</Box>
+              </SpaceBetween>
+              <SpaceBetween size="m">
+                <Box variant="awsui-key-label">Latest Version</Box>
+                <Box fontSize="heading-m">
+                  {state.updateInfo.latest_version}
+                  {state.updateInfo.is_update_available && (
+                    <Badge color="green" style={{ marginLeft: '8px' }}>New</Badge>
+                  )}
+                </Box>
+              </SpaceBetween>
+              <SpaceBetween size="m">
+                <Box variant="awsui-key-label">Status</Box>
+                <StatusIndicator
+                  type={state.updateInfo.is_update_available ? 'info' : 'success'}
+                >
+                  {state.updateInfo.is_update_available ? 'Update Available' : 'Up to Date'}
+                </StatusIndicator>
+              </SpaceBetween>
+            </ColumnLayout>
+
+            {state.updateInfo.is_update_available && (
+              <Alert type="info" header="New version available">
+                <SpaceBetween size="s">
+                  <div><strong>Installation method:</strong> {state.updateInfo.install_method}</div>
+                  <div><strong>Update command:</strong> <code>{state.updateInfo.update_command}</code></div>
+                  <div><strong>Published:</strong> {new Date(state.updateInfo.published_at).toLocaleDateString()}</div>
+                  <div>
+                    <a href={state.updateInfo.release_url} target="_blank" rel="noopener noreferrer">
+                      View release notes →
+                    </a>
+                  </div>
+                </SpaceBetween>
+              </Alert>
+            )}
+          </SpaceBetween>
+        ) : (
+          <Alert type="info">Checking for updates...</Alert>
+        )}
+      </Container>
+
       {/* Configuration Section */}
       <Container
         header={
@@ -10407,6 +10484,25 @@ export default function PrismApp() {
         }
         content={
           <div id="main-content" role="main">
+            {/* Update Notification Banner */}
+            {state.updateInfo && state.updateInfo.is_update_available && (
+              <Alert
+                type="info"
+                dismissible
+                header={`New version available: ${state.updateInfo.latest_version}`}
+              >
+                <SpaceBetween size="xs">
+                  <div>You're currently running version {state.updateInfo.current_version}</div>
+                  <div><strong>Installation method:</strong> {state.updateInfo.install_method}</div>
+                  <div><strong>Update command:</strong> <code>{state.updateInfo.update_command}</code></div>
+                  <div>
+                    <a href={state.updateInfo.release_url} target="_blank" rel="noopener noreferrer">
+                      View release notes
+                    </a>
+                  </div>
+                </SpaceBetween>
+              </Alert>
+            )}
             {state.activeView === 'dashboard' && <DashboardView />}
             {state.activeView === 'templates' && <TemplateSelectionView />}
             {state.activeView === 'workspaces' && <InstanceManagementView />}

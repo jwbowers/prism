@@ -741,6 +741,7 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/ping", applyMiddleware(s.handlePing))
 	mux.HandleFunc("/api/v1/status", applyMiddleware(s.handleStatus))
 	mux.HandleFunc("/api/v1/shutdown", applyMiddleware(s.handleShutdown))
+	mux.HandleFunc("/api/v1/update/check", applyMiddleware(s.handleUpdateCheck))
 
 	// Authentication
 	mux.HandleFunc("/api/v1/auth", applyMiddleware(s.handleAuth))

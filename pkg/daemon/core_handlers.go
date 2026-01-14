@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/types"
+	"github.com/scttfrdmn/prism/pkg/update"
 	"github.com/scttfrdmn/prism/pkg/version"
 )
 
@@ -177,4 +179,32 @@ func (s *Server) handleShutdown(w http.ResponseWriter, r *http.Request) {
 		}
 		os.Exit(0)
 	}()
+}
+
+// handleUpdateCheck handles update check requests
+func (s *Server) handleUpdateCheck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Create update checker
+	checker, err := update.NewChecker()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to initialize update checker: %v", err))
+		return
+	}
+
+	// Check for updates with timeout
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+
+	updateInfo, err := checker.CheckForUpdates(ctx)
+	if err != nil {
+		s.writeError(w, http.StatusServiceUnavailable, fmt.Sprintf("Failed to check for updates: %v", err))
+		return
+	}
+
+	// Return update information
+	_ = json.NewEncoder(w).Encode(updateInfo)
 }

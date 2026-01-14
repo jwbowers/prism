@@ -24,13 +24,15 @@ const (
 
 // StatusBar is a component for displaying status information
 type StatusBar struct {
-	status      string
-	statusType  StatusType
-	region      string
-	version     string
-	connections int
-	lastUpdated time.Time
-	width       int
+	status          string
+	statusType      StatusType
+	region          string
+	version         string
+	connections     int
+	lastUpdated     time.Time
+	width           int
+	updateAvailable bool
+	latestVersion   string
 }
 
 // LastUpdated returns the time the status was last updated
@@ -88,6 +90,12 @@ func (s *StatusBar) SetWidth(width int) {
 	s.width = width
 }
 
+// SetUpdateAvailable sets update availability information
+func (s *StatusBar) SetUpdateAvailable(available bool, latestVersion string) {
+	s.updateAvailable = available
+	s.latestVersion = latestVersion
+}
+
 // View renders the status bar
 func (s *StatusBar) View() string {
 	theme := styles.CurrentTheme
@@ -114,7 +122,7 @@ func (s *StatusBar) View() string {
 	// Build the left part (status)
 	left := statusStyle.Render(statusIndicator + " " + s.status)
 
-	// Build the right part (region, connections, version)
+	// Build the right part (region, connections, version, update indicator)
 	rightElements := []string{
 		"Region: " + s.region,
 	}
@@ -123,7 +131,16 @@ func (s *StatusBar) View() string {
 		rightElements = append(rightElements, "Connections: "+strings.Repeat("•", s.connections))
 	}
 
-	rightElements = append(rightElements, "v"+s.version)
+	// Show update indicator if available
+	if s.updateAvailable {
+		updateIndicator := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("10")). // Green color
+			Bold(true).
+			Render("🎉 v" + s.latestVersion + " available")
+		rightElements = append(rightElements, updateIndicator)
+	} else {
+		rightElements = append(rightElements, "v"+s.version)
+	}
 
 	right := lipgloss.JoinHorizontal(
 		lipgloss.Center,

@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/scttfrdmn/prism/internal/tui/components"
 	"github.com/scttfrdmn/prism/internal/tui/styles"
+	"github.com/scttfrdmn/prism/pkg/update"
 	"github.com/scttfrdmn/prism/pkg/version"
 )
 
@@ -19,6 +20,7 @@ type SettingsModel struct {
 	height       int
 	daemonStatus string
 	error        string
+	updateInfo   *update.UpdateInfo
 }
 
 // NewSettingsModel creates a new settings model
@@ -47,6 +49,15 @@ func (m SettingsModel) checkDaemonStatus() tea.Msg {
 		return DaemonStatusMsg{Status: "disconnected", Error: err}
 	}
 	return DaemonStatusMsg{Status: "connected", Error: nil}
+}
+
+// SetUpdateInfo sets the update information for display
+func (m *SettingsModel) SetUpdateInfo(updateInfo *update.UpdateInfo) {
+	m.updateInfo = updateInfo
+	// Update the status bar if update is available
+	if updateInfo != nil && updateInfo.IsUpdateAvailable {
+		m.statusBar.SetUpdateAvailable(true, updateInfo.LatestVersion)
+	}
 }
 
 // DaemonStatusMsg represents daemon status information
@@ -103,6 +114,22 @@ func (m SettingsModel) View() string {
 	systemInfo += fmt.Sprintf("  Daemon Status: %s\n", m.daemonStatus)
 	systemInfo += "  API Endpoint: http://localhost:8947\n"
 
+	// Update Information
+	updateInfo := ""
+	if m.updateInfo != nil {
+		if m.updateInfo.IsUpdateAvailable {
+			updateInfo = "\nUpdate Available:\n"
+			updateInfo += fmt.Sprintf("  Current Version: %s\n", m.updateInfo.CurrentVersion)
+			updateInfo += fmt.Sprintf("  Latest Version: %s\n", m.updateInfo.LatestVersion)
+			updateInfo += fmt.Sprintf("  Installation Method: %s\n", m.updateInfo.InstallMethod)
+			updateInfo += fmt.Sprintf("  Update Command: %s\n", m.updateInfo.UpdateCommand)
+			updateInfo += fmt.Sprintf("  Release URL: %s\n", m.updateInfo.ReleaseURL)
+		} else {
+			updateInfo = "\nUpdate Status:\n"
+			updateInfo += fmt.Sprintf("  ✓ You're running the latest version (%s)\n", m.updateInfo.CurrentVersion)
+		}
+	}
+
 	// Configuration
 	configInfo := "\nConfiguration:\n"
 	configInfo += "  Profile system is managed via CLI commands:\n"
@@ -131,7 +158,7 @@ func (m SettingsModel) View() string {
 	}
 
 	// Combine all content
-	fullContent := systemInfo + configInfo + daemonInfo + tuiInfo + errorInfo
+	fullContent := systemInfo + updateInfo + configInfo + daemonInfo + tuiInfo + errorInfo
 
 	content = lipgloss.NewStyle().
 		Width(m.width-4).

@@ -5,16 +5,19 @@
 package tui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/scttfrdmn/prism/internal/tui/api"
 	"github.com/scttfrdmn/prism/internal/tui/models"
 	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/pkg/profile"
+	"github.com/scttfrdmn/prism/pkg/update"
 	"github.com/scttfrdmn/prism/pkg/version"
 )
 
@@ -86,6 +89,13 @@ type AppModel struct {
 	height           int
 	inSubmenu        bool   // Whether we're currently in a submenu
 	submenuParent    PageID // The page that opened the submenu
+	updateInfo       *update.UpdateInfo
+}
+
+// UpdateCheckMsg represents the result of an update check
+type UpdateCheckMsg struct {
+	UpdateInfo *update.UpdateInfo
+	Error      error
 }
 
 // NewApp creates a new TUI application
@@ -174,41 +184,70 @@ func (a *App) Run() error {
 
 // Init initializes the application model
 func (m AppModel) Init() tea.Cmd {
+	// Start background update check
+	updateCheckCmd := checkForUpdatesBackground()
+
+	// Initialize current page
+	var pageInitCmd tea.Cmd
 	switch m.currentPage {
 	case DashboardPage:
-		return m.dashboardModel.Init()
+		pageInitCmd = m.dashboardModel.Init()
 	case InstancesPage:
-		return m.instancesModel.Init()
+		pageInitCmd = m.instancesModel.Init()
 	case TemplatesPage:
-		return m.templatesModel.Init()
+		pageInitCmd = m.templatesModel.Init()
 	case StoragePage:
-		return m.storageModel.Init()
+		pageInitCmd = m.storageModel.Init()
 	case ProjectsPage:
-		return m.projectsModel.Init()
+		pageInitCmd = m.projectsModel.Init()
 	case BudgetPage:
-		return m.budgetModel.Init()
+		pageInitCmd = m.budgetModel.Init()
 	case UsersPage:
-		return m.usersModel.Init()
+		pageInitCmd = m.usersModel.Init()
 	case PolicyPage:
-		return m.policyModel.Init()
+		pageInitCmd = m.policyModel.Init()
 	case MarketplacePage:
-		return m.marketplaceModel.Init()
+		pageInitCmd = m.marketplaceModel.Init()
 	case IdlePage:
-		return m.idleModel.Init()
+		pageInitCmd = m.idleModel.Init()
 	case AMIPage:
-		return m.amiModel.Init()
+		pageInitCmd = m.amiModel.Init()
 	case RightsizingPage:
-		return m.rightsizingModel.Init()
+		pageInitCmd = m.rightsizingModel.Init()
 	case LogsPage:
-		return m.logsModel.Init()
+		pageInitCmd = m.logsModel.Init()
 	case DaemonPage:
-		return m.daemonModel.Init()
+		pageInitCmd = m.daemonModel.Init()
 	case SettingsPage:
-		return m.settingsModel.Init()
+		pageInitCmd = m.settingsModel.Init()
 	case ProfilesPage:
-		return m.profilesModel.Init()
+		pageInitCmd = m.profilesModel.Init()
 	default:
-		return m.dashboardModel.Init()
+		pageInitCmd = m.dashboardModel.Init()
+	}
+
+	// Batch both commands
+	return tea.Batch(updateCheckCmd, pageInitCmd)
+}
+
+// checkForUpdatesBackground performs a background update check
+func checkForUpdatesBackground() tea.Cmd {
+	return func() tea.Msg {
+		checker, err := update.NewChecker()
+		if err != nil {
+			return UpdateCheckMsg{UpdateInfo: nil, Error: err}
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		updateInfo, err := checker.CheckForUpdates(ctx)
+		if err != nil {
+			// Silently fail - don't disrupt user experience
+			return UpdateCheckMsg{UpdateInfo: nil, Error: err}
+		}
+
+		return UpdateCheckMsg{UpdateInfo: updateInfo, Error: nil}
 	}
 }
 
@@ -243,6 +282,26 @@ func (h *QuitKeyHandler) CanHandle(msg tea.Msg) bool {
 
 func (h *QuitKeyHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea.Cmd) {
 	return m, []tea.Cmd{tea.Quit}
+}
+
+// UpdateCheckHandler handles update check messages
+type UpdateCheckHandler struct{}
+
+func (h *UpdateCheckHandler) CanHandle(msg tea.Msg) bool {
+	_, ok := msg.(UpdateCheckMsg)
+	return ok
+}
+
+func (h *UpdateCheckHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea.Cmd) {
+	updateMsg := msg.(UpdateCheckMsg)
+	if updateMsg.Error == nil && updateMsg.UpdateInfo != nil {
+		m.updateInfo = updateMsg.UpdateInfo
+		// Update all status bars with update information
+		if updateMsg.UpdateInfo.IsUpdateAvailable {
+			m.settingsModel.SetUpdateInfo(updateMsg.UpdateInfo)
+		}
+	}
+	return m, nil
 }
 
 // PageNavigationHandler handles page navigation keys
@@ -425,6 +484,7 @@ func NewAppMessageDispatcher() *AppMessageDispatcher {
 	return &AppMessageDispatcher{
 		handlers: []AppMessageHandler{
 			&WindowSizeHandler{},
+			&UpdateCheckHandler{},
 			&QuitKeyHandler{},
 			&PageNavigationHandler{},
 		},
