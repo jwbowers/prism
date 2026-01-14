@@ -92,6 +92,22 @@ Chaos tests simulate real-world failure conditions to ensure the system:
 **Expected Runtime**: ~5-10 minutes
 **Addresses Issue**: [#414](https://github.com/scttfrdmn/prism/issues/414)
 
+### Instance Management Edge Cases (`instance_management_test.go`)
+
+**700+ lines of chaos tests**
+
+| Test | Chaos Scenario | Validates |
+|------|---------------|-----------|
+| `TestIdempotentStopOperations` | Stop already stopped instance | Idempotent behavior, clear errors, concurrent stops |
+| `TestIdempotentTerminateOperations` | Terminate already terminated instance | Idempotent behavior, state cleanup, no orphaned resources |
+| `TestConnectToTerminatedInstance` | Get connection info for terminated instance | Clear error messages, graceful failure, state consistency |
+| `TestInstanceVanishedFromAWS` | Instance manually deleted from AWS console | State sync, clear errors, operations fail gracefully |
+| `TestStateConsistency` | State file out of sync with AWS reality | Consistency detection, automatic reconciliation, no data loss |
+| `TestConcurrentInstanceOperations` | Multiple clients operating on same instance | Operation serialization, no data races, consistent final state |
+
+**Expected Runtime**: ~10-15 minutes (creates real AWS instances)
+**Addresses Issue**: [#415](https://github.com/scttfrdmn/prism/issues/415)
+
 ## Running Chaos Tests
 
 ### Prerequisites
@@ -134,6 +150,9 @@ go test -v -tags integration ./test/integration/chaos/ -run TestConcurrent
 
 # Template edge cases only
 go test -v -tags integration ./test/integration/chaos/ -run "TestCircular|TestDeep|TestEmpty|TestHuge|TestInvalid|TestConflicting|TestLargeFile|TestChecksum|TestProvisioning"
+
+# Instance management edge cases only
+go test -v -tags integration ./test/integration/chaos/ -run "TestIdempotent|TestConnectToTerminated|TestInstanceVanished|TestStateConsistency|TestConcurrentInstance"
 ```
 
 ### Run Individual Tests
@@ -216,6 +235,24 @@ go test -v -tags integration ./test/integration/chaos/ -run TestChecksumMismatch
 
 # Provisioning failure recovery
 go test -v -tags integration ./test/integration/chaos/ -run TestProvisioningFailureRecovery
+
+# Idempotent stop operations
+go test -v -tags integration ./test/integration/chaos/ -run TestIdempotentStopOperations
+
+# Idempotent terminate operations
+go test -v -tags integration ./test/integration/chaos/ -run TestIdempotentTerminateOperations
+
+# Connect to terminated instance
+go test -v -tags integration ./test/integration/chaos/ -run TestConnectToTerminatedInstance
+
+# Instance vanished from AWS
+go test -v -tags integration ./test/integration/chaos/ -run TestInstanceVanishedFromAWS
+
+# State consistency
+go test -v -tags integration ./test/integration/chaos/ -run TestStateConsistency
+
+# Concurrent instance operations
+go test -v -tags integration ./test/integration/chaos/ -run TestConcurrentInstanceOperations
 ```
 
 ## Test Output
