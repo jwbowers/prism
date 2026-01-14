@@ -13,10 +13,11 @@ import (
 
 // CreateTestInstanceOptions contains options for creating a test instance
 type CreateTestInstanceOptions struct {
-	Template  string
-	Name      string
-	Size      string
-	ProjectID string // Optional: Associate instance with a project for budget enforcement
+	Template            string
+	Name                string
+	Size                string
+	ProjectID           string // Optional: Associate instance with a project for budget enforcement
+	FundingAllocationID string // Optional: Specific allocation to charge (v0.6.2+)
 }
 
 // CreateTestInstance creates a test instance for integration tests
@@ -49,10 +50,11 @@ func CreateTestInstance(t *testing.T, registry *FixtureRegistry, opts CreateTest
 
 	// Launch instance
 	launchReq := types.LaunchRequest{
-		Template:  opts.Template,
-		Name:      opts.Name,
-		Size:      opts.Size,
-		ProjectID: opts.ProjectID, // Associate with project if provided
+		Template:            opts.Template,
+		Name:                opts.Name,
+		Size:                opts.Size,
+		ProjectID:           opts.ProjectID,           // Associate with project if provided
+		FundingAllocationID: opts.FundingAllocationID, // Specify funding source (v0.6.2+)
 	}
 
 	if opts.ProjectID != "" {

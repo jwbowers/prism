@@ -72,6 +72,8 @@ func (s *Server) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 		s.handleProjectFunding(w, r, projectID)
 	case "default-allocation":
 		s.handleSetDefaultAllocation(w, r, projectID)
+	case "allocations":
+		s.handleProjectAllocations(w, r, projectID)
 	case "invitations":
 		// Delegate to invitation handler (v0.5.11)
 		s.handleInvitationOperations(w, r)
@@ -897,4 +899,30 @@ func (s *Server) handleProjectForecast(w http.ResponseWriter, r *http.Request, p
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(forecast)
+}
+
+// handleProjectAllocations retrieves all funding allocations for a project (GET)
+func (s *Server) handleProjectAllocations(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := context.Background()
+	allocations, err := s.budgetManager.GetProjectAllocations(ctx, projectID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get project allocations: %v", err))
+		return
+	}
+
+	// Wrap response in object with "allocations" field for API client compatibility
+	response := struct {
+		Allocations []*types.ProjectBudgetAllocation `json:"allocations"`
+	}{
+		Allocations: allocations,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
 }

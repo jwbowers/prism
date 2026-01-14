@@ -355,10 +355,11 @@ func TestProjectBudget_CostTracking_RealInstance(t *testing.T) {
 	// Launch a small instance for cost tracking
 	instanceName := "cost-tracking-instance"
 	instance, err := fixtures.CreateTestInstance(t, registry, fixtures.CreateTestInstanceOptions{
-		Name:      instanceName,
-		Template:  "Basic Ubuntu (APT)",
-		Size:      "S",     // Small instance for testing
-		ProjectID: proj.ID, // Associate with project
+		Name:                instanceName,
+		Template:            "Ubuntu 22.04 Server",
+		Size:                "S",           // Small instance for testing
+		ProjectID:           proj.ID,       // Associate with project
+		FundingAllocationID: allocation.ID, // Specify which allocation to charge
 	})
 	require.NoError(t, err, "Failed to create test instance")
 	require.NotNil(t, instance)
@@ -432,7 +433,7 @@ func TestProjectBudget_AlertThresholds(t *testing.T) {
 	registry.Register("budget", budget.ID)
 
 	// Allocate to project with custom alert threshold
-	alertThreshold := 80.0 // Alert at 80% of allocation
+	alertThreshold := 0.80 // Alert at 80% of allocation (0.0-1.0 range)
 	allocationReq := &project.CreateAllocationRequest{
 		BudgetID:        budget.ID,
 		ProjectID:       proj.ID,
@@ -447,12 +448,12 @@ func TestProjectBudget_AlertThresholds(t *testing.T) {
 
 	// Verify alert threshold was set
 	assert.NotNil(t, allocation.AlertThreshold)
-	assert.Equal(t, 80.0, *allocation.AlertThreshold)
+	assert.Equal(t, 0.80, *allocation.AlertThreshold)
 
 	// Calculate alert amount (80% of $5000 = $4000)
-	expectedAlertAmount := 5000.0 * 0.80
+	expectedAlertAmount := 5000.0 * alertThreshold
 	t.Logf("Alert will trigger at $%.2f (%.0f%% of $%.2f)",
-		expectedAlertAmount, alertThreshold, allocation.AllocatedAmount)
+		expectedAlertAmount, alertThreshold*100, allocation.AllocatedAmount)
 
 	// Simulate spending that triggers alert
 	// In production, this would come from AWS Cost Explorer
