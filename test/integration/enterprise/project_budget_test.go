@@ -45,6 +45,7 @@ func TestProjectBudget_CreateAndAllocate(t *testing.T) {
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create budget")
 	require.NotNil(t, budget)
+	registry.Register("budget", budget.ID)
 	assert.Equal(t, "NSF Grant 2024", budget.Name)
 	assert.Equal(t, 50000.0, budget.TotalAmount)
 	assert.Equal(t, 0.0, budget.AllocatedAmount)
@@ -60,6 +61,7 @@ func TestProjectBudget_CreateAndAllocate(t *testing.T) {
 	allocation, err := testCtx.Client.CreateAllocation(ctx, *allocationReq)
 	require.NoError(t, err, "Failed to create allocation")
 	require.NotNil(t, allocation)
+	registry.Register("allocation", allocation.ID)
 	assert.Equal(t, budget.ID, allocation.BudgetID)
 	assert.Equal(t, proj.ID, allocation.ProjectID)
 	assert.Equal(t, 10000.0, allocation.AllocatedAmount)
@@ -121,6 +123,7 @@ func TestProjectBudget_MultiSourceFunding(t *testing.T) {
 
 		budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 		require.NoError(t, err, "Failed to create budget: "+b.name)
+		registry.Register("budget", budget.ID)
 
 		// Allocate to project (allocate 50% of each budget)
 		allocationAmount := b.amount * 0.5
@@ -169,6 +172,7 @@ func TestProjectBudget_SharedBudgetPool(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create shared budget")
+	registry.Register("budget", budget.ID)
 
 	// Create multiple projects and allocate from shared pool
 	projects := []struct {
@@ -243,6 +247,7 @@ func TestProjectBudget_Reallocation(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create budget")
+	registry.Register("budget", budget.ID)
 
 	// Create two projects
 	proj1, err := fixtures.CreateTestProject(t, registry, fixtures.CreateTestProjectOptions{
@@ -266,6 +271,7 @@ func TestProjectBudget_Reallocation(t *testing.T) {
 	}
 	allocation1, err := testCtx.Client.CreateAllocation(ctx, *allocation1Req)
 	require.NoError(t, err, "Failed to create initial allocation for Alpha")
+	registry.Register("allocation", allocation1.ID)
 
 	allocation2Req := &project.CreateAllocationRequest{
 		BudgetID:        budget.ID,
@@ -275,6 +281,7 @@ func TestProjectBudget_Reallocation(t *testing.T) {
 	}
 	allocation2, err := testCtx.Client.CreateAllocation(ctx, *allocation2Req)
 	require.NoError(t, err, "Failed to create initial allocation for Beta")
+	registry.Register("allocation", allocation2.ID)
 
 	t.Logf("Initial: Alpha=$30k, Beta=$15k")
 
@@ -332,6 +339,7 @@ func TestProjectBudget_CostTracking_RealInstance(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create budget")
+	registry.Register("budget", budget.ID)
 
 	allocationReq := &project.CreateAllocationRequest{
 		BudgetID:        budget.ID,
@@ -342,6 +350,7 @@ func TestProjectBudget_CostTracking_RealInstance(t *testing.T) {
 
 	allocation, err := testCtx.Client.CreateAllocation(ctx, *allocationReq)
 	require.NoError(t, err, "Failed to create allocation")
+	registry.Register("allocation", allocation.ID)
 
 	// Launch a small instance for cost tracking
 	instanceName := "cost-tracking-instance"
@@ -420,6 +429,7 @@ func TestProjectBudget_AlertThresholds(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create budget")
+	registry.Register("budget", budget.ID)
 
 	// Allocate to project with custom alert threshold
 	alertThreshold := 80.0 // Alert at 80% of allocation
@@ -433,6 +443,7 @@ func TestProjectBudget_AlertThresholds(t *testing.T) {
 
 	allocation, err := testCtx.Client.CreateAllocation(ctx, *allocationReq)
 	require.NoError(t, err, "Failed to create allocation")
+	registry.Register("allocation", allocation.ID)
 
 	// Verify alert threshold was set
 	assert.NotNil(t, allocation.AlertThreshold)
@@ -491,6 +502,7 @@ func TestProjectBudget_OverspendPrevention(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create budget")
+	registry.Register("budget", budget.ID)
 
 	allocationReq := &project.CreateAllocationRequest{
 		BudgetID:        budget.ID,
@@ -501,6 +513,7 @@ func TestProjectBudget_OverspendPrevention(t *testing.T) {
 
 	allocation, err := testCtx.Client.CreateAllocation(ctx, *allocationReq)
 	require.NoError(t, err, "Failed to create allocation")
+	registry.Register("allocation", allocation.ID)
 
 	t.Logf("Allocation created: $%.2f", allocation.AllocatedAmount)
 
@@ -552,6 +565,7 @@ func TestProject_CreateWithDefaultAllocation(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create default budget")
+	registry.Register("budget", budget.ID)
 
 	// Create project with budget reference
 	projectReq := project.CreateProjectRequest{
@@ -574,6 +588,7 @@ func TestProject_CreateWithDefaultAllocation(t *testing.T) {
 
 	allocation, err := testCtx.Client.CreateAllocation(ctx, *allocationReq)
 	require.NoError(t, err, "Failed to create default allocation")
+	registry.Register("allocation", allocation.ID)
 
 	// Verify project has allocation
 	fundingSummary, err := testCtx.Client.GetProjectFundingSummary(ctx, proj.ID)
@@ -611,6 +626,7 @@ func TestProject_DeleteWithActiveAllocations(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create budget")
+	registry.Register("budget", budget.ID)
 
 	// Create allocation
 	allocationReq := &project.CreateAllocationRequest{
@@ -622,6 +638,7 @@ func TestProject_DeleteWithActiveAllocations(t *testing.T) {
 
 	allocation, err := testCtx.Client.CreateAllocation(ctx, *allocationReq)
 	require.NoError(t, err, "Failed to create allocation")
+	registry.Register("allocation", allocation.ID)
 
 	t.Logf("Project has active allocation: $%.2f", allocation.AllocatedAmount)
 
@@ -677,6 +694,7 @@ func TestProject_BudgetSummary_Accuracy(t *testing.T) {
 
 	budget, err := testCtx.Client.CreateBudget(ctx, *budgetReq)
 	require.NoError(t, err, "Failed to create budget")
+	registry.Register("budget", budget.ID)
 
 	// Create allocation
 	allocationReq := &project.CreateAllocationRequest{
@@ -688,6 +706,7 @@ func TestProject_BudgetSummary_Accuracy(t *testing.T) {
 
 	allocation, err := testCtx.Client.CreateAllocation(ctx, *allocationReq)
 	require.NoError(t, err, "Failed to create allocation")
+	registry.Register("allocation", allocation.ID)
 
 	// Record various spending amounts
 	spendingAmounts := []float64{1500.0, 2500.0, 3000.0}

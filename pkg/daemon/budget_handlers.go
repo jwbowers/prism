@@ -234,6 +234,8 @@ func (s *Server) handleAllocationByID(w http.ResponseWriter, r *http.Request) {
 		s.handleAllocationStatus(w, r, allocationID)
 	case "reallocations":
 		s.handleAllocationReallocationHistory(w, r, allocationID)
+	case "spending":
+		s.handleRecordSpending(w, r, allocationID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown allocation operation")
 	}
@@ -293,6 +295,30 @@ func (s *Server) handleDeleteAllocation(w http.ResponseWriter, r *http.Request, 
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleRecordSpending records spending against an allocation (v0.5.10+)
+func (s *Server) handleRecordSpending(w http.ResponseWriter, r *http.Request, allocationID string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req struct {
+		Amount float64 `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid request: %v", err))
+		return
+	}
+
+	result, err := s.budgetManager.RecordSpending(context.Background(), allocationID, req.Amount)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to record spending: %v", err))
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 // ============================================================================

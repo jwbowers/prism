@@ -20,6 +20,8 @@ type FixtureRegistry struct {
 	ebsStorages   []string
 	profiles      []string
 	projects      []string
+	budgets       []string // v0.6.2: Budget IDs for cleanup
+	allocations   []string // v0.6.2: Allocation IDs for cleanup
 	cleanupCalled bool
 }
 
@@ -60,13 +62,17 @@ func (r *FixtureRegistry) Register(resourceType, id string) {
 		r.profiles = append(r.profiles, id)
 	case "project":
 		r.projects = append(r.projects, id)
+	case "budget": // v0.6.2
+		r.budgets = append(r.budgets, id)
+	case "allocation": // v0.6.2
+		r.allocations = append(r.allocations, id)
 	default:
 		r.t.Logf("Warning: Unknown resource type %q", resourceType)
 	}
 }
 
 // cleanup removes all registered test resources in the correct order
-// Order: backups → instances → EBS volumes → EFS volumes → profiles
+// Order: allocations → budgets → backups → instances → EBS volumes → EFS volumes → projects → profiles
 func (r *FixtureRegistry) cleanup() {
 	r.t.Helper()
 	r.cleanupCalled = true
@@ -74,7 +80,25 @@ func (r *FixtureRegistry) cleanup() {
 	ctx := context.Background()
 	r.t.Log("Cleaning up test fixtures...")
 
-	// Clean up backups first (fastest, no dependencies)
+	// Clean up allocations first (must be deleted before budgets) - v0.6.2
+	for _, allocationID := range r.allocations {
+		if err := r.client.DeleteAllocation(ctx, allocationID); err != nil {
+			r.t.Logf("Warning: Failed to cleanup allocation %s: %v", allocationID, err)
+		} else {
+			r.t.Logf("Cleaned up allocation: %s", allocationID)
+		}
+	}
+
+	// Clean up budgets (must be deleted before budgets can be fully removed) - v0.6.2
+	for _, budgetID := range r.budgets {
+		if err := r.client.DeleteBudget(ctx, budgetID); err != nil {
+			r.t.Logf("Warning: Failed to cleanup budget %s: %v", budgetID, err)
+		} else {
+			r.t.Logf("Cleaned up budget: %s", budgetID)
+		}
+	}
+
+	// Clean up backups (fastest, no dependencies)
 	for _, backupID := range r.backups {
 		result, err := r.client.DeleteBackup(ctx, backupID)
 		if err != nil {
