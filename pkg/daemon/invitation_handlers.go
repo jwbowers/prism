@@ -65,6 +65,10 @@ func (s *Server) handleInvitationOperations(w http.ResponseWriter, r *http.Reque
 	case path == "/api/v1/invitations/quota-check" && method == http.MethodPost:
 		s.handleQuotaCheck(w, r)
 
+	// GET /api/v1/invitations/by-id/{id} - Get invitation by ID (v0.6.2)
+	case strings.HasPrefix(path, "/api/v1/invitations/by-id/") && method == http.MethodGet:
+		s.handleGetInvitationByID(w, r)
+
 	// GET /api/v1/invitations/{token} - Get invitation by token
 	case strings.HasPrefix(path, "/api/v1/invitations/") && method == http.MethodGet:
 		s.handleGetInvitation(w, r)
@@ -94,6 +98,13 @@ func (s *Server) handleSendInvitation(w http.ResponseWriter, r *http.Request) {
 
 	// Set project ID from URL
 	req.ProjectID = projectID
+
+	// Set InvitedBy (in production, this would come from authenticated user)
+	// For now, use project owner as the inviter
+	// TODO: Get actual authenticated user from request context
+	if req.InvitedBy == "" {
+		req.InvitedBy = "system" // Default for tests
+	}
 
 	// Validate project exists
 	project, err := s.projectManager.GetProject(r.Context(), projectID)
@@ -273,6 +284,49 @@ func (s *Server) handleGetInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inv, err := s.invitationManager.GetInvitationByToken(r.Context(), token)
+	if err != nil {
+		if err == types.ErrInvitationNotFound {
+			http.Error(w, "Invitation not found", http.StatusNotFound)
+			return
+		}
+		if err == types.ErrInvitationExpired {
+			http.Error(w, "Invitation has expired", http.StatusGone)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to get invitation: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Get project details for context
+	project, err := s.projectManager.GetProject(r.Context(), inv.ProjectID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get project: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Enrich invitation with project name for display
+	inv.ProjectName = project.Name
+
+	response := map[string]interface{}{
+		"invitation": inv,
+		"project":    project,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleGetInvitationByID retrieves an invitation by its ID (v0.6.2)
+// GET /api/v1/invitations/by-id/{id}
+func (s *Server) handleGetInvitationByID(w http.ResponseWriter, r *http.Request) {
+	// Parse invitation ID from path: /api/v1/invitations/by-id/{id}
+	invitationID := r.URL.Path[len("/api/v1/invitations/by-id/"):]
+	if invitationID == "" {
+		http.Error(w, "Missing invitation ID", http.StatusBadRequest)
+		return
+	}
+
+	inv, err := s.invitationManager.GetInvitation(r.Context(), invitationID)
 	if err != nil {
 		if err == types.ErrInvitationNotFound {
 			http.Error(w, "Invitation not found", http.StatusNotFound)

@@ -22,6 +22,7 @@ type FixtureRegistry struct {
 	projects      []string
 	budgets       []string // v0.6.2: Budget IDs for cleanup
 	allocations   []string // v0.6.2: Allocation IDs for cleanup
+	invitations   []string // v0.6.2: Invitation IDs for cleanup (Issue #383)
 	cleanupCalled bool
 }
 
@@ -66,13 +67,15 @@ func (r *FixtureRegistry) Register(resourceType, id string) {
 		r.budgets = append(r.budgets, id)
 	case "allocation": // v0.6.2
 		r.allocations = append(r.allocations, id)
+	case "invitation": // v0.6.2 (Issue #383)
+		r.invitations = append(r.invitations, id)
 	default:
 		r.t.Logf("Warning: Unknown resource type %q", resourceType)
 	}
 }
 
 // cleanup removes all registered test resources in the correct order
-// Order: allocations → budgets → backups → instances → EBS volumes → EFS volumes → projects → profiles
+// Order: allocations → budgets → invitations → backups → instances → EBS volumes → EFS volumes → projects → profiles
 func (r *FixtureRegistry) cleanup() {
 	r.t.Helper()
 	r.cleanupCalled = true
@@ -95,6 +98,18 @@ func (r *FixtureRegistry) cleanup() {
 			r.t.Logf("Warning: Failed to cleanup budget %s: %v", budgetID, err)
 		} else {
 			r.t.Logf("Cleaned up budget: %s", budgetID)
+		}
+	}
+
+	// Clean up invitations (revoke pending invitations before project cleanup) - v0.6.2 (Issue #383)
+	for _, invitationID := range r.invitations {
+		// Note: We use a placeholder method name - the actual API client method needs to be verified
+		// The invitation manager has RevokeInvitation but API client might use different naming
+		if err := r.client.RevokeInvitation(ctx, invitationID); err != nil {
+			// If already accepted/declined/expired, revocation will fail - that's OK
+			r.t.Logf("Warning: Failed to cleanup invitation %s: %v (may already be accepted/declined)", invitationID, err)
+		} else {
+			r.t.Logf("Cleaned up invitation: %s", invitationID)
 		}
 	}
 

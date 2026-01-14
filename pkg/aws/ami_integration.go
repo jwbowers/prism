@@ -342,9 +342,10 @@ func (m *Manager) CreateAMIFromInstance(request *types.AMICreationRequest) (*typ
 		return nil, fmt.Errorf("instance not found: %s", request.InstanceID)
 	}
 
-	// Ensure instance is running
-	if sourceInstance.State != "running" {
-		return nil, fmt.Errorf("instance must be running to create AMI, current state: %s", sourceInstance.State)
+	// AWS allows AMI creation from running or stopped instances
+	// Reject only invalid states (terminated, terminating, shutting-down)
+	if sourceInstance.State == "terminated" || sourceInstance.State == "terminating" || sourceInstance.State == "shutting-down" {
+		return nil, fmt.Errorf("cannot create AMI from instance in state: %s", sourceInstance.State)
 	}
 
 	// Set instance ID to AWS instance ID for AMI creation

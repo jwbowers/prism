@@ -128,10 +128,13 @@ type PrismAPI interface {
 
 	// Invitation operations (v0.5.11)
 	GetInvitationByToken(context.Context, string) (*GetInvitationResponse, error)
+	GetInvitationByID(context.Context, string) (*GetInvitationResponse, error) // v0.6.2 (Issue #383)
 	AcceptInvitation(context.Context, string) (*InvitationActionResponse, error)
 	DeclineInvitation(context.Context, string, string) (*InvitationActionResponse, error)
 	SendInvitation(context.Context, string, SendInvitationRequest) (*SendInvitationResponse, error)
 	SendBulkInvitation(context.Context, string, *types.BulkInvitationRequest) (*types.BulkInvitationResponse, error)
+	RevokeInvitation(context.Context, string) error // v0.6.2 (Issue #383)
+	ResendInvitation(context.Context, string) error // v0.6.2 (Issue #383)
 
 	// Shared token operations (v0.5.13)
 	CreateSharedToken(context.Context, string, *types.CreateSharedTokenRequest) (*types.SharedInvitationToken, error)

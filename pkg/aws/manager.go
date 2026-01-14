@@ -4301,8 +4301,10 @@ func (m *Manager) CreateInstanceAMISnapshot(instanceName, snapshotName, descript
 		return nil, fmt.Errorf("instance '%s' not found", instanceName)
 	}
 
-	if instanceData.State != "running" {
-		return nil, fmt.Errorf("instance '%s' must be running to create snapshot (current state: %s)", instanceName, instanceData.State)
+	// AWS allows AMI creation from running or stopped instances
+	// Reject only invalid states (terminated, terminating, shutting-down)
+	if instanceData.State == "terminated" || instanceData.State == "terminating" || instanceData.State == "shutting-down" {
+		return nil, fmt.Errorf("cannot create snapshot from instance '%s' in state: %s", instanceName, instanceData.State)
 	}
 
 	// Ensure unique snapshot name

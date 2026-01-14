@@ -133,6 +133,65 @@ func (c *HTTPClient) SendBulkInvitation(ctx context.Context, projectID string, r
 	return &result, nil
 }
 
+// GetInvitationByID retrieves an invitation by its ID
+// GET /api/v1/invitations/by-id/{invitationID}
+func (c *HTTPClient) GetInvitationByID(ctx context.Context, invitationID string) (*GetInvitationResponse, error) {
+	path := fmt.Sprintf("/api/v1/invitations/by-id/%s", invitationID)
+
+	resp, err := c.makeRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get invitation: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseHTTPError(resp)
+	}
+
+	var result GetInvitationResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
+// RevokeInvitation revokes a pending invitation
+// DELETE /api/v1/invitations/{invitationID}
+func (c *HTTPClient) RevokeInvitation(ctx context.Context, invitationID string) error {
+	path := fmt.Sprintf("/api/v1/invitations/%s", invitationID)
+
+	resp, err := c.makeRequest(ctx, http.MethodDelete, path, nil)
+	if err != nil {
+		return fmt.Errorf("failed to revoke invitation: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return parseHTTPError(resp)
+	}
+
+	return nil
+}
+
+// ResendInvitation resends an invitation email
+// POST /api/v1/invitations/{invitationID}/resend
+func (c *HTTPClient) ResendInvitation(ctx context.Context, invitationID string) error {
+	path := fmt.Sprintf("/api/v1/invitations/%s/resend", invitationID)
+
+	resp, err := c.makeRequest(ctx, http.MethodPost, path, nil)
+	if err != nil {
+		return fmt.Errorf("failed to resend invitation: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return parseHTTPError(resp)
+	}
+
+	return nil
+}
+
 // parseHTTPError extracts error message from HTTP response
 func parseHTTPError(resp *http.Response) error {
 	var errMsg struct {
