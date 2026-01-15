@@ -40,7 +40,8 @@ import {
   Wizard,
   ProgressBar,
   TextContent,
-  Textarea
+  Textarea,
+  Toggle
 } from '@cloudscape-design/components';
 
 // Type definitions
@@ -569,6 +570,7 @@ interface AppState {
   connected: boolean;
   error: string | null;
   updateInfo: any | null;
+  autoStartEnabled: boolean;
 }
 
 // API Response Interfaces
@@ -1637,6 +1639,27 @@ class SafePrismAPI {
   async checkForUpdates(): Promise<any> {
     return this.safeRequest('/api/v1/update/check');
   }
+
+  async getAutoStartStatus(): Promise<{ enabled: boolean; method?: string; path?: string }> {
+    // Call the Wails backend method
+    try {
+      const response = await (window as any).go.main.PrismService.GetAutoStartStatus();
+      return response;
+    } catch (error) {
+      logger.error('Failed to get auto-start status:', error);
+      throw error;
+    }
+  }
+
+  async setAutoStart(enable: boolean): Promise<void> {
+    // Call the Wails backend method
+    try {
+      await (window as any).go.main.PrismService.SetAutoStart(enable);
+    } catch (error) {
+      logger.error('Failed to set auto-start:', error);
+      throw error;
+    }
+  }
 }
 
 export default function PrismApp() {
@@ -1677,7 +1700,8 @@ export default function PrismApp() {
     notifications: [],
     connected: false,
     error: null,
-    updateInfo: null
+    updateInfo: null,
+    autoStartEnabled: false
   });
 
   const [navigationOpen, setNavigationOpen] = useState(true);
@@ -1835,17 +1859,19 @@ export default function PrismApp() {
         api.getMarketplaceCategories(),
         api.getIdlePolicies(),
         api.getIdleSchedules(),
-        api.getMyInvitations()
+        api.getMyInvitations(),
+        api.getAutoStartStatus()
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, budgetPoolsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData] = results.map((result, index) => {
+      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, budgetsData, budgetPoolsData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData, autoStartStatusData] = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
           // Return appropriate empty fallback based on expected type
           if (index === 0) return {}; // templates (object)
           if (index === 12) return null; // policyStatus (nullable, updated index after adding budgetPoolsData)
+          if (index === 20) return { enabled: false }; // autoStartStatus (object with enabled boolean)
           return []; // everything else (arrays)
         }
       });
@@ -1894,6 +1920,7 @@ export default function PrismApp() {
         idlePolicies: idlePoliciesData,
         idleSchedules: idleSchedulesData,
         invitations: cachedInvitations,
+        autoStartEnabled: autoStartStatusData?.enabled || false,
         loading: false,
         connected: true,
         error: null
@@ -7142,6 +7169,38 @@ export default function PrismApp() {
                 { label: "Disabled", value: "disabled" }
               ]}
             />
+          </FormField>
+
+          <FormField
+            label="Start at login"
+            description="Automatically start Prism GUI when you log in to your computer"
+          >
+            <Toggle
+              checked={state.autoStartEnabled || false}
+              onChange={async ({ detail }) => {
+                try {
+                  await api.setAutoStart(detail.checked);
+                  setState(prev => ({ ...prev, autoStartEnabled: detail.checked }));
+
+                  setNotification({
+                    type: 'success',
+                    content: `Auto-start ${detail.checked ? 'enabled' : 'disabled'} successfully`,
+                    dismissible: true,
+                    id: 'auto-start-update'
+                  });
+                } catch (error) {
+                  logger.error('Failed to update auto-start:', error);
+                  setNotification({
+                    type: 'error',
+                    content: `Failed to update auto-start: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    dismissible: true,
+                    id: 'auto-start-error'
+                  });
+                }
+              }}
+            >
+              {state.autoStartEnabled ? 'Enabled' : 'Disabled'}
+            </Toggle>
           </FormField>
         </SpaceBetween>
       </Container>

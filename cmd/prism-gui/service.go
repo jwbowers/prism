@@ -8,7 +8,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -1064,4 +1066,105 @@ func loadAPIKeyFromState() string {
 	}
 
 	return state.Config.APIKey
+}
+
+// AutoStartStatus represents the auto-start configuration status
+type AutoStartStatus struct {
+	Enabled bool   `json:"enabled"`
+	Method  string `json:"method,omitempty"` // "login-items", "registry", "xdg-autostart"
+	Path    string `json:"path,omitempty"`
+}
+
+// GetAutoStartStatus returns the current auto-start status
+func (s *PrismService) GetAutoStartStatus(ctx context.Context) (*AutoStartStatus, error) {
+	// Check if auto-start is configured by attempting to read the configuration
+	// This is platform-specific
+	status := &AutoStartStatus{
+		Enabled: isAutoStartEnabled(),
+	}
+
+	// Get method and path based on platform
+	switch runtime.GOOS {
+	case osDarwin:
+		status.Method = "login-items"
+	case osLinux:
+		status.Method = "xdg-autostart"
+	case osWindows:
+		status.Method = "registry"
+	}
+
+	return status, nil
+}
+
+// SetAutoStart enables or disables auto-start
+func (s *PrismService) SetAutoStart(ctx context.Context, enable bool) error {
+	if err := configureAutoStart(enable); err != nil {
+		return fmt.Errorf("failed to configure auto-start: %w", err)
+	}
+
+	log.Printf("Auto-start %s successfully", map[bool]string{true: "enabled", false: "disabled"}[enable])
+	return nil
+}
+
+// isAutoStartEnabled checks if auto-start is currently enabled
+func isAutoStartEnabled() bool {
+	switch runtime.GOOS {
+	case osDarwin:
+		return isMacOSAutoStartEnabled()
+	case osLinux:
+		return isLinuxAutoStartEnabled()
+	case osWindows:
+		return isWindowsAutoStartEnabled()
+	default:
+		return false
+	}
+}
+
+// Platform-specific auto-start detection functions
+func isMacOSAutoStartEnabled() bool {
+	// Check if our app is in the Login Items list
+	execPath, err := os.Executable()
+	if err != nil {
+		return false
+	}
+
+	execPath, err = filepath.EvalSymlinks(execPath)
+	if err != nil {
+		return false
+	}
+
+	// Use osascript to check login items
+	script := fmt.Sprintf(`
+	tell application "System Events"
+		exists login item "%s"
+	end tell
+	`, filepath.Base(execPath))
+
+	cmd := exec.Command("osascript", "-e", script)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	return strings.TrimSpace(string(output)) == "true"
+}
+
+func isLinuxAutoStartEnabled() bool {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+
+	desktopFile := filepath.Join(homeDir, ".config", "autostart", "cloudworkstation-gui.desktop")
+	_, err = os.Stat(desktopFile)
+	return err == nil
+}
+
+func isWindowsAutoStartEnabled() bool {
+	keyPath := `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`
+	appName := "PrismGUI"
+
+	cmd := exec.Command("reg", "query", keyPath, "/v", appName)
+	err := cmd.Run()
+	return err == nil // If query succeeds, the key exists
 }
