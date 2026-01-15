@@ -87,18 +87,35 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
 });
 
-// Suppress CSS parsing errors in test environment
+// Suppress CSS parsing errors and other test noise
 const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
 console.error = (...args) => {
-  // Suppress specific CSS parsing errors that don't affect functionality
+  // Suppress specific errors that don't affect functionality
   if (
     args.length > 0 &&
     typeof args[0] === 'string' &&
     (args[0].includes('\\8 and \\9 are not allowed in strict mode') ||
      args[0].includes('CSS parsing error') ||
-     args[0].includes('nwsapi'))
+     args[0].includes('Could not parse CSS stylesheet') ||
+     args[0].includes('nwsapi') ||
+     args[0].includes('Not implemented: HTMLCanvasElement'))
   ) {
     return;
   }
   originalConsoleError.apply(console, args);
+};
+
+console.warn = (...args) => {
+  // Suppress non-critical warnings
+  if (
+    args.length > 0 &&
+    typeof args[0] === 'string' &&
+    (args[0].includes('Could not parse CSS stylesheet') ||
+     args[0].includes('Not implemented: HTMLCanvasElement'))
+  ) {
+    return;
+  }
+  originalConsoleWarn.apply(console, args);
 };
