@@ -91,7 +91,7 @@ func (s *Server) handleCreateInstanceSnapshot(w http.ResponseWriter, r *http.Req
 			} else {
 				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create snapshot: %v", err))
 			}
-			return err
+			return nil // Error already written to response
 		}
 
 		// If wait is requested, monitor snapshot creation
@@ -114,7 +114,7 @@ func (s *Server) handleListInstanceSnapshots(w http.ResponseWriter, r *http.Requ
 		snapshots, err := awsManager.ListInstanceSnapshots()
 		if err != nil {
 			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list snapshots: %v", err))
-			return err
+			return nil // Error already written to response
 		}
 
 		response := types.InstanceSnapshotListResponse{
@@ -138,7 +138,7 @@ func (s *Server) handleGetInstanceSnapshot(w http.ResponseWriter, r *http.Reques
 			} else {
 				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get snapshot info: %v", err))
 			}
-			return err
+			return nil // Error already written to response
 		}
 
 		s.writeJSON(w, http.StatusOK, snapshot)
@@ -157,7 +157,7 @@ func (s *Server) handleDeleteInstanceSnapshot(w http.ResponseWriter, r *http.Req
 			} else {
 				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete snapshot: %v", err))
 			}
-			return err
+			return nil // Error already written to response
 		}
 
 		s.writeJSON(w, http.StatusOK, result)
@@ -191,7 +191,7 @@ func (s *Server) handleRestoreInstanceFromSnapshot(w http.ResponseWriter, r *htt
 			} else {
 				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to restore instance: %v", err))
 			}
-			return err
+			return nil // Error already written to response
 		}
 
 		if req.Wait {
