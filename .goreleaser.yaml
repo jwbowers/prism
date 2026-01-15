@@ -141,7 +141,7 @@ brews:
       token: "{{ .Env.GITHUB_TOKEN }}"
 
     # Formula directory (Homebrew expects formulas in Formula/ subdirectory)
-    folder: Formula
+    directory: Formula
 
     # Commit message template
     commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
