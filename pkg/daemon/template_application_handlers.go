@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -272,6 +273,20 @@ func (s *Server) handleInstanceRollback(w http.ResponseWriter, r *http.Request) 
 }
 
 // createRemoteExecutor creates an appropriate remote executor for the instance
+//
+// Remote execution supports two connection methods:
+//  1. SSH - For instances with public IPs (uses SCP for file transfers)
+//  2. Systems Manager (SSM) - For private instances (uses S3 as intermediate storage)
+//
+// SSM File Operations (Issue #421):
+// When using Systems Manager for private instances, file operations (CopyFile/GetFile)
+// utilize S3 as intermediate storage since SSM doesn't support direct file transfer:
+//   - CopyFile: Local → S3 → Instance (via aws s3 cp command over SSM)
+//   - GetFile: Instance → S3 → Local (via aws s3 cp command over SSM)
+//   - Temporary files are automatically cleaned up from S3 after transfer
+//
+// The S3 bucket name follows the pattern: prism-temp-{account-id}-{region}
+// This bucket must exist and be accessible by the instance's IAM role.
 func (s *Server) createRemoteExecutor(instance types.Instance) (templates.RemoteExecutor, error) {
 	// Determine the best connection method based on instance configuration
 	if instance.PublicIP != "" {
@@ -284,11 +299,24 @@ func (s *Server) createRemoteExecutor(instance types.Instance) (templates.Remote
 		// Use Systems Manager for private instances
 		region := s.getAWSRegion()
 
-		// Design Note: SSM executor created with nil clients for file operations (CopyFile/GetFile)
-		// Command execution (Execute/ExecuteScript) uses awsManager's SSM client instead
-		// This separation keeps the executor lightweight while delegating AWS operations to awsManager
-		// File operations (CopyFile/GetFile) not currently used; can be implemented when needed
-		return templates.NewSystemsManagerExecutor(region, nil, nil, "", s.stateManager), nil
+		// Get SSM client from AWS manager
+		ssmClient := s.awsManager.GetSSMClient()
+
+		// Create S3 client for file operations (uses S3 as intermediate storage)
+		s3Client, err := s.awsManager.CreateS3Client()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create S3 client for SSM file operations: %w", err)
+		}
+
+		// Get temporary S3 bucket for file transfers
+		// This bucket is used as intermediate storage for SSM file operations
+		ctx := context.Background()
+		s3Bucket, err := s.awsManager.GetTemporaryS3Bucket(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get temporary S3 bucket: %w", err)
+		}
+
+		return templates.NewSystemsManagerExecutor(region, ssmClient, s3Client, s3Bucket, s.stateManager), nil
 	}
 }
 

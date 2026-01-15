@@ -4876,6 +4876,46 @@ func (m *Manager) CreateS3Client() (*s3.Client, error) {
 	return s3.NewFromConfig(m.cfg), nil
 }
 
+// GetSSMClient returns the SSM client for direct use by components like SystemsManagerExecutor (Issue #421)
+// This allows the executor to send commands and manage command execution via AWS Systems Manager.
+func (m *Manager) GetSSMClient() SSMClientInterface {
+	return m.ssm
+}
+
+// GetTemporaryS3Bucket returns the S3 bucket name to use for temporary file storage in SSM operations (Issue #421)
+//
+// SSM doesn't support direct file transfer, so file operations (CopyFile/GetFile) use S3 as
+// intermediate storage. This method returns a deterministic bucket name based on the AWS account
+// and region:
+//
+//	Pattern: prism-temp-{account-id}-{region}
+//	Example: prism-temp-123456789012-us-west-2
+//
+// IMPORTANT: This bucket must be created manually or via infrastructure automation before using
+// SSM file operations. The instance's IAM role must have s3:PutObject, s3:GetObject, and
+// s3:DeleteObject permissions for this bucket.
+//
+// Recommended bucket configuration:
+//   - Lifecycle policy: Delete objects after 1 day
+//   - Encryption: AES-256 (SSE-S3)
+//   - Versioning: Disabled
+//   - Public access: Blocked
+func (m *Manager) GetTemporaryS3Bucket(ctx context.Context) (string, error) {
+	// Get AWS account ID
+	stsOutput, err := m.sts.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get AWS account ID: %w", err)
+	}
+
+	accountID := *stsOutput.Account
+
+	// Generate deterministic bucket name: prism-temp-{account-id}-{region}
+	// This follows AWS S3 bucket naming conventions (lowercase, no underscores)
+	bucketName := fmt.Sprintf("prism-temp-%s-%s", accountID, m.region)
+
+	return bucketName, nil
+}
+
 // CheckAMIFreshness validates static AMI IDs against latest SSM values (v0.5.4)
 func (m *Manager) CheckAMIFreshness(ctx context.Context, staticAMIs map[string]map[string]map[string]map[string]string) ([]AMIFreshnessResult, error) {
 	return m.amiDiscovery.CheckAMIFreshness(ctx, staticAMIs, m.region)
