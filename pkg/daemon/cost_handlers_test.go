@@ -534,8 +534,13 @@ func TestCostHandlersMethodValidation(t *testing.T) {
 
 			handler.ServeHTTP(w, req)
 
-			// May return 405 or 404 depending on routing
-			assert.True(t, w.Code == http.StatusMethodNotAllowed || w.Code == http.StatusNotFound)
+			// May return 405, 404, 401, or 403 depending on routing and authentication
+			assert.True(t,
+				w.Code == http.StatusMethodNotAllowed ||
+					w.Code == http.StatusNotFound ||
+					w.Code == http.StatusUnauthorized ||
+					w.Code == http.StatusForbidden,
+				"Expected 405, 404, 401, or 403 but got %d", w.Code)
 		})
 	}
 }

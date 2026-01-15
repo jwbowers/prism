@@ -13,6 +13,11 @@ import (
 
 // handleGetCostAlerts returns all cost alerts
 func (s *Server) handleGetCostAlerts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Get project ID from query params if provided
 	projectID := r.URL.Query().Get("project_id")
 
@@ -177,6 +182,11 @@ func (s *Server) handleGetRecommendations(w http.ResponseWriter, r *http.Request
 
 // handleGetCostTrends returns cost trends for analysis
 func (s *Server) handleGetCostTrends(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	projectID := r.URL.Query().Get("project_id")
 	period := r.URL.Query().Get("period") // 7d, 30d, 90d
 
