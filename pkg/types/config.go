@@ -12,10 +12,14 @@ type Config struct {
 
 // State manages the application state
 type State struct {
+	Version        string                   `json:"version"` // State file format version
 	Instances      map[string]Instance      `json:"instances"`
 	StorageVolumes map[string]StorageVolume `json:"storage_volumes"`
 	Config         Config                   `json:"config"`
 }
+
+// CurrentStateVersion is the current version of the state file format
+const CurrentStateVersion = "1.0"
 
 // DaemonStatus represents the status of the Prism daemon
 type DaemonStatus struct {

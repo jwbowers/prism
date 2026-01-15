@@ -49,7 +49,7 @@ func NewManager() (*Manager, error) {
 	}, nil
 }
 
-// LoadState loads the current state from disk
+// LoadState loads the current state from disk with corruption recovery
 func (m *Manager) LoadState() (*types.State, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
@@ -57,16 +57,48 @@ func (m *Manager) LoadState() (*types.State, error) {
 	// Check if state file exists
 	if _, err := os.Stat(m.statePath); os.IsNotExist(err) {
 		// Return empty state if file doesn't exist
-		return &types.State{
-			Instances:      make(map[string]types.Instance),
-			StorageVolumes: make(map[string]types.StorageVolume),
-			Config: types.Config{
-				DefaultRegion: "us-east-1",
-			},
-		}, nil
+		return m.newEmptyState(), nil
 	}
 
-	data, err := os.ReadFile(m.statePath)
+	// Try to load primary state file
+	state, err := m.loadStateFile(m.statePath)
+	if err == nil {
+		return state, nil
+	}
+
+	// Primary state file is corrupted, try backups
+	backups := []string{
+		m.statePath + ".bak",
+		m.statePath + ".bak1",
+		m.statePath + ".bak2",
+		m.statePath + ".bak3",
+	}
+
+	for _, backup := range backups {
+		if _, err := os.Stat(backup); os.IsNotExist(err) {
+			continue
+		}
+
+		state, err := m.loadStateFile(backup)
+		if err == nil {
+			// Successfully recovered from backup
+			// Restore backup to primary state file
+			if err := m.restoreBackup(backup); err != nil {
+				// Log error but continue with recovered state
+				fmt.Fprintf(os.Stderr, "Warning: failed to restore backup: %v\n", err)
+			}
+			return state, nil
+		}
+	}
+
+	// All backups failed, return empty state
+	fmt.Fprintf(os.Stderr, "Warning: all state files corrupted, initializing empty state\n")
+	return m.newEmptyState(), nil
+}
+
+// loadStateFile loads and validates a state file
+func (m *Manager) loadStateFile(path string) (*types.State, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read state file: %w", err)
 	}
@@ -74,6 +106,11 @@ func (m *Manager) LoadState() (*types.State, error) {
 	var state types.State
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, fmt.Errorf("failed to parse state file: %w", err)
+	}
+
+	// Validate state structure
+	if err := m.validateState(&state); err != nil {
+		return nil, fmt.Errorf("invalid state structure: %w", err)
 	}
 
 	// Ensure maps are initialized
@@ -87,10 +124,58 @@ func (m *Manager) LoadState() (*types.State, error) {
 	return &state, nil
 }
 
-// SaveState saves the current state to disk
+// validateState performs basic validation on loaded state
+func (m *Manager) validateState(state *types.State) error {
+	// Check version (for future compatibility)
+	if state.Version == "" {
+		// Old state file without version, auto-upgrade
+		state.Version = types.CurrentStateVersion
+	}
+
+	// Add more validation as needed
+	return nil
+}
+
+// newEmptyState creates a new empty state with defaults
+func (m *Manager) newEmptyState() *types.State {
+	return &types.State{
+		Version:        types.CurrentStateVersion,
+		Instances:      make(map[string]types.Instance),
+		StorageVolumes: make(map[string]types.StorageVolume),
+		Config: types.Config{
+			DefaultRegion: "us-east-1",
+		},
+	}
+}
+
+// restoreBackup atomically restores a backup to the primary state file
+func (m *Manager) restoreBackup(backupPath string) error {
+	data, err := os.ReadFile(backupPath)
+	if err != nil {
+		return err
+	}
+
+	tempPath := m.statePath + ".tmp"
+	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+		return err
+	}
+
+	return os.Rename(tempPath, m.statePath)
+}
+
+// SaveState saves the current state to disk with atomic writes and backup rotation
 func (m *Manager) SaveState(state *types.State) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
+	// Set version
+	state.Version = types.CurrentStateVersion
+
+	// Rotate backups before writing new state
+	if err := m.rotateBackups(); err != nil {
+		// Log error but continue - backup rotation failure shouldn't prevent save
+		fmt.Fprintf(os.Stderr, "Warning: backup rotation failed: %v\n", err)
+	}
 
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
@@ -105,6 +190,57 @@ func (m *Manager) SaveState(state *types.State) error {
 
 	if err := os.Rename(tempPath, m.statePath); err != nil {
 		return fmt.Errorf("failed to rename state file: %w", err)
+	}
+
+	return nil
+}
+
+// rotateBackups rotates backup files before writing new state
+// state.json -> state.json.bak
+// state.json.bak -> state.json.bak1
+// state.json.bak1 -> state.json.bak2
+// state.json.bak2 -> state.json.bak3
+// state.json.bak3 -> deleted
+func (m *Manager) rotateBackups() error {
+	// Check if primary state file exists
+	if _, err := os.Stat(m.statePath); os.IsNotExist(err) {
+		return nil // No state file to backup yet
+	}
+
+	// Rotate existing backups (from oldest to newest)
+	backups := []struct {
+		from string
+		to   string
+	}{
+		{m.statePath + ".bak2", m.statePath + ".bak3"},
+		{m.statePath + ".bak1", m.statePath + ".bak2"},
+		{m.statePath + ".bak", m.statePath + ".bak1"},
+		{m.statePath, m.statePath + ".bak"},
+	}
+
+	for _, backup := range backups {
+		if _, err := os.Stat(backup.from); os.IsNotExist(err) {
+			continue
+		}
+
+		// Remove destination if it exists
+		os.Remove(backup.to)
+
+		// Copy file (preserve original for atomic write)
+		if backup.from == m.statePath {
+			data, err := os.ReadFile(backup.from)
+			if err != nil {
+				return fmt.Errorf("failed to read state for backup: %w", err)
+			}
+			if err := os.WriteFile(backup.to, data, 0644); err != nil {
+				return fmt.Errorf("failed to write backup: %w", err)
+			}
+		} else {
+			// Rename backup files
+			if err := os.Rename(backup.from, backup.to); err != nil {
+				return fmt.Errorf("failed to rotate backup: %w", err)
+			}
+		}
 	}
 
 	return nil
