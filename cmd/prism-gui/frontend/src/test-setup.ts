@@ -1,9 +1,13 @@
 import { expect, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
+import * as lodash from 'lodash';
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
+
+// Make lodash available globally for Cloudscape components
+(globalThis as any)._ = lodash;
 
 // Cleanup after each test case (e.g. clearing jsdom)
 afterEach(() => {
@@ -35,10 +39,15 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
-// Mock CSS.supports for Cloudscape
+// Mock CSS.supports and CSS.escape for Cloudscape
 Object.defineProperty(window, 'CSS', {
   value: {
     supports: () => false,
+    escape: (str: string) => {
+      // Simple CSS.escape polyfill for tests
+      // Escapes special characters that need escaping in CSS selectors
+      return str.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
+    },
   },
   writable: true
 });
