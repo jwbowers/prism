@@ -236,12 +236,12 @@ func main() {
 			Handler: application.AssetFileServerFS(assets),
 		},
 		Mac: application.MacOptions{
-			ApplicationShouldTerminateAfterLastWindowClosed: false, // Keep running in menu bar
+			ApplicationShouldTerminateAfterLastWindowClosed: false, // Keep running in menu bar/system tray
 		},
 	})
 
 	// Create main window with professional styling
-	_ = app.Window.NewWithOptions(application.WebviewWindowOptions{
+	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Prism",
 		Mac: application.MacWindow{
 			Backdrop: application.MacBackdropTranslucent,
@@ -255,10 +255,18 @@ func main() {
 		MinHeight:        600,
 	})
 
+	// Setup system tray
+	trayManager := NewSystemTrayManager(app, window, cwsService)
+	if err := trayManager.Setup(); err != nil {
+		log.Printf("⚠️  Failed to setup system tray: %v", err)
+		log.Println("Continuing without system tray functionality...")
+	}
+
 	// Handle minimize to tray option
 	if *minimizeToTray {
-		// Hide window on startup (system tray functionality would go here)
-		log.Println("⚠️  System tray functionality not yet implemented")
+		// Start minimized to tray
+		window.Hide()
+		log.Println("✅ Started minimized to system tray")
 	}
 
 	// Run the application
