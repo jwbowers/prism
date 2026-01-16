@@ -1,0 +1,182 @@
+name: "R + RStudio Server"
+slug: "r-rstudio-server"
+description: "R environment with RStudio Server web IDE (inherits from R Base)"
+long_description: |
+  Builds on R Base to add web-based IDE access.
+
+  Includes everything from R Base, plus:
+  - RStudio Server 2024.12.0 (web IDE on port 8787)
+  - PAM authentication (use system password)
+  - Auto-start on boot
+  - Multi-user support
+
+  Access RStudio in your browser at: http://your-ip:8787
+
+  Perfect for:
+  - Interactive R development
+  - Collaborative data analysis
+  - Teaching R programming
+  - Remote research teams
+
+  For full publishing stack (Quarto, LaTeX), use: r-publishing-stack
+
+author: "Prism Team"
+version: "1.0.0"
+base: "ubuntu-24.04"
+
+# Connection type
+connection_type: "ssh"
+
+# Complexity and categorization
+complexity: "intermediate"
+category: "Research Tools"
+domain: "research"
+
+# Visual presentation
+icon: "🖥️"
+color: "#276DC3"
+popular: true
+
+# Architecture
+architecture: "x86_64"
+
+# Use APT package manager
+package_manager: "apt"
+
+# Inherit from R Base
+inherits: ["R Base (Ubuntu 24.04)"]
+
+# Additional packages beyond R Base
+packages:
+  # RStudio Server dependencies (gdebi handles dependencies)
+  rstudio_deps:
+    - "gdebi-core"
+    - "psmisc"  # For process management
+
+# Users inherited from parent (researcher with sudo)
+
+# Services
+services:
+  - name: "rstudio-server"
+    port: 8787
+    type: "web"
+    description: "RStudio Server (web-based R IDE)"
+    start_command: "sudo systemctl start rstudio-server"
+    check_command: "systemctl is-active rstudio-server"
+
+# Ports - add RStudio Server port
+ports:
+  - 22    # SSH (from parent)
+  - 8787  # RStudio Server
+
+# Post-installation script
+post_install: |
+  #!/bin/bash
+  set -e
+
+  echo "🔧 Installing RStudio Server layer..."
+
+  # Update system
+  apt-get update
+
+  # Install RStudio Server
+  echo "🖥️  Installing RStudio Server 2024.12.0..."
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2024.12.0-396-amd64.deb
+  gdebi --non-interactive rstudio-server-2024.12.0-396-amd64.deb
+  rm rstudio-server-2024.12.0-396-amd64.deb
+
+  # Configure RStudio Server
+  echo "⚙️  Configuring RStudio Server..."
+  mkdir -p /etc/rstudio
+  cat > /etc/rstudio/rserver.conf <<'RSTUDIO_CONF'
+  # RStudio Server Configuration
+  www-address=0.0.0.0
+  www-port=8787
+  rsession-which-r=/usr/bin/R
+  auth-required-user-group=sudo
+  RSTUDIO_CONF
+
+  # Enable and start RStudio Server
+  systemctl enable rstudio-server
+  systemctl start rstudio-server
+
+  # Verify RStudio Server is running
+  if systemctl is-active --quiet rstudio-server; then
+    echo "✅ RStudio Server started successfully"
+  else
+    echo "⚠️  RStudio Server failed to start"
+    systemctl status rstudio-server
+  fi
+
+  # Update welcome message
+  echo "Updating welcome message..."
+  cat > /home/researcher/WELCOME.txt <<'WELCOME_END'
+  R + RStudio Server Environment
+
+  RStudio Server (Web IDE):
+    URL: http://YOUR_IP:8787
+    Username: researcher
+    Password: Your system password
+
+  R Version: Inherited from R Base layer
+  Packages: tidyverse, rmarkdown, knitr, devtools
+
+  Access Methods:
+    1. Web IDE: Open browser to port 8787
+    2. Terminal: SSH and type 'R'
+    3. Scripts: Rscript my_analysis.R
+
+  Add Collaborators:
+    sudo adduser colleague
+    sudo usermod -aG sudo colleague
+    (They can login at http://YOUR_IP:8787)
+
+  For publishing tools (Quarto, LaTeX), use: r-publishing-stack template
+  WELCOME_END
+
+  chown researcher:researcher /home/researcher/WELCOME.txt
+
+  # Cleanup
+  apt-get autoremove -y
+  apt-get clean
+
+  echo "✅ RStudio Server layer installation complete!"
+  echo ""
+  echo "🖥️  RStudio Server: http://\$(curl -s ifconfig.me):8787"
+  echo "👤 Login with username and password"
+  echo ""
+
+# Idle detection - check both R and RStudio processes
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 30  # Longer for web IDE sessions
+  check_processes:
+    - "R"
+    - "rsession"
+    - "rstudio"
+
+# Instance defaults
+instance_defaults:
+  ports: [22, 8787]
+  root_volume_gb: 25  # Slightly larger for RStudio Server
+
+# Research user configuration
+research_users:
+  enabled: true
+  default_shell: "/bin/bash"
+  default_groups: ["sudo"]
+  ssh_key_required: false
+
+# Component versions
+components:
+  r_version: "4.4.2"  # From parent
+  rstudio_server_version: "2024.12.0"
+
+# Tags
+tags:
+  type: "research"
+  purpose: "data-science"
+  level: "intermediate"
+  language: "r"
+  layer: "rstudio"
+  web_interface: "true"
