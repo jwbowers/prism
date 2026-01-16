@@ -302,10 +302,10 @@ func (iw *InitWizard) stepHibernation(recommendedPolicy string) string {
 		case "2", "customize", "custom":
 			fmt.Println("⚙️  Advanced hibernation configuration:")
 			fmt.Println("   Use 'prism idle profile create' to create custom policies")
-			fmt.Println("⏭️  Skipping for now (using default)\n")
+			fmt.Println("⏭️  Skipping for now (using default)")
 			return "balanced"
 		case "3", "skip", "no", "n":
-			fmt.Println("⏭️  Skipping hibernation setup (you can configure this later)\n")
+			fmt.Println("⏭️  Skipping hibernation setup (you can configure this later)")
 			return ""
 		default:
 			fmt.Println("❌ Please enter 1, 2, or 3")

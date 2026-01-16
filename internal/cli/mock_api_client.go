@@ -2300,3 +2300,282 @@ func (m *MockAPIClient) CancelTransfer(ctx context.Context, transferID string) e
 	}
 	return nil
 }
+
+// CheckAllocationStatus checks if an allocation is exhausted (mock)
+func (m *MockAPIClient) CheckAllocationStatus(ctx context.Context, allocationID string) (*client.AllocationStatus, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &client.AllocationStatus{
+		Exhausted: false,
+		Remaining: 1000.0,
+	}, nil
+}
+
+// CreateAllocation creates a budget allocation for a project (mock)
+func (m *MockAPIClient) CreateAllocation(ctx context.Context, req project.CreateAllocationRequest) (*types.ProjectBudgetAllocation, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.ProjectBudgetAllocation{
+		ID:              "alloc-12345",
+		BudgetID:        req.BudgetID,
+		ProjectID:       req.ProjectID,
+		AllocatedAmount: req.AllocatedAmount,
+		SpentAmount:     0.0,
+	}, nil
+}
+
+// CreateBudget creates a new budget pool (mock)
+func (m *MockAPIClient) CreateBudget(ctx context.Context, req project.CreateBudgetRequest) (*types.Budget, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.Budget{
+		ID:              "budget-12345",
+		Name:            req.Name,
+		Description:     req.Description,
+		TotalAmount:     req.TotalAmount,
+		AllocatedAmount: 0.0,
+		SpentAmount:     0.0,
+		Period:          types.BudgetPeriodMonthly,
+		StartDate:       time.Now(),
+		AlertThreshold:  0.8,
+	}, nil
+}
+
+// DeleteAllocation deletes a budget allocation (mock)
+func (m *MockAPIClient) DeleteAllocation(ctx context.Context, allocationID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+// DeleteBudget deletes a budget pool (mock)
+func (m *MockAPIClient) DeleteBudget(ctx context.Context, budgetID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+// GetBudget gets a budget by ID (mock)
+func (m *MockAPIClient) GetBudget(ctx context.Context, budgetID string) (*types.Budget, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.Budget{
+		ID:              budgetID,
+		Name:            "Mock Budget",
+		Description:     "A mock budget",
+		TotalAmount:     10000.0,
+		AllocatedAmount: 5000.0,
+		SpentAmount:     2000.0,
+		Period:          types.BudgetPeriodMonthly,
+		StartDate:       time.Now().Add(-30 * 24 * time.Hour),
+		AlertThreshold:  0.8,
+	}, nil
+}
+
+// ListBudgets lists all budgets (mock)
+func (m *MockAPIClient) ListBudgets(ctx context.Context) ([]*types.Budget, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []*types.Budget{
+		{
+			ID:              "budget-1",
+			Name:            "Mock Budget 1",
+			Description:     "First mock budget",
+			TotalAmount:     10000.0,
+			AllocatedAmount: 5000.0,
+			SpentAmount:     2000.0,
+			Period:          types.BudgetPeriodMonthly,
+			StartDate:       time.Now().Add(-30 * 24 * time.Hour),
+			AlertThreshold:  0.8,
+		},
+	}, nil
+}
+
+// UpdateBudget updates a budget (mock)
+func (m *MockAPIClient) UpdateBudget(ctx context.Context, budgetID string, req project.UpdateBudgetRequest) (*types.Budget, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.Budget{
+		ID:              budgetID,
+		Name:            "Updated Budget",
+		Description:     "An updated mock budget",
+		TotalAmount:     15000.0,
+		AllocatedAmount: 5000.0,
+		SpentAmount:     2000.0,
+		Period:          types.BudgetPeriodMonthly,
+		StartDate:       time.Now().Add(-30 * 24 * time.Hour),
+		AlertThreshold:  0.8,
+	}, nil
+}
+
+// GetBudgetSummary gets a budget summary (mock)
+func (m *MockAPIClient) GetBudgetSummary(ctx context.Context, budgetID string) (*types.BudgetSummary, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.BudgetSummary{
+		Budget: types.Budget{
+			ID:              budgetID,
+			Name:            "Mock Budget",
+			Description:     "A mock budget",
+			TotalAmount:     10000.0,
+			AllocatedAmount: 5000.0,
+			SpentAmount:     2000.0,
+			Period:          types.BudgetPeriodMonthly,
+			StartDate:       time.Now().Add(-30 * 24 * time.Hour),
+			AlertThreshold:  0.8,
+		},
+		Allocations:     []types.ProjectBudgetAllocation{},
+		ProjectNames:    map[string]string{},
+		RemainingAmount: 5000.0,
+		UtilizationRate: 0.4,
+	}, nil
+}
+
+// GetInvitationByID gets an invitation by ID (mock)
+func (m *MockAPIClient) GetInvitationByID(ctx context.Context, invitationID string) (*client.GetInvitationResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &client.GetInvitationResponse{
+		Invitation: &types.Invitation{
+			ID:        invitationID,
+			ProjectID: "test-project",
+			Email:     "user@example.com",
+			Role:      types.ProjectRoleMember,
+			Token:     "mock-token",
+			InvitedBy: "admin",
+			InvitedAt: time.Now().Add(-24 * time.Hour),
+			ExpiresAt: time.Now().Add(6 * 24 * time.Hour),
+			Status:    types.InvitationPending,
+		},
+		Project: &types.Project{
+			ID:          "test-project",
+			Name:        "Test Project",
+			Description: "A test project",
+			Owner:       "admin",
+			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
+		},
+	}, nil
+}
+
+// GetBudgetAllocations gets all allocations for a budget (mock)
+func (m *MockAPIClient) GetBudgetAllocations(ctx context.Context, budgetID string) ([]*types.ProjectBudgetAllocation, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []*types.ProjectBudgetAllocation{
+		{
+			ID:              "alloc-1",
+			BudgetID:        budgetID,
+			ProjectID:       "project-1",
+			AllocatedAmount: 2000.0,
+			SpentAmount:     500.0,
+		},
+	}, nil
+}
+
+// GetAllocation gets an allocation by ID (mock)
+func (m *MockAPIClient) GetAllocation(ctx context.Context, allocationID string) (*types.ProjectBudgetAllocation, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.ProjectBudgetAllocation{
+		ID:              allocationID,
+		BudgetID:        "budget-123",
+		ProjectID:       "project-456",
+		AllocatedAmount: 2000.0,
+		SpentAmount:     500.0,
+	}, nil
+}
+
+// UpdateAllocation updates an allocation (mock)
+func (m *MockAPIClient) UpdateAllocation(ctx context.Context, allocationID string, req project.UpdateAllocationRequest) (*types.ProjectBudgetAllocation, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.ProjectBudgetAllocation{
+		ID:              allocationID,
+		BudgetID:        "budget-123",
+		ProjectID:       "project-456",
+		AllocatedAmount: 3000.0,
+		SpentAmount:     500.0,
+	}, nil
+}
+
+// GetProjectAllocations gets all allocations for a project (mock)
+func (m *MockAPIClient) GetProjectAllocations(ctx context.Context, projectID string) ([]*types.ProjectBudgetAllocation, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []*types.ProjectBudgetAllocation{
+		{
+			ID:              "alloc-1",
+			BudgetID:        "budget-123",
+			ProjectID:       projectID,
+			AllocatedAmount: 2000.0,
+			SpentAmount:     500.0,
+		},
+	}, nil
+}
+
+// GetProjectFundingSummary gets the funding summary for a project (mock)
+func (m *MockAPIClient) GetProjectFundingSummary(ctx context.Context, projectID string) (*types.ProjectFundingSummary, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.ProjectFundingSummary{
+		ProjectID:   projectID,
+		ProjectName: "Mock Project",
+		Allocations: []types.ProjectBudgetAllocation{
+			{
+				ID:              "alloc-1",
+				BudgetID:        "budget-123",
+				ProjectID:       projectID,
+				AllocatedAmount: 2000.0,
+				SpentAmount:     500.0,
+			},
+		},
+		BudgetNames:    map[string]string{"budget-123": "Mock Budget"},
+		TotalAllocated: 2000.0,
+		TotalSpent:     500.0,
+	}, nil
+}
+
+// RecordSpending records spending against an allocation (mock)
+func (m *MockAPIClient) RecordSpending(ctx context.Context, allocationID string, amount float64) (*project.SpendingResult, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &project.SpendingResult{
+		AllocationID:        allocationID,
+		AllocationExhausted: false,
+		BackupActivated:     false,
+		BackupAllocationID:  "",
+		WarningMessage:      "",
+	}, nil
+}
+
+// ResendInvitation resends an invitation (mock)
+func (m *MockAPIClient) ResendInvitation(ctx context.Context, invitationID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+// RevokeInvitation revokes an invitation (mock)
+func (m *MockAPIClient) RevokeInvitation(ctx context.Context, invitationID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
