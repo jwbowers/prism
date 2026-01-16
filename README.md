@@ -259,6 +259,8 @@ prism doctor                      # System health check
 
 **Guides:**
 - [AWS Setup Guide](docs/user-guides/AWS_SETUP_GUIDE.md) - AWS account and credential configuration
+- [Collaboration Quickstart](docs/user-guides/COLLABORATION_QUICKSTART.md) - Add collaborators in 5 minutes (simplified guide)
+- [Multi-User Instance Setup](docs/user-guides/MULTI_USER_INSTANCE_SETUP.md) - Comprehensive multi-user collaboration guide
 - [Custom AMI Workflow](docs/user-guides/CUSTOM_AMI_WORKFLOW.md) - Creating and managing custom AMIs for faster launches
 - [AMI Best Practices](docs/user-guides/AMI_BEST_PRACTICES.md) - Best practices for AMI management, security, and cost optimization
 - [Installation Guide](INSTALL.md) - Comprehensive installation instructions
