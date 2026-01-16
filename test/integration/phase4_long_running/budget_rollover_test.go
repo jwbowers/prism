@@ -147,7 +147,7 @@ func TestMonthlyBudgetRollover(t *testing.T) {
 	t.Logf("   Expected monthly cost: ~$28.80 (24h × 30d × $0.04/h)")
 
 	// Get baseline budget for current month
-	baselineBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	baselineBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Failed to get baseline budget")
 
 	t.Logf("")
@@ -197,7 +197,7 @@ func TestMonthlyBudgetRollover(t *testing.T) {
 		t.Logf("   Elapsed: %.1f hours (%.1f days)", elapsedHours, elapsedHours/24)
 
 		// Get current budget
-		currentBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+		currentBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 		if err != nil {
 			t.Logf("⚠️  Failed to get budget: %v", err)
 		} else {
@@ -263,7 +263,7 @@ func TestMonthlyBudgetRollover(t *testing.T) {
 	t.Logf("")
 	t.Logf("Checking budget after rollover...")
 
-	postRolloverBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	postRolloverBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Failed to get post-rollover budget")
 
 	t.Logf("")
@@ -310,7 +310,7 @@ func TestMonthlyBudgetRollover(t *testing.T) {
 		t.Logf("   Time: %s", checkpointTime.Format(time.RFC3339))
 
 		// Get budget
-		newMonthBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+		newMonthBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 		if err != nil {
 			t.Logf("⚠️  Failed to get budget: %v", err)
 		} else {

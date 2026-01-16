@@ -290,22 +290,22 @@ func TestLabEnvironment_SmithLab(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	// Check postdoc project budget
-	postdocBudget, err := ctx.Client.GetProjectBudget(context.Background(), postdocProject.ID)
+	postdocBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), postdocProject.ID)
 	integration.AssertNoError(t, err, "Failed to get postdoc budget")
 	t.Logf("   Dr. Park (postdoc): $%.2f / $%.2f", postdocBudget.CurrentSpend, postdocMonthlyLimit)
 
 	// Check James's budget
-	jamesBudget, err := ctx.Client.GetProjectBudget(context.Background(), jamesProject.ID)
+	jamesBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), jamesProject.ID)
 	integration.AssertNoError(t, err, "Failed to get James's budget")
 	t.Logf("   James (Year 4): $%.2f / $%.2f", jamesBudget.CurrentSpend, jamesMonthlyLimit)
 
 	// Check Maria's budget
-	mariaBudget, err := ctx.Client.GetProjectBudget(context.Background(), mariaProject.ID)
+	mariaBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), mariaProject.ID)
 	integration.AssertNoError(t, err, "Failed to get Maria's budget")
 	t.Logf("   Maria (Year 2): $%.2f / $%.2f", mariaBudget.CurrentSpend, mariaMonthlyLimit)
 
 	// Check overall lab budget
-	labBudget, err := ctx.Client.GetProjectBudget(context.Background(), labProject.ID)
+	labBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), labProject.ID)
 	integration.AssertNoError(t, err, "Failed to get lab budget")
 	t.Logf("   Lab Total: $%.2f / $%.2f", labBudget.CurrentSpend, totalLabBudget)
 

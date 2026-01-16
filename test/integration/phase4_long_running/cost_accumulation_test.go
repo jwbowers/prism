@@ -157,7 +157,7 @@ func TestMultiDayCostAccumulation(t *testing.T) {
 
 	// Record baseline
 	startTime := time.Now()
-	startBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	startBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Failed to get starting budget")
 	baselineCost := startBudget.CurrentSpend
 
@@ -198,7 +198,7 @@ func TestMultiDayCostAccumulation(t *testing.T) {
 		t.Logf("Elapsed: %.1f hours (%.1f days)", elapsedHours, elapsedHours/24)
 
 		// Get current budget
-		currentBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+		currentBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 		if err != nil {
 			t.Logf("⚠️  Failed to get budget: %v", err)
 			continue
@@ -292,7 +292,7 @@ func TestMultiDayCostAccumulation(t *testing.T) {
 	t.Logf("   Total: %.1f hours (%.2f days)", totalElapsed.Hours(), totalElapsed.Hours()/24)
 
 	// Final budget
-	finalBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	finalBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Failed to get final budget")
 
 	finalActualCost := finalBudget.CurrentSpend - baselineCost

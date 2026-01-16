@@ -197,7 +197,7 @@ func TestUniversityClass_CS229MachineLearning(t *testing.T) {
 	// Wait for cost tracking
 	time.Sleep(5 * time.Second)
 
-	classBudget, err := ctx.Client.GetProjectBudget(context.Background(), classProject.ID)
+	classBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), classProject.ID)
 	integration.AssertNoError(t, err, "Failed to get class budget")
 
 	t.Logf("   Total spend: $%.2f / $%.2f semester budget", classBudget.CurrentSpend, semesterBudget)
@@ -265,7 +265,7 @@ func TestUniversityClass_CS229MachineLearning(t *testing.T) {
 	// Step 10: Final budget report
 	t.Logf("💰 Generating final semester budget report")
 
-	finalBudget, err := ctx.Client.GetProjectBudget(context.Background(), classProject.ID)
+	finalBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), classProject.ID)
 	integration.AssertNoError(t, err, "Failed to get final budget")
 
 	t.Logf("   Final spend: $%.2f / $%.2f semester budget", finalBudget.CurrentSpend, semesterBudget)

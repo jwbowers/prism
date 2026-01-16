@@ -118,7 +118,7 @@ func TestNetworkDownDuringLaunch(t *testing.T) {
 			t.Logf("✅ Launch completed before timeout (%v)", elapsed)
 			// Clean up successful instance
 			fixtures.RegisterCleanupResource(t, registry, "instance", timeoutInstance.ID, func() error {
-				return ctx.Client.TerminateInstance(context.Background(), timeoutInstance.ID)
+				return ctx.Client.DeleteInstance(context.Background(), timeoutInstance.ID)
 			})
 		}
 	}

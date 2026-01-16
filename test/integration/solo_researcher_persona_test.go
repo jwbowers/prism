@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/api/client"
+	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/scttfrdmn/prism/test/fixtures"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +62,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		t.Log("Step 1: Setting up research project with budget...")
 
 		projectName := fmt.Sprintf("rnaseq-research-%d", time.Now().Unix())
-		project, err := apiClient.CreateProject(ctx, types.CreateProjectRequest{
+		project, err := apiClient.CreateProject(ctx, project.CreateProjectRequest{
 			Name:        projectName,
 			Description: "RNA-seq analysis for postdoc research",
 			Owner:       "sarah.chen@university.edu",
@@ -74,7 +75,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 
 		// Configure budget ($100 monthly with alerts)
 		monthlyLimit := 100.0
-		err = apiClient.SetProjectBudget(ctx, projectID, types.SetBudgetRequest{
+		_, err = apiClient.SetProjectBudget(ctx, projectID, client.SetProjectBudgetRequest{
 			TotalBudget:  1000.0, // Grant total
 			MonthlyLimit: &monthlyLimit,
 			AlertThresholds: []types.BudgetAlert{
@@ -116,7 +117,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		rnaseqInstance = fmt.Sprintf("rnaseq-analysis-%d", time.Now().Unix())
 
 		launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-			Template:  "Python Machine Learning", // Bioinformatics template
+			Template:  "Python ML Workstation", // Bioinformatics template
 			Name:      rnaseqInstance,
 			Size:      "M", // 4 vCPU, 8GB RAM
 			ProjectID: projectID,
@@ -169,7 +170,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 
 		if status.BudgetEnabled {
 			t.Log("✓ Budget tracking active")
-			t.Logf("  Monthly budget: $%.2f", status.MonthlyLimit)
+			t.Logf("  Monthly budget: $%.2f", status.TotalBudget)
 			t.Logf("  Current spend: $%.4f", status.SpentAmount)
 			t.Logf("  Remaining: $%.2f", status.RemainingBudget)
 			t.Logf("  Spent: %.1f%%", status.SpentPercentage*100)
@@ -178,11 +179,11 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 				t.Logf("  Projected end-of-month: $%.2f", status.ProjectedMonthlySpend)
 
 				// Check if projected spend is within budget
-				if status.ProjectedMonthlySpend <= status.MonthlyLimit {
+				if status.ProjectedMonthlySpend <= status.TotalBudget {
 					t.Log("✓ Projected spend within budget")
 				} else {
 					t.Logf("⚠️  Projected spend may exceed budget: $%.2f > $%.2f",
-						status.ProjectedMonthlySpend, status.MonthlyLimit)
+						status.ProjectedMonthlySpend, status.TotalBudget)
 				}
 			}
 		} else {
@@ -230,7 +231,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		status, err := apiClient.GetProjectBudgetStatus(ctx, projectID)
 		assert.NoError(t, err, "Failed to get budget status")
 
-		t.Logf("  Current spend: $%.2f / $%.2f", status.SpentAmount, status.MonthlyLimit)
+		t.Logf("  Current spend: $%.2f / $%.2f", status.SpentAmount, status.TotalBudget)
 		t.Logf("  Spent percentage: %.1f%%", status.SpentPercentage*100)
 
 		// Check alert thresholds
@@ -273,7 +274,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 
 		// Launch small instance for quick test
 		launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-			Template:  "Ubuntu Basic",
+			Template:  "Ubuntu 22.04 Server",
 			Name:      testInstance,
 			Size:      "S", // Small size for cost efficiency
 			ProjectID: projectID,
@@ -311,9 +312,9 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		err = apiClient.StopInstance(ctx, rnaseqInstance)
 		require.NoError(t, err, "Failed to stop workspace")
 
-		// Wait for stopped state
-		err = fixtures.WaitForInstanceState(t, apiClient, rnaseqInstance, "stopped", 3*time.Minute)
-		require.NoError(t, err, "Workspace should reach stopped state")
+		// Wait for stopping state (confirms AWS accepted stop request)
+		err = fixtures.WaitForInstanceState(t, apiClient, rnaseqInstance, "stopping", 1*time.Minute)
+		require.NoError(t, err, "Workspace should begin stopping")
 
 		t.Log("  ✓ Workspace hibernated")
 		t.Log("  💰 Cost accumulation stopped")
@@ -340,8 +341,13 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		t.Log("Step 9: Resuming workspace for next work session...")
 		t.Log("  (Sarah starts work the next morning)")
 
+		// Wait for instance to fully stop before attempting start
+		// (Previous test only waited for "stopping" to begin)
+		err := fixtures.WaitForInstanceState(t, apiClient, rnaseqInstance, "stopped", 5*time.Minute)
+		require.NoError(t, err, "Workspace should be fully stopped before starting")
+
 		// Start the workspace
-		err := apiClient.StartInstance(ctx, rnaseqInstance)
+		err = apiClient.StartInstance(ctx, rnaseqInstance)
 		require.NoError(t, err, "Failed to start workspace")
 
 		// Wait for running state
@@ -370,7 +376,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		t.Log("========================================")
 		t.Log("MONTH-END BUDGET SUMMARY")
 		t.Log("========================================")
-		t.Logf("Monthly Budget:       $%.2f", status.MonthlyLimit)
+		t.Logf("Monthly Budget:       $%.2f", status.TotalBudget)
 		t.Logf("Total Spent:          $%.2f", status.SpentAmount)
 		t.Logf("Remaining:            $%.2f", status.RemainingBudget)
 		t.Logf("Percentage Used:      %.1f%%", status.SpentPercentage*100)
@@ -382,12 +388,12 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		t.Log("")
 
 		// Determine budget status
-		if status.SpentAmount <= status.MonthlyLimit {
-			underBudget := status.MonthlyLimit - status.SpentAmount
+		if status.SpentAmount <= status.TotalBudget {
+			underBudget := status.TotalBudget - status.SpentAmount
 			t.Logf("✓ UNDER BUDGET by $%.2f", underBudget)
 			t.Log("  Sarah successfully managed her budget!")
 		} else {
-			overBudget := status.SpentAmount - status.MonthlyLimit
+			overBudget := status.SpentAmount - status.TotalBudget
 			t.Logf("⚠️  OVER BUDGET by $%.2f", overBudget)
 			t.Log("  May need to request additional funds from PI")
 		}

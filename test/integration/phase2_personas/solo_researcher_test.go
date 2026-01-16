@@ -113,7 +113,7 @@ func TestSoloResearcher_DrSarahChen(t *testing.T) {
 	// Wait a few seconds for cost tracking to update
 	time.Sleep(5 * time.Second)
 
-	budgetStatus, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	budgetStatus, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Failed to get budget status")
 
 	// Should have some cost accrued (> $0)
@@ -186,7 +186,7 @@ func TestSoloResearcher_DrSarahChen(t *testing.T) {
 	// - Hibernated: 3 days × 0 = $0 (EBS storage only)
 	// - Expected weekly cost: ~$1.28 + minimal EBS storage
 
-	weeklyBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	weeklyBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Failed to get budget status")
 
 	t.Logf("   Current spend: $%.2f / $%.2f monthly limit",

@@ -219,7 +219,7 @@ func TestIdempotentTerminateOperations(t *testing.T) {
 	t.Logf("")
 	t.Logf("📋 Testing first terminate operation")
 
-	err = ctx.Client.TerminateInstance(context.Background(), instance.ID)
+	err = ctx.Client.DeleteInstance(context.Background(), instance.ID)
 	integration.AssertNoError(t, err, "First terminate should succeed")
 	t.Logf("✅ First terminate operation initiated")
 
@@ -233,7 +233,7 @@ func TestIdempotentTerminateOperations(t *testing.T) {
 	t.Logf("")
 	t.Logf("📋 Testing second terminate operation")
 
-	err = ctx.Client.TerminateInstance(context.Background(), instance.ID)
+	err = ctx.Client.DeleteInstance(context.Background(), instance.ID)
 	if err == nil {
 		t.Logf("✅ Second terminate succeeded (idempotent behavior)")
 	} else {
@@ -258,7 +258,7 @@ func TestIdempotentTerminateOperations(t *testing.T) {
 
 	t.Logf("📋 Testing third terminate operation (after termination)")
 
-	err = ctx.Client.TerminateInstance(context.Background(), instance.ID)
+	err = ctx.Client.DeleteInstance(context.Background(), instance.ID)
 	if err == nil {
 		t.Logf("✅ Third terminate succeeded (idempotent)")
 	} else {
@@ -374,7 +374,7 @@ func TestConnectToTerminatedInstance(t *testing.T) {
 	t.Logf("")
 	t.Logf("📋 Terminating instance")
 
-	err = ctx.Client.TerminateInstance(context.Background(), instance.ID)
+	err = ctx.Client.DeleteInstance(context.Background(), instance.ID)
 	integration.AssertNoError(t, err, "Terminate should succeed")
 	t.Logf("✅ Instance termination initiated")
 
@@ -501,7 +501,7 @@ func TestInstanceVanishedFromAWS(t *testing.T) {
 	t.Logf("📋 Simulating manual AWS deletion (terminate via AWS)")
 
 	// Terminate the instance (simulates manual console deletion)
-	err = ctx.Client.TerminateInstance(context.Background(), instance.ID)
+	err = ctx.Client.DeleteInstance(context.Background(), instance.ID)
 	integration.AssertNoError(t, err, "Terminate should succeed")
 	t.Logf("✅ Instance terminated (simulating manual deletion)")
 

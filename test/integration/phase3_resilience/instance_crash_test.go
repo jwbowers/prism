@@ -173,7 +173,7 @@ func TestInstanceCrashRecovery(t *testing.T) {
 	// Step 8: Check budget tracking reflects instance lifetime
 	t.Logf("Checking budget after instance crash...")
 
-	budget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	budget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Should be able to get budget")
 
 	t.Logf("   Current spend: $%.4f", budget.CurrentSpend)
@@ -242,7 +242,7 @@ func TestInstanceCrashRecovery(t *testing.T) {
 	// Step 10: Terminate instance (simulates console termination)
 	t.Logf("Terminating instance (simulates AWS console termination)...")
 
-	err = ctx.Client.TerminateInstance(context.Background(), instance.ID)
+	err = ctx.Client.DeleteInstance(context.Background(), instance.ID)
 	if err != nil {
 		t.Logf("⚠️  Termination failed: %v", err)
 	} else {
@@ -288,7 +288,7 @@ func TestInstanceCrashRecovery(t *testing.T) {
 	// Step 12: Verify project budget is final
 	t.Logf("Checking final budget after termination...")
 
-	finalBudget, err := ctx.Client.GetProjectBudget(context.Background(), project.ID)
+	finalBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Should be able to get final budget")
 	t.Logf("   Final spend: $%.4f", finalBudget.CurrentSpend)
 

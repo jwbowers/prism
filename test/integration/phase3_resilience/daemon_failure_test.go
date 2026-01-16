@@ -204,7 +204,7 @@ func TestDaemonFailureRecovery(t *testing.T) {
 	// Step 9: Verify budget state persisted
 	t.Logf("Verifying budget state...")
 
-	recoveredBudget, err := newClient.GetProjectBudget(context.Background(), project.ID)
+	recoveredBudget, err := newClient.GetProjectBudgetStatus(context.Background(), project.ID)
 	integration.AssertNoError(t, err, "Should be able to retrieve budget after restart")
 
 	if recoveredBudget.MonthlyLimit != nil {

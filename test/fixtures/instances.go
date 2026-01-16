@@ -8,7 +8,6 @@ import (
 
 	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/pkg/types"
-	"github.com/scttfrdmn/prism/test/integration"
 )
 
 // CreateTestInstanceOptions contains options for creating a test instance
@@ -38,7 +37,7 @@ func CreateTestInstance(t *testing.T, registry *FixtureRegistry, opts CreateTest
 	}
 
 	// CRITICAL: Acquire instance slot (blocks until available, max 2 concurrent)
-	suiteManager := integration.GetSuiteManager()
+	suiteManager := GetSuiteManager()
 	suiteManager.SetClient(registry.client) // Ensure client available for cleanup
 	suiteManager.AcquireInstanceSlot(t, opts.Name)
 

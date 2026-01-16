@@ -575,7 +575,36 @@ func (l *InstanceLauncher) createDryRunInstance(req ctypes.LaunchRequest, hourly
 
 // executeInstanceLaunch performs the actual EC2 instance launch with intelligent AZ failover (v0.7.0)
 func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *ec2.RunInstancesInput, instanceType string) (*ec2types.Instance, error) {
-	// Use AvailabilityManager for intelligent AZ selection and automatic failover
+	// When a subnet is specified, AWS automatically uses the subnet's AZ.
+	// Don't override placement AZ in this case (Issue #427)
+	if runInput.SubnetId != nil && *runInput.SubnetId != "" {
+		// Launch directly without AZ failover since subnet determines the AZ
+		var result *ec2.RunInstancesOutput
+		err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
+			var runErr error
+			result, runErr = l.manager.ec2.RunInstances(ctx, runInput)
+			return runErr
+		})
+
+		if err != nil {
+			return nil, EnhanceError(err, "Launch instance")
+		}
+
+		if len(result.Instances) == 0 {
+			return nil, fmt.Errorf("no instances returned from launch")
+		}
+
+		instance := &result.Instances[0]
+		selectedAZ := ""
+		if instance.Placement != nil && instance.Placement.AvailabilityZone != nil {
+			selectedAZ = *instance.Placement.AvailabilityZone
+		}
+
+		log.Printf("✅ Successfully launched instance %s in AZ %s (from subnet)", *instance.InstanceId, selectedAZ)
+		return instance, nil
+	}
+
+	// No subnet specified - use AvailabilityManager for intelligent AZ selection and automatic failover
 	instanceID, selectedAZ, err := l.manager.availabilityManager.AttemptLaunchWithFailover(
 		ctx,
 		instanceType,

@@ -219,7 +219,7 @@ func TestCrossInstitutional_NeuroscienceConsortium(t *testing.T) {
 	// Wait for cost tracking
 	time.Sleep(5 * time.Second)
 
-	consortiumBudget, err := ctx.Client.GetProjectBudget(context.Background(), consortiumProject.ID)
+	consortiumBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), consortiumProject.ID)
 	integration.AssertNoError(t, err, "Failed to get consortium budget")
 
 	t.Logf("   Total spend: $%.2f / $%.2f monthly budget",
@@ -294,7 +294,7 @@ func TestCrossInstitutional_NeuroscienceConsortium(t *testing.T) {
 	// Step 11: Review final consortium metrics
 	t.Logf("📊 Final consortium metrics (Month 18 - project completion)")
 
-	finalBudget, err := ctx.Client.GetProjectBudget(context.Background(), consortiumProject.ID)
+	finalBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), consortiumProject.ID)
 	integration.AssertNoError(t, err, "Failed to get final budget")
 
 	t.Logf("   Project duration: 18 months")
@@ -302,7 +302,7 @@ func TestCrossInstitutional_NeuroscienceConsortium(t *testing.T) {
 	t.Logf("   Current spend: $%.2f", finalBudget.CurrentSpend)
 
 	// List all project members for final report
-	projectMembers, err := ctx.Client.ListProjectMembers(context.Background(), consortiumProject.ID)
+	projectMembers, err := ctx.Client.GetProjectMembers(context.Background(), consortiumProject.ID)
 	integration.AssertNoError(t, err, "Failed to list project members")
 
 	t.Logf("   Collaborators: %d", len(projectMembers))

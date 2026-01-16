@@ -142,7 +142,7 @@ func TestConferenceWorkshop_NeurIPS(t *testing.T) {
 	t.Logf("✅ Test workspace launched and verified")
 
 	// Terminate test workspace after validation
-	err = ctx.Client.TerminateInstance(context.Background(), testInstance.ID)
+	err = ctx.Client.DeleteInstance(context.Background(), testInstance.ID)
 	integration.AssertNoError(t, err, "Failed to terminate test workspace")
 	t.Logf("✅ Test workspace terminated")
 
@@ -196,7 +196,7 @@ func TestConferenceWorkshop_NeurIPS(t *testing.T) {
 	// Wait for cost tracking to update
 	time.Sleep(5 * time.Second)
 
-	workshopBudgetStatus, err := ctx.Client.GetProjectBudget(context.Background(), workshopProject.ID)
+	workshopBudgetStatus, err := ctx.Client.GetProjectBudgetStatus(context.Background(), workshopProject.ID)
 	integration.AssertNoError(t, err, "Failed to get workshop budget")
 
 	t.Logf("   Current spend: $%.2f / $%.2f budget", workshopBudgetStatus.CurrentSpend, workshopBudget)
@@ -265,7 +265,7 @@ func TestConferenceWorkshop_NeurIPS(t *testing.T) {
 	// Step 9: Generate final workshop budget report
 	t.Logf("💰 Generating final workshop budget report")
 
-	finalBudget, err := ctx.Client.GetProjectBudget(context.Background(), workshopProject.ID)
+	finalBudget, err := ctx.Client.GetProjectBudgetStatus(context.Background(), workshopProject.ID)
 	integration.AssertNoError(t, err, "Failed to get final budget")
 
 	t.Logf("   Final spend: $%.2f / $%.2f budget", finalBudget.CurrentSpend, workshopBudget)
