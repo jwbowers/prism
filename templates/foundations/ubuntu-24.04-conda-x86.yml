@@ -1,0 +1,223 @@
+################################################################################
+# Ubuntu 24.04 + Conda (x86_64)
+# Tier 2: Package Manager Foundation Template
+################################################################################
+#
+# Purpose: Foundation template that adds Conda package manager to Ubuntu 24.04
+#
+# Use this template when:
+#   - Building Python/ML environments with Conda
+#   - Need Python scientific computing stack
+#   - Want isolated package management via Conda
+#
+# Inherits from:
+#   - Ubuntu 24.04 LTS (x86_64) - Provides base OS, APT, ubuntu user
+#
+# Provides to child templates:
+#   - Miniconda 3 installed in /opt/conda
+#   - Conda initialized for all users
+#   - Base conda environment with Python 3.12
+#   - Foundation for language-specific stacks
+#
+# Child templates can add:
+#   - Language-specific packages (Python ML, R, Julia)
+#   - Development tools (Jupyter, RStudio)
+#   - Domain-specific packages (bioinformatics, geospatial)
+#
+# Launch time: ~5-8 minutes
+# Estimated cost: $0.10-0.15/hour (t3.medium default)
+#
+# Related templates:
+#   - Python ML Stack (Layer 3)
+#   - Python Jupyter Stack (Layer 3)
+#   - Data Science Workstation (Layer 4)
+#
+################################################################################
+
+name: "Ubuntu 24.04 + Conda (x86_64)"
+slug: "ubuntu-24-04-conda-x86"
+version: "1.0.0"
+
+# Template classification
+category: "foundations"
+complexity: "simple"
+estimated_setup_time: "5-8 minutes"
+
+# Base operating system
+base: "ubuntu-24.04"
+architecture: "x86_64"
+
+# Inheritance
+inherits:
+  - "Ubuntu 24.04 LTS (x86_64)"
+
+# Package management
+package_manager: "conda"
+
+# System packages (via APT from parent)
+# Parent provides: curl, wget, vim, git, htop, build-essential, etc.
+
+# Users (inherited from parent)
+# Parent provides: ubuntu user with sudo access
+
+# Network ports
+ports:
+  - 22  # SSH (from parent)
+
+# Description
+description: |
+  Ubuntu 24.04 LTS with Conda package manager installed.
+
+  This foundation template provides Conda for Python scientific computing
+  environments. Conda enables isolated package management for Python, R,
+  and other data science tools.
+
+  **What's Included:**
+  - Ubuntu 24.04 LTS base system
+  - Miniconda 3 (latest Python 3.12)
+  - Conda package manager
+  - Initialized conda environment
+
+  **Use Cases:**
+  - Python machine learning development
+  - Data science workflows
+  - Scientific computing
+  - R/Python hybrid environments
+
+  **Next Steps:**
+  Launch child templates like:
+  - Python ML Stack (adds PyTorch, TensorFlow, scikit-learn)
+  - Python Jupyter Stack (adds JupyterLab, pandas, matplotlib)
+  - Data Science Workstation (adds R, Julia, multi-language support)
+
+# Tags for searchability
+tags:
+  type: "foundation"
+  package_manager: "conda"
+  language: "python"
+  purpose: "scientific-computing"
+  category: "base-layer"
+
+# Configuration
+default_size: "M"  # t3.medium (2 vCPU, 4 GB RAM)
+
+# Installation script
+post_install: |
+  #!/bin/bash
+  set -euo pipefail
+
+  echo "======================================================================"
+  echo "Installing Conda Package Manager"
+  echo "======================================================================"
+
+  # Install Miniconda
+  echo "→ Downloading Miniconda..."
+  MINICONDA_VERSION="latest"
+  MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh"
+
+  wget -q "${MINICONDA_URL}" -O /tmp/miniconda.sh
+
+  echo "→ Installing Miniconda to /opt/conda..."
+  bash /tmp/miniconda.sh -b -p /opt/conda
+  rm /tmp/miniconda.sh
+
+  # Configure conda
+  echo "→ Configuring Conda..."
+
+  # Add conda to PATH for all users
+  {
+    echo '# Conda initialization'
+    echo 'export PATH="/opt/conda/bin:$PATH"'
+    echo ''
+    echo '# Initialize conda for interactive shells'
+    echo 'if [ -f "/opt/conda/etc/profile.d/conda.sh" ]; then'
+    echo '    . "/opt/conda/etc/profile.d/conda.sh"'
+    echo 'fi'
+  } > /etc/profile.d/conda.sh
+
+  chmod +x /etc/profile.d/conda.sh
+
+  # Source conda for current session
+  export PATH="/opt/conda/bin:$PATH"
+  source /opt/conda/etc/profile.d/conda.sh
+
+  # Initialize conda for bash
+  /opt/conda/bin/conda init bash
+
+  # Configure conda settings
+  echo "→ Configuring Conda settings..."
+  /opt/conda/bin/conda config --set auto_activate_base true
+  /opt/conda/bin/conda config --set channel_priority strict
+  /opt/conda/bin/conda config --add channels conda-forge
+
+  # Update conda itself
+  echo "→ Updating Conda..."
+  /opt/conda/bin/conda update -n base -c defaults conda -y
+
+  # Install base Python packages in base environment
+  echo "→ Installing base Python packages..."
+  /opt/conda/bin/conda install -y \
+    python=3.12 \
+    pip \
+    setuptools \
+    wheel
+
+  # Set conda ownership to allow user access
+  echo "→ Setting permissions..."
+  chmod -R 755 /opt/conda
+  chown -R ubuntu:ubuntu /opt/conda
+
+  # Verify installation
+  echo "→ Verifying Conda installation..."
+  /opt/conda/bin/conda --version
+  /opt/conda/bin/python --version
+  /opt/conda/bin/pip --version
+
+  echo "======================================================================"
+  echo "Conda Installation Complete"
+  echo "======================================================================"
+  echo ""
+  echo "Conda Info:"
+  echo "  Location: /opt/conda"
+  echo "  Python Version: $(/opt/conda/bin/python --version)"
+  echo "  Conda Version: $(/opt/conda/bin/conda --version)"
+  echo ""
+  echo "Usage:"
+  echo "  conda create -n myenv python=3.12"
+  echo "  conda activate myenv"
+  echo "  conda install package-name"
+  echo ""
+  echo "Documentation: https://docs.conda.io/"
+  echo "======================================================================"
+
+# Success criteria for automated testing
+success_criteria:
+  - command: "/opt/conda/bin/conda --version"
+    expected_output: "conda"
+  - command: "/opt/conda/bin/python --version"
+    expected_output: "Python 3.12"
+  - command: "test -d /opt/conda"
+    expected_exit_code: 0
+  - command: "test -f /etc/profile.d/conda.sh"
+    expected_exit_code: 0
+
+# Documentation links
+documentation:
+  - title: "Conda Documentation"
+    url: "https://docs.conda.io/"
+  - title: "Conda Cheat Sheet"
+    url: "https://docs.conda.io/projects/conda/en/latest/user-guide/cheatsheet.html"
+  - title: "Managing Environments"
+    url: "https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html"
+
+# Maintenance metadata
+maintainer: "Prism Team"
+last_updated: "2026-01-16T12:00:00Z"
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-16T12:00:00Z"
+    changes:
+      - "Initial release of Conda foundation template"
+      - "Based on Ubuntu 24.04 LTS"
+      - "Miniconda 3 with Python 3.12"
+      - "Configured for multi-user access"
