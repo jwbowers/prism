@@ -28,8 +28,13 @@ func (s *Server) handleTemplates(w http.ResponseWriter, r *http.Request) {
 		architecture = "x86_64" // Default architecture
 	}
 
-	// Use the new unified template system
-	templates, err := templates.GetTemplatesForDaemonHandler(region, architecture)
+	// Use the new unified template system with dynamic AMI discovery (Issue #436)
+	var amiDiscovery templates.AMIDiscoveryService
+	if s.awsManager != nil {
+		amiDiscovery = s.awsManager.GetAMIDiscovery()
+	}
+
+	templates, err := templates.GetTemplatesForRegionWithDiscovery(region, architecture, amiDiscovery)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, "Failed to load templates: "+err.Error())
 		return
@@ -94,8 +99,13 @@ func (s *Server) handleTemplateInfo(w http.ResponseWriter, r *http.Request) {
 	// Get size for instance type scaling from query params
 	size := r.URL.Query().Get("size")
 
-	// Use the new unified template system with package manager and size support
-	template, err := templates.GetTemplateWithPackageManager(templateName, region, architecture, packageManager, size)
+	// Use the new unified template system with package manager, size, and dynamic AMI discovery (Issue #436)
+	var amiDiscovery templates.AMIDiscoveryService
+	if s.awsManager != nil {
+		amiDiscovery = s.awsManager.GetAMIDiscovery()
+	}
+
+	template, err := templates.GetTemplateWithDiscovery(templateName, region, architecture, packageManager, size, amiDiscovery)
 	if err != nil {
 		s.writeError(w, http.StatusNotFound, "Template not found: "+err.Error())
 		return

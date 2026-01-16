@@ -196,6 +196,12 @@ func (m *Manager) GetHealthMonitor() *HealthMonitor {
 	return m.healthMonitor
 }
 
+// GetAMIDiscovery returns the AMI discovery service (Issue #436)
+// Used by template handlers to enable dynamic AMI lookup via SSM Parameter Store
+func (m *Manager) GetAMIDiscovery() *AMIDiscovery {
+	return m.amiDiscovery
+}
+
 // GetTemplates returns all available templates
 func (m *Manager) GetTemplates() map[string]ctypes.Template {
 	return m.templates

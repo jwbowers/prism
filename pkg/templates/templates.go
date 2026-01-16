@@ -553,5 +553,79 @@ func ReplaceAWSTemplatesFunction() func() map[string]types.RuntimeTemplate {
 
 // Integration with daemon handlers
 func GetTemplatesForDaemonHandler(region, architecture string) (map[string]types.RuntimeTemplate, error) {
-	return GetTemplatesForRegion(region, architecture)
+	return GetTemplatesForRegionWithDiscovery(region, architecture, nil)
+}
+
+// GetTemplatesForRegionWithDiscovery returns all templates for the specified region and architecture
+// with optional dynamic AMI discovery (Issue #436)
+func GetTemplatesForRegionWithDiscovery(region, architecture string, amiDiscovery AMIDiscoveryService) (map[string]types.RuntimeTemplate, error) {
+	registry := NewTemplateRegistry(DefaultTemplateDirs())
+
+	// Create resolver with or without AMI discovery
+	var resolver *TemplateResolver
+	if amiDiscovery != nil {
+		resolver = NewTemplateResolverWithDiscovery(amiDiscovery)
+	} else {
+		resolver = NewTemplateResolver()
+	}
+
+	// Scan for templates
+	if err := registry.ScanTemplates(); err != nil {
+		return nil, fmt.Errorf("failed to scan templates: %w", err)
+	}
+
+	// Convert to runtime format
+	templates := make(map[string]types.RuntimeTemplate)
+
+	for name, template := range registry.Templates {
+		runtimeTemplate, err := resolver.ResolveTemplate(template, region, architecture)
+		if err != nil {
+			// Log the error but continue with other templates
+			fmt.Printf("Warning: Failed to resolve template %s: %v\n", name, err)
+			continue
+		}
+
+		// Convert to runtime template format
+		var idleDetectionConfig *types.IdleDetectionConfig
+		if runtimeTemplate.IdleDetection != nil {
+			idleDetectionConfig = &types.IdleDetectionConfig{
+				Enabled:                   runtimeTemplate.IdleDetection.Enabled,
+				IdleThresholdMinutes:      runtimeTemplate.IdleDetection.IdleThresholdMinutes,
+				HibernateThresholdMinutes: runtimeTemplate.IdleDetection.HibernateThresholdMinutes,
+				CheckIntervalMinutes:      runtimeTemplate.IdleDetection.CheckIntervalMinutes,
+			}
+		}
+
+		// Convert research user configuration (Phase 5A+)
+		var researchUserConfig *types.ResearchUserTemplate
+		if template.ResearchUser != nil {
+			researchUserConfig = &types.ResearchUserTemplate{
+				AutoCreate:     template.ResearchUser.AutoCreate,
+				RequireEFS:     template.ResearchUser.RequireEFS,
+				EFSMountPoint:  template.ResearchUser.EFSMountPoint,
+				InstallSSHKeys: template.ResearchUser.InstallSSHKeys,
+				DefaultShell:   template.ResearchUser.DefaultShell,
+				DefaultGroups:  template.ResearchUser.DefaultGroups,
+				UserIntegration: types.DualUserIntegration{
+					Strategy:    template.ResearchUser.UserIntegration.Strategy,
+					PrimaryUser: template.ResearchUser.UserIntegration.PrimaryUser,
+				},
+			}
+		}
+
+		templates[name] = types.RuntimeTemplate{
+			Name:                 runtimeTemplate.Name,
+			Slug:                 runtimeTemplate.Slug,
+			Description:          runtimeTemplate.Description,
+			AMI:                  runtimeTemplate.AMI,
+			InstanceType:         runtimeTemplate.InstanceType,
+			UserData:             runtimeTemplate.UserData,
+			Ports:                runtimeTemplate.Ports,
+			EstimatedCostPerHour: runtimeTemplate.EstimatedCostPerHour,
+			IdleDetection:        idleDetectionConfig,
+			ResearchUser:         researchUserConfig,
+		}
+	}
+
+	return templates, nil
 }

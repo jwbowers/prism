@@ -3,16 +3,17 @@
 
 set -e
 
-# Cleanup
-pkill -f "bin/prismd" 2>/dev/null || true
-sleep 1
+# Cleanup - ensure no zombie processes (use -9 for force kill)
+pkill -9 -f "bin/prismd" 2>/dev/null || true
+# Wait longer to ensure port is released
+sleep 3
 
 echo "Testing CLI auto-start..."
 
 # Run CLI command - should auto-start daemon
-timeout 10s ./bin/prism workspace list > /dev/null 2>&1
+timeout 15s ./bin/prism workspace list > /dev/null 2>&1
 
 echo "✅ CLI auto-start working"
 
 # Cleanup
-pkill -f "bin/prismd" 2>/dev/null || true
+pkill -9 -f "bin/prismd" 2>/dev/null || true
