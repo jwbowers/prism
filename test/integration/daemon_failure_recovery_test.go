@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/api/client"
+	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/scttfrdmn/prism/test/fixtures"
 	"github.com/stretchr/testify/assert"
@@ -42,16 +43,16 @@ func TestDaemonRecovery_StatePersistence(t *testing.T) {
 
 		// Create project
 		projectName = fmt.Sprintf("daemon-test-project-%d", time.Now().Unix())
-		project, err := apiClient.CreateProject(ctx, project.CreateProjectRequest{
+		proj, err := apiClient.CreateProject(ctx, project.CreateProjectRequest{
 			Name:        projectName,
 			Description: "Daemon recovery test project",
 			Owner:       "test-user@example.com",
 		})
 		require.NoError(t, err, "Failed to create project")
 		registry.Register("project", projectName)
-		projectID = project.ID
+		projectID = proj.ID
 
-		t.Logf("✓ Project created: %s (ID: %s)", project.Name, project.ID)
+		t.Logf("✓ Project created: %s (ID: %s)", proj.Name, proj.ID)
 
 		// Launch instance
 		instanceName = fmt.Sprintf("daemon-test-inst-%d", time.Now().Unix())
@@ -116,11 +117,11 @@ func TestDaemonRecovery_StatePersistence(t *testing.T) {
 		t.Log("Verifying resources are still accessible...")
 
 		// Check project still exists
-		projects, err := apiClient.ListProjects(ctx, types.ListProjectsRequest{})
+		projectsResp, err := apiClient.ListProjects(ctx, nil)
 		assert.NoError(t, err, "Failed to list projects")
 
 		projectFound := false
-		for _, p := range projects {
+		for _, p := range projectsResp.Projects {
 			if p.ID == projectID {
 				projectFound = true
 				t.Logf("✓ Project found: %s", p.Name)

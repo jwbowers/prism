@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ExampleBackupWorkflow demonstrates using the fixtures package for integration tests
+// TestFixturesExample_BackupWorkflow demonstrates using the fixtures package for integration tests
 // This example creates a real instance, creates a backup, and automatic cleanup happens via t.Cleanup()
-func ExampleBackupWorkflow(t *testing.T) {
+func TestFixturesExample_BackupWorkflow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
@@ -24,7 +24,7 @@ func ExampleBackupWorkflow(t *testing.T) {
 	// Initialize API client pointing to local daemon
 	client := client.NewClientWithOptions("http://localhost:8947", client.Options{
 		AWSProfile: "aws",
-		Region:     "us-west-2",
+		AWSRegion:  "us-west-2",
 	})
 
 	// Create fixture registry - cleanup is automatic via t.Cleanup()
@@ -48,13 +48,13 @@ func ExampleBackupWorkflow(t *testing.T) {
 	})
 	require.NoError(t, err, "Failed to create backup")
 	require.NotNil(t, backup)
-	assert.Equal(t, "available", backup.Status)
+	assert.Equal(t, "available", backup.State)
 
 	// Step 3: Verify backup via API
 	ctx := context.Background()
-	retrievedBackup, err := client.GetBackup(ctx, backup.Name)
+	retrievedBackup, err := client.GetBackup(ctx, backup.BackupName)
 	require.NoError(t, err)
-	assert.Equal(t, backup.Name, retrievedBackup.Name)
+	assert.Equal(t, backup.BackupName, retrievedBackup.BackupName)
 
 	// Cleanup happens automatically via t.Cleanup() - no explicit cleanup needed!
 	// The registry will delete: backups first, then instances
@@ -64,14 +64,14 @@ func ExampleBackupWorkflow(t *testing.T) {
 // locally via pkg/profile package, not through the daemon API
 
 // ExampleStorageWorkflow demonstrates storage fixture usage
-func ExampleStorageWorkflow(t *testing.T) {
+func TestFixturesExample_StorageWorkflow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
 
 	client := client.NewClientWithOptions("http://localhost:8947", client.Options{
 		AWSProfile: "aws",
-		Region:     "us-west-2",
+		AWSRegion:  "us-west-2",
 	})
 
 	registry := fixtures.NewFixtureRegistry(t, client)
@@ -100,14 +100,14 @@ func ExampleStorageWorkflow(t *testing.T) {
 
 // ExampleCompleteTestEnvironment demonstrates creating a complete test environment
 // with multiple resources that depend on each other
-func ExampleCompleteTestEnvironment(t *testing.T) {
+func TestFixturesExample_CompleteTestEnvironment(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping long-running integration test")
 	}
 
 	client := client.NewClientWithOptions("http://localhost:8947", client.Options{
 		AWSProfile: "aws",
-		Region:     "us-west-2",
+		AWSRegion:  "us-west-2",
 	})
 
 	registry := fixtures.NewFixtureRegistry(t, client)
@@ -119,7 +119,7 @@ func ExampleCompleteTestEnvironment(t *testing.T) {
 		PerformanceMode: "generalPurpose",
 	})
 	require.NoError(t, err)
-	t.Logf("Created EFS volume: %s", efsVolume.FilesystemID)
+	t.Logf("Created EFS volume: %s", efsVolume.FileSystemID)
 
 	ebsStorage, err := fixtures.CreateTestEBSStorage(t, registry, fixtures.CreateTestEBSStorageOptions{
 		Name:       "test-env-ebs",
@@ -154,7 +154,7 @@ func ExampleCompleteTestEnvironment(t *testing.T) {
 		Description: "Complete environment backup",
 	})
 	require.NoError(t, err)
-	t.Logf("Created backup: %s", backup.Name)
+	t.Logf("Created backup: %s", backup.BackupName)
 
 	// Verify all resources exist
 	_, err = client.GetVolume(ctx, efsVolume.Name)
@@ -166,7 +166,7 @@ func ExampleCompleteTestEnvironment(t *testing.T) {
 	_, err = client.GetInstance(ctx, instance.Name)
 	require.NoError(t, err)
 
-	_, err = client.GetBackup(ctx, backup.Name)
+	_, err = client.GetBackup(ctx, backup.BackupName)
 	require.NoError(t, err)
 
 	t.Log("✓ Complete test environment created and verified")
@@ -179,14 +179,14 @@ func ExampleCompleteTestEnvironment(t *testing.T) {
 }
 
 // ExampleManualCleanup demonstrates explicit cleanup (optional)
-func ExampleManualCleanup(t *testing.T) {
+func TestFixturesExample_ManualCleanup(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
 
 	client := client.NewClientWithOptions("http://localhost:8947", client.Options{
 		AWSProfile: "aws",
-		Region:     "us-west-2",
+		AWSRegion:  "us-west-2",
 	})
 
 	registry := fixtures.NewFixtureRegistry(t, client)
