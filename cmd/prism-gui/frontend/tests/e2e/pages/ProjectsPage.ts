@@ -402,6 +402,35 @@ export class ProjectsPage extends BasePage {
   }
 
   /**
+   * Get specific cell text from an invitation row
+   * Column mapping: project (0), role (1), invited_by (2), expires (3), status (4), actions (5)
+   */
+  async getInvitationCellText(row: Locator, columnIndex: number): Promise<string> {
+    const cell = row.locator('td').nth(columnIndex);
+    const text = await cell.textContent();
+    return text?.trim() || '';
+  }
+
+  /**
+   * Get invitation data as an object from a row
+   */
+  async getInvitationData(row: Locator): Promise<{
+    project: string;
+    role: string;
+    invitedBy: string;
+    expires: string;
+    status: string;
+  }> {
+    return {
+      project: await this.getInvitationCellText(row, 0),
+      role: await this.getInvitationCellText(row, 1),
+      invitedBy: await this.getInvitationCellText(row, 2),
+      expires: await this.getInvitationCellText(row, 3),
+      status: await this.getInvitationCellText(row, 4),
+    };
+  }
+
+  /**
    * Add invitation by token and optionally wait for it to appear
    * @param token - The invitation token to add
    * @param expectedProjectName - Optional project name to wait for. If provided, waits for the invitation row to appear.
@@ -595,6 +624,37 @@ export class ProjectsPage extends BasePage {
     // Wait for QR code dialog to appear
     const dialog = this.page.getByRole('dialog', { name: /qr code/i });
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  /**
+   * Get specific cell text from a shared token row
+   * Column mapping: name (0), project (1), role (2), redemptions (3), expires (4), status (5), actions (6)
+   */
+  async getSharedTokenCellText(row: Locator, columnIndex: number): Promise<string> {
+    const cell = row.locator('td').nth(columnIndex);
+    const text = await cell.textContent();
+    return text?.trim() || '';
+  }
+
+  /**
+   * Get shared token data as an object from a row
+   */
+  async getSharedTokenData(row: Locator): Promise<{
+    name: string;
+    project: string;
+    role: string;
+    redemptions: string;
+    expires: string;
+    status: string;
+  }> {
+    return {
+      name: await this.getSharedTokenCellText(row, 0),
+      project: await this.getSharedTokenCellText(row, 1),
+      role: await this.getSharedTokenCellText(row, 2),
+      redemptions: await this.getSharedTokenCellText(row, 3),
+      expires: await this.getSharedTokenCellText(row, 4),
+      status: await this.getSharedTokenCellText(row, 5),
+    };
   }
 
   /**
