@@ -176,23 +176,35 @@ prism list
 - **GUI**: Desktop application (available when building from source)
 - **REST API**: Complete HTTP API on port 8947
 
-## 📦 Example Templates
+## 📦 Templates
 
-Prism includes 21+ pre-configured templates for research computing:
+**Prism ships with minimal base OS templates** (as of v0.7.0):
+- Amazon Linux 2023 (x86_64, ARM64)
+- Ubuntu 22.04 LTS (x86_64, ARM64)
+- Ubuntu 24.04 LTS (x86_64, ARM64)
 
+**Application templates are community-contributed:**
 - **Python ML**: Jupyter, scikit-learn, TensorFlow, PyTorch
 - **R Research**: RStudio, tidyverse, Bioconductor
 - **Bioinformatics**: BLAST, bowtie2, samtools, bedtools
 - **Web Development**: Node.js, Docker, nginx
-- **Deep Learning**: GPU-optimized environments with CUDA
+- **Desktop Environments**: Full GUI with browsers and dev tools
 
 ```bash
-# View all templates
+# View all templates (base + community)
 prism templates
+
+# Launch a base OS template
+prism launch ubuntu-24-04-x86 my-instance
+
+# Launch a community template with applications
+prism launch python-ml my-ml-project
 
 # Get detailed template info
 prism templates info python-ml
 ```
+
+**Template Structure**: See [templates/README.md](templates/README.md) for details on base/, community/, and custom templates.
 
 ## 💻 Usage Examples
 
