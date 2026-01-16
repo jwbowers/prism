@@ -212,8 +212,8 @@ func (pm *DefaultProcessManager) findProcessesSystemWide() ([]ProcessInfo, error
 func (pm *DefaultProcessManager) findProcessesUnix() ([]ProcessInfo, error) {
 	var processes []ProcessInfo
 
-	// Use pgrep to find cwsd processes
-	cmd := exec.Command("pgrep", "-f", "cwsd")
+	// Use pgrep to find prismd processes
+	cmd := exec.Command("pgrep", "-f", "prismd")
 	output, err := cmd.Output()
 	if err != nil {
 		// pgrep returns exit code 1 when no processes found, which is normal
@@ -248,8 +248,8 @@ func (pm *DefaultProcessManager) findProcessesUnix() ([]ProcessInfo, error) {
 func (pm *DefaultProcessManager) findProcessesWindows() ([]ProcessInfo, error) {
 	var processes []ProcessInfo
 
-	// Use tasklist to find cwsd processes
-	cmd := exec.Command("tasklist", "/FI", "IMAGENAME eq cwsd*", "/FO", "CSV")
+	// Use tasklist to find prismd processes
+	cmd := exec.Command("tasklist", "/FI", "IMAGENAME eq prismd*", "/FO", "CSV")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("tasklist failed: %w", err)

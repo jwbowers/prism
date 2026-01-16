@@ -17,7 +17,7 @@ import (
 
 const (
 	// PIDFileName is the name of the PID file
-	PIDFileName = "cwsd.pid"
+	PIDFileName = "prismd.pid"
 
 	// ShutdownTimeout is how long to wait for graceful shutdown
 	ShutdownTimeout = 10 * time.Second
@@ -131,13 +131,13 @@ func (s *SingletonManager) isProcessRunning(pid int) bool {
 		return false
 	}
 
-	// Additional check: verify it's actually cwsd
+	// Additional check: verify it's actually prismd
 	// This prevents false positives if PID is reused
-	return s.isCWSDProcess(pid)
+	return s.isPrismDProcess(pid)
 }
 
-// isCWSDProcess checks if the process is actually cwsd
-func (s *SingletonManager) isCWSDProcess(pid int) bool {
+// isPrismDProcess checks if the process is actually prismd
+func (s *SingletonManager) isPrismDProcess(pid int) bool {
 	// On macOS/Linux, read process name from /proc or ps
 	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "comm=")
 	output, err := cmd.Output()
@@ -146,7 +146,7 @@ func (s *SingletonManager) isCWSDProcess(pid int) bool {
 	}
 
 	procName := strings.TrimSpace(string(output))
-	return strings.Contains(procName, "cwsd")
+	return strings.Contains(procName, "prismd")
 }
 
 // shutdownOldDaemon attempts to gracefully shutdown the old daemon
