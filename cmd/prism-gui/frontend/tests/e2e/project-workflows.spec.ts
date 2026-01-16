@@ -305,7 +305,7 @@ test.describe('Project Management Workflows', () => {
       // Apply filter for active projects using data-testid
       const filterSelect = projectsPage.page.getByTestId('project-filter-select');
       await filterSelect.click();
-      await projectsPage.page.getByRole('option', { name: 'Active Only' }).click();
+      await projectsPage.page.locator('[data-value="active"]').click();
 
       // Verify both projects are still visible after filter
       // (both should have 'active' status by default)
@@ -314,7 +314,7 @@ test.describe('Project Management Workflows', () => {
 
       // Switch to "All Projects" filter for cleanup
       await filterSelect.click();
-      await projectsPage.page.getByRole('option', { name: 'All Projects' }).click();
+      await projectsPage.page.locator('[data-value="all"]').click();
 
       // Cleanup
       await projectsPage.deleteProject(activeName);
