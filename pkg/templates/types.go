@@ -6,6 +6,7 @@
 package templates
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -310,11 +311,19 @@ type TemplateParser struct {
 	Strategy *PackageManagerStrategy
 }
 
+// AMIDiscoveryService provides dynamic AMI lookup via AWS SSM Parameter Store
+// This interface allows TemplateResolver to use AMI discovery without importing pkg/aws
+type AMIDiscoveryService interface {
+	// GetAMIWithFallback attempts dynamic discovery first, then falls back to static AMI
+	GetAMIWithFallback(ctx context.Context, distro, version, region, arch, staticFallback string) (ami string, source string, err error)
+}
+
 // TemplateResolver converts unified templates to runtime templates
 type TemplateResolver struct {
-	Parser      *TemplateParser
-	ScriptGen   *ScriptGenerator
-	AMIRegistry map[string]map[string]map[string]string // template -> region -> arch -> AMI
+	Parser       *TemplateParser
+	ScriptGen    *ScriptGenerator
+	AMIRegistry  map[string]map[string]map[string]string // template -> region -> arch -> AMI
+	AMIDiscovery AMIDiscoveryService                     // Optional: Dynamic AMI lookup via SSM
 }
 
 // ScriptGenerator generates installation scripts for different package managers

@@ -1,0 +1,50 @@
+name: "Ubuntu 24.04 LTS (x86_64)"
+slug: "ubuntu-24-04-x86"
+description: "Minimal Ubuntu 24.04 LTS base with APT package manager (x86_64 architecture)"
+base: "ubuntu-24.04"
+
+# Connection type
+connection_type: "ssh"
+
+# Complexity and categorization
+complexity: "simple"
+category: "Base Systems"
+domain: "base"
+
+# Visual presentation
+icon: "🐧"
+color: "#e95420"
+popular: true
+
+# Architecture
+architecture: "x86_64"
+
+# Use APT package manager
+package_manager: "apt"
+
+# Minimal system packages
+packages:
+  system:
+    - "git"
+    - "wget"
+    - "curl"
+    - "vim"
+    - "htop"
+    - "build-essential"
+
+# Default user
+users:
+  - name: "ubuntu"
+    groups: ["sudo"]
+
+services: []
+
+# Minimal instance defaults
+instance_defaults:
+  ports: [22]
+  root_volume_gb: 20
+
+version: "1.0"
+tags:
+  type: "base"
+  purpose: "minimal"

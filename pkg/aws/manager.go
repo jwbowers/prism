@@ -889,10 +889,11 @@ func (m *Manager) launchWithUnifiedTemplateSystem(req ctypes.LaunchRequest, arch
 	var template *ctypes.RuntimeTemplate
 
 	// Use parameter-aware template processing if parameters are provided
+	// Issue #436: Pass AMI discovery service for dynamic AMI lookup via SSM
 	if len(req.Parameters) > 0 {
-		template, err = templates.GetTemplateWithParameters(req.Template, m.region, arch, packageManager, req.Size, req.Parameters)
+		template, err = templates.GetTemplateWithParametersAndDiscovery(req.Template, m.region, arch, packageManager, req.Size, req.Parameters, m.amiDiscovery)
 	} else {
-		template, err = templates.GetTemplateWithPackageManager(req.Template, m.region, arch, packageManager, req.Size)
+		template, err = templates.GetTemplateWithDiscovery(req.Template, m.region, arch, packageManager, req.Size, m.amiDiscovery)
 	}
 
 	if err != nil {

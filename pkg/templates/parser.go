@@ -518,6 +518,28 @@ func getDefaultBaseAMIs() map[string]map[string]map[string]map[string]string {
 				},
 			},
 		},
+
+		// Legacy alias for Amazon Linux (matching ubuntu-* pattern)
+		"amazonlinux-2023": {
+			"2023": {
+				"us-east-1": {
+					"x86_64": "ami-0q1234567890abcde",
+					"arm64":  "ami-0r1234567890abcde",
+				},
+				"us-east-2": {
+					"x86_64": "ami-0s1234567890abcde",
+					"arm64":  "ami-0t1234567890abcde",
+				},
+				"us-west-1": {
+					"x86_64": "ami-0u1234567890abcde",
+					"arm64":  "ami-0v1234567890abcde",
+				},
+				"us-west-2": {
+					"x86_64": "ami-0w1234567890abcde",
+					"arm64":  "ami-0x1234567890abcde",
+				},
+			},
+		},
 	}
 }
 

@@ -1,0 +1,49 @@
+name: "Amazon Linux 2023 (arm64)"
+slug: "amazon-linux-2023-arm"
+description: "Minimal Amazon Linux 2023 base with DNF package manager (arm64 architecture)"
+base: "amazonlinux-2023"
+
+# Connection type
+connection_type: "ssh"
+
+# Complexity and categorization
+complexity: "simple"
+category: "Base Systems"
+domain: "base"
+
+# Visual presentation
+icon: "🐧"
+color: "#FF9900"
+popular: true
+
+# Architecture
+architecture: "arm64"
+
+# Use DNF package manager (Amazon Linux 2023)
+package_manager: "dnf"
+
+# Minimal system packages
+packages:
+  system:
+    - "git"
+    - "wget"
+    - "curl"
+    - "vim"
+    - "htop"
+
+# Default user
+users:
+  - name: "ec2-user"
+    groups: ["wheel"]
+
+services: []
+
+# Minimal instance defaults
+instance_defaults:
+  ports: [22]
+  root_volume_gb: 20
+
+version: "1.0"
+tags:
+  type: "base"
+  purpose: "minimal"

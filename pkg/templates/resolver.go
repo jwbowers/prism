@@ -7,12 +7,23 @@ import (
 	"time"
 )
 
-// NewTemplateResolver creates a new template resolver
+// NewTemplateResolver creates a new template resolver without AMI discovery
 func NewTemplateResolver() *TemplateResolver {
 	return &TemplateResolver{
-		Parser:      NewTemplateParser(),
-		ScriptGen:   NewScriptGenerator(),
-		AMIRegistry: getDefaultAMIRegistry(),
+		Parser:       NewTemplateParser(),
+		ScriptGen:    NewScriptGenerator(),
+		AMIRegistry:  getDefaultAMIRegistry(),
+		AMIDiscovery: nil, // No dynamic discovery
+	}
+}
+
+// NewTemplateResolverWithDiscovery creates a template resolver with dynamic AMI discovery
+func NewTemplateResolverWithDiscovery(amiDiscovery AMIDiscoveryService) *TemplateResolver {
+	return &TemplateResolver{
+		Parser:       NewTemplateParser(),
+		ScriptGen:    NewScriptGenerator(),
+		AMIRegistry:  getDefaultAMIRegistry(),
+		AMIDiscovery: amiDiscovery,
 	}
 }
 
@@ -133,7 +144,39 @@ func (r *TemplateResolver) ResolveAllTemplates(registry *TemplateRegistry, regio
 	return runtimeTemplates, nil
 }
 
+// parseBaseOS parses a base OS string into distro and version components
+// Examples:
+//   - "ubuntu-24.04" -> ("ubuntu", "24.04")
+//   - "amazonlinux-2023" -> ("amazonlinux", "2023")
+//   - "ubuntu" -> ("ubuntu", "latest")
+func parseBaseOS(base string) (distro, version string) {
+	parts := strings.Split(base, "-")
+	if len(parts) >= 2 {
+		return parts[0], strings.Join(parts[1:], "-")
+	}
+	return base, "latest"
+}
+
+// getStaticAMIFallback retrieves static AMI from parser BaseAMIs map
+func (r *TemplateResolver) getStaticAMIFallback(base, region, architecture string) string {
+	distroVersions := r.Parser.BaseAMIs[base]
+	if distroVersions == nil {
+		return ""
+	}
+
+	// Get first available version's AMI for this region/arch
+	for _, versionAMIs := range distroVersions {
+		if regionAMIs, exists := versionAMIs[region]; exists {
+			if ami, exists := regionAMIs[architecture]; exists {
+				return ami
+			}
+		}
+	}
+	return ""
+}
+
 // getAMIMapping generates AMI mapping for a template
+// Issue #436: Now uses dynamic AMI discovery via SSM with static fallback
 func (r *TemplateResolver) getAMIMapping(template *Template, region, architecture string) (map[string]map[string]string, error) {
 	// For AMI-based templates, use the AMI configuration directly
 	if template.PackageManager == "ami" && template.AMIConfig.AMIs != nil {
@@ -147,8 +190,40 @@ func (r *TemplateResolver) getAMIMapping(template *Template, region, architectur
 		return templateAMIs, nil
 	}
 
-	// Fall back to base AMI mapping (hierarchical structure)
-	// For backward compatibility, support both "ubuntu" and "ubuntu-22.04" formats
+	// NEW (Issue #436): Try dynamic discovery via SSM if available
+	if r.AMIDiscovery != nil {
+		distro, version := parseBaseOS(template.Base)
+		staticFallback := r.getStaticAMIFallback(template.Base, region, architecture)
+
+		ami, source, err := r.AMIDiscovery.GetAMIWithFallback(
+			context.Background(),
+			distro,
+			version,
+			region,
+			architecture,
+			staticFallback,
+		)
+
+		if err == nil && ami != "" {
+			if source == "ssm" {
+				fmt.Printf("✅ Using latest AMI from SSM for %s %s (%s): %s\n", distro, version, architecture, ami)
+			} else {
+				fmt.Printf("⚠️  SSM unavailable, using static fallback AMI for %s: %s\n", template.Base, ami)
+			}
+
+			return map[string]map[string]string{
+				region: {architecture: ami},
+			}, nil
+		}
+
+		// Dynamic discovery failed, continue to static fallback
+		if err != nil {
+			fmt.Printf("⚠️  AMI discovery failed for %s: %v, using static fallback\n", template.Base, err)
+		}
+	}
+
+	// Final fallback: Use static BaseAMIs (existing behavior)
+	// For backward compatibility, support both "ubuntu" and "ubuntu-24.04" formats
 	distroVersions := r.Parser.BaseAMIs[template.Base]
 	if distroVersions == nil {
 		return nil, fmt.Errorf("no base AMI found for OS: %s", template.Base)

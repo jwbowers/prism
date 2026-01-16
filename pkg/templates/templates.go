@@ -180,8 +180,21 @@ func GetTemplate(name, region, architecture string) (*types.RuntimeTemplate, err
 
 // GetTemplateWithPackageManager returns a single template with package manager override and size scaling
 func GetTemplateWithPackageManager(name, region, architecture, packageManager, size string) (*types.RuntimeTemplate, error) {
+	return GetTemplateWithDiscovery(name, region, architecture, packageManager, size, nil)
+}
+
+// GetTemplateWithDiscovery returns a single template with AMI discovery service (Issue #436)
+// This function integrates dynamic AMI lookup via AWS SSM Parameter Store
+func GetTemplateWithDiscovery(name, region, architecture, packageManager, size string, amiDiscovery AMIDiscoveryService) (*types.RuntimeTemplate, error) {
 	registry := NewTemplateRegistry(DefaultTemplateDirs())
-	resolver := NewTemplateResolver()
+
+	// Create resolver with or without AMI discovery
+	var resolver *TemplateResolver
+	if amiDiscovery != nil {
+		resolver = NewTemplateResolverWithDiscovery(amiDiscovery)
+	} else {
+		resolver = NewTemplateResolver()
+	}
 
 	// Scan for templates
 	if err := registry.ScanTemplates(); err != nil {
@@ -246,6 +259,11 @@ func GetTemplateWithPackageManager(name, region, architecture, packageManager, s
 
 // GetTemplateWithParameters returns a template with parameter processing applied
 func GetTemplateWithParameters(name, region, architecture, packageManager, size string, parameters map[string]interface{}) (*types.RuntimeTemplate, error) {
+	return GetTemplateWithParametersAndDiscovery(name, region, architecture, packageManager, size, parameters, nil)
+}
+
+// GetTemplateWithParametersAndDiscovery returns a template with parameter processing and AMI discovery (Issue #436)
+func GetTemplateWithParametersAndDiscovery(name, region, architecture, packageManager, size string, parameters map[string]interface{}, amiDiscovery AMIDiscoveryService) (*types.RuntimeTemplate, error) {
 	// First, get the raw template
 	registry := NewTemplateRegistry(DefaultTemplateDirs())
 	if err := registry.ScanTemplates(); err != nil {
@@ -280,8 +298,14 @@ func GetTemplateWithParameters(name, region, architecture, packageManager, size 
 		processedTemplate = template
 	}
 
-	// Convert to runtime template using resolver
-	resolver := NewTemplateResolver()
+	// Convert to runtime template using resolver with AMI discovery
+	var resolver *TemplateResolver
+	if amiDiscovery != nil {
+		resolver = NewTemplateResolverWithDiscovery(amiDiscovery)
+	} else {
+		resolver = NewTemplateResolver()
+	}
+
 	runtimeTemplate, err := resolver.ResolveTemplateWithOptions(processedTemplate, region, architecture, packageManager, size)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve template: %w", err)
