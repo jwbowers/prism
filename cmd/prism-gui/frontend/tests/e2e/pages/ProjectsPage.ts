@@ -473,7 +473,9 @@ export class ProjectsPage extends BasePage {
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     if (reason) {
-      await this.fillInput('reason', reason);
+      // Cloudscape wraps textarea in a span, need to target the actual textarea
+      const reasonTextarea = this.page.getByTestId('decline-reason-textarea').locator('textarea');
+      await reasonTextarea.fill(reason);
     }
 
     await this.clickButton('decline');
@@ -491,8 +493,8 @@ export class ProjectsPage extends BasePage {
   ) {
     await this.switchToBulkInvitations();
 
-    // Fill email addresses
-    const emailTextarea = this.page.getByLabel(/email.*addresses/i);
+    // Fill email addresses - Cloudscape wraps textarea in a span, need to target the actual textarea
+    const emailTextarea = this.page.getByTestId('bulk-emails-textarea').locator('textarea');
     await emailTextarea.fill(emails.join('\n'));
 
     // Select role - use specific test ID to avoid strict mode violation (multiple role selectors on page)
@@ -510,9 +512,9 @@ export class ProjectsPage extends BasePage {
     await projectOption.waitFor({ state: 'visible', timeout: 3000 });
     await projectOption.click();
 
-    // Optional message
+    // Optional message - Cloudscape wraps textarea in a span, need to target the actual textarea
     if (message) {
-      const messageTextarea = this.page.getByLabel(/message/i);
+      const messageTextarea = this.page.getByTestId('bulk-message-textarea').locator('textarea');
       await messageTextarea.fill(message);
     }
 
