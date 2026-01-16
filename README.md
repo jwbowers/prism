@@ -347,8 +347,11 @@ Prism is open source and welcomes contributions!
 
 - **Issues**: [Report bugs or request features](https://github.com/scttfrdmn/prism/issues)
 - **Pull Requests**: Submit code improvements
-- **Templates**: Contribute research environment templates
+- **Templates**: [Contribute research environment templates](docs/development/COMMUNITY_TEMPLATE_GUIDE.md) 🎯
 - **Documentation**: Help improve guides
+
+**Contributing Templates:**
+See our [Community Template Contribution Guide](docs/development/COMMUNITY_TEMPLATE_GUIDE.md) for step-by-step instructions on creating and submitting templates to the marketplace.
 
 **Development:**
 ```bash
