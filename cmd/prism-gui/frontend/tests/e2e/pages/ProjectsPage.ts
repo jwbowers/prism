@@ -126,7 +126,7 @@ export class ProjectsPage extends BasePage {
     await deleteOption.click();
 
     // Wait for delete confirmation modal dialog to be visible
-    await this.page.getByRole('dialog').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.getByRole('dialog', { name: /delete/i }).waitFor({ state: 'visible', timeout: 5000 });
     await this.page.getByTestId('confirm-delete-button').waitFor({ state: 'visible', timeout: 5000 });
   }
 
@@ -601,9 +601,8 @@ export class ProjectsPage extends BasePage {
     const revokeButton = tokenRow.getByRole('button', { name: /revoke|close/i });
     await revokeButton.click();
 
-    // Wait for confirmation modal - Cloudscape-specific targeting
-    // Note: The revoke confirmation dialog may have various header texts
-    const dialog = this.page.getByRole('dialog').first();
+    // Wait for confirmation modal with name-based selector
+    const dialog = this.page.getByRole('dialog', { name: /revoke|confirm/i });
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     // Confirm
