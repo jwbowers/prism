@@ -1,0 +1,335 @@
+name: "R Research Full Stack"
+slug: "r-research-full-stack"
+description: "Complete R research environment with RStudio Server, Quarto, LaTeX, Python, Jupyter, and essential data science tools"
+long_description: |
+  All-in-one R research environment designed for collaborative research.
+
+  Includes:
+  - R 4.4+ with tidyverse and essential packages
+  - RStudio Server (web-based IDE on port 8787)
+  - Quarto and LaTeX for document publishing
+  - Python 3.12 with Jupyter notebooks
+  - Database clients (PostgreSQL, MySQL, SQLite)
+  - Git with LFS support for version control
+  - Essential data science tools and utilities
+
+  Perfect for research projects requiring web-based collaboration with
+  non-technical colleagues.
+
+author: "Prism Team"
+version: "1.0.0"
+base: "ubuntu-24.04"
+
+# Connection type
+connection_type: "ssh"
+
+# Complexity and categorization
+complexity: "complex"
+category: "Research Tools"
+domain: "research"
+
+# Visual presentation
+icon: "📊"
+color: "#276DC3"
+popular: true
+
+# Architecture
+architecture: "x86_64"
+
+# Use APT package manager for system packages
+package_manager: "apt"
+
+# Inherit from Ubuntu 24.04 base
+inherits: ["Ubuntu 24.04 LTS (x86_64)"]
+
+# System and application packages
+packages:
+  # Core system tools
+  system:
+    - "build-essential"
+    - "software-properties-common"
+    - "apt-transport-https"
+    - "ca-certificates"
+    - "gnupg"
+    - "lsb-release"
+    - "dirmngr"
+
+  # R dependencies
+  r_dependencies:
+    - "gfortran"
+    - "libcurl4-openssl-dev"
+    - "libssl-dev"
+    - "libxml2-dev"
+    - "libfontconfig1-dev"
+    - "libharfbuzz-dev"
+    - "libfribidi-dev"
+    - "libfreetype6-dev"
+    - "libpng-dev"
+    - "libtiff5-dev"
+    - "libjpeg-dev"
+    - "libgit2-dev"
+
+  # LaTeX and document tools
+  latex:
+    - "texlive-full"
+    - "texlive-xetex"
+    - "texlive-fonts-extra"
+    - "pandoc"
+    - "ghostscript"
+    - "pdftk"
+    - "imagemagick"
+
+  # Database clients
+  databases:
+    - "postgresql-client"
+    - "mysql-client"
+    - "sqlite3"
+
+  # Data processing tools
+  data_tools:
+    - "csvkit"
+    - "jq"
+    - "xmlstarlet"
+
+  # Terminal and session management
+  terminal:
+    - "tmux"
+    - "screen"
+    - "htop"
+    - "tree"
+    - "ncdu"
+
+  # Text editors
+  editors:
+    - "vim"
+    - "nano"
+    - "emacs-nox"
+
+  # Compression tools
+  compression:
+    - "zip"
+    - "unzip"
+    - "bzip2"
+    - "p7zip-full"
+
+  # File transfer
+  transfer:
+    - "rsync"
+    - "wget"
+    - "curl"
+
+  # Python for mixed workflows
+  python:
+    - "python3.12"
+    - "python3.12-dev"
+    - "python3.12-venv"
+    - "python3-pip"
+
+# Users
+users:
+  - name: "researcher"
+    groups: ["sudo"]
+    shell: "/bin/bash"
+
+# Services
+services:
+  - name: "rstudio-server"
+    port: 8787
+    type: "web"
+    description: "RStudio Server (web-based R IDE)"
+    start_command: "sudo systemctl start rstudio-server"
+    check_command: "systemctl is-active rstudio-server"
+
+  - name: "jupyter"
+    port: 8888
+    type: "web"
+    description: "Jupyter Notebook Server"
+    start_command: "jupyter lab --ip=0.0.0.0 --no-browser"
+    check_command: "pgrep -f jupyter-lab"
+
+# Ports to open
+ports:
+  - 22    # SSH
+  - 8787  # RStudio Server
+  - 8888  # Jupyter (optional)
+
+# Post-installation script
+post_install: |
+  #!/bin/bash
+  set -e
+
+  echo "🔧 Starting R Research Full Stack configuration..."
+
+  # Update system
+  echo "📦 Updating system packages..."
+  apt-get update && apt-get upgrade -y
+
+  # Install R 4.4.2
+  echo "📊 Installing R 4.4.2..."
+  wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+  add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+  apt-get update
+  apt-get install -y r-base r-base-dev
+
+  # Verify R version
+  R_VERSION=$(R --version | head -n1)
+  echo "✅ R installed: $R_VERSION"
+
+  # Install RStudio Server 2024.12.0
+  echo "🖥️  Installing RStudio Server..."
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2024.12.0-396-amd64.deb
+  apt-get install -y ./rstudio-server-2024.12.0-396-amd64.deb
+  rm rstudio-server-2024.12.0-396-amd64.deb
+
+  # Enable and start RStudio Server
+  systemctl enable rstudio-server
+  systemctl start rstudio-server
+  echo "✅ RStudio Server installed and started (port 8787)"
+
+  # Install Quarto 1.6.33
+  echo "📝 Installing Quarto..."
+  wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.6.33/quarto-1.6.33-linux-amd64.deb
+  apt-get install -y ./quarto-1.6.33-linux-amd64.deb
+  rm quarto-1.6.33-linux-amd64.deb
+  echo "✅ Quarto installed"
+
+  # Install essential R packages
+  echo "📦 Installing essential R packages (this may take 10-15 minutes)..."
+  Rscript -e "
+  # Install core packages
+  install.packages(c(
+    'tidyverse',     # Data manipulation and visualization
+    'rmarkdown',     # Dynamic documents
+    'knitr',         # Literate programming
+    'devtools',      # Package development
+    'ggplot2',       # Advanced plotting
+    'dplyr',         # Data manipulation
+    'tidyr',         # Data tidying
+    'readr',         # Data reading
+    'purrr',         # Functional programming
+    'stringr',       # String operations
+    'forcats',       # Factor operations
+    'lubridate',     # Date/time operations
+    'jsonlite',      # JSON handling
+    'httr',          # HTTP requests
+    'xml2',          # XML handling
+    'rvest',         # Web scraping
+    'DBI',           # Database interface
+    'RSQLite',       # SQLite support
+    'RPostgres',     # PostgreSQL support
+    'RMySQL',        # MySQL support
+    'reticulate',    # Python integration
+    'shiny',         # Interactive web apps
+    'plotly',        # Interactive plots
+    'scales',        # Plot scales
+    'viridis',       # Color palettes
+    'here',          # Project-relative paths
+    'fs',            # File system operations
+    'glue',          # String interpolation
+    'magrittr',      # Pipe operators
+    'tibble',        # Modern data frames
+    'testthat',      # Unit testing
+    'usethis',       # Package development helpers
+    'pkgdown',       # Documentation websites
+    'bookdown',      # Books and long documents
+    'blogdown',      # Websites and blogs
+    'xaringan',      # Presentations
+    'gt',            # Tables
+    'gtsummary'      # Summary tables
+  ), repos='https://cloud.r-project.org/')
+
+  # Verify installation
+  cat('\n✅ R packages installed successfully\n')
+  "
+
+  # Install Python packages for Jupyter
+  echo "🐍 Installing Python packages..."
+  pip3 install --upgrade pip
+  pip3 install jupyter jupyterlab numpy pandas matplotlib seaborn scikit-learn scipy
+  echo "✅ Jupyter and Python packages installed"
+
+  # Install Git LFS
+  echo "📦 Installing Git LFS..."
+  curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+  apt-get install -y git-lfs
+  git lfs install --system
+  echo "✅ Git LFS installed"
+
+  # Configure RStudio Server for better performance
+  echo "⚙️  Configuring RStudio Server..."
+  mkdir -p /etc/rstudio
+  cat > /etc/rstudio/rserver.conf <<'RSTUDIO_CONF'
+  # RStudio Server Configuration
+  www-address=0.0.0.0
+  www-port=8787
+  rsession-which-r=/usr/bin/R
+  auth-required-user-group=sudo
+  RSTUDIO_CONF
+
+  # Restart RStudio Server with new configuration
+  systemctl restart rstudio-server
+
+  # Create researcher user home directory structure
+  mkdir -p /home/researcher/{projects,data,notebooks,documents,scripts}
+  chown -R researcher:researcher /home/researcher
+
+  # Create welcome message
+  echo "Creating welcome message..."
+  echo "Welcome to R Research Full Stack" > /home/researcher/WELCOME.txt
+  echo "" >> /home/researcher/WELCOME.txt
+  echo "RStudio Server: http://\$(curl -s ifconfig.me):8787" >> /home/researcher/WELCOME.txt
+  echo "Jupyter Lab: jupyter lab --ip=0.0.0.0 --no-browser" >> /home/researcher/WELCOME.txt
+  echo "" >> /home/researcher/WELCOME.txt
+  echo "Installed: R 4.4+, RStudio Server, Quarto, LaTeX, Python 3.12, Jupyter" >> /home/researcher/WELCOME.txt
+  echo "Documentation: See /home/researcher/README.md for full guide" >> /home/researcher/WELCOME.txt
+  chown researcher:researcher /home/researcher/WELCOME.txt
+
+  # Final cleanup
+  apt-get autoremove -y
+  apt-get clean
+
+  echo "✅ R Research Full Stack installation complete!"
+  echo ""
+  echo "📊 RStudio Server: http://$(curl -s ifconfig.me):8787"
+  echo "🐍 Jupyter Lab: Start with 'jupyter lab --ip=0.0.0.0 --no-browser'"
+  echo "📝 Welcome guide: /home/researcher/WELCOME.md"
+  echo ""
+
+# Idle detection configuration
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 30  # Longer threshold for research workloads
+  check_processes:
+    - "rstudio"
+    - "R"
+    - "python"
+    - "jupyter"
+
+# Instance defaults
+instance_defaults:
+  ports: [22, 8787, 8888]
+  root_volume_gb: 50  # Larger for LaTeX and R packages
+
+# Research user configuration
+research_users:
+  enabled: true
+  default_shell: "/bin/bash"
+  default_groups: ["sudo"]
+  ssh_key_required: false
+
+# Component versions (for reference)
+components:
+  r_version: "4.4.2"
+  rstudio_server_version: "2024.12.0"
+  quarto_version: "1.6.33"
+  python_version: "3.12"
+  texlive_version: "2024"
+
+# Tags for marketplace
+tags:
+  type: "research"
+  purpose: "data-science"
+  level: "intermediate"
+  language: "r-python"
+  web_interface: "true"
+  collaborative: "true"
