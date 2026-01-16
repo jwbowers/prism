@@ -50,7 +50,42 @@ func NewAvailabilityManager(cfg aws.Config, region string) *AvailabilityManager 
 	}
 }
 
-// GetAvailableAZsForInstanceType returns available AZs for a given instance type
+// isStandardAZ determines if an AZ is a standard availability zone (not a local zone or wavelength zone)
+// Standard AZs follow the pattern: {region}{letter} (e.g., us-west-2a, eu-west-1b)
+// Local zones have extra components: {region}-{city}-{number}{letter} (e.g., us-west-2-lax-1a)
+// Wavelength zones contain "wl": {region}-wl1-{city}-wlz-1 (e.g., us-east-1-wl1-nyc-wlz-1)
+func (am *AvailabilityManager) isStandardAZ(az string) bool {
+	// Wavelength zones contain "wl" - exclude them
+	if strings.Contains(az, "-wl") {
+		return false
+	}
+
+	// Local zones have more than one hyphen after the region
+	// Standard AZ: us-west-2a (region "us-west-2" + letter "a")
+	// Local zone: us-west-2-lax-1a (region "us-west-2" + extra parts)
+
+	// Remove the region prefix to check what's left
+	// For us-west-2a, after removing us-west-2, we have "a" (single letter)
+	// For us-west-2-lax-1a, after removing us-west-2, we have "-lax-1a" (extra components)
+
+	if !strings.HasPrefix(az, am.region) {
+		return false
+	}
+
+	suffix := strings.TrimPrefix(az, am.region)
+
+	// Standard AZ should have just a single letter (a-z) after the region
+	// It might have no prefix (unlikely but handle it), or just the letter
+	if len(suffix) == 0 {
+		return false
+	}
+
+	// Should be just a single lowercase letter (no hyphens or additional characters)
+	return len(suffix) == 1 && suffix >= "a" && suffix <= "z"
+}
+
+// GetAvailableAZsForInstanceType returns available standard AZs for a given instance type
+// Filters out local zones and wavelength zones to avoid subnet mismatches
 func (am *AvailabilityManager) GetAvailableAZsForInstanceType(ctx context.Context, instanceType string) ([]string, error) {
 	input := &ec2.DescribeInstanceTypeOfferingsInput{
 		LocationType: ec2types.LocationTypeAvailabilityZone,
@@ -70,12 +105,16 @@ func (am *AvailabilityManager) GetAvailableAZsForInstanceType(ctx context.Contex
 	var azs []string
 	for _, offering := range output.InstanceTypeOfferings {
 		if offering.Location != nil {
-			azs = append(azs, *offering.Location)
+			az := *offering.Location
+			// Only include standard AZs (exclude local zones and wavelength zones)
+			if am.isStandardAZ(az) {
+				azs = append(azs, az)
+			}
 		}
 	}
 
 	if len(azs) == 0 {
-		return nil, fmt.Errorf("instance type %s not available in any AZ in region %s", instanceType, am.region)
+		return nil, fmt.Errorf("instance type %s not available in any standard AZ in region %s (local zones and wavelength zones are excluded)", instanceType, am.region)
 	}
 
 	return azs, nil
