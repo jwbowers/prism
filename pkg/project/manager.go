@@ -72,7 +72,7 @@ func (m *Manager) CreateProject(ctx context.Context, req *CreateProjectRequest) 
 	// Check for duplicate names
 	for _, project := range m.projects {
 		if project.Name == req.Name {
-			return nil, fmt.Errorf("project with name %q already exists", req.Name)
+			return nil, ErrDuplicateProjectName
 		}
 	}
 
@@ -195,7 +195,7 @@ func (m *Manager) UpdateProject(ctx context.Context, projectID string, req *Upda
 		// Check for duplicate names
 		for id, p := range m.projects {
 			if id != projectID && p.Name == *req.Name {
-				return nil, fmt.Errorf("project with name %q already exists", *req.Name)
+				return nil, ErrDuplicateProjectName
 			}
 		}
 		project.Name = *req.Name

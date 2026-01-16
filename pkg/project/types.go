@@ -1,10 +1,17 @@
 package project
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/types"
+)
+
+// Error constants
+var (
+	// ErrDuplicateProjectName is returned when attempting to create a project with a name that already exists
+	ErrDuplicateProjectName = errors.New("project name already exists")
 )
 
 // CreateProjectRequest represents a request to create a new project

@@ -242,7 +242,11 @@ func (s *Server) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	proj, err := s.projectManager.CreateProject(ctx, &req)
 	if err != nil {
-		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to create project: %v", err))
+		if err == project.ErrDuplicateProjectName {
+			s.writeError(w, http.StatusConflict, err.Error())
+		} else {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to create project: %v", err))
+		}
 		return
 	}
 
@@ -273,7 +277,11 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request, pro
 	ctx := context.Background()
 	proj, err := s.projectManager.UpdateProject(ctx, projectID, &req)
 	if err != nil {
-		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to update project: %v", err))
+		if err == project.ErrDuplicateProjectName {
+			s.writeError(w, http.StatusConflict, err.Error())
+		} else {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to update project: %v", err))
+		}
 		return
 	}
 
