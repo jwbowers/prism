@@ -123,7 +123,7 @@ func (cws *PrismService) Execute(args []string, r <-chan svc.ChangeRequest, chan
 	}
 }
 
-// startDaemon locates and starts the cwsd daemon process
+// startDaemon locates and starts the prismd daemon process
 func (cws *PrismService) startDaemon() (*exec.Cmd, error) {
 	// Get current executable directory
 	execPath, err := os.Executable()
@@ -132,7 +132,7 @@ func (cws *PrismService) startDaemon() (*exec.Cmd, error) {
 	}
 
 	binDir := filepath.Dir(execPath)
-	daemonPath := filepath.Join(binDir, "cwsd.exe")
+	daemonPath := filepath.Join(binDir, "prismd.exe")
 
 	// Verify daemon executable exists
 	if _, err := os.Stat(daemonPath); os.IsNotExist(err) {

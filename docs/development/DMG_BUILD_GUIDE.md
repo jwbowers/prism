@@ -462,7 +462,7 @@ Prism.app/
 │   ├── MacOS/
 │   │   ├── Prism    # Launcher script
 │   │   ├── prism                 # CLI binary
-│   │   ├── cwsd                # Daemon binary
+│   │   ├── prismd                # Daemon binary
 │   │   └── cws-gui            # GUI binary
 │   ├── Resources/
 │   │   ├── Prism.icns

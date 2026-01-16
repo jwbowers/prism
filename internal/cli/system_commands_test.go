@@ -126,7 +126,7 @@ func TestDaemonStartCommand(t *testing.T) {
 			setupMock: func(mock *MockAPIClient) {
 				mock.PingError = assert.AnError
 			},
-			expectError: true, // Will fail because 'cwsd' command doesn't exist in test
+			expectError: true, // Will fail because 'prismd' command doesn't exist in test
 		},
 	}
 
@@ -141,7 +141,7 @@ func TestDaemonStartCommand(t *testing.T) {
 			err := sc.daemonStart()
 
 			if tt.expectError {
-				// In test environment, starting daemon will fail due to missing 'cwsd' binary
+				// In test environment, starting daemon will fail due to missing 'prismd' binary
 				// This is expected and acceptable
 				t.Logf("Expected daemon start error in test environment: %v", err)
 			} else {

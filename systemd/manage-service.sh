@@ -22,7 +22,7 @@ if ! command -v systemctl >/dev/null 2>&1; then
     exit 1
 fi
 
-SERVICE_NAME="cwsd"
+SERVICE_NAME="prismd"
 
 # Service management functions
 start_service() {

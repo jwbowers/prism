@@ -28,12 +28,12 @@ brew install prism
 
 # Verify installation
 prism version
-cwsd version
+prismd version
 ```
 
 **Includes:**
 - `cws` CLI tool
-- `cwsd` daemon
+- `prismd` daemon
 - `prism-gui` desktop application (if GUI support is available)
 - Automatic PATH configuration
 - Easy updates via `brew upgrade`
@@ -50,7 +50,7 @@ curl -L https://github.com/scttfrdmn/prism/releases/latest/download/prism-darwin
 curl -L https://github.com/scttfrdmn/prism/releases/latest/download/prism-darwin-arm64.tar.gz | tar xz
 
 # Move binaries to PATH
-sudo mv prism cwsd /usr/local/bin/
+sudo mv prism prismd /usr/local/bin/
 ```
 
 ## Post-Installation Setup
@@ -141,7 +141,7 @@ echo $PATH | grep homebrew
 ```bash
 # Ensure proper permissions on binaries
 ls -la $(which cws)
-ls -la $(which cwsd)
+ls -la $(which prismd)
 
 # Fix permissions if needed
 brew reinstall prism

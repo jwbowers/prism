@@ -137,23 +137,23 @@ make cross-compile
 ```bash
 # macOS Intel
 GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/darwin-amd64/cws ./cmd/cws
-GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/darwin-amd64/cwsd ./cmd/cwsd
+GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/darwin-amd64/prismd ./cmd/prismd
 
 # macOS Apple Silicon
 GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/darwin-arm64/cws ./cmd/cws
-GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/darwin-arm64/cwsd ./cmd/cwsd
+GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/darwin-arm64/prismd ./cmd/prismd
 
 # Linux x86_64
 GOOS=linux GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/linux-amd64/cws ./cmd/cws
-GOOS=linux GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/linux-amd64/cwsd ./cmd/cwsd
+GOOS=linux GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/linux-amd64/prismd ./cmd/prismd
 
 # Linux ARM64
 GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/linux-arm64/cws ./cmd/cws
-GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/linux-arm64/cwsd ./cmd/cwsd
+GOOS=linux GOARCH=arm64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/linux-arm64/prismd ./cmd/prismd
 
 # Windows x86_64
 GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/windows-amd64/cws.exe ./cmd/cws
-GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/windows-amd64/cwsd.exe ./cmd/cwsd
+GOOS=windows GOARCH=amd64 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.4.6" -o bin/release/windows-amd64/prismd.exe ./cmd/prismd
 ```
 
 ### 4. GUI Build Process (Platform-Specific)
@@ -185,27 +185,27 @@ Create compressed archives for each platform:
 ```bash
 # macOS Intel
 cd bin/release/darwin-amd64
-tar -czf ../../../dist/v0.4.6/prism-v0.4.6-darwin-amd64.tar.gz prism cwsd
+tar -czf ../../../dist/v0.4.6/prism-v0.4.6-darwin-amd64.tar.gz prism prismd
 cd ../../..
 
 # macOS Apple Silicon
 cd bin/release/darwin-arm64
-tar -czf ../../../dist/v0.4.6/prism-v0.4.6-darwin-arm64.tar.gz prism cwsd
+tar -czf ../../../dist/v0.4.6/prism-v0.4.6-darwin-arm64.tar.gz prism prismd
 cd ../../..
 
 # Linux x86_64
 cd bin/release/linux-amd64
-tar -czf ../../../dist/v0.4.6/prism-v0.4.6-linux-amd64.tar.gz prism cwsd
+tar -czf ../../../dist/v0.4.6/prism-v0.4.6-linux-amd64.tar.gz prism prismd
 cd ../../..
 
 # Linux ARM64
 cd bin/release/linux-arm64
-tar -czf ../../../dist/v0.4.6/prism-v0.4.6-linux-arm64.tar.gz prism cwsd
+tar -czf ../../../dist/v0.4.6/prism-v0.4.6-linux-arm64.tar.gz prism prismd
 cd ../../..
 
 # Windows x86_64
 cd bin/release/windows-amd64
-zip -r ../../../dist/v0.4.6/prism-v0.4.6-windows-amd64.zip cws.exe cwsd.exe
+zip -r ../../../dist/v0.4.6/prism-v0.4.6-windows-amd64.zip cws.exe prismd.exe
 cd ../../..
 ```
 
@@ -383,7 +383,7 @@ def caveats
     📦 Installed Components:
       • CLI (cws) - Command-line interface with all latest features
       • TUI (prism tui) - Terminal user interface
-      • Daemon (cwsd) - Background service
+      • Daemon (prismd) - Background service
   EOS
 
   if OS.mac?
@@ -472,9 +472,9 @@ brew install scttfrdmn/prism/prism
 
 # Verify installation
 which cws
-which cwsd
+which prismd
 prism --version
-cwsd --version
+prismd --version
 ```
 
 ### 2. Test Downloaded Binaries
@@ -484,7 +484,7 @@ cwsd --version
 wget https://github.com/scttfrdmn/prism/releases/download/v0.4.6/prism-v0.4.6-darwin-arm64.tar.gz
 tar -xzf prism-v0.4.6-darwin-arm64.tar.gz
 ./cws --version
-./cwsd --version
+./prismd --version
 ```
 
 ### 3. Verify Checksums

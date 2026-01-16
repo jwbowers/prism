@@ -43,32 +43,32 @@ jobs:
       - name: Build for Linux amd64
         run: |
           GOOS=linux GOARCH=amd64 go build -o bin/cws-linux-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
-          GOOS=linux GOARCH=amd64 go build -o bin/cwsd-linux-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/cwsd
-          cd bin && tar -czf cws-linux-amd64.tar.gz cws-linux-amd64 cwsd-linux-amd64 && cd ..
+          GOOS=linux GOARCH=amd64 go build -o bin/prismd-linux-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
+          cd bin && tar -czf cws-linux-amd64.tar.gz cws-linux-amd64 prismd-linux-amd64 && cd ..
 
       - name: Build for Linux arm64
         run: |
           GOOS=linux GOARCH=arm64 go build -o bin/cws-linux-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
-          GOOS=linux GOARCH=arm64 go build -o bin/cwsd-linux-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/cwsd
-          cd bin && tar -czf cws-linux-arm64.tar.gz cws-linux-arm64 cwsd-linux-arm64 && cd ..
+          GOOS=linux GOARCH=arm64 go build -o bin/prismd-linux-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
+          cd bin && tar -czf cws-linux-arm64.tar.gz cws-linux-arm64 prismd-linux-arm64 && cd ..
 
       - name: Build for macOS amd64
         run: |
           GOOS=darwin GOARCH=amd64 go build -tags crosscompile -o bin/cws-macos-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
-          GOOS=darwin GOARCH=amd64 go build -tags crosscompile -o bin/cwsd-macos-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/cwsd
-          cd bin && tar -czf cws-macos-amd64.tar.gz cws-macos-amd64 cwsd-macos-amd64 && cd ..
+          GOOS=darwin GOARCH=amd64 go build -tags crosscompile -o bin/prismd-macos-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
+          cd bin && tar -czf cws-macos-amd64.tar.gz cws-macos-amd64 prismd-macos-amd64 && cd ..
 
       - name: Build for macOS arm64
         run: |
           GOOS=darwin GOARCH=arm64 go build -tags crosscompile -o bin/cws-macos-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
-          GOOS=darwin GOARCH=arm64 go build -tags crosscompile -o bin/cwsd-macos-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/cwsd
-          cd bin && tar -czf cws-macos-arm64.tar.gz cws-macos-arm64 cwsd-macos-arm64 && cd ..
+          GOOS=darwin GOARCH=arm64 go build -tags crosscompile -o bin/prismd-macos-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
+          cd bin && tar -czf cws-macos-arm64.tar.gz cws-macos-arm64 prismd-macos-arm64 && cd ..
 
       - name: Build for Windows amd64
         run: |
           GOOS=windows GOARCH=amd64 go build -o bin/cws-windows-amd64.exe -ldflags "-X main.Version=${VERSION}" ./cmd/cws
-          GOOS=windows GOARCH=amd64 go build -o bin/cwsd-windows-amd64.exe -ldflags "-X main.Version=${VERSION}" ./cmd/cwsd
-          cd bin && zip -r cws-windows-amd64.zip cws-windows-amd64.exe cwsd-windows-amd64.exe && cd ..
+          GOOS=windows GOARCH=amd64 go build -o bin/prismd-windows-amd64.exe -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
+          cd bin && zip -r cws-windows-amd64.zip cws-windows-amd64.exe prismd-windows-amd64.exe && cd ..
 
       - name: Generate checksums
         run: |

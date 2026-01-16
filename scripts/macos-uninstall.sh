@@ -94,9 +94,9 @@ stop_daemon() {
     log_info "Stopping CloudWorkstation daemon..."
     
     # Stop any running daemon processes
-    if pgrep -f "cwsd" > /dev/null; then
+    if pgrep -f "prismd" > /dev/null; then
         log_info "Stopping running daemon processes..."
-        pkill -f "cwsd" || true
+        pkill -f "prismd" || true
         sleep 2
     fi
     
@@ -132,17 +132,17 @@ remove_cli_tools() {
         fi
     fi
     
-    # Remove cwsd binary
-    if [[ -f "$INSTALL_DIR/cwsd" ]]; then
+    # Remove prismd binary
+    if [[ -f "$INSTALL_DIR/prismd" ]]; then
         if [[ -w "$INSTALL_DIR" ]]; then
-            rm -f "$INSTALL_DIR/cwsd"
-            removed_tools+=("cwsd")
+            rm -f "$INSTALL_DIR/prismd"
+            removed_tools+=("prismd")
         else
             # Need sudo for removal
-            if sudo rm -f "$INSTALL_DIR/cwsd" 2>/dev/null; then
-                removed_tools+=("cwsd")
+            if sudo rm -f "$INSTALL_DIR/prismd" 2>/dev/null; then
+                removed_tools+=("prismd")
             else
-                log_error "Failed to remove $INSTALL_DIR/cwsd"
+                log_error "Failed to remove $INSTALL_DIR/prismd"
             fi
         fi
     fi
@@ -268,7 +268,7 @@ remove_logs_and_temp() {
     log_info "Removing logs and temporary files..."
     
     local temp_locations=(
-        "/tmp/cwsd.log"
+        "/tmp/prismd.log"
         "/tmp/prism-*"
         "$HOME/Library/Logs/CloudWorkstation"
     )
@@ -296,7 +296,7 @@ verify_removal() {
     local remaining_items=()
     
     # Check for remaining binaries
-    if [[ -f "$INSTALL_DIR/cws" ]] || [[ -f "$INSTALL_DIR/cwsd" ]]; then
+    if [[ -f "$INSTALL_DIR/cws" ]] || [[ -f "$INSTALL_DIR/prismd" ]]; then
         remaining_items+=("CLI tools")
     fi
     
@@ -306,7 +306,7 @@ verify_removal() {
     fi
     
     # Check for daemon
-    if pgrep -f "cwsd" > /dev/null; then
+    if pgrep -f "prismd" > /dev/null; then
         remaining_items+=("Running daemon")
     fi
     

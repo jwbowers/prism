@@ -63,11 +63,11 @@
             KeyPath="yes"
             Name="cws.exe" />
       <File Id="CWSDDaemonExecutable" 
-            Source="$(var.SourceDir)\windows-amd64\cwsd.exe"
-            Name="cwsd.exe" />
+            Source="$(var.SourceDir)\windows-amd64\prismd.exe"
+            Name="prismd.exe" />
       <File Id="CWSServiceWrapper" 
-            Source="$(var.SourceDir)\windows-amd64\cwsd-service.exe"
-            Name="cwsd-service.exe" />
+            Source="$(var.SourceDir)\windows-amd64\prismd-service.exe"
+            Name="prismd-service.exe" />
       <File Id="CWSGUIExecutable" 
             Source="$(var.SourceDir)\windows-amd64\cws-gui.exe"
             Name="cws-gui.exe" />

@@ -314,10 +314,10 @@ nuget restore packaging/windows/SetupCustomActions/packages.config
 Get-Service Tcpip, Dhcp
 
 # Verify service executable
-Test-Path "C:\Program Files\Prism\bin\cwsd-service.exe"
+Test-Path "C:\Program Files\Prism\bin\prismd-service.exe"
 
 # Manual service installation
-sc create PrismDaemon binPath="C:\Program Files\Prism\bin\cwsd-service.exe"
+sc create PrismDaemon binPath="C:\Program Files\Prism\bin\prismd-service.exe"
 ```
 
 **Path Not Updated**:
@@ -339,7 +339,7 @@ Get-Service PrismDaemon
 Get-EventLog -LogName Application -Source PrismDaemon -Newest 10
 
 # Test daemon manually
-& "C:\Program Files\Prism\bin\cwsd.exe" --version
+& "C:\Program Files\Prism\bin\prismd.exe" --version
 ```
 
 **CLI Not Found**:

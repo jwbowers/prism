@@ -16,7 +16,7 @@
 - GUI shows "Connected" status but no data loads
 
 **Root Cause**:
-The Prism daemon (`cwsd`) was not running when the GUI attempted to load data.
+The Prism daemon (`prismd`) was not running when the GUI attempted to load data.
 
 **Solution (v0.5.2+)**: ✅ **Auto-Fixed!**
 
@@ -24,14 +24,14 @@ Starting in v0.5.2, the GUI **automatically starts the daemon** if it's not runn
 ```
 🔍 Checking if daemon is running...
 ⚠️  Daemon is not running, attempting to start...
-📍 Found daemon at: /path/to/cwsd
+📍 Found daemon at: /path/to/prismd
 ⏳ Waiting for daemon to initialize...
 ✅ Daemon started successfully!
 ```
 
 The GUI will:
 1. Check if daemon is responding (health check on port 8947)
-2. If not, locate the `cwsd` binary automatically
+2. If not, locate the `prismd` binary automatically
 3. Start daemon in independent process group
 4. Wait up to 10 seconds for daemon to become healthy
 5. Proceed with GUI startup
@@ -40,7 +40,7 @@ The GUI will:
 
 1. **Check daemon binary exists**:
    ```bash
-   ls -l bin/cwsd
+   ls -l bin/prismd
    ```
 
 2. **Manually start daemon**:
@@ -85,7 +85,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
    lsof -i :8947
    ```
 
-   Should show `cwsd` process listening on port 8947.
+   Should show `prismd` process listening on port 8947.
 
 3. **Verify daemon API responds**:
    ```bash
@@ -445,7 +445,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 
 4. **Check daemon memory**:
    ```bash
-   ps aux | grep cwsd
+   ps aux | grep prismd
    ```
 
    Should be <200MB normally.

@@ -4,16 +4,16 @@
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # macOS
   cp cws ${PREFIX}/bin/
-  cp cwsd ${PREFIX}/bin/
+  cp prismd ${PREFIX}/bin/
 else
   # Linux
   cp cws ${PREFIX}/bin/
-  cp cwsd ${PREFIX}/bin/
+  cp prismd ${PREFIX}/bin/
 fi
 
 # Make sure binaries are executable
 chmod +x ${PREFIX}/bin/cws
-chmod +x ${PREFIX}/bin/cwsd
+chmod +x ${PREFIX}/bin/prismd
 
 # Generate shell completions
 mkdir -p ${PREFIX}/etc/bash_completion.d/

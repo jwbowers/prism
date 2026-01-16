@@ -136,11 +136,11 @@ jobs:
           fi
           echo "✅ cws binary found"
           
-          if [ ! -f "$APP_BUNDLE/Contents/MacOS/cwsd" ]; then
-            echo "❌ cwsd binary not found"
+          if [ ! -f "$APP_BUNDLE/Contents/MacOS/prismd" ]; then
+            echo "❌ prismd binary not found"
             exit 1
           fi
-          echo "✅ cwsd binary found"
+          echo "✅ prismd binary found"
           
           # Check Resources
           if [ ! -d "$APP_BUNDLE/Contents/Resources" ]; then

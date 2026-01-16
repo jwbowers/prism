@@ -1,8 +1,8 @@
 # Binaries
 cws
 cws.exe
-cwsd
-cwsd.exe
+prismd
+prismd.exe
 /cws-*
 !/cmd/cws-*
 /bin/

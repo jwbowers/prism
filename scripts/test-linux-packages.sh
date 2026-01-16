@@ -168,11 +168,11 @@ esac
 # Test installation
 echo "Testing installation..."
 which cws || exit 1
-which cwsd || exit 1
+which prismd || exit 1
 
 # Test binary execution
 cws --version || exit 1
-cwsd --version || exit 1
+prismd --version || exit 1
 
 # Check systemd service
 systemctl status prism || echo "Service not automatically started (expected)"
@@ -260,11 +260,11 @@ apt-get install -f -y
 # Test installation
 echo "Testing installation..."
 which cws || exit 1
-which cwsd || exit 1
+which prismd || exit 1
 
 # Test binary execution
 cws --version || exit 1
-cwsd --version || exit 1
+prismd --version || exit 1
 
 # Check systemd service
 systemctl status prism || echo "Service not automatically started (expected)"

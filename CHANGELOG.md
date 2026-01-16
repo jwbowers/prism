@@ -370,7 +370,7 @@ Connect: prism connect ml-workspace-1
 **Project Rename**: CloudWorkStation → Prism
 - Complete code rename (29,225 files across 3 PRs)
 - GitHub repository rename: `scttfrdmn/prism`
-- All binaries renamed: `cws` → `prism`, `cwsd` → `prismd`
+- All binaries renamed: `cws` → `prism`, `prismd` → `prismd`
 - Configuration directory: `.cloudworkstation` → `.prism`
 - Go module: `github.com/scttfrdmn/prism`
 

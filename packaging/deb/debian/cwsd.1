@@ -1,11 +1,11 @@
 .TH CWSD 1 "December 2024" "CloudWorkstation 0.4.2" "System Commands"
 .SH NAME
-cwsd \- CloudWorkstation daemon
+prismd \- CloudWorkstation daemon
 .SH SYNOPSIS
-.B cwsd
+.B prismd
 [\fIOPTIONS\fR]
 .SH DESCRIPTION
-The CloudWorkstation daemon (\fBcwsd\fR) provides the backend API for managing research instances, handling AWS operations, and coordinating between multiple client interfaces (CLI, TUI, GUI).
+The CloudWorkstation daemon (\fBprismd\fR) provides the backend API for managing research instances, handling AWS operations, and coordinating between multiple client interfaces (CLI, TUI, GUI).
 
 The daemon runs as a system service and provides a REST API on port 8947 for all CloudWorkstation operations including instance management, template processing, cost optimization, and project administration.
 
@@ -327,11 +327,11 @@ Permission or file system error
 .SH EXAMPLES
 .SS Manual Startup
 Start daemon manually in foreground for debugging:
-.B cwsd --foreground --debug --log-level debug
+.B prismd --foreground --debug --log-level debug
 
 .SS Custom Configuration
 Start daemon with custom configuration:
-.B cwsd --config /path/to/custom.conf --data-dir /custom/data
+.B prismd --config /path/to/custom.conf --data-dir /custom/data
 
 .SS Service Management
 Use systemd for production deployment:
@@ -368,7 +368,7 @@ Check systemd logs: \fBjournalctl -u cloudworkstation\fR
 .SS Debug Mode
 Enable debug logging to troubleshoot issues:
 .br
-.B cwsd --debug --log-level debug --foreground
+.B prismd --debug --log-level debug --foreground
 
 .SH BUGS
 Report bugs at: https://github.com/scttfrdmn/prism/issues

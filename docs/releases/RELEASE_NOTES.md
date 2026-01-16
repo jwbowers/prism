@@ -45,7 +45,7 @@ cd prism
 make build
 
 # Copy binaries to path
-cp bin/cws bin/cwsd /usr/local/bin/
+cp bin/cws bin/prismd /usr/local/bin/
 ```
 
 ## Basic Usage

@@ -126,7 +126,7 @@ log_success "CloudWorkstation binaries available"
 
 # Check 7: Daemon Connectivity
 log_info "Checking CloudWorkstation daemon..."
-if ! pgrep -f "cwsd" > /dev/null; then
+if ! pgrep -f "prismd" > /dev/null; then
     log_warning "CloudWorkstation daemon not running"
     log_info "Start daemon with: ./bin/prismd &"
     

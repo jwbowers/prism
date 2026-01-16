@@ -104,11 +104,11 @@ generate_plist() {
 
 # Check if daemon binary exists
 check_daemon_binary() {
-    if [[ ! -x "$DAEMON_PATH/cwsd" ]]; then
-        error_exit "CloudWorkstation daemon (cwsd) not found at $DAEMON_PATH. Please install CloudWorkstation first."
+    if [[ ! -x "$DAEMON_PATH/prismd" ]]; then
+        error_exit "CloudWorkstation daemon (prismd) not found at $DAEMON_PATH. Please install CloudWorkstation first."
     fi
     
-    log "✅ Found CloudWorkstation daemon at $DAEMON_PATH/cwsd"
+    log "✅ Found CloudWorkstation daemon at $DAEMON_PATH/prismd"
 }
 
 # Install service
@@ -237,7 +237,7 @@ show_status() {
     if service_installed; then
         green "📦 Service: Installed"
         echo "   Plist: $PLIST_PATH/$SERVICE_NAME.plist"
-        echo "   Daemon: $DAEMON_PATH/cwsd"
+        echo "   Daemon: $DAEMON_PATH/prismd"
         echo "   Logs: $LOG_PATH/prism-daemon.log"
         echo
         
@@ -317,10 +317,10 @@ validate_service() {
     local errors=0
     
     # Check daemon binary
-    if [[ -x "$DAEMON_PATH/cwsd" ]]; then
-        green "✅ Daemon binary: Found at $DAEMON_PATH/cwsd"
+    if [[ -x "$DAEMON_PATH/prismd" ]]; then
+        green "✅ Daemon binary: Found at $DAEMON_PATH/prismd"
     else
-        red "❌ Daemon binary: Not found at $DAEMON_PATH/cwsd"
+        red "❌ Daemon binary: Not found at $DAEMON_PATH/prismd"
         ((errors++))
     fi
     

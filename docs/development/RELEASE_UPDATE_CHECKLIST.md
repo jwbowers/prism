@@ -51,7 +51,7 @@ class Prism < Formula
     # Build from source for latest features and full functionality
     system "make", "build"
     bin.install "bin/cws"
-    bin.install "bin/cwsd"
+    bin.install "bin/prismd"
     if OS.mac?
       bin.install "bin/cws-gui"  # GUI available on macOS
     end

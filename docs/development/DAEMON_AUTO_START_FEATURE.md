@@ -8,7 +8,7 @@
 
 ## Overview
 
-The GUI now automatically starts the Prism daemon (`cwsd`) if it's not already running. This eliminates the common issue where users launch the GUI and see empty data because the daemon wasn't started first.
+The GUI now automatically starts the Prism daemon (`prismd`) if it's not already running. This eliminates the common issue where users launch the GUI and see empty data because the daemon wasn't started first.
 
 ---
 
@@ -32,10 +32,10 @@ The GUI now automatically starts the Prism daemon (`cwsd`) if it's not already r
 When the GUI starts, it now:
 
 1. **Health Check**: Tests if daemon is responding on `http://localhost:8947/api/v1/health`
-2. **Binary Discovery**: Locates `cwsd` binary in multiple locations:
+2. **Binary Discovery**: Locates `prismd` binary in multiple locations:
    - Same directory as GUI (production installs)
    - Parent directory (alternate layouts)
-   - `./bin/cwsd` (development environment)
+   - `./bin/prismd` (development environment)
    - System PATH (installed globally)
 3. **Process Launch**: Starts daemon as independent background process
 4. **Process Group**: Creates new process group so daemon survives GUI exit
@@ -47,7 +47,7 @@ When the GUI starts, it now:
 ```
 2025/10/15 09:02:47 🔍 Checking if daemon is running...
 2025/10/15 09:02:47 ⚠️  Daemon is not running, attempting to start...
-2025/10/15 09:02:47 📍 Found daemon at: /Users/username/prism/bin/cwsd
+2025/10/15 09:02:47 📍 Found daemon at: /Users/username/prism/bin/prismd
 2025/10/15 09:02:47 ⏳ Waiting for daemon to initialize...
 2025/10/15 09:02:50 ✅ Daemon started successfully!
 ```
@@ -94,10 +94,10 @@ func checkDaemonHealth() bool {
 #### 2. Binary Discovery
 ```go
 locations := []string{
-	filepath.Join(exeDir, "cwsd"),        // Same directory as GUI
-	filepath.Join(exeDir, "..", "cwsd"),  // Parent directory
-	"./bin/cwsd",                         // Development environment
-	"cwsd",                               // In PATH
+	filepath.Join(exeDir, "prismd"),        // Same directory as GUI
+	filepath.Join(exeDir, "..", "prismd"),  // Parent directory
+	"./bin/prismd",                         // Development environment
+	"prismd",                               // In PATH
 }
 ```
 
@@ -162,7 +162,7 @@ for i := 0; i < maxAttempts; i++ {
 2. Daemon binary not found or fails to start
 3. Console shows error:
    ```
-   ❌ Failed to start daemon: cannot start daemon: daemon binary (cwsd) not found
+   ❌ Failed to start daemon: cannot start daemon: daemon binary (prismd) not found
    Please start the daemon manually with: prism daemon start
    ```
 4. GUI continues to open anyway
@@ -201,8 +201,8 @@ for i := 0; i < maxAttempts; i++ {
 ./bin/cws-gui
 
 # Verify no duplicate daemon
-ps aux | grep cwsd | grep -v grep
-# Output: Single cwsd process
+ps aux | grep prismd | grep -v grep
+# Output: Single prismd process
 ```
 
 **Result**: PASS - No duplicate daemon created
@@ -229,7 +229,7 @@ sleep 2
 ```bash
 # Manually test health check during daemon startup
 ./bin/cws daemon stop
-./bin/cwsd &
+./bin/prismd &
 sleep 1  # Daemon initializing
 curl http://localhost:8947/api/v1/health
 # Output: 200 OK (or retries until ready)

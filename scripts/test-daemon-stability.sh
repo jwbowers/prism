@@ -52,7 +52,7 @@ else
     exit 1
 fi
 
-if go build -o bin/test-cwsd ./cmd/cwsd/; then
+if go build -o bin/test-prismd ./cmd/prismd/; then
     log "✅ Daemon build successful with stability components"
 else
     error "❌ Daemon build failed"
@@ -628,7 +628,7 @@ rm -f error_recovery.go
 
 # Final cleanup
 log "Cleaning up test artifacts"
-rm -f bin/test-cws bin/test-cwsd
+rm -f bin/test-cws bin/test-prismd
 
 log "=== DAEMON STABILITY TEST SUMMARY ==="
 log "✅ Unit tests: PASSED"

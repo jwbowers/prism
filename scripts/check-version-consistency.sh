@@ -112,7 +112,7 @@ echo ""
 # Check for legacy stale binaries
 echo "Checking for legacy/stale binaries..."
 STALE_BINARIES=0
-for legacy in bin/cws bin/cwsd; do
+for legacy in bin/cws bin/prismd; do
     if [ -f "$legacy" ]; then
         TIMESTAMP=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$legacy" 2>/dev/null || stat -c "%y" "$legacy" 2>/dev/null | cut -d' ' -f1-2)
         echo -e "  ${YELLOW}⚠${NC}  $legacy exists (last modified: $TIMESTAMP) - consider removing"

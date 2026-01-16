@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_NAME="prism-daemon"
-SYSTEMD_SERVICE_NAME="cwsd"
+SYSTEMD_SERVICE_NAME="prismd"
 SYSTEMD_SERVICE_FILE="/etc/systemd/system/${SYSTEMD_SERVICE_NAME}.service"
 
 # Paths
@@ -672,7 +672,7 @@ NOTES:
     - Service automatically restarts if daemon crashes
     - Configuration stored in /etc/prism/
     - Data stored in /var/lib/prism/
-    - Logs available via journalctl -u cwsd
+    - Logs available via journalctl -u prismd
     - Requires systemd (most modern Linux distributions)
 
 INSTALLATION STEPS:

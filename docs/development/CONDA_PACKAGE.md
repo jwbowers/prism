@@ -72,7 +72,7 @@ conda install --use-local prism
 
 # Test installation
 prism --version
-cwsd --version
+prismd --version
 
 # Uninstall
 conda remove prism

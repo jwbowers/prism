@@ -629,7 +629,7 @@ func (s *SystemCommands) daemonCleanup(args []string) error {
 
 	// Verify cleanup
 	fmt.Println("🔍 Verifying cleanup...")
-	cmd = exec.Command("pgrep", "-f", "cwsd")
+	cmd = exec.Command("pgrep", "-f", "prismd")
 	if _, err := cmd.Output(); err != nil {
 		// No processes found (pgrep returns exit code 1)
 		fmt.Println("✅ All daemon processes cleaned up successfully")
@@ -731,7 +731,7 @@ func (s *SystemCommands) performDirectCleanup(forceKill bool) error {
 		time.Sleep(5 * time.Second)
 
 		// Check if any processes remain and force kill them
-		cmd = exec.Command("pgrep", "-f", "cwsd")
+		cmd = exec.Command("pgrep", "-f", "prismd")
 		if output, err := cmd.Output(); err == nil {
 			remainingPids := strings.Fields(strings.TrimSpace(string(output)))
 			if len(remainingPids) > 0 {

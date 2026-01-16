@@ -39,9 +39,9 @@ if (Test-Path $targetPath) {
 
 # Add to PATH
 $binPath = Join-Path $toolsDir 'cws.exe'
-$daemonPath = Join-Path $toolsDir 'cwsd.exe'
+$daemonPath = Join-Path $toolsDir 'prismd.exe'
 Install-BinFile -Name 'cws' -Path $binPath
-Install-BinFile -Name 'cwsd' -Path $daemonPath
+Install-BinFile -Name 'prismd' -Path $daemonPath
 
 # Install Windows service for auto-startup
 $serviceWrapperPath = Join-Path $toolsDir 'cloudworkstation-service.exe'
@@ -66,7 +66,7 @@ Write-Host "🎉 CloudWorkstation v$version has been installed!"
 Write-Host ""
 Write-Host "📦 Installed Components:"
 Write-Host "  • CLI (cws) - Available in PATH"
-Write-Host "  • Daemon (cwsd) - Available in PATH"
+Write-Host "  • Daemon (prismd) - Available in PATH"
 if (Test-Path $targetPath) {
     Write-Host "  • GUI - Available in Start Menu"
 }

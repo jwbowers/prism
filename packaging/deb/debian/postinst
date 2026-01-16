@@ -81,7 +81,7 @@ case "$1" in
 ║  🎉 CloudWorkstation v0.4.2 has been installed successfully!                ║
 ║                                                                              ║
 ║  📋 What's installed:                                                        ║
-║     ✅ Core binaries: cws, cwsd                                              ║
+║     ✅ Core binaries: cws, prismd                                              ║
 ║     ✅ Systemd service: cloudworkstation.service                             ║
 ║     ✅ Configuration: /etc/cloudworkstation/                                 ║
 ║     ✅ User account: cloudworkstation (system user)                          ║
@@ -107,7 +107,7 @@ case "$1" in
 ║                                                                              ║
 ║  💡 Quick start guide:                                                       ║
 ║     Run 'man cws' for detailed usage instructions                           ║
-║     Run 'man cwsd' for daemon configuration help                            ║
+║     Run 'man prismd' for daemon configuration help                            ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 

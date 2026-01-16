@@ -236,11 +236,11 @@ detect_installation() {
         binary_locations+=("$(which cws)")
     fi
     
-    if command -v cwsd >/dev/null 2>&1; then
+    if command -v prismd >/dev/null 2>&1; then
         if [[ "$installation_type" != "system" ]]; then
             installation_type="system"
         fi
-        binary_locations+=("$(which cwsd)")
+        binary_locations+=("$(which prismd)")
     fi
     
     # Check source installation in project directory
@@ -267,18 +267,18 @@ find_daemon_processes() {
     
     case "$OS_TYPE" in
         macos|linux)
-            # Use pgrep to find cwsd processes
+            # Use pgrep to find prismd processes
             while IFS= read -r pid; do
                 [[ -n "$pid" ]] && pids+=("$pid")
-            done < <(pgrep -f "cwsd" 2>/dev/null || true)
+            done < <(pgrep -f "prismd" 2>/dev/null || true)
             ;;
         windows)
             # Use tasklist on Windows
             while IFS= read -r line; do
-                if [[ "$line" =~ cwsd.*[[:space:]]+([0-9]+)[[:space:]] ]]; then
+                if [[ "$line" =~ prismd.*[[:space:]]+([0-9]+)[[:space:]] ]]; then
                     pids+=("${BASH_REMATCH[1]}")
                 fi
-            done < <(tasklist 2>/dev/null | grep -i cwsd || true)
+            done < <(tasklist 2>/dev/null | grep -i prismd || true)
             ;;
     esac
     
@@ -397,7 +397,7 @@ uninstall_homebrew() {
 remove_system_binaries() {
     log_info "Removing system binaries..."
     
-    local binaries=("cws" "cwsd")
+    local binaries=("cws" "prismd")
     local removed_any=false
     
     for binary in "${binaries[@]}"; do
@@ -583,7 +583,7 @@ verify_cleanup() {
     fi
     
     # Check for remaining binaries
-    for binary in "cws" "cwsd"; do
+    for binary in "cws" "prismd"; do
         if command -v "$binary" >/dev/null 2>&1; then
             issues+=("Binary still in PATH: $binary")
         fi

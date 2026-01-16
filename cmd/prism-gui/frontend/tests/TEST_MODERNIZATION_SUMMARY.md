@@ -277,7 +277,7 @@ const input = dialog.getByLabel(/email/i)
 
 **Solution**: Clean PID files before test runs:
 ```bash
-rm -f ~/.prism/daemon.pid ~/.prism/cwsd.pid ~/.cws/daemon.pid
+rm -f ~/.prism/daemon.pid ~/.prism/prismd.pid ~/.cws/daemon.pid
 ```
 
 ### 4. Onboarding Modal Blocking Tests

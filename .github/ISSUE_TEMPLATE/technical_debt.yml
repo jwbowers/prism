@@ -35,7 +35,7 @@ body:
         - CLI (cmd/cws, internal/cli)
         - GUI (cmd/cws-gui)
         - TUI (internal/tui)
-        - Daemon (cmd/cwsd, pkg/daemon)
+        - Daemon (cmd/prismd, pkg/daemon)
         - AWS Integration (pkg/aws)
         - Templates (pkg/templates)
         - Build/CI

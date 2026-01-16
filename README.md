@@ -280,7 +280,7 @@ prism doctor                      # System health check
 - **Budget Surplus Banking**: Track and leverage surplus funds for burst research needs
 - **Budget Performance Metrics**: ROI analysis, utilization tracking, and forecasting
 - **Complete Prism Rebrand**: CloudWorkStation → Prism across entire codebase (29,225 files)
-- **Binary Rename**: `cws`/`cwsd` → `prism`/`prismd`
+- **Binary Rename**: `cws`/`prismd` → `prism`/`prismd`
 
 ### v0.5.9 - Navigation Restructure & UX Polish
 - **Streamlined Navigation**: 14 → 6 top-level menu items for clearer workspace focus

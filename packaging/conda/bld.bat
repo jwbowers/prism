@@ -2,7 +2,7 @@
 
 :: Copy binaries to the conda environment Scripts directory
 copy cws.exe %PREFIX%\Scripts\
-copy cwsd.exe %PREFIX%\Scripts\
+copy prismd.exe %PREFIX%\Scripts\
 
 :: Copy GUI if it exists
 if exist cws-gui.exe (

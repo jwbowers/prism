@@ -38,7 +38,7 @@ func checkDaemonHealth() bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-// findDaemonBinary locates the cwsd daemon binary
+// findDaemonBinary locates the prismd daemon binary
 func findDaemonBinary() (string, error) {
 	// Get the directory where cws-gui is located
 	exePath, err := os.Executable()
@@ -49,10 +49,10 @@ func findDaemonBinary() (string, error) {
 
 	// Try several locations in order of preference
 	locations := []string{
-		filepath.Join(exeDir, "cwsd"),       // Same directory as GUI (production)
-		filepath.Join(exeDir, "..", "cwsd"), // Parent directory
-		"./bin/cwsd",                        // Development environment
-		"cwsd",                              // In PATH
+		filepath.Join(exeDir, "prismd"),       // Same directory as GUI (production)
+		filepath.Join(exeDir, "..", "prismd"), // Parent directory
+		"./bin/prismd",                        // Development environment
+		"prismd",                              // In PATH
 	}
 
 	// Add platform-specific extension
@@ -75,7 +75,7 @@ func findDaemonBinary() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("daemon binary (cwsd) not found in expected locations")
+	return "", fmt.Errorf("daemon binary (prismd) not found in expected locations")
 }
 
 // startDaemon attempts to start the daemon if it's not running

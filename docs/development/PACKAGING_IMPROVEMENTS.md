@@ -3,13 +3,13 @@
 ## Current State Analysis
 
 ### Existing Homebrew Integration (v0.4.2)
-- ✅ **Basic Installation**: CLI (`cws`) and daemon (`cwsd`) binaries installed
+- ✅ **Basic Installation**: CLI (`cws`) and daemon (`prismd`) binaries installed
 - ✅ **Cross-Platform Support**: macOS (Intel/ARM), Linux (x64/ARM64)
 - ✅ **Shell Completions**: bash, zsh, fish completion scripts
 - ✅ **Configuration**: Creates `~/.prism` directory
 
 ### Current User Experience Issues
-- ❌ **Manual Daemon Management**: Users must manually start/stop `cwsd`
+- ❌ **Manual Daemon Management**: Users must manually start/stop `prismd`
 - ❌ **No Service Integration**: Daemon doesn't integrate with system services
 - ❌ **Multiple Daemon Risk**: Users can accidentally start multiple daemons
 - ❌ **No Auto-Start**: Daemon doesn't start automatically after installation
@@ -23,7 +23,7 @@
 ```ruby
 # Add to Formula/prism.rb
 service do
-  run [opt_bin/"cwsd"]
+  run [opt_bin/"prismd"]
   environment_variables PRISM_DEV: var/"log/prism.log"
   log_path var/"log/prism.log"
   error_log_path var/"log/prism-error.log"
@@ -100,8 +100,8 @@ Based on our current `daemon-control.sh`, create a production-ready version:
 
 set -e
 
-DAEMON_NAME="cwsd"
-DAEMON_CMD="cwsd"
+DAEMON_NAME="prismd"
+DAEMON_CMD="prismd"
 PID_FILE="$HOME/.prism/daemon.pid"
 LOG_FILE="$HOME/.prism/daemon.log"
 API_PORT="8947"
@@ -110,10 +110,10 @@ API_URL="http://localhost:$API_PORT"
 # Homebrew vs source build detection
 if command -v brew >/dev/null 2>&1 && brew list prism >/dev/null 2>&1; then
     INSTALL_TYPE="homebrew"
-    DAEMON_CMD="cwsd"  # In PATH via Homebrew
+    DAEMON_CMD="prismd"  # In PATH via Homebrew
 else
     INSTALL_TYPE="source"
-    DAEMON_CMD="./bin/cwsd"  # Relative path for source builds
+    DAEMON_CMD="./bin/prismd"  # Relative path for source builds
 fi
 
 # Auto-detect development mode
@@ -126,7 +126,7 @@ fi
 ```
 
 #### **Package Integration**
-- Install `cws-daemon` script alongside `cws` and `cwsd` binaries
+- Install `cws-daemon` script alongside `cws` and `prismd` binaries
 - Make script available in PATH for easy access
 - Provide both `brew services` integration and direct script control
 
@@ -230,7 +230,7 @@ prism daemon status  # Should maintain running state
 # Removal testing
 brew services stop prism
 brew uninstall prism
-ps aux | grep cwsd  # Should show no processes
+ps aux | grep prismd  # Should show no processes
 ```
 
 ### **Cross-Platform Validation**

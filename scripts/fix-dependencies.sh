@@ -48,7 +48,7 @@ else
   echo "❌ CLI client build failed"
 fi
 
-if go build -o /dev/null ./cmd/cwsd 2>/dev/null; then
+if go build -o /dev/null ./cmd/prismd 2>/dev/null; then
   echo "✅ Daemon builds successfully"
 else
   echo "❌ Daemon build failed"

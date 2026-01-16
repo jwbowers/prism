@@ -86,7 +86,7 @@ jobs:
       
     - name: Start CloudWorkstation daemon
       run: |
-        ./bin/cwsd &
+        ./bin/prismd &
         sleep 5
         curl -f http://localhost:8947/api/v1/ping || exit 1
         
@@ -141,7 +141,7 @@ jobs:
     - name: Stop daemon
       if: always()
       run: |
-        pkill -f cwsd || true
+        pkill -f prismd || true
         
   cost-notification:
     name: Cost Notification

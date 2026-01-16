@@ -26,7 +26,7 @@ For detailed installation instructions, see the main [Installation Guide](../ind
 
 ### 1. Daemon Auto-Start
 
-The Prism daemon (`cwsd`) starts automatically when needed:
+The Prism daemon (`prismd`) starts automatically when needed:
 
 ```bash
 prism launch template my-instance

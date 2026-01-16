@@ -86,7 +86,7 @@ validate_environment() {
     print_step "Validating build environment..."
     
     # Check if we're in the right directory
-    if [[ ! -f "go.mod" ]] || [[ ! -d "cmd/cws" ]] || [[ ! -d "cmd/cwsd" ]]; then
+    if [[ ! -f "go.mod" ]] || [[ ! -d "cmd/cws" ]] || [[ ! -d "cmd/prismd" ]]; then
         print_error "Must run from CloudWorkstation project root directory"
         exit 1
     fi
@@ -185,8 +185,8 @@ build_binaries() {
     eval "go build $ldflags -o bin/cws ./cmd/cws"
     
     # Build daemon
-    print_step "Building daemon binary (cwsd)..."
-    eval "go build $ldflags -o bin/prismd ./cmd/cwsd"
+    print_step "Building daemon binary (prismd)..."
+    eval "go build $ldflags -o bin/prismd ./cmd/prismd"
     
     # Verify binaries
     if [[ ! -x "bin/cws" ]] || [[ ! -x "bin/prismd" ]]; then

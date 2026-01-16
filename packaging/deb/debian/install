@@ -3,10 +3,10 @@
 
 # Main binaries
 build/cws usr/bin
-build/cwsd usr/bin
+build/prismd usr/bin
 
 # Systemd service file
-systemd/cwsd.service lib/systemd/system/cloudworkstation.service
+systemd/prismd.service lib/systemd/system/cloudworkstation.service
 
 # Configuration templates
 debian/daemon.conf etc/cloudworkstation
@@ -20,4 +20,4 @@ LICENSE usr/share/doc/cloudworkstation
 
 # Man pages
 debian/cws.1 usr/share/man/man1
-debian/cwsd.1 usr/share/man/man1
+debian/prismd.1 usr/share/man/man1

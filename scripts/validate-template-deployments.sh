@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Check daemon status
 echo -e "${BLUE}📋 Step 1: Checking daemon and AWS connectivity...${NC}"
-if ! pgrep -f cwsd > /dev/null; then
+if ! pgrep -f prismd > /dev/null; then
     echo -e "${YELLOW}⚠️ Starting daemon...${NC}"
     ./bin/prismd &
     sleep 3

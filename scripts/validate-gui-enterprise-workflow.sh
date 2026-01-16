@@ -22,7 +22,7 @@ fi
 
 # Check if daemon is running
 echo -e "${BLUE}📋 Step 1: Checking daemon status...${NC}"
-if ! pgrep -f cwsd > /dev/null; then
+if ! pgrep -f prismd > /dev/null; then
     echo -e "${YELLOW}⚠️ Daemon not running. Starting daemon...${NC}"
     ./bin/prismd &
     sleep 3

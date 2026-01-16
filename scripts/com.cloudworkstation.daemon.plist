@@ -7,7 +7,7 @@
     
     <key>ProgramArguments</key>
     <array>
-        <string>{{DAEMON_PATH}}/cwsd</string>
+        <string>{{DAEMON_PATH}}/prismd</string>
         <string>--service</string>
     </array>
     

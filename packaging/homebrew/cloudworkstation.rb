@@ -17,7 +17,7 @@ class Cloudworkstation < Formula
     
     # Install binaries
     bin.install "bin/cws"
-    bin.install "bin/cwsd"
+    bin.install "bin/prismd"
     
     # Install GUI if available (optional)
     if File.exist?("bin/cws-gui")
@@ -80,7 +80,7 @@ class Cloudworkstation < Formula
         cws admin daemon status          # System administration
         cws user list                    # List all users
       
-      The daemon (cwsd) will start automatically when needed.
+      The daemon (prismd) will start automatically when needed.
       You can also start it manually or as a service.
       
       AWS credentials are required. Set them up with:
@@ -96,7 +96,7 @@ class Cloudworkstation < Formula
   test do
     # Test that binaries exist and are executable
     assert_predicate bin/"cws", :exist?
-    assert_predicate bin/"cwsd", :exist?
+    assert_predicate bin/"prismd", :exist?
     
     # Test GUI if available (optional)
     if (bin/"cws-gui").exist?
@@ -112,10 +112,10 @@ class Cloudworkstation < Formula
   end
 
   service do
-    run [opt_bin/"cwsd"]
+    run [opt_bin/"prismd"]
     keep_alive true
-    log_path var/"log/cloudworkstation/cwsd.log"
-    error_log_path var/"log/cloudworkstation/cwsd.log"
+    log_path var/"log/cloudworkstation/prismd.log"
+    error_log_path var/"log/cloudworkstation/prismd.log"
     working_dir HOMEBREW_PREFIX
   end
 end

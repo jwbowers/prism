@@ -197,7 +197,7 @@ namespace SetupCustomActions
                 var conflicts = new[]
                 {
                     // Other services using port 8947
-                    new { Name = "Other CloudWorkstation", Process = "cwsd", Port = 8947 },
+                    new { Name = "Other CloudWorkstation", Process = "prismd", Port = 8947 },
                     
                     // AWS CLI conflicts (informational)
                     new { Name = "AWS CLI v1", Process = "aws", Port = 0 }

@@ -10,18 +10,18 @@ This document summarizes comprehensive testing of the singleton enforcement and 
 ## 1. Daemon Singleton Enforcement
 
 ### Purpose
-Ensure only one `cwsd` daemon process can run at a time. When a new daemon starts, it should gracefully shut down any existing daemon process.
+Ensure only one `prismd` daemon process can run at a time. When a new daemon starts, it should gracefully shut down any existing daemon process.
 
 ### Implementation
 - **Location**: `pkg/daemon/singleton.go` (200+ lines)
-- **PID File**: `~/.prism/cwsd.pid`
+- **PID File**: `~/.prism/prismd.pid`
 - **Shutdown Strategy**: Progressive signal escalation (SIGTERM → SIGINT → SIGKILL)
 
 ### Test Results ✅
 
 **Test 1: First Daemon Startup**
 ```bash
-./bin/cwsd > /tmp/daemon1.log 2>&1 &
+./bin/prismd > /tmp/daemon1.log 2>&1 &
 # Result: Started successfully (PID 77209)
 # Log excerpt:
 # 2025/10/17 11:18:53 Prism Daemon v0.4.6 starting...
@@ -30,7 +30,7 @@ Ensure only one `cwsd` daemon process can run at a time. When a new daemon start
 
 **Test 2: Second Daemon Replaces First**
 ```bash
-./bin/cwsd > /tmp/daemon2.log 2>&1 &
+./bin/prismd > /tmp/daemon2.log 2>&1 &
 # Result:
 # - First daemon (PID 77209) received SIGTERM and shut down gracefully
 # - Second daemon (PID 78339) acquired lock and started
@@ -100,14 +100,14 @@ No workstations found. Launch one with: prism launch <template> <name>
 ## 3. Daemon Discovery from PATH
 
 ### Purpose
-Verify that the CLI can find and start the daemon when `cwsd` is only available in PATH (not in the same directory as `cws`).
+Verify that the CLI can find and start the daemon when `prismd` is only available in PATH (not in the same directory as `cws`).
 
 ### Implementation
 - **Binary Discovery Function**: `findCwsdBinary()` in `internal/cli/system_impl.go:785`
 - **Strategy**:
   1. Check same directory as `cws` executable first
-  2. Fall back to PATH lookup using `exec.LookPath("cwsd")`
-  3. Final fallback: return "cwsd" (let exec.Command handle the error)
+  2. Fall back to PATH lookup using `exec.LookPath("prismd")`
+  3. Final fallback: return "prismd" (let exec.Command handle the error)
 
 ### Test Results ✅
 
@@ -115,11 +115,11 @@ Verify that the CLI can find and start the daemon when `cwsd` is only available 
 ```bash
 # Create temporary PATH location
 mkdir -p /tmp/cws-test-bin
-cp ./bin/cwsd /tmp/cws-test-bin/
-chmod +x /tmp/cws-test-bin/cwsd
+cp ./bin/prismd /tmp/cws-test-bin/
+chmod +x /tmp/cws-test-bin/prismd
 
-# Temporarily hide local cwsd and add test location to PATH
-mv ./bin/cwsd ./bin/cwsd.backup
+# Temporarily hide local prismd and add test location to PATH
+mv ./bin/prismd ./bin/prismd.backup
 export PATH="/tmp/cws-test-bin:$PATH"
 ```
 
@@ -138,7 +138,7 @@ No workstations found. Launch one with: prism launch <template> <name>
 ```
 
 **Verification**
-- CLI successfully found `cwsd` in PATH
+- CLI successfully found `prismd` in PATH
 - Daemon started correctly from PATH location
 - All functionality worked as expected
 
@@ -181,12 +181,12 @@ During testing, we encountered version mismatches (v0.4.6 vs v0.5.2) which were 
 ## 5. Deployment Scenarios
 
 ### Development Environment
-- **Binary Location**: `./bin/cws` and `./bin/cwsd` in same directory
+- **Binary Location**: `./bin/cws` and `./bin/prismd` in same directory
 - **Behavior**: CLI finds daemon in same directory, auto-starts as needed
 - **Status**: ✅ Working correctly
 
 ### Homebrew Installation
-- **Binary Location**: Both `cws` and `cwsd` installed to PATH (e.g., `/usr/local/bin/`)
+- **Binary Location**: Both `cws` and `prismd` installed to PATH (e.g., `/usr/local/bin/`)
 - **Behavior**: CLI finds daemon via PATH lookup, auto-starts as needed
 - **Optional**: Daemon can run as a service (launchd) for always-on availability
 - **Status**: ✅ PATH discovery tested and working
@@ -202,14 +202,14 @@ During testing, we encountered version mismatches (v0.4.6 vs v0.5.2) which were 
 ## 6. Identified Issues and Resolutions
 
 ### Issue 1: Stray Binaries (RESOLVED ✅)
-**Problem**: Multiple cwsd binaries in different locations (./cmd/cwsd/, ./bin/, ./dist/) causing version confusion.
+**Problem**: Multiple prismd binaries in different locations (./cmd/prismd/, ./bin/, ./dist/) causing version confusion.
 
 **Resolution**:
 - Standardized on `./bin/` directory for all development binaries
 - Build process properly injects version with ldflags:
   ```bash
   go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.5.2" \
-    -o bin/cwsd ./cmd/cwsd
+    -o bin/prismd ./cmd/prismd
   ```
 
 ### Issue 2: Version Mismatch During Testing (RESOLVED ✅)
@@ -217,7 +217,7 @@ During testing, we encountered version mismatches (v0.4.6 vs v0.5.2) which were 
 
 **Resolution**:
 - Rebuilt binaries with correct version injection
-- Verified versions match: `./bin/cwsd --version` and `./bin/cws version`
+- Verified versions match: `./bin/prismd --version` and `./bin/cws version`
 
 ---
 
@@ -325,20 +325,20 @@ The singleton and auto-start system is production-ready and addresses all origin
 PRISM_DAEMON_AUTO_START_DISABLE=1 timeout 10s ./bin/cws list
 
 # Manual daemon start (for testing)
-./bin/cwsd > /tmp/daemon.log 2>&1 &
+./bin/prismd > /tmp/daemon.log 2>&1 &
 
 # Check daemon version
-./bin/cwsd --version
+./bin/prismd --version
 
 # Check CLI version
 ./bin/cws version
 
-# Find cwsd binaries
-find . -name "cwsd"
+# Find prismd binaries
+find . -name "prismd"
 
 # Build with version
 go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=0.5.2" \
-  -o bin/cwsd ./cmd/cwsd
+  -o bin/prismd ./cmd/prismd
 ```
 
 ---

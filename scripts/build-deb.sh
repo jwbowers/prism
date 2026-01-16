@@ -98,7 +98,7 @@ validate_environment() {
     print_step "Validating build environment..."
     
     # Check if we're in the right directory
-    if [[ ! -f "go.mod" ]] || [[ ! -d "cmd/cws" ]] || [[ ! -d "cmd/cwsd" ]]; then
+    if [[ ! -f "go.mod" ]] || [[ ! -d "cmd/cws" ]] || [[ ! -d "cmd/prismd" ]]; then
         print_error "Must run from CloudWorkstation project root directory"
         exit 1
     fi
@@ -203,11 +203,11 @@ build_binaries() {
     eval "go build $ldflags -o build/cws ./cmd/cws"
     
     # Build daemon
-    print_step "Building daemon binary (cwsd)..."
-    eval "go build $ldflags -o build/cwsd ./cmd/cwsd"
+    print_step "Building daemon binary (prismd)..."
+    eval "go build $ldflags -o build/prismd ./cmd/prismd"
     
     # Verify binaries
-    if [[ ! -x "build/cws" ]] || [[ ! -x "build/cwsd" ]]; then
+    if [[ ! -x "build/cws" ]] || [[ ! -x "build/prismd" ]]; then
         print_error "Failed to build binaries"
         exit 1
     fi
@@ -215,11 +215,11 @@ build_binaries() {
     # Show binary information
     print_success "Built binaries:"
     echo "  CLI:    $(file build/cws)"
-    echo "  Daemon: $(file build/cwsd)"
+    echo "  Daemon: $(file build/prismd)"
     
     # Test binary execution
     print_step "Testing binary functionality..."
-    if ./build/cws --version >/dev/null 2>&1 && ./build/cwsd --version >/dev/null 2>&1; then
+    if ./build/cws --version >/dev/null 2>&1 && ./build/prismd --version >/dev/null 2>&1; then
         print_success "Binaries execute correctly"
     else
         print_error "Binary functionality test failed"

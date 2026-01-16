@@ -1,10 +1,10 @@
 [Unit]
 Description=CloudWorkstation Daemon - Autonomous Research Instance Management
 Documentation=https://github.com/scttfrdmn/prism
-Documentation=man:cwsd(1)
+Documentation=man:prismd(1)
 After=network-online.target
 Wants=network-online.target
-ConditionPathExists=/usr/bin/cwsd
+ConditionPathExists=/usr/bin/prismd
 StartLimitIntervalSec=60s
 StartLimitBurst=3
 
@@ -13,7 +13,7 @@ StartLimitBurst=3
 Type=notify
 User=cloudworkstation
 Group=cloudworkstation
-ExecStart=/usr/bin/cwsd --autonomous
+ExecStart=/usr/bin/prismd --autonomous
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStop=/bin/kill -TERM $MAINPID
 TimeoutStartSec=60s
@@ -69,7 +69,7 @@ ReadWritePaths=/var/lib/cloudworkstation
 ReadWritePaths=/var/log/cloudworkstation
 ReadWritePaths=/tmp
 ReadOnlyPaths=/etc/cloudworkstation
-ReadOnlyPaths=/usr/bin/cwsd
+ReadOnlyPaths=/usr/bin/prismd
 
 # Network security
 IPAddressDeny=any

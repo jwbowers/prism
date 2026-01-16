@@ -27,8 +27,8 @@ COPY . .
 RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags '-w -s -extldflags "-static"' \
     -a -installsuffix cgo \
-    -o cwsd \
-    ./cmd/cwsd/
+    -o prismd \
+    ./cmd/prismd/
 
 # Production stage
 FROM scratch
@@ -43,7 +43,7 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/passwd /etc/passwd
 
 # Copy the binary
-COPY --from=builder /src/cwsd /usr/local/bin/cwsd
+COPY --from=builder /src/prismd /usr/local/bin/prismd
 
 # Create necessary directories
 COPY --from=builder --chown=appuser:appuser /tmp /tmp
@@ -53,7 +53,7 @@ USER appuser
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD ["/usr/local/bin/cwsd", "--help"]
+  CMD ["/usr/local/bin/prismd", "--help"]
 
 # Expose port
 EXPOSE 8947
@@ -64,5 +64,5 @@ ENV CWS_SECURITY_ENABLED=true
 ENV CWS_LOG_LEVEL=info
 
 # Run the daemon
-ENTRYPOINT ["/usr/local/bin/cwsd"]
+ENTRYPOINT ["/usr/local/bin/prismd"]
 CMD ["-port", "8947"]

@@ -107,7 +107,7 @@ build_binaries() {
         log_info "Building for Intel (amd64)..."
         GOOS=darwin GOARCH=amd64 make build-cli build-daemon
         mv bin/cws "$temp_dir/cws-amd64"
-        mv bin/prismd "$temp_dir/cwsd-amd64"
+        mv bin/prismd "$temp_dir/prismd-amd64"
         
         # Build GUI for Intel (if not dev build)
         if [[ "$DEV_BUILD" == false ]]; then
@@ -119,7 +119,7 @@ build_binaries() {
         log_info "Building for Apple Silicon (arm64)..."
         GOOS=darwin GOARCH=arm64 make build-cli build-daemon
         mv bin/cws "$temp_dir/cws-arm64"
-        mv bin/prismd "$temp_dir/cwsd-arm64"
+        mv bin/prismd "$temp_dir/prismd-arm64"
         
         # Build GUI for Apple Silicon (if not dev build)
         if [[ "$DEV_BUILD" == false ]]; then
@@ -130,7 +130,7 @@ build_binaries() {
         # Create universal binaries
         mkdir -p bin
         lipo -create "$temp_dir/cws-amd64" "$temp_dir/cws-arm64" -output "bin/cws"
-        lipo -create "$temp_dir/cwsd-amd64" "$temp_dir/cwsd-arm64" -output "bin/prismd"
+        lipo -create "$temp_dir/prismd-amd64" "$temp_dir/prismd-arm64" -output "bin/prismd"
         
         if [[ "$DEV_BUILD" == false ]]; then
             lipo -create "$temp_dir/cws-gui-amd64" "$temp_dir/cws-gui-arm64" -output "bin/prism-gui"
@@ -236,20 +236,20 @@ EOD
 
 # Function to check if daemon is running
 is_daemon_running() {
-    pgrep -f "cwsd" > /dev/null 2>&1
+    pgrep -f "prismd" > /dev/null 2>&1
 }
 
 # Function to start daemon
 start_daemon() {
     if ! is_daemon_running; then
         echo "Starting CloudWorkstation daemon..."
-        "$SCRIPT_DIR/cwsd" > /tmp/cwsd.log 2>&1 &
+        "$SCRIPT_DIR/prismd" > /tmp/prismd.log 2>&1 &
         sleep 2
         
         if is_daemon_running; then
             echo "Daemon started successfully"
         else
-            show_error "Failed to start CloudWorkstation daemon. Check /tmp/cwsd.log for details."
+            show_error "Failed to start CloudWorkstation daemon. Check /tmp/prismd.log for details."
             exit 1
         fi
     fi
@@ -268,7 +268,7 @@ install_cli_tools() {
         # Ask user if they want to install CLI tools
         local response
         response=$(osascript << 'EOD'
-            display dialog "Would you like to install CloudWorkstation command-line tools? This will add 'cws' and 'cwsd' commands to your PATH." with title "CloudWorkstation Setup" buttons {"Skip", "Install"} default button "Install" with icon question
+            display dialog "Would you like to install CloudWorkstation command-line tools? This will add 'cws' and 'prismd' commands to your PATH." with title "CloudWorkstation Setup" buttons {"Skip", "Install"} default button "Install" with icon question
 EOD
         )
         
@@ -565,7 +565,7 @@ create_cli_install_script() {
 #!/bin/bash
 
 # CloudWorkstation CLI Tools Installer
-# Installs cws and cwsd command-line tools to /usr/local/bin
+# Installs cws and prismd command-line tools to /usr/local/bin
 
 set -euo pipefail
 
@@ -622,22 +622,22 @@ EOD
         
         # Install with sudo
         sudo cp "$MACOS_DIR/cws" "$INSTALL_DIR/"
-        sudo cp "$MACOS_DIR/cwsd" "$INSTALL_DIR/"
-        sudo chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/cwsd"
+        sudo cp "$MACOS_DIR/prismd" "$INSTALL_DIR/"
+        sudo chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd"
     else
         # Install without sudo
         cp "$MACOS_DIR/cws" "$INSTALL_DIR/"
-        cp "$MACOS_DIR/cwsd" "$INSTALL_DIR/"
-        chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/cwsd"
+        cp "$MACOS_DIR/prismd" "$INSTALL_DIR/"
+        chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd"
     fi
     
     # Verify installation
-    if [[ -x "$INSTALL_DIR/cws" ]] && [[ -x "$INSTALL_DIR/cwsd" ]]; then
+    if [[ -x "$INSTALL_DIR/cws" ]] && [[ -x "$INSTALL_DIR/prismd" ]]; then
         show_success "CloudWorkstation CLI tools installed successfully!
 
 Commands available:
 • cws --help    (CLI client)
-• cwsd          (daemon service)
+• prismd          (daemon service)
 
 You can now use CloudWorkstation from any terminal window."
         echo "✅ Installation complete"
@@ -675,7 +675,7 @@ INSTALLATION INSTRUCTIONS:
 
 WHAT'S INCLUDED:
 • CloudWorkstation GUI - Visual interface for managing workstations
-• Command-line tools (cws, cwsd) - Terminal interface and daemon
+• Command-line tools (cws, prismd) - Terminal interface and daemon
 • Pre-configured templates for research environments
 • Automatic service management
 

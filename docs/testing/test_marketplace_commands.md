@@ -110,7 +110,7 @@ The Prism marketplace system has been fully implemented with complete CLI integr
 ### 1. Start the Daemon
 ```bash
 # Start daemon with marketplace support
-./bin/cwsd
+./bin/prismd
 ```
 
 ### 2. Test Basic Commands

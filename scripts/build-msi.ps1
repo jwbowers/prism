@@ -215,16 +215,16 @@ function Build-GoBinaries {
         Write-Success "CLI binary built successfully"
         
         # Build daemon binary
-        Write-Task "Building daemon binary (cwsd.exe)..."
-        $daemonPath = Join-Path $ReleaseDir "windows-amd64\cwsd.exe"
-        & go build -ldflags $ldflags -o $daemonPath ./cmd/cwsd
+        Write-Task "Building daemon binary (prismd.exe)..."
+        $daemonPath = Join-Path $ReleaseDir "windows-amd64\prismd.exe"
+        & go build -ldflags $ldflags -o $daemonPath ./cmd/prismd
         if ($LASTEXITCODE -ne 0) { throw "Failed to build daemon binary" }
         Write-Success "Daemon binary built successfully"
         
         # Build service wrapper
-        Write-Task "Building service wrapper (cwsd-service.exe)..."
-        $servicePath = Join-Path $ReleaseDir "windows-amd64\cwsd-service.exe"
-        & go build -ldflags $ldflags -o $servicePath ./cmd/cwsd-service
+        Write-Task "Building service wrapper (prismd-service.exe)..."
+        $servicePath = Join-Path $ReleaseDir "windows-amd64\prismd-service.exe"
+        & go build -ldflags $ldflags -o $servicePath ./cmd/prismd-service
         if ($LASTEXITCODE -ne 0) { throw "Failed to build service wrapper" }
         Write-Success "Service wrapper built successfully"
         

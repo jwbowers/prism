@@ -1,7 +1,7 @@
 // Prism CLI client (cws) - Launch research computing environments.
 //
 // The cws command-line tool provides a simple interface for managing cloud
-// research workstations. It communicates with the Prism daemon (cwsd)
+// research workstations. It communicates with the Prism daemon (prismd)
 // to launch pre-configured environments optimized for academic research.
 //
 // Core Commands:

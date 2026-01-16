@@ -37,9 +37,9 @@ run_test() {
 
 # Start daemon if not running
 echo "1. Starting daemon..."
-pkill cwsd 2>/dev/null || true
+pkill prismd 2>/dev/null || true
 sleep 1
-./bin/cwsd > /tmp/daemon-test.log 2>&1 &
+./bin/prismd > /tmp/daemon-test.log 2>&1 &
 DAEMON_PID=$!
 sleep 2
 

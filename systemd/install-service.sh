@@ -90,21 +90,21 @@ install_binaries() {
     log_info "Installing CloudWorkstation binaries..."
     
     # Build binaries if they don't exist
-    if [[ ! -f "$PROJECT_ROOT/bin/cwsd" ]]; then
+    if [[ ! -f "$PROJECT_ROOT/bin/prismd" ]]; then
         log_info "Building CloudWorkstation daemon..."
         cd "$PROJECT_ROOT"
         make build
     fi
     
     # Copy binaries
-    cp "$PROJECT_ROOT/bin/cwsd" /usr/local/bin/cwsd
+    cp "$PROJECT_ROOT/bin/prismd" /usr/local/bin/prismd
     cp "$PROJECT_ROOT/bin/cws" /usr/local/bin/cws
-    chmod 755 /usr/local/bin/cwsd
+    chmod 755 /usr/local/bin/prismd
     chmod 755 /usr/local/bin/cws
     
     # Verify binaries
-    if ! /usr/local/bin/cwsd --version >/dev/null 2>&1; then
-        log_error "Failed to verify cwsd binary"
+    if ! /usr/local/bin/prismd --version >/dev/null 2>&1; then
+        log_error "Failed to verify prismd binary"
         exit 1
     fi
     
@@ -116,8 +116,8 @@ install_systemd_service() {
     log_info "Installing systemd service..."
     
     # Copy service file
-    cp "$SCRIPT_DIR/cwsd.service" /etc/systemd/system/
-    chmod 644 /etc/systemd/system/cwsd.service
+    cp "$SCRIPT_DIR/prismd.service" /etc/systemd/system/
+    chmod 644 /etc/systemd/system/prismd.service
     
     # Reload systemd
     systemctl daemon-reload
@@ -243,11 +243,11 @@ main() {
             echo "  2. Add the SSH public key to your AWS EC2 key pairs"
             echo "  3. Configure /etc/cloudworkstation/config.json as needed"
             echo "  4. Enable and start the service:"
-            echo "     sudo systemctl enable cwsd"
-            echo "     sudo systemctl start cwsd"
+            echo "     sudo systemctl enable prismd"
+            echo "     sudo systemctl start prismd"
             echo "  5. Check status:"
-            echo "     sudo systemctl status cwsd"
-            echo "     sudo journalctl -u cwsd -f"
+            echo "     sudo systemctl status prismd"
+            echo "     sudo journalctl -u prismd -f"
             ;;
         *)
             log_error "Unsupported init system: $INIT_SYSTEM"

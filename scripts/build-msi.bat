@@ -85,16 +85,16 @@ if !errorlevel! neq 0 (
 )
 echo %GREEN%✓ CLI binary built successfully%RESET%
 
-echo %BLUE%Building daemon binary (cwsd.exe)...%RESET%
-go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\cwsd.exe" ./cmd/cwsd
+echo %BLUE%Building daemon binary (prismd.exe)...%RESET%
+go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\prismd.exe" ./cmd/prismd
 if !errorlevel! neq 0 (
     echo %RED%Error: Failed to build daemon binary%RESET%
     exit /b 1
 )
 echo %GREEN%✓ Daemon binary built successfully%RESET%
 
-echo %BLUE%Building service wrapper (cwsd-service.exe)...%RESET%
-go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\cwsd-service.exe" ./cmd/cwsd-service
+echo %BLUE%Building service wrapper (prismd-service.exe)...%RESET%
+go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\prismd-service.exe" ./cmd/prismd-service
 if !errorlevel! neq 0 (
     echo %RED%Error: Failed to build service wrapper%RESET%
     exit /b 1

@@ -38,7 +38,7 @@ Description: Autonomous Research Instance Management Platform
   * Comprehensive cost analytics with hibernation savings
  .
  This package provides both the command-line interface (cws) and the
- backend daemon (cwsd) with systemd integration for autonomous operation.
+ backend daemon (prismd) with systemd integration for autonomous operation.
 
 Package: cloudworkstation-dev
 Architecture: amd64 arm64

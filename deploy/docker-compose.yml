@@ -12,10 +12,10 @@ version: '3.8'
 
 services:
   # CloudWorkstation Daemon - Main service
-  cwsd:
+  prismd:
     build:
       context: ..
-      dockerfile: deploy/Dockerfile.cwsd
+      dockerfile: deploy/Dockerfile.prismd
     container_name: cloudworkstation-daemon
     restart: unless-stopped
     ports:
@@ -57,9 +57,9 @@ services:
     container_name: cloudworkstation-security-monitor
     restart: unless-stopped
     depends_on:
-      - cwsd
+      - prismd
     environment:
-      - CWS_DAEMON_URL=http://cwsd:8947
+      - CWS_DAEMON_URL=http://prismd:8947
       - CWS_MONITOR_INTERVAL=30s
       - CWS_CORRELATION_INTERVAL=5m
       - CWS_ALERT_THRESHOLD=MEDIUM
@@ -95,11 +95,11 @@ services:
     container_name: cloudworkstation-metrics
     restart: unless-stopped
     depends_on:
-      - cwsd
+      - prismd
     ports:
       - "9090:9090"
     environment:
-      - CWS_DAEMON_URL=http://cwsd:8947
+      - CWS_DAEMON_URL=http://prismd:8947
       - METRICS_PORT=9090
     networks:
       - cloudworkstation

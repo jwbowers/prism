@@ -85,7 +85,7 @@ namespace SetupCustomActions
                     return ActionResult.Failure;
                 }
 
-                string servicePath = System.IO.Path.Combine(installDir, "bin", "cwsd-service.exe");
+                string servicePath = System.IO.Path.Combine(installDir, "bin", "prismd-service.exe");
                 
                 // Verify service executable exists
                 if (!System.IO.File.Exists(servicePath))

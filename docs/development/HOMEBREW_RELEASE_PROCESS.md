@@ -29,7 +29,7 @@ make release
 # Verify release binaries exist and have correct versions
 ls -la bin/release/
 ./bin/release/darwin-arm64/cws --version
-./bin/release/darwin-arm64/cwsd --version
+./bin/release/darwin-arm64/prismd --version
 # Should show: Prism CLI vX.Y.Z-N and Prism Daemon vX.Y.Z-N
 ```
 
@@ -40,14 +40,14 @@ ls -la bin/release/
 cd bin/release
 
 # Create tar.gz archives with correct structure for Homebrew
-tar -czf prism-darwin-arm64.tar.gz -C darwin-arm64 prism cwsd
-tar -czf prism-darwin-amd64.tar.gz -C darwin-amd64 prism cwsd
+tar -czf prism-darwin-arm64.tar.gz -C darwin-arm64 prism prismd
+tar -czf prism-darwin-amd64.tar.gz -C darwin-amd64 prism prismd
 
 # Verify archive contents (should show binaries in root, not subdirectories)
 tar -tzf prism-darwin-arm64.tar.gz
 # Should show:
 # cws
-# cwsd
+# prismd
 
 # Verify binary functionality from archives
 tar -xzf prism-darwin-arm64.tar.gz -C /tmp/test-extract/
@@ -92,7 +92,7 @@ class Prism < Formula
   def install
     # Install prebuilt binaries directly from working directory
     bin.install "cws"
-    bin.install "cwsd"
+    bin.install "prismd"
   end
 
   def post_install
@@ -103,18 +103,18 @@ class Prism < Formula
   test do
     # Test that binaries exist and are executable
     assert_predicate bin/"cws", :exist?
-    assert_predicate bin/"cwsd", :exist?
+    assert_predicate bin/"prismd", :exist?
     
     # Test version command
     assert_match "Prism v", shell_output("#{bin}/cws --version")
-    assert_match "Prism v", shell_output("#{bin}/cwsd --version")
+    assert_match "Prism v", shell_output("#{bin}/prismd --version")
   end
 
   service do
-    run [opt_bin/"cwsd"]
+    run [opt_bin/"prismd"]
     keep_alive true
-    log_path var/"log/prism/cwsd.log"
-    error_log_path var/"log/prism/cwsd.log"
+    log_path var/"log/prism/prismd.log"
+    error_log_path var/"log/prism/prismd.log"
     working_dir HOMEBREW_PREFIX
   end
 end
@@ -177,14 +177,14 @@ brew install prism
 
 # Verify installation
 prism --version
-cwsd --version
+prismd --version
 brew test prism
 
 # Test service functionality
 brew services start prism
 sleep 2
 prism daemon status
-pgrep -f cwsd | wc -l  # Should be 1
+pgrep -f prismd | wc -l  # Should be 1
 
 # Verify no duplicate startups
 launchctl list | grep prism  # Should show single entry
@@ -202,12 +202,12 @@ launchctl list | grep prism  # Should show 1 line
 find ~/Library/LaunchAgents/ -name "*prism*"  # Should show 1 file
 
 # Check for single process
-pgrep -f cwsd | wc -l  # Should return 1
+pgrep -f prismd | wc -l  # Should return 1
 
 # Check service restart behavior
 brew services restart prism
 sleep 2
-pgrep -f cwsd | wc -l  # Should still be 1
+pgrep -f prismd | wc -l  # Should still be 1
 ```
 
 ## Important Notes

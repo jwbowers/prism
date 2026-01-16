@@ -52,13 +52,13 @@ func (m *cloudWorkstationService) Execute(args []string, r <-chan svc.ChangeRequ
 func (m *cloudWorkstationService) startDaemonProcess(elog *eventlog.Log) (*exec.Cmd, error) {
 	elog.Info(1, fmt.Sprintf("%s service starting", displayName))
 
-	// Find cwsd binary
+	// Find prismd binary
 	executableDir, err := os.Executable()
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("Failed to get executable path: %v", err))
 		return nil, err
 	}
-	daemonPath := filepath.Join(filepath.Dir(executableDir), "cwsd.exe")
+	daemonPath := filepath.Join(filepath.Dir(executableDir), "prismd.exe")
 
 	// Start the daemon process
 	cmd := exec.Command(daemonPath, "--service")

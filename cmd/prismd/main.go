@@ -1,6 +1,6 @@
-// Prism Daemon (cwsd) - Background service for AWS operations.
+// Prism Daemon (prismd) - Background service for AWS operations.
 //
-// The cwsd daemon provides a REST API server for Prism operations.
+// The prismd daemon provides a REST API server for Prism operations.
 // It manages AWS resources, maintains state, and serves requests from CLI and
 // GUI clients. The daemon handles all AWS authentication, resource management,
 // and cost tracking while providing a simple API interface.
@@ -23,9 +23,9 @@
 //
 // Usage:
 //
-//	cwsd                                    # Start daemon on :8080
-//	cwsd -port 9000                         # Start on custom port
-//	cwsd -config /path/to/config.json      # Use custom config
+//	prismd                                    # Start daemon on :8080
+//	prismd -port 9000                         # Start on custom port
+//	prismd -config /path/to/config.json      # Use custom config
 //
 // The daemon implements Prism's core principles of reliability,
 // cost transparency, and zero-surprise operations.

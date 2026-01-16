@@ -21,7 +21,7 @@ brew install prism
 ```bash
 # Verify installation
 prism --version
-cwsd --version
+prismd --version
 
 # Configure AWS credentials (required for cloud operations)
 aws configure --profile aws  # Use your preferred profile name

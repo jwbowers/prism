@@ -63,7 +63,7 @@ EOD
 
 # Check if command line tools are already installed
 check_cli_tools_installed() {
-    if [[ -f "$INSTALL_DIR/cws" ]] && [[ -f "$INSTALL_DIR/cwsd" ]]; then
+    if [[ -f "$INSTALL_DIR/cws" ]] && [[ -f "$INSTALL_DIR/prismd" ]]; then
         # Check if they're the same version as in the app bundle
         local installed_version
         local bundle_version
@@ -111,8 +111,8 @@ EOD
             
             # Install with sudo
             if echo "$password" | sudo -S cp "$MACOS_DIR/cws" "$INSTALL_DIR/" 2>/dev/null && \
-               echo "$password" | sudo -S cp "$MACOS_DIR/cwsd" "$INSTALL_DIR/" 2>/dev/null && \
-               echo "$password" | sudo -S chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/cwsd" 2>/dev/null; then
+               echo "$password" | sudo -S cp "$MACOS_DIR/prismd" "$INSTALL_DIR/" 2>/dev/null && \
+               echo "$password" | sudo -S chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd" 2>/dev/null; then
                 log_success "CLI tools installed to $INSTALL_DIR"
                 return 0
             else
@@ -126,8 +126,8 @@ EOD
     else
         # Install without sudo
         if cp "$MACOS_DIR/cws" "$INSTALL_DIR/" && \
-           cp "$MACOS_DIR/cwsd" "$INSTALL_DIR/" && \
-           chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/cwsd"; then
+           cp "$MACOS_DIR/prismd" "$INSTALL_DIR/" && \
+           chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd"; then
             log_success "CLI tools installed to $INSTALL_DIR"
             return 0
         else
@@ -221,7 +221,7 @@ install_launch_agent() {
     
     <key>ProgramArguments</key>
     <array>
-        <string>$INSTALL_DIR/cwsd</string>
+        <string>$INSTALL_DIR/prismd</string>
     </array>
     
     <key>KeepAlive</key>
@@ -328,7 +328,7 @@ verify_installation() {
     local errors=0
     
     # Check CLI tools
-    if command -v cws &> /dev/null && command -v cwsd &> /dev/null; then
+    if command -v cws &> /dev/null && command -v prismd &> /dev/null; then
         log_success "CLI tools are accessible via PATH"
     else
         log_error "CLI tools not found in PATH"
@@ -344,7 +344,7 @@ verify_installation() {
     fi
     
     # Check daemon
-    if pgrep -f "cwsd" > /dev/null; then
+    if pgrep -f "prismd" > /dev/null; then
         log_success "CloudWorkstation daemon is running"
     else
         log_info "Daemon not running (will start on next login)"
@@ -364,7 +364,7 @@ main() {
     # Ask user about CLI tools installation
     if ! check_cli_tools_installed; then
         local install_response
-        install_response=$(show_install_dialog "Would you like to install CloudWorkstation command-line tools (cws, cwsd) to $INSTALL_DIR? This allows you to use CloudWorkstation from any terminal window.")
+        install_response=$(show_install_dialog "Would you like to install CloudWorkstation command-line tools (cws, prismd) to $INSTALL_DIR? This allows you to use CloudWorkstation from any terminal window.")
         
         if [[ "$install_response" == *"Install"* ]]; then
             if install_cli_tools; then
@@ -393,7 +393,7 @@ main() {
 Available interfaces:
 • CloudWorkstation.app - GUI interface
 • 'cws' command - Terminal interface
-• 'cwsd' daemon - Background service
+• 'prismd' daemon - Background service
 
 Next steps:
 1. Configure AWS credentials

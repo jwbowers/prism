@@ -36,7 +36,7 @@ if (Test-Path $shortcutDir) {
 
 # Remove from PATH
 Uninstall-BinFile -Name 'cws'
-Uninstall-BinFile -Name 'cwsd'
+Uninstall-BinFile -Name 'prismd'
 
 Write-Host ""
 Write-Host "✅ CloudWorkstation has been uninstalled."

@@ -39,9 +39,9 @@ function Get-CloudWorkstationPaths {
     
     # Add executable paths
     $paths.CWS = Join-Path $paths.BinPath "cws.exe"
-    $paths.CWSD = Join-Path $paths.BinPath "cwsd.exe"
+    $paths.CWSD = Join-Path $paths.BinPath "prismd.exe"
     $paths.CWSGUI = Join-Path $paths.BinPath "cws-gui.exe"
-    $paths.CWSService = Join-Path $paths.BinPath "cwsd-service.exe"
+    $paths.CWSService = Join-Path $paths.BinPath "prismd-service.exe"
     
     return $paths
 }
@@ -708,7 +708,7 @@ if (-not (Test-Path $CloudWorkstationPaths.CWS)) {
 
 # Create convenient aliases
 New-Alias -Name "cws" -Value $CloudWorkstationPaths.CWS -ErrorAction SilentlyContinue
-New-Alias -Name "cwsd" -Value $CloudWorkstationPaths.CWSD -ErrorAction SilentlyContinue
+New-Alias -Name "prismd" -Value $CloudWorkstationPaths.CWSD -ErrorAction SilentlyContinue
 New-Alias -Name "cws-gui" -Value $CloudWorkstationPaths.CWSGUI -ErrorAction SilentlyContinue
 
 #endregion
@@ -728,4 +728,4 @@ Export-ModuleMember -Function @(
     'Start-CloudWorkstationTUI',
     'Test-CloudWorkstationInstallation',
     'Open-CloudWorkstationDocumentation'
-) -Alias @('cws', 'cwsd', 'cws-gui') -Variable @('CloudWorkstationPaths')
+) -Alias @('cws', 'prismd', 'cws-gui') -Variable @('CloudWorkstationPaths')

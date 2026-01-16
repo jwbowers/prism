@@ -13,7 +13,7 @@
 set -e
 
 # Configuration
-DAEMON_NAME="cwsd"
+DAEMON_NAME="prismd"
 API_PORT="8947"
 API_URL="http://localhost:$API_PORT"
 CONFIG_DIR="$HOME/.cloudworkstation"
@@ -30,19 +30,19 @@ DAEMON_CMD=""
 
 if command -v brew >/dev/null 2>&1 && brew list cloudworkstation >/dev/null 2>&1; then
     INSTALL_TYPE="homebrew"
-    DAEMON_CMD="cwsd"
+    DAEMON_CMD="prismd"
     LOG_FILE="$(brew --prefix)/var/log/cloudworkstation.log"
-elif command -v cwsd >/dev/null 2>&1; then
+elif command -v prismd >/dev/null 2>&1; then
     INSTALL_TYPE="system"
-    DAEMON_CMD="cwsd"
-elif [[ -x "./bin/cwsd" ]]; then
+    DAEMON_CMD="prismd"
+elif [[ -x "./bin/prismd" ]]; then
     INSTALL_TYPE="source"
-    DAEMON_CMD="./bin/cwsd"
-elif [[ -x "$(dirname "$0")/../bin/cwsd" ]]; then
+    DAEMON_CMD="./bin/prismd"
+elif [[ -x "$(dirname "$0")/../bin/prismd" ]]; then
     INSTALL_TYPE="source"
-    DAEMON_CMD="$(dirname "$0")/../bin/cwsd"
+    DAEMON_CMD="$(dirname "$0")/../bin/prismd"
 else
-    echo "❌ CloudWorkstation daemon (cwsd) not found"
+    echo "❌ CloudWorkstation daemon (prismd) not found"
     echo "   Install via: brew install scttfrdmn/cloudworkstation/cloudworkstation"
     echo "   Or build from source: make build"
     exit 1
@@ -92,7 +92,7 @@ release_lock() {
 
 # Comprehensive daemon process detection
 get_daemon_pids() {
-    pgrep -f "cwsd" 2>/dev/null || true
+    pgrep -f "prismd" 2>/dev/null || true
 }
 
 is_daemon_running() {
@@ -135,7 +135,7 @@ show_status() {
         # Show process details
         echo ""
         echo "Process Details:"
-        ps aux | grep cwsd | grep -v grep | head -5 | while read -r line; do
+        ps aux | grep prismd | grep -v grep | head -5 | while read -r line; do
             echo "  $line"
         done
         

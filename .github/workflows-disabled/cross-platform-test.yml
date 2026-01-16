@@ -68,7 +68,7 @@ jobs:
       - name: Build binaries
         run: |
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/cws-${{ matrix.os }}-${{ matrix.arch }} ./cmd/cws
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/cwsd-${{ matrix.os }}-${{ matrix.arch }} ./cmd/cwsd
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/prismd-${{ matrix.os }}-${{ matrix.arch }} ./cmd/prismd
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/cws-gui-${{ matrix.os }}-${{ matrix.arch }} ./cmd/cws-gui
         shell: bash
 

@@ -137,13 +137,13 @@ jobs:
         if ($LASTEXITCODE -ne 0) { throw "CLI build failed" }
         
         # Build daemon
-        Write-Host "Building daemon (cwsd.exe)..."
-        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/cwsd.exe" ./cmd/cwsd
+        Write-Host "Building daemon (prismd.exe)..."
+        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/prismd.exe" ./cmd/prismd
         if ($LASTEXITCODE -ne 0) { throw "Daemon build failed" }
         
         # Build service wrapper
-        Write-Host "Building service wrapper (cwsd-service.exe)..."
-        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/cwsd-service.exe" ./cmd/cwsd-service
+        Write-Host "Building service wrapper (prismd-service.exe)..."
+        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/prismd-service.exe" ./cmd/prismd-service
         if ($LASTEXITCODE -ne 0) { throw "Service wrapper build failed" }
         
         # Build GUI (best effort)
@@ -364,7 +364,7 @@ msiexec /i CloudWorkstation-v$version-x64.msi /l*v install.log
 ```
 
 ### What's Included
-- **Core Binaries**: CLI (cws.exe), Daemon (cwsd.exe), GUI (cws-gui.exe)
+- **Core Binaries**: CLI (cws.exe), Daemon (prismd.exe), GUI (cws-gui.exe)
 - **Windows Service**: Automatic daemon startup with system boot
 - **Research Templates**: Built-in templates for Python ML, R research, etc.
 - **PowerShell Integration**: PowerShell module for advanced scripting

@@ -65,7 +65,7 @@
 
 - name: "area: daemon"
   color: "c5def5"
-  description: "Backend daemon (cmd/cwsd, pkg/daemon)"
+  description: "Backend daemon (cmd/prismd, pkg/daemon)"
 
 - name: "area: templates"
   color: "c5def5"
