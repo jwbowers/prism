@@ -29,12 +29,9 @@ func (s *Server) handleTemplates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use the new unified template system with dynamic AMI discovery (Issue #436)
-	var amiDiscovery templates.AMIDiscoveryService
-	if s.awsManager != nil {
-		amiDiscovery = s.awsManager.GetAMIDiscovery()
-	}
-
-	templates, err := templates.GetTemplatesForRegionWithDiscovery(region, architecture, amiDiscovery)
+	// For template listing, we don't need to resolve AMI IDs (slow SSM calls)
+	// AMI discovery only happens at launch time
+	templates, err := templates.GetTemplatesForRegionWithDiscovery(region, architecture, nil)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, "Failed to load templates: "+err.Error())
 		return

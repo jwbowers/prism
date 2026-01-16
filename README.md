@@ -259,6 +259,8 @@ prism doctor                      # System health check
 
 **Guides:**
 - [AWS Setup Guide](docs/user-guides/AWS_SETUP_GUIDE.md) - AWS account and credential configuration
+- [Custom AMI Workflow](docs/user-guides/CUSTOM_AMI_WORKFLOW.md) - Creating and managing custom AMIs for faster launches
+- [AMI Best Practices](docs/user-guides/AMI_BEST_PRACTICES.md) - Best practices for AMI management, security, and cost optimization
 - [Installation Guide](INSTALL.md) - Comprehensive installation instructions
 - [Budget System Philosophy](docs/BUDGET_PHILOSOPHY.md) - Multi-budget system design and conceptual model (v0.5.10+)
 - [Budget Banking Philosophy](docs/BUDGET_BANKING_PHILOSOPHY.md) - Surplus tracking and burst budgeting
