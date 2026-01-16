@@ -546,7 +546,8 @@ export class ProjectsPage extends BasePage {
     await this.page.locator('[data-testid="expires-in-select"]').click();
     await this.page.locator(`[data-value="${expiresIn}"]`).click();
 
-    await this.page.locator('[data-testid="role-select"]').click();
+    // Use specific test ID to avoid strict mode violation with other role selectors
+    await this.page.locator('[data-testid="shared-token-role-select"]').click();
     await this.page.locator(`[data-value="${role}"]`).click();
 
     if (message) {
