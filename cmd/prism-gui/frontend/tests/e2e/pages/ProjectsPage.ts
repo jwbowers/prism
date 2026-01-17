@@ -601,7 +601,8 @@ export class ProjectsPage extends BasePage {
     await this.page.getByRole('option', { name: role }).click();
 
     if (message) {
-      await this.fillInput('welcome message', message);
+      const messageTextarea = dialog.locator('[data-testid="token-message-textarea"]');
+      await messageTextarea.fill(message);
     }
 
     await this.page.locator('[data-testid="create-token-button"]').click();

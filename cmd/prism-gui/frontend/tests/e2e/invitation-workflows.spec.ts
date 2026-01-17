@@ -609,8 +609,8 @@ test.describe('Invitation Management Workflows', () => {
       // View QR code
       await projectsPage.viewQRCode(tokenName);
 
-      // Verify QR code modal
-      const qrModal = projectsPage.page.locator('[role="dialog"]').first();
+      // Verify QR code modal using data-testid
+      const qrModal = projectsPage.page.locator('[data-testid="qr-code-modal"]');
       expect(await qrModal.isVisible()).toBe(true);
 
       // Should show QR code image
