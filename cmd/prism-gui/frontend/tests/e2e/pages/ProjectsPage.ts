@@ -874,6 +874,70 @@ export class ProjectsPage extends BasePage {
   }
 
   /**
+   * Clean up all test invitations via API
+   * Fetches all invitations and deletes them to prevent test data pollution
+   */
+  async cleanupTestInvitations(): Promise<void> {
+    await this.page.evaluate(async () => {
+      const api = (window as any).__apiClient;
+      try {
+        // Get all invitations for the test user
+        const invitations = await api.getMyInvitations('test-user@example.com');
+
+        // Delete each invitation
+        for (const invitation of invitations) {
+          try {
+            await api.revokeInvitation(invitation.id);
+          } catch (err) {
+            console.error(`Failed to delete invitation ${invitation.id}:`, err);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to cleanup test invitations:', err);
+      }
+    });
+  }
+
+  /**
+   * Clean up test projects that match invitation workflow patterns
+   * Deletes projects via API to prevent database pollution
+   */
+  async cleanupInvitationTestProjects(): Promise<void> {
+    await this.page.evaluate(async () => {
+      const api = (window as any).__apiClient;
+      try {
+        // Get all projects
+        const projects = await api.getProjects();
+
+        // Test project name patterns used in invitation tests
+        const testPatterns = [
+          /^Test-Project-\d+$/,
+          /^Accept Test \d+$/,
+          /^Decline Test \d+$/,
+          /^Bulk Test \d+$/,
+          /^Token Test \d+$/,
+          /^Add Token Test \d+$/,
+          /^test-project-\d+$/i
+        ];
+
+        // Delete matching projects
+        for (const project of projects) {
+          const matches = testPatterns.some(pattern => pattern.test(project.name));
+          if (matches) {
+            try {
+              await api.deleteProject(project.id);
+            } catch (err) {
+              console.error(`Failed to delete project ${project.name}:`, err);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to cleanup invitation test projects:', err);
+      }
+    });
+  }
+
+  /**
    * Verify user appears in project members list
    */
   async verifyProjectMember(projectName: string, username: string): Promise<boolean> {

@@ -1307,6 +1307,15 @@ class SafePrismAPI {
     }
   }
 
+  async revokeInvitation(invitationId: string): Promise<void> {
+    try {
+      await this.safeRequest(`/api/v1/invitations/${invitationId}`, 'DELETE');
+    } catch (error) {
+      logger.error('Failed to revoke invitation:', error);
+      throw error;
+    }
+  }
+
   // Project Details API
   async getProjectDetails(projectId: string): Promise<ProjectDetails> {
     return this.safeRequest(`/api/v1/projects/${projectId}`);

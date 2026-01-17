@@ -22,6 +22,21 @@ test.describe('Invitation Management Workflows', () => {
 
     // Force close any open dialogs from previous tests
     await projectsPage.forceCloseDialogs();
+
+    // CRITICAL: Clean up all test invitations and projects before each test
+    // This prevents data pollution from previous test runs that caused 54 test failures
+    await projectsPage.cleanupTestInvitations();
+    await projectsPage.cleanupInvitationTestProjects();
+  });
+
+  test.afterEach(async () => {
+    // Clean up after each test to prevent data pollution even if test fails
+    try {
+      await projectsPage.cleanupTestInvitations();
+      await projectsPage.cleanupInvitationTestProjects();
+    } catch (error) {
+      console.error('Failed to cleanup after test:', error);
+    }
   });
 
   test.describe('Individual Invitations Workflow', () => {
