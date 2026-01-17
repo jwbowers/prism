@@ -139,42 +139,97 @@ test.describe('Invitation Management Workflows', () => {
       const testProjectId = await projectsPage.createTestProject(testProjectName);
       const token = await projectsPage.sendTestInvitation(testProjectId, undefined, 'member');
 
-      // Reload page to fetch invitations from backend (invitation should appear automatically)
+      // Navigate to invitations page
       await projectsPage.navigateToInvitations();
-      await projectsPage.page.reload();
-
-      // Wait for page to load and fetch invitations
-      await projectsPage.waitForAPIResponse('/invitations/my', 15000);
-
       await projectsPage.switchToIndividualInvitations();
 
-      // Debug: Check what invitations exist via API before filtering
-      const invitations = await projectsPage.page.evaluate(async () => {
-        const api = (window as any).__apiClient;
-        const invites = await api.getMyInvitations('test-user@example.com');
-        console.log(`Found ${invites.length} total invitations`);
-        const pending = invites.filter((inv: any) => inv.status === 'pending');
-        console.log(`Found ${pending.length} pending invitations:`, pending.map((inv: any) => ({
-          project: inv.project_name,
-          status: inv.status,
-          token: inv.token.substring(0, 10) + '...'
-        })));
-        return { total: invites.length, pending: pending.length, pendingNames: pending.map((inv: any) => inv.project_name) };
+      // Wait for the component to fully mount and set up event listeners
+      await projectsPage.page.waitForTimeout(1000);
+
+      // Set up API response wait BEFORE dispatching event
+      const invitationsResponsePromise = projectsPage.page.waitForResponse(
+        response => response.url().includes('/invitations/my'),
+        { timeout: 15000 }
+      );
+
+      // Trigger explicit refresh by dispatching invitation-created event
+      // This causes InvitationManagementView to call loadInvitations()
+      await projectsPage.page.evaluate(() => {
+        console.log('Dispatching invitation-created event to trigger refresh');
+        window.dispatchEvent(new Event('invitation-created'));
       });
 
-      console.log(`Invitation count: ${invitations.total} total, ${invitations.pending} pending`);
-      console.log(`Pending project names: ${invitations.pendingNames.join(', ')}`);
+      // Wait for API call to complete
+      const response = await invitationsResponsePromise;
 
-      if (invitations.pending === 0) {
-        throw new Error(`No pending invitations found! Expected to find invitation for project "${testProjectName}". Total invitations: ${invitations.total}`);
+      // Check what data was returned
+      const invitationsData = await projectsPage.page.evaluate(async (projectName) => {
+        const api = (window as any).__apiClient;
+        const invites = await api.getMyInvitations('test-user@example.com');
+        const pending = invites.filter((inv: any) => inv.status === 'pending');
+
+        // Find our specific test invitation
+        const testInvite = invites.find((inv: any) => inv.project_name === projectName);
+
+        console.log(`Total invitations: ${invites.length}`);
+        console.log(`Pending invitations: ${pending.length}`);
+        if (testInvite) {
+          console.log(`Found test invitation: project=${testInvite.project_name}, status=${testInvite.status}, id=${testInvite.id}`);
+        } else {
+          console.log(`Test invitation NOT FOUND for project: ${projectName}`);
+          console.log(`All project names: ${invites.map((i: any) => i.project_name).join(', ')}`);
+        }
+
+        return {
+          total: invites.length,
+          pending: pending.length,
+          pendingNames: pending.map((inv: any) => inv.project_name),
+          testInviteStatus: testInvite?.status,
+          allProjects: invites.map((inv: any) => inv.project_name).slice(0, 10)
+        };
+      }, testProjectName);
+
+      console.log(`After refresh: ${invitationsData.total} total, ${invitationsData.pending} pending`);
+      console.log(`Pending projects: ${invitationsData.pendingNames.join(', ')}`);
+      console.log(`Looking for: ${testProjectName}`);
+
+      if (!invitationsData.pendingNames.includes(testProjectName)) {
+        throw new Error(`Test invitation not found in API response! Pending: ${invitationsData.pendingNames.join(', ')}`);
       }
 
-      // The invitation exists in the backend - now find it in the table
-      // Note: Cloudscape filter may have issues, so we'll just find the row directly
-      const testRow = projectsPage.page.locator(`table tbody tr:has-text("${testProjectName}")`);
+      // Check how many rows are actually in the table
+      const tableInfo = await projectsPage.page.evaluate(() => {
+        const rows = document.querySelectorAll('table tbody tr');
+        const rowTexts = Array.from(rows).slice(0, 5).map(row => row.textContent?.substring(0, 50) || '');
+        return {
+          totalRows: rows.length,
+          firstFiveRows: rowTexts
+        };
+      });
+      console.log(`Table has ${tableInfo.totalRows} rows. First 5: ${tableInfo.firstFiveRows.join(' | ')}`);
 
-      // Wait for the row to appear (it should be in the table already since we saw it in API)
-      await testRow.waitFor({ state: 'visible', timeout: 15000 });
+      // Wait for React to re-render and update the table
+      // Use polling to wait for the specific row to appear
+      await projectsPage.pollUntil(
+        async () => {
+          const row = projectsPage.page.locator(`table tbody tr:has-text("${testProjectName}")`);
+          const count = await row.count();
+          if (count === 0) {
+            // Log what rows we DO see
+            const allRows = await projectsPage.page.locator('table tbody tr').count();
+            console.log(`Poll attempt: Row not found. Table has ${allRows} rows total`);
+          }
+          return count > 0;
+        },
+        {
+          timeout: 20000,
+          interval: 1000,
+          errorMessage: `Table row for "${testProjectName}" did not appear even though invitation exists in API`
+        }
+      );
+
+      // Now find the row for interaction
+      const testRow = projectsPage.page.locator(`table tbody tr:has-text("${testProjectName}")`);
 
       // Find the accept button in the row
       const acceptButton = testRow.getByRole('button', { name: /accept/i });
