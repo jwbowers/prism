@@ -635,12 +635,15 @@ export class ProjectsPage extends BasePage {
   async viewQRCode(tokenName: string) {
     await this.switchToSharedTokens();
 
+    // Wait for token row to appear in table
     const tokenRow = this.page.locator(`tr:has-text("${tokenName}")`).first();
+    await tokenRow.waitFor({ state: 'visible', timeout: 10000 });
+
     const viewButton = tokenRow.getByRole('button', { name: /view/i });
     await viewButton.click();
 
-    // Wait for QR code dialog to appear
-    const dialog = this.page.getByRole('dialog', { name: /qr code/i });
+    // Wait for QR code dialog to appear - header is "Shared Invitation Token"
+    const dialog = this.page.locator('[data-testid="qr-code-modal"]');
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
   }
 

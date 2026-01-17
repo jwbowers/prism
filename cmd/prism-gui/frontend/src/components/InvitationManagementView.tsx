@@ -960,6 +960,19 @@ export const InvitationManagementView: React.FC = () => {
       header="Shared Invitation Token"
       size="medium"
       data-testid="qr-code-modal"
+      footer={
+        <Box float="right">
+          <Button
+            onClick={() => {
+              setQRModalVisible(false);
+              setSelectedToken(null);
+            }}
+            data-testid="close-qr-modal-button"
+          >
+            Close
+          </Button>
+        </Box>
+      }
     >
       {selectedToken && (
         <SpaceBetween size="l">
