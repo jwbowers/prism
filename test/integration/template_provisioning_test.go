@@ -37,7 +37,7 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 
 	// Launch Python ML instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template: "Python Machine Learning",
+		Template: "python-ml-workstation",
 		Name:     instanceName,
 		Size:     "M",
 	})
@@ -138,7 +138,7 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 
 	// Launch R Research instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template: "R Research Environment",
+		Template: "rstudio-server",
 		Name:     instanceName,
 		Size:     "M",
 	})
@@ -232,7 +232,7 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 
 	// Launch Ubuntu Basic instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template: "Ubuntu Basic",
+		Template: "ubuntu-22-04-server",
 		Name:     instanceName,
 		Size:     "S",
 	})
@@ -350,9 +350,9 @@ func TestTemplateProvisioning_MultipleTemplates(t *testing.T) {
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	templates := []string{
-		"Ubuntu Basic",
-		"Python Machine Learning",
-		"R Research Environment",
+		"ubuntu-22-04-server",
+		"python-ml-workstation",
+		"rstudio-server",
 	}
 
 	t.Log("Launching multiple templates concurrently...")
