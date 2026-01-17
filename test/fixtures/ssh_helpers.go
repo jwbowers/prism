@@ -12,15 +12,23 @@ import (
 )
 
 // SSHCommand executes a command on a remote instance via SSH
-func SSHCommand(t *testing.T, host, user, command string) (string, error) {
+// If sshKeyPath is empty, uses default SSH authentication
+func SSHCommand(t *testing.T, host, user, command string, sshKeyPath ...string) (string, error) {
 	t.Helper()
 
-	sshCmd := exec.Command("ssh",
+	args := []string{
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "ConnectTimeout=10",
-		fmt.Sprintf("%s@%s", user, host),
-		command)
+	}
+
+	// Add SSH key if provided
+	if len(sshKeyPath) > 0 && sshKeyPath[0] != "" {
+		args = append(args, "-i", sshKeyPath[0])
+	}
+
+	args = append(args, fmt.Sprintf("%s@%s", user, host), command)
+	sshCmd := exec.Command("ssh", args...)
 
 	output, err := sshCmd.CombinedOutput()
 	if err != nil {
@@ -63,14 +71,14 @@ func WaitForInstanceState(t *testing.T, apiClient client.PrismAPI, instanceName,
 }
 
 // WaitForSSHReady waits for SSH to be accessible on an instance
-func WaitForSSHReady(t *testing.T, host, user string, timeout time.Duration) error {
+func WaitForSSHReady(t *testing.T, host, user string, timeout time.Duration, sshKeyPath ...string) error {
 	t.Helper()
 
 	deadline := time.Now().Add(timeout)
 	t.Logf("Waiting for SSH to be ready on %s (timeout: %v)", host, timeout)
 
 	for time.Now().Before(deadline) {
-		_, err := SSHCommand(t, host, user, "echo 'SSH ready'")
+		_, err := SSHCommand(t, host, user, "echo 'SSH ready'", sshKeyPath...)
 		if err == nil {
 			t.Logf("✓ SSH ready on %s", host)
 			return nil
@@ -84,11 +92,11 @@ func WaitForSSHReady(t *testing.T, host, user string, timeout time.Duration) err
 }
 
 // ExecuteRemoteTest runs a test command on a remote instance and returns the output
-func ExecuteRemoteTest(t *testing.T, host, user, testCommand string) (string, error) {
+func ExecuteRemoteTest(t *testing.T, host, user, testCommand string, sshKeyPath ...string) (string, error) {
 	t.Helper()
 
 	t.Logf("Executing remote test: %s", testCommand)
-	output, err := SSHCommand(t, host, user, testCommand)
+	output, err := SSHCommand(t, host, user, testCommand, sshKeyPath...)
 	if err != nil {
 		t.Logf("Remote test failed: %v", err)
 		return output, err
@@ -99,19 +107,19 @@ func ExecuteRemoteTest(t *testing.T, host, user, testCommand string) (string, er
 }
 
 // VerifyServiceRunning checks if a service is running on a remote instance
-func VerifyServiceRunning(t *testing.T, host, user, serviceName string) bool {
+func VerifyServiceRunning(t *testing.T, host, user, serviceName string, sshKeyPath ...string) bool {
 	t.Helper()
 
 	command := fmt.Sprintf("systemctl is-active %s || ps aux | grep -v grep | grep %s", serviceName, serviceName)
-	_, err := SSHCommand(t, host, user, command)
+	_, err := SSHCommand(t, host, user, command, sshKeyPath...)
 	return err == nil
 }
 
 // VerifyPortListening checks if a port is listening on a remote instance
-func VerifyPortListening(t *testing.T, host, user string, port int) bool {
+func VerifyPortListening(t *testing.T, host, user string, port int, sshKeyPath ...string) bool {
 	t.Helper()
 
 	command := fmt.Sprintf("netstat -tuln | grep ':%d ' || ss -tuln | grep ':%d '", port, port)
-	output, err := SSHCommand(t, host, user, command)
+	output, err := SSHCommand(t, host, user, command, sshKeyPath...)
 	return err == nil && strings.Contains(output, fmt.Sprintf(":%d", port))
 }

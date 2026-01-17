@@ -6,6 +6,8 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +17,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const (
+	// SSH key for integration tests
+	testSSHKeyName = "cws-test-aws-west2-key"
+)
+
+// getSSHKeyPath returns the path to the test SSH private key
+func getSSHKeyPath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(homeDir, ".ssh", testSSHKeyName)
+}
 
 // TestTemplateProvisioning_PythonML validates Python ML template provisioning
 // Tests: Launch → Jupyter accessible on port 8888 → numpy/pandas/pytorch installed
@@ -32,14 +48,17 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	instanceName := fmt.Sprintf("python-ml-test-%d", time.Now().Unix())
+	sshKeyPath := getSSHKeyPath()
 
 	t.Logf("Launching Python ML instance: %s", instanceName)
+	t.Logf("Using SSH key: %s (private key: %s)", testSSHKeyName, sshKeyPath)
 
 	// Launch Python ML instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template: "python-ml-workstation",
-		Name:     instanceName,
-		Size:     "M",
+		Template:   "python-ml-workstation",
+		Name:       instanceName,
+		Size:       "M",
+		SSHKeyName: testSSHKeyName,
 	})
 	require.NoError(t, err, "Failed to launch Python ML instance")
 	registry.Register("instance", instanceName)
@@ -68,9 +87,9 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 		for i := 0; i < maxAttempts; i++ {
 			t.Logf("Attempt %d/%d: Checking Jupyter status...", i+1, maxAttempts)
 
-			// Check if Jupyter process is running
+			// Check if Jupyter process is running (ps shows all processes regardless of user)
 			_, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-				"ps aux | grep jupyter | grep -v grep")
+				"ps aux | grep jupyter | grep -v grep", sshKeyPath)
 			if err == nil {
 				httpCode = "200"
 				break
@@ -91,8 +110,10 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 		for _, pkg := range packages {
 			t.Logf("Checking package: %s", pkg)
 
+			// SSH as ubuntu, explicitly source conda and activate environment
+			condaCmd := fmt.Sprintf("source /opt/conda/etc/profile.d/conda.sh && conda activate base && python -c 'import %s; print(%s.__version__)'", pkg, pkg)
 			output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-				fmt.Sprintf("python3 -c 'import %s; print(%s.__version__)'", pkg, pkg))
+				condaCmd, sshKeyPath)
 
 			assert.NoError(t, err, "Package %s should be importable", pkg)
 			assert.NotEmpty(t, strings.TrimSpace(output), "Package %s should have version", pkg)
@@ -105,8 +126,9 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 	t.Run("JupyterInstalled", func(t *testing.T) {
 		t.Log("Verifying Jupyter installation...")
 
+		// SSH as ubuntu, explicitly source conda and activate environment
 		output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"jupyter --version")
+			"source /opt/conda/etc/profile.d/conda.sh && conda activate base && jupyter --version", sshKeyPath)
 
 		assert.NoError(t, err, "Jupyter should be installed")
 		assert.Contains(t, output, "jupyter", "Jupyter version should be displayed")
@@ -133,14 +155,17 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	instanceName := fmt.Sprintf("r-research-test-%d", time.Now().Unix())
+	sshKeyPath := getSSHKeyPath()
 
 	t.Logf("Launching R Research instance: %s", instanceName)
+	t.Logf("Using SSH key: %s (private key: %s)", testSSHKeyName, sshKeyPath)
 
 	// Launch R Research instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template: "rstudio-server",
-		Name:     instanceName,
-		Size:     "M",
+		Template:   "rstudio-server",
+		Name:       instanceName,
+		Size:       "M",
+		SSHKeyName: testSSHKeyName,
 	})
 	require.NoError(t, err, "Failed to launch R Research instance")
 	registry.Register("instance", instanceName)
@@ -163,14 +188,14 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 	t.Run("RStudioAccessible", func(t *testing.T) {
 		t.Log("Testing RStudio accessibility on port 8787...")
 
-		// Check if RStudio process is running
+		// Check if RStudio process is running (ps shows all processes regardless of user)
 		maxAttempts := 12
 		var running bool
 		for i := 0; i < maxAttempts; i++ {
 			t.Logf("Attempt %d/%d: Checking RStudio status...", i+1, maxAttempts)
 
 			output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-				"ps aux | grep rstudio-server | grep -v grep")
+				"ps aux | grep rstudio-server | grep -v grep", sshKeyPath)
 			if err == nil && strings.Contains(output, "rstudio-server") {
 				running = true
 				break
@@ -186,8 +211,9 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 	t.Run("RInstalled", func(t *testing.T) {
 		t.Log("Verifying R installation...")
 
+		// SSH as ubuntu to check R installation
 		output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"R --version")
+			"R --version", sshKeyPath)
 
 		assert.NoError(t, err, "R should be installed")
 		assert.Contains(t, output, "R version", "R version should be displayed")
@@ -199,8 +225,9 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 	t.Run("TidyverseInstalled", func(t *testing.T) {
 		t.Log("Verifying tidyverse package...")
 
+		// SSH as ubuntu to check R packages
 		output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"R -e 'library(tidyverse); packageVersion(\"tidyverse\")' --quiet")
+			"R -e 'library(tidyverse); packageVersion(\"tidyverse\")' --quiet", sshKeyPath)
 
 		assert.NoError(t, err, "Tidyverse should be installed")
 		assert.Contains(t, output, "[1]", "Tidyverse version should be displayed")
@@ -227,14 +254,17 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	instanceName := fmt.Sprintf("base-template-test-%d", time.Now().Unix())
+	sshKeyPath := getSSHKeyPath()
 
 	t.Logf("Launching Ubuntu Basic instance: %s", instanceName)
+	t.Logf("Using SSH key: %s (private key: %s)", testSSHKeyName, sshKeyPath)
 
 	// Launch Ubuntu Basic instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template: "ubuntu-22-04-server",
-		Name:     instanceName,
-		Size:     "S",
+		Template:   "ubuntu-22-04-server",
+		Name:       instanceName,
+		Size:       "S",
+		SSHKeyName: testSSHKeyName,
 	})
 	require.NoError(t, err, "Failed to launch Ubuntu Basic instance")
 	registry.Register("instance", instanceName)
@@ -259,13 +289,13 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 
 		// Check user exists
 		output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"whoami")
+			"whoami", sshKeyPath)
 		assert.NoError(t, err, "Should be able to SSH as ubuntu user")
 		assert.Equal(t, "ubuntu", strings.TrimSpace(output), "User should be ubuntu")
 
 		// Check sudo privileges
 		output, err = fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"sudo -n whoami")
+			"sudo -n whoami", sshKeyPath)
 		assert.NoError(t, err, "Ubuntu user should have passwordless sudo")
 		assert.Equal(t, "root", strings.TrimSpace(output), "Sudo should work as root")
 
@@ -278,13 +308,13 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 
 		// Check default shell
 		output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"echo $SHELL")
+			"echo $SHELL", sshKeyPath)
 		assert.NoError(t, err, "Should be able to read SHELL variable")
 		assert.Contains(t, output, "bash", "Default shell should be bash")
 
 		// Check .bashrc exists
 		output, err = fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"test -f ~/.bashrc && echo 'exists'")
+			"test -f ~/.bashrc && echo 'exists'", sshKeyPath)
 		assert.NoError(t, err, ".bashrc should exist")
 		assert.Equal(t, "exists", strings.TrimSpace(output), ".bashrc file should exist")
 
@@ -300,7 +330,7 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 			t.Logf("Checking tool: %s", tool)
 
 			output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-				fmt.Sprintf("which %s", tool))
+				fmt.Sprintf("which %s", tool), sshKeyPath)
 
 			assert.NoError(t, err, "Tool %s should be installed", tool)
 			assert.Contains(t, output, "/", "Tool %s should have path", tool)
@@ -315,19 +345,19 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 
 		// Check home directory permissions
 		output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"stat -c '%a' ~")
+			"stat -c '%a' ~", sshKeyPath)
 		assert.NoError(t, err, "Should be able to check home directory permissions")
 		assert.Equal(t, "755", strings.TrimSpace(output), "Home directory should be 755")
 
 		// Verify user can create files
 		testFile := "/home/ubuntu/test-permissions.txt"
 		_, err = fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			fmt.Sprintf("echo 'test' > %s && cat %s", testFile, testFile))
+			fmt.Sprintf("echo 'test' > %s && cat %s", testFile, testFile), sshKeyPath)
 		assert.NoError(t, err, "User should be able to create and read files")
 
 		// Cleanup
 		fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			fmt.Sprintf("rm -f %s", testFile))
+			fmt.Sprintf("rm -f %s", testFile), sshKeyPath)
 
 		t.Log("✓ File permissions correct")
 	})
@@ -366,9 +396,10 @@ func TestTemplateProvisioning_MultipleTemplates(t *testing.T) {
 		t.Logf("Launching %s as %s", template, instanceName)
 
 		_, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-			Template: template,
-			Name:     instanceName,
-			Size:     "S",
+			Template:   template,
+			Name:       instanceName,
+			Size:       "S",
+			SSHKeyName: testSSHKeyName,
 		})
 		require.NoError(t, err, "Failed to launch %s", template)
 		registry.Register("instance", instanceName)
