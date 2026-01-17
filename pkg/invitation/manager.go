@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -226,6 +227,11 @@ func (m *Manager) ListInvitations(ctx context.Context, filter *types.InvitationF
 
 		results = append(results, inv)
 	}
+
+	// Sort by InvitedAt descending (newest first)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].InvitedAt.After(results[j].InvitedAt)
+	})
 
 	// Apply pagination
 	limit := filter.Limit
