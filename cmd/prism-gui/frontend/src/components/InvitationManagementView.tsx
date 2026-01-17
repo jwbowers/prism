@@ -113,6 +113,7 @@ export const InvitationManagementView: React.FC = () => {
   const [tokenLimit, setTokenLimit] = useState('10');
   const [tokenExpires, setTokenExpires] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
   const [tokenMessage, setTokenMessage] = useState('');
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
 
   // Access API client from window context
   const api = (window as any).__apiClient;
@@ -140,6 +141,20 @@ export const InvitationManagementView: React.FC = () => {
       window.removeEventListener('shared-token-created', handleSharedTokenCreated);
     };
   }, [bulkProjectId]);
+
+  // Load projects for shared token creation
+  useEffect(() => {
+    const loadProjects = async () => {
+      if (!api) return;
+      try {
+        const projectList = await api.getProjects();
+        setProjects(projectList.map((p: any) => ({ id: p.id, name: p.name })));
+      } catch (err) {
+        console.error('Failed to load projects:', err);
+      }
+    };
+    loadProjects();
+  }, [api]);
 
   const loadInvitations = async () => {
     if (!api) return;
@@ -997,6 +1012,120 @@ export const InvitationManagementView: React.FC = () => {
     </Modal>
   );
 
+  const createSharedTokenModal = (
+    <Modal
+      onDismiss={() => {
+        setCreateTokenModalVisible(false);
+        setError(null);
+      }}
+      visible={createTokenModalVisible}
+      header="Create Shared Invitation Token"
+      size="medium"
+      data-testid="create-shared-token-modal"
+      footer={
+        <Box float="right">
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button
+              variant="link"
+              onClick={() => {
+                setCreateTokenModalVisible(false);
+                setError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateToken}
+              loading={loading}
+              data-testid="create-token-button"
+            >
+              Create Token
+            </Button>
+          </SpaceBetween>
+        </Box>
+      }
+    >
+      <SpaceBetween size="m">
+        {error && (
+          <Alert type="error" dismissible onDismiss={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        <FormField label="Project" description="Select the project for this shared token">
+          <Select
+            selectedOption={
+              bulkProjectId
+                ? { label: projects.find(p => p.id === bulkProjectId)?.name || '', value: bulkProjectId }
+                : null
+            }
+            onChange={({ detail }) => setBulkProjectId(detail.selectedOption.value || '')}
+            options={projects.map(p => ({ label: p.name, value: p.id }))}
+            placeholder="Select a project"
+            data-testid="token-project-select"
+          />
+        </FormField>
+
+        <FormField label="Token Name" description="A friendly name to identify this token">
+          <Input
+            value={tokenName}
+            onChange={({ detail }) => setTokenName(detail.value)}
+            placeholder="e.g., Research Team Access"
+            data-testid="token-name-input"
+          />
+        </FormField>
+
+        <FormField label="Role" description="Access level for users who redeem this token">
+          <Select
+            selectedOption={{ label: tokenRole, value: tokenRole }}
+            onChange={({ detail }) => setTokenRole(detail.selectedOption.value as 'viewer' | 'member' | 'admin')}
+            options={[
+              { label: 'viewer', value: 'viewer' },
+              { label: 'member', value: 'member' },
+              { label: 'admin', value: 'admin' }
+            ]}
+            data-testid="shared-token-role-select"
+          />
+        </FormField>
+
+        <FormField label="Redemption Limit" description="Maximum number of times this token can be used">
+          <Input
+            value={tokenLimit}
+            onChange={({ detail }) => setTokenLimit(detail.value)}
+            type="number"
+            placeholder="10"
+            data-testid="redemption-limit-input"
+          />
+        </FormField>
+
+        <FormField label="Expires In" description="How long the token remains valid">
+          <Select
+            selectedOption={{ label: tokenExpires, value: tokenExpires }}
+            onChange={({ detail }) => setTokenExpires(detail.selectedOption.value as '1d' | '7d' | '30d' | '90d')}
+            options={[
+              { label: '1d', value: '1d' },
+              { label: '7d', value: '7d' },
+              { label: '30d', value: '30d' },
+              { label: '90d', value: '90d' }
+            ]}
+            data-testid="expires-in-select"
+          />
+        </FormField>
+
+        <FormField label="Welcome Message (Optional)" description="A message shown to users who redeem this token">
+          <Textarea
+            value={tokenMessage}
+            onChange={({ detail }) => setTokenMessage(detail.value)}
+            placeholder="Welcome to the project!"
+            rows={3}
+            data-testid="token-message-textarea"
+          />
+        </FormField>
+      </SpaceBetween>
+    </Modal>
+  );
+
   // ==================== MAIN RENDER ====================
 
   return (
@@ -1026,6 +1155,7 @@ export const InvitationManagementView: React.FC = () => {
       {/* Modals */}
       {acceptInvitationModal}
       {declineInvitationModal}
+      {createSharedTokenModal}
       {qrCodeModal}
     </SpaceBetween>
   );

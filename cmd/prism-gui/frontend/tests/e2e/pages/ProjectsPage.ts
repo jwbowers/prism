@@ -567,7 +567,8 @@ export class ProjectsPage extends BasePage {
     redemptionLimit: number,
     expiresIn: '1d' | '7d' | '30d' | '90d',
     role: 'viewer' | 'member' | 'admin',
-    message?: string
+    message?: string,
+    projectId?: string
   ) {
     await this.switchToSharedTokens();
 
@@ -577,16 +578,27 @@ export class ProjectsPage extends BasePage {
     const dialog = this.page.locator('[data-testid="create-shared-token-modal"]');
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
+    // Select project if provided, otherwise select first available project
+    const projectSelect = dialog.locator('[data-testid="token-project-select"]');
+    await projectSelect.click();
+    await this.page.waitForTimeout(300);
+    // Click first option in dropdown
+    await this.page.getByRole('option').first().click();
+
     await this.fillInput('token name', name);
     await this.fillInput('redemption limit', redemptionLimit.toString());
 
-    // Use data-testid for Cloudscape Select components
-    await this.page.locator('[data-testid="expires-in-select"]').click();
-    await this.page.locator(`[data-value="${expiresIn}"]`).click();
+    // Select expires in
+    const expiresSelect = dialog.locator('[data-testid="expires-in-select"]');
+    await expiresSelect.click();
+    await this.page.waitForTimeout(300);
+    await this.page.getByRole('option', { name: expiresIn }).click();
 
-    // Use specific test ID to avoid strict mode violation with other role selectors
-    await this.page.locator('[data-testid="shared-token-role-select"]').click();
-    await this.page.locator(`[data-value="${role}"]`).click();
+    // Select role
+    const roleSelect = dialog.locator('[data-testid="shared-token-role-select"]');
+    await roleSelect.click();
+    await this.page.waitForTimeout(300);
+    await this.page.getByRole('option', { name: role }).click();
 
     if (message) {
       await this.fillInput('welcome message', message);
