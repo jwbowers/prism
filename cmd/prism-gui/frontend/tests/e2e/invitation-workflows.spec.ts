@@ -485,7 +485,7 @@ test.describe('Invitation Management Workflows', () => {
       ];
 
       // Select project first
-      const projectSelect = projectsPage.page.getByTestId('bulk-project-select');
+      const projectSelect = projectsPage.page.getByTestId('bulk-invite-project-select');
       await projectSelect.click();
       await projectsPage.page.waitForTimeout(300);
       const projectOption = projectsPage.page.locator(`[data-value="${testProjectId}"]`);

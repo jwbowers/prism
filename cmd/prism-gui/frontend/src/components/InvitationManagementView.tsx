@@ -311,7 +311,7 @@ export const InvitationManagementView: React.FC = () => {
         return;
       }
 
-      const result = await api.sendBulkInvitations(
+      const result = await api.bulkInvite(
         bulkProjectId,
         emails,
         bulkRole,
