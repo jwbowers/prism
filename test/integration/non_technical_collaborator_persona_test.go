@@ -51,7 +51,7 @@ func TestNonTechnicalCollaboratorPersona(t *testing.T) {
 		Size:     "M", // Medium size for RStudio Server
 	})
 	AssertNoError(t, err, "Failed to launch R research instance")
-	AssertNotNil(t, instance, "Instance should not be nil")
+	AssertNotEmpty(t, instance.ID, "Instance should have ID")
 
 	t.Logf("✓ Instance launched: %s (IP: %s)", instance.Name, instance.PublicIP)
 
