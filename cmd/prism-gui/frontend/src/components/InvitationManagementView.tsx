@@ -995,6 +995,7 @@ export const InvitationManagementView: React.FC = () => {
       }}
       visible={declineModalVisible}
       header="Decline Invitation"
+      data-testid="decline-invitation-modal"
       footer={
         <Box float="right">
           <SpaceBetween direction="horizontal" size="xs">
@@ -1012,6 +1013,7 @@ export const InvitationManagementView: React.FC = () => {
               variant="primary"
               onClick={handleDeclineConfirm}
               loading={loading}
+              data-testid="confirm-decline-button"
             >
               Decline
             </Button>

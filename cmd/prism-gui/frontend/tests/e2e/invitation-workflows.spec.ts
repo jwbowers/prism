@@ -400,7 +400,8 @@ test.describe('Invitation Management Workflows', () => {
       await declineButton.click();
 
       // Verify confirmation dialog
-      const dialog = projectsPage.page.locator('[role="dialog"]').first();
+      const dialog = projectsPage.page.locator('[data-testid="decline-invitation-modal"]');
+      await dialog.waitFor({ state: 'visible', timeout: 5000 });
       expect(await dialog.isVisible()).toBe(true);
 
       // Should have optional reason field
