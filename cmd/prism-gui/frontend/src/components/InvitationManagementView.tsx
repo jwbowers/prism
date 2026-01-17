@@ -701,14 +701,15 @@ export const InvitationManagementView: React.FC = () => {
 
         <FormField label="Project" constraintText="Required">
           <Select
-            selectedOption={bulkProjectId ? { label: bulkProjectId, value: bulkProjectId } : null}
+            selectedOption={
+              bulkProjectId
+                ? { label: projects.find(p => p.id === bulkProjectId)?.name || bulkProjectId, value: bulkProjectId }
+                : null
+            }
             onChange={({ detail }) => setBulkProjectId(detail.selectedOption.value || '')}
-            options={[
-              { label: 'Select a project', value: '' },
-              // TODO: Load from actual projects list
-            ]}
+            options={projects.map(p => ({ label: p.name, value: p.id }))}
             placeholder="Select a project"
-            data-testid="bulk-project-select"
+            data-testid="bulk-invite-project-select"
           />
         </FormField>
 
