@@ -601,7 +601,9 @@ export class ProjectsPage extends BasePage {
     await this.page.getByRole('option', { name: role }).click();
 
     if (message) {
-      const messageTextarea = dialog.locator('[data-testid="token-message-textarea"]');
+      // Cloudscape Textarea wraps the actual textarea in a span with data-testid
+      // So we need to find the textarea element within it
+      const messageTextarea = dialog.locator('[data-testid="token-message-textarea"]').locator('textarea');
       await messageTextarea.fill(message);
     }
 
