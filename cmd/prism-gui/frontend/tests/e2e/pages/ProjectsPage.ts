@@ -614,18 +614,53 @@ export class ProjectsPage extends BasePage {
   async revokeSharedToken(tokenName: string) {
     await this.switchToSharedTokens();
 
+    // Wait for token row to appear
     const tokenRow = this.page.locator(`tr:has-text("${tokenName}")`).first();
+    await tokenRow.waitFor({ state: 'visible', timeout: 10000 });
 
-    // Click revoke icon button (close icon)
-    const revokeButton = tokenRow.getByRole('button', { name: /revoke|close/i });
+    // Click revoke button using text match
+    const revokeButton = tokenRow.getByRole('button', { name: 'Revoke' });
     await revokeButton.click();
 
-    // Wait for confirmation modal with name-based selector
-    const dialog = this.page.getByRole('dialog', { name: /revoke|confirm/i });
+    // Wait for confirmation modal using data-testid
+    const dialog = this.page.locator('[data-testid="revoke-token-modal"]');
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Confirm
-    await this.clickButton('revoke');
+    // Confirm by clicking the confirm button
+    const confirmButton = dialog.locator('[data-testid="confirm-revoke-button"]');
+    await confirmButton.click();
+
+    await this.waitForDialogClose();
+  }
+
+  /**
+   * Extend shared token expiration
+   */
+  async extendSharedToken(tokenName: string, days: '7' | '30' | '90' = '7') {
+    await this.switchToSharedTokens();
+
+    // Wait for token row to appear
+    const tokenRow = this.page.locator(`tr:has-text("${tokenName}")`).first();
+    await tokenRow.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Click extend button using text match
+    const extendButton = tokenRow.getByRole('button', { name: 'Extend' });
+    await extendButton.click();
+
+    // Wait for extend modal using data-testid
+    const dialog = this.page.locator('[data-testid="extend-token-modal"]');
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Select duration using Cloudscape Select component
+    const durationSelect = dialog.locator('[data-testid="extend-duration-select"]');
+    await durationSelect.click();
+    await this.page.waitForTimeout(300);
+    await this.page.getByRole('option', { name: `${days} days` }).click();
+
+    // Confirm extension
+    const confirmButton = dialog.locator('[data-testid="confirm-extend-button"]');
+    await confirmButton.click();
+
     await this.waitForDialogClose();
   }
 

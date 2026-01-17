@@ -670,21 +670,10 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.createSharedToken(tokenName, 5, '7d', 'member');
       await projectsPage.page.waitForTimeout(1000);
 
-      const tokenRow = projectsPage.page.locator(`tr:has-text("${tokenName}")`).first();
+      // Extend the token
+      await projectsPage.extendSharedToken(tokenName, '7');
 
-      // Click extend button
-      const extendButton = tokenRow.getByRole('button', { name: /extend|add-plus/i });
-      await extendButton.click();
-      await projectsPage.page.waitForTimeout(500);
-
-      // Select extension duration
-      const durationSelect = projectsPage.page.getByLabel(/duration/i);
-      await durationSelect.selectOption('7d');
-
-      // Confirm
-      await projectsPage.clickButton('extend');
-
-      // Verify new expiration date
+      // Verify token still appears in list (expiration was extended)
       await projectsPage.page.waitForTimeout(1000);
       const updatedRow = projectsPage.page.locator(`tr:has-text("${tokenName}")`).first();
       const updatedText = await updatedRow.textContent();
