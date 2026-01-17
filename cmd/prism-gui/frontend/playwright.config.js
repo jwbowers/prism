@@ -51,16 +51,14 @@ export default defineConfig({
   // Global timeout for each test (includes setup, test body, and cleanup)
   timeout: 90000, // 90s per test - allows for test execution (~30s) + cleanup (~30s) + buffer
 
-  // Configure projects for major browsers (desktop only - CloudWorkstation is not mobile)
+  // Configure projects for Wails WebView engines only (desktop only - CloudWorkstation is not mobile)
+  // - Chromium: Windows (WebView2)
+  // - Webkit: macOS (WKWebView), Linux (webkit2gtk)
+  // Firefox not needed as Wails doesn't use it
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
     },
 
     {
