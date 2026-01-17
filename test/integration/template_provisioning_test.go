@@ -55,7 +55,7 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 
 	// Launch Python ML instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template:   "python-ml-workstation",
+		Template:   "python-ml-config",
 		Name:       instanceName,
 		Size:       "M",
 		SSHKeyName: testSSHKeyName,
@@ -111,7 +111,7 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 			t.Logf("Checking package: %s", pkg)
 
 			// SSH as ubuntu, explicitly source conda and activate environment
-			condaCmd := fmt.Sprintf("source /opt/conda/etc/profile.d/conda.sh && conda activate base && python -c 'import %s; print(%s.__version__)'", pkg, pkg)
+			condaCmd := fmt.Sprintf("source /opt/conda/etc/profile.d/conda.sh && conda activate ml-env && python -c 'import %s; print(%s.__version__)'", pkg, pkg)
 			output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
 				condaCmd, sshKeyPath)
 
@@ -128,7 +128,7 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 
 		// SSH as ubuntu, explicitly source conda and activate environment
 		output, err := fixtures.SSHCommand(t, instanceDetails.PublicIP, "ubuntu",
-			"source /opt/conda/etc/profile.d/conda.sh && conda activate base && jupyter --version", sshKeyPath)
+			"source /opt/conda/etc/profile.d/conda.sh && conda activate ml-env && jupyter --version", sshKeyPath)
 
 		assert.NoError(t, err, "Jupyter should be installed")
 		assert.Contains(t, output, "jupyter", "Jupyter version should be displayed")
@@ -162,7 +162,7 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 
 	// Launch R Research instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template:   "rstudio-server",
+		Template:   "r-rstudio-server",
 		Name:       instanceName,
 		Size:       "M",
 		SSHKeyName: testSSHKeyName,
@@ -261,7 +261,7 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 
 	// Launch Ubuntu Basic instance
 	launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-		Template:   "ubuntu-22-04-server",
+		Template:   "ubuntu-24-04-x86",
 		Name:       instanceName,
 		Size:       "S",
 		SSHKeyName: testSSHKeyName,
@@ -380,9 +380,9 @@ func TestTemplateProvisioning_MultipleTemplates(t *testing.T) {
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	templates := []string{
-		"ubuntu-22-04-server",
-		"python-ml-workstation",
-		"rstudio-server",
+		"ubuntu-24-04-x86",
+		"python-ml-config",
+		"r-rstudio-server",
 	}
 
 	t.Log("Launching multiple templates concurrently...")
