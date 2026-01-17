@@ -390,9 +390,12 @@ test.describe('Invitation Management Workflows', () => {
       // Add invitation to Individual Invitations tab
       await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken);
+      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
-      const invitationRow = projectsPage.getInvitationRows().first();
+      // Wait for invitation row to appear
+      const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
+      await invitationRow.waitFor({ state: 'visible', timeout: 5000 });
+
       const declineButton = invitationRow.getByRole('button', { name: /decline/i });
       await declineButton.click();
 
@@ -421,7 +424,7 @@ test.describe('Invitation Management Workflows', () => {
       // Add invitation to Individual Invitations tab
       await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken);
+      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Decline without reason
       await projectsPage.declineInvitation(testProjectName);
@@ -776,8 +779,7 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.switchToIndividualInvitations();
 
       // Add invitation
-      await projectsPage.addInvitationToken(invitationToken);
-      await projectsPage.page.waitForTimeout(1000);
+      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Accept the invitation
       await projectsPage.acceptInvitation(testProjectName);
@@ -804,8 +806,7 @@ test.describe('Invitation Management Workflows', () => {
 
       await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken);
-      await projectsPage.page.waitForTimeout(1000);
+      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Verify invitation appears (expiration date is part of invitation display)
       const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
