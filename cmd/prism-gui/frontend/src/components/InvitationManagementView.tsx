@@ -107,11 +107,14 @@ export const InvitationManagementView: React.FC = () => {
   // Shared tokens state
   const [createTokenModalVisible, setCreateTokenModalVisible] = useState(false);
   const [qrModalVisible, setQRModalVisible] = useState(false);
+  const [revokeTokenModalVisible, setRevokeTokenModalVisible] = useState(false);
+  const [extendTokenModalVisible, setExtendTokenModalVisible] = useState(false);
   const [selectedToken, setSelectedToken] = useState<SharedInvitationToken | null>(null);
   const [tokenName, setTokenName] = useState('');
   const [tokenRole, setTokenRole] = useState<'viewer' | 'member' | 'admin'>('member');
   const [tokenLimit, setTokenLimit] = useState('10');
   const [tokenExpires, setTokenExpires] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
+  const [extendDuration, setExtendDuration] = useState<'7' | '30' | '90'>('7');
   const [tokenMessage, setTokenMessage] = useState('');
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
 
@@ -399,6 +402,65 @@ export const InvitationManagementView: React.FC = () => {
     // Copy token URL to clipboard
     const url = `${window.location.origin}/invitations/redeem?token=${selectedToken.token}`;
     navigator.clipboard.writeText(url);
+  };
+
+  const handleExtendToken = async () => {
+    if (!api || !selectedToken) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await api.extendSharedToken(selectedToken.token, extendDuration);
+
+      // Update local state
+      setSharedTokens(prev => prev.map(t => {
+        if (t.token === selectedToken.token) {
+          const currentExpires = new Date(t.expires_at);
+          const newExpires = new Date(currentExpires.getTime() + parseInt(extendDuration) * 24 * 60 * 60 * 1000);
+          return { ...t, expires_at: newExpires.toISOString() };
+        }
+        return t;
+      }));
+
+      setExtendTokenModalVisible(false);
+      setSelectedToken(null);
+
+      // Dispatch event to refresh if needed
+      window.dispatchEvent(new CustomEvent('shared-token-updated'));
+    } catch (err: any) {
+      console.error('Failed to extend token:', err);
+      setError(err.message || 'Failed to extend token');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRevokeToken = async () => {
+    if (!api || !selectedToken) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await api.revokeSharedToken(selectedToken.token);
+
+      // Update local state
+      setSharedTokens(prev => prev.map(t =>
+        t.token === selectedToken.token ? { ...t, revoked: true } : t
+      ));
+
+      setRevokeTokenModalVisible(false);
+      setSelectedToken(null);
+
+      // Dispatch event to refresh if needed
+      window.dispatchEvent(new CustomEvent('shared-token-updated'));
+    } catch (err: any) {
+      console.error('Failed to revoke token:', err);
+      setError(err.message || 'Failed to revoke token');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ==================== HELPER FUNCTIONS ====================
@@ -807,17 +869,45 @@ export const InvitationManagementView: React.FC = () => {
           {
             id: 'actions',
             header: 'Actions',
-            cell: (item: SharedInvitationToken) => (
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button
-                  iconName="view-full"
-                  onClick={() => handleViewQRCode(item)}
-                  data-testid={`view-qr-button-${item.token}`}
-                >
-                  View QR
-                </Button>
-              </SpaceBetween>
-            ),
+            cell: (item: SharedInvitationToken) => {
+              const isExpired = new Date(item.expires_at) < new Date();
+              const isRevoked = item.revoked;
+              const isInactive = isExpired || isRevoked;
+
+              return (
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button
+                    iconName="view-full"
+                    onClick={() => handleViewQRCode(item)}
+                    data-testid={`view-qr-button-${item.token}`}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    iconName="add-plus"
+                    onClick={() => {
+                      setSelectedToken(item);
+                      setExtendTokenModalVisible(true);
+                    }}
+                    disabled={isInactive}
+                    data-testid={`extend-token-button-${item.token}`}
+                  >
+                    Extend
+                  </Button>
+                  <Button
+                    iconName="close"
+                    onClick={() => {
+                      setSelectedToken(item);
+                      setRevokeTokenModalVisible(true);
+                    }}
+                    disabled={isInactive}
+                    data-testid={`revoke-token-button-${item.token}`}
+                  >
+                    Revoke
+                  </Button>
+                </SpaceBetween>
+              );
+            },
           },
         ]}
         items={sharedTokens}
@@ -947,6 +1037,129 @@ export const InvitationManagementView: React.FC = () => {
           </FormField>
         </SpaceBetween>
       )}
+    </Modal>
+  );
+
+  const extendTokenModal = (
+    <Modal
+      onDismiss={() => {
+        setExtendTokenModalVisible(false);
+        setSelectedToken(null);
+        setError(null);
+      }}
+      visible={extendTokenModalVisible}
+      header="Extend Token Expiration"
+      size="medium"
+      data-testid="extend-token-modal"
+      footer={
+        <Box float="right">
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button
+              variant="link"
+              onClick={() => {
+                setExtendTokenModalVisible(false);
+                setSelectedToken(null);
+                setError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleExtendToken}
+              loading={loading}
+              data-testid="confirm-extend-button"
+            >
+              Extend
+            </Button>
+          </SpaceBetween>
+        </Box>
+      }
+    >
+      <SpaceBetween size="m">
+        {error && (
+          <Alert type="error" dismissible onDismiss={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {selectedToken && (
+          <Box>
+            <Box variant="awsui-key-label">Token Name</Box>
+            <div>{selectedToken.name}</div>
+          </Box>
+        )}
+
+        <FormField label="Extend By" description="Add additional days to the expiration">
+          <Select
+            selectedOption={{ label: `${extendDuration} days`, value: extendDuration }}
+            onChange={({ detail }) => setExtendDuration(detail.selectedOption.value as '7' | '30' | '90')}
+            options={[
+              { label: '7 days', value: '7' },
+              { label: '30 days', value: '30' },
+              { label: '90 days', value: '90' }
+            ]}
+            data-testid="extend-duration-select"
+          />
+        </FormField>
+      </SpaceBetween>
+    </Modal>
+  );
+
+  const revokeTokenModal = (
+    <Modal
+      onDismiss={() => {
+        setRevokeTokenModalVisible(false);
+        setSelectedToken(null);
+        setError(null);
+      }}
+      visible={revokeTokenModalVisible}
+      header="Revoke Shared Token"
+      size="medium"
+      data-testid="revoke-token-modal"
+      footer={
+        <Box float="right">
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button
+              variant="link"
+              onClick={() => {
+                setRevokeTokenModalVisible(false);
+                setSelectedToken(null);
+                setError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleRevokeToken}
+              loading={loading}
+              data-testid="confirm-revoke-button"
+            >
+              Revoke
+            </Button>
+          </SpaceBetween>
+        </Box>
+      }
+    >
+      <SpaceBetween size="m">
+        {error && (
+          <Alert type="error" dismissible onDismiss={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        <Alert type="warning">
+          Are you sure you want to revoke this token? This action cannot be undone and the token will no longer be usable.
+        </Alert>
+
+        {selectedToken && (
+          <Box>
+            <Box variant="awsui-key-label">Token Name</Box>
+            <div>{selectedToken.name}</div>
+          </Box>
+        )}
+      </SpaceBetween>
     </Modal>
   );
 
@@ -1169,6 +1382,8 @@ export const InvitationManagementView: React.FC = () => {
       {acceptInvitationModal}
       {declineInvitationModal}
       {createSharedTokenModal}
+      {extendTokenModal}
+      {revokeTokenModal}
       {qrCodeModal}
     </SpaceBetween>
   );
