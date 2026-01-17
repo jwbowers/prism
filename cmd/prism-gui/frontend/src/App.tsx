@@ -1153,7 +1153,23 @@ class SafePrismAPI {
   async getInvitationByToken(token: string): Promise<CachedInvitation> {
     try {
       const data = await this.safeRequest(`/api/v1/invitations/${token}`);
-      return data;
+      const inv = data.invitation;
+
+      // Map backend Invitation type to frontend CachedInvitation type
+      return {
+        token: inv.token,
+        invitation_id: inv.id,  // Backend uses 'id', frontend uses 'invitation_id'
+        project_id: inv.project_id,
+        project_name: inv.project_name || data.project?.name || 'Unknown Project',
+        email: inv.email,
+        role: inv.role,
+        invited_by: inv.invited_by,
+        invited_at: inv.invited_at,
+        expires_at: inv.expires_at,
+        status: inv.status,
+        message: inv.message,
+        added_at: new Date().toISOString()  // Client-side timestamp for when added to cache
+      };
     } catch (error) {
       logger.error('Failed to fetch invitation:', error);
       throw error;
