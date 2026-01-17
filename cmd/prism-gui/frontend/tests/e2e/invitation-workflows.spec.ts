@@ -315,14 +315,15 @@ test.describe('Invitation Management Workflows', () => {
       // Add invitation to Individual Invitations tab
       await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken);
+      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Accept invitation
       await projectsPage.acceptInvitation(testProjectName);
 
-      // Navigate to projects and verify membership
-      await projectsPage.navigate();
-      const isMember = await projectsPage.verifyProjectMember(testProjectName, testEmail);
+      // Verify membership via API (more reliable than UI with 730+ projects)
+      const members = await projectsPage.getProjectMembers(testProjectId);
+      // Backend stores email in user_id field, not email field
+      const isMember = members.some((m: any) => m.user_id === testEmail);
       expect(isMember).toBe(true);
 
       // Cleanup

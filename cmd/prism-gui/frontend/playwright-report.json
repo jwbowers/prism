@@ -104,8 +104,8 @@
               "column": 8,
               "specs": [
                 {
-                  "title": "should accept invitation with confirmation",
-                  "ok": true,
+                  "title": "should show acceptance confirmation dialog",
+                  "ok": false,
                   "tags": [],
                   "tests": [
                     {
@@ -118,134 +118,74 @@
                         {
                           "workerIndex": 0,
                           "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 17377,
-                          "errors": [],
-                          "stdout": [
-                            {
-                              "text": "[BROWSER DEBUG] [vite] connecting...\n"
+                          "status": "failed",
+                          "duration": 241,
+                          "error": {
+                            "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n",
+                            "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at ProjectsPage.goto (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:37:21)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:21:24",
+                            "location": {
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts",
+                              "column": 21,
+                              "line": 37
                             },
+                            "snippet": "\u001b[90m   at \u001b[39mpages/BasePage.ts:37\n\n  35 |    */\n  36 |   async goto() {\n> 37 |     await this.page.goto('/');\n     |                     ^\n  38 |     await this.waitForPageLoad();\n  39 |     await this.dismissWelcomeTour();\n  40 |     await this.waitForAppReady();"
+                          },
+                          "errors": [
                             {
-                              "text": "[BROWSER DEBUG] [vite] connected.\n"
-                            },
-                            {
-                              "text": "[BROWSER INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <p> p \n\n  ...\n    <div className=\"awsui_root...\" ref={function}>\n      <div className=\"awsui_chil...\">\n        <Box textAlign=\"center\" padding={{top:\"xl\", ...}}>\n          <InternalBox variant=\"div\" margin={{}} padding={{top:\"xl\", ...}} textAlign=\"center\" ...>\n            <div tabIndex={undefined} className=\"awsui_root...\" ref={{current:null}}>\n              <SpaceBetween size=\"m\">\n                <div className=\"awsui_root...\" ref={function}>\n                  <div className=\"awsui_chil...\">\n                    <TextContent>\n                      <div className=\"awsui_text...\" ref={{current:null}}>\n                        <h1>\n>                       <p>\n                          <Box variant=\"p\" fontSize=\"heading-m\" color=\"text-body-...\">\n                            <InternalBox variant=\"p\" margin={{}} padding={{}} fontSize=\"heading-m\" color=\"text-body-...\" ...>\n>                             <p\n>                               tabIndex={undefined}\n>                               className=\"awsui_root_18wu0_1xjaz_934 awsui_box_18wu0_1xjaz_172 awsui_p-variant_18wu0_...\"\n>                               ref={{current:null}}\n>                             >\n                  ...\n\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] <%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. p <p>\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] [2026-01-17T01:57:14.654Z] [Prism][ERROR] Failed to get auto-start status: TypeError: Cannot read properties of undefined (reading 'main')\n    at SafePrismAPI.getAutoStartStatus (http://localhost:3000/src/App.tsx:903:40)\n    at http://localhost:3000/src/App.tsx:1066:15\n    at http://localhost:3000/src/App.tsx:1213:5\n    at Object.react_stack_bottom_frame (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:18567:20)\n    at runWithFiberInDEV (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:997:72)\n    at commitHookEffectListMount (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:9411:163)\n    at commitHookPassiveMountEffects (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:9465:60)\n    at commitPassiveMountOnFiber (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:11040:29)\n    at recursivelyTraversePassiveMountEffects (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:11010:13)\n    at commitPassiveMountOnFiber (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:11201:13)\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] [2026-01-17T01:57:14.665Z] [Prism][ERROR] Failed to get auto-start status: TypeError: Cannot read properties of undefined (reading 'main')\n    at SafePrismAPI.getAutoStartStatus (http://localhost:3000/src/App.tsx:903:40)\n    at http://localhost:3000/src/App.tsx:1066:15\n    at http://localhost:3000/src/App.tsx:1213:5\n    at Object.react_stack_bottom_frame (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:18567:20)\n    at runWithFiberInDEV (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:997:72)\n    at commitHookEffectListMount (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:9411:163)\n    at commitHookPassiveMountEffects (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:9465:60)\n    at reconnectPassiveEffects (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:11273:13)\n    at recursivelyTraverseReconnectPassiveEffects (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:11240:11)\n    at reconnectPassiveEffects (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=2a20c401:11317:13)\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] Each child in a list should have a unique \"key\" prop.%s%s See https://react.dev/link/warning-keys for more information. \n\nCheck the render method of `ForwardRef`.  It was passed a child from ForwardRef.\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Waiting for React root to mount...\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] React root mounted successfully\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Waiting for Cloudscape side navigation...\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Side navigation is visible\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Tab content not visible (may be on different page)\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] App is ready\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Cleanup: Found 50 invitations, 2 pending\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Creating invitation for project ec05037d-b6c0-4f2a-a4de-a609dbb59596, email test-user@example.com, role member\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Invitation created successfully: token=cV4wS5qemKLgl1xKjfzfkNKV57NU4b2PHztwcb84rC0=, status=pending\n"
-                            },
-                            {
-                              "text": "Test invitation created: token=cV4wS5qemKLgl1xKjfzfkNKV57NU4b2PHztwcb84rC0=, status=pending\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Ensuring navigation is ready for \"invitations\"...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Looking for link: \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Link \"Invitations\" is visible, clicking...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Successfully clicked \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Ensuring navigation is ready for \"invitations\"...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Looking for link: \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Link \"Invitations\" is visible, clicking...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Successfully clicked \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Dispatching invitation-created event to trigger refresh\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Total invitations: 50\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Pending invitations: 1\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Found test invitation: project=Accept Test 1768615047209, status=pending, id=2ac67c7b-15e9-40d2-8179-88199c28a833\n"
-                            },
-                            {
-                              "text": "After refresh: 50 total, 1 pending\n"
-                            },
-                            {
-                              "text": "Pending projects: Accept Test 1768615047209\n"
-                            },
-                            {
-                              "text": "Looking for: Accept Test 1768615047209\n"
-                            },
-                            {
-                              "text": "Table has 50 rows. First 5: Accept Test 1768615047209membertest-user6 daysPend | membertest-user6 daysRevokedAcceptDecline | membertest-user6 daysRevokedAcceptDecline | Accept Test 1768614171518membertest-user6 daysRevo | Accept Test 1768614140449membertest-user6 daysRevo\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Cleanup: Found 50 invitations, 0 pending\n"
+                              "location": {
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts",
+                                "column": 21,
+                                "line": 37
+                              },
+                              "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\n   at pages/BasePage.ts:37\n\n  35 |    */\n  36 |   async goto() {\n> 37 |     await this.page.goto('/');\n     |                     ^\n  38 |     await this.waitForPageLoad();\n  39 |     await this.dismissWelcomeTour();\n  40 |     await this.waitForAppReady();\n    at ProjectsPage.goto (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:37:21)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:21:24"
                             }
                           ],
-                          "stderr": [],
+                          "stdout": [
+                            {
+                              "text": "[BROWSER ERROR] Failed to cleanup test invitations: TypeError: Cannot read properties of undefined (reading 'getMyInvitations')\n    at eval (eval at evaluate (:290:30), <anonymous>:5:39)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n"
+                            },
+                            {
+                              "text": "[BROWSER ERROR] Failed to cleanup invitation test projects: TypeError: Cannot read properties of undefined (reading 'getProjects')\n    at eval (eval at evaluate (:290:30), <anonymous>:5:36)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n"
+                            }
+                          ],
+                          "stderr": [
+                            {
+                              "text": "[PAGE ERROR] Failed to read the 'localStorage' property from 'Window': Access is denied for this document.\nSecurityError: Failed to read the 'localStorage' property from 'Window': Access is denied for this document.\n    at <anonymous>:4:7\n    at <anonymous>:5:7\n"
+                            }
+                          ],
                           "retry": 0,
-                          "startTime": "2026-01-17T01:57:12.208Z",
+                          "startTime": "2026-01-17T04:19:23.723Z",
                           "annotations": [],
-                          "attachments": []
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-20230-eptance-confirmation-dialog-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-20230-eptance-confirmation-dialog-chromium/video.webm"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts",
+                            "column": 21,
+                            "line": 37
+                          }
                         }
                       ],
-                      "status": "expected"
+                      "status": "unexpected"
                     }
                   ],
-                  "id": "ce9e05a89da8ed622f12-9a3769bda492148381ad",
+                  "id": "ce9e05a89da8ed622f12-3d8cd9154ced3f407e9f",
                   "file": "invitation-workflows.spec.ts",
-                  "line": 132,
+                  "line": 268,
                   "column": 5
                 },
                 {
-                  "title": "should accept invitation with confirmation",
-                  "ok": true,
+                  "title": "should show acceptance confirmation dialog",
+                  "ok": false,
                   "tags": [],
                   "tests": [
                     {
@@ -258,148 +198,68 @@
                         {
                           "workerIndex": 1,
                           "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 16600,
-                          "errors": [],
+                          "status": "failed",
+                          "duration": 431,
+                          "error": {
+                            "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n",
+                            "stack": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at ProjectsPage.goto (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:37:21)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:21:24",
+                            "location": {
+                              "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts",
+                              "column": 21,
+                              "line": 37
+                            },
+                            "snippet": "\u001b[90m   at \u001b[39mpages/BasePage.ts:37\n\n  35 |    */\n  36 |   async goto() {\n> 37 |     await this.page.goto('/');\n     |                     ^\n  38 |     await this.waitForPageLoad();\n  39 |     await this.dismissWelcomeTour();\n  40 |     await this.waitForAppReady();"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts",
+                                "column": 21,
+                                "line": 37
+                              },
+                              "message": "Error: page.goto: Could not connect to the server.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\n   at pages/BasePage.ts:37\n\n  35 |    */\n  36 |   async goto() {\n> 37 |     await this.page.goto('/');\n     |                     ^\n  38 |     await this.waitForPageLoad();\n  39 |     await this.dismissWelcomeTour();\n  40 |     await this.waitForAppReady();\n    at ProjectsPage.goto (/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts:37:21)\n    at /Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/invitation-workflows.spec.ts:21:24"
+                            }
+                          ],
                           "stdout": [
                             {
-                              "text": "[BROWSER INFO] Successfully preconnected to https://fonts.googleapis.com/\n"
+                              "text": "[BROWSER ERROR] Failed to load resource: Could not connect to the server.\n"
                             },
                             {
-                              "text": "[BROWSER INFO] Successfully preconnected to https://fonts.gstatic.com/\n"
+                              "text": "[BROWSER ERROR] Failed to cleanup test invitations: TypeError: undefined is not an object (evaluating 'api.getMyInvitations')\n"
                             },
                             {
-                              "text": "[BROWSER DEBUG] [vite] connecting...\n"
-                            },
-                            {
-                              "text": "[BROWSER DEBUG] [vite] connected.\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <p> p \n\n  ...\n    <div className=\"awsui_root...\" ref={function}>\n      <div className=\"awsui_chil...\">\n        <Box textAlign=\"center\" padding={{top:\"xl\", ...}}>\n          <InternalBox variant=\"div\" margin={{}} padding={{top:\"xl\", ...}} textAlign=\"center\" ...>\n            <div tabIndex={undefined} className=\"awsui_root...\" ref={{current:null}}>\n              <SpaceBetween size=\"m\">\n                <div className=\"awsui_root...\" ref={function}>\n                  <div className=\"awsui_chil...\">\n                    <TextContent>\n                      <div className=\"awsui_text...\" ref={{current:null}}>\n                        <h1>\n>                       <p>\n                          <Box variant=\"p\" fontSize=\"heading-m\" color=\"text-body-...\">\n                            <InternalBox variant=\"p\" margin={{}} padding={{}} fontSize=\"heading-m\" color=\"text-body-...\" ...>\n>                             <p\n>                               tabIndex={undefined}\n>                               className=\"awsui_root_18wu0_1xjaz_934 awsui_box_18wu0_1xjaz_172 awsui_p-variant_18wu0_...\"\n>                               ref={{current:null}}\n>                             >\n                  ...\n\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] <%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. p <p>\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] [2026-01-17T01:57:32.617Z] [Prism][ERROR] Failed to get auto-start status: TypeError: undefined is not an object (evaluating 'window.go.main')\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] [2026-01-17T01:57:32.627Z] [Prism][ERROR] Failed to get auto-start status: TypeError: undefined is not an object (evaluating 'window.go.main')\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] Each child in a list should have a unique \"key\" prop.%s%s See https://react.dev/link/warning-keys for more information. \n\nCheck the render method of `ForwardRef`.  It was passed a child from ForwardRef.\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] The network connection was lost.\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] Failed to load resource: The network connection was lost.\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] [2026-01-17T01:57:32.770Z] [Prism][ERROR] API request failed for /api/v1/projects: TypeError: Load failed\n"
-                            },
-                            {
-                              "text": "[BROWSER ERROR] [2026-01-17T01:57:32.770Z] [Prism][ERROR] Failed to fetch projects: TypeError: Load failed\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Waiting for React root to mount...\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] React root mounted successfully\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Waiting for Cloudscape side navigation...\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Side navigation is visible\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] Tab content not visible (may be on different page)\n"
-                            },
-                            {
-                              "text": "[waitForAppReady] App is ready\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Cleanup: Found 50 invitations, 0 pending\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Creating invitation for project 26fcbb39-0e84-47b8-91b9-4b7bec928edc, email test-user@example.com, role member\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Invitation created successfully: token=y9sKQiSiIW12EuJdPkkNuO352ehIBpjHiEBh5xEAVGo=, status=pending\n"
-                            },
-                            {
-                              "text": "Test invitation created: token=y9sKQiSiIW12EuJdPkkNuO352ehIBpjHiEBh5xEAVGo=, status=pending\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Ensuring navigation is ready for \"invitations\"...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Looking for link: \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Link \"Invitations\" is visible, clicking...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Successfully clicked \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Ensuring navigation is ready for \"invitations\"...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Looking for link: \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Link \"Invitations\" is visible, clicking...\n"
-                            },
-                            {
-                              "text": "[navigateToTab] Successfully clicked \"Invitations\"\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Dispatching invitation-created event to trigger refresh\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Total invitations: 50\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Pending invitations: 1\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Found test invitation: project=Accept Test 1768615065042, status=pending, id=d633a866-ead3-4250-80e9-9f922ea91e7e\n"
-                            },
-                            {
-                              "text": "After refresh: 50 total, 1 pending\n"
-                            },
-                            {
-                              "text": "Pending projects: Accept Test 1768615065042\n"
-                            },
-                            {
-                              "text": "Looking for: Accept Test 1768615065042\n"
-                            },
-                            {
-                              "text": "Table has 50 rows. First 5: Accept Test 1768615065042membertest-user6 daysPend | Accept Test 1768615047209membertest-user6 daysAcce | membertest-user6 daysRevokedAcceptDecline | membertest-user6 daysRevokedAcceptDecline | Accept Test 1768614171518membertest-user6 daysRevo\n"
-                            },
-                            {
-                              "text": "[BROWSER LOG] Cleanup: Found 50 invitations, 0 pending\n"
+                              "text": "[BROWSER ERROR] Failed to cleanup invitation test projects: TypeError: undefined is not an object (evaluating 'api.getProjects')\n"
                             }
                           ],
-                          "stderr": [
-                            {
-                              "text": "[PAGE ERROR] /localhost:8947/api/v1/projects due to access control checks.\n\n"
-                            }
-                          ],
+                          "stderr": [],
                           "retry": 0,
-                          "startTime": "2026-01-17T01:57:31.082Z",
+                          "startTime": "2026-01-17T04:19:24.700Z",
                           "annotations": [],
-                          "attachments": []
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-20230-eptance-confirmation-dialog-webkit/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/test-results/invitation-workflows-Invit-20230-eptance-confirmation-dialog-webkit/video.webm"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/scttfrdmn/src/prism/cmd/prism-gui/frontend/tests/e2e/pages/BasePage.ts",
+                            "column": 21,
+                            "line": 37
+                          }
                         }
                       ],
-                      "status": "expected"
+                      "status": "unexpected"
                     }
                   ],
-                  "id": "ce9e05a89da8ed622f12-e66ec994e73f7a25cd3c",
+                  "id": "ce9e05a89da8ed622f12-adf0d9084a73dea3145b",
                   "file": "invitation-workflows.spec.ts",
-                  "line": 132,
+                  "line": 268,
                   "column": 5
                 }
               ]
@@ -411,11 +271,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-01-17T01:57:07.625Z",
-    "duration": 40399.159,
-    "expected": 2,
+    "startTime": "2026-01-17T04:19:19.719Z",
+    "duration": 5635.759,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 2,
     "flaky": 0
   }
 }

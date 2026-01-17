@@ -146,8 +146,15 @@ export class ProjectsPage extends BasePage {
   async viewProjectDetails(projectName: string) {
     await this.navigate();
 
+    // Poll for project to appear in table (handles async UI updates)
+    const projectExists = await this.verifyProjectExists(projectName);
+    if (!projectExists) {
+      throw new Error(`Project "${projectName}" not found in projects table`);
+    }
+
     const projectRow = this.getProjectByName(projectName);
     const actionsButton = projectRow.getByRole('button', { name: /actions/i });
+    await actionsButton.waitFor({ state: 'visible', timeout: 5000 });
     await actionsButton.click();
 
     // Wait for menu to appear
@@ -896,6 +903,25 @@ export class ProjectsPage extends BasePage {
   }
 
   /**
+   * Get project members via API
+   */
+  async getProjectMembers(projectId: string): Promise<any[]> {
+    return await this.page.evaluate(async (id) => {
+      const api = (window as any).__apiClient;
+      if (!api) {
+        throw new Error('API client not found - page may not be loaded');
+      }
+      try {
+        const project = await api.getProject(id);
+        return project.members || [];
+      } catch (err: any) {
+        console.error(`Failed to get project members: ${err.message || String(err)}`);
+        throw err;
+      }
+    }, projectId);
+  }
+
+  /**
    * Delete test project via API
    */
   async deleteTestProject(projectId: string): Promise<void> {
@@ -1015,7 +1041,20 @@ export class ProjectsPage extends BasePage {
       'list-test',
       'alert-test',
       'exceeded-test',
-      'spend-test'
+      'spend-test',
+      // Invitation workflow test projects
+      'Membership Test',
+      'Dialog Test',
+      'Stats Test',
+      'Expiration Test',
+      'Email Validation Test',
+      'Welcome Message Test',
+      'Decline Test',
+      'Decline Dialog Test',
+      'Results Summary Test',
+      'Decline Reason Test',
+      'test-collab-project',
+      'test-invitation-project'
     ];
 
     // Get all project rows
