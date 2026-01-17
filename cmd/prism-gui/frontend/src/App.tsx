@@ -1221,14 +1221,26 @@ class SafePrismAPI {
   // Bulk Invitation API (Issue #240)
   async bulkInvite(projectId: string, emails: string[], role: string, message?: string): Promise<BulkInviteResponse> {
     try {
-      const body: Record<string, string | string[]> = {
-        emails,
-        role,
+      // Backend expects invitations array with BulkInvitationEntry objects
+      const body: Record<string, unknown> = {
+        invitations: emails.map(email => ({ email })),
+        default_role: role,
       };
-      if (message) body.message = message;
+      if (message) body.default_message = message;
 
-      const data = await this.safeRequest<BulkInviteResponse>(`/api/v1/projects/${projectId}/invitations/bulk`, 'POST', body);
-      return data;
+      // Backend returns BulkInvitationResponse with summary and results
+      const data = await this.safeRequest<{summary: {total: number; sent: number; failed: number}; results: Array<{email: string; status: string; error?: string}>}>(`/api/v1/projects/${projectId}/invitations/bulk`, 'POST', body);
+
+      // Transform backend response to match frontend BulkInviteResponse interface
+      return {
+        total: data.summary.total,
+        sent: data.summary.sent,
+        failed: data.summary.failed,
+        errors: data.results.filter(r => r.status === 'failed').map(r => ({
+          email: r.email,
+          error: r.error || 'Unknown error'
+        }))
+      };
     } catch (error) {
       logger.error('Failed to send bulk invitations:', error);
       throw error;
