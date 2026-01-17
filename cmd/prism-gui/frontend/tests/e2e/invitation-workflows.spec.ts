@@ -617,12 +617,13 @@ test.describe('Invitation Management Workflows', () => {
       const qrImage = qrModal.getByRole('img', { name: 'QR Code' });
       expect(await qrImage.isVisible()).toBe(true);
 
-      // Should have copy token button
-      const copyButton = qrModal.getByRole('button', { name: /copy token/i });
+      // Should have copy URL button
+      const copyButton = qrModal.getByRole('button', { name: 'Copy URL' });
       expect(await copyButton.isVisible()).toBe(true);
 
       // Close
-      await projectsPage.clickButton('close');
+      const closeButton = qrModal.locator('[data-testid="close-qr-modal-button"]');
+      await closeButton.click();
     });
 
     test('should copy shared token URL', async () => {
