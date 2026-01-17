@@ -876,6 +876,7 @@ export class ProjectsPage extends BasePage {
   /**
    * Clean up all test invitations via API
    * Fetches all invitations and deletes them to prevent test data pollution
+   * Only revokes pending invitations (accepted/declined cannot be revoked)
    */
   async cleanupTestInvitations(): Promise<void> {
     await this.page.evaluate(async () => {
@@ -884,8 +885,13 @@ export class ProjectsPage extends BasePage {
         // Get all invitations for the test user
         const invitations = await api.getMyInvitations('test-user@example.com');
 
-        // Delete each invitation
-        for (const invitation of invitations) {
+        // Only revoke pending invitations (backend rejects revocation of accepted/declined)
+        const pendingInvitations = invitations.filter((inv: any) => inv.status === 'pending');
+
+        console.log(`Cleanup: Found ${invitations.length} invitations, ${pendingInvitations.length} pending`);
+
+        // Delete each pending invitation
+        for (const invitation of pendingInvitations) {
           try {
             await api.revokeInvitation(invitation.id);
           } catch (err) {
