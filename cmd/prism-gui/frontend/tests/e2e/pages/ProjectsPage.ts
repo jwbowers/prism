@@ -1013,4 +1013,142 @@ export class ProjectsPage extends BasePage {
       }
     }
   }
+
+  // ==================== TIMING UTILITIES (Issue #366) ====================
+
+  /**
+   * Wait for API response to complete before proceeding
+   * Helps prevent timing issues where UI checks happen before API calls finish
+   */
+  async waitForAPIResponse(urlPattern: string | RegExp, timeout: number = 10000): Promise<void> {
+    await this.page.waitForResponse(
+      (response) => {
+        const url = response.url();
+        if (typeof urlPattern === 'string') {
+          return url.includes(urlPattern);
+        }
+        return urlPattern.test(url);
+      },
+      { timeout }
+    );
+    // Add small buffer for React re-render
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Wait for network to become idle (all requests completed)
+   * Useful after operations that trigger multiple API calls
+   */
+  async waitForNetworkIdle(timeout: number = 5000): Promise<void> {
+    await this.page.waitForLoadState('networkidle', { timeout });
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Poll until a condition is true or timeout
+   * Generic helper for waiting for dynamic conditions
+   */
+  async pollUntil(
+    condition: () => Promise<boolean>,
+    options: { timeout?: number; interval?: number; errorMessage?: string } = {}
+  ): Promise<void> {
+    const timeout = options.timeout || 15000;
+    const interval = options.interval || 500;
+    const errorMessage = options.errorMessage || 'Condition not met within timeout';
+
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      if (await condition()) {
+        return;
+      }
+      await this.page.waitForTimeout(interval);
+    }
+
+    throw new Error(`${errorMessage} (timeout: ${timeout}ms)`);
+  }
+
+  /**
+   * Wait for table to update with new data
+   * Polls until row count changes or specific row appears
+   */
+  async waitForTableUpdate(
+    expectedMinRows: number = 1,
+    timeout: number = 10000
+  ): Promise<void> {
+    await this.pollUntil(
+      async () => {
+        const rows = this.page.locator('table tbody tr');
+        const count = await rows.count();
+        return count >= expectedMinRows;
+      },
+      {
+        timeout,
+        errorMessage: `Table did not update with at least ${expectedMinRows} rows`
+      }
+    );
+  }
+
+  /**
+   * Wait for specific row to appear in table
+   * More robust than simple waitFor - retries if row doesn't exist
+   */
+  async waitForTableRow(
+    text: string,
+    timeout: number = 10000
+  ): Promise<void> {
+    await this.pollUntil(
+      async () => {
+        const row = this.page.locator(`table tbody tr:has-text("${text}")`);
+        const count = await row.count();
+        return count > 0;
+      },
+      {
+        timeout,
+        errorMessage: `Row containing "${text}" did not appear`
+      }
+    );
+  }
+
+  /**
+   * Wait for dialog to be ready (visible and fully rendered)
+   * More robust than simple waitFor - handles React rendering delays
+   */
+  async waitForDialogReady(
+    dialogNamePattern: string | RegExp,
+    timeout: number = 10000
+  ): Promise<void> {
+    // Wait for dialog to appear in DOM
+    const dialog = typeof dialogNamePattern === 'string'
+      ? this.page.getByRole('dialog', { name: new RegExp(dialogNamePattern, 'i') })
+      : this.page.getByRole('dialog', { name: dialogNamePattern });
+
+    await dialog.waitFor({ state: 'visible', timeout });
+
+    // Wait for dialog to be fully rendered (buttons, inputs, etc.)
+    await this.page.waitForTimeout(500);
+
+    // Verify dialog is still visible (not a flicker)
+    await dialog.waitFor({ state: 'visible', timeout: 2000 });
+  }
+
+  /**
+   * Wait for button to become enabled
+   * Polls until button is no longer disabled
+   */
+  async waitForButtonEnabled(
+    button: Locator,
+    timeout: number = 10000
+  ): Promise<void> {
+    await this.pollUntil(
+      async () => {
+        const isDisabled = await button.getAttribute('disabled');
+        return isDisabled === null;
+      },
+      {
+        timeout,
+        errorMessage: 'Button did not become enabled'
+      }
+    );
+  }
 }

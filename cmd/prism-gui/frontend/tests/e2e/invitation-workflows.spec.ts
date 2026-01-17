@@ -144,28 +144,35 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
 
-      // Wait for API call and React rendering: table body should have at least one row
-      await projectsPage.page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+      // Wait for API response and table to update with new data
+      await projectsPage.waitForNetworkIdle();
+      await projectsPage.waitForTableUpdate(1);
 
-      // Find the row containing our test project (table may not be sorted by creation time)
+      // Wait for specific test row to appear (more robust than simple waitFor)
+      await projectsPage.waitForTableRow(testProjectName);
+
+      // Find the row and accept button
       const testRow = projectsPage.page.locator(`table tbody tr:has-text("${testProjectName}")`);
-      await testRow.waitFor({ state: 'visible', timeout: 5000 });
-
-      // Accept the invitation for our test project
       const acceptButton = testRow.getByRole('button', { name: /accept/i });
+
+      // Wait for button to be enabled before clicking
+      await projectsPage.waitForButtonEnabled(acceptButton);
       await acceptButton.click();
 
-      // Wait for confirmation dialog to appear and click Accept
-      // Use heading to identify the specific "Accept Invitation" dialog
-      const confirmDialog = projectsPage.page.getByRole('dialog').filter({ hasText: 'Accept Invitation' });
-      await confirmDialog.waitFor({ state: 'visible', timeout: 5000 });
+      // Wait for confirmation dialog to be fully rendered
+      await projectsPage.waitForDialogReady('Accept Invitation');
 
+      // Find and click the dialog accept button
+      const confirmDialog = projectsPage.page.getByRole('dialog').filter({ hasText: 'Accept Invitation' });
       const dialogAcceptButton = confirmDialog.getByRole('button', { name: 'Accept' });
       await dialogAcceptButton.click();
 
-      // Wait for dialog to close and status to update
+      // Wait for API response and dialog to close
+      await projectsPage.waitForAPIResponse('/accept', 10000);
       await confirmDialog.waitFor({ state: 'hidden', timeout: 5000 });
-      await projectsPage.page.waitForTimeout(1000);
+
+      // Wait for table to refresh with updated status
+      await projectsPage.waitForNetworkIdle();
 
       // Verify status changed to Accepted
       const updatedRowText = await testRow.textContent();
