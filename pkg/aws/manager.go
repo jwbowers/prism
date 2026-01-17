@@ -404,14 +404,22 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 		)
 	}
 
+	// Use NetworkInterfaces format to enable public IP assignment (Issue #439)
+	// This ensures instances get public IPs even in subnets with MapPublicIpOnLaunch=false
 	runInput := &ec2.RunInstancesInput{
-		ImageId:          &ami,
-		InstanceType:     ec2types.InstanceType(instanceType),
-		MinCount:         &minCount,
-		MaxCount:         &maxCount,
-		UserData:         &userDataEncoded,
-		SubnetId:         aws.String(subnetID),
-		SecurityGroupIds: []string{securityGroupID},
+		ImageId:      &ami,
+		InstanceType: ec2types.InstanceType(instanceType),
+		MinCount:     &minCount,
+		MaxCount:     &maxCount,
+		UserData:     &userDataEncoded,
+		NetworkInterfaces: []ec2types.InstanceNetworkInterfaceSpecification{
+			{
+				DeviceIndex:              aws.Int32(0),
+				SubnetId:                 aws.String(subnetID),
+				Groups:                   []string{securityGroupID},
+				AssociatePublicIpAddress: aws.Bool(true), // Explicitly request public IP
+			},
+		},
 		// IAM Instance Profile is optional - only add if it exists
 		// This makes onboarding painless for new users
 		TagSpecifications: []ec2types.TagSpecification{
@@ -582,8 +590,12 @@ func (l *InstanceLauncher) createDryRunInstance(req ctypes.LaunchRequest, hourly
 // executeInstanceLaunch performs the actual EC2 instance launch with intelligent AZ failover (v0.7.0)
 func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *ec2.RunInstancesInput, instanceType string) (*ec2types.Instance, error) {
 	// When a subnet is specified, AWS automatically uses the subnet's AZ.
-	// Don't override placement AZ in this case (Issue #427)
-	if runInput.SubnetId != nil && *runInput.SubnetId != "" {
+	// Don't override placement AZ in this case (Issue #427, #439)
+	// Check both old format (SubnetId) and new format (NetworkInterfaces)
+	hasSubnet := (runInput.SubnetId != nil && *runInput.SubnetId != "") ||
+		(len(runInput.NetworkInterfaces) > 0 && runInput.NetworkInterfaces[0].SubnetId != nil)
+
+	if hasSubnet {
 		// Launch directly without AZ failover since subnet determines the AZ
 		var result *ec2.RunInstancesOutput
 		err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
