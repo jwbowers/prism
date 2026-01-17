@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/pkg/types"
 	"github.com/scttfrdmn/prism/test/fixtures"
 	"github.com/stretchr/testify/assert"
@@ -24,11 +23,12 @@ func TestTemplateProvisioning_PythonML(t *testing.T) {
 		t.Skip("Skipping template provisioning test in short mode")
 	}
 
+	// Initialize test context (starts daemon automatically)
+	testCtx := NewTestContext(t)
+	defer testCtx.Cleanup()
+
 	ctx := context.Background()
-	apiClient := client.NewClientWithOptions("http://localhost:8947", client.Options{
-		AWSProfile: "aws",
-		AWSRegion:  "us-west-2",
-	})
+	apiClient := testCtx.Client
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	instanceName := fmt.Sprintf("python-ml-test-%d", time.Now().Unix())
@@ -124,11 +124,12 @@ func TestTemplateProvisioning_RResearch(t *testing.T) {
 		t.Skip("Skipping template provisioning test in short mode")
 	}
 
+	// Initialize test context (starts daemon automatically)
+	testCtx := NewTestContext(t)
+	defer testCtx.Cleanup()
+
 	ctx := context.Background()
-	apiClient := client.NewClientWithOptions("http://localhost:8947", client.Options{
-		AWSProfile: "aws",
-		AWSRegion:  "us-west-2",
-	})
+	apiClient := testCtx.Client
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	instanceName := fmt.Sprintf("r-research-test-%d", time.Now().Unix())
@@ -217,11 +218,12 @@ func TestTemplateProvisioning_BaseTemplate(t *testing.T) {
 		t.Skip("Skipping template provisioning test in short mode")
 	}
 
+	// Initialize test context (starts daemon automatically)
+	testCtx := NewTestContext(t)
+	defer testCtx.Cleanup()
+
 	ctx := context.Background()
-	apiClient := client.NewClientWithOptions("http://localhost:8947", client.Options{
-		AWSProfile: "aws",
-		AWSRegion:  "us-west-2",
-	})
+	apiClient := testCtx.Client
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	instanceName := fmt.Sprintf("base-template-test-%d", time.Now().Unix())
@@ -339,11 +341,12 @@ func TestTemplateProvisioning_MultipleTemplates(t *testing.T) {
 		t.Skip("Skipping concurrent template test in short mode")
 	}
 
+	// Initialize test context (starts daemon automatically)
+	testCtx := NewTestContext(t)
+	defer testCtx.Cleanup()
+
 	ctx := context.Background()
-	apiClient := client.NewClientWithOptions("http://localhost:8947", client.Options{
-		AWSProfile: "aws",
-		AWSRegion:  "us-west-2",
-	})
+	apiClient := testCtx.Client
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	templates := []string{
