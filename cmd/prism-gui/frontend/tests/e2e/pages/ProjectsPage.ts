@@ -821,6 +821,23 @@ export class ProjectsPage extends BasePage {
   // ==================== INVITATION TEST HELPERS ====================
 
   /**
+   * Filter invitations by status (Pending, Accepted, Declined, etc.)
+   */
+  async filterInvitationsByStatus(status: 'All' | 'Pending' | 'Accepted' | 'Declined' | 'Expired' | 'Revoked'): Promise<void> {
+    // Click the filter button
+    const filterButton = this.page.getByRole('button', { name: /filter by status/i });
+    await filterButton.click();
+
+    // Wait for dropdown to appear and click the status option
+    await this.page.waitForTimeout(300);
+    const statusOption = this.page.getByRole('option', { name: new RegExp(status, 'i') });
+    await statusOption.click();
+
+    // Wait for table to update
+    await this.waitForNetworkIdle();
+  }
+
+  /**
    * Create test project via API for invitation testing
    */
   async createTestProject(name: string): Promise<string> {
@@ -845,18 +862,37 @@ export class ProjectsPage extends BasePage {
     email: string = 'test-user@example.com',
     role: 'viewer' | 'member' | 'admin'
   ): Promise<string> {
-    const token = await this.page.evaluate(async (args) => {
+    const result = await this.page.evaluate(async (args) => {
       const api = (window as any).__apiClient;
-      const invitation = await api.sendInvitation(
-        args.projectId,
-        args.email,
-        args.role,
-        'Test invitation message'
-      );
-      return invitation.token;
+      if (!api) {
+        throw new Error('API client not found - page may not be loaded');
+      }
+      try {
+        console.log(`Creating invitation for project ${args.projectId}, email ${args.email}, role ${args.role}`);
+        const invitation = await api.sendInvitation(
+          args.projectId,
+          args.email,
+          args.role,
+          'Test invitation message'
+        );
+        console.log(`Invitation created successfully: token=${invitation.token}, status=${invitation.status}`);
+        return { token: invitation.token, status: invitation.status, error: null };
+      } catch (err: any) {
+        console.error('Failed to create invitation:', err);
+        return { token: null, status: null, error: err.message || String(err) };
+      }
     }, { projectId, email, role });
 
-    return token;
+    if (result.error) {
+      throw new Error(`Failed to send test invitation: ${result.error}`);
+    }
+
+    if (!result.token) {
+      throw new Error('Invitation created but no token returned');
+    }
+
+    console.log(`Test invitation created: token=${result.token}, status=${result.status}`);
+    return result.token;
   }
 
   /**

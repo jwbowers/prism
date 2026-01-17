@@ -148,15 +148,35 @@ test.describe('Invitation Management Workflows', () => {
 
       await projectsPage.switchToIndividualInvitations();
 
-      // Wait for API response and table to update with new data
-      await projectsPage.waitForNetworkIdle();
-      await projectsPage.waitForTableUpdate(1, 15000);
+      // Debug: Check what invitations exist via API before filtering
+      const invitations = await projectsPage.page.evaluate(async () => {
+        const api = (window as any).__apiClient;
+        const invites = await api.getMyInvitations('test-user@example.com');
+        console.log(`Found ${invites.length} total invitations`);
+        const pending = invites.filter((inv: any) => inv.status === 'pending');
+        console.log(`Found ${pending.length} pending invitations:`, pending.map((inv: any) => ({
+          project: inv.project_name,
+          status: inv.status,
+          token: inv.token.substring(0, 10) + '...'
+        })));
+        return { total: invites.length, pending: pending.length, pendingNames: pending.map((inv: any) => inv.project_name) };
+      });
 
-      // Wait for specific test row to appear (more robust than simple waitFor)
-      await projectsPage.waitForTableRow(testProjectName);
+      console.log(`Invitation count: ${invitations.total} total, ${invitations.pending} pending`);
+      console.log(`Pending project names: ${invitations.pendingNames.join(', ')}`);
 
-      // Find the row and accept button
+      if (invitations.pending === 0) {
+        throw new Error(`No pending invitations found! Expected to find invitation for project "${testProjectName}". Total invitations: ${invitations.total}`);
+      }
+
+      // The invitation exists in the backend - now find it in the table
+      // Note: Cloudscape filter may have issues, so we'll just find the row directly
       const testRow = projectsPage.page.locator(`table tbody tr:has-text("${testProjectName}")`);
+
+      // Wait for the row to appear (it should be in the table already since we saw it in API)
+      await testRow.waitFor({ state: 'visible', timeout: 15000 });
+
+      // Find the accept button in the row
       const acceptButton = testRow.getByRole('button', { name: /accept/i });
 
       // Wait for button to be enabled before clicking
@@ -169,10 +189,17 @@ test.describe('Invitation Management Workflows', () => {
       // Find and click the dialog accept button
       const confirmDialog = projectsPage.page.getByRole('dialog').filter({ hasText: 'Accept Invitation' });
       const dialogAcceptButton = confirmDialog.getByRole('button', { name: 'Accept' });
+
+      // Set up API response wait BEFORE clicking (Playwright needs to wait before the action)
+      const acceptResponsePromise = projectsPage.page.waitForResponse(
+        response => response.url().includes('/invitations/') && response.url().includes('/accept'),
+        { timeout: 10000 }
+      );
+
       await dialogAcceptButton.click();
 
-      // Wait for API response and dialog to close
-      await projectsPage.waitForAPIResponse('/accept', 10000);
+      // Wait for API response to complete
+      await acceptResponsePromise;
       await confirmDialog.waitFor({ state: 'hidden', timeout: 5000 });
 
       // Wait for table to refresh with updated status
