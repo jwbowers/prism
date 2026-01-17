@@ -142,11 +142,15 @@ test.describe('Invitation Management Workflows', () => {
       // Reload page to fetch invitations from backend (invitation should appear automatically)
       await projectsPage.navigateToInvitations();
       await projectsPage.page.reload();
+
+      // Wait for page to load and fetch invitations
+      await projectsPage.waitForAPIResponse('/invitations/my', 15000);
+
       await projectsPage.switchToIndividualInvitations();
 
       // Wait for API response and table to update with new data
       await projectsPage.waitForNetworkIdle();
-      await projectsPage.waitForTableUpdate(1);
+      await projectsPage.waitForTableUpdate(1, 15000);
 
       // Wait for specific test row to appear (more robust than simple waitFor)
       await projectsPage.waitForTableRow(testProjectName);
