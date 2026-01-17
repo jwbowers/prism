@@ -613,8 +613,8 @@ test.describe('Invitation Management Workflows', () => {
       const qrModal = projectsPage.page.locator('[data-testid="qr-code-modal"]');
       expect(await qrModal.isVisible()).toBe(true);
 
-      // Should show QR code image
-      const qrImage = qrModal.locator('img, canvas, svg');
+      // Should show QR code image (use alt text to avoid matching button icons)
+      const qrImage = qrModal.getByRole('img', { name: 'QR Code' });
       expect(await qrImage.isVisible()).toBe(true);
 
       // Should have copy token button
