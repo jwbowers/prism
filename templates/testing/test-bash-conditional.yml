@@ -1,0 +1,38 @@
+name: "Test Bash Conditional"
+slug: "test-bash-cond"
+description: "Test BASH conditional with parameter"
+base: "ubuntu-22.04"
+connection_type: "ssh"
+package_manager: "apt"
+
+parameters:
+  install_mode:
+    name: "install_mode"
+    display_name: "Install Mode"
+    type: "choice"
+    choices: ["latest", "specific"]
+    default: "latest"
+
+packages:
+  system:
+    - curl
+
+post_install: |
+  echo "Install mode: {{.install_mode}}"
+
+  if [ "{{.install_mode}}" = "latest" ]; then
+    echo "Installing latest version"
+    echo "SUCCESS: Bash conditional worked with parameter"
+  else
+    echo "Installing specific version"
+    echo "SUCCESS: Bash else branch with parameter"
+  fi
+
+users:
+  - name: "ubuntu"
+
+instance_defaults:
+  type: "t3.micro"
+  ports: [22]
+
+version: "1.0.0"

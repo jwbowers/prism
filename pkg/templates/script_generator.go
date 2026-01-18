@@ -329,6 +329,10 @@ apt-get update -y && apt-get install -y curl wget bzip2 ca-certificates
 progress "STAGE:init:COMPLETE"
 progress "STAGE:system-packages:START"
 
+{{if .Template.Packages.System}}# Install system packages (from template and inherited templates)
+apt-get install -y{{range .Template.Packages.System}} {{.}}{{end}}
+{{end}}
+
 # Install Miniforge (standard conda-forge distribution)
 # Following official Miniforge installation: https://github.com/conda-forge/miniforge
 ARCH=$(uname -m)

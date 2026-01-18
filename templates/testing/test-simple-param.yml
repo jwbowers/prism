@@ -1,0 +1,30 @@
+name: "Test Simple Parameter"
+slug: "test-simple-param"
+description: "Minimal test for parameter substitution"
+base: "ubuntu-22.04"
+connection_type: "ssh"
+package_manager: "apt"
+
+parameters:
+  test_value:
+    name: "test_value"
+    display_name: "Test Value"
+    type: "string"
+    default: "default_value"
+
+packages:
+  system:
+    - curl
+
+post_install: |
+  echo "Test value is: {{.test_value}}"
+  echo "This should show the parameter value"
+
+users:
+  - name: "ubuntu"
+
+instance_defaults:
+  type: "t3.micro"
+  ports: [22]
+
+version: "1.0.0"

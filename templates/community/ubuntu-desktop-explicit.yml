@@ -27,7 +27,6 @@ packages:
   system:
     - ubuntu-desktop-minimal  # Desktop environment
     - firefox
-    - code
     - git
     - curl
     - build-essential

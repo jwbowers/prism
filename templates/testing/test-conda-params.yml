@@ -1,0 +1,45 @@
+name: "Test Conda Parameters"
+slug: "test-conda-params"
+description: "Test conda template with parameters"
+base: "ubuntu-22.04"
+connection_type: "ssh"
+complexity: "simple"
+category: "Testing"
+domain: "test"
+icon: "🧪"
+color: "#059669"
+
+# Use conda package manager
+package_manager: "conda"
+
+# Test parameters
+parameters:
+  python_version:
+    name: "python_version"
+    display_name: "Python Version"
+    type: "choice"
+    choices: ["3.9", "3.10", "3.11"]
+    default: "3.11"
+    group: "Runtime"
+    order: 1
+
+packages:
+  conda:
+    - python=3.11
+
+users:
+  - name: "ubuntu"
+    groups: ["sudo"]
+
+post_install: |
+  echo "=== PARAMETER TEST ==="
+  echo "Python version parameter: {{.python_version}}"
+  echo "=== END TEST ==="
+
+instance_defaults:
+  type: "t3.micro"
+  ports: [22]
+
+version: "1.0.0"
+tags:
+  test: "true"
