@@ -342,7 +342,9 @@ rm /tmp/miniforge.sh
 
 # Reload bash environment to make conda available
 export PATH="/opt/miniforge/bin:$PATH"
+set +u  # Temporarily disable unbound variable check for .bashrc sourcing
 source /root/.bashrc || true
+set -u  # Re-enable unbound variable check
 
 progress "STAGE:system-packages:COMPLETE"
 progress "STAGE:conda-packages:START"
