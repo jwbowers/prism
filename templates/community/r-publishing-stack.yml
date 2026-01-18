@@ -51,6 +51,61 @@ package_manager: "apt"
 # Inherit from R + RStudio Server (which inherits from R Base)
 inherits: ["R + RStudio Server"]
 
+# Template parameters for customization
+parameters:
+  # RStudio Server version (passed to parent template)
+  rstudio_version:
+    name: "rstudio_version"
+    display_name: "RStudio Server Version"
+    description: "RStudio Server version to install"
+    type: "choice"
+    choices: ["latest", "2024.12.1-542", "2024.09.1-394", "2024.04.2-764"]
+    default: "latest"
+    group: "Development Environment"
+    order: 1
+    impact: "Version affects available features and compatibility"
+
+  # R package plugins
+  install_languageserver:
+    name: "install_languageserver"
+    display_name: "Install Language Server"
+    description: "Install R languageserver package for LSP support in editors"
+    type: "boolean"
+    default: true
+    group: "R Packages"
+    order: 10
+
+  languageserver_version:
+    name: "languageserver_version"
+    display_name: "Language Server Version"
+    description: "Version of languageserver package"
+    type: "choice"
+    choices: ["latest", "0.3.16", "0.3.15"]
+    default: "latest"
+    group: "R Packages"
+    order: 11
+    conditional: "{{.install_languageserver}}"
+
+  install_renv:
+    name: "install_renv"
+    display_name: "Install renv"
+    description: "Install renv package for reproducible R environments"
+    type: "boolean"
+    default: true
+    group: "R Packages"
+    order: 20
+
+  renv_version:
+    name: "renv_version"
+    display_name: "renv Version"
+    description: "Version of renv package"
+    type: "choice"
+    choices: ["latest", "1.0.7", "1.0.3"]
+    default: "latest"
+    group: "R Packages"
+    order: 21
+    conditional: "{{.install_renv}}"
+
 # Additional packages beyond R + RStudio Server
 packages:
   # LaTeX and document tools
@@ -222,6 +277,30 @@ post_install: |
   WELCOME_END
 
   chown researcher:researcher /home/researcher/WELCOME.txt
+
+  # Install R package plugins
+  echo "🔌 Installing R package plugins..."
+  {{if .install_languageserver}}
+  echo "  Installing languageserver package..."
+  if [ "{{.languageserver_version}}" = "latest" ]; then
+    R -e "install.packages('languageserver', repos='https://cloud.r-project.org')"
+  else
+    R -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_version('languageserver', version='{{.languageserver_version}}', repos='https://cloud.r-project.org')"
+  fi
+  echo "  ✅ languageserver installed"
+  {{end}}
+
+  {{if .install_renv}}
+  echo "  Installing renv package..."
+  if [ "{{.renv_version}}" = "latest" ]; then
+    R -e "install.packages('renv', repos='https://cloud.r-project.org')"
+  else
+    R -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_version('renv', version='{{.renv_version}}', repos='https://cloud.r-project.org')"
+  fi
+  echo "  ✅ renv installed"
+  {{end}}
+
+  echo "✅ R package plugins installation complete"
 
   # Cleanup
   apt-get autoremove -y

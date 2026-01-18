@@ -7,6 +7,9 @@ long_description: |
   interdisciplinary research teams requiring seamless data and code sharing.
 base: "ubuntu-22.04"
 
+# Inherit Docker Foundation for docker runtime and group
+inherits: ["Docker Foundation"]
+
 # Multi-interface support (SSH + Web)
 connection_type: "ssh"  # Primary access via SSH, with web services available
 

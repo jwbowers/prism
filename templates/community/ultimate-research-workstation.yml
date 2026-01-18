@@ -5,6 +5,9 @@ description: "Complete research environment supporting all connection methods"
 long_description: "The ultimate research workstation with desktop environment (DCV), web interfaces (Jupyter, RStudio, Streamlit), and SSH terminal. Choose your preferred interface or use multiple simultaneously."
 base: "ubuntu-22.04"
 
+# Inherit Docker Foundation for docker runtime and group
+inherits: ["Docker Foundation"]
+
 # EXPLICIT CONNECTION TYPE - Supports everything
 connection_type: "all"  # DCV + SSH + Web - ultimate flexibility
 

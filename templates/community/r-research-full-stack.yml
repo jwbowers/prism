@@ -42,6 +42,61 @@ package_manager: "apt"
 # Inherit from Ubuntu 24.04 base
 inherits: ["Ubuntu 24.04 LTS (x86_64)"]
 
+# Template parameters for customization
+parameters:
+  # RStudio Server version
+  rstudio_version:
+    name: "rstudio_version"
+    display_name: "RStudio Server Version"
+    description: "RStudio Server version to install"
+    type: "choice"
+    choices: ["latest", "2024.12.1-542", "2024.09.1-394", "2024.04.2-764"]
+    default: "latest"
+    group: "Development Environment"
+    order: 1
+    impact: "Version affects available features and compatibility"
+
+  # R package plugins
+  install_languageserver:
+    name: "install_languageserver"
+    display_name: "Install Language Server"
+    description: "Install R languageserver package for LSP support in editors"
+    type: "boolean"
+    default: true
+    group: "R Packages"
+    order: 10
+
+  languageserver_version:
+    name: "languageserver_version"
+    display_name: "Language Server Version"
+    description: "Version of languageserver package"
+    type: "choice"
+    choices: ["latest", "0.3.16", "0.3.15"]
+    default: "latest"
+    group: "R Packages"
+    order: 11
+    conditional: "{{.install_languageserver}}"
+
+  install_renv:
+    name: "install_renv"
+    display_name: "Install renv"
+    description: "Install renv package for reproducible R environments"
+    type: "boolean"
+    default: true
+    group: "R Packages"
+    order: 20
+
+  renv_version:
+    name: "renv_version"
+    display_name: "renv Version"
+    description: "Version of renv package"
+    type: "choice"
+    choices: ["latest", "1.0.7", "1.0.3"]
+    default: "latest"
+    group: "R Packages"
+    order: 21
+    conditional: "{{.install_renv}}"
+
 # System and application packages
 packages:
   # Core system tools
@@ -175,11 +230,22 @@ post_install: |
   R_VERSION=$(R --version | head -n1)
   echo "✅ R installed: $R_VERSION"
 
-  # Install RStudio Server 2024.12.0
+  # Install RStudio Server
   echo "🖥️  Installing RStudio Server..."
-  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2024.12.0-396-amd64.deb
-  apt-get install -y ./rstudio-server-2024.12.0-396-amd64.deb
-  rm rstudio-server-2024.12.0-396-amd64.deb
+  if [ "{{.rstudio_version}}" = "latest" ]; then
+    # Use latest available version
+    apt-get install -y gdebi-core
+    wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-latest-amd64.deb
+    gdebi -n rstudio-server-latest-amd64.deb
+    rm rstudio-server-latest-amd64.deb
+  else
+    # Download specific version
+    apt-get install -y gdebi-core
+    RSTUDIO_VERSION="{{.rstudio_version}}"
+    wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+    gdebi -n rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+    rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  fi
 
   # Enable and start RStudio Server
   systemctl enable rstudio-server
@@ -283,6 +349,30 @@ post_install: |
   echo "Installed: R 4.4+, RStudio Server, Quarto, LaTeX, Python 3.12, Jupyter" >> /home/researcher/WELCOME.txt
   echo "Documentation: See /home/researcher/README.md for full guide" >> /home/researcher/WELCOME.txt
   chown researcher:researcher /home/researcher/WELCOME.txt
+
+  # Install R package plugins
+  echo "🔌 Installing R package plugins..."
+  {{if .install_languageserver}}
+  echo "  Installing languageserver package..."
+  if [ "{{.languageserver_version}}" = "latest" ]; then
+    R -e "install.packages('languageserver', repos='https://cloud.r-project.org')"
+  else
+    R -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_version('languageserver', version='{{.languageserver_version}}', repos='https://cloud.r-project.org')"
+  fi
+  echo "  ✅ languageserver installed"
+  {{end}}
+
+  {{if .install_renv}}
+  echo "  Installing renv package..."
+  if [ "{{.renv_version}}" = "latest" ]; then
+    R -e "install.packages('renv', repos='https://cloud.r-project.org')"
+  else
+    R -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', repos='https://cloud.r-project.org'); remotes::install_version('renv', version='{{.renv_version}}', repos='https://cloud.r-project.org')"
+  fi
+  echo "  ✅ renv installed"
+  {{end}}
+
+  echo "✅ R package plugins installation complete"
 
   # Final cleanup
   apt-get autoremove -y

@@ -1,0 +1,34 @@
+name: "Docker Foundation"
+slug: "docker-foundation"
+description: "Provides Docker runtime and docker group"
+long_description: |
+  Foundation template that installs Docker and creates the docker group.
+  Other templates can inherit from this to enable Docker functionality.
+
+base: "ubuntu-22.04"
+package_manager: "apt"
+
+packages:
+  apt:
+    - docker.io
+    - docker-compose
+
+post_install: |
+  # Enable and start docker
+  systemctl enable docker
+  systemctl start docker
+
+  # Verify docker group exists
+  getent group docker || groupadd docker
+
+  # Verify docker is running
+  docker --version
+  systemctl status docker --no-pager
+
+ports:
+  - 22
+
+tags:
+  type: "foundation"
+  provides: "docker"
+  category: "infrastructure"

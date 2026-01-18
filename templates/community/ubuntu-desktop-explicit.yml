@@ -5,6 +5,9 @@ description: "Complete data science environment with both GUI and headless capab
 long_description: "Full-featured data science workstation with Jupyter, RStudio, Python, R, and desktop environment. Use via remote desktop for GUI work or SSH terminal for headless automation."
 base: "ubuntu-22.04"
 
+# Inherit Docker Foundation for docker runtime and group
+inherits: ["Docker Foundation"]
+
 # EXPLICIT CONNECTION TYPE - Supports both interfaces
 connection_type: "both"  # Users can choose DCV (desktop) OR SSH (terminal) based on their workflow
 
