@@ -365,7 +365,8 @@ progress "STAGE:service-config:START"
 
 {{range .Users}}# Create user: {{.Name}}
 useradd -m -s /bin/bash {{.Name}} || true
-{{if .Groups}}{{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}{{end}}{{end}}
+{{if .Groups}}{{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
+{{end}}{{end}}
 
 {{if ne .Name "ubuntu"}}
 # Copy SSH keys from ubuntu user for seamless SSH access
