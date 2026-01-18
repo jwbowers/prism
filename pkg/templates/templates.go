@@ -276,8 +276,10 @@ func GetTemplateWithParametersAndDiscovery(name, region, architecture, packageMa
 	}
 
 	// Process parameters if the template has them
+	// Issue #444: Always process parameters if template defines them, even if user doesn't provide any
+	// This ensures default parameter values are applied
 	var processedTemplate *Template
-	if len(template.Parameters) > 0 && parameters != nil {
+	if len(template.Parameters) > 0 {
 		processor := NewParameterProcessor(template, parameters)
 
 		// Validate parameters
