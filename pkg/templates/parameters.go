@@ -102,20 +102,40 @@ func (pp *ParameterProcessor) processString(input string) (string, error) {
 	}
 
 	// Use Go's text/template for variable substitution
-	tmpl, err := template.New("template").Parse(input)
+	tmpl, err := template.New("template").Funcs(template.FuncMap{
+		"eq": func(a, b interface{}) bool {
+			return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+		},
+	}).Parse(input)
 	if err != nil {
-		// If template parsing fails, try simple substitution
-		return pp.simpleSubstitution(input), nil
+		// Issue #448: Template parsing failed - return error instead of silent fallback
+		return "", fmt.Errorf("template parsing failed: %w (template preview: %.100s...)", err, input)
 	}
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, pp.variables)
 	if err != nil {
-		// Fallback to simple substitution if template execution fails
-		return pp.simpleSubstitution(input), nil
+		// Issue #448: Template execution failed - return error with helpful context
+		// Common causes: undefined variables, incorrect template syntax with conditionals
+		availableVars := strings.Join(pp.getVariableNames(), ", ")
+
+		if strings.Contains(err.Error(), "can't evaluate field") {
+			return "", fmt.Errorf("template execution failed - undefined variable: %w\nAvailable variables: [%s]\nTemplate preview: %.200s...", err, availableVars, input)
+		}
+
+		return "", fmt.Errorf("template execution failed: %w\nAvailable variables: [%s]\nTemplate preview: %.200s...", err, availableVars, input)
 	}
 
 	return buf.String(), nil
+}
+
+// getVariableNames returns a list of available variable names for debugging
+func (pp *ParameterProcessor) getVariableNames() []string {
+	names := make([]string, 0, len(pp.variables))
+	for name := range pp.variables {
+		names = append(names, name)
+	}
+	return names
 }
 
 // simpleSubstitution performs basic {{variable}} substitution
