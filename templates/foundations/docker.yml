@@ -9,7 +9,7 @@ base: "ubuntu-22.04"
 package_manager: "apt"
 
 packages:
-  apt:
+  system:
     - docker.io
     - docker-compose
 
