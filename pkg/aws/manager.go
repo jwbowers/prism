@@ -2976,17 +2976,27 @@ func (m *Manager) findVolumeByName(name string) (string, error) {
 // EnsureKeyPairExists ensures the SSH key pair exists in AWS, creating it if necessary
 func (m *Manager) EnsureKeyPairExists(keyName, publicKeyContent string) error {
 	ctx := context.Background()
+
 	// Check if key pair already exists
 	_, err := m.ec2.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{
 		KeyNames: []string{keyName},
 	})
 
 	if err == nil {
-		// Key pair already exists
-		return nil
+		// Key exists - delete it to ensure fresh content
+		log.Printf("Key pair %s exists in AWS, replacing with current local key", keyName)
+		if err := m.DeleteKeyPair(keyName); err != nil {
+			return fmt.Errorf("failed to delete existing key pair %s: %w", keyName, err)
+		}
+	} else {
+		// Check if error is something other than "not found"
+		if !strings.Contains(err.Error(), "InvalidKeyPair.NotFound") {
+			return fmt.Errorf("failed to check if key pair exists: %w", err)
+		}
+		// Key doesn't exist - proceed to import
 	}
 
-	// Key pair doesn't exist, import it
+	// Import key pair (fresh or replacement)
 	_, err = m.ec2.ImportKeyPair(ctx, &ec2.ImportKeyPairInput{
 		KeyName:           aws.String(keyName),
 		PublicKeyMaterial: []byte(publicKeyContent),
@@ -3010,6 +3020,7 @@ func (m *Manager) EnsureKeyPairExists(keyName, publicKeyContent string) error {
 		return fmt.Errorf("failed to import key pair: %w", err)
 	}
 
+	log.Printf("Successfully ensured key pair %s in AWS", keyName)
 	return nil
 }
 
