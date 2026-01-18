@@ -155,6 +155,7 @@ dnf install -y{{range .Packages}} {{.}}{{end}}
 # Create user: {{.Name}}
 echo "Creating user: {{.Name}}"
 {{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
+{{if ne .Name "ubuntu"}}
 # Copy SSH keys from ubuntu user for seamless SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
@@ -164,6 +165,7 @@ if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
   echo "✅ SSH keys copied to {{.Name}} user"
 fi
+{{end}}
 {{if .Groups}}
 {{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
 {{end}}
@@ -243,6 +245,7 @@ apt-get install -y{{range .Packages}} {{.}}{{end}}
 # Create user: {{.Name}}
 echo "Creating user: {{.Name}}"
 {{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
+{{if ne .Name "ubuntu"}}
 # Copy SSH keys from ubuntu user for seamless SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
@@ -252,6 +255,7 @@ if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
   echo "✅ SSH keys copied to {{.Name}} user"
 fi
+{{end}}
 {{if .Groups}}
 {{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
 {{end}}
@@ -357,6 +361,7 @@ progress "STAGE:service-config:START"
 useradd -m -s /bin/bash {{.Name}} || true
 {{if .Groups}}{{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}{{end}}{{end}}
 
+{{if ne .Name "ubuntu"}}
 # Copy SSH keys from ubuntu user for seamless SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
@@ -366,6 +371,7 @@ if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
   echo "✅ SSH keys copied to {{.Name}} user"
 fi
+{{end}}
 
 # Initialize conda for this user (standard approach)
 sudo -u {{.Name}} /opt/miniforge/bin/conda init bash
@@ -617,6 +623,7 @@ echo "Running custom AMI user data script..."
 # Create user: {{.Name}}
 echo "Creating user: {{.Name}}"
 {{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
+{{if ne .Name "ubuntu"}}
 # Copy SSH keys from ubuntu user for seamless SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
@@ -626,6 +633,7 @@ if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
   echo "✅ SSH keys copied to {{.Name}} user"
 fi
+{{end}}
 {{if .Groups}}
 {{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
 {{end}}
@@ -710,6 +718,7 @@ pip3 install{{range .Packages}} {{.}}{{end}}
 # Create user: {{.Name}}
 echo "Creating user: {{.Name}}"
 {{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
+{{if ne .Name "ubuntu"}}
 # Copy SSH keys from ubuntu user for seamless SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
@@ -719,6 +728,7 @@ if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
   echo "✅ SSH keys copied to {{.Name}} user"
 fi
+{{end}}
 {{if .Groups}}
 {{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
 {{end}}
