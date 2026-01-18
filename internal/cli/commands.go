@@ -45,6 +45,7 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&ParameterCommand{})
 	dispatcher.RegisterCommand(&ResearchUserCommand{})
 	dispatcher.RegisterCommand(&VersionCommand{})
+	dispatcher.RegisterCommand(&SSHKeyCommand{})
 
 	// Universal AMI System commands (Phase 5.1 Week 2)
 	dispatcher.RegisterCommand(&AMIStrategyCommand{})
@@ -368,6 +369,21 @@ func (v *VersionCommand) Execute(req *types.LaunchRequest, args []string, index 
 		return index, fmt.Errorf("--version requires a value (e.g., 24.04, 22.04, 9, 10, latest, lts)")
 	}
 	req.Version = args[index+1]
+	return index + 1, nil
+}
+
+// SSHKeyCommand handles --ssh-key flag for SSH access
+type SSHKeyCommand struct{}
+
+func (s *SSHKeyCommand) CanHandle(arg string) bool {
+	return arg == "--ssh-key"
+}
+
+func (s *SSHKeyCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	if index+1 >= len(args) {
+		return index, fmt.Errorf("--ssh-key requires a key name")
+	}
+	req.SSHKeyName = args[index+1]
 	return index + 1, nil
 }
 
