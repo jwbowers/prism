@@ -511,6 +511,12 @@ apt-get upgrade -y
 echo "Installing Spack dependencies..."
 apt-get install -y build-essential ca-certificates coreutils curl environment-modules gfortran git gpg lsb-release python3 python3-distutils python3-venv unzip zip
 
+# Install system packages if defined (from template and inherited templates)
+{{if .Template.Packages.System}}
+echo "Installing system packages..."
+apt-get install -y{{range .Template.Packages.System}} {{.}}{{end}}
+{{end}}
+
 # Install Spack
 echo "Installing Spack..."
 git clone -c feature.manyFiles=true https://github.com/spack/spack.git /opt/spack
