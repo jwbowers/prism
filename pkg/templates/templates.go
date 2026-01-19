@@ -280,6 +280,10 @@ func GetTemplateWithParametersAndDiscovery(name, region, architecture, packageMa
 	// This ensures default parameter values are applied
 	var processedTemplate *Template
 	if len(template.Parameters) > 0 {
+		// DEBUG: Log parameter processing for Issue #450
+		log.Printf("DEBUG [Issue #450]: Template '%s' has %d parameters", template.Name, len(template.Parameters))
+		log.Printf("DEBUG [Issue #450]: User provided %d parameter values: %+v", len(parameters), parameters)
+
 		processor := NewParameterProcessor(template, parameters)
 
 		// Validate parameters
@@ -288,14 +292,24 @@ func GetTemplateWithParametersAndDiscovery(name, region, architecture, packageMa
 			for _, vErr := range validationErrors {
 				errorMessages = append(errorMessages, vErr.Error())
 			}
+			// DEBUG: Log validation errors
+			log.Printf("DEBUG [Issue #450]: Validation FAILED for '%s': %v", template.Name, errorMessages)
 			return nil, fmt.Errorf("parameter validation failed: %s", strings.Join(errorMessages, ", "))
 		}
+
+		log.Printf("DEBUG [Issue #450]: Validation PASSED for '%s', processing template...", template.Name)
 
 		// Process template with parameters
 		processedTemplate, err = processor.ProcessTemplate()
 		if err != nil {
+			log.Printf("DEBUG [Issue #450]: Processing FAILED for '%s': %v", template.Name, err)
 			return nil, fmt.Errorf("parameter processing failed: %w", err)
 		}
+
+		log.Printf("DEBUG [Issue #450]: Processing SUCCEEDED for '%s', post_install length: %d",
+			template.Name, len(processedTemplate.PostInstall))
+		log.Printf("DEBUG [Issue #450]: Post-install preview (first 200 chars): %.200s",
+			processedTemplate.PostInstall)
 	} else {
 		processedTemplate = template
 	}

@@ -765,6 +765,23 @@ func (r *TemplateRegistry) mergeTemplate(target, source *Template) {
 	for k, v := range source.InstanceDefaults.EstimatedCostPerHour {
 		target.InstanceDefaults.EstimatedCostPerHour[k] = v
 	}
+
+	// Merge parameters (child overrides parent) - Issue #450
+	// Parameters are template-specific configuration, so child parameters take precedence
+	if target.Parameters == nil {
+		target.Parameters = make(map[string]TemplateParameter)
+	}
+	for k, v := range source.Parameters {
+		target.Parameters[k] = v
+	}
+
+	// Merge variables (child overrides parent)
+	if target.Variables == nil {
+		target.Variables = make(map[string]string)
+	}
+	for k, v := range source.Variables {
+		target.Variables[k] = v
+	}
 }
 
 // validateInheritance performs basic inheritance validation
