@@ -14,7 +14,7 @@ import (
 type ParameterProcessor struct {
 	template   *Template
 	parameters TemplateParameterValues
-	variables  map[string]string
+	variables  map[string]interface{} // Changed from map[string]string to preserve type information
 }
 
 // NewParameterProcessor creates a parameter processor for a template
@@ -22,7 +22,7 @@ func NewParameterProcessor(tmpl *Template, userParams TemplateParameterValues) *
 	processor := &ParameterProcessor{
 		template:   tmpl,
 		parameters: make(TemplateParameterValues),
-		variables:  make(map[string]string),
+		variables:  make(map[string]interface{}),
 	}
 
 	// Start with template-level variables
@@ -53,8 +53,11 @@ func (pp *ParameterProcessor) applyParameters(userParams TemplateParameterValues
 	}
 
 	// Convert parameters to variables for substitution
+	// Preserve type information for proper handling in Go templates (boolean, int, string)
 	for name, value := range pp.parameters {
-		pp.variables[name] = fmt.Sprintf("%v", value)
+		// Keep typed values for template engine - this enables {{if .bool_param}} to work correctly
+		// Boolean false as string "false" would be truthy, but boolean false is falsy
+		pp.variables[name] = value
 	}
 }
 
@@ -142,12 +145,15 @@ func (pp *ParameterProcessor) getVariableNames() []string {
 func (pp *ParameterProcessor) simpleSubstitution(input string) string {
 	result := input
 	for name, value := range pp.variables {
+		// Convert interface{} to string for substitution
+		valueStr := fmt.Sprintf("%v", value)
+
 		placeholder := fmt.Sprintf("{{.%s}}", name)
-		result = strings.ReplaceAll(result, placeholder, value)
+		result = strings.ReplaceAll(result, placeholder, valueStr)
 
 		// Also support {{variable}} format
 		simplePlaceholder := fmt.Sprintf("{{%s}}", name)
-		result = strings.ReplaceAll(result, simplePlaceholder, value)
+		result = strings.ReplaceAll(result, simplePlaceholder, valueStr)
 	}
 	return result
 }
@@ -226,8 +232,8 @@ func (pp *ParameterProcessor) GetParameterValue(name string) (interface{}, bool)
 	return value, exists
 }
 
-// GetVariable returns the processed variable value
-func (pp *ParameterProcessor) GetVariable(name string) (string, bool) {
+// GetVariable returns the processed variable value (preserving type)
+func (pp *ParameterProcessor) GetVariable(name string) (interface{}, bool) {
 	value, exists := pp.variables[name]
 	return value, exists
 }
