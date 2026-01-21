@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"text/template"
 
@@ -10,18 +11,46 @@ import (
 
 // NewScriptGenerator creates a new script generator
 func NewScriptGenerator() *ScriptGenerator {
-	return &ScriptGenerator{
-		AptTemplate:   aptScriptTemplate,
-		DnfTemplate:   dnfScriptTemplate,
-		CondaTemplate: condaScriptTemplate,
-		SpackTemplate: spackScriptTemplate,
-		AMITemplate:   amiScriptTemplate,
-		PipTemplate:   pipScriptTemplate,
+	return NewScriptGeneratorWithPlugins(nil)
+}
+
+// NewScriptGeneratorWithPlugins creates a script generator with plugin support
+func NewScriptGeneratorWithPlugins(pluginRegistry *PluginRegistry) *ScriptGenerator {
+	sg := &ScriptGenerator{
+		AptTemplate:    aptScriptTemplate,
+		DnfTemplate:    dnfScriptTemplate,
+		CondaTemplate:  condaScriptTemplate,
+		SpackTemplate:  spackScriptTemplate,
+		AMITemplate:    amiScriptTemplate,
+		PipTemplate:    pipScriptTemplate,
+		PluginRegistry: pluginRegistry,
 	}
+
+	// Create plugin script generator if registry provided
+	if pluginRegistry != nil {
+		installerRegistry := NewPluginInstallerRegistry()
+		sg.PluginScriptGenerator = NewPluginScriptGenerator(pluginRegistry, installerRegistry)
+	}
+
+	return sg
 }
 
 // GenerateScript generates an installation script for a template
 func (sg *ScriptGenerator) GenerateScript(tmpl *Template, packageManager PackageManagerType) (string, error) {
+	// Generate plugin installation script if plugin support enabled
+	var pluginScript string
+	if sg.PluginScriptGenerator != nil && len(tmpl.Plugins.Enabled) > 0 {
+		// Use empty parameter values for now (will be substituted at launch time)
+		script, err := sg.PluginScriptGenerator.GeneratePluginInstallScriptForTool(context.Background(), tmpl, packageManager, nil)
+		if err != nil {
+			// Don't fail entire script generation if plugin script fails
+			// Just log and continue
+			pluginScript = fmt.Sprintf("# Warning: Plugin script generation failed: %v\n", err)
+		} else {
+			pluginScript = script
+		}
+	}
+
 	// Prepare script data
 	scriptData := &ScriptData{
 		Template:           tmpl,
@@ -30,6 +59,7 @@ func (sg *ScriptGenerator) GenerateScript(tmpl *Template, packageManager Package
 		Users:              sg.prepareUsers(tmpl.Users),
 		Services:           tmpl.Services,
 		WebInterfaceBindIP: security.GetWebInterfaceBindIP(),
+		PluginScript:       pluginScript,
 	}
 
 	// Select appropriate template

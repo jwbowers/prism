@@ -338,6 +338,10 @@ type ScriptGenerator struct {
 	SpackTemplate string
 	AMITemplate   string
 	PipTemplate   string
+
+	// Plugin support (Phase 2A+)
+	PluginScriptGenerator *PluginScriptGenerator
+	PluginRegistry        *PluginRegistry
 }
 
 // TemplateValidationError represents template validation errors

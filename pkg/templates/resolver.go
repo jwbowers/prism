@@ -3,15 +3,30 @@ package templates
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
+
+// initScriptGeneratorWithPlugins creates a script generator with plugin support
+func initScriptGeneratorWithPlugins() *ScriptGenerator {
+	// Create plugin registry and load plugins
+	pluginRegistry := NewPluginRegistry()
+	for _, dir := range DefaultPluginDirs() {
+		// Silently ignore errors loading plugins (plugins are optional)
+		if err := pluginRegistry.LoadPluginsFromDirectory(dir); err != nil {
+			log.Printf("[DEBUG] Failed to load plugins from %s: %v", dir, err)
+		}
+	}
+
+	return NewScriptGeneratorWithPlugins(pluginRegistry)
+}
 
 // NewTemplateResolver creates a new template resolver without AMI discovery
 func NewTemplateResolver() *TemplateResolver {
 	return &TemplateResolver{
 		Parser:       NewTemplateParser(),
-		ScriptGen:    NewScriptGenerator(),
+		ScriptGen:    initScriptGeneratorWithPlugins(),
 		AMIRegistry:  getDefaultAMIRegistry(),
 		AMIDiscovery: nil, // No dynamic discovery
 	}
@@ -21,7 +36,7 @@ func NewTemplateResolver() *TemplateResolver {
 func NewTemplateResolverWithDiscovery(amiDiscovery AMIDiscoveryService) *TemplateResolver {
 	return &TemplateResolver{
 		Parser:       NewTemplateParser(),
-		ScriptGen:    NewScriptGenerator(),
+		ScriptGen:    initScriptGeneratorWithPlugins(),
 		AMIRegistry:  getDefaultAMIRegistry(),
 		AMIDiscovery: amiDiscovery,
 	}

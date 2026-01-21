@@ -883,7 +883,14 @@ func (tc *TemplateCommands) setupTemplateValidator() (*templates.ComprehensiveVa
 		return nil, fmt.Errorf("failed to scan templates: %w", err)
 	}
 
-	validator := templates.NewComprehensiveValidator(registry)
+	// Create plugin registry and load plugins
+	pluginRegistry := templates.NewPluginRegistry()
+	for _, dir := range templates.DefaultPluginDirs() {
+		// Silently ignore errors loading plugins (plugins are optional)
+		_ = pluginRegistry.LoadPluginsFromDirectory(dir)
+	}
+
+	validator := templates.NewComprehensiveValidatorWithPlugins(registry, pluginRegistry)
 	return validator, nil
 }
 

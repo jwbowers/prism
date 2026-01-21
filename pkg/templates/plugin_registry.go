@@ -4,6 +4,7 @@ package templates
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -22,6 +23,45 @@ func NewPluginRegistry() *PluginRegistry {
 		plugins:     make(map[string]*PluginManifest),
 		pluginPaths: make([]string, 0),
 	}
+}
+
+// DefaultPluginDirs returns the default plugin directories to search
+func DefaultPluginDirs() []string {
+	dirs := []string{}
+
+	// Environment variable override (for tests and custom setups)
+	if envDir := os.Getenv("PRISM_PLUGIN_DIR"); envDir != "" {
+		envDir = filepath.Clean(envDir)
+		if info, err := os.Stat(envDir); err == nil && info.IsDir() {
+			dirs = append(dirs, envDir)
+			return dirs // Use ONLY the environment variable path when set
+		}
+	}
+
+	// Binary-relative path (development and production)
+	if exe, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exe)
+		binaryRelativePath := filepath.Join(exeDir, "..", "plugins")
+		if absPath, err := filepath.Abs(binaryRelativePath); err == nil {
+			if info, err := os.Stat(absPath); err == nil && info.IsDir() {
+				dirs = append(dirs, absPath)
+			}
+		}
+	}
+
+	// System-wide installation path (Homebrew, system packages)
+	systemPaths := []string{
+		"/opt/homebrew/share/prism/plugins",
+		"/usr/local/share/prism/plugins",
+		"/usr/share/prism/plugins",
+	}
+	for _, path := range systemPaths {
+		if info, err := os.Stat(path); err == nil && info.IsDir() {
+			dirs = append(dirs, path)
+		}
+	}
+
+	return dirs
 }
 
 // LoadPluginsFromDirectory loads all plugin manifests from a directory

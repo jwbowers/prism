@@ -446,7 +446,14 @@ func GenerateScript(templateName, packageManager string) (string, error) {
 		return "", err
 	}
 
-	generator := NewScriptGenerator()
+	// Create plugin registry and load plugins
+	pluginRegistry := NewPluginRegistry()
+	for _, dir := range DefaultPluginDirs() {
+		// Silently ignore errors loading plugins (plugins are optional)
+		_ = pluginRegistry.LoadPluginsFromDirectory(dir)
+	}
+
+	generator := NewScriptGeneratorWithPlugins(pluginRegistry)
 	return generator.GenerateScript(template, PackageManagerType(packageManager))
 }
 

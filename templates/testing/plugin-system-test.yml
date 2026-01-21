@@ -1,0 +1,39 @@
+name: "Plugin System Integration Test"
+description: "Simple template to test plugin system functionality"
+base: "ubuntu-22.04"
+package_manager: "apt"
+
+# Traditional system packages
+packages:
+  system:
+    - "curl"
+    - "wget"
+
+# Universal plugin system (Phase 2A)
+plugins:
+  enabled:
+    - name: "git"
+      version: "latest"
+      configuration:
+        enable_lfs: true
+
+# Template parameters
+parameters:
+  test_param:
+    type: "string"
+    default: "test-value"
+    description: "Test parameter for validation"
+
+# Verify plugin installation worked
+post_install: |
+  echo "Verifying plugin installation..."
+  git --version
+  git lfs version
+
+users:
+  - name: "testuser"
+    groups: ["sudo"]
+    shell: "/bin/bash"
+
+ports:
+  - 22

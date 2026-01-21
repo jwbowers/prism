@@ -36,8 +36,9 @@ type ValidationReport struct {
 
 // ComprehensiveValidator performs comprehensive template validation
 type ComprehensiveValidator struct {
-	registry *TemplateRegistry
-	rules    []ValidationRule
+	registry       *TemplateRegistry
+	pluginRegistry *PluginRegistry
+	rules          []ValidationRule
 }
 
 // ValidationRule defines a validation check
@@ -48,21 +49,34 @@ type ValidationRule interface {
 
 // NewComprehensiveValidator creates a new validator with all rules
 func NewComprehensiveValidator(registry *TemplateRegistry) *ComprehensiveValidator {
+	return NewComprehensiveValidatorWithPlugins(registry, nil)
+}
+
+// NewComprehensiveValidatorWithPlugins creates a validator with plugin support
+func NewComprehensiveValidatorWithPlugins(registry *TemplateRegistry, pluginRegistry *PluginRegistry) *ComprehensiveValidator {
+	rules := []ValidationRule{
+		&RequiredFieldsRule{},
+		&PackageManagerRule{},
+		&ServicePortRule{},
+		&UserConfigRule{},
+		&DesktopConfigRule{},
+		&InheritanceRule{registry: registry},
+		&ParameterRule{},
+		&SecurityRule{},
+		&CostOptimizationRule{},
+		&PerformanceRule{},
+		&BestPracticesRule{},
+	}
+
+	// Add plugin validation if plugin registry provided
+	if pluginRegistry != nil {
+		rules = append(rules, NewPluginValidationRule(pluginRegistry))
+	}
+
 	return &ComprehensiveValidator{
-		registry: registry,
-		rules: []ValidationRule{
-			&RequiredFieldsRule{},
-			&PackageManagerRule{},
-			&ServicePortRule{},
-			&UserConfigRule{},
-			&DesktopConfigRule{},
-			&InheritanceRule{registry: registry},
-			&ParameterRule{},
-			&SecurityRule{},
-			&CostOptimizationRule{},
-			&PerformanceRule{},
-			&BestPracticesRule{},
-		},
+		registry:       registry,
+		pluginRegistry: pluginRegistry,
+		rules:          rules,
 	}
 }
 
