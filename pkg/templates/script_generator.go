@@ -74,6 +74,7 @@ type ScriptData struct {
 	Users              []UserData
 	Services           []ServiceConfig
 	WebInterfaceBindIP string // Dynamic IP binding for web interfaces (0.0.0.0 or 127.0.0.1)
+	PluginScript       string // Plugin installation script (optional, Phase 2A+)
 }
 
 // UserData contains processed user data for script generation
@@ -187,6 +188,11 @@ systemctl start {{.Name}} || true
 {{end}}
 {{end}}
 
+{{if .PluginScript}}
+# Plugin installation (Phase 2A+)
+{{.PluginScript}}
+{{end}}
+
 {{if .Template.PostInstall}}
 # Post-install script
 echo "Running post-install script..."
@@ -275,6 +281,11 @@ echo "{{.}}" >> /etc/{{$service.Name}}/{{$service.Name}}.conf
 systemctl enable {{.Name}} || true
 systemctl start {{.Name}} || true
 {{end}}
+{{end}}
+
+{{if .PluginScript}}
+# Plugin installation (Phase 2A+)
+{{.PluginScript}}
 {{end}}
 
 {{if .Template.PostInstall}}
@@ -666,6 +677,11 @@ echo "{{.}}" >> /etc/{{$service.Name}}/{{$service.Name}}.conf
 systemctl enable {{.Name}} || true
 systemctl start {{.Name}} || true
 {{end}}
+{{end}}
+
+{{if .PluginScript}}
+# Plugin installation (Phase 2A+)
+{{.PluginScript}}
 {{end}}
 
 {{if .Template.PostInstall}}

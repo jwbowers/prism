@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  name: "git"
+  display_name: "Git Version Control"
+  description: "Distributed version control system for tracking changes in source code"
+  category: "development"
+  version: "1.0.0"
+  maintainer: "Prism Team"
+
+spec:
+  provides:
+    - name: "version_control"
+      type: "capability"
+    - name: "git_lfs"
+      type: "feature"
+
+  dependencies:
+    required: []
+    optional: []
+
+  conflicts: []
+
+  alternatives:
+    - plugin: "mercurial"
+      reason: "Alternative version control system"
+
+  installers:
+    apt:
+      package_manager: "apt"
+      packages:
+        - name: "git"
+          version_param: "version"
+          install_command: "apt-get install -y git{{if ne .version \"latest\"}}={{.version}}{{end}}"
+        - name: "git-lfs"
+          install_command: "{{if .enable_lfs}}apt-get install -y git-lfs && git lfs install --system{{end}}"
+
+    dnf:
+      package_manager: "dnf"
+      packages:
+        - name: "git"
+          version_param: "version"
+          install_command: "dnf install -y git{{if ne .version \"latest\"}}-{{.version}}{{end}}"
+        - name: "git-lfs"
+          install_command: "{{if .enable_lfs}}dnf install -y git-lfs && git lfs install --system{{end}}"
+
+    conda:
+      package_manager: "conda"
+      packages:
+        - name: "git"
+          version_param: "version"
+          install_command: "conda install -y git{{if ne .version \"latest\"}}={{.version}}{{end}}"
+        - name: "git-lfs"
+          install_command: "{{if .enable_lfs}}conda install -y git-lfs && git lfs install{{end}}"
+
+    system:
+      package_manager: "system"
+      packages:
+        - name: "git"
+          version_param: "version"
+          install_command: |
+            if command -v apt-get &> /dev/null; then
+              apt-get install -y git{{if ne .version "latest"}}={{.version}}{{end}}
+            elif command -v dnf &> /dev/null; then
+              dnf install -y git{{if ne .version "latest"}}-{{.version}}{{end}}
+            elif command -v yum &> /dev/null; then
+              yum install -y git{{if ne .version "latest"}}-{{.version}}{{end}}
+            fi
+
+  configuration:
+    parameters:
+      version:
+        type: "choice"
+        choices: ["latest", "2.43.0", "2.42.0", "2.41.0"]
+        default: "latest"
+        description: "Git version to install"
+
+      enable_lfs:
+        type: "bool"
+        default: false
+        description: "Enable Git Large File Storage (LFS)"
+
+      user_name:
+        type: "string"
+        default: ""
+        description: "Git user.name configuration (optional)"
+
+      user_email:
+        type: "string"
+        default: ""
+        description: "Git user.email configuration (optional)"
+
+  compatibility:
+    tools:
+      system:
+        min_version: "2.0.0"
+
+  security:
+    trusted: true
+    verified_publisher: true
+    cve_scanned: true
+    last_security_scan: "2024-01-15T10:00:00Z"

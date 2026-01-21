@@ -1,0 +1,176 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  name: "language_server"
+  display_name: "Language Server Protocol"
+  description: "LSP support for code intelligence, autocomplete, and diagnostics across multiple editors"
+  category: "development"
+  version: "1.0.0"
+  maintainer: "Prism Team"
+
+spec:
+  provides:
+    - name: "lsp"
+      type: "capability"
+    - name: "autocomplete"
+      type: "feature"
+    - name: "diagnostics"
+      type: "feature"
+
+  dependencies:
+    required: []
+    optional:
+      - plugin: "git"
+        version: ">=2.0.0"
+
+  conflicts: []
+
+  alternatives:
+    - plugin: "legacy_ide"
+      reason: "Built-in IDE features may conflict with LSP"
+
+  installers:
+    r:
+      package_manager: "cran"
+      packages:
+        - name: "languageserver"
+          version_param: "version"
+          install_command: |
+            R -e "install.packages('languageserver', repos='https://cloud.r-project.org/'{{if ne .version 'latest'}}, version='{{.version}}'{{end}})"
+      config:
+        - file: ".Rprofile"
+          path: "/home/{{.user}}/.Rprofile"
+          content: |
+            # Language Server configuration
+            options(langserver_library = .libPaths()[1])
+            {{if .enable_diagnostics}}
+            options(langserver_enable_diagnostics = TRUE)
+            {{end}}
+            {{if .max_workers}}
+            options(langserver_max_workers = {{.max_workers}})
+            {{end}}
+
+    vscode:
+      package_manager: "extension"
+      packages:
+        - name: "REditorSupport.r"
+          version_param: "version"
+          install_command: "code --install-extension REditorSupport.r{{if ne .version 'latest'}}@{{.version}}{{end}}"
+      config:
+        - file: "settings.json"
+          path: ".vscode/settings.json"
+          content: |
+            {
+              "r.lsp.enabled": true,
+              {{if .enable_diagnostics}}
+              "r.lsp.diagnostics": true,
+              {{end}}
+              "r.rterm.linux": "/usr/bin/R",
+              "r.bracketedPaste": true
+            }
+
+    vim:
+      package_manager: "plugin_manager"
+      packages:
+        - name: "neoclide/coc.nvim"
+          version_param: "version"
+          install_command: |
+            # Install coc.nvim using vim-plug
+            if [ ! -f ~/.vim/autoload/plug.vim ]; then
+              curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+                https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+            fi
+
+            # Add to vimrc if not already present
+            if ! grep -q "coc.nvim" ~/.vimrc; then
+              cat >> ~/.vimrc <<'EOF'
+
+            " Language Server Plugin
+            call plug#begin('~/.vim/plugged')
+            Plug 'neoclide/coc.nvim', {'branch': '{{if eq .version "latest"}}release{{else}}{{.version}}{{end}}'}
+            call plug#end()
+            EOF
+            fi
+
+            # Install plugins
+            vim +PlugInstall +qall
+      config:
+        - file: "coc-settings.json"
+          path: "~/.vim/coc-settings.json"
+          content: |
+            {
+              "languageserver": {
+                "R": {
+                  "enable": true,
+                  "command": "R",
+                  "args": ["--slave", "-e", "languageserver::run()"],
+                  "filetypes": ["r", "rmd"]
+                }
+              },
+              {{if .enable_diagnostics}}
+              "diagnostic.enable": true,
+              {{end}}
+              "suggest.enablePreview": true
+            }
+
+    jupyter:
+      package_manager: "pip"
+      packages:
+        - name: "python-lsp-server"
+          version_param: "version"
+          install_command: "pip install python-lsp-server{{if ne .version 'latest'}}=={{.version}}{{end}}"
+      config:
+        - file: "jupyter_server_config.py"
+          path: "~/.jupyter/jupyter_server_config.py"
+          content: |
+            # Language Server configuration for JupyterLab
+            c.LanguageServerManager.language_servers = {
+                'pylsp': {
+                    'version': 2,
+                    'argv': ['pylsp'],
+                    'languages': ['python'],
+                    'mime_types': ['text/x-python']
+                }
+            }
+
+  configuration:
+    parameters:
+      version:
+        type: "choice"
+        choices: ["latest", "0.3.16", "0.3.15", "0.3.14"]
+        default: "latest"
+        description: "Language server version to install"
+
+      enable_diagnostics:
+        type: "bool"
+        default: true
+        description: "Enable real-time diagnostics and linting"
+
+      max_workers:
+        type: "integer"
+        default: 4
+        min: 1
+        max: 16
+        description: "Maximum number of worker threads for language server"
+
+      user:
+        type: "string"
+        default: "researcher"
+        description: "Username for configuration files"
+
+  compatibility:
+    tools:
+      r:
+        min_version: "4.0.0"
+      vscode:
+        min_version: "1.70.0"
+      vim:
+        min_version: "8.0.0"
+      jupyter:
+        min_version: "3.0.0"
+
+  security:
+    trusted: true
+    verified_publisher: true
+    cve_scanned: true
+    last_security_scan: "2024-01-15T10:00:00Z"

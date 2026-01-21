@@ -81,6 +81,9 @@ type Template struct {
 	// Research user integration (Phase 5A+)
 	ResearchUser *research.ResearchUserTemplate `yaml:"research_user,omitempty" json:"research_user,omitempty"`
 
+	// Universal plugin support (Phase 2A+)
+	Plugins TemplatePlugins `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+
 	// Template metadata
 	Version          string            `yaml:"version,omitempty" json:"version,omitempty"`
 	ValidationStatus ValidationStatus  `yaml:"validation_status,omitempty" json:"validation_status,omitempty"` // validated, testing, experimental

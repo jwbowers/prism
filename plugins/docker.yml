@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  name: "docker"
+  display_name: "Docker Container Platform"
+  description: "Platform for developing, shipping, and running containerized applications"
+  category: "infrastructure"
+  version: "1.0.0"
+  maintainer: "Prism Team"
+
+spec:
+  provides:
+    - name: "containerization"
+      type: "capability"
+    - name: "docker_compose"
+      type: "feature"
+
+  dependencies:
+    required: []
+    optional:
+      - plugin: "git"
+        version: ">=2.0.0"
+
+  conflicts:
+    - plugin: "podman"
+      reason: "Both provide container runtime; using both can cause conflicts"
+
+  alternatives:
+    - plugin: "podman"
+      reason: "Alternative container runtime with Docker-compatible CLI"
+
+  installers:
+    apt:
+      package_manager: "apt"
+      packages:
+        - name: "docker-ce"
+          version_param: "version"
+          install_command: |
+            # Install Docker CE from official repository
+            apt-get update
+            apt-get install -y ca-certificates curl gnupg
+            install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            chmod a+r /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            apt-get update
+            {{if ne .version "latest"}}
+            apt-get install -y docker-ce={{.version}} docker-ce-cli={{.version}} containerd.io docker-buildx-plugin docker-compose-plugin
+            {{else}}
+            apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            {{end}}
+      post_install: |
+        # Start and enable Docker service
+        systemctl enable docker
+        systemctl start docker
+
+        {{if .add_user_to_group}}
+        # Add user to docker group
+        usermod -aG docker {{.user}}
+        echo "✅ User {{.user}} added to docker group (re-login required)"
+        {{end}}
+
+        # Verify Docker installation
+        docker --version
+
+    dnf:
+      package_manager: "dnf"
+      packages:
+        - name: "docker-ce"
+          version_param: "version"
+          install_command: |
+            # Install Docker CE from official repository
+            dnf install -y dnf-plugins-core
+            dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            {{if ne .version "latest"}}
+            dnf install -y docker-ce-{{.version}} docker-ce-cli-{{.version}} containerd.io docker-buildx-plugin docker-compose-plugin
+            {{else}}
+            dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            {{end}}
+      post_install: |
+        # Start and enable Docker service
+        systemctl enable docker
+        systemctl start docker
+
+        {{if .add_user_to_group}}
+        # Add user to docker group
+        usermod -aG docker {{.user}}
+        echo "✅ User {{.user}} added to docker group (re-login required)"
+        {{end}}
+
+        # Verify Docker installation
+        docker --version
+
+    system:
+      package_manager: "system"
+      packages:
+        - name: "docker"
+          version_param: "version"
+          install_command: |
+            if command -v apt-get &> /dev/null; then
+              # Ubuntu/Debian installation
+              apt-get update
+              apt-get install -y ca-certificates curl gnupg
+              install -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              chmod a+r /etc/apt/keyrings/docker.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+              apt-get update
+              apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            elif command -v dnf &> /dev/null; then
+              # RHEL/Rocky/Fedora installation
+              dnf install -y dnf-plugins-core
+              dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+              dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            fi
+      post_install: |
+        systemctl enable docker
+        systemctl start docker
+        {{if .add_user_to_group}}
+        usermod -aG docker {{.user}}
+        {{end}}
+        docker --version
+
+  configuration:
+    parameters:
+      version:
+        type: "choice"
+        choices: ["latest", "24.0.7", "24.0.6", "23.0.6"]
+        default: "latest"
+        description: "Docker version to install"
+
+      add_user_to_group:
+        type: "bool"
+        default: true
+        description: "Add user to docker group (allows running docker without sudo)"
+
+      user:
+        type: "string"
+        default: "researcher"
+        description: "Username to add to docker group"
+
+      enable_buildx:
+        type: "bool"
+        default: true
+        description: "Enable Docker Buildx for multi-platform builds"
+
+  compatibility:
+    tools:
+      system:
+        min_version: "20.0.0"
+
+  security:
+    trusted: true
+    verified_publisher: true
+    cve_scanned: true
+    last_security_scan: "2024-01-15T10:00:00Z"
