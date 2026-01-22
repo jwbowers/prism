@@ -43,6 +43,14 @@ package_manager: "apt"
 # Inherit from Ubuntu 24.04 base
 inherits: ["Ubuntu 24.04 LTS (x86_64)"]
 
+# Universal plugins - tool-agnostic configurations
+plugins:
+  enabled:
+    - name: "git"
+      version: "latest"
+      configuration:
+        enable_lfs: false
+
 # System and R packages
 packages:
   # R dependencies for package compilation
@@ -59,10 +67,6 @@ packages:
     - "libtiff5-dev"
     - "libjpeg-dev"
     - "libgit2-dev"
-
-  # Version control
-  vcs:
-    - "git"
 
 # Users
 users:

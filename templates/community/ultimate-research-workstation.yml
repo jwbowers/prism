@@ -22,6 +22,14 @@ color: "#6366f1"
 popular: true
 featured: true
 
+# Universal plugins - tool-agnostic configurations
+plugins:
+  enabled:
+    - name: "git"
+      version: "latest"
+      configuration:
+        enable_lfs: true
+
 # Comprehensive packages for all interfaces
 package_manager: "conda"
 packages:
@@ -29,7 +37,6 @@ packages:
     - ubuntu-desktop-minimal  # For DCV
     - firefox
     - code
-    - git
     - curl
     - vim
     - htop
