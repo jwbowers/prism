@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  name: "python"
+  display_name: "Python Programming Language"
+  description: "Python interpreter with pip, venv, and development tools"
+  category: "development"
+  version: "1.0.0"
+  maintainer: "Prism Team"
+
+spec:
+  provides:
+    - name: "python"
+      type: "capability"
+    - name: "pip"
+      type: "feature"
+    - name: "venv"
+      type: "feature"
+
+  dependencies:
+    required: []
+    optional:
+      - plugin: "git"
+        version: ">=2.0.0"
+
+  conflicts: []
+
+  alternatives:
+    - plugin: "conda"
+      reason: "Alternative Python environment manager with better package management"
+
+  installers:
+    apt:
+      package_manager: "apt"
+      packages:
+        - name: "python3"
+          version_param: "version"
+          install_command: |
+            apt-get update
+            {{if eq .version "latest"}}
+            apt-get install -y python3 python3-pip python3-venv python3-dev
+            {{else if eq .version "3.12"}}
+            apt-get install -y python3.12 python3.12-venv python3.12-dev python3-pip
+            {{else if eq .version "3.11"}}
+            apt-get install -y python3.11 python3.11-venv python3.11-dev python3-pip
+            {{else if eq .version "3.10"}}
+            apt-get install -y python3.10 python3.10-venv python3.10-dev python3-pip
+            {{end}}
+      post_install: |
+        # Create python/python3 symlinks if needed
+        {{if ne .version "latest"}}
+        update-alternatives --install /usr/bin/python python /usr/bin/python{{.version}} 1
+        update-alternatives --install /usr/bin/python3 python3 /usr/bin/python{{.version}} 1
+        {{end}}
+
+        # Upgrade pip to latest version
+        {{if .upgrade_pip}}
+        python3 -m pip install --upgrade pip setuptools wheel
+        {{end}}
+
+        # Install common development packages
+        {{if .install_dev_tools}}
+        python3 -m pip install --user black pylint mypy pytest pytest-cov ipython
+        {{end}}
+
+        # Verify installation
+        python3 --version
+        pip3 --version
+
+    dnf:
+      package_manager: "dnf"
+      packages:
+        - name: "python3"
+          version_param: "version"
+          install_command: |
+            {{if eq .version "latest"}}
+            dnf install -y python3 python3-pip python3-devel
+            {{else if eq .version "3.12"}}
+            dnf install -y python3.12 python3.12-pip python3.12-devel
+            {{else if eq .version "3.11"}}
+            dnf install -y python3.11 python3.11-pip python3.11-devel
+            {{else if eq .version "3.10"}}
+            dnf install -y python3.10 python3.10-pip python3.10-devel
+            {{end}}
+      post_install: |
+        # Upgrade pip
+        {{if .upgrade_pip}}
+        python3 -m pip install --upgrade pip setuptools wheel
+        {{end}}
+
+        # Install dev tools
+        {{if .install_dev_tools}}
+        python3 -m pip install --user black pylint mypy pytest pytest-cov ipython
+        {{end}}
+
+        python3 --version
+        pip3 --version
+
+    conda:
+      package_manager: "conda"
+      packages:
+        - name: "python"
+          version_param: "version"
+          install_command: |
+            {{if eq .version "latest"}}
+            conda install -y python
+            {{else}}
+            conda install -y python={{.version}}
+            {{end}}
+      post_install: |
+        {{if .install_dev_tools}}
+        conda install -y black pylint mypy pytest pytest-cov ipython
+        {{end}}
+
+        python --version
+        pip --version
+
+    pip:
+      package_manager: "pip"
+      packages:
+        - name: "python-packages"
+          install_command: |
+            # This installer assumes Python is already installed
+            {{if .upgrade_pip}}
+            python3 -m pip install --upgrade pip setuptools wheel
+            {{end}}
+
+            {{if .install_dev_tools}}
+            python3 -m pip install black pylint mypy pytest pytest-cov ipython
+            {{end}}
+
+            {{if .install_jupyter}}
+            python3 -m pip install jupyter jupyterlab notebook
+            {{end}}
+
+            {{if .install_data_science}}
+            python3 -m pip install numpy pandas matplotlib seaborn scikit-learn scipy
+            {{end}}
+
+  configuration:
+    parameters:
+      version:
+        type: "choice"
+        choices: ["latest", "3.12", "3.11", "3.10"]
+        default: "latest"
+        description: "Python version to install"
+
+      upgrade_pip:
+        type: "bool"
+        default: true
+        description: "Upgrade pip to latest version after installation"
+
+      install_dev_tools:
+        type: "bool"
+        default: true
+        description: "Install common development tools (black, pylint, mypy, pytest, ipython)"
+
+      install_jupyter:
+        type: "bool"
+        default: false
+        description: "Install Jupyter Lab and Notebook"
+
+      install_data_science:
+        type: "bool"
+        default: false
+        description: "Install data science packages (numpy, pandas, matplotlib, seaborn, scikit-learn, scipy)"
+
+  compatibility:
+    tools:
+      system:
+        min_version: "3.8.0"
+
+  security:
+    trusted: true
+    verified_publisher: true
+    cve_scanned: true
+    last_security_scan: "2024-01-15T10:00:00Z"

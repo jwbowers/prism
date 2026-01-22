@@ -1,0 +1,246 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  name: "nodejs"
+  display_name: "Node.js Runtime"
+  description: "Node.js JavaScript runtime with npm package manager"
+  category: "development"
+  version: "1.0.0"
+  maintainer: "Prism Team"
+
+spec:
+  provides:
+    - name: "nodejs"
+      type: "capability"
+    - name: "npm"
+      type: "tool"
+    - name: "npx"
+      type: "tool"
+
+  dependencies:
+    required: []
+    optional:
+      - plugin: "git"
+        version: ">=2.0.0"
+
+  conflicts: []
+
+  alternatives:
+    - plugin: "deno"
+      reason: "Alternative JavaScript/TypeScript runtime"
+    - plugin: "bun"
+      reason: "Alternative JavaScript runtime with faster performance"
+
+  installers:
+    apt:
+      package_manager: "apt"
+      packages:
+        - name: "nodejs"
+          version_param: "version"
+          install_command: |
+            # Install Node.js from NodeSource repository
+            apt-get update
+            apt-get install -y ca-certificates curl gnupg
+
+            {{if eq .version "latest"}}
+            # Install latest LTS version (Node 20.x)
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+            {{else if eq .version "20"}}
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            {{else if eq .version "18"}}
+            curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+            {{else if eq .version "16"}}
+            curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+            {{end}}
+
+            apt-get install -y nodejs
+
+      post_install: |
+        # Verify installation
+        node --version
+        npm --version
+
+        {{if .install_yarn}}
+        # Install Yarn package manager
+        npm install -g yarn
+        yarn --version
+        {{end}}
+
+        {{if .install_pnpm}}
+        # Install pnpm package manager
+        npm install -g pnpm
+        pnpm --version
+        {{end}}
+
+        {{if .install_typescript}}
+        # Install TypeScript
+        npm install -g typescript ts-node
+        tsc --version
+        {{end}}
+
+        {{if .install_dev_tools}}
+        # Install common development tools
+        npm install -g eslint prettier nodemon
+        {{end}}
+
+    dnf:
+      package_manager: "dnf"
+      packages:
+        - name: "nodejs"
+          version_param: "version"
+          install_command: |
+            # Install Node.js from NodeSource repository
+            {{if eq .version "latest"}}
+            curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+            {{else if eq .version "20"}}
+            curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+            {{else if eq .version "18"}}
+            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+            {{else if eq .version "16"}}
+            curl -fsSL https://rpm.nodesource.com/setup_16.x | bash -
+            {{end}}
+
+            dnf install -y nodejs
+
+      post_install: |
+        node --version
+        npm --version
+
+        {{if .install_yarn}}
+        npm install -g yarn
+        yarn --version
+        {{end}}
+
+        {{if .install_pnpm}}
+        npm install -g pnpm
+        pnpm --version
+        {{end}}
+
+        {{if .install_typescript}}
+        npm install -g typescript ts-node
+        tsc --version
+        {{end}}
+
+        {{if .install_dev_tools}}
+        npm install -g eslint prettier nodemon
+        {{end}}
+
+    conda:
+      package_manager: "conda"
+      packages:
+        - name: "nodejs"
+          version_param: "version"
+          install_command: |
+            {{if eq .version "latest"}}
+            conda install -y nodejs
+            {{else}}
+            conda install -y nodejs={{.version}}
+            {{end}}
+
+      post_install: |
+        node --version
+        npm --version
+
+        {{if .install_yarn}}
+        npm install -g yarn
+        {{end}}
+
+        {{if .install_pnpm}}
+        npm install -g pnpm
+        {{end}}
+
+        {{if .install_typescript}}
+        npm install -g typescript ts-node
+        {{end}}
+
+        {{if .install_dev_tools}}
+        npm install -g eslint prettier nodemon
+        {{end}}
+
+    system:
+      package_manager: "system"
+      packages:
+        - name: "nodejs"
+          install_command: |
+            if command -v apt-get &> /dev/null; then
+              # Ubuntu/Debian
+              apt-get update
+              apt-get install -y ca-certificates curl gnupg
+              {{if eq .version "latest"}}
+              curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+              {{else if eq .version "20"}}
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              {{else if eq .version "18"}}
+              curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+              {{end}}
+              apt-get install -y nodejs
+            elif command -v dnf &> /dev/null; then
+              # RHEL/Rocky/Fedora
+              {{if eq .version "latest"}}
+              curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+              {{else if eq .version "20"}}
+              curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+              {{else if eq .version "18"}}
+              curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+              {{end}}
+              dnf install -y nodejs
+            fi
+
+      post_install: |
+        node --version
+        npm --version
+
+        {{if .install_yarn}}
+        npm install -g yarn
+        {{end}}
+
+        {{if .install_pnpm}}
+        npm install -g pnpm
+        {{end}}
+
+        {{if .install_typescript}}
+        npm install -g typescript ts-node
+        {{end}}
+
+        {{if .install_dev_tools}}
+        npm install -g eslint prettier nodemon
+        {{end}}
+
+  configuration:
+    parameters:
+      version:
+        type: "choice"
+        choices: ["latest", "20", "18", "16"]
+        default: "latest"
+        description: "Node.js version (major version number or 'latest' for LTS)"
+
+      install_yarn:
+        type: "bool"
+        default: false
+        description: "Install Yarn package manager"
+
+      install_pnpm:
+        type: "bool"
+        default: false
+        description: "Install pnpm package manager"
+
+      install_typescript:
+        type: "bool"
+        default: false
+        description: "Install TypeScript compiler and ts-node"
+
+      install_dev_tools:
+        type: "bool"
+        default: true
+        description: "Install common development tools (eslint, prettier, nodemon)"
+
+  compatibility:
+    tools:
+      system:
+        min_version: "16.0.0"
+
+  security:
+    trusted: true
+    verified_publisher: true
+    cve_scanned: true
+    last_security_scan: "2024-01-15T10:00:00Z"

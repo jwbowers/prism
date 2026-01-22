@@ -1,0 +1,286 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  name: "mysql"
+  display_name: "MySQL Database"
+  description: "MySQL/MariaDB client and optional server with administrative tools"
+  category: "database"
+  version: "1.0.0"
+  maintainer: "Prism Team"
+
+spec:
+  provides:
+    - name: "mysql_client"
+      type: "capability"
+    - name: "mysql_server"
+      type: "feature"
+    - name: "mysql"
+      type: "tool"
+
+  dependencies:
+    required: []
+    optional: []
+
+  conflicts: []
+
+  alternatives:
+    - plugin: "postgresql"
+      reason: "Alternative relational database"
+    - plugin: "mariadb"
+      reason: "Fork of MySQL with additional features"
+    - plugin: "mongodb"
+      reason: "Alternative NoSQL database"
+
+  installers:
+    apt:
+      package_manager: "apt"
+      packages:
+        - name: "mysql-client"
+          version_param: "version"
+          install_command: |
+            apt-get update
+            {{if eq .flavor "mysql"}}
+            # Install MySQL client
+            {{if eq .version "latest"}}
+            apt-get install -y mysql-client
+            {{else}}
+            apt-get install -y mysql-client-{{.version}}
+            {{end}}
+            {{else}}
+            # Install MariaDB client
+            {{if eq .version "latest"}}
+            apt-get install -y mariadb-client
+            {{else}}
+            apt-get install -y mariadb-client-{{.version}}
+            {{end}}
+            {{end}}
+
+        - name: "mysql-server"
+          install_command: |
+            {{if .install_server}}
+            {{if eq .flavor "mysql"}}
+            # Install MySQL server
+            {{if eq .version "latest"}}
+            apt-get install -y mysql-server
+            {{else}}
+            apt-get install -y mysql-server-{{.version}}
+            {{end}}
+            {{else}}
+            # Install MariaDB server
+            {{if eq .version "latest"}}
+            apt-get install -y mariadb-server
+            {{else}}
+            apt-get install -y mariadb-server-{{.version}}
+            {{end}}
+            {{end}}
+            {{end}}
+
+      post_install: |
+        # Verify client installation
+        mysql --version
+
+        {{if .install_server}}
+        # Start and enable MySQL/MariaDB service
+        {{if eq .flavor "mysql"}}
+        systemctl enable mysql
+        systemctl start mysql
+        {{else}}
+        systemctl enable mariadb
+        systemctl start mariadb
+        {{end}}
+
+        {{if .create_default_db}}
+        # Create default database and user
+        mysql -u root <<'EOSQL'
+        CREATE DATABASE IF NOT EXISTS {{.database_name}};
+        CREATE USER IF NOT EXISTS '{{.database_user}}'@'localhost' IDENTIFIED BY '{{.database_password}}';
+        GRANT ALL PRIVILEGES ON {{.database_name}}.* TO '{{.database_user}}'@'localhost';
+        FLUSH PRIVILEGES;
+        EOSQL
+        echo "✅ Created database '{{.database_name}}' with user '{{.database_user}}'"
+        {{end}}
+
+        # Show server status
+        {{if eq .flavor "mysql"}}
+        systemctl status mysql --no-pager
+        {{else}}
+        systemctl status mariadb --no-pager
+        {{end}}
+        {{end}}
+
+    dnf:
+      package_manager: "dnf"
+      packages:
+        - name: "mysql"
+          version_param: "version"
+          install_command: |
+            {{if eq .flavor "mysql"}}
+            # Install MySQL from official repository
+            {{if eq .version "latest"}}
+            dnf install -y mysql mysql-server
+            {{else}}
+            dnf install -y mysql-{{.version}} mysql-server-{{.version}}
+            {{end}}
+            {{else}}
+            # Install MariaDB (default on RHEL/Rocky)
+            {{if eq .version "latest"}}
+            dnf install -y mariadb mariadb-server
+            {{else}}
+            dnf install -y mariadb-{{.version}} mariadb-server-{{.version}}
+            {{end}}
+            {{end}}
+
+      post_install: |
+        mysql --version
+
+        {{if .install_server}}
+        {{if eq .flavor "mysql"}}
+        systemctl enable mysqld
+        systemctl start mysqld
+        {{else}}
+        systemctl enable mariadb
+        systemctl start mariadb
+        {{end}}
+
+        {{if .create_default_db}}
+        mysql -u root <<'EOSQL'
+        CREATE DATABASE IF NOT EXISTS {{.database_name}};
+        CREATE USER IF NOT EXISTS '{{.database_user}}'@'localhost' IDENTIFIED BY '{{.database_password}}';
+        GRANT ALL PRIVILEGES ON {{.database_name}}.* TO '{{.database_user}}'@'localhost';
+        FLUSH PRIVILEGES;
+        EOSQL
+        echo "✅ Created database '{{.database_name}}' with user '{{.database_user}}'"
+        {{end}}
+
+        {{if eq .flavor "mysql"}}
+        systemctl status mysqld --no-pager
+        {{else}}
+        systemctl status mariadb --no-pager
+        {{end}}
+        {{end}}
+
+    conda:
+      package_manager: "conda"
+      packages:
+        - name: "mysql"
+          install_command: |
+            # Conda only provides MySQL client connector
+            conda install -y mysql-connector-python
+            echo "Note: Conda provides MySQL client connector only. For server, use apt or dnf."
+
+      post_install: |
+        python -c "import mysql.connector; print('MySQL Connector:', mysql.connector.__version__)"
+
+    system:
+      package_manager: "system"
+      packages:
+        - name: "mysql"
+          install_command: |
+            if command -v apt-get &> /dev/null; then
+              apt-get update
+              {{if eq .flavor "mysql"}}
+              apt-get install -y mysql-client
+              {{if .install_server}}
+              apt-get install -y mysql-server
+              {{end}}
+              {{else}}
+              apt-get install -y mariadb-client
+              {{if .install_server}}
+              apt-get install -y mariadb-server
+              {{end}}
+              {{end}}
+            elif command -v dnf &> /dev/null; then
+              {{if eq .flavor "mysql"}}
+              dnf install -y mysql
+              {{if .install_server}}
+              dnf install -y mysql-server
+              {{end}}
+              {{else}}
+              dnf install -y mariadb
+              {{if .install_server}}
+              dnf install -y mariadb-server
+              {{end}}
+              {{end}}
+            fi
+
+      post_install: |
+        mysql --version
+
+        {{if .install_server}}
+        if command -v apt-get &> /dev/null; then
+          {{if eq .flavor "mysql"}}
+          systemctl enable mysql
+          systemctl start mysql
+          {{else}}
+          systemctl enable mariadb
+          systemctl start mariadb
+          {{end}}
+        elif command -v dnf &> /dev/null; then
+          {{if eq .flavor "mysql"}}
+          systemctl enable mysqld
+          systemctl start mysqld
+          {{else}}
+          systemctl enable mariadb
+          systemctl start mariadb
+          {{end}}
+        fi
+
+        {{if .create_default_db}}
+        mysql -u root <<'EOSQL'
+        CREATE DATABASE IF NOT EXISTS {{.database_name}};
+        CREATE USER IF NOT EXISTS '{{.database_user}}'@'localhost' IDENTIFIED BY '{{.database_password}}';
+        GRANT ALL PRIVILEGES ON {{.database_name}}.* TO '{{.database_user}}'@'localhost';
+        FLUSH PRIVILEGES;
+        EOSQL
+        {{end}}
+        {{end}}
+
+  configuration:
+    parameters:
+      flavor:
+        type: "choice"
+        choices: ["mysql", "mariadb"]
+        default: "mysql"
+        description: "Choose between MySQL or MariaDB"
+
+      version:
+        type: "choice"
+        choices: ["latest", "8.0", "5.7", "10.11", "10.6"]
+        default: "latest"
+        description: "MySQL/MariaDB version (8.0/5.7 for MySQL, 10.x for MariaDB)"
+
+      install_server:
+        type: "bool"
+        default: false
+        description: "Install MySQL/MariaDB server (otherwise just client tools)"
+
+      create_default_db:
+        type: "bool"
+        default: false
+        description: "Create default database and user (requires install_server=true)"
+
+      database_name:
+        type: "string"
+        default: "research_db"
+        description: "Name of default database to create"
+
+      database_user:
+        type: "string"
+        default: "researcher"
+        description: "Username for default database user"
+
+      database_password:
+        type: "string"
+        default: "changeme"
+        description: "Password for default database user (CHANGE IN PRODUCTION)"
+
+  compatibility:
+    tools:
+      system:
+        min_version: "5.7.0"
+
+  security:
+    trusted: true
+    verified_publisher: true
+    cve_scanned: true
+    last_security_scan: "2024-01-15T10:00:00Z"

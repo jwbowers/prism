@@ -1,0 +1,217 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  name: "postgresql"
+  display_name: "PostgreSQL Database"
+  description: "PostgreSQL client and optional server with administrative tools"
+  category: "database"
+  version: "1.0.0"
+  maintainer: "Prism Team"
+
+spec:
+  provides:
+    - name: "postgresql_client"
+      type: "capability"
+    - name: "postgresql_server"
+      type: "feature"
+    - name: "psql"
+      type: "tool"
+
+  dependencies:
+    required: []
+    optional: []
+
+  conflicts: []
+
+  alternatives:
+    - plugin: "mysql"
+      reason: "Alternative relational database"
+    - plugin: "mongodb"
+      reason: "Alternative NoSQL database"
+
+  installers:
+    apt:
+      package_manager: "apt"
+      packages:
+        - name: "postgresql-client"
+          version_param: "version"
+          install_command: |
+            apt-get update
+            {{if eq .version "latest"}}
+            apt-get install -y postgresql-client
+            {{else}}
+            apt-get install -y postgresql-client-{{.version}}
+            {{end}}
+
+        - name: "postgresql-server"
+          install_command: |
+            {{if .install_server}}
+            {{if eq .version "latest"}}
+            apt-get install -y postgresql postgresql-contrib
+            {{else}}
+            apt-get install -y postgresql-{{.version}} postgresql-contrib-{{.version}}
+            {{end}}
+            {{end}}
+
+      post_install: |
+        # Verify client installation
+        psql --version
+
+        {{if .install_server}}
+        # Configure and start PostgreSQL server
+        systemctl enable postgresql
+        systemctl start postgresql
+
+        {{if .create_default_db}}
+        # Create default database and user
+        sudo -u postgres psql -c "CREATE DATABASE {{.database_name}};"
+        sudo -u postgres psql -c "CREATE USER {{.database_user}} WITH PASSWORD '{{.database_password}}';"
+        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE {{.database_name}} TO {{.database_user}};"
+        echo "✅ Created database '{{.database_name}}' with user '{{.database_user}}'"
+        {{end}}
+
+        # Show server status
+        systemctl status postgresql --no-pager
+        {{end}}
+
+    dnf:
+      package_manager: "dnf"
+      packages:
+        - name: "postgresql"
+          version_param: "version"
+          install_command: |
+            {{if eq .version "latest"}}
+            dnf install -y postgresql postgresql-contrib
+            {{else}}
+            dnf install -y postgresql{{.version}} postgresql{{.version}}-contrib
+            {{end}}
+
+        - name: "postgresql-server"
+          install_command: |
+            {{if .install_server}}
+            {{if eq .version "latest"}}
+            dnf install -y postgresql-server
+            {{else}}
+            dnf install -y postgresql{{.version}}-server
+            {{end}}
+            {{end}}
+
+      post_install: |
+        psql --version
+
+        {{if .install_server}}
+        # Initialize database cluster
+        postgresql-setup --initdb
+
+        # Enable and start service
+        systemctl enable postgresql
+        systemctl start postgresql
+
+        {{if .create_default_db}}
+        sudo -u postgres psql -c "CREATE DATABASE {{.database_name}};"
+        sudo -u postgres psql -c "CREATE USER {{.database_user}} WITH PASSWORD '{{.database_password}}';"
+        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE {{.database_name}} TO {{.database_user}};"
+        echo "✅ Created database '{{.database_name}}' with user '{{.database_user}}'"
+        {{end}}
+
+        systemctl status postgresql --no-pager
+        {{end}}
+
+    conda:
+      package_manager: "conda"
+      packages:
+        - name: "postgresql"
+          version_param: "version"
+          install_command: |
+            {{if eq .version "latest"}}
+            conda install -y postgresql
+            {{else}}
+            conda install -y postgresql={{.version}}
+            {{end}}
+
+      post_install: |
+        # Note: Conda installs client tools only
+        psql --version
+        echo "Note: Conda installation includes client tools only. For server, use apt or dnf."
+
+    system:
+      package_manager: "system"
+      packages:
+        - name: "postgresql"
+          install_command: |
+            if command -v apt-get &> /dev/null; then
+              apt-get update
+              apt-get install -y postgresql-client
+              {{if .install_server}}
+              apt-get install -y postgresql postgresql-contrib
+              {{end}}
+            elif command -v dnf &> /dev/null; then
+              dnf install -y postgresql
+              {{if .install_server}}
+              dnf install -y postgresql-server
+              {{end}}
+            fi
+
+      post_install: |
+        psql --version
+
+        {{if .install_server}}
+        if command -v apt-get &> /dev/null; then
+          systemctl enable postgresql
+          systemctl start postgresql
+        elif command -v dnf &> /dev/null; then
+          postgresql-setup --initdb
+          systemctl enable postgresql
+          systemctl start postgresql
+        fi
+
+        {{if .create_default_db}}
+        sudo -u postgres psql -c "CREATE DATABASE {{.database_name}};"
+        sudo -u postgres psql -c "CREATE USER {{.database_user}} WITH PASSWORD '{{.database_password}}';"
+        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE {{.database_name}} TO {{.database_user}};"
+        {{end}}
+        {{end}}
+
+  configuration:
+    parameters:
+      version:
+        type: "choice"
+        choices: ["latest", "16", "15", "14", "13"]
+        default: "latest"
+        description: "PostgreSQL version to install"
+
+      install_server:
+        type: "bool"
+        default: false
+        description: "Install PostgreSQL server (otherwise just client tools)"
+
+      create_default_db:
+        type: "bool"
+        default: false
+        description: "Create default database and user (requires install_server=true)"
+
+      database_name:
+        type: "string"
+        default: "research_db"
+        description: "Name of default database to create"
+
+      database_user:
+        type: "string"
+        default: "researcher"
+        description: "Username for default database user"
+
+      database_password:
+        type: "string"
+        default: "changeme"
+        description: "Password for default database user (CHANGE IN PRODUCTION)"
+
+  compatibility:
+    tools:
+      system:
+        min_version: "13.0"
+
+  security:
+    trusted: true
+    verified_publisher: true
+    cve_scanned: true
+    last_security_scan: "2024-01-15T10:00:00Z"
