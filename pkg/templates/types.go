@@ -535,8 +535,8 @@ type MarketplaceConfig struct {
 	RatingCount int     `yaml:"rating_count,omitempty" json:"rating_count,omitempty"` // Number of ratings
 
 	// Security and validation
-	SecurityScan    *SecurityScanResult `yaml:"security_scan,omitempty" json:"security_scan,omitempty"`
-	ValidationTests []ValidationTest    `yaml:"validation_tests,omitempty" json:"validation_tests,omitempty"`
+	SecurityScan    *MarketplaceSecurityScanResult `yaml:"security_scan,omitempty" json:"security_scan,omitempty"`
+	ValidationTests []ValidationTest               `yaml:"validation_tests,omitempty" json:"validation_tests,omitempty"`
 
 	// Marketplace categories and discoverability
 	Keywords   []string           `yaml:"keywords,omitempty" json:"keywords,omitempty"`     // Search keywords
@@ -550,8 +550,8 @@ type MarketplaceConfig struct {
 	Compatibility []string             `yaml:"compatibility,omitempty" json:"compatibility,omitempty"` // Compatible Prism versions
 }
 
-// SecurityScanResult contains security scanning information
-type SecurityScanResult struct {
+// MarketplaceSecurityScanResult contains marketplace-specific security scanning information
+type MarketplaceSecurityScanResult struct {
 	Status    string            `yaml:"status" json:"status"` // passed, failed, warning, pending
 	ScanDate  time.Time         `yaml:"scan_date" json:"scan_date"`
 	Scanner   string            `yaml:"scanner" json:"scanner"` // Tool used for scanning

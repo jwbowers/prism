@@ -72,7 +72,7 @@ type MarketplaceValidationResult struct {
 	ValidatorID string           `json:"validator_id"`
 
 	// Security analysis
-	SecurityScan SecurityScanResult `json:"security_scan"`
+	SecurityScan MarketplaceSecurityScanResult `json:"security_scan"`
 
 	// Quality analysis
 	QualityChecks []QualityCheck `json:"quality_checks"`
@@ -402,7 +402,7 @@ func (v *MarketplaceValidator) validateTemplateStructure(template *Template, res
 
 // performSecurityScan conducts comprehensive security analysis
 func (v *MarketplaceValidator) performSecurityScan(ctx context.Context, template *Template, result *MarketplaceValidationResult) error {
-	securityScan := &SecurityScanResult{
+	securityScan := &MarketplaceSecurityScanResult{
 		Status:   "pending",
 		ScanDate: time.Now(),
 		Scanner:  "marketplace-security-scanner-v1.0",
@@ -431,7 +431,7 @@ func (v *MarketplaceValidator) performSecurityScan(ctx context.Context, template
 }
 
 // scanPackages performs package vulnerability scanning
-func (v *MarketplaceValidator) scanPackages(ctx context.Context, template *Template, securityScan *SecurityScanResult) error {
+func (v *MarketplaceValidator) scanPackages(ctx context.Context, template *Template, securityScan *MarketplaceSecurityScanResult) error {
 	if v.PackageScanner == nil {
 		return nil
 	}
@@ -458,7 +458,7 @@ func (v *MarketplaceValidator) scanPackages(ctx context.Context, template *Templ
 }
 
 // scanSecrets performs secrets detection scanning
-func (v *MarketplaceValidator) scanSecrets(ctx context.Context, template *Template, securityScan *SecurityScanResult) error {
+func (v *MarketplaceValidator) scanSecrets(ctx context.Context, template *Template, securityScan *MarketplaceSecurityScanResult) error {
 	if v.SecretsScanner == nil {
 		return nil
 	}
@@ -483,7 +483,7 @@ func (v *MarketplaceValidator) scanSecrets(ctx context.Context, template *Templa
 }
 
 // scanConfiguration performs configuration security scanning
-func (v *MarketplaceValidator) scanConfiguration(ctx context.Context, template *Template, securityScan *SecurityScanResult) error {
+func (v *MarketplaceValidator) scanConfiguration(ctx context.Context, template *Template, securityScan *MarketplaceSecurityScanResult) error {
 	if v.ConfigScanner == nil {
 		return nil
 	}
@@ -507,7 +507,7 @@ func (v *MarketplaceValidator) scanConfiguration(ctx context.Context, template *
 }
 
 // checkForbiddenPatterns checks for policy-forbidden patterns
-func (v *MarketplaceValidator) checkForbiddenPatterns(template *Template, securityScan *SecurityScanResult) {
+func (v *MarketplaceValidator) checkForbiddenPatterns(template *Template, securityScan *MarketplaceSecurityScanResult) {
 	templateStr := fmt.Sprintf("%+v", template)
 	for _, pattern := range v.Config.ForbiddenPatterns {
 		if matched, _ := regexp.MatchString(pattern, templateStr); matched {
@@ -523,7 +523,7 @@ func (v *MarketplaceValidator) checkForbiddenPatterns(template *Template, securi
 }
 
 // validateExternalURLs validates external URL references
-func (v *MarketplaceValidator) validateExternalURLs(template *Template, securityScan *SecurityScanResult) {
+func (v *MarketplaceValidator) validateExternalURLs(template *Template, securityScan *MarketplaceSecurityScanResult) {
 	if len(v.Config.AllowedDomains) == 0 {
 		return
 	}
@@ -572,7 +572,7 @@ func (v *MarketplaceValidator) isDomainAllowed(hostname string) bool {
 }
 
 // determineSecurityStatus sets the security scan status based on findings
-func (v *MarketplaceValidator) determineSecurityStatus(securityScan *SecurityScanResult) {
+func (v *MarketplaceValidator) determineSecurityStatus(securityScan *MarketplaceSecurityScanResult) {
 	criticalCount := 0
 	highCount := 0
 

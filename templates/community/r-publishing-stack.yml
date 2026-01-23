@@ -70,7 +70,7 @@ parameters:
     name: "install_languageserver"
     display_name: "Install Language Server"
     description: "Install R languageserver package for LSP support in editors"
-    type: "boolean"
+    type: "bool"
     default: true
     group: "R Packages"
     order: 10
@@ -90,7 +90,7 @@ parameters:
     name: "install_renv"
     display_name: "Install renv"
     description: "Install renv package for reproducible R environments"
-    type: "boolean"
+    type: "bool"
     default: true
     group: "R Packages"
     order: 20
