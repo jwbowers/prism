@@ -1,0 +1,36 @@
+name: "Test R Minimal"
+slug: "test-r-minimal"
+description: "Minimal R template to test parameters"
+base: "ubuntu-22.04"
+connection_type: "ssh"
+package_manager: "apt"
+
+parameters:
+  test_r_param:
+    name: "test_r_param"
+    display_name: "Test R Parameter"
+    type: "choice"
+    choices: ["latest", "specific"]
+    default: "latest"
+
+packages:
+  system:
+    - curl
+
+post_install: |
+  echo "Test R parameter is: {{.test_r_param}}"
+  
+  if [ "{{.test_r_param}}" = "latest" ]; then
+    echo "SUCCESS: R parameter conditional worked - latest"
+  else
+    echo "SUCCESS: R parameter conditional worked - specific"
+  fi
+
+users:
+  - name: "ubuntu"
+
+instance_defaults:
+  type: "t3.micro"
+  ports: [22]
+
+version: "1.0.0"
