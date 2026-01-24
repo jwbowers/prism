@@ -1912,7 +1912,7 @@ func (tc *TemplateCommands) templatesPackages(args []string) error {
 
 	fmt.Printf("📦 Packages for template: %s\n", templateName)
 	fmt.Printf("Package Manager: %s\n", pm)
-	fmt.Println("═══════════════════════════════════════════════════════════════════\n")
+	fmt.Println("═══════════════════════════════════════════════════════════════════")
 
 	// Show packages by group
 	if pm == templates.PackageManagerApt || pm == templates.PackageManagerDnf {

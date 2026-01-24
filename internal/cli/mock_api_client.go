@@ -259,6 +259,28 @@ func (m *MockAPIClient) GetInstance(ctx context.Context, name string) (*types.In
 	return nil, fmt.Errorf("instance %s not found", name)
 }
 
+// GetProgress returns mock progress for an instance (v0.7.2 - Issue #453)
+func (m *MockAPIClient) GetProgress(ctx context.Context, name string) (*types.ProgressResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+
+	// Return mock progress response
+	return &types.ProgressResponse{
+		InstanceName:      name,
+		OverallProgress:   100.0,
+		CurrentStage:      "Complete",
+		CurrentStageIndex: 3,
+		IsComplete:        true,
+		EstimatedTimeLeft: "0 seconds",
+		Stages: []types.ProgressStage{
+			{Name: "Launching", DisplayName: "Launching instance", Status: "complete"},
+			{Name: "Cloud-init", DisplayName: "Running cloud-init", Status: "complete"},
+			{Name: "Ready", DisplayName: "Ready", Status: "complete"},
+		},
+	}, nil
+}
+
 func (m *MockAPIClient) StartInstance(ctx context.Context, name string) error {
 	m.StartCalls = append(m.StartCalls, name)
 
