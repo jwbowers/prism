@@ -117,7 +117,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		rnaseqInstance = fmt.Sprintf("rnaseq-analysis-%d", time.Now().Unix())
 
 		launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-			Template:  "Python ML Workstation", // Bioinformatics template
+			Template:  "Ubuntu Data Science Workstation", // Data science environment for RNA-seq
 			Name:      rnaseqInstance,
 			Size:      "M", // 4 vCPU, 8GB RAM
 			ProjectID: projectID,
@@ -274,7 +274,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 
 		// Launch small instance for quick test
 		launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-			Template:  "Ubuntu 22.04 Server",
+			Template:  "Basic Research (APT)",
 			Name:      testInstance,
 			Size:      "S", // Small size for cost efficiency
 			ProjectID: projectID,

@@ -193,7 +193,7 @@ func TestUniversityClassPersona_ProfThompson(t *testing.T) {
 			studentInstances[i] = instanceName
 
 			_, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-				Template:  "Python ML Workstation",
+				Template:  "Ubuntu Data Science Workstation",
 				Name:      instanceName,
 				Size:      "S",
 				ProjectID: projectID,

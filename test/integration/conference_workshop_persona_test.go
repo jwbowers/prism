@@ -136,7 +136,7 @@ func TestConferenceWorkshopPersona_DrPatel(t *testing.T) {
 			workshopInstances[i] = instanceName
 
 			_, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-				Template:  "Python ML Workstation",
+				Template:  "Ubuntu Data Science Workstation",
 				Name:      instanceName,
 				Size:      "S", // Small instances sufficient for workshop
 				ProjectID: projectID,

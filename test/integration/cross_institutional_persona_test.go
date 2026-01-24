@@ -306,7 +306,7 @@ func TestCrossInstitutionalPersona_DrKim(t *testing.T) {
 					time.Now().Unix())
 
 				launchResp, err := apiClient.LaunchInstance(ctx, types.LaunchRequest{
-					Template:  "R Research Workstation",
+					Template:  "R Research Full Stack",
 					Name:      instanceName,
 					Size:      "L", // Larger instances for climate data
 					ProjectID: projectID,

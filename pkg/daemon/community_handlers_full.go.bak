@@ -1,0 +1,532 @@
+// Community templates handlers for Community Template Repository Integration (Issue #451)
+package daemon
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/scttfrdmn/prism/pkg/templates"
+)
+
+// RegisterCommunityRoutes registers all community template-related API routes
+func (s *Server) RegisterCommunityRoutes(mux *http.ServeMux, applyMiddleware func(http.HandlerFunc) http.HandlerFunc) {
+	// Source management endpoints
+	mux.HandleFunc("/api/v1/community/sources", applyMiddleware(s.handleCommunitySources))
+	mux.HandleFunc("/api/v1/community/sources/", applyMiddleware(s.handleCommunitySourceDetail))
+
+	// Template discovery endpoints
+	mux.HandleFunc("/api/v1/community/templates", applyMiddleware(s.handleCommunityTemplates))
+	mux.HandleFunc("/api/v1/community/templates/", applyMiddleware(s.handleCommunityTemplateDetail))
+}
+
+// CommunitySourceRequest represents a request to add a community source
+type CommunitySourceRequest struct {
+	URL        string `json:"url"`
+	Branch     string `json:"branch,omitempty"`
+	TrustLevel string `json:"trust_level,omitempty"`
+}
+
+// CommunitySourceResponse represents a community source in API responses
+type CommunitySourceResponse struct {
+	Name       string `json:"name"`
+	URL        string `json:"url"`
+	Branch     string `json:"branch"`
+	Enabled    bool   `json:"enabled"`
+	TrustLevel string `json:"trust_level"`
+	Added      string `json:"added"`
+}
+
+// CommunityTemplateResponse represents a community template in API responses
+type CommunityTemplateResponse struct {
+	// Basic template info
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	BaseOS      string   `json:"base_os"`
+	Category    string   `json:"category"`
+	Keywords    []string `json:"keywords"`
+
+	// Source info
+	SourceURL      string `json:"source_url"`
+	RepositoryPath string `json:"repository_path"`
+	TrustLevel     string `json:"trust_level"`
+
+	// Community metadata
+	Author          string  `json:"author"`
+	MaintainerEmail string  `json:"maintainer_email"`
+	License         string  `json:"license"`
+	Version         string  `json:"version"`
+	LastUpdated     string  `json:"last_updated"`
+
+	// Engagement metrics
+	Downloads       int     `json:"downloads"`
+	Rating          float64 `json:"rating"`
+	PopularityScore float64 `json:"popularity_score"`
+	Verified        bool    `json:"verified"`
+
+	// Security
+	SecurityScanned  bool   `json:"security_scanned"`
+	SecurityScore    int    `json:"security_score"`
+	SecurityScanDate string `json:"security_scan_date"`
+}
+
+// handleCommunitySources handles GET (list) and POST (add) for sources
+// GET /api/v1/community/sources - List all sources
+// POST /api/v1/community/sources - Add a new source
+func (s *Server) handleCommunitySources(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		s.handleListSources(w, r)
+	case http.MethodPost:
+		s.handleAddSource(w, r)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// handleListSources lists all configured community sources
+func (s *Server) handleListSources(w http.ResponseWriter, r *http.Request) {
+	sourceManager := templates.NewSourceManager()
+	sources := sourceManager.List()
+
+	// Convert to API response format
+	response := make([]CommunitySourceResponse, 0, len(sources))
+	for _, source := range sources {
+		response = append(response, CommunitySourceResponse{
+			Name:       source.Name,
+			URL:        source.URL,
+			Branch:     source.Branch,
+			Enabled:    source.Enabled,
+			TrustLevel: source.TrustLevel,
+			Added:      source.Added.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"sources": response,
+		"count":   len(response),
+	})
+}
+
+// handleAddSource adds a new community source
+func (s *Server) handleAddSource(w http.ResponseWriter, r *http.Request) {
+	var req CommunitySourceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// Validate required fields
+	if req.URL == "" {
+		s.writeError(w, http.StatusBadRequest, "URL is required")
+		return
+	}
+
+	// Set defaults
+	if req.Branch == "" {
+		req.Branch = "main"
+	}
+	if req.TrustLevel == "" {
+		req.TrustLevel = "unverified"
+	}
+
+	// Add source
+	sourceManager := templates.NewSourceManager()
+	source, err := sourceManager.Add(req.URL, req.Branch)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to add source: %v", err))
+		return
+	}
+
+	// Set custom trust level if provided
+	if req.TrustLevel != "" && req.TrustLevel != "community" {
+		if err := sourceManager.SetTrustLevel(source.Name, req.TrustLevel); err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to set trust level: %v", err))
+			return
+		}
+	}
+
+	s.writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"message": "Source added successfully",
+		"url":     req.URL,
+	})
+}
+
+// handleCommunitySourceDetail handles operations on a specific source
+// GET /api/v1/community/sources/{name} - Get source details
+// DELETE /api/v1/community/sources/{name} - Remove source
+// PATCH /api/v1/community/sources/{name} - Update source (enable/disable/trust)
+func (s *Server) handleCommunitySourceDetail(w http.ResponseWriter, r *http.Request) {
+	// Extract source name from URL path
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/community/sources/")
+	sourceName := strings.Split(path, "/")[0]
+
+	if sourceName == "" {
+		s.writeError(w, http.StatusBadRequest, "source name required")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		s.handleGetSource(w, r, sourceName)
+	case http.MethodDelete:
+		s.handleRemoveSource(w, r, sourceName)
+	case http.MethodPatch:
+		s.handleUpdateSource(w, r, sourceName)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// handleGetSource gets details for a specific source
+func (s *Server) handleGetSource(w http.ResponseWriter, r *http.Request, sourceName string) {
+	sourceManager := templates.NewSourceManager()
+	source, err := sourceManager.Get(sourceName)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("source not found: %v", err))
+		return
+	}
+
+	response := CommunitySourceResponse{
+		Name:       source.Name,
+		URL:        source.URL,
+		Branch:     source.Branch,
+		Enabled:    source.Enabled,
+		TrustLevel: source.TrustLevel,
+		Added:      source.Added.Format("2006-01-02T15:04:05Z"),
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// handleRemoveSource removes a community source
+func (s *Server) handleRemoveSource(w http.ResponseWriter, r *http.Request, sourceName string) {
+	sourceManager := templates.NewSourceManager()
+	if err := sourceManager.Remove(sourceName); err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to remove source: %v", err))
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Source removed successfully",
+		"name":    sourceName,
+	})
+}
+
+// CommunitySourceUpdateRequest represents a request to update a source
+type CommunitySourceUpdateRequest struct {
+	Enabled    *bool   `json:"enabled,omitempty"`
+	TrustLevel *string `json:"trust_level,omitempty"`
+}
+
+// handleUpdateSource updates a community source (enable/disable/trust level)
+func (s *Server) handleUpdateSource(w http.ResponseWriter, r *http.Request, sourceName string) {
+	var req CommunitySourceUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	sourceManager := templates.NewSourceManager()
+
+	// Apply updates
+	if req.Enabled != nil {
+		if *req.Enabled {
+			if err := sourceManager.Enable(sourceName); err != nil {
+				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to enable source: %v", err))
+				return
+			}
+		} else {
+			if err := sourceManager.Disable(sourceName); err != nil {
+				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to disable source: %v", err))
+				return
+			}
+		}
+	}
+
+	if req.TrustLevel != nil {
+		if err := sourceManager.SetTrustLevel(sourceName, *req.TrustLevel); err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to set trust level: %v", err))
+			return
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Source updated successfully",
+		"name":    sourceName,
+	})
+}
+
+// handleCommunityTemplates handles listing and searching community templates
+// GET /api/v1/community/templates?query=ml&source=official&verified=true
+func (s *Server) handleCommunityTemplates(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	// Parse query parameters
+	queryStr := r.URL.Query().Get("query")
+	sourceFilter := r.URL.Query().Get("source")
+	verifiedOnly := r.URL.Query().Get("verified") == "true"
+
+	// Load cache and metadata
+	cache := templates.NewCommunityCache(templates.DefaultCacheOptions())
+	cachedTemplates, err := cache.ListCachedTemplates()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to list templates: %v", err))
+		return
+	}
+
+	metadataStore := templates.NewCommunityMetadataStore()
+	sourceManager := templates.NewSourceManager()
+	sources := sourceManager.List()
+
+	// Build trust level map
+	trustLevels := make(map[string]string)
+	for _, source := range sources {
+		trustLevels[source.URL] = source.TrustLevel
+	}
+
+	// Filter and convert templates
+	response := make([]CommunityTemplateResponse, 0)
+	for _, tmpl := range cachedTemplates {
+		// Apply filters
+		if sourceFilter != "" && tmpl.SourceURL != sourceFilter {
+			continue
+		}
+
+		trustLevel := trustLevels[tmpl.SourceURL]
+		if verifiedOnly && trustLevel != "verified" {
+			continue
+		}
+
+		if queryStr != "" {
+			lowerQuery := strings.ToLower(queryStr)
+			if !strings.Contains(strings.ToLower(tmpl.Template.Name), lowerQuery) &&
+				!strings.Contains(strings.ToLower(tmpl.Template.Description), lowerQuery) {
+				continue
+			}
+		}
+
+		// Get metadata
+		metadata, _ := metadataStore.GetMetadata(tmpl.Template.Name, tmpl.SourceURL)
+
+		// Build response
+		templateResp := CommunityTemplateResponse{
+			Name:             tmpl.Template.Name,
+			Description:      tmpl.Template.Description,
+			BaseOS:           tmpl.Template.Base,
+			Category:         tmpl.Template.Category,
+			Keywords:         metadata.Keywords,
+			SourceURL:        tmpl.SourceURL,
+			RepositoryPath:   tmpl.TemplatePath,
+			TrustLevel:       trustLevel,
+			Author:           metadata.Author,
+			MaintainerEmail:  metadata.MaintainerEmail,
+			License:          metadata.License,
+			Version:          metadata.TemplateVersion,
+			LastUpdated:      metadata.LastUpdated.Format("2006-01-02T15:04:05Z"),
+			Downloads:        metadata.UsageStats.TotalLaunches, // Using total launches as download count
+			Rating:           0,                              // TODO v0.7.3: Implement rating system
+			PopularityScore:  metadata.UsageStats.PopularityScore,
+			Verified:         metadata.Verified,
+			SecurityScanned:  metadata.SecurityScanned,
+			SecurityScore:    0, // TODO: Get from trust manager
+			SecurityScanDate: metadata.SecurityScanDate.Format("2006-01-02T15:04:05Z"),
+		}
+
+		response = append(response, templateResp)
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"templates": response,
+		"count":     len(response),
+	})
+}
+
+// handleCommunityTemplateDetail handles operations on a specific template
+// GET /api/v1/community/templates/{name} - Get template details
+// POST /api/v1/community/templates/{name}/verify - Verify template security
+// POST /api/v1/community/templates/{name}/install - Install template
+func (s *Server) handleCommunityTemplateDetail(w http.ResponseWriter, r *http.Request) {
+	// Extract template name from URL path
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/community/templates/")
+	parts := strings.Split(path, "/")
+	templateName := parts[0]
+
+	if templateName == "" {
+		s.writeError(w, http.StatusBadRequest, "template name required")
+		return
+	}
+
+	// Check for sub-action
+	if len(parts) > 1 {
+		action := parts[1]
+		switch action {
+		case "verify":
+			if r.Method == http.MethodPost {
+				s.handleVerifyTemplate(w, r, templateName)
+				return
+			}
+		case "install":
+			if r.Method == http.MethodPost {
+				s.handleInstallCommunityTemplate(w, r, templateName)
+				return
+			}
+		}
+	}
+
+	// Default to GET template details
+	if r.Method == http.MethodGet {
+		s.handleGetCommunityTemplate(w, r, templateName)
+		return
+	}
+
+	s.writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+}
+
+// handleGetCommunityTemplate gets details for a specific community template
+func (s *Server) handleGetCommunityTemplate(w http.ResponseWriter, r *http.Request, templateName string) {
+	cache := templates.NewCommunityCache(templates.DefaultCacheOptions())
+	tmpl, err := cache.Get(templateName)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("template not found: %v", err))
+		return
+	}
+
+	// Get metadata and trust level
+	metadataStore := templates.NewCommunityMetadataStore()
+	metadata, _ := metadataStore.GetMetadata(tmpl.Name, tmpl.SourceURL)
+
+	sourceManager := templates.NewSourceManager()
+	sources := sourceManager.List()
+	trustLevel := "unverified"
+	for _, source := range sources {
+		if source.URL == tmpl.SourceURL {
+			trustLevel = source.TrustLevel
+			break
+		}
+	}
+
+	response := CommunityTemplateResponse{
+		Name:             tmpl.Name,
+		Description:      tmpl.Description,
+		BaseOS:           tmpl.BaseOS,
+		Category:         tmpl.Category,
+		Keywords:         metadata.Keywords,
+		SourceURL:        tmpl.SourceURL,
+		RepositoryPath:   tmpl.RepositoryPath,
+		TrustLevel:       trustLevel,
+		Author:           metadata.Author,
+		MaintainerEmail:  metadata.MaintainerEmail,
+		License:          metadata.License,
+		Version:          metadata.TemplateVersion,
+		LastUpdated:      metadata.LastUpdated.Format("2006-01-02T15:04:05Z"),
+		Downloads:        metadata.UsageStats.Downloads,
+		Rating:           metadata.UsageStats.Rating,
+		PopularityScore:  metadata.UsageStats.PopularityScore,
+		Verified:         metadata.Verified,
+		SecurityScanned:  metadata.SecurityScanned,
+		SecurityScore:    0, // TODO: Get from trust manager
+		SecurityScanDate: metadata.SecurityScanDate.Format("2006-01-02T15:04:05Z"),
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// VerificationResultResponse represents the result of template security verification
+type VerificationResultResponse struct {
+	Verified         bool     `json:"verified"`
+	TrustLevel       string   `json:"trust_level"`
+	SecurityPassed   bool     `json:"security_passed"`
+	SecurityScore    int      `json:"security_score"`
+	Issues           []string `json:"issues"`
+	Warnings         []string `json:"warnings"`
+	RequiresApproval bool     `json:"requires_approval"`
+}
+
+// handleVerifyTemplate verifies the security of a community template
+func (s *Server) handleVerifyTemplate(w http.ResponseWriter, r *http.Request, templateName string) {
+	// Get template
+	cache := templates.NewCommunityCache(templates.DefaultCacheOptions())
+	tmpl, err := cache.Get(templateName)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("template not found: %v", err))
+		return
+	}
+
+	// Verify template
+	trustManager := templates.NewTrustManager()
+	result, err := trustManager.VerifyTemplate(tmpl, tmpl.SourceURL)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("verification failed: %v", err))
+		return
+	}
+
+	response := VerificationResultResponse{
+		Verified:         result.Verified,
+		TrustLevel:       result.TrustLevel,
+		SecurityPassed:   result.SecurityPassed,
+		SecurityScore:    result.SecurityScore,
+		Issues:           result.Issues,
+		Warnings:         result.Warnings,
+		RequiresApproval: result.RequiresApproval,
+	}
+
+	s.writeJSON(w, http.StatusOK, response)
+}
+
+// CommunityTemplateInstallRequest represents a request to install a community template
+type CommunityTemplateInstallRequest struct {
+	ForceInstall bool `json:"force_install,omitempty"`
+}
+
+// handleInstallCommunityTemplate installs a community template
+func (s *Server) handleInstallCommunityTemplate(w http.ResponseWriter, r *http.Request, templateName string) {
+	var req CommunityTemplateInstallRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		// Allow empty body
+		req.ForceInstall = false
+	}
+
+	// Get template
+	cache := templates.NewCommunityCache(templates.DefaultCacheOptions())
+	tmpl, err := cache.Get(templateName)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("template not found: %v", err))
+		return
+	}
+
+	// Verify template unless force install
+	if !req.ForceInstall {
+		trustManager := templates.NewTrustManager()
+		result, err := trustManager.VerifyTemplate(tmpl, tmpl.SourceURL)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("verification failed: %v", err))
+			return
+		}
+
+		if !result.Verified {
+			s.writeError(w, http.StatusForbidden, "template verification failed")
+			return
+		}
+
+		if result.RequiresApproval {
+			s.writeError(w, http.StatusPreconditionRequired, "template requires user approval")
+			return
+		}
+	}
+
+	// Update download count and mark as installed
+	metadataStore := templates.NewCommunityMetadataStore()
+	metadataStore.UpdateDownloadCount(tmpl.Name, tmpl.SourceURL)
+
+	// Template is now available from cache and can be used for launching instances
+	// The template system will automatically find it in the cache
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"message":  "Template verified and ready to use",
+		"template": templateName,
+	})
+}
