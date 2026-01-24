@@ -176,31 +176,36 @@ dnf install -y curl wget ca-certificates gcc gcc-c++ make git
 # Install development tools group
 dnf groupinstall -y "Development Tools" || true
 
-{{if .Packages}}
-# Install template packages
-echo "Installing template packages with DNF..."
-dnf install -y{{range .Packages}} {{.}}{{end}}
-{{end}}
-
 {{range .Users}}
-# Create user: {{.Name}}
+# Create user: {{.Name}} (BEFORE package installation for immediate SSH access)
 echo "Creating user: {{.Name}}"
 {{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
 {{if ne .Name "ubuntu"}}
-# Copy SSH keys from ubuntu user for seamless SSH access
+# Copy SSH keys from ubuntu user for immediate SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
   cp /home/ubuntu/.ssh/authorized_keys /home/{{.Name}}/.ssh/authorized_keys
   chown -R {{.Name}}:{{.Name}} /home/{{.Name}}/.ssh
   chmod 700 /home/{{.Name}}/.ssh
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
-  echo "✅ SSH keys copied to {{.Name}} user"
+  echo "✅ SSH keys copied to {{.Name}} user - SSH access ready!"
+else
+  echo "⚠️  Warning: No SSH keys found in /home/ubuntu/.ssh/authorized_keys"
 fi
 {{end}}
 {{if .Groups}}
 {{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
 {{end}}
 {{end}}
+chown -R {{.Name}}:{{.Name}} /home/{{.Name}}
+{{end}}
+
+echo "✅ All users created - SSH access available while packages install"
+
+{{if .Packages}}
+# Install template packages (users can SSH in and monitor progress)
+echo "Installing template packages with DNF..."
+dnf install -y{{range .Packages}} {{.}}{{end}}
 {{end}}
 
 {{range .Services}}
@@ -271,31 +276,36 @@ apt-get upgrade -y
 echo "Installing base requirements..."
 apt-get install -y curl wget software-properties-common build-essential
 
-{{if .Packages}}
-# Install template packages
-echo "Installing template packages..."
-apt-get install -y{{range .Packages}} {{.}}{{end}}
-{{end}}
-
 {{range .Users}}
-# Create user: {{.Name}}
+# Create user: {{.Name}} (BEFORE package installation for immediate SSH access)
 echo "Creating user: {{.Name}}"
 {{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
 {{if ne .Name "ubuntu"}}
-# Copy SSH keys from ubuntu user for seamless SSH access
+# Copy SSH keys from ubuntu user for immediate SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
   cp /home/ubuntu/.ssh/authorized_keys /home/{{.Name}}/.ssh/authorized_keys
   chown -R {{.Name}}:{{.Name}} /home/{{.Name}}/.ssh
   chmod 700 /home/{{.Name}}/.ssh
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
-  echo "✅ SSH keys copied to {{.Name}} user"
+  echo "✅ SSH keys copied to {{.Name}} user - SSH access ready!"
+else
+  echo "⚠️  Warning: No SSH keys found in /home/ubuntu/.ssh/authorized_keys"
 fi
 {{end}}
 {{if .Groups}}
 {{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
 {{end}}
 {{end}}
+chown -R {{.Name}}:{{.Name}} /home/{{.Name}}
+{{end}}
+
+echo "✅ All users created - SSH access available while packages install"
+
+{{if .Packages}}
+# Install template packages (users can SSH in and monitor progress)
+echo "Installing template packages..."
+apt-get install -y{{range .Packages}} {{.}}{{end}}
 {{end}}
 
 {{range .Services}}
@@ -368,6 +378,34 @@ progress "STAGE:init:START"
 apt-get update -y && apt-get install -y curl wget bzip2 ca-certificates
 
 progress "STAGE:init:COMPLETE"
+progress "STAGE:users:START"
+
+{{range .Users}}# Create user: {{.Name}}
+echo "Creating user: {{.Name}}"
+useradd -m -s /bin/bash {{.Name}} || true
+{{if .Groups}}{{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
+{{end}}{{end}}
+
+{{if ne .Name "ubuntu"}}
+# Copy SSH keys from ubuntu user for immediate SSH access
+if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
+  mkdir -p /home/{{.Name}}/.ssh
+  cp /home/ubuntu/.ssh/authorized_keys /home/{{.Name}}/.ssh/authorized_keys
+  chown -R {{.Name}}:{{.Name}} /home/{{.Name}}/.ssh
+  chmod 700 /home/{{.Name}}/.ssh
+  chmod 600 /home/{{.Name}}/.ssh/authorized_keys
+  echo "✅ SSH keys copied to {{.Name}} user"
+else
+  echo "⚠️  Warning: No SSH keys found in /home/ubuntu/.ssh/authorized_keys"
+fi
+{{end}}
+
+# Fix initial ownership
+chown -R {{.Name}}:{{.Name}} /home/{{.Name}}
+echo "✅ User {{.Name}} created and ready for SSH access"
+{{end}}
+
+progress "STAGE:users:COMPLETE"
 progress "STAGE:system-packages:START"
 
 {{if .Template.Packages.System}}# Install system packages (from template and inherited templates)
@@ -391,6 +429,13 @@ set +u  # Temporarily disable unbound variable check for .bashrc sourcing
 source /root/.bashrc || true
 set -u  # Re-enable unbound variable check
 
+{{range .Users}}# Initialize conda for user: {{.Name}}
+echo "Initializing conda for {{.Name}}..."
+sudo -u {{.Name}} /opt/miniforge/bin/conda init bash
+chown -R {{.Name}}:{{.Name}} /home/{{.Name}}
+echo "✅ Conda initialized for {{.Name}}"
+{{end}}
+
 progress "STAGE:system-packages:COMPLETE"
 progress "STAGE:conda-packages:START"
 
@@ -403,30 +448,6 @@ progress "STAGE:pip-packages:START"
 
 progress "STAGE:pip-packages:COMPLETE"
 progress "STAGE:service-config:START"
-
-{{range .Users}}# Create user: {{.Name}}
-useradd -m -s /bin/bash {{.Name}} || true
-{{if .Groups}}{{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
-{{end}}{{end}}
-
-{{if ne .Name "ubuntu"}}
-# Copy SSH keys from ubuntu user for seamless SSH access
-if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
-  mkdir -p /home/{{.Name}}/.ssh
-  cp /home/ubuntu/.ssh/authorized_keys /home/{{.Name}}/.ssh/authorized_keys
-  chown -R {{.Name}}:{{.Name}} /home/{{.Name}}/.ssh
-  chmod 700 /home/{{.Name}}/.ssh
-  chmod 600 /home/{{.Name}}/.ssh/authorized_keys
-  echo "✅ SSH keys copied to {{.Name}} user"
-fi
-{{end}}
-
-# Initialize conda for this user (standard approach)
-sudo -u {{.Name}} /opt/miniforge/bin/conda init bash
-
-# Fix ownership
-chown -R {{.Name}}:{{.Name}} /home/{{.Name}}
-{{end}}
 
 {{range .Services}}{{if eq .Name "jupyter"}}# Generate Jupyter config for researcher user
 sudo -u {{range $.Users}}{{if eq .Name "researcher"}}{{.Name}}{{end}}{{end}} /opt/miniforge/bin/jupyter lab --generate-config -y
@@ -558,6 +579,32 @@ echo "Installing system packages..."
 apt-get install -y{{range .Template.Packages.System}} {{.}}{{end}}
 {{end}}
 
+{{range .Users}}
+# Create user: {{.Name}} (BEFORE Spack installation for immediate SSH access)
+echo "Creating user: {{.Name}}"
+{{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
+{{if ne .Name "ubuntu"}}
+# Copy SSH keys from ubuntu user for immediate SSH access
+if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
+  mkdir -p /home/{{.Name}}/.ssh
+  cp /home/ubuntu/.ssh/authorized_keys /home/{{.Name}}/.ssh/authorized_keys
+  chown -R {{.Name}}:{{.Name}} /home/{{.Name}}/.ssh
+  chmod 700 /home/{{.Name}}/.ssh
+  chmod 600 /home/{{.Name}}/.ssh/authorized_keys
+  echo "✅ SSH keys copied to {{.Name}} user - SSH access ready!"
+else
+  echo "⚠️  Warning: No SSH keys found in /home/ubuntu/.ssh/authorized_keys"
+fi
+{{end}}
+{{if .Groups}}
+{{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
+{{end}}
+{{end}}
+chown -R {{.Name}}:{{.Name}} /home/{{.Name}}
+{{end}}
+
+echo "✅ All users created - SSH access available while Spack installs"
+
 # Install Spack
 echo "Installing Spack..."
 git clone -c feature.manyFiles=true https://github.com/spack/spack.git /opt/spack
@@ -597,16 +644,7 @@ spack install
 {{end}}
 
 {{range .Users}}
-# Create user: {{.Name}}
-echo "Creating user: {{.Name}}"
-{{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
-# SSH key authentication configured - no password needed
-{{if .Groups}}
-{{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
-{{end}}
-{{end}}
-
-# Setup Spack for user
+# Configure Spack environment for user: {{.Name}}
 echo 'export SPACK_ROOT=/opt/spack' >> /home/{{.Name}}/.bashrc
 echo 'export PATH="$SPACK_ROOT/bin:$PATH"' >> /home/{{.Name}}/.bashrc
 echo '. $SPACK_ROOT/share/spack/setup-env.sh' >> /home/{{.Name}}/.bashrc
@@ -767,31 +805,36 @@ echo "Installing system packages..."
 apt-get install -y{{range .Template.Packages.System}} {{.}}{{end}}
 {{end}}
 
-{{if .Packages}}
-# Install pip packages
-echo "Installing pip packages..."
-pip3 install{{range .Packages}} {{.}}{{end}}
-{{end}}
-
 {{range .Users}}
-# Create user: {{.Name}}
+# Create user: {{.Name}} (BEFORE pip installation for immediate SSH access)
 echo "Creating user: {{.Name}}"
 {{if .Shell}}useradd -m -s {{.Shell}} {{.Name}} || true{{else}}useradd -m -s /bin/bash {{.Name}} || true{{end}}
 {{if ne .Name "ubuntu"}}
-# Copy SSH keys from ubuntu user for seamless SSH access
+# Copy SSH keys from ubuntu user for immediate SSH access
 if [ -f /home/ubuntu/.ssh/authorized_keys ]; then
   mkdir -p /home/{{.Name}}/.ssh
   cp /home/ubuntu/.ssh/authorized_keys /home/{{.Name}}/.ssh/authorized_keys
   chown -R {{.Name}}:{{.Name}} /home/{{.Name}}/.ssh
   chmod 700 /home/{{.Name}}/.ssh
   chmod 600 /home/{{.Name}}/.ssh/authorized_keys
-  echo "✅ SSH keys copied to {{.Name}} user"
+  echo "✅ SSH keys copied to {{.Name}} user - SSH access ready!"
+else
+  echo "⚠️  Warning: No SSH keys found in /home/ubuntu/.ssh/authorized_keys"
 fi
 {{end}}
 {{if .Groups}}
 {{$user := .}}{{range .Groups}}usermod -aG {{.}} {{$user.Name}}
 {{end}}
 {{end}}
+chown -R {{.Name}}:{{.Name}} /home/{{.Name}}
+{{end}}
+
+echo "✅ All users created - SSH access available while packages install"
+
+{{if .Packages}}
+# Install pip packages (users can SSH in and monitor progress)
+echo "Installing pip packages..."
+pip3 install{{range .Packages}} {{.}}{{end}}
 {{end}}
 
 {{range .Services}}

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/test/fixtures"
 )
 
@@ -34,8 +35,11 @@ func TestNonTechnicalCollaboratorPersona(t *testing.T) {
 	}
 
 	// Setup test context
-	ctx := NewTestContext(t)
-	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
+	apiClient := client.NewClientWithOptions("http://localhost:8947", client.Options{
+		AWSProfile: "aws",
+		AWSRegion:  "us-west-2",
+	})
+	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	// Phase 1: Setup (Instance Owner - Dr. Smith in US)
 	t.Log("=" + "================================================================")
@@ -216,8 +220,11 @@ func TestNonTechnicalCollaboratorPersona_MultipleCollaborators(t *testing.T) {
 	}
 
 	// Setup test context
-	ctx := NewTestContext(t)
-	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
+	apiClient := client.NewClientWithOptions("http://localhost:8947", client.Options{
+		AWSProfile: "aws",
+		AWSRegion:  "us-west-2",
+	})
+	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	// Launch instance
 	instanceName := GenerateTestName("multi-collab-r")
@@ -308,8 +315,11 @@ func TestNonTechnicalCollaboratorPersona_PermissionErrors(t *testing.T) {
 	}
 
 	// Setup test context
-	ctx := NewTestContext(t)
-	registry := fixtures.NewFixtureRegistry(t, ctx.Client)
+	apiClient := client.NewClientWithOptions("http://localhost:8947", client.Options{
+		AWSProfile: "aws",
+		AWSRegion:  "us-west-2",
+	})
+	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	// Launch instance
 	instanceName := GenerateTestName("perm-test-r")

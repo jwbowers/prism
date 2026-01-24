@@ -38,6 +38,7 @@ func NewLaunchProgressMonitor(instance *types.Instance, sshKeyPath, username str
 		pollInterval: 10 * time.Second,
 		stages: []ProgressStage{
 			{Name: "init", DisplayName: "System initialization", Status: "pending"},
+			{Name: "users", DisplayName: "Creating users and configuring SSH", Status: "pending"},
 			{Name: "system-packages", DisplayName: "Installing system packages", Status: "pending"},
 			{Name: "conda-packages", DisplayName: "Installing conda packages", Status: "pending"},
 			{Name: "pip-packages", DisplayName: "Installing pip packages", Status: "pending"},
