@@ -394,6 +394,29 @@ func (m *MockClient) GetInstance(ctx context.Context, name string) (*types.Insta
 	return nil, fmt.Errorf("instance not found: %s", name)
 }
 
+// GetProgress returns mock progress for an instance (v0.7.2 - Issue #453)
+func (m *MockClient) GetProgress(ctx context.Context, name string) (*types.ProgressResponse, error) {
+	if _, exists := m.Instances[name]; !exists {
+		return nil, fmt.Errorf("instance not found: %s", name)
+	}
+
+	// Return mock progress - simulates a completed setup
+	return &types.ProgressResponse{
+		InstanceName:      name,
+		OverallProgress:   100,
+		CurrentStage:      "Complete",
+		CurrentStageIndex: 6,
+		Stages: []types.ProgressStage{
+			{Name: "init", DisplayName: "System initialization", Status: "complete"},
+			{Name: "users", DisplayName: "Creating users", Status: "complete"},
+			{Name: "system-packages", DisplayName: "Installing packages", Status: "complete"},
+			{Name: "ready", DisplayName: "Ready", Status: "complete"},
+		},
+		IsComplete:        true,
+		EstimatedTimeLeft: "",
+	}, nil
+}
+
 // DeleteInstance simulates deleting an instance
 func (m *MockClient) DeleteInstance(ctx context.Context, name string) error {
 	if _, exists := m.Instances[name]; !exists {

@@ -33,6 +33,7 @@ type PrismAPI interface {
 	ListInstances(context.Context) (*types.ListResponse, error)
 	ListInstancesWithRefresh(context.Context, bool) (*types.ListResponse, error)
 	GetInstance(context.Context, string) (*types.Instance, error)
+	GetProgress(context.Context, string) (*types.ProgressResponse, error) // Launch progress (v0.7.2)
 	StartInstance(context.Context, string) error
 	StopInstance(context.Context, string) error
 	HibernateInstance(context.Context, string) error

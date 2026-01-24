@@ -15,18 +15,8 @@ type LaunchProgressMonitor struct {
 	instance     *types.Instance
 	sshKeyPath   string
 	username     string
-	stages       []ProgressStage
+	stages       []types.ProgressStage
 	pollInterval time.Duration
-}
-
-// ProgressStage represents a stage in the setup process
-type ProgressStage struct {
-	Name        string // Internal name: "system-packages"
-	DisplayName string // User-facing: "Installing system packages"
-	Status      string // "pending", "running", "complete", "error"
-	StartTime   time.Time
-	EndTime     time.Time
-	Output      string // Last output line from this stage
 }
 
 // NewLaunchProgressMonitor creates a new progress monitor
@@ -36,7 +26,7 @@ func NewLaunchProgressMonitor(instance *types.Instance, sshKeyPath, username str
 		sshKeyPath:   sshKeyPath,
 		username:     username,
 		pollInterval: 10 * time.Second,
-		stages: []ProgressStage{
+		stages: []types.ProgressStage{
 			{Name: "init", DisplayName: "System initialization", Status: "pending"},
 			{Name: "users", DisplayName: "Creating users and configuring SSH", Status: "pending"},
 			{Name: "system-packages", DisplayName: "Installing system packages", Status: "pending"},
@@ -272,7 +262,7 @@ func (m *LaunchProgressMonitor) markAllComplete() {
 }
 
 // GetStages returns the current progress stages
-func (m *LaunchProgressMonitor) GetStages() []ProgressStage {
+func (m *LaunchProgressMonitor) GetStages() []types.ProgressStage {
 	return m.stages
 }
 

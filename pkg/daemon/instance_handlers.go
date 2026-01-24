@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -298,6 +299,13 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Start progress monitoring if instance is running (v0.7.2 - Issue #453)
+	if instance.State == "running" && !s.testMode {
+		// Use default SSH key path for progress monitoring
+		sshKeyPath := os.ExpandEnv("$HOME/.ssh/id_rsa")
+		s.progressTracker.StartMonitoring(instance, sshKeyPath)
+	}
+
 	// Save state with actual current AWS state
 	if err := s.stateManager.SaveInstance(*instance); err != nil {
 		s.writeError(w, http.StatusInternalServerError, "Failed to save instance state")
@@ -376,6 +384,7 @@ func (s *Server) handleInstanceSubOperation(w http.ResponseWriter, r *http.Reque
 		"resize":                s.handleResizeInstance,
 		"idle-policies":         s.handleInstanceIdlePolicies,
 		"recommend-idle-policy": s.handleInstanceRecommendIdlePolicy,
+		"progress":              s.handleGetProgress, // Launch progress monitoring (v0.7.2 - Issue #453)
 	}
 
 	if handler, exists := operationHandlers[operation]; exists {

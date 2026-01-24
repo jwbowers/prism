@@ -244,6 +244,22 @@ func (c *HTTPClient) GetInstance(ctx context.Context, name string) (*types.Insta
 	return &result, nil
 }
 
+// GetProgress returns the current setup progress for an instance (v0.7.2 - Issue #453)
+func (c *HTTPClient) GetProgress(ctx context.Context, name string) (*types.ProgressResponse, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/instances/%s/progress", name), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result types.ProgressResponse
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 // StartInstance starts a stopped instance
 func (c *HTTPClient) StartInstance(ctx context.Context, name string) error {
 	resp, err := c.makeRequest(ctx, "POST", fmt.Sprintf("/api/v1/instances/%s/start", name), nil)

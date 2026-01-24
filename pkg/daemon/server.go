@@ -87,6 +87,9 @@ type Server struct {
 
 	// Profile management singleton (prevents filesystem race conditions)
 	profileManager *profile.ManagerEnhanced
+
+	// Progress tracking for instance launches (v0.7.2 - Issue #453)
+	progressTracker *ProgressTracker
 }
 
 // NewServer creates a new daemon server
@@ -360,7 +363,8 @@ func NewServer(port string) (*Server, error) {
 		cloudwatchClient:    cloudwatchClient,
 		idleScheduler:       idleScheduler,
 		policyManager:       policyManager,
-		profileManager:      profileManager, // Singleton for filesystem consistency
+		profileManager:      profileManager,       // Singleton for filesystem consistency
+		progressTracker:     NewProgressTracker(), // Launch progress monitoring (v0.7.2 - Issue #453)
 	}
 
 	// Configure budget tracker with action executor
