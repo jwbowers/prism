@@ -96,11 +96,16 @@ type Template struct {
 }
 
 // PackageDefinitions defines packages for different package managers
+// Supports both fixed fields and arbitrary named groups for organizational purposes
 type PackageDefinitions struct {
 	System []string `yaml:"system,omitempty" json:"system,omitempty"` // apt/dnf packages
 	Conda  []string `yaml:"conda,omitempty" json:"conda,omitempty"`   // conda packages
 	Spack  []string `yaml:"spack,omitempty" json:"spack,omitempty"`   // spack packages
 	Pip    []string `yaml:"pip,omitempty" json:"pip,omitempty"`       // pip packages (when conda used)
+
+	// Additional captures all other package groups (e.g., r_dependencies, latex, databases)
+	// This allows templates to organize packages into logical groups
+	Additional map[string][]string `yaml:",inline" json:"-"`
 }
 
 // AMIConfig defines AMI-based template configuration for Universal AMI System

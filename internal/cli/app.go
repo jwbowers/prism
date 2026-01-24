@@ -291,23 +291,35 @@ func (a *App) Launch(args []string) error {
 		return err
 	}
 
-	// Show immediate feedback with animated spinner
-	spinner := NewSpinner(fmt.Sprintf("Launching workspace '%s' from template '%s'", req.Name, req.Template))
-	spinner.Start()
+	// Show immediate feedback with animated spinner (unless quiet mode)
+	var spinner *Spinner
+	if !req.Quiet {
+		spinner = NewSpinner(fmt.Sprintf("Launching workspace '%s' from template '%s'", req.Name, req.Template))
+		spinner.Start()
+	}
 
 	response, err := a.apiClient.LaunchInstance(a.ctx, req)
 
 	if err != nil {
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 		return WrapAPIError("launch workspace "+req.Name, err)
 	}
 
-	spinner.StopWithMessage(fmt.Sprintf("✅ %s", response.Message))
+	if spinner != nil {
+		spinner.StopWithMessage(fmt.Sprintf("✅ %s", response.Message))
+	}
 
-	// Show project information if launched in a project
-	if req.ProjectID != "" {
+	// Show project information if launched in a project (unless quiet mode)
+	if !req.Quiet && req.ProjectID != "" {
 		fmt.Printf("📁 Project: %s\n", req.ProjectID)
 		fmt.Printf("🏷️  Workspace will be tracked under project budget\n")
+	}
+
+	// Skip all monitoring if --no-progress is specified
+	if req.NoProgress {
+		return nil
 	}
 
 	// Determine if we should monitor progress
@@ -321,14 +333,18 @@ func (a *App) Launch(args []string) error {
 		if err == nil && len(templateInfo.AMI) == 0 {
 			// Package-based template - always monitor progress
 			shouldMonitor = true
-			fmt.Printf("\n💡 Package installation will take 5-10 minutes. Monitoring progress...\n")
-			fmt.Printf("   (Use Ctrl+C to return to prompt - workspace will continue setup)\n")
+			if !req.Quiet {
+				fmt.Printf("\n💡 Package installation will take 5-10 minutes. Monitoring progress...\n")
+				fmt.Printf("   (Use Ctrl+C to return to prompt - workspace will continue setup)\n")
+			}
 		}
 	}
 
 	// Monitor launch progress if needed
 	if shouldMonitor {
-		fmt.Println()
+		if !req.Quiet {
+			fmt.Println()
+		}
 		return a.monitorLaunchProgress(req.Name, req.Template)
 	}
 
@@ -1730,34 +1746,16 @@ func loadAPIKeyFromState() string {
 
 // monitorSetupProgress monitors setup progress using SSH-based monitoring
 func (a *App) monitorSetupProgress(instance *types.Instance) error {
-	// We need the SSH key to monitor progress
-	// Use the tunnel manager's key resolution logic
-	sshKeyPath, err := a.findSSHKey(instance.Region)
-	if err != nil {
-		// Fall back to basic monitoring if no SSH key
-		fmt.Printf("⚠️  SSH key not found - using basic progress monitoring\n")
-		fmt.Printf("💡 Expected key: cws-test-%s-key in ~/.ssh/\n", instance.Region)
-		return a.basicSetupMonitoring(instance)
-	}
+	// Use new progress API (v0.7.2) instead of SSH checks
+	fmt.Printf("🔍 Monitoring template installation progress...\n\n")
 
-	// Determine username (ubuntu for standard AMIs)
-	username := instance.Username
-	if username == "" {
-		username = "ubuntu"
-	}
-
-	// Create progress monitor (from daemon package, need to import it properly)
-	// For now, use basic monitoring with cloud-init status check
-	fmt.Printf("🔍 Monitoring setup with SSH key: %s\n", filepath.Base(sshKeyPath))
-	fmt.Printf("👤 Username: %s\n", username)
-	fmt.Printf("🌐 IP: %s\n\n", instance.PublicIP)
-
-	// Poll for setup completion
-	ticker := time.NewTicker(10 * time.Second)
+	// Poll for setup completion using the progress API
+	ticker := time.NewTicker(5 * time.Second) // Poll every 5 seconds
 	defer ticker.Stop()
 
 	startTime := time.Now()
-	lastStage := ""
+	lastProgressPercent := float64(-1)
+	lastStageIndex := -1
 
 	for {
 		select {
@@ -1766,29 +1764,108 @@ func (a *App) monitorSetupProgress(instance *types.Instance) error {
 		case <-ticker.C:
 			elapsed := time.Since(startTime)
 
-			// Check cloud-init status via SSH
-			status := a.checkSetupStatus(sshKeyPath, username, instance.PublicIP)
+			// Get progress from API
+			progress, err := a.apiClient.GetProgress(a.ctx, instance.Name)
+			if err != nil {
+				// Progress monitoring might not be available yet
+				if elapsed < 2*time.Minute {
+					fmt.Printf("⏳ Initializing progress monitoring... (%s)\n", elapsed.Round(time.Second))
+					continue
+				}
+				// After 2 minutes, if still no progress API, fall back to basic monitoring
+				fmt.Printf("⚠️  Progress API not available, falling back to basic monitoring\n")
+				return a.basicSetupMonitoring(instance)
+			}
 
-			if status != lastStage {
-				fmt.Printf("📦 %s (%s)\n", status, elapsed.Round(time.Second))
-				lastStage = status
+			// Clear previous output (simple approach - just update on changes)
+			if progress.OverallProgress != lastProgressPercent || progress.CurrentStageIndex != lastStageIndex {
+				// Show progress bar
+				a.displayProgressBar(progress.OverallProgress)
+
+				// Show current stage with details
+				fmt.Printf("📦 %s\n", progress.CurrentStage)
+
+				// Show stage list with status
+				a.displayStageList(progress.Stages)
+
+				// Show time estimate
+				if progress.EstimatedTimeLeft != "" && !progress.IsComplete {
+					fmt.Printf("\n⏱️  Elapsed: %s | Remaining: %s\n",
+						elapsed.Round(time.Second),
+						progress.EstimatedTimeLeft)
+				}
+
+				fmt.Println() // Add spacing
+
+				lastProgressPercent = progress.OverallProgress
+				lastStageIndex = progress.CurrentStageIndex
 			}
 
 			// Check if complete
-			if strings.Contains(status, "Complete") || strings.Contains(status, "ready") {
-				fmt.Printf("\n✅ Setup complete! Workspace ready.\n")
+			if progress.IsComplete || progress.OverallProgress >= 100 {
+				fmt.Printf("✅ Setup complete! Workspace ready.\n")
 				fmt.Printf("⏱️  Total setup time: %s\n", elapsed.Round(time.Second))
 				fmt.Printf("🔗 Connect: prism connect %s\n", instance.Name)
 				return nil
 			}
 
-			// Timeout after 15 minutes
-			if elapsed > 15*time.Minute {
+			// Timeout after 30 minutes (generous for complex templates)
+			if elapsed > 30*time.Minute {
 				fmt.Printf("\n⚠️  Setup taking longer than expected\n")
-				fmt.Printf("💡 Workspace may still be configuring. Check with: prism list\n")
+				fmt.Printf("💡 Progress: %.1f%% - Workspace may still be configuring\n", progress.OverallProgress)
+				fmt.Printf("💡 Check status with: prism list\n")
 				return nil
 			}
 		}
+	}
+}
+
+// displayProgressBar shows a visual progress bar
+func (a *App) displayProgressBar(percent float64) {
+	barWidth := 30
+	filled := int(percent / 100 * float64(barWidth))
+
+	bar := "["
+	for i := 0; i < barWidth; i++ {
+		if i < filled {
+			bar += "█"
+		} else if i == filled && percent < 100 {
+			bar += "▌"
+		} else {
+			bar += "░"
+		}
+	}
+	bar += fmt.Sprintf("] %.1f%%", percent)
+
+	fmt.Printf("  %s\n\n", bar)
+}
+
+// displayStageList shows the list of stages with status icons
+func (a *App) displayStageList(stages []types.ProgressStage) {
+	for _, stage := range stages {
+		var icon string
+		switch stage.Status {
+		case "complete":
+			icon = "✓"
+		case "running":
+			icon = "⏳"
+		case "error":
+			icon = "❌"
+		default: // pending
+			icon = "⏸"
+		}
+
+		// Calculate elapsed time for completed stages
+		timeStr := ""
+		if stage.Status == "complete" && !stage.EndTime.IsZero() && !stage.StartTime.IsZero() {
+			elapsed := stage.EndTime.Sub(stage.StartTime)
+			timeStr = fmt.Sprintf(" (%s)", elapsed.Round(time.Second))
+		} else if stage.Status == "running" && !stage.StartTime.IsZero() {
+			elapsed := time.Since(stage.StartTime)
+			timeStr = fmt.Sprintf(" (%s elapsed)", elapsed.Round(time.Second))
+		}
+
+		fmt.Printf("  %s %s%s\n", icon, stage.DisplayName, timeStr)
 	}
 }
 

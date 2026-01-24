@@ -44,9 +44,12 @@ func (s *Server) createAWSManagerFromRequest(r *http.Request) (*aws.Manager, err
 // and handles error cases, writing the error to the response
 func (s *Server) withAWSManager(w http.ResponseWriter, r *http.Request,
 	fn func(*aws.Manager) error) {
+	log.Printf("[DEBUG] withAWSManager: Starting for %s", r.URL.Path)
+
 	// Track this as an AWS operation specifically with operation name derived from URL
 	opType := "AWS-" + extractOperationType(r.URL.Path)
 	opID := s.statusTracker.StartOperationWithType(opType)
+	log.Printf("[DEBUG] withAWSManager: Operation %d (%s) started", opID, opType)
 
 	// Record start time for duration tracking
 	startTime := time.Now()
@@ -58,17 +61,23 @@ func (s *Server) withAWSManager(w http.ResponseWriter, r *http.Request,
 	}()
 
 	// Create AWS manager with credentials from the request
+	log.Printf("[DEBUG] withAWSManager: Creating AWS manager from request")
 	awsManager, err := s.createAWSManagerFromRequest(r)
 	if err != nil {
+		log.Printf("[ERROR] withAWSManager: Failed to create AWS manager: %v", err)
 		s.writeError(w, http.StatusInternalServerError,
 			fmt.Sprintf("Failed to initialize AWS manager: %v", err))
 		return
 	}
+	log.Printf("[DEBUG] withAWSManager: AWS manager created successfully")
 
 	// Call the provided function with the AWS manager
+	log.Printf("[DEBUG] withAWSManager: Calling provided function")
 	if err := fn(awsManager); err != nil {
+		log.Printf("[ERROR] withAWSManager: Function returned error: %v", err)
 		s.writeError(w, http.StatusInternalServerError,
 			fmt.Sprintf("AWS operation failed: %v", err))
 		return
 	}
+	log.Printf("[DEBUG] withAWSManager: Function completed successfully")
 }

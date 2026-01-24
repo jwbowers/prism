@@ -218,11 +218,22 @@ func (m *Manager) GetTemplate(name string) (*ctypes.Template, error) {
 
 // LaunchInstance launches a new EC2 instance
 func (m *Manager) LaunchInstance(req ctypes.LaunchRequest) (*ctypes.Instance, error) {
+	// Use context with reasonable timeout for AWS operations
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	return m.LaunchInstanceWithContext(ctx, req)
+}
+
+func (m *Manager) LaunchInstanceWithContext(ctx context.Context, req ctypes.LaunchRequest) (*ctypes.Instance, error) {
+	log.Printf("[DEBUG] LaunchInstanceWithContext: Starting launch for %s", req.Name)
+
 	// ARCHITECTURE FIX: Determine instance type first, then query its architecture
 	// This fixes the critical bug where local machine architecture was used to select AMIs
 
 	// Step 1: Get template to determine what instance type will be used
 	// We need to know the instance type before we can determine architecture
+	log.Printf("[DEBUG] LaunchInstanceWithContext: Getting template info for %s", req.Template)
 	rawTemplate, err := templates.GetTemplateInfo(req.Template)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get template info: %w", err)
@@ -241,18 +252,20 @@ func (m *Manager) LaunchInstance(req ctypes.LaunchRequest) (*ctypes.Instance, er
 		instanceType = "t3.micro"
 	}
 
-	// Step 3: Query AWS for this instance type's architecture
-	arch, err := m.getInstanceTypeArchitecture(instanceType)
+	// Step 3: Query AWS for this instance type's architecture (with context timeout)
+	log.Printf("[DEBUG] LaunchInstanceWithContext: Getting architecture for instance type %s", instanceType)
+	arch, err := m.getInstanceTypeArchitectureWithContext(ctx, instanceType)
 	if err != nil {
-		// This shouldn't fail due to fallbacks in getInstanceTypeArchitecture
+		// This shouldn't fail due to fallbacks in getInstanceTypeArchitectureWithContext
 		log.Printf("Warning: Failed to get architecture for instance type %s: %v", instanceType, err)
 		arch = "x86_64" // Safe fallback
 	}
 
 	log.Printf("Instance type %s supports architecture: %s", instanceType, arch)
 
-	// Step 4: Now launch with the correct architecture
-	return m.launchWithUnifiedTemplateSystem(req, arch)
+	// Step 4: Now launch with the correct architecture (passing context)
+	log.Printf("[DEBUG] LaunchInstanceWithContext: Calling launchWithUnifiedTemplateSystemWithContext")
+	return m.launchWithUnifiedTemplateSystemWithContext(ctx, req, arch)
 }
 
 // TemplateConfigExtractor extracts configuration from unified template (Single Responsibility - SOLID)
@@ -769,8 +782,9 @@ func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec
 		return l.createDryRunInstance(req, hourlyRate, services, primaryUsername), nil
 	}
 
-	// Launch instance with AZ failover (v0.7.0)
-	ctx := context.Background()
+	// Launch instance with AZ failover (v0.7.0) - with timeout to prevent hangs
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
 	instance, err := l.executeInstanceLaunch(ctx, runInput, instanceType)
 	if err != nil {
 		return nil, err
@@ -779,8 +793,10 @@ func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec
 	// Build Prism instance from EC2 instance
 	cwsInstance := l.buildInstanceFromEC2(instance, req, hourlyRate, services, primaryUsername, rootVolumeGB)
 
-	// Wait for instance to be ready for use
-	l.waitForInstanceReady(cwsInstance.ID)
+	// Don't wait for readiness synchronously - return immediately so client gets response
+	// The progress monitoring system will track readiness asynchronously
+	// This prevents HTTP timeouts when status checks take longer than expected
+	// l.waitForInstanceReady(cwsInstance.ID)
 
 	return cwsInstance, nil
 }
@@ -845,10 +861,18 @@ func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *c
 
 // launchWithUnifiedTemplateSystem launches instance using unified template system with SOLID orchestration (SOLID: Single Responsibility)
 func (m *Manager) launchWithUnifiedTemplateSystem(req ctypes.LaunchRequest, arch string) (*ctypes.Instance, error) {
-	ctx := context.Background()
+	// Legacy method - create context with default timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	return m.launchWithUnifiedTemplateSystemWithContext(ctx, req, arch)
+}
+
+func (m *Manager) launchWithUnifiedTemplateSystemWithContext(ctx context.Context, req ctypes.LaunchRequest, arch string) (*ctypes.Instance, error) {
+	log.Printf("[DEBUG] launchWithUnifiedTemplateSystemWithContext: Starting for %s", req.Name)
 
 	// PHASE 1: Pre-launch validation (v0.7.0 - Issue #418)
 	// Determine instance type for validation
+	log.Printf("[DEBUG] launchWithUnifiedTemplateSystemWithContext: Getting template info")
 	rawTemplate, err := templates.GetTemplateInfo(req.Template)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get template info: %w", err)
@@ -1786,13 +1810,19 @@ func (m *Manager) DetachStorage(volumeName string) error {
 // getInstanceTypeArchitecture queries AWS to determine the architecture of an instance type
 // This ensures AMI architecture matches the actual instance type being launched
 func (m *Manager) getInstanceTypeArchitecture(instanceType string) (string, error) {
+	// Legacy method - use context with default timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	return m.getInstanceTypeArchitectureWithContext(ctx, instanceType)
+}
+
+func (m *Manager) getInstanceTypeArchitectureWithContext(ctx context.Context, instanceType string) (string, error) {
 	// Check cache first
 	if arch, exists := m.architectureCache[instanceType]; exists {
 		return arch, nil
 	}
 
-	// Query AWS for instance type details
-	ctx := context.Background()
+	// Query AWS for instance type details (with context timeout)
 	input := &ec2.DescribeInstanceTypesInput{
 		InstanceTypes: []ec2types.InstanceType{
 			ec2types.InstanceType(instanceType),
@@ -2461,7 +2491,9 @@ func (p *InstanceListProcessor) ProcessReservations(reservations []ec2types.Rese
 
 // GetInstance retrieves real-time information for a specific instance from AWS
 func (m *Manager) GetInstance(instanceID string) (*ctypes.Instance, error) {
-	ctx := context.Background()
+	// Use context with timeout to prevent hangs
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	// Query AWS for this specific instance
 	result, err := m.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
@@ -4327,6 +4359,13 @@ func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2Cli
 	attemptDelay := 5 * time.Second
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context cancelled while waiting for status checks: %w", ctx.Err())
+		default:
+		}
+
 		output, err := regionalClient.DescribeInstanceStatus(ctx, &ec2.DescribeInstanceStatusInput{
 			InstanceIds: []string{instanceID},
 		})
@@ -4371,7 +4410,12 @@ func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2Cli
 		}
 
 		if attempt < maxAttempts {
-			time.Sleep(attemptDelay)
+			// Use context-aware sleep so we can cancel immediately
+			select {
+			case <-time.After(attemptDelay):
+			case <-ctx.Done():
+				return fmt.Errorf("context cancelled while waiting: %w", ctx.Err())
+			}
 		}
 	}
 
@@ -4384,7 +4428,9 @@ func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2Cli
 // 2. AWS system status checks (2/2 passing)
 // 3. SSH port (22) being accessible
 func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, progressCallback func(stage string, progress float64, description string)) error {
-	ctx := context.Background()
+	// Use context with reasonable timeout for readiness checks (5 minutes total)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 
 	// Get regional EC2 client
 	regionalClient := m.getRegionalEC2Client(region)
@@ -4448,6 +4494,13 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 	attemptDelay := 3 * time.Second
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context cancelled while waiting for SSH: %w", ctx.Err())
+		default:
+		}
+
 		// Try to connect to SSH port (don't actually authenticate, just check if port is open)
 		conn, err := net.DialTimeout("tcp", publicIP+":22", 2*time.Second)
 		if err == nil {
@@ -4466,7 +4519,12 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 		}
 
 		if attempt < maxAttempts {
-			time.Sleep(attemptDelay)
+			// Use context-aware sleep so we can cancel immediately
+			select {
+			case <-time.After(attemptDelay):
+			case <-ctx.Done():
+				return fmt.Errorf("context cancelled while waiting for SSH: %w", ctx.Err())
+			}
 		}
 	}
 

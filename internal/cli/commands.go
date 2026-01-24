@@ -42,6 +42,8 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&IdlePolicyCommand{})
 	dispatcher.RegisterCommand(&DryRunCommand{})
 	dispatcher.RegisterCommand(&WaitCommand{})
+	dispatcher.RegisterCommand(&QuietCommand{})
+	dispatcher.RegisterCommand(&NoProgressCommand{})
 	dispatcher.RegisterCommand(&ParameterCommand{})
 	dispatcher.RegisterCommand(&ResearchUserCommand{})
 	dispatcher.RegisterCommand(&VersionCommand{})
@@ -282,6 +284,30 @@ func (w *WaitCommand) CanHandle(arg string) bool {
 
 func (w *WaitCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
 	req.Wait = true
+	return index, nil
+}
+
+// QuietCommand handles --quiet flag
+type QuietCommand struct{}
+
+func (q *QuietCommand) CanHandle(arg string) bool {
+	return arg == "--quiet"
+}
+
+func (q *QuietCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	req.Quiet = true
+	return index, nil
+}
+
+// NoProgressCommand handles --no-progress flag
+type NoProgressCommand struct{}
+
+func (n *NoProgressCommand) CanHandle(arg string) bool {
+	return arg == "--no-progress"
+}
+
+func (n *NoProgressCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	req.NoProgress = true
 	return index, nil
 }
 

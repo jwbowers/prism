@@ -93,6 +93,12 @@ func (f *WorkspaceCommandFactory) buildLaunchArgs(cmd *cobra.Command, args []str
 	if sshKey, _ := cmd.Flags().GetString("ssh-key"); sshKey != "" {
 		args = append(args, "--ssh-key", sshKey)
 	}
+	if quiet, _ := cmd.Flags().GetBool("quiet"); quiet {
+		args = append(args, "--quiet")
+	}
+	if noProgress, _ := cmd.Flags().GetBool("no-progress"); noProgress {
+		args = append(args, "--no-progress")
+	}
 	return f.app.Launch(args)
 }
 
@@ -109,6 +115,8 @@ func (f *WorkspaceCommandFactory) addLaunchFlags(cmd *cobra.Command) {
 	cmd.Flags().StringArray("param", []string{}, "Template parameter (name=value)")
 	cmd.Flags().String("research-user", "", "Automatically create and provision research user")
 	cmd.Flags().String("ssh-key", "", "SSH key name for instance access (defaults to first available key)")
+	cmd.Flags().Bool("quiet", false, "Suppress progress output (for scripting)")
+	cmd.Flags().Bool("no-progress", false, "Disable progress monitoring")
 }
 
 func (f *WorkspaceCommandFactory) createListCommand() *cobra.Command {

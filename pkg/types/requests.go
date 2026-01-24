@@ -18,6 +18,8 @@ type LaunchRequest struct {
 	IdlePolicy          bool                   `json:"idle_policy,omitempty"` // Enable idle policy for automatic cost optimization
 	DryRun              bool                   `json:"dry_run,omitempty"`
 	Wait                bool                   `json:"wait,omitempty"`          // Wait and show launch progress
+	Quiet               bool                   `json:"quiet,omitempty"`         // Suppress progress output (for scripting)
+	NoProgress          bool                   `json:"no_progress,omitempty"`   // Disable progress monitoring
 	Parameters          map[string]interface{} `json:"parameters,omitempty"`    // Template parameters
 	ResearchUser        string                 `json:"research_user,omitempty"` // Research user to create and provision (Phase 5A+)
 

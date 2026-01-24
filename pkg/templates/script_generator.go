@@ -55,7 +55,7 @@ func (sg *ScriptGenerator) GenerateScript(tmpl *Template, packageManager Package
 	scriptData := &ScriptData{
 		Template:           tmpl,
 		PackageManager:     string(packageManager),
-		Packages:           sg.selectPackagesForManager(tmpl, packageManager),
+		Packages:           sg.SelectPackagesForManager(tmpl, packageManager),
 		Users:              sg.prepareUsers(tmpl.Users),
 		Services:           tmpl.Services,
 		WebInterfaceBindIP: security.GetWebInterfaceBindIP(),
@@ -114,22 +114,52 @@ type UserData struct {
 	Shell  string
 }
 
-// selectPackagesForManager selects appropriate packages for the given package manager
-func (sg *ScriptGenerator) selectPackagesForManager(tmpl *Template, pm PackageManagerType) []string {
+// SelectPackagesForManager selects appropriate packages for the given package manager (exported for CLI)
+func (sg *ScriptGenerator) SelectPackagesForManager(tmpl *Template, pm PackageManagerType) []string {
 	switch pm {
-	case PackageManagerApt:
-		return tmpl.Packages.System
-	case PackageManagerDnf:
-		return tmpl.Packages.System
+	case PackageManagerApt, PackageManagerDnf:
+		// For system package managers, collect packages from:
+		// 1. The System field
+		// 2. All additional named groups (e.g., r_dependencies, latex, databases, python)
+		packages := make([]string, 0, len(tmpl.Packages.System))
+		packages = append(packages, tmpl.Packages.System...)
+
+		// Add packages from all additional groups
+		if tmpl.Packages.Additional != nil {
+			for groupName, groupPackages := range tmpl.Packages.Additional {
+				// Skip the known fields to avoid duplication
+				if groupName == "system" || groupName == "conda" || groupName == "spack" || groupName == "pip" {
+					continue
+				}
+				packages = append(packages, groupPackages...)
+			}
+		}
+
+		return packages
+
 	case PackageManagerConda:
 		// Only return conda packages, pip packages are handled separately in the template
 		return tmpl.Packages.Conda
+
 	case PackageManagerSpack:
 		return tmpl.Packages.Spack
+
 	case PackageManagerPip:
 		return tmpl.Packages.Pip
+
 	default:
-		return tmpl.Packages.System
+		// Default to system packages
+		packages := make([]string, 0, len(tmpl.Packages.System))
+		packages = append(packages, tmpl.Packages.System...)
+		if tmpl.Packages.Additional != nil {
+			for groupName, groupPackages := range tmpl.Packages.Additional {
+				if groupName == "system" || groupName == "conda" || groupName == "spack" || groupName == "pip" {
+					continue
+				}
+				packages = append(packages, groupPackages...)
+			}
+		}
+		return packages
 	}
 }
 

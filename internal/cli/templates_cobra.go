@@ -57,6 +57,7 @@ and testing templates. Use subcommands for specific operations.`,
 		tc.createInstallCommand(),
 		tc.createVersionCommand(),
 		tc.createSnapshotCommand(),
+		tc.createPackagesCommand(),
 	)
 
 	return cmd
@@ -130,6 +131,20 @@ func (tc *TemplateCobraCommands) createInfoCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return tc.templateCommands.templatesInfo(args)
+		},
+	}
+}
+
+// createPackagesCommand creates the packages subcommand
+func (tc *TemplateCobraCommands) createPackagesCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "packages <template-name>",
+		Short: "Show packages that will be installed",
+		Long: `Display all packages that would be installed from a template, organized by group.
+This shows what packages will be installed WITHOUT launching an instance.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return tc.templateCommands.templatesPackages(args)
 		},
 	}
 }

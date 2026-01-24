@@ -271,9 +271,9 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 			// Track launch start time
 			launchStart := time.Now()
 
-			// Launch instance via AWS
+			// Launch instance via AWS (passing HTTP request context for timeout)
 			var err error
-			instance, err = awsManager.LaunchInstance(req)
+			instance, err = awsManager.LaunchInstanceWithContext(r.Context(), req)
 
 			// Record usage stats
 			launchDuration := int(time.Since(launchStart).Seconds())
@@ -296,21 +296,29 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 
 	// If instance is nil, withAWSManager already wrote an error response
 	if instance == nil {
+		log.Printf("[DEBUG] handleLaunchInstance: instance is nil, returning")
 		return
 	}
+
+	log.Printf("[DEBUG] handleLaunchInstance: Instance created: %s (ID: %s, State: %s)", instance.Name, instance.ID, instance.State)
 
 	// Start progress monitoring if instance is running (v0.7.2 - Issue #453)
 	if instance.State == "running" && !s.testMode {
+		log.Printf("[DEBUG] handleLaunchInstance: Starting progress monitoring for %s", instance.Name)
 		// Use default SSH key path for progress monitoring
 		sshKeyPath := os.ExpandEnv("$HOME/.ssh/id_rsa")
 		s.progressTracker.StartMonitoring(instance, sshKeyPath)
+		log.Printf("[DEBUG] handleLaunchInstance: Progress monitoring started for %s", instance.Name)
 	}
 
 	// Save state with actual current AWS state
+	log.Printf("[DEBUG] handleLaunchInstance: Saving instance state for %s", instance.Name)
 	if err := s.stateManager.SaveInstance(*instance); err != nil {
+		log.Printf("[ERROR] handleLaunchInstance: Failed to save state: %v", err)
 		s.writeError(w, http.StatusInternalServerError, "Failed to save instance state")
 		return
 	}
+	log.Printf("[DEBUG] handleLaunchInstance: Instance state saved for %s", instance.Name)
 
 	response := types.LaunchResponse{
 		Instance:       *instance,
@@ -319,7 +327,14 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		ConnectionInfo: fmt.Sprintf("ssh ubuntu@%s", instance.PublicIP),
 	}
 
-	_ = json.NewEncoder(w).Encode(response)
+	log.Printf("[DEBUG] handleLaunchInstance: Encoding response for %s", instance.Name)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("[ERROR] Failed to encode launch response: %v", err)
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to encode response: %v", err))
+		return
+	}
+	log.Printf("[DEBUG] handleLaunchInstance: Response sent successfully for %s", instance.Name)
 }
 
 // handleInstanceOperations handles operations on specific instances

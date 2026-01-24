@@ -665,9 +665,11 @@ func (r *TemplateRegistry) resolveTemplateInheritance(template *Template) (*Temp
 		Maintainer:  template.Maintainer,
 		LastUpdated: template.LastUpdated,
 		Tags:        make(map[string]string),
-		Packages:    PackageDefinitions{},
-		Users:       []UserConfig{},
-		Services:    []ServiceConfig{},
+		Packages: PackageDefinitions{
+			Additional: make(map[string][]string),
+		},
+		Users:    []UserConfig{},
+		Services: []ServiceConfig{},
 		InstanceDefaults: InstanceDefaults{
 			Ports:                []int{},
 			EstimatedCostPerHour: make(map[string]float64),
@@ -712,6 +714,17 @@ func (r *TemplateRegistry) mergeTemplate(target, source *Template) {
 	target.Packages.Conda = append(target.Packages.Conda, source.Packages.Conda...)
 	target.Packages.Spack = append(target.Packages.Spack, source.Packages.Spack...)
 	target.Packages.Pip = append(target.Packages.Pip, source.Packages.Pip...)
+
+	// Merge Additional package groups
+	if source.Packages.Additional != nil {
+		if target.Packages.Additional == nil {
+			target.Packages.Additional = make(map[string][]string)
+		}
+		for groupName, groupPackages := range source.Packages.Additional {
+			// Append to existing group or create new one
+			target.Packages.Additional[groupName] = append(target.Packages.Additional[groupName], groupPackages...)
+		}
+	}
 
 	// Merge users (append)
 	target.Users = append(target.Users, source.Users...)

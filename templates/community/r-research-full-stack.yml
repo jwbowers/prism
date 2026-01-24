@@ -1,20 +1,21 @@
 name: "R Research Full Stack"
 slug: "r-research-full-stack"
-description: "Complete R research environment with RStudio Server, Quarto, LaTeX, Python, Jupyter, and essential data science tools"
+description: "Complete R research environment with RStudio Server, Quarto, Python, Jupyter, and core data science packages"
 long_description: |
   All-in-one R research environment designed for collaborative research.
 
   Includes:
-  - R 4.4+ with tidyverse and essential packages
-  - RStudio Server (web-based IDE on port 8787)
-  - Quarto and LaTeX for document publishing
-  - Python 3.12 with Jupyter notebooks
+  - R 4.5+ with core tidyverse packages (ggplot2, dplyr, tidyr, etc.)
+  - RStudio Server 2026.01 (web-based IDE on port 8787)
+  - Quarto for document publishing
+  - LaTeX for PDF generation
+  - Python 3.12 with Jupyter Lab
   - Database clients (PostgreSQL, MySQL, SQLite)
-  - Git with LFS support for version control
-  - Essential data science tools and utilities
+  - Web scraping tools (httr, xml2, rvest)
+  - Git for version control
 
-  Perfect for research projects requiring web-based collaboration with
-  non-technical colleagues.
+  Focused on reliability and fast setup. Additional packages can be
+  installed via RStudio as needed.
 
 author: "Prism Team"
 version: "1.0.0"
@@ -50,7 +51,7 @@ parameters:
     display_name: "RStudio Server Version"
     description: "RStudio Server version to install"
     type: "choice"
-    choices: ["latest", "2024.12.1-542", "2024.09.1-394", "2024.04.2-764"]
+    choices: ["latest", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
     default: "latest"
     group: "Development Environment"
     order: 1
@@ -219,6 +220,9 @@ post_install: |
   echo "📦 Updating system packages..."
   apt-get update && apt-get upgrade -y
 
+  # System dependencies are installed by the template package system
+  # (no need to explicitly install them here)
+
   # Install R 4.4.2
   echo "📊 Installing R 4.4.2..."
   wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
@@ -232,20 +236,16 @@ post_install: |
 
   # Install RStudio Server
   echo "🖥️  Installing RStudio Server..."
+  apt-get install -y gdebi-core
   if [ "{{.rstudio_version}}" = "latest" ]; then
-    # Use latest available version
-    apt-get install -y gdebi-core
-    wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-latest-amd64.deb
-    gdebi -n rstudio-server-latest-amd64.deb
-    rm rstudio-server-latest-amd64.deb
+    # Use latest available version (2026.01.0-392 as of January 2026)
+    RSTUDIO_VERSION="2026.01.0-392"
   else
-    # Download specific version
-    apt-get install -y gdebi-core
     RSTUDIO_VERSION="{{.rstudio_version}}"
-    wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
-    gdebi -n rstudio-server-${RSTUDIO_VERSION}-amd64.deb
-    rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   fi
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  gdebi -n rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
 
   # Enable and start RStudio Server
   systemctl enable rstudio-server
@@ -259,60 +259,49 @@ post_install: |
   rm quarto-1.6.33-linux-amd64.deb
   echo "✅ Quarto installed"
 
-  # Install essential R packages
-  echo "📦 Installing essential R packages (this may take 10-15 minutes)..."
-  Rscript -e "
-  # Install core packages
-  install.packages(c(
-    'tidyverse',     # Data manipulation and visualization
-    'rmarkdown',     # Dynamic documents
-    'knitr',         # Literate programming
-    'devtools',      # Package development
-    'ggplot2',       # Advanced plotting
-    'dplyr',         # Data manipulation
-    'tidyr',         # Data tidying
-    'readr',         # Data reading
-    'purrr',         # Functional programming
-    'stringr',       # String operations
-    'forcats',       # Factor operations
-    'lubridate',     # Date/time operations
-    'jsonlite',      # JSON handling
-    'httr',          # HTTP requests
-    'xml2',          # XML handling
-    'rvest',         # Web scraping
-    'DBI',           # Database interface
-    'RSQLite',       # SQLite support
-    'RPostgres',     # PostgreSQL support
-    'RMySQL',        # MySQL support
-    'reticulate',    # Python integration
-    'shiny',         # Interactive web apps
-    'plotly',        # Interactive plots
-    'scales',        # Plot scales
-    'viridis',       # Color palettes
-    'here',          # Project-relative paths
-    'fs',            # File system operations
-    'glue',          # String interpolation
-    'magrittr',      # Pipe operators
-    'tibble',        # Modern data frames
-    'testthat',      # Unit testing
-    'usethis',       # Package development helpers
-    'pkgdown',       # Documentation websites
-    'bookdown',      # Books and long documents
-    'blogdown',      # Websites and blogs
-    'xaringan',      # Presentations
-    'gt',            # Tables
-    'gtsummary'      # Summary tables
-  ), repos='https://cloud.r-project.org/')
+  # Install essential R packages using Ubuntu binaries (FAST - no compilation!)
+  echo "📦 Installing essential R packages from Ubuntu (1-2 minutes)..."
+  apt-get install -y \
+    r-cran-ggplot2 \
+    r-cran-dplyr \
+    r-cran-tidyr \
+    r-cran-readr \
+    r-cran-purrr \
+    r-cran-stringr \
+    r-cran-forcats \
+    r-cran-tibble \
+    r-cran-rmarkdown \
+    r-cran-knitr \
+    r-cran-lubridate \
+    r-cran-jsonlite \
+    r-cran-here \
+    r-cran-glue \
+    r-cran-httr \
+    r-cran-xml2 \
+    r-cran-rvest \
+    r-cran-dbi \
+    r-cran-rsqlite \
+    r-cran-rpostgresql \
+    r-cran-rmysql \
+    r-cran-shiny \
+    r-cran-plotly \
+    r-cran-devtools \
+    r-cran-usethis \
+    r-cran-reticulate
+  echo "✅ Core R packages installed (pre-compiled, no compilation needed!)"
+  echo "📝 Note: Additional packages can be installed via RStudio as needed"
 
-  # Verify installation
-  cat('\n✅ R packages installed successfully\n')
-  "
-
-  # Install Python packages for Jupyter
-  echo "🐍 Installing Python packages..."
-  pip3 install --upgrade pip
-  pip3 install jupyter jupyterlab numpy pandas matplotlib seaborn scikit-learn scipy
-  echo "✅ Jupyter and Python packages installed"
+  # Install Python data science packages (using Ubuntu binaries - no compilation!)
+  echo "🐍 Installing Python data science packages from Ubuntu..."
+  apt-get install -y \
+    jupyter-notebook \
+    python3-numpy \
+    python3-pandas \
+    python3-matplotlib \
+    python3-seaborn \
+    python3-sklearn \
+    python3-scipy
+  echo "✅ Jupyter and Python packages installed (pre-compiled, no pip conflicts)"
 
   # Install Git LFS
   echo "📦 Installing Git LFS..."

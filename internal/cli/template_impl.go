@@ -1881,3 +1881,84 @@ func (tc *TemplateCommands) printTestSummary(totalPassed, totalFailed int) error
 	fmt.Printf("\n✅ All tests passed!\n")
 	return nil
 }
+
+// templatesPackages shows what packages would be installed from a template
+func (tc *TemplateCommands) templatesPackages(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("template name required")
+	}
+
+	templateName := args[0]
+
+	// Load template
+	registry := templates.NewTemplateRegistry(templates.DefaultTemplateDirs())
+	if err := registry.ScanTemplates(); err != nil {
+		return fmt.Errorf("failed to scan templates: %w", err)
+	}
+
+	tmpl, exists := registry.Templates[templateName]
+	if !exists {
+		return fmt.Errorf("template '%s' not found", templateName)
+	}
+
+	// Create script generator to access package selection logic
+	scriptGen := templates.NewScriptGenerator()
+
+	// Determine package manager
+	pm := templates.PackageManagerApt
+	if tmpl.PackageManager != "" {
+		pm = templates.PackageManagerType(tmpl.PackageManager)
+	}
+
+	fmt.Printf("📦 Packages for template: %s\n", templateName)
+	fmt.Printf("Package Manager: %s\n", pm)
+	fmt.Println("═══════════════════════════════════════════════════════════════════\n")
+
+	// Show packages by group
+	if pm == templates.PackageManagerApt || pm == templates.PackageManagerDnf {
+		// Show System packages
+		if len(tmpl.Packages.System) > 0 {
+			fmt.Printf("📋 System Packages (%d):\n", len(tmpl.Packages.System))
+			for _, pkg := range tmpl.Packages.System {
+				fmt.Printf("   • %s\n", pkg)
+			}
+			fmt.Println()
+		}
+
+		// Show Additional groups
+		if tmpl.Packages.Additional != nil && len(tmpl.Packages.Additional) > 0 {
+			for groupName, groupPackages := range tmpl.Packages.Additional {
+				// Skip known fields
+				if groupName == "system" || groupName == "conda" || groupName == "spack" || groupName == "pip" {
+					continue
+				}
+				fmt.Printf("📋 %s Packages (%d):\n", groupName, len(groupPackages))
+				for _, pkg := range groupPackages {
+					fmt.Printf("   • %s\n", pkg)
+				}
+				fmt.Println()
+			}
+		}
+
+		// Show total
+		packages := scriptGen.SelectPackagesForManager(tmpl, pm)
+		fmt.Printf("═══════════════════════════════════════════════════════════════════\n")
+		fmt.Printf("📊 Total packages to install: %d\n", len(packages))
+
+	} else if pm == templates.PackageManagerConda {
+		if len(tmpl.Packages.Conda) > 0 {
+			fmt.Printf("📋 Conda Packages (%d):\n", len(tmpl.Packages.Conda))
+			for _, pkg := range tmpl.Packages.Conda {
+				fmt.Printf("   • %s\n", pkg)
+			}
+		}
+		if len(tmpl.Packages.Pip) > 0 {
+			fmt.Printf("\n📋 Pip Packages (%d):\n", len(tmpl.Packages.Pip))
+			for _, pkg := range tmpl.Packages.Pip {
+				fmt.Printf("   • %s\n", pkg)
+			}
+		}
+	}
+
+	return nil
+}
