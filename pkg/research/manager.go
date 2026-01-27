@@ -79,6 +79,7 @@ func (rum *ResearchUserManager) CreateResearchUser(profileID, username string, f
 		GID:             gid,
 		FullName:        fullName,
 		Email:           email,
+		Enabled:         true, // New users are enabled by default
 		HomeDirectory:   fmt.Sprintf("/efs/home/%s", username),
 		EFSMountPoint:   "/efs",
 		Shell:           "/bin/bash",

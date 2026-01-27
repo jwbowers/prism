@@ -58,6 +58,7 @@ type ResearchUserConfig struct {
 	GID      int    `json:"gid" yaml:"gid"` // Primary group ID
 	FullName string `json:"full_name" yaml:"full_name"`
 	Email    string `json:"email" yaml:"email"`
+	Enabled  bool   `json:"enabled" yaml:"enabled"` // Account status (enabled/disabled)
 
 	// Home directory configuration
 	HomeDirectory string `json:"home_directory" yaml:"home_directory"`   // Path on EFS volume

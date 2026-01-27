@@ -597,18 +597,26 @@ test.describe('User Management Workflows', () => {
       await projectsPage.clickButton('delete');
     });
 
-    test.skip('should update user status', async () => {
-      // TODO: Requires user status editing
+    test('should update user status', async () => {
       const uniqueUsername = `status-update-test-${Date.now()}`;
 
+      // Create user
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'Test User');
+      await projectsPage.page.waitForTimeout(1000);
 
-      // Change status (e.g., suspend user)
-      // ...
-
-      // Verify status updated in table
+      // Disable user
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
-      const userText = await userRow.textContent();
+      const actionsButton = userRow.getByRole('button', { name: /actions/i });
+      await actionsButton.click();
+      await projectsPage.page.waitForTimeout(300);
+
+      // Click "Disable User"
+      await projectsPage.page.getByRole('menuitem', { name: /disable user/i }).click();
+      await projectsPage.page.waitForTimeout(1500);
+
+      // Verify status updated to "Suspended" in table
+      const updatedRow = projectsPage.getUserByUsername(uniqueUsername);
+      const userText = await updatedRow.textContent();
       expect(userText).toContain('Suspended');
 
       // Cleanup

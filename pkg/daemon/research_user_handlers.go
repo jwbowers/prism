@@ -131,6 +131,10 @@ func (s *Server) handleResearchUserOperations(w http.ResponseWriter, r *http.Req
 			s.handleResearchUserSSHKey(w, r, username)
 		case "status":
 			s.handleResearchUserStatus(w, r, username)
+		case "enable":
+			s.handleEnableResearchUser(w, r, username)
+		case "disable":
+			s.handleDisableResearchUser(w, r, username)
 		default:
 			s.writeError(w, http.StatusNotFound, "Unknown operation")
 		}
@@ -367,4 +371,78 @@ func (d *DaemonProfileAdapter) UpdateProfileConfig(profileID string, config inte
 	}
 
 	return fmt.Errorf("invalid profile config type")
+}
+
+// handleEnableResearchUser enables a research user account
+func (s *Server) handleEnableResearchUser(w http.ResponseWriter, r *http.Request, username string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	service, err := s.getResearchUserService()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to initialize research user service: %v", err))
+		return
+	}
+
+	// Get user to verify existence
+	user, err := service.GetResearchUser(username)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Research user not found: %v", err))
+		return
+	}
+
+	// Get current profile ID
+	profileID, err := s.getCurrentProfile()
+	if err != nil {
+		profileID = "default" // Fallback to default
+	}
+
+	// Update user enabled status
+	user.Enabled = true
+	err = service.UpdateResearchUser(profileID, user)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to enable user: %v", err))
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleDisableResearchUser disables a research user account
+func (s *Server) handleDisableResearchUser(w http.ResponseWriter, r *http.Request, username string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	service, err := s.getResearchUserService()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to initialize research user service: %v", err))
+		return
+	}
+
+	// Get user to verify existence
+	user, err := service.GetResearchUser(username)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Research user not found: %v", err))
+		return
+	}
+
+	// Get current profile ID
+	profileID, err := s.getCurrentProfile()
+	if err != nil {
+		profileID = "default" // Fallback to default
+	}
+
+	// Update user enabled status
+	user.Enabled = false
+	err = service.UpdateResearchUser(profileID, user)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to disable user: %v", err))
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

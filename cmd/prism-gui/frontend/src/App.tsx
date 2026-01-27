@@ -69,6 +69,7 @@ interface User {
   created_at: string;
   provisioned_instances?: string[];
   status?: string;
+  enabled?: boolean;       // User account status (enabled/disabled)
 }
 
 interface Template {
@@ -1026,6 +1027,14 @@ class SafePrismAPI {
 
   async provisionUser(username: string, instanceName: string): Promise<UserProvisionResponse> {
     return this.safeRequest(`/api/v1/users/${username}/provision`, 'POST', { instance: instanceName });
+  }
+
+  async enableUser(username: string): Promise<void> {
+    await this.safeRequest(`/api/v1/users/${username}/enable`, 'POST');
+  }
+
+  async disableUser(username: string): Promise<void> {
+    await this.safeRequest(`/api/v1/users/${username}/disable`, 'POST');
   }
 
   async generateSSHKey(username: string): Promise<SSHKeyResponse> {
@@ -5158,17 +5167,23 @@ export default function PrismApp() {
             {
               id: "status",
               header: "Status",
-              cell: (item: User) => (
-                <StatusIndicator
-                  type={
-                    item.status === 'active' ? 'success' :
-                    item.status === 'inactive' ? 'warning' : 'success'
-                  }
-                  ariaLabel={getStatusLabel('user', item.status || 'active')}
-                >
-                  {item.status || 'active'}
-                </StatusIndicator>
-              ),
+              cell: (item: User) => {
+                // enabled field takes precedence (true/undefined = Active, false = Suspended)
+                const isEnabled = item.enabled !== false;
+                const displayStatus = !isEnabled ? 'Suspended' : (item.status || 'Active');
+                const statusType = !isEnabled ? 'error' : (
+                  item.status === 'active' || !item.status ? 'success' : 'warning'
+                );
+
+                return (
+                  <StatusIndicator
+                    type={statusType}
+                    ariaLabel={displayStatus}
+                  >
+                    {displayStatus}
+                  </StatusIndicator>
+                );
+              },
               sortingField: "status"
             },
             {
@@ -5189,6 +5204,9 @@ export default function PrismApp() {
                     { text: "Generate SSH Key", id: "ssh-key", disabled: (item.ssh_keys || 0) > 0 },
                     { text: "Provision on Workspace", id: "provision" },
                     { text: "User Status", id: "status" },
+                    ...(item.enabled !== false
+                      ? [{ text: "Disable User", id: "disable" }]
+                      : [{ text: "Enable User", id: "enable" }]),
                     { text: "Edit User", id: "edit" },
                     { text: "Delete User", id: "delete" }
                   ]}
@@ -5279,6 +5297,84 @@ export default function PrismApp() {
                         }
                       });
                       setDeleteModalVisible(true);
+                    } else if (detail.detail.id === 'enable') {
+                      // Enable user
+                      try {
+                        await api.enableUser(item.username);
+
+                        // Update user's enabled status
+                        setState(prev => ({
+                          ...prev,
+                          users: prev.users.map(u =>
+                            u.username === item.username
+                              ? { ...u, enabled: true }
+                              : u
+                          ),
+                          notifications: [
+                            {
+                              type: 'success',
+                              header: 'User Enabled',
+                              content: `User "${item.username}" has been enabled`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            },
+                            ...prev.notifications
+                          ]
+                        }));
+                      } catch (error: any) {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            {
+                              type: 'error',
+                              header: 'Enable Failed',
+                              content: error.message || 'Failed to enable user',
+                              dismissible: true,
+                              id: Date.now().toString()
+                            },
+                            ...prev.notifications
+                          ]
+                        }));
+                      }
+                    } else if (detail.detail.id === 'disable') {
+                      // Disable user
+                      try {
+                        await api.disableUser(item.username);
+
+                        // Update user's enabled status
+                        setState(prev => ({
+                          ...prev,
+                          users: prev.users.map(u =>
+                            u.username === item.username
+                              ? { ...u, enabled: false }
+                              : u
+                          ),
+                          notifications: [
+                            {
+                              type: 'success',
+                              header: 'User Disabled',
+                              content: `User "${item.username}" has been disabled`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            },
+                            ...prev.notifications
+                          ]
+                        }));
+                      } catch (error: any) {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            {
+                              type: 'error',
+                              header: 'Disable Failed',
+                              content: error.message || 'Failed to disable user',
+                              dismissible: true,
+                              id: Date.now().toString()
+                            },
+                            ...prev.notifications
+                          ]
+                        }));
+                      }
                     } else if (detail.detail.id && detail.detail.text) {
                       setState(prev => ({
                         ...prev,
