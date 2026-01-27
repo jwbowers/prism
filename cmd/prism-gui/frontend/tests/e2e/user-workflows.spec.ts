@@ -239,14 +239,13 @@ test.describe('User Management Workflows', () => {
       await projectsPage.clickButton('delete');
     });
 
-    test.skip('should display existing SSH keys', async () => {
-      // TODO: Requires SSH key listing UI
+    test('should display existing SSH keys', async () => {
       const uniqueUsername = `sshtest-${Date.now()}`;
 
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'SSH Test User');
 
-      // Generate key (via API or UI)
-      // ...
+      // Wait for user to be created
+      await projectsPage.page.waitForTimeout(500);
 
       // View user details
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
@@ -256,11 +255,18 @@ test.describe('User Management Workflows', () => {
 
       await projectsPage.page.getByRole('menuitem', { name: /view details/i }).click();
 
-      // Verify SSH keys section shows keys
-      const sshSection = projectsPage.page.locator('text=/ssh keys/i');
+      // Wait for modal to open and verify it's visible
+      const modal = projectsPage.page.locator('[data-testid="user-details-modal"]');
+      await modal.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Verify SSH keys section is in the modal (using :visible to target only the open modal)
+      const sshSection = modal.locator('text=/ssh keys/i').first();
       expect(await sshSection.isVisible()).toBe(true);
 
-      // Cleanup
+      // Cleanup - dismiss modal first
+      await projectsPage.page.keyboard.press('Escape');
+      await projectsPage.page.waitForTimeout(300);
+
       await projectsPage.navigateToUsers();
       await projectsPage.deleteUser(uniqueUsername);
       await projectsPage.clickButton('delete');
@@ -447,8 +453,7 @@ test.describe('User Management Workflows', () => {
       expect(await statsSection.isVisible()).toBe(true);
     });
 
-    test.skip('should display UID for each user', async () => {
-      // TODO: Verify UID column in table
+    test('should display UID for each user', async () => {
       const uniqueUsername = `uid-test-${Date.now()}`;
 
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'UID Test');

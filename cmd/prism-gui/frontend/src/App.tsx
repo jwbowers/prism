@@ -603,6 +603,25 @@ interface SSHKeyResponse {
   generated_at: string;
 }
 
+interface SSHKeyConfig {
+  key_id: string;
+  profile_id: string;
+  username: string;
+  key_type: string;
+  fingerprint: string;
+  public_key: string;
+  comment: string;
+  created_at: string;
+  last_used?: string;
+  from_profile: string;
+  auto_generated: boolean;
+}
+
+interface UserSSHKeysResponse {
+  username: string;
+  keys: SSHKeyConfig[];
+}
+
 interface ProjectUsageResponse {
   project_id: string;
   period: string;
@@ -1014,6 +1033,10 @@ class SafePrismAPI {
       username: username,
       key_type: 'ed25519'
     });
+  }
+
+  async getUserSSHKeys(username: string): Promise<UserSSHKeysResponse> {
+    return this.safeRequest(`/api/v1/users/${username}/ssh-key`);
   }
 
   // Helper function to calculate budget status
@@ -1836,6 +1859,12 @@ export default function PrismApp() {
   // SSH Key modal state
   const [sshKeyModalVisible, setSshKeyModalVisible] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState<string>('');
+
+  // User details modal state
+  const [userDetailsModalVisible, setUserDetailsModalVisible] = useState(false);
+  const [selectedUserForDetails, setSelectedUserForDetails] = useState<User | null>(null);
+  const [userSSHKeys, setUserSSHKeys] = useState<SSHKeyConfig[]>([]);
+  const [loadingSSHKeys, setLoadingSSHKeys] = useState(false);
 
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
@@ -5122,8 +5151,21 @@ export default function PrismApp() {
                     { text: "Edit User", id: "edit" },
                     { text: "Delete User", id: "delete" }
                   ]}
-                  onItemClick={(detail) => {
-                    if (detail.detail.id === 'ssh-key') {
+                  onItemClick={async (detail) => {
+                    if (detail.detail.id === 'view') {
+                      setSelectedUserForDetails(item);
+                      setUserDetailsModalVisible(true);
+                      setLoadingSSHKeys(true);
+                      try {
+                        const response = await api.getUserSSHKeys(item.username);
+                        setUserSSHKeys(response.keys || []);
+                      } catch (error: any) {
+                        console.error('Failed to fetch SSH keys:', error);
+                        setUserSSHKeys([]);
+                      } finally {
+                        setLoadingSSHKeys(false);
+                      }
+                    } else if (detail.detail.id === 'ssh-key') {
                       setSelectedUsername(item.username);
                       setSshKeyModalVisible(true);
                     } else if (detail.detail.id === 'delete') {
@@ -10682,6 +10724,115 @@ export default function PrismApp() {
         }}
         onGenerate={handleGenerateSSHKey}
       />
+
+      {/* User Details Modal */}
+      <Modal
+        visible={userDetailsModalVisible}
+        onDismiss={() => {
+          setUserDetailsModalVisible(false);
+          setSelectedUserForDetails(null);
+          setUserSSHKeys([]);
+        }}
+        size="large"
+        header={selectedUserForDetails ? `User Details: ${selectedUserForDetails.username}` : 'User Details'}
+        data-testid="user-details-modal"
+      >
+        {selectedUserForDetails && (
+          <SpaceBetween size="l">
+            {/* User Information */}
+            <Container header={<Header variant="h2">User Information</Header>}>
+              <ColumnLayout columns={2} variant="text-grid">
+                <div>
+                  <Box variant="awsui-key-label">Username</Box>
+                  <div>{selectedUserForDetails.username}</div>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">Display Name</Box>
+                  <div>{selectedUserForDetails.display_name}</div>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">Email</Box>
+                  <div>{selectedUserForDetails.email}</div>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">UID</Box>
+                  <div>{selectedUserForDetails.uid}</div>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">Created</Box>
+                  <div>{new Date(selectedUserForDetails.created_at).toLocaleString()}</div>
+                </div>
+                <div>
+                  <Box variant="awsui-key-label">SSH Keys</Box>
+                  <div>{selectedUserForDetails.ssh_keys || 0}</div>
+                </div>
+              </ColumnLayout>
+            </Container>
+
+            {/* SSH Keys Section */}
+            <Container header={<Header variant="h2">SSH Keys</Header>}>
+              {loadingSSHKeys ? (
+                <Box textAlign="center" padding={{ vertical: 'xl' }}>
+                  <Spinner size="large" />
+                </Box>
+              ) : userSSHKeys.length === 0 ? (
+                <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
+                  <Box variant="p" color="text-body-secondary">
+                    No SSH keys found for this user
+                  </Box>
+                </Box>
+              ) : (
+                <Table
+                  columnDefinitions={[
+                    {
+                      id: "key_type",
+                      header: "Type",
+                      cell: (item: SSHKeyConfig) => item.key_type,
+                      width: 100
+                    },
+                    {
+                      id: "fingerprint",
+                      header: "Fingerprint",
+                      cell: (item: SSHKeyConfig) => (
+                        <Box fontSize="body-s" fontFamily="monospace">
+                          {item.fingerprint}
+                        </Box>
+                      )
+                    },
+                    {
+                      id: "comment",
+                      header: "Comment",
+                      cell: (item: SSHKeyConfig) => item.comment,
+                      width: 250
+                    },
+                    {
+                      id: "created_at",
+                      header: "Created",
+                      cell: (item: SSHKeyConfig) => new Date(item.created_at).toLocaleString(),
+                      width: 180
+                    },
+                    {
+                      id: "auto_generated",
+                      header: "Auto-Generated",
+                      cell: (item: SSHKeyConfig) => item.auto_generated ? "Yes" : "No",
+                      width: 120
+                    }
+                  ]}
+                  items={userSSHKeys}
+                  variant="embedded"
+                  empty={
+                    <Box textAlign="center" color="inherit">
+                      <Box variant="p" color="text-body-secondary">
+                        No SSH keys
+                      </Box>
+                    </Box>
+                  }
+                />
+              )}
+            </Container>
+          </SpaceBetween>
+        )}
+      </Modal>
 
       {/* Send Invitation Modal */}
       <Modal
