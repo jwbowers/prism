@@ -5,6 +5,132 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.5] - 2026-01-27
+
+### 🎯 Focus: Complete User Management System
+
+**Production-ready user management with comprehensive lifecycle operations**:
+- Professional user interface with detailed user views and statistics
+- Status management with enable/disable functionality
+- Workspace provisioning with consistent UID/GID across instances
+- SSH key management and display
+- Delete safety with provisioned workspace warnings
+- All features fully tested with E2E coverage (9/9 tests passing)
+
+### Added
+
+- **User Detail View with SSH Keys** (#346):
+  - Comprehensive user details modal showing username, UID, email, full name
+  - SSH keys table displaying all configured keys with fingerprints
+  - Creation timestamp and user metadata
+  - Professional Cloudscape modal design
+  - API integration: GET `/api/v1/users/{username}/ssh-key`
+
+- **User Statistics Dashboard** (#456):
+  - Real-time statistics cards showing Total Users, Active Users, SSH Keys, Provisioned Workspaces
+  - Automatic calculation from user data
+  - Color-coded status indicators
+  - Grid layout with responsive design
+
+- **User Status Management** (#348):
+  - Status filtering: All Users, Active, Inactive dropdown
+  - Dynamic table filtering with automatic counter updates
+  - Status detail modal with comprehensive user information
+  - Color-coded StatusIndicator components (success/warning/error)
+  - API integration: GET `/api/v1/users/{username}/status`
+
+- **User Status Update (Enable/Disable)** (#348):
+  - Enable/disable user accounts through UI
+  - Dynamic action menu showing "Enable User" or "Disable User" based on current status
+  - Status display: "Active" (enabled) or "Suspended" (disabled) in table
+  - Optimistic UI updates with immediate feedback
+  - Backend endpoints: POST `/api/v1/users/{username}/enable`, POST `/api/v1/users/{username}/disable`
+  - New users default to enabled=true
+  - Added Enabled bool field to ResearchUserConfig
+
+- **User Provisioning on Workspaces** (#347):
+  - "Provision on Workspace" action in user actions dropdown
+  - Workspace selection modal showing running instances only
+  - Creates user account with consistent UID/GID across instances
+  - Installs SSH keys on target workspace
+  - API integration: POST `/api/v1/users/{username}/provision`
+  - Success/error notifications with detailed messages
+
+- **Provisioned Workspaces Display** (#347):
+  - "Provisioned Workspaces" section in user details modal
+  - Table showing all workspaces where user is provisioned
+  - Empty state for users with no workspaces
+  - Automatic refresh on provisioning actions
+
+- **Delete Safety Warnings** (#347):
+  - Automatic detection of provisioned workspaces before deletion
+  - Enhanced delete confirmation modal with warning alerts
+  - Warning message: "This user has N provisioned workspace(s)..."
+  - Informs about access removal consequences
+  - Prevents accidental deletion of active users
+
+### Changed
+
+- **User Interface Enhancements**:
+  - Updated user table to show UID, SSH keys count, provisioned workspaces count
+  - Added status column with color-coded indicators
+  - Enhanced actions dropdown with conditional menu items
+  - Improved modal designs with better spacing and layout
+
+- **Backend User Handlers**:
+  - Extended research user handlers with enable/disable operations
+  - Added status field to research user configuration
+  - Improved error handling and status codes
+  - Better API response messages
+
+### Technical Implementation
+
+- **Frontend** (cmd/prism-gui/frontend/src/App.tsx):
+  - Added 14 new state variables for user management
+  - Implemented 5 new API methods (getUserStatus, provisionUser, enableUser, disableUser, getUserSSHKeys)
+  - Created 3 new modals: User Details, User Status, User Provision
+  - Added status filter dropdown with dynamic filtering
+  - Enhanced delete confirmation with optional warnings
+  - ~300 lines of production-ready React/TypeScript code
+
+- **Backend**:
+  - pkg/daemon/research_user_handlers.go: Added enable/disable routes and handlers
+  - pkg/research/types.go: Added Enabled bool field to ResearchUserConfig
+  - pkg/research/manager.go: Set Enabled: true for new users by default
+
+- **E2E Tests** (cmd/prism-gui/frontend/tests/e2e/user-workflows.spec.ts):
+  - Activated 9 comprehensive user management tests
+  - Fixed Cloudscape Select interaction patterns
+  - Added proper wait states and modal selectors
+  - All tests passing: 100% success rate (chromium + webkit)
+
+- **API Endpoints Added**:
+  - GET `/api/v1/users/{username}/status`: Get detailed user status
+  - POST `/api/v1/users/{username}/provision`: Provision user on workspace
+  - GET `/api/v1/users/{username}/ssh-key`: Get user SSH keys
+  - POST `/api/v1/users/{username}/enable`: Enable user account
+  - POST `/api/v1/users/{username}/disable`: Disable user account
+
+### Test Coverage
+
+**9/9 E2E Tests Passing** (100% milestone completion):
+- ✅ should display UID for each user
+- ✅ should display existing SSH keys
+- ✅ should show user statistics
+- ✅ should filter users by status
+- ✅ should view user status details
+- ✅ should provision user on workspace
+- ✅ should show provisioned workspaces for user
+- ✅ should warn when deleting user with active workspaces
+- ✅ should update user status
+
+### Fixed
+
+- Cloudscape Select component interaction patterns in E2E tests
+- User status default values for backward compatibility
+- Modal test selectors for reliable E2E testing
+- Proper error handling in status update operations
+
 ## [0.5.11] - 2025-11-09
 
 ### 🎯 Focus: Complete User Invitation & Collaboration System
