@@ -444,8 +444,7 @@ test.describe('User Management Workflows', () => {
       await projectsPage.waitForUserToBeRemoved(name2);
     });
 
-    test.skip('should show user statistics', async () => {
-      // TODO: Verify stats cards at top of page
+    test('should show user statistics', async () => {
       await projectsPage.navigateToUsers();
 
       // Check for overview stats
