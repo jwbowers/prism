@@ -1866,6 +1866,13 @@ export default function PrismApp() {
   const [userSSHKeys, setUserSSHKeys] = useState<SSHKeyConfig[]>([]);
   const [loadingSSHKeys, setLoadingSSHKeys] = useState(false);
 
+  // User status management state
+  const [userStatusFilter, setUserStatusFilter] = useState<string>('all');
+  const [userStatusModalVisible, setUserStatusModalVisible] = useState(false);
+  const [selectedUserForStatus, setSelectedUserForStatus] = useState<User | null>(null);
+  const [userStatusDetails, setUserStatusDetails] = useState<UserStatus | null>(null);
+  const [loadingUserStatus, setLoadingUserStatus] = useState(false);
+
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
   const [budgetName, setBudgetName] = useState('');
@@ -4992,6 +4999,17 @@ export default function PrismApp() {
     );
   };
 
+  // Get filtered users based on status filter
+  const getFilteredUsers = () => {
+    if (userStatusFilter === 'all') {
+      return state.users;
+    }
+    return state.users.filter(user => {
+      const userStatus = user.status || 'active'; // Default to active if no status
+      return userStatus.toLowerCase() === userStatusFilter.toLowerCase();
+    });
+  };
+
   // User Management View
   const UserManagementView = () => (
     <SpaceBetween size="l">
@@ -5041,13 +5059,29 @@ export default function PrismApp() {
         </Container>
       </ColumnLayout>
 
+      {/* Status Filter */}
+      <Container>
+        <FormField label="Filter by Status">
+          <Select
+            selectedOption={{ label: userStatusFilter === 'all' ? 'All Users' : userStatusFilter === 'active' ? 'Active' : 'Inactive', value: userStatusFilter }}
+            onChange={({ detail }) => setUserStatusFilter(detail.selectedOption.value || 'all')}
+            options={[
+              { label: 'All Users', value: 'all' },
+              { label: 'Active', value: 'active' },
+              { label: 'Inactive', value: 'inactive' }
+            ]}
+            selectedAriaLabel="Selected"
+          />
+        </FormField>
+      </Container>
+
       {/* Users Table */}
       <Container
         header={
           <Header
             variant="h2"
             description="Research users with persistent identity and SSH key management"
-            counter={`(${state.users.length})`}
+            counter={`(${getFilteredUsers().length})`}
             actions={
               <SpaceBetween direction="horizontal" size="xs">
                 <Button>Export Users</Button>
@@ -5165,6 +5199,19 @@ export default function PrismApp() {
                       } finally {
                         setLoadingSSHKeys(false);
                       }
+                    } else if (detail.detail.id === 'status') {
+                      setSelectedUserForStatus(item);
+                      setUserStatusModalVisible(true);
+                      setLoadingUserStatus(true);
+                      try {
+                        const statusData = await api.getUserStatus(item.username);
+                        setUserStatusDetails(statusData);
+                      } catch (error: any) {
+                        console.error('Failed to fetch user status:', error);
+                        setUserStatusDetails(null);
+                      } finally {
+                        setLoadingUserStatus(false);
+                      }
                     } else if (detail.detail.id === 'ssh-key') {
                       setSelectedUsername(item.username);
                       setSshKeyModalVisible(true);
@@ -5237,7 +5284,7 @@ export default function PrismApp() {
               )
             }
           ]}
-          items={state.users}
+          items={getFilteredUsers()}
           loadingText="Loading users..."
           empty={
             <Box textAlign="center" color="text-body-secondary">
@@ -10830,6 +10877,73 @@ export default function PrismApp() {
                 />
               )}
             </Container>
+          </SpaceBetween>
+        )}
+      </Modal>
+
+      {/* User Status Modal */}
+      <Modal
+        visible={userStatusModalVisible}
+        onDismiss={() => {
+          setUserStatusModalVisible(false);
+          setSelectedUserForStatus(null);
+          setUserStatusDetails(null);
+        }}
+        size="medium"
+        header={selectedUserForStatus ? `User Status: ${selectedUserForStatus.username}` : 'User Status'}
+        data-testid="user-status-modal"
+        footer={
+          <Box float="right">
+            <Button onClick={() => setUserStatusModalVisible(false)} data-testid="close">
+              Close
+            </Button>
+          </Box>
+        }
+      >
+        {selectedUserForStatus && (
+          <SpaceBetween size="m">
+            {loadingUserStatus ? (
+              <Box textAlign="center" padding={{ vertical: 'xl' }}>
+                <Spinner size="large" />
+              </Box>
+            ) : userStatusDetails ? (
+              <Container header={<Header variant="h2">Status Details</Header>}>
+                <ColumnLayout columns={2} variant="text-grid">
+                  <div>
+                    <Box variant="awsui-key-label">Username</Box>
+                    <div>{userStatusDetails.username}</div>
+                  </div>
+                  <div>
+                    <Box variant="awsui-key-label">Status</Box>
+                    <div>
+                      <StatusIndicator type={userStatusDetails.status === 'active' ? 'success' : 'warning'}>
+                        {userStatusDetails.status || 'active'}
+                      </StatusIndicator>
+                    </div>
+                  </div>
+                  <div>
+                    <Box variant="awsui-key-label">SSH Keys</Box>
+                    <div>{userStatusDetails.ssh_keys_count || 0}</div>
+                  </div>
+                  <div>
+                    <Box variant="awsui-key-label">Provisioned Workspaces</Box>
+                    <div>{userStatusDetails.provisioned_instances?.length || 0}</div>
+                  </div>
+                  {userStatusDetails.last_active && (
+                    <div>
+                      <Box variant="awsui-key-label">Last Active</Box>
+                      <div>{new Date(userStatusDetails.last_active).toLocaleString()}</div>
+                    </div>
+                  )}
+                </ColumnLayout>
+              </Container>
+            ) : (
+              <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
+                <Box variant="p" color="text-body-secondary">
+                  Failed to load user status
+                </Box>
+              </Box>
+            )}
           </SpaceBetween>
         )}
       </Modal>

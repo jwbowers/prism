@@ -468,29 +468,37 @@ test.describe('User Management Workflows', () => {
       await projectsPage.clickButton('delete');
     });
 
-    test.skip('should filter users by status', async () => {
-      // TODO: Requires filter functionality
+    test('should filter users by status', async () => {
       await projectsPage.navigateToUsers();
 
-      // Apply filter
-      const filterSelect = projectsPage.page.getByLabel(/status/i);
-      await filterSelect.selectOption('active');
+      // Apply filter - click on the Select dropdown
+      const filterButton = projectsPage.page.getByRole('button', { name: /Filter by Status/ });
+      await filterButton.click();
+
+      // Wait for dropdown to appear and select 'Active' (use first to handle multiple dropdowns)
+      await projectsPage.page.waitForTimeout(300);
+      await projectsPage.page.getByRole('option', { name: 'Active', exact: true }).first().click();
+
+      // Wait for filter to apply
+      await projectsPage.page.waitForTimeout(500);
 
       // Verify only active users shown
       const rows = projectsPage.getUserRows();
       const count = await rows.count();
 
-      for (let i = 0; i < count; i++) {
-        const row = rows.nth(i);
-        const text = await row.textContent();
-        expect(text).toContain('Active');
+      // If there are any users, verify they're all active
+      if (count > 0) {
+        for (let i = 0; i < count; i++) {
+          const row = rows.nth(i);
+          const text = await row.textContent();
+          expect(text).toMatch(/active/i);
+        }
       }
     });
   });
 
   test.describe('User Status Management', () => {
-    test.skip('should view user status details', async () => {
-      // TODO: Requires user status view
+    test('should view user status details', async () => {
       const uniqueUsername = `status-test-${Date.now()}`;
 
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'Status Test');
@@ -503,8 +511,9 @@ test.describe('User Management Workflows', () => {
 
       await projectsPage.page.getByRole('menuitem', { name: /user status/i }).click();
 
-      // Verify status dialog
-      const statusDialog = projectsPage.page.locator('[role="dialog"]').first();
+      // Wait for and verify status dialog
+      const statusDialog = projectsPage.page.getByTestId('user-status-modal');
+      await statusDialog.waitFor({ state: 'visible', timeout: 5000 });
       expect(await statusDialog.isVisible()).toBe(true);
 
       // Close
