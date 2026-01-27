@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -772,9 +773,17 @@ func TestHandleAMISnapshotDelete(t *testing.T) {
 
 // TestHandleAMICheckFreshness tests AMI freshness checking
 // This test validates that static AMI IDs in templates match latest SSM values
+// NOTE: This is an integration test that requires real AWS access
+// Run with: go test -tags integration ./pkg/daemon/...
 func TestHandleAMICheckFreshness(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping slow AMI freshness check test in short mode")
+	}
+
+	// Skip this test in regular unit test runs - it requires real AWS SSM access
+	// This prevents CI failures and local test timeouts
+	if os.Getenv("AWS_PROFILE") == "" {
+		t.Skip("Skipping AMI freshness check test - requires AWS credentials (set AWS_PROFILE)")
 	}
 
 	server := createTestServerWithAWS(t)

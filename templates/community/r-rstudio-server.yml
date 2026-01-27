@@ -5,7 +5,7 @@ long_description: |
   Builds on R Base to add web-based IDE access.
 
   Includes everything from R Base, plus:
-  - RStudio Server 2024.12.0 (web IDE on port 8787)
+  - RStudio Server 2026.01.0 (web IDE on port 8787, version customizable)
   - PAM authentication (use system password)
   - Auto-start on boot
   - Multi-user support
@@ -46,6 +46,18 @@ package_manager: "apt"
 # Inherit from R Base
 inherits: ["R Base (Ubuntu 24.04)"]
 
+# Template parameters for customization
+parameters:
+  rstudio_version:
+    name: "rstudio_version"
+    display_name: "RStudio Server Version"
+    description: "RStudio Server version to install"
+    type: "choice"
+    choices: ["latest", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
+    default: "latest"
+    group: "Development Environment"
+    order: 1
+
 # Additional packages beyond R Base
 packages:
   # RStudio Server dependencies (gdebi handles dependencies)
@@ -80,10 +92,17 @@ post_install: |
   apt-get update
 
   # Install RStudio Server
-  echo "🖥️  Installing RStudio Server 2024.12.0..."
-  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2024.12.0-396-amd64.deb
-  gdebi --non-interactive rstudio-server-2024.12.0-396-amd64.deb
-  rm rstudio-server-2024.12.0-396-amd64.deb
+  echo "🖥️  Installing RStudio Server..."
+  if [ "{{.rstudio_version}}" = "latest" ]; then
+    # Use latest available version (2026.01.0-392 as of January 2026)
+    RSTUDIO_VERSION="2026.01.0-392"
+  else
+    RSTUDIO_VERSION="{{.rstudio_version}}"
+  fi
+  echo "Installing RStudio Server version: ${RSTUDIO_VERSION}"
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  gdebi --non-interactive rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
 
   # Configure RStudio Server
   echo "⚙️  Configuring RStudio Server..."
@@ -170,7 +189,7 @@ research_users:
 # Component versions
 components:
   r_version: "4.4.2"  # From parent
-  rstudio_server_version: "2024.12.0"
+  rstudio_server_version: "2026.01.0-392"  # Default (latest)
 
 # Tags
 tags:

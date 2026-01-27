@@ -16,9 +16,11 @@ export class ConfirmDialog {
 
   /**
    * Get dialog container
+   * Uses :visible to target only the currently visible dialog
+   * (Cloudscape renders all modals in DOM with CSS visibility control)
    */
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]');
+    return this.page.locator('[role="dialog"]:visible');
   }
 
   /**

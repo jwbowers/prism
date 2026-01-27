@@ -69,17 +69,26 @@ async function startDaemon() {
   daemon.unref()
   
   // Wait for daemon to be ready
+  // NOTE: Daemon may take up to 20 seconds for singleton takeover if old process exists
+  // (10s graceful shutdown + 5s SIGINT + 5s SIGKILL)
+  // Allow 60 seconds total: 20s for takeover + 10s for startup + 30s buffer
   let attempts = 0
-  while (attempts < 30) {
+  const maxAttempts = 60
+  while (attempts < maxAttempts) {
     if (await isDaemonRunning()) {
-      console.log('Daemon is ready!')
+      console.log(`Daemon is ready! (took ${attempts} seconds)`)
       return daemon.pid
     }
     await new Promise(resolve => setTimeout(resolve, 1000))
     attempts++
+
+    // Progress indicator every 5 seconds
+    if (attempts % 5 === 0) {
+      console.log(`Still waiting for daemon... (${attempts}/${maxAttempts}s)`)
+    }
   }
-  
-  throw new Error('Daemon failed to start within 30 seconds')
+
+  throw new Error(`Daemon failed to start within ${maxAttempts} seconds. Check daemon logs above for errors.`)
 }
 
 // Function to stop the daemon

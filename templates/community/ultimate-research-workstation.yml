@@ -30,6 +30,18 @@ plugins:
       configuration:
         enable_lfs: true
 
+# Template parameters for customization
+parameters:
+  rstudio_version:
+    name: "rstudio_version"
+    display_name: "RStudio Server Version"
+    description: "RStudio Server version to install"
+    type: "choice"
+    choices: ["latest", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
+    default: "latest"
+    group: "Development Environment"
+    order: 1
+
 # Comprehensive packages for all interfaces
 package_manager: "conda"
 packages:
@@ -100,8 +112,16 @@ users:
 post_install: |
   #!/bin/bash
   # Setup RStudio Server
-  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2024.04.2-764-amd64.deb
-  sudo gdebi --non-interactive rstudio-server-*-amd64.deb
+  if [ "{{.rstudio_version}}" = "latest" ]; then
+    # Use latest available version (2026.01.0-392 as of January 2026)
+    RSTUDIO_VERSION="2026.01.0-392"
+  else
+    RSTUDIO_VERSION="{{.rstudio_version}}"
+  fi
+  echo "Installing RStudio Server version: ${RSTUDIO_VERSION}"
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  sudo gdebi --non-interactive rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   
   # Configure services for external access
   sudo echo "www-port=8787" >> /etc/rstudio/rserver.conf
