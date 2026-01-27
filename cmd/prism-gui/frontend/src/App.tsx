@@ -1777,6 +1777,7 @@ export default function PrismApp() {
     type: 'workspace' | 'efs-volume' | 'ebs-volume' | 'project' | 'user' | null;
     name: string;
     requireNameConfirmation: boolean;
+    warning?: string;
     onConfirm: () => Promise<void>;
   }>({
     type: null,
@@ -1872,6 +1873,12 @@ export default function PrismApp() {
   const [selectedUserForStatus, setSelectedUserForStatus] = useState<User | null>(null);
   const [userStatusDetails, setUserStatusDetails] = useState<UserStatus | null>(null);
   const [loadingUserStatus, setLoadingUserStatus] = useState(false);
+
+  // User provisioning state
+  const [provisionModalVisible, setProvisionModalVisible] = useState(false);
+  const [selectedUserForProvision, setSelectedUserForProvision] = useState<User | null>(null);
+  const [selectedWorkspaceForProvision, setSelectedWorkspaceForProvision] = useState<string>('');
+  const [provisioningInProgress, setProvisioningInProgress] = useState(false);
 
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
@@ -5212,15 +5219,25 @@ export default function PrismApp() {
                       } finally {
                         setLoadingUserStatus(false);
                       }
+                    } else if (detail.detail.id === 'provision') {
+                      setSelectedUserForProvision(item);
+                      setProvisionModalVisible(true);
                     } else if (detail.detail.id === 'ssh-key') {
                       setSelectedUsername(item.username);
                       setSshKeyModalVisible(true);
                     } else if (detail.detail.id === 'delete') {
+                      // Check for provisioned workspaces
+                      const hasWorkspaces = (item.provisioned_instances?.length || 0) > 0;
+                      const workspaceWarning = hasWorkspaces
+                        ? `This user has ${item.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
+                        : undefined;
+
                       // Open delete confirmation modal
                       setDeleteModalConfig({
                         type: 'user',
                         name: item.username,
                         requireNameConfirmation: false,
+                        warning: workspaceWarning,
                         onConfirm: async () => {
                           try {
                             await api.deleteUser(item.username);
@@ -9261,6 +9278,12 @@ export default function PrismApp() {
             {getDeleteMessage()}
           </Alert>
 
+          {deleteModalConfig.warning && (
+            <Alert type="error" header="Additional Warning">
+              {deleteModalConfig.warning}
+            </Alert>
+          )}
+
           {deleteModalConfig.requireNameConfirmation && (
             <FormField
               label={`Type "${deleteModalConfig.name}" to confirm deletion`}
@@ -10877,6 +10900,140 @@ export default function PrismApp() {
                 />
               )}
             </Container>
+
+            {/* Provisioned Workspaces Section */}
+            <Container header={<Header variant="h2">Provisioned Workspaces</Header>}>
+              {selectedUserForDetails.provisioned_instances && selectedUserForDetails.provisioned_instances.length > 0 ? (
+                <Table
+                  columnDefinitions={[
+                    {
+                      id: "workspace",
+                      header: "Workspace",
+                      cell: (item: string) => item
+                    }
+                  ]}
+                  items={selectedUserForDetails.provisioned_instances}
+                  variant="embedded"
+                  empty={
+                    <Box textAlign="center" color="inherit">
+                      <Box variant="p" color="text-body-secondary">
+                        No provisioned workspaces
+                      </Box>
+                    </Box>
+                  }
+                />
+              ) : (
+                <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
+                  <Box variant="p" color="text-body-secondary">
+                    No provisioned workspaces
+                  </Box>
+                </Box>
+              )}
+            </Container>
+          </SpaceBetween>
+        )}
+      </Modal>
+
+      {/* User Provision Modal */}
+      <Modal
+        visible={provisionModalVisible}
+        onDismiss={() => {
+          setProvisionModalVisible(false);
+          setSelectedUserForProvision(null);
+          setSelectedWorkspaceForProvision('');
+        }}
+        size="medium"
+        header={selectedUserForProvision ? `Provision ${selectedUserForProvision.username} on Workspace` : 'Provision User'}
+        data-testid="provision-modal"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button onClick={() => setProvisionModalVisible(false)} disabled={provisioningInProgress}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  if (!selectedUserForProvision || !selectedWorkspaceForProvision) return;
+
+                  setProvisioningInProgress(true);
+                  try {
+                    await api.provisionUser(selectedUserForProvision.username, selectedWorkspaceForProvision);
+
+                    // Update user's provisioned instances
+                    setState(prev => ({
+                      ...prev,
+                      users: prev.users.map(u =>
+                        u.username === selectedUserForProvision.username
+                          ? { ...u, provisioned_instances: [...(u.provisioned_instances || []), selectedWorkspaceForProvision] }
+                          : u
+                      ),
+                      notifications: [
+                        {
+                          type: 'success',
+                          header: 'User Provisioned',
+                          content: `User "${selectedUserForProvision.username}" provisioned on workspace "${selectedWorkspaceForProvision}"`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        },
+                        ...prev.notifications
+                      ]
+                    }));
+                    setProvisionModalVisible(false);
+                    setSelectedWorkspaceForProvision('');
+                  } catch (error: any) {
+                    setState(prev => ({
+                      ...prev,
+                      notifications: [
+                        {
+                          type: 'error',
+                          header: 'Provisioning Failed',
+                          content: error.message || 'Failed to provision user',
+                          dismissible: true,
+                          id: Date.now().toString()
+                        },
+                        ...prev.notifications
+                      ]
+                    }));
+                  } finally {
+                    setProvisioningInProgress(false);
+                  }
+                }}
+                disabled={!selectedWorkspaceForProvision || provisioningInProgress}
+                loading={provisioningInProgress}
+                data-testid="provision"
+              >
+                Provision
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        {selectedUserForProvision && (
+          <SpaceBetween size="m">
+            <FormField label="Workspace" description="Select a running workspace to provision this user on">
+              <Select
+                selectedOption={
+                  selectedWorkspaceForProvision
+                    ? { label: selectedWorkspaceForProvision, value: selectedWorkspaceForProvision }
+                    : null
+                }
+                onChange={({ detail }) => setSelectedWorkspaceForProvision(detail.selectedOption?.value || '')}
+                options={state.instances
+                  .filter(instance => instance.state === 'running')
+                  .map(instance => ({
+                    label: instance.name,
+                    value: instance.name
+                  }))}
+                placeholder="Select a workspace"
+                empty="No running workspaces available"
+                ariaLabel="Workspace"
+              />
+            </FormField>
+
+            <Alert type="info">
+              Provisioning will create a user account for "{selectedUserForProvision.username}" on the selected workspace with the same UID/GID and SSH keys.
+            </Alert>
           </SpaceBetween>
         )}
       </Modal>
