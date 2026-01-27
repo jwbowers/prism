@@ -32,6 +32,9 @@ type Invitation struct {
 	// InvitedBy is the user ID of who sent the invitation
 	InvitedBy string `json:"invited_by"`
 
+	// ProfileID is the profile associated with this invitation (for credential validation)
+	ProfileID string `json:"profile_id,omitempty"`
+
 	// InvitedAt is when the invitation was sent
 	InvitedAt time.Time `json:"invited_at"`
 

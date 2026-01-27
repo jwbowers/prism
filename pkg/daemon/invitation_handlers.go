@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/scttfrdmn/prism/pkg/invitation"
 	"github.com/scttfrdmn/prism/pkg/research"
@@ -68,6 +69,18 @@ func (s *Server) handleInvitationOperations(w http.ResponseWriter, r *http.Reque
 	// GET /api/v1/invitations/by-id/{id} - Get invitation by ID (v0.6.2)
 	case strings.HasPrefix(path, "/api/v1/invitations/by-id/") && method == http.MethodGet:
 		s.handleGetInvitationByID(w, r)
+
+	// POST /api/v1/invitations/{id}/validate - Validate invitation credentials (#357)
+	case strings.Contains(path, "/validate") && method == http.MethodPost:
+		s.handleValidateInvitation(w, r)
+
+	// GET /api/v1/invitations/{id}/credential-status - Get credential status (#357)
+	case strings.Contains(path, "/credential-status") && method == http.MethodGet:
+		s.handleGetCredentialStatus(w, r)
+
+	// POST /api/v1/invitations/{id}/test-credentials - Test credentials (#357)
+	case strings.Contains(path, "/test-credentials") && method == http.MethodPost:
+		s.handleTestCredentials(w, r)
 
 	// GET /api/v1/invitations/{token} - Get invitation by token
 	case strings.HasPrefix(path, "/api/v1/invitations/") && method == http.MethodGet:
@@ -714,6 +727,135 @@ func (s *Server) handleQuotaCheck(w http.ResponseWriter, r *http.Request) {
 	if !quotaCheck.HasSufficientQuota {
 		response["warning"] = quotaCheck.WarningMessage
 		w.WriteHeader(http.StatusPreconditionFailed) // 412 status for insufficient quota
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleValidateInvitation validates invitation profile association and credentials (#357)
+// POST /api/v1/invitations/{id}/validate
+func (s *Server) handleValidateInvitation(w http.ResponseWriter, r *http.Request) {
+	// Parse invitation ID from path: /api/v1/invitations/{id}/validate
+	path := r.URL.Path[len("/api/v1/invitations/"):]
+	parts := splitPath(path)
+	if len(parts) < 2 || parts[1] != "validate" {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+	invitationID := parts[0]
+
+	// Get invitation
+	inv, err := s.invitationManager.GetInvitation(r.Context(), invitationID)
+	if err != nil {
+		if err == types.ErrInvitationNotFound {
+			http.Error(w, "Invitation not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to get invitation: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Validate invitation with profile manager
+	profileMgr := NewProfileManagerAdapter(s)
+	result, err := s.invitationManager.ValidateInvitation(r.Context(), invitationID, profileMgr)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to validate invitation: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"invitation": inv,
+		"validation": result,
+	}
+
+	// Set appropriate HTTP status
+	if !result.Valid {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleGetCredentialStatus returns the current credential status for an invitation (#357)
+// GET /api/v1/invitations/{id}/credential-status
+func (s *Server) handleGetCredentialStatus(w http.ResponseWriter, r *http.Request) {
+	// Parse invitation ID from path: /api/v1/invitations/{id}/credential-status
+	path := r.URL.Path[len("/api/v1/invitations/"):]
+	parts := splitPath(path)
+	if len(parts) < 2 || parts[1] != "credential-status" {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+	invitationID := parts[0]
+
+	// Get credential status
+	profileMgr := NewProfileManagerAdapter(s)
+	status, err := s.invitationManager.GetCredentialStatus(r.Context(), invitationID, profileMgr)
+	if err != nil {
+		if err == types.ErrInvitationNotFound {
+			http.Error(w, "Invitation not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to get credential status: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+// handleTestCredentials tests if credentials work for an invitation (#357)
+// POST /api/v1/invitations/{id}/test-credentials
+func (s *Server) handleTestCredentials(w http.ResponseWriter, r *http.Request) {
+	// Parse invitation ID from path: /api/v1/invitations/{id}/test-credentials
+	path := r.URL.Path[len("/api/v1/invitations/"):]
+	parts := splitPath(path)
+	if len(parts) < 2 || parts[1] != "test-credentials" {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+	invitationID := parts[0]
+
+	// Get invitation
+	inv, err := s.invitationManager.GetInvitation(r.Context(), invitationID)
+	if err != nil {
+		if err == types.ErrInvitationNotFound {
+			http.Error(w, "Invitation not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to get invitation: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if profile ID exists
+	if inv.ProfileID == "" {
+		http.Error(w, "Invitation has no profile association", http.StatusBadRequest)
+		return
+	}
+
+	// Test credentials
+	profileMgr := NewProfileManagerAdapter(s)
+	valid, identity, err := s.invitationManager.TestCredentials(r.Context(), profileMgr, inv.ProfileID)
+	if err != nil {
+		response := map[string]interface{}{
+			"valid":         false,
+			"error_message": err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := map[string]interface{}{
+		"valid":               valid,
+		"credential_identity": identity,
+		"tested_at":           time.Now(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
