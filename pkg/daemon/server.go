@@ -81,6 +81,9 @@ type Server struct {
 	// Test mode flag (skips AWS operations for unit testing)
 	testMode bool
 
+	// Reduced functionality mode (AWS credentials unavailable - Issue #356)
+	reducedMode bool
+
 	// Idle detection components (daemon singletons - Issue #289)
 	idleScheduler *idle.Scheduler
 	policyManager *idle.PolicyManager
@@ -128,7 +131,11 @@ func NewServer(port string) (*Server, error) {
 	versionManager := NewAPIVersionManager("/api")
 
 	// Get current profile configuration and initialize AWS manager
+	// NOTE: AWS initialization is now non-blocking to prevent daemon startup delays
+	// when credentials are unavailable (Issue #356)
 	var awsManager *aws.Manager
+	reducedMode := false // Will be set to true if AWS initialization fails
+
 	profileManager, profileErr := profile.NewManagerEnhanced()
 	if profileErr != nil {
 		log.Printf("Failed to initialize profile manager: %v", profileErr)
@@ -145,6 +152,15 @@ func NewServer(port string) (*Server, error) {
 			Profile: envProfile, // Use environment variable or AWS SDK default
 			Region:  envRegion,  // Use environment variable or AWS SDK default
 		})
+		if err != nil {
+			if isCredentialError(err) {
+				log.Printf("AWS credentials unavailable, starting in reduced functionality mode")
+				reducedMode = true
+				awsManager = nil
+			} else {
+				return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
+			}
+		}
 	} else {
 		currentProfile, err := profileManager.GetCurrentProfile()
 		if err != nil {
@@ -158,20 +174,35 @@ func NewServer(port string) (*Server, error) {
 			if envRegion != "" {
 				log.Printf("Using AWS_REGION from environment: %s", envRegion)
 			}
-			awsManager, _ = aws.NewManager(aws.ManagerOptions{
+			awsManager, err = aws.NewManager(aws.ManagerOptions{
 				Profile: envProfile, // Use environment variable or AWS SDK default
 				Region:  envRegion,  // Use environment variable or AWS SDK default
 			})
+			if err != nil {
+				if isCredentialError(err) {
+					log.Printf("AWS credentials unavailable, starting in reduced functionality mode")
+					reducedMode = true
+					awsManager = nil
+				} else {
+					return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
+				}
+			}
 		} else {
 			// Use profile values from current Prism profile
-			awsManager, _ = aws.NewManager(aws.ManagerOptions{
+			awsManager, err = aws.NewManager(aws.ManagerOptions{
 				Profile: currentProfile.AWSProfile,
 				Region:  currentProfile.Region,
 			})
+			if err != nil {
+				if isCredentialError(err) {
+					log.Printf("AWS credentials unavailable, starting in reduced functionality mode")
+					reducedMode = true
+					awsManager = nil
+				} else {
+					return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
+				}
+			}
 		}
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
 	}
 
 	// Initialize idle detection components as daemon singletons (Issue #289 fix)
@@ -365,6 +396,12 @@ func NewServer(port string) (*Server, error) {
 		policyManager:       policyManager,
 		profileManager:      profileManager,       // Singleton for filesystem consistency
 		progressTracker:     NewProgressTracker(), // Launch progress monitoring (v0.7.2 - Issue #453)
+		reducedMode:         reducedMode,          // Reduced functionality mode when AWS credentials unavailable (Issue #356)
+	}
+
+	// Print reduced mode banner if AWS credentials unavailable (Issue #356)
+	if reducedMode {
+		log.Println(getReducedModeBanner())
 	}
 
 	// Configure budget tracker with action executor
@@ -728,11 +765,25 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 		)
 	}
 
+	// Middleware for AWS-requiring endpoints (Issue #356)
+	applyAWSMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
+		return s.combineMiddleware(
+			handler,
+			corsMiddleware, // Add CORS first for web development
+			jsonMiddleware,
+			operationTrackingMiddleware,
+			versionHeaderMiddleware,
+			s.awsHeadersMiddleware,
+			s.authMiddleware,
+			s.requireAWSMiddleware, // Check AWS credentials before proceeding
+		)
+	}
+
 	// API version information endpoint
 	mux.HandleFunc("/api/versions", applyMiddleware(s.handleAPIVersions))
 
 	// Register v1 endpoints
-	s.registerV1Routes(mux, applyMiddleware)
+	s.registerV1Routes(mux, applyMiddleware, applyAWSMiddleware)
 
 	// API path matcher to handle any valid API request
 	// This allows proper versioning of new paths that may be added in the future
@@ -740,57 +791,57 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 }
 
 // registerV1Routes registers all API v1 routes
-func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.HandlerFunc) http.HandlerFunc) {
-	// Health check
+func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.HandlerFunc) http.HandlerFunc, applyAWSMiddleware func(http.HandlerFunc) http.HandlerFunc) {
+	// Health check (no AWS required)
 	mux.HandleFunc("/api/v1/ping", applyMiddleware(s.handlePing))
 	mux.HandleFunc("/api/v1/status", applyMiddleware(s.handleStatus))
 	mux.HandleFunc("/api/v1/shutdown", applyMiddleware(s.handleShutdown))
 	mux.HandleFunc("/api/v1/update/check", applyMiddleware(s.handleUpdateCheck))
 
-	// Authentication
+	// Authentication (no AWS required)
 	mux.HandleFunc("/api/v1/auth", applyMiddleware(s.handleAuth))
 
-	// User authentication
+	// User authentication (no AWS required)
 	mux.HandleFunc("/api/v1/authenticate", applyMiddleware(s.handleAuthenticate))
 
-	// Profile management
+	// Profile management (no AWS required - local profiles)
 	mux.HandleFunc("/api/v1/profiles", applyMiddleware(s.handleProfiles))
 	mux.HandleFunc("/api/v1/profiles/current", applyMiddleware(s.handleGetCurrentProfile))
 	mux.HandleFunc("/api/v1/profiles/", applyMiddleware(s.handleProfileOperations))
 
-	// Group management
-	mux.HandleFunc("/api/v1/groups", applyMiddleware(s.handleGroups))
-	mux.HandleFunc("/api/v1/groups/", applyMiddleware(s.handleGroupOperations))
+	// Group management (requires AWS)
+	mux.HandleFunc("/api/v1/groups", applyAWSMiddleware(s.handleGroups))
+	mux.HandleFunc("/api/v1/groups/", applyAWSMiddleware(s.handleGroupOperations))
 
-	// Instance operations
-	mux.HandleFunc("/api/v1/instances", applyMiddleware(s.handleInstances))
-	mux.HandleFunc("/api/v1/instances/", applyMiddleware(s.handleInstanceOperations))
+	// Instance operations (requires AWS)
+	mux.HandleFunc("/api/v1/instances", applyAWSMiddleware(s.handleInstances))
+	mux.HandleFunc("/api/v1/instances/", applyAWSMiddleware(s.handleInstanceOperations))
 
-	// Tunnel operations (web service access)
-	mux.HandleFunc("/api/v1/tunnels", applyMiddleware(s.handleTunnels))
+	// Tunnel operations (requires AWS - needs instances)
+	mux.HandleFunc("/api/v1/tunnels", applyAWSMiddleware(s.handleTunnels))
 
-	// Log operations
-	mux.HandleFunc("/api/v1/logs", applyMiddleware(s.handleLogs))
-	mux.HandleFunc("/api/v1/logs/", applyMiddleware(s.handleLogOperations))
+	// Log operations (requires AWS - needs instances)
+	mux.HandleFunc("/api/v1/logs", applyAWSMiddleware(s.handleLogs))
+	mux.HandleFunc("/api/v1/logs/", applyAWSMiddleware(s.handleLogOperations))
 
-	// Template operations
+	// Template operations (no AWS required - local operations)
 	mux.HandleFunc("/api/v1/templates", applyMiddleware(s.handleTemplates))
 	mux.HandleFunc("/api/v1/templates/", applyMiddleware(s.handleTemplateInfo))
 
-	// Template application operations
-	mux.HandleFunc("/api/v1/templates/apply", applyMiddleware(s.handleTemplateApply))
-	mux.HandleFunc("/api/v1/templates/diff", applyMiddleware(s.handleTemplateDiff))
+	// Template application operations (requires AWS - launches instances)
+	mux.HandleFunc("/api/v1/templates/apply", applyAWSMiddleware(s.handleTemplateApply))
+	mux.HandleFunc("/api/v1/templates/diff", applyAWSMiddleware(s.handleTemplateDiff))
 
-	// Volume operations
-	mux.HandleFunc("/api/v1/volumes", applyMiddleware(s.handleVolumes))
-	mux.HandleFunc("/api/v1/volumes/", applyMiddleware(s.handleVolumeOperations))
+	// Volume operations (requires AWS)
+	mux.HandleFunc("/api/v1/volumes", applyAWSMiddleware(s.handleVolumes))
+	mux.HandleFunc("/api/v1/volumes/", applyAWSMiddleware(s.handleVolumeOperations))
 
-	// Storage operations
-	mux.HandleFunc("/api/v1/storage", applyMiddleware(s.handleStorage))
-	mux.HandleFunc("/api/v1/storage/", applyMiddleware(s.handleStorageOperations))
+	// Storage operations (requires AWS)
+	mux.HandleFunc("/api/v1/storage", applyAWSMiddleware(s.handleStorage))
+	mux.HandleFunc("/api/v1/storage/", applyAWSMiddleware(s.handleStorageOperations))
 
-	// Storage transfer operations (S3-backed file transfers) (v0.5.7)
-	mux.HandleFunc("/api/v1/storage/transfer", applyMiddleware(s.handleStorageTransfer))
+	// Storage transfer operations (requires AWS - S3-backed file transfers) (v0.5.7)
+	mux.HandleFunc("/api/v1/storage/transfer", applyAWSMiddleware(s.handleStorageTransfer))
 	mux.HandleFunc("/api/v1/storage/transfer/", applyMiddleware(s.handleStorageTransferOperations))
 
 	// Instance snapshot operations
