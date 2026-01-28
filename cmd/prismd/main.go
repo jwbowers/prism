@@ -34,12 +34,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/scttfrdmn/prism/pkg/daemon"
+	"github.com/scttfrdmn/prism/pkg/daemon/logger"
 	"github.com/scttfrdmn/prism/pkg/version"
 )
 
@@ -61,20 +61,23 @@ func main() {
 		return
 	}
 
-	log.Printf("Prism Daemon v%s starting...", version.GetVersion())
+	// Initialize logging with appropriate level
+	logger.Initialize(logger.GetLevel())
+
+	logger.Info("Prism daemon starting", "version", version.GetVersion())
 
 	// Enforce singleton: only one daemon can run at a time
 	singleton, err := daemon.NewSingletonManager()
 	if err != nil {
-		log.Fatalf("Failed to create singleton manager: %v", err)
+		logger.Fatal("Failed to create singleton manager", "error", err)
 	}
 
 	if err := singleton.Acquire(); err != nil {
-		log.Fatalf("Failed to acquire singleton lock: %v", err)
+		logger.Fatal("Failed to acquire singleton lock", "error", err)
 	}
 	defer singleton.Release()
 
-	log.Printf("✅ Singleton lock acquired (PID: %d)", os.Getpid())
+	logger.Info("Singleton lock acquired", "pid", os.Getpid())
 
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -83,7 +86,7 @@ func main() {
 	// Start the main daemon server with integrated monitoring
 	server, err := daemon.NewServer(*port)
 	if err != nil {
-		log.Fatalf("Failed to create server: %v", err)
+		logger.Fatal("Failed to create server", "error", err)
 	}
 
 	// Start the daemon server in a goroutine
@@ -97,27 +100,27 @@ func main() {
 	// Wait for shutdown signals or server error
 	select {
 	case err := <-serverErr:
-		log.Fatalf("Server failed: %v", err)
+		logger.Fatal("Server failed", "error", err)
 	case sig := <-sigChan:
-		log.Printf("🔔 Received signal: %v", sig)
+		logger.Info("Received signal", "signal", sig)
 
 		switch sig {
 		case syscall.SIGHUP:
-			log.Printf("🔄 Configuration reload requested")
+			logger.Info("Configuration reload requested")
 			// Integrated monitoring will automatically restart if idle detection is re-enabled
 
 		case syscall.SIGINT, syscall.SIGTERM:
-			log.Printf("🛑 Graceful shutdown requested")
+			logger.Info("Graceful shutdown requested")
 
 			// Stop main server (which includes integrated monitoring)
-			log.Printf("Stopping daemon server...")
+			logger.Info("Stopping daemon server")
 			if err := server.Stop(); err != nil {
-				log.Printf("Error stopping server: %v", err)
+				logger.Error("Error stopping server", "error", err)
 			} else {
-				log.Printf("✅ Daemon server stopped")
+				logger.Info("Daemon server stopped")
 			}
 
-			log.Printf("✅ Prism daemon shutdown complete")
+			logger.Info("Prism daemon shutdown complete")
 			os.Exit(0)
 		}
 	}

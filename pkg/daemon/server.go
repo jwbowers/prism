@@ -3,7 +3,6 @@ package daemon
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/connection"
 	"github.com/scttfrdmn/prism/pkg/cost"
+	"github.com/scttfrdmn/prism/pkg/daemon/logger"
 	"github.com/scttfrdmn/prism/pkg/idle"
 	"github.com/scttfrdmn/prism/pkg/invitation"
 	"github.com/scttfrdmn/prism/pkg/marketplace"
@@ -138,15 +138,15 @@ func NewServer(port string) (*Server, error) {
 
 	profileManager, profileErr := profile.NewManagerEnhanced()
 	if profileErr != nil {
-		log.Printf("Failed to initialize profile manager: %v", profileErr)
+		logger.Warn("Failed to initialize profile manager", "error", profileErr)
 		// Fall back to environment variables before using AWS SDK defaults
 		envProfile := os.Getenv("AWS_PROFILE")
 		envRegion := os.Getenv("AWS_REGION")
 		if envProfile != "" {
-			log.Printf("Using AWS_PROFILE from environment: %s", envProfile)
+			logger.Info("Using AWS_PROFILE from environment", "profile", envProfile)
 		}
 		if envRegion != "" {
-			log.Printf("Using AWS_REGION from environment: %s", envRegion)
+			logger.Info("Using AWS_REGION from environment", "region", envRegion)
 		}
 		awsManager, err = aws.NewManager(aws.ManagerOptions{
 			Profile: envProfile, // Use environment variable or AWS SDK default
@@ -154,7 +154,7 @@ func NewServer(port string) (*Server, error) {
 		})
 		if err != nil {
 			if isCredentialError(err) {
-				log.Printf("AWS credentials unavailable, starting in reduced functionality mode")
+				logger.Warn("AWS credentials unavailable, starting in reduced functionality mode")
 				reducedMode = true
 				awsManager = nil
 			} else {
@@ -164,15 +164,15 @@ func NewServer(port string) (*Server, error) {
 	} else {
 		currentProfile, err := profileManager.GetCurrentProfile()
 		if err != nil {
-			log.Printf("Failed to get current profile, using AWS defaults: %v", err)
+			logger.Warn("Failed to get current profile, using AWS defaults", "error", err)
 			// Fall back to environment variables before using AWS SDK defaults
 			envProfile := os.Getenv("AWS_PROFILE")
 			envRegion := os.Getenv("AWS_REGION")
 			if envProfile != "" {
-				log.Printf("Using AWS_PROFILE from environment: %s", envProfile)
+				logger.Info("Using AWS_PROFILE from environment", "profile", envProfile)
 			}
 			if envRegion != "" {
-				log.Printf("Using AWS_REGION from environment: %s", envRegion)
+				logger.Info("Using AWS_REGION from environment", "region", envRegion)
 			}
 			awsManager, err = aws.NewManager(aws.ManagerOptions{
 				Profile: envProfile, // Use environment variable or AWS SDK default
@@ -180,7 +180,7 @@ func NewServer(port string) (*Server, error) {
 			})
 			if err != nil {
 				if isCredentialError(err) {
-					log.Printf("AWS credentials unavailable, starting in reduced functionality mode")
+					logger.Warn("AWS credentials unavailable, starting in reduced functionality mode")
 					reducedMode = true
 					awsManager = nil
 				} else {
@@ -195,7 +195,7 @@ func NewServer(port string) (*Server, error) {
 			})
 			if err != nil {
 				if isCredentialError(err) {
-					log.Printf("AWS credentials unavailable, starting in reduced functionality mode")
+					logger.Warn("AWS credentials unavailable, starting in reduced functionality mode")
 					reducedMode = true
 					awsManager = nil
 				} else {
@@ -220,7 +220,7 @@ func NewServer(port string) (*Server, error) {
 		// Start the scheduler
 		idleScheduler.Start()
 
-		log.Printf("Idle detection system initialized (daemon singleton)")
+		logger.Info("Idle detection system initialized")
 	}
 
 	// Legacy idle management removed - using universal idle detection via template resolver
@@ -295,16 +295,16 @@ func NewServer(port string) (*Server, error) {
 	// Initialize launch rate limiter (v0.5.12)
 	// Default: 2 launches per minute to prevent accidental cost overruns
 	rateLimiter := NewRateLimiter(2, time.Minute)
-	log.Printf("Launch rate limiter initialized: 2 launches per minute")
+	logger.Info("Launch rate limiter initialized", "max_launches", 2, "window", "1 minute")
 
 	// Initialize advanced launch throttling (v0.6.0)
 	// Default: Disabled (opt-in), can be configured via API
 	throttleConfig := throttle.DefaultConfig()
 	launchThrottler := throttle.NewLaunchThrottler(throttleConfig)
 	if throttleConfig.Enabled {
-		log.Printf("Launch throttling enabled: %d launches per %s", throttleConfig.MaxLaunches, throttleConfig.TimeWindow)
+		logger.Info("Launch throttling enabled", "max_launches", throttleConfig.MaxLaunches, "window", throttleConfig.TimeWindow)
 	} else {
-		log.Printf("Launch throttling initialized (disabled by default, use API to enable)")
+		logger.Info("Launch throttling initialized", "enabled", false)
 	}
 
 	// Initialize template marketplace registry
@@ -328,7 +328,7 @@ func NewServer(port string) (*Server, error) {
 
 	// Initialize tunnel manager for web services
 	tunnelManager := NewTunnelManager(stateManager)
-	log.Printf("Tunnel manager initialized for automatic web service access")
+	logger.Info("Tunnel manager initialized")
 
 	// Initialize security manager
 	securityConfig := security.GetDefaultSecurityConfig()
@@ -339,7 +339,7 @@ func NewServer(port string) (*Server, error) {
 
 	// Initialize policy service
 	policyService := policy.NewService()
-	log.Printf("Policy service initialized with framework foundation")
+	logger.Info("Policy service initialized")
 
 	// Initialize process manager
 	processManager := NewProcessManager()
@@ -401,7 +401,8 @@ func NewServer(port string) (*Server, error) {
 
 	// Print reduced mode banner if AWS credentials unavailable (Issue #356)
 	if reducedMode {
-		log.Println(getReducedModeBanner())
+		logger.Warn("Starting in reduced functionality mode")
+		logger.Info(getReducedModeBanner())
 	}
 
 	// Configure budget tracker with action executor
@@ -419,11 +420,11 @@ func NewServer(port string) (*Server, error) {
 	instanceManager := newInstanceManager(server)
 	sleepWakeMonitor, err := sleepwake.NewMonitor(sleepWakeConfig, instanceManager)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize sleep/wake monitor: %v", err)
+		logger.Warn("Failed to initialize sleep/wake monitor", "error", err)
 		// Non-fatal: continue without sleep/wake monitoring
 	} else {
 		server.sleepWakeMonitor = sleepWakeMonitor
-		log.Printf("Sleep/wake monitor initialized (platform: %s)", sleepWakeMonitor.GetStatus().Platform)
+		logger.Info("Sleep/wake monitor initialized", "platform", sleepWakeMonitor.GetStatus().Platform)
 	}
 
 	// Setup HTTP routes
@@ -461,7 +462,7 @@ func NewServerForTesting(port string) (*Server, error) {
 
 // Start starts the daemon server
 func (s *Server) Start() error {
-	log.Printf("Starting Prism daemon on port %s", s.port)
+	logger.Info("Starting Prism daemon", "port", s.port)
 
 	// Enforce singleton: check for existing daemon and perform takeover if necessary
 	currentPID := os.Getpid()
@@ -469,11 +470,11 @@ func (s *Server) Start() error {
 	if err == nil && len(existingProcesses) > 0 {
 		for _, proc := range existingProcesses {
 			if proc.PID != currentPID && s.processManager.IsProcessRunning(proc.PID) {
-				log.Printf("Found existing daemon (PID: %d), performing singleton takeover...", proc.PID)
+				logger.Info("Found existing daemon, performing singleton takeover", "existing_pid", proc.PID)
 
 				// Signal existing daemon to shut down gracefully
 				if err := s.processManager.GracefulShutdown(proc.PID); err != nil {
-					log.Printf("Warning: Failed to gracefully shutdown existing daemon: %v", err)
+					logger.Warn("Failed to gracefully shutdown existing daemon", "error", err, "pid", proc.PID)
 					// Continue anyway - might be stale registry entry
 				}
 
@@ -494,7 +495,7 @@ func (s *Server) Start() error {
 					return fmt.Errorf("timeout waiting for existing daemon (PID: %d) to release port %s", proc.PID, s.port)
 				}
 
-				log.Printf("✅ Singleton lock acquired (PID: %d)", currentPID)
+				logger.Info("Singleton lock acquired after takeover", "pid", currentPID)
 			}
 		}
 	}
@@ -503,11 +504,11 @@ func (s *Server) Start() error {
 	pid := os.Getpid()
 	configPath := fmt.Sprintf("%s/.prism", os.Getenv("HOME"))
 	if err := s.processManager.RegisterDaemon(pid, configPath, ""); err != nil {
-		log.Printf("Warning: Failed to register daemon: %v", err)
+		logger.Warn("Failed to register daemon", "error", err)
 	} else {
 		// Only log this if there was no takeover (otherwise we already logged "Singleton lock acquired")
 		if len(existingProcesses) == 0 {
-			log.Printf("✅ Singleton lock acquired (PID: %d)", currentPID)
+			logger.Info("Singleton lock acquired", "pid", currentPID)
 		}
 	}
 
@@ -515,7 +516,7 @@ func (s *Server) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	log.Printf("Starting stability management systems...")
+	logger.Info("Starting stability management systems")
 	go s.performanceMonitor.Start(ctx)
 	go s.reliabilityManager.Start(ctx)
 	go s.stabilityManager.Start(ctx)
@@ -523,19 +524,19 @@ func (s *Server) Start() error {
 
 	// Start background state monitor for async instance state tracking (v0.5.8)
 	if err := s.stateMonitor.Start(); err != nil {
-		log.Printf("Warning: Failed to start state monitor: %v", err)
+		logger.Warn("Failed to start state monitor", "error", err)
 	}
 
 	// Enable memory management
 	s.stabilityManager.EnableForceGC(true)
-	log.Printf("Daemon stability systems started")
+	logger.Info("Daemon stability systems started")
 
 	// Start security manager
 	if err := s.securityManager.Start(); err != nil {
-		log.Printf("Warning: Failed to start security manager: %v", err)
+		logger.Warn("Failed to start security manager", "error", err)
 		s.stabilityManager.RecordError("security", "startup_failed", err.Error(), ErrorSeverityHigh)
 	} else {
-		log.Printf("Security manager started successfully")
+		logger.Info("Security manager started")
 		s.stabilityManager.RecordRecovery("security", "startup_failed")
 	}
 
@@ -545,10 +546,10 @@ func (s *Server) Start() error {
 	// Start sleep/wake monitor (v0.5.7 - Issue #91)
 	if s.sleepWakeMonitor != nil {
 		if err := s.sleepWakeMonitor.Start(); err != nil {
-			log.Printf("Warning: Failed to start sleep/wake monitor: %v", err)
+			logger.Warn("Failed to start sleep/wake monitor", "error", err)
 			s.stabilityManager.RecordError("sleepwake", "startup_failed", err.Error(), ErrorSeverityMedium)
 		} else {
-			log.Printf("Sleep/wake monitor started successfully")
+			logger.Info("Sleep/wake monitor started")
 			s.stabilityManager.RecordRecovery("sleepwake", "startup_failed")
 		}
 	}
@@ -558,20 +559,20 @@ func (s *Server) Start() error {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		<-c
-		log.Println("Shutting down daemon with stability management...")
+		logger.Info("Shutting down daemon with stability management")
 
 		// Use recovery manager for graceful shutdown
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		if err := s.recoveryManager.GracefulShutdown(ctx); err != nil {
-			log.Printf("Warning: Graceful shutdown had issues: %v", err)
+			logger.Warn("Graceful shutdown had issues", "error", err)
 		}
 
 		// Unregister this daemon instance
 		pid := os.Getpid()
 		if err := s.processManager.UnregisterDaemon(pid); err != nil {
-			log.Printf("Warning: Failed to unregister daemon: %v", err)
+			logger.Warn("Failed to unregister daemon", "error", err)
 		}
 
 		// Stop integrated monitoring
@@ -580,7 +581,7 @@ func (s *Server) Start() error {
 		// Stop sleep/wake monitor (v0.5.7 - Issue #91)
 		if s.sleepWakeMonitor != nil {
 			if err := s.sleepWakeMonitor.Stop(); err != nil {
-				log.Printf("Warning: Failed to stop sleep/wake monitor: %v", err)
+				logger.Warn("Failed to stop sleep/wake monitor", "error", err)
 			}
 		}
 
@@ -589,7 +590,7 @@ func (s *Server) Start() error {
 
 		// Stop security manager
 		if err := s.securityManager.Stop(); err != nil {
-			log.Printf("Warning: Failed to stop security manager: %v", err)
+			logger.Warn("Failed to stop security manager", "error", err)
 		}
 	}()
 
@@ -598,17 +599,17 @@ func (s *Server) Start() error {
 
 // Stop stops the daemon server gracefully
 func (s *Server) Stop() error {
-	log.Printf("Gracefully stopping daemon server...")
+	logger.Info("Gracefully stopping daemon server")
 
 	// Unregister this daemon instance
 	pid := os.Getpid()
 	if err := s.processManager.UnregisterDaemon(pid); err != nil {
-		log.Printf("Warning: Failed to unregister daemon: %v", err)
+		logger.Warn("Failed to unregister daemon", "error", err)
 	}
 
 	// Stop security manager
 	if err := s.securityManager.Stop(); err != nil {
-		log.Printf("Warning: Failed to stop security manager: %v", err)
+		logger.Warn("Failed to stop security manager", "error", err)
 	}
 
 	// Stop integrated monitoring
@@ -617,7 +618,7 @@ func (s *Server) Stop() error {
 	// Stop sleep/wake monitor (v0.5.7 - Issue #91)
 	if s.sleepWakeMonitor != nil {
 		if err := s.sleepWakeMonitor.Stop(); err != nil {
-			log.Printf("Warning: Failed to stop sleep/wake monitor: %v", err)
+			logger.Warn("Failed to stop sleep/wake monitor", "error", err)
 		}
 	}
 
@@ -627,13 +628,13 @@ func (s *Server) Stop() error {
 	// Stop idle scheduler to prevent goroutine leaks
 	if s.idleScheduler != nil {
 		s.idleScheduler.Stop()
-		log.Printf("Idle scheduler stopped")
+		logger.Info("Idle scheduler stopped")
 	}
 
 	// Stop alert manager to prevent goroutine leaks
 	if s.alertManager != nil {
 		s.alertManager.Stop()
-		log.Printf("Alert manager stopped")
+		logger.Info("Alert manager stopped")
 	}
 
 	// Shutdown HTTP server with timeout
@@ -644,17 +645,17 @@ func (s *Server) Stop() error {
 		return fmt.Errorf("daemon server shutdown failed: %w", err)
 	}
 
-	log.Printf("Daemon server stopped successfully")
+	logger.Info("Daemon server stopped successfully")
 	return nil
 }
 
 // Cleanup performs comprehensive cleanup for uninstallation
 func (s *Server) Cleanup() error {
-	log.Printf("Performing comprehensive daemon cleanup...")
+	logger.Info("Performing comprehensive daemon cleanup")
 
 	// First stop the server if running
 	if err := s.Stop(); err != nil {
-		log.Printf("Warning: Server stop failed during cleanup: %v", err)
+		logger.Warn("Server stop failed during cleanup", "error", err)
 	}
 
 	// Clean up all daemon processes
@@ -662,7 +663,7 @@ func (s *Server) Cleanup() error {
 		return fmt.Errorf("failed to cleanup daemon processes: %w", err)
 	}
 
-	log.Printf("Daemon cleanup completed successfully")
+	logger.Info("Daemon cleanup completed successfully")
 	return nil
 }
 
@@ -674,7 +675,7 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	jsonMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			log.Printf("%s %s", r.Method, r.URL.Path)
+			logger.Debug("API request", "method", r.Method, "path", r.URL.Path)
 			// Record the request in status tracker
 			s.statusTracker.RecordRequest()
 			handler(w, r)
@@ -713,7 +714,7 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 			opID := s.statusTracker.StartOperationWithType(opType)
 
 			// Enhance logging
-			log.Printf("Operation %d (%s) started: %s %s", opID, opType, r.Method, r.URL.Path)
+			logger.Debug("Operation started", "id", opID, "type", opType, "method", r.Method, "path", r.URL.Path)
 
 			// Record start time for duration tracking
 			startTime := time.Now()
@@ -721,7 +722,7 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 			// Ensure operation is always marked as completed
 			defer func() {
 				s.statusTracker.EndOperationWithType(opType)
-				log.Printf("Operation %d (%s) completed in %v", opID, opType, time.Since(startTime))
+				logger.Debug("Operation completed", "id", opID, "type", opType, "duration", time.Since(startTime))
 			}()
 
 			// Call the handler
@@ -1011,12 +1012,12 @@ func extractOperationType(path string) string {
 
 // startIntegratedMonitoring removed - using universal idle detection via template resolver
 func (s *Server) startIntegratedMonitoring() {
-	log.Printf("Legacy monitoring removed - using universal idle detection")
+	logger.Debug("Legacy monitoring removed - using universal idle detection")
 }
 
 // stopIntegratedMonitoring removed - using universal idle detection
 func (s *Server) stopIntegratedMonitoring() {
-	log.Printf("Legacy monitoring removed - using universal idle detection")
+	logger.Debug("Legacy monitoring removed - using universal idle detection")
 }
 
 // createHTTPHandler creates and configures the HTTP handler for testing
@@ -1057,7 +1058,7 @@ func (s *Server) ExecuteHibernateAll(projectID string) error {
 				errors = append(errors, fmt.Sprintf("failed to hibernate %s: %v", instance.Name, err))
 			} else {
 				hibernatedCount++
-				log.Printf("Budget auto action: hibernated instance %s (project: %s)", instance.Name, projectID)
+				logger.Info("Budget auto action hibernated instance", "instance", instance.Name, "project", projectID)
 			}
 		}
 	}
@@ -1066,8 +1067,7 @@ func (s *Server) ExecuteHibernateAll(projectID string) error {
 		return fmt.Errorf("hibernated %d instances but encountered errors: %s", hibernatedCount, strings.Join(errors, ", "))
 	}
 
-	log.Printf("Budget auto action: hibernated %d instances for project %s (skipped %d instances from other projects)",
-		hibernatedCount, projectID, skippedCount)
+	logger.Info("Budget auto action completed hibernation", "hibernated", hibernatedCount, "project", projectID, "skipped", skippedCount)
 	return nil
 }
 
@@ -1105,8 +1105,7 @@ func (s *Server) ExecuteStopAll(projectID string) error {
 		return fmt.Errorf("stopped %d instances but encountered errors: %s", stoppedCount, strings.Join(errors, ", "))
 	}
 
-	log.Printf("Budget auto action: stopped %d instances for project %s (skipped %d instances from other projects)",
-		stoppedCount, projectID, skippedCount)
+	logger.Info("Budget auto action completed stop", "stopped", stoppedCount, "project", projectID, "skipped", skippedCount)
 	return nil
 }
 
@@ -1118,6 +1117,6 @@ func (s *Server) ExecutePreventLaunch(projectID string) error {
 		return fmt.Errorf("failed to prevent launches: %w", err)
 	}
 
-	log.Printf("Budget auto action: prevented new launches for project %s", projectID)
+	logger.Info("Budget auto action prevented new launches", "project", projectID)
 	return nil
 }
