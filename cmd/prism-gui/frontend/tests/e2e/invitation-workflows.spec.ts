@@ -46,11 +46,14 @@ test.describe('Invitation Management Workflows', () => {
       // Use unique name to avoid conflicts between test runs
       const uniqueName = `Test-Project-${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(uniqueName);
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, 'test-user@example.com', 'viewer');
 
-      // Refresh the page to see the new invitation
-      await projectsPage.page.reload();
+      // Send invitation to test-user@example.com (the default test user)
+      // No need to specify email - defaults to 'test-user@example.com'
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'viewer');
+
+      // Navigate to invitations page and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
 
       // Wait for invitation to appear in the UI before tests proceed
@@ -62,24 +65,26 @@ test.describe('Invitation Management Workflows', () => {
       await expect(invitationRows.first()).toBeVisible({ timeout: 10000 });
     });
 
-    test('should add invitation by token', async () => {
-      // Create test project and invitation to get a valid token
-      const testProjectName = `Add Token Test ${Date.now()}`;
+    test('should display invitation in list after creation', async () => {
+      // Create test project and invitation
+      const testProjectName = `Display Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'add-token-test@example.com';
-      const testToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'viewer');
 
-      // Navigate to Individual Invitations tab
+      // Send invitation to test user (defaults to 'test-user@example.com')
+      const testToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'viewer');
+
+      // Navigate to invitations and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
 
-      // Add invitation by token - this should complete without error
-      await projectsPage.addInvitationToken(testToken);
+      // Wait for invitation row to appear (it should appear automatically via /api/v1/invitations/my)
+      const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
+      await expect(invitationRow).toBeVisible({ timeout: 10000 });
 
-      // Verify the button is still present (UI didn't crash)
-      const individualPanel = projectsPage.page.getByRole('tabpanel', { name: 'Individual' });
-      const addButton = individualPanel.getByTestId('add-invitation-button');
-      await expect(addButton).toBeVisible();
+      // Verify the invitation appears in the table
+      const invitationText = await invitationRow.textContent();
+      expect(invitationText).toContain(testProjectName);
 
       // Cleanup
       await projectsPage.deleteTestProject(testProjectId);
@@ -272,20 +277,18 @@ test.describe('Invitation Management Workflows', () => {
       // Create test project and invitation
       const testProjectName = `Dialog Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'dialog-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'admin');
 
-      // Add invitation to Individual Invitations tab
+      // Send invitation to test user (defaults to 'test-user@example.com')
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'admin');
+
+      // Navigate to invitations and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
-      // Wait for React to re-render the table with the new invitation
-      await projectsPage.page.waitForTimeout(500);
-
-      // Find the specific invitation row by project name
+      // Wait for invitation row to appear
       const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
-      await invitationRow.waitFor({ state: 'visible', timeout: 5000 });
+      await invitationRow.waitFor({ state: 'visible', timeout: 10000 });
 
       const acceptButton = invitationRow.getByRole('button', { name: /accept/i });
       await acceptButton.click();
@@ -309,13 +312,14 @@ test.describe('Invitation Management Workflows', () => {
       // Create test project and invitation
       const testProjectName = `Membership Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'membership-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'viewer');
 
-      // Add invitation to Individual Invitations tab
+      // Send invitation to test user (defaults to 'test-user@example.com')
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'viewer');
+
+      // Navigate to invitations and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Accept invitation
       await projectsPage.acceptInvitation(testProjectName);
@@ -323,6 +327,7 @@ test.describe('Invitation Management Workflows', () => {
       // Verify membership via API (more reliable than UI with 730+ projects)
       const members = await projectsPage.getProjectMembers(testProjectId);
       // Backend stores email in user_id field, not email field
+      const testEmail = 'test-user@example.com';
       const isMember = members.some((m: any) => m.user_id === testEmail);
       expect(isMember).toBe(true);
 
@@ -384,17 +389,18 @@ test.describe('Invitation Management Workflows', () => {
       // Create test project and invitation
       const testProjectName = `Decline Dialog Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'decline-dialog-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'viewer');
 
-      // Add invitation to Individual Invitations tab
+      // Send invitation to test user (defaults to 'test-user@example.com')
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'viewer');
+
+      // Navigate to invitations and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Wait for invitation row to appear
       const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
-      await invitationRow.waitFor({ state: 'visible', timeout: 5000 });
+      await invitationRow.waitFor({ state: 'visible', timeout: 10000 });
 
       const declineButton = invitationRow.getByRole('button', { name: /decline/i });
       await declineButton.click();
@@ -419,13 +425,14 @@ test.describe('Invitation Management Workflows', () => {
       // Create test project and invitation
       const testProjectName = `Decline No Reason Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'decline-no-reason-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'admin');
 
-      // Add invitation to Individual Invitations tab
+      // Send invitation to test user (defaults to 'test-user@example.com')
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'admin');
+
+      // Navigate to invitations and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Decline without reason
       await projectsPage.declineInvitation(testProjectName);
@@ -763,14 +770,14 @@ test.describe('Invitation Management Workflows', () => {
       // Create test invitation to get initial state
       const testProjectName = `Stats Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'stats-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'member');
 
+      // Send invitation to test user (defaults to 'test-user@example.com')
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'member');
+
+      // Navigate to invitations and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-
-      // Add invitation
-      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Accept the invitation
       await projectsPage.acceptInvitation(testProjectName);
@@ -792,16 +799,18 @@ test.describe('Invitation Management Workflows', () => {
       // Create test invitation to verify expiration date display
       const testProjectName = `Expiration Test ${Date.now()}`;
       const testProjectId = await projectsPage.createTestProject(testProjectName);
-      const testEmail = 'expiration-test@example.com';
-      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, testEmail, 'member');
 
+      // Send invitation to test user (defaults to 'test-user@example.com')
+      const invitationToken = await projectsPage.sendTestInvitation(testProjectId, undefined, 'member');
+
+      // Navigate to invitations and reload to fetch updated data
       await projectsPage.navigateToInvitations();
+      await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
-      await projectsPage.addInvitationToken(invitationToken, testProjectName);
 
       // Verify invitation appears (expiration date is part of invitation display)
       const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
-      expect(await invitationRow.isVisible()).toBe(true);
+      expect(await invitationRow.isVisible({ timeout: 10000 })).toBe(true);
 
       // Cleanup
       await projectsPage.deleteTestProject(testProjectId);
