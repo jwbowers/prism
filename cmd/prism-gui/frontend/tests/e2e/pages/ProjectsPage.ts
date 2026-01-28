@@ -110,6 +110,15 @@ export class ProjectsPage extends BasePage {
   async deleteProject(projectName: string) {
     await this.navigate();
 
+    // Navigate to page 1 to ensure newly created projects are visible
+    // (projects are sorted by created_at descending, so new projects should be on page 1)
+    const page1Button = this.page.getByRole('button', { name: 'Page 1' });
+    if (await page1Button.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await page1Button.click();
+      // Wait a bit for the table to update after pagination change
+      await this.page.waitForTimeout(500);
+    }
+
     // Wait for the project to appear in the table before trying to interact with it
     await this.page.getByRole('cell', { name: projectName, exact: true }).waitFor({ state: 'visible', timeout: 10000 });
 
@@ -170,14 +179,16 @@ export class ProjectsPage extends BasePage {
    * Waits/polls for the project to appear in the table (handles async UI updates)
    */
   async verifyProjectExists(name: string): Promise<boolean> {
-    // Don't navigate - just check if the project exists in the current table
-    // Poll for the project to appear (table may take time to refresh after creation)
+    // Don't navigate - just check if the project exists in the current visible page
+    // Use same selector as createProject() for consistency (cell by exact name)
+    // With pagination, only checks current page - project must be visible
     const maxWait = 10000; // 10 seconds
     const startTime = Date.now();
 
     while (Date.now() - startTime < maxWait) {
-      const project = this.getProjectByName(name);
-      if (await this.elementExists(project)) {
+      // Use cell selector (same as createProject) instead of row has-text
+      const cell = this.page.getByRole('cell', { name, exact: true });
+      if (await this.elementExists(cell)) {
         return true; // Project found!
       }
       // Wait a bit before checking again

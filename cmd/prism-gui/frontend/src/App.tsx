@@ -41,7 +41,8 @@ import {
   ProgressBar,
   TextContent,
   Textarea,
-  Toggle
+  Toggle,
+  Pagination
 } from '@cloudscape-design/components';
 
 // Type definitions
@@ -2078,9 +2079,11 @@ export default function PrismApp() {
     }
   }, [api]);
 
-  // Load budget data when switching to budgets or projects view
+  // Load budget data when switching to budgets view or project detail
+  // NOTE: Removed 'projects' to avoid N+1 query problem (Issue #457)
+  // Projects table doesn't need budget data - only Budgets page and Project Detail need it
   useEffect(() => {
-    if (state.activeView === 'budgets' || state.activeView === 'projects' || state.activeView === 'project-detail') {
+    if (state.activeView === 'budgets' || state.activeView === 'project-detail') {
       loadBudgetData();
     }
   }, [state.activeView, loadBudgetData]);
@@ -2155,8 +2158,9 @@ export default function PrismApp() {
     loadApplicationData();
     const interval = setInterval(() => {
       loadApplicationData();
-      // Also refresh budgets if viewing budgets/projects
-      if (state.activeView === 'budgets' || state.activeView === 'projects' || state.activeView === 'project-detail') {
+      // Also refresh budgets if viewing budgets page or project detail
+      // NOTE: Removed 'projects' to avoid N+1 query problem (Issue #457)
+      if (state.activeView === 'budgets' || state.activeView === 'project-detail') {
         loadBudgetData();
       }
     }, 30000);
@@ -2348,10 +2352,10 @@ export default function PrismApp() {
       });
 
       // Optimistic UI update: add project directly to state without re-fetching
-      // This matches the user creation pattern and avoids race conditions
+      // Prepend new project so it appears at top of list (page 1) - fixes Issue #457
       setState(prev => ({
         ...prev,
-        projects: [...prev.projects, createdProject],
+        projects: [createdProject, ...prev.projects],
         notifications: [{
           type: 'success',
           header: 'Project Created',
@@ -4333,13 +4337,62 @@ export default function PrismApp() {
     // Filter state for projects
     const [projectFilter, setProjectFilter] = useState<string>('all');
 
-    // Filtered projects using useMemo for performance
+    // Pagination state for projects table (Issue #457 - handle large datasets)
+    const [projectsCurrentPage, setProjectsCurrentPage] = useState(1);
+    const projectsPageSize = 20; // Show 20 projects per page
+
+    // Sorting state - disable table sorting, use pre-sorted data
+    const [projectsSortingColumn, setProjectsSortingColumn] = useState({});
+
+    // Filtered and sorted projects using useMemo for performance
+    // Sort by created_at descending (newest first) to ensure consistent pagination (Issue #457)
+    // Backend returns projects from map in random order, so we must sort on frontend
     const filteredProjects = useMemo(() => {
-      if (projectFilter === 'all') return state.projects;
-      if (projectFilter === 'active') return state.projects.filter(p => p.status === 'active');
-      if (projectFilter === 'suspended') return state.projects.filter(p => p.status === 'suspended');
-      return state.projects;
+      let projects = state.projects;
+      if (projectFilter === 'active') projects = projects.filter(p => p.status === 'active');
+      if (projectFilter === 'suspended') projects = projects.filter(p => p.status === 'suspended');
+
+      // Sort by creation date descending (newest first), then by ID for stable sort
+      // Stable sort ensures consistent ordering when timestamps are identical (Issue #457)
+      return [...projects].sort((a, b) => {
+        // Handle missing/invalid created_at (treat as epoch 0)
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        // Check for NaN (invalid dates) and treat as epoch 0
+        const timeA = isNaN(dateA) ? 0 : dateA;
+        const timeB = isNaN(dateB) ? 0 : dateB;
+
+        // Primary sort: by created_at descending (newest first)
+        if (timeB !== timeA) {
+          return timeB - timeA;
+        }
+
+        // Secondary sort: by ID ascending (stable tiebreaker)
+        return (a.id || '').localeCompare(b.id || '');
+      });
     }, [state.projects, projectFilter]);
+
+    // Paginated projects - slice filtered projects for current page
+    const paginatedProjects = useMemo(() => {
+      const startIndex = (projectsCurrentPage - 1) * projectsPageSize;
+      const endIndex = startIndex + projectsPageSize;
+      return filteredProjects.slice(startIndex, endIndex);
+    }, [filteredProjects, projectsCurrentPage]);
+
+    // Calculate total pages
+    const projectsTotalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPageSize));
+
+    // Reset to page 1 when filter changes
+    useEffect(() => {
+      setProjectsCurrentPage(1);
+    }, [projectFilter]);
+
+    // Ensure current page is valid (if we're on page 10 but now only have 5 pages, go to page 5)
+    useEffect(() => {
+      if (projectsCurrentPage > projectsTotalPages) {
+        setProjectsCurrentPage(projectsTotalPages);
+      }
+    }, [projectsCurrentPage, projectsTotalPages]);
 
     return (
       <SpaceBetween size="l">
@@ -4598,7 +4651,11 @@ export default function PrismApp() {
               )
             }
           ]}
-          items={filteredProjects}
+          items={paginatedProjects}
+          trackBy="id"
+          sortingColumn={projectsSortingColumn}
+          onSortingChange={({ detail }) => setProjectsSortingColumn(detail.sortingColumn)}
+          sortingDisabled={true}
           loadingText="Loading projects..."
           empty={
             <Box textAlign="center" color="text-body-secondary">
@@ -4619,7 +4676,18 @@ export default function PrismApp() {
               All Projects
             </Header>
           }
-          pagination={<Box>Showing {filteredProjects.length} of {state.projects.length} projects</Box>}
+          pagination={
+            <Pagination
+              currentPageIndex={projectsCurrentPage}
+              pagesCount={projectsTotalPages}
+              onChange={({ detail }) => setProjectsCurrentPage(detail.currentPageIndex)}
+              ariaLabels={{
+                nextPageLabel: 'Next page',
+                previousPageLabel: 'Previous page',
+                pageLabel: pageNumber => `Page ${pageNumber}`
+              }}
+            />
+          }
         />
       </Container>
 

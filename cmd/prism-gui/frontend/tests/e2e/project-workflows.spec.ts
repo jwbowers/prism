@@ -86,8 +86,9 @@ test.describe('Project Management Workflows', () => {
       const validationError = await projectsPage.page.locator('text=/Project name is required/i').textContent();
       expect(validationError).toMatch(/name.*required/i);
 
-      // Cancel - search at page level
-      await projectsPage.page.getByRole('button', { name: /cancel/i }).click();
+      // Cancel - use exact text match to find the modal's cancel button
+      // Note: Multiple project names may contain "cancel" so we use exact text
+      await projectsPage.page.getByRole('button', { name: 'Cancel', exact: true }).click();
     });
 
     test('should prevent duplicate project names', async () => {
