@@ -345,7 +345,8 @@ func (a *App) Launch(args []string) error {
 		if !req.Quiet {
 			fmt.Println()
 		}
-		return a.monitorLaunchProgress(req.Name, req.Template)
+		// Pass req.Wait to disable arbitrary timeouts when --wait is explicitly specified
+		return a.monitorLaunchProgress(req.Name, req.Template, req.Wait)
 	}
 
 	return nil
@@ -396,7 +397,7 @@ func (a *App) displayCostSummary(summary CostSummary, hasDiscounts bool, pricing
 }
 
 // monitorLaunchProgress monitors and displays enhanced real-time launch progress
-func (a *App) monitorLaunchProgress(instanceName, templateName string) error {
+func (a *App) monitorLaunchProgress(instanceName, templateName string, wait bool) error {
 	// Get template information for enhanced progress reporting
 	template, err := a.apiClient.GetTemplate(a.ctx, templateName)
 	if err != nil {
@@ -408,19 +409,22 @@ func (a *App) monitorLaunchProgress(instanceName, templateName string) error {
 	progressReporter.ShowHeader()
 
 	// Monitor launch with enhanced progress reporting
-	return a.monitorLaunchWithEnhancedProgress(progressReporter, template)
+	// Pass wait flag to control timeout behavior (Issue #282)
+	return a.monitorLaunchWithEnhancedProgress(progressReporter, template, wait)
 }
 
 // monitorLaunchWithEnhancedProgress monitors launch with enhanced progress reporting
-func (a *App) monitorLaunchWithEnhancedProgress(reporter *ProgressReporter, template *types.Template) error {
+func (a *App) monitorLaunchWithEnhancedProgress(reporter *ProgressReporter, template *types.Template, wait bool) error {
 	startTime := time.Now()
-	maxDuration := 20 * time.Minute // Maximum monitoring time
+	// Issue #282: Remove arbitrary timeout when --wait is explicitly specified
+	// Keep timeout for backward compatibility when auto-monitoring package templates
+	maxDuration := 20 * time.Minute // Maximum monitoring time (only used when wait=false)
 
 	for {
 		elapsed := time.Since(startTime)
 
-		// Check for timeout
-		if elapsed > maxDuration {
+		// Check for timeout (only when --wait not specified, for backward compatibility)
+		if !wait && elapsed > maxDuration {
 			fmt.Printf("⚠️  Launch monitoring timeout (%s). Workspace may still be setting up.\n",
 				reporter.FormatDuration(maxDuration))
 			fmt.Printf("💡 Check status with: prism list\n")
@@ -466,7 +470,7 @@ func (a *App) monitorLaunchWithEnhancedProgress(reporter *ProgressReporter, temp
 			// Package-based template - switch to detailed progress monitoring
 			// This monitors actual setup progress via SSH and cloud-init status
 			fmt.Printf("\n📦 Workspace running - monitoring package installation progress...\n\n")
-			return a.monitorSetupProgress(instance)
+			return a.monitorSetupProgress(instance, wait)
 
 		case "stopped", "stopping":
 			err := fmt.Errorf("workspace stopped during launch")
@@ -938,39 +942,120 @@ func (a *App) Resume(args []string) error {
 	return a.instanceCommands.Resume(args)
 }
 
-// StopWithWait stops an instance with optional blocking (Phase 1: backward compatible, always blocks)
+// waitForInstanceState polls instance status until target state is reached
+// No arbitrary timeouts - only network timeouts per API call (Issue #282)
+func (a *App) waitForInstanceState(name string, targetStates []string, operation string) error {
+	fmt.Printf("⏳ Waiting for %s to complete...\n", operation)
+	startTime := time.Now()
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-a.ctx.Done():
+			return fmt.Errorf("operation cancelled")
+		case <-ticker.C:
+			instance, err := a.apiClient.GetInstance(a.ctx, name)
+			if err != nil {
+				// For delete operations, "not found" means success
+				if operation == "deletion" && (strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "does not exist")) {
+					elapsed := time.Since(startTime)
+					fmt.Printf("✅ %s complete (took %s)\n", strings.Title(operation), elapsed.Round(time.Second))
+					return nil
+				}
+				// For other operations, retry on error
+				fmt.Printf("⏳ Checking status... (%s)\n", time.Since(startTime).Round(time.Second))
+				continue
+			}
+
+			// Check if we've reached target state
+			for _, targetState := range targetStates {
+				if instance.State == targetState {
+					elapsed := time.Since(startTime)
+					fmt.Printf("✅ %s complete - instance is %s (took %s)\n", strings.Title(operation), instance.State, elapsed.Round(time.Second))
+					return nil
+				}
+			}
+
+			// Show progress
+			fmt.Printf("⏳ Instance state: %s (%s)\n", instance.State, time.Since(startTime).Round(time.Second))
+		}
+	}
+}
+
+// StopWithWait stops an instance with optional blocking
 func (a *App) StopWithWait(name string, wait bool) error {
-	// Phase 1: Keep current blocking behavior regardless of wait flag
-	// TODO: In Phase 2, make async by default and only wait if wait==true
-	return a.instanceCommands.Stop([]string{name})
+	// Initiate the stop operation
+	if err := a.instanceCommands.Stop([]string{name}); err != nil {
+		return err
+	}
+
+	// If --wait flag specified, poll until stopped (no arbitrary timeout)
+	if wait {
+		return a.waitForInstanceState(name, []string{"stopped"}, "stop")
+	}
+
+	return nil
 }
 
-// StartWithWait starts an instance with optional blocking (Phase 1: backward compatible, always blocks)
+// StartWithWait starts an instance with optional blocking
 func (a *App) StartWithWait(name string, wait bool) error {
-	// Phase 1: Keep current blocking behavior regardless of wait flag
-	// TODO: In Phase 2, make async by default and only wait if wait==true
-	return a.instanceCommands.Start([]string{name})
+	// Initiate the start operation
+	if err := a.instanceCommands.Start([]string{name}); err != nil {
+		return err
+	}
+
+	// If --wait flag specified, poll until running (no arbitrary timeout)
+	if wait {
+		return a.waitForInstanceState(name, []string{"running"}, "start")
+	}
+
+	return nil
 }
 
-// DeleteWithWait deletes an instance with optional blocking (Phase 1: backward compatible, always blocks)
+// DeleteWithWait deletes an instance with optional blocking
 func (a *App) DeleteWithWait(name string, wait bool) error {
-	// Phase 1: Keep current blocking behavior regardless of wait flag
-	// TODO: In Phase 2, make async by default and only wait if wait==true
-	return a.instanceCommands.Delete([]string{name})
+	// Initiate the delete operation
+	if err := a.instanceCommands.Delete([]string{name}); err != nil {
+		return err
+	}
+
+	// If --wait flag specified, poll until terminated/not found (no arbitrary timeout)
+	if wait {
+		return a.waitForInstanceState(name, []string{"terminated"}, "deletion")
+	}
+
+	return nil
 }
 
-// HibernateWithWait hibernates an instance with optional blocking (Phase 1: backward compatible, always blocks)
+// HibernateWithWait hibernates an instance with optional blocking
 func (a *App) HibernateWithWait(name string, wait bool) error {
-	// Phase 1: Keep current blocking behavior regardless of wait flag
-	// TODO: In Phase 2, make async by default and only wait if wait==true
-	return a.instanceCommands.Hibernate([]string{name})
+	// Initiate the hibernate operation
+	if err := a.instanceCommands.Hibernate([]string{name}); err != nil {
+		return err
+	}
+
+	// If --wait flag specified, poll until stopped (no arbitrary timeout)
+	if wait {
+		return a.waitForInstanceState(name, []string{"stopped"}, "hibernation")
+	}
+
+	return nil
 }
 
-// ResumeWithWait resumes an instance with optional blocking (Phase 1: backward compatible, always blocks)
+// ResumeWithWait resumes an instance with optional blocking
 func (a *App) ResumeWithWait(name string, wait bool) error {
-	// Phase 1: Keep current blocking behavior regardless of wait flag
-	// TODO: In Phase 2, make async by default and only wait if wait==true
-	return a.instanceCommands.Resume([]string{name})
+	// Initiate the resume operation
+	if err := a.instanceCommands.Resume([]string{name}); err != nil {
+		return err
+	}
+
+	// If --wait flag specified, poll until running (no arbitrary timeout)
+	if wait {
+		return a.waitForInstanceState(name, []string{"running"}, "resume")
+	}
+
+	return nil
 }
 
 // Volume handles volume commands
@@ -1745,7 +1830,7 @@ func loadAPIKeyFromState() string {
 }
 
 // monitorSetupProgress monitors setup progress using SSH-based monitoring
-func (a *App) monitorSetupProgress(instance *types.Instance) error {
+func (a *App) monitorSetupProgress(instance *types.Instance, wait bool) error {
 	// Use new progress API (v0.7.2) instead of SSH checks
 	fmt.Printf("🔍 Monitoring template installation progress...\n\n")
 
@@ -1774,7 +1859,7 @@ func (a *App) monitorSetupProgress(instance *types.Instance) error {
 				}
 				// After 2 minutes, if still no progress API, fall back to basic monitoring
 				fmt.Printf("⚠️  Progress API not available, falling back to basic monitoring\n")
-				return a.basicSetupMonitoring(instance)
+				return a.basicSetupMonitoring(instance, wait)
 			}
 
 			// Clear previous output (simple approach - just update on changes)
@@ -1809,8 +1894,9 @@ func (a *App) monitorSetupProgress(instance *types.Instance) error {
 				return nil
 			}
 
-			// Timeout after 30 minutes (generous for complex templates)
-			if elapsed > 30*time.Minute {
+			// Issue #282: Timeout only when --wait not specified (for backward compatibility)
+			// When --wait is specified, poll indefinitely until complete
+			if !wait && elapsed > 30*time.Minute {
 				fmt.Printf("\n⚠️  Setup taking longer than expected\n")
 				fmt.Printf("💡 Progress: %.1f%% - Workspace may still be configuring\n", progress.OverallProgress)
 				fmt.Printf("💡 Check status with: prism list\n")
@@ -1986,7 +2072,7 @@ func (a *App) getDetailedProgress(sshKeyPath, username, ip string) string {
 }
 
 // basicSetupMonitoring provides basic time-based monitoring when SSH not available
-func (a *App) basicSetupMonitoring(instance *types.Instance) error {
+func (a *App) basicSetupMonitoring(instance *types.Instance, wait bool) error {
 	fmt.Printf("📦 Monitoring setup progress (estimated 5-8 minutes)...\n\n")
 
 	ticker := time.NewTicker(15 * time.Second)
@@ -2022,8 +2108,9 @@ func (a *App) basicSetupMonitoring(instance *types.Instance) error {
 				}
 			}
 
-			// Timeout after 15 minutes
-			if elapsed > 15*time.Minute {
+			// Issue #282: Timeout only when --wait not specified (for backward compatibility)
+			// When --wait is specified, poll indefinitely until complete
+			if !wait && elapsed > 15*time.Minute {
 				fmt.Printf("\n⚠️  Setup taking longer than expected\n")
 				return nil
 			}

@@ -307,7 +307,7 @@ func (s *SnapshotCommands) restoreSnapshot(args []string) error {
 
 	if req.Wait {
 		fmt.Printf("\n⏳ Monitoring instance launch progress...\n")
-		return s.app.monitorLaunchProgress(result.NewInstanceName, result.SourceTemplate)
+		return s.app.monitorLaunchProgress(result.NewInstanceName, result.SourceTemplate, req.Wait)
 	}
 
 	fmt.Printf("\n💡 Check progress with: prism list\n")
