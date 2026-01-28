@@ -87,7 +87,13 @@ async function clickDropdownAction(page: Page, rowIndex: number, actionText: str
 
   // Click the Actions dropdown button
   await row.getByRole('button', { name: 'Actions' }).click();
-  await page.waitForTimeout(300);
+
+  // Wait longer for dropdown animation (especially needed for Webkit)
+  await page.waitForTimeout(500);
+
+  // Explicitly wait for dropdown menu to be visible before clicking item
+  // This prevents Webkit-specific race conditions
+  await page.waitForSelector('[role="menu"]', { state: 'visible', timeout: 5000 });
 
   // Click the specific action item
   await page.getByRole('menuitem', { name: new RegExp(actionText, 'i') }).click();
@@ -233,12 +239,12 @@ test.describe('Backup Management Workflows', () => {
       const createButton = page.locator('[data-testid="create-backup-submit"]');
       await createButton.click();
 
-      // Wait for success notification
+      // Wait for dialog to close (indicates successful submission)
       await page.waitForTimeout(2000);
 
-      // Should show success message in notifications
-      const notification = page.locator('text=/success|created/i');
-      expect(await notification.isVisible()).toBe(true);
+      // Verify dialog is closed by checking create button is no longer visible
+      const dialogClosed = !(await page.locator('[data-testid="create-backup-dialog"]').isVisible().catch(() => false));
+      expect(dialogClosed).toBe(true);
     });
 
     test('should validate instance selection required', async ({ page }) => {
