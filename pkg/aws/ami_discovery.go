@@ -10,11 +10,11 @@ import (
 
 // AMIDiscovery handles dynamic AMI discovery via AWS SSM Parameter Store
 type AMIDiscovery struct {
-	ssmClient *ssm.Client
+	ssmClient SSMClientInterface
 }
 
 // NewAMIDiscovery creates a new AMI discovery service
-func NewAMIDiscovery(ssmClient *ssm.Client) *AMIDiscovery {
+func NewAMIDiscovery(ssmClient SSMClientInterface) *AMIDiscovery {
 	return &AMIDiscovery{
 		ssmClient: ssmClient,
 	}

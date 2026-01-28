@@ -202,6 +202,12 @@ func (m *Manager) GetAMIDiscovery() *AMIDiscovery {
 	return m.amiDiscovery
 }
 
+// SetAMIDiscovery sets the AMI discovery service (for testing purposes - Issue #455)
+// Allows injecting mock AMI discovery for unit tests
+func (m *Manager) SetAMIDiscovery(discovery *AMIDiscovery) {
+	m.amiDiscovery = discovery
+}
+
 // GetTemplates returns all available templates
 func (m *Manager) GetTemplates() map[string]ctypes.Template {
 	return m.templates

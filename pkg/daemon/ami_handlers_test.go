@@ -2,13 +2,19 @@ package daemon
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 
+	awssdk "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	ssmtypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -775,7 +781,76 @@ func TestHandleAMISnapshotDelete(t *testing.T) {
 // This test validates that static AMI IDs in templates match latest SSM values
 // NOTE: This is an integration test that requires real AWS access
 // Run with: go test -tags integration ./pkg/daemon/...
+// TestHandleAMICheckFreshness tests the AMI freshness check handler with mocked SSM responses
 func TestHandleAMICheckFreshness(t *testing.T) {
+	// Create a test server with mocked AWS clients
+	server := createTestServer(t)
+
+	// Mock SSM client that returns simulated AMI IDs
+	mockSSM := &aws.MockSSMClient{
+		GetParameterFunc: func(ctx context.Context, params *ssm.GetParameterInput) (*ssm.GetParameterOutput, error) {
+			// Simulate SSM responses for different OS/arch combinations
+			paramName := *params.Name
+			var amiID string
+
+			switch {
+			case strings.Contains(paramName, "ubuntu"):
+				amiID = "ami-mock-ubuntu-12345"
+			case strings.Contains(paramName, "amazonlinux"):
+				amiID = "ami-mock-al2023-67890"
+			case strings.Contains(paramName, "debian"):
+				amiID = "ami-mock-debian-11111"
+			default:
+				// Rocky/RHEL don't have SSM support - return error
+				return nil, fmt.Errorf("parameter not found")
+			}
+
+			return &ssm.GetParameterOutput{
+				Parameter: &ssmtypes.Parameter{
+					Name:  params.Name,
+					Value: awssdk.String(amiID),
+				},
+			}, nil
+		},
+	}
+
+	// Replace the server's AWS manager's AMI discovery with mocked version
+	server.awsManager.SetAMIDiscovery(aws.NewAMIDiscovery(mockSSM))
+
+	handler := server.createHTTPHandler()
+	req := httptest.NewRequest("GET", "/api/v1/ami/check-freshness", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code, "Handler should return 200 OK")
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err, "Response should be valid JSON")
+
+	// Validate response structure
+	assert.Contains(t, response, "total_checked", "Response should include total_checked count")
+	assert.Contains(t, response, "outdated", "Response should include outdated count")
+	assert.Contains(t, response, "up_to_date", "Response should include up_to_date count")
+	assert.Contains(t, response, "results", "Response should include detailed results")
+	assert.Contains(t, response, "ssm_supported", "Response should list SSM-supported distros")
+	assert.Contains(t, response, "static_only", "Response should list static-only distros")
+
+	// Log freshness check results for visibility
+	totalChecked := int(response["total_checked"].(float64))
+	upToDate := int(response["up_to_date"].(float64))
+	outdated := int(response["outdated"].(float64))
+
+	t.Logf("✓ AMI Freshness Check working correctly (mocked): %d total, %d up-to-date, %d outdated",
+		totalChecked, upToDate, outdated)
+
+	// Verify we checked multiple AMI combinations
+	assert.Greater(t, totalChecked, 0, "Should check at least one AMI")
+}
+
+// TestHandleAMICheckFreshnessIntegration tests the AMI freshness check against real AWS SSM (integration test)
+func TestHandleAMICheckFreshnessIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping slow AMI freshness check test in short mode")
 	}
@@ -783,7 +858,7 @@ func TestHandleAMICheckFreshness(t *testing.T) {
 	// Skip this test in regular unit test runs - it requires real AWS SSM access
 	// This prevents CI failures and local test timeouts
 	if os.Getenv("AWS_PROFILE") == "" {
-		t.Skip("Skipping AMI freshness check test - requires AWS credentials (set AWS_PROFILE)")
+		t.Skip("Skipping AMI freshness check integration test - requires AWS credentials (set AWS_PROFILE)")
 	}
 
 	server := createTestServerWithAWS(t)
@@ -822,7 +897,7 @@ func TestHandleAMICheckFreshness(t *testing.T) {
 	assert.Contains(t, response, "results", "Response should include detailed results")
 
 	// Log freshness check results for visibility
-	t.Logf("✓ AMI Freshness Check working correctly: %d total, %d up-to-date, %d outdated",
+	t.Logf("✓ AMI Freshness Check working correctly (real AWS): %d total, %d up-to-date, %d outdated",
 		int(response["total_checked"].(float64)),
 		int(response["up_to_date"].(float64)),
 		int(response["outdated"].(float64)))
