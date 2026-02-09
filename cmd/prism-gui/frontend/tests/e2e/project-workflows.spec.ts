@@ -11,6 +11,65 @@ import { ProjectsPage } from './pages';
 test.describe('Project Management Workflows', () => {
   let projectsPage: ProjectsPage;
 
+  // Clean up old test projects once before all tests to prevent pagination issues
+  test.beforeAll(async ({ browser }) => {
+    test.setTimeout(180000); // 3 minutes for cleanup
+
+    const context = await browser.newContext();
+    await context.addInitScript(() => {
+      localStorage.setItem('cws_onboarding_complete', 'true');
+    });
+    const page = await context.newPage();
+
+    try {
+      console.log('🧹 Cleaning up old test projects via API...');
+
+      // Use API to bulk delete test projects (faster than UI)
+      const response = await page.request.get('http://localhost:8947/api/v1/projects');
+      if (response.ok()) {
+        const data = await response.json();
+        const projects = data.projects || []; // API returns {projects: [...], totalCount: N}
+        const testProjectPatterns = [
+          /^list-test-/,              // All list test variants
+          /^active-project-/,         // All active project variants
+          /^suspended-project-/,      // All suspended project variants
+          /^cancel-delete-test-/,     // All cancel delete variants
+          /^delete-test-/,            // All delete test variants
+          /^test-project-/,           // All test project variants
+          /^view-test-/,              // View test projects
+          /^budget-view-test-/,       // Budget view test projects
+          /^budget-test-/,            // Budget test projects
+          /^duplicate-test-/,         // Duplicate test projects
+          /^spend-test-/,             // Spending test projects
+          /^alert-test-/,             // Alert test projects
+          /^exceeded-test-/,          // Budget exceeded test projects
+          /^active-delete-test-/      // Active delete test projects
+        ];
+
+        let deletedCount = 0;
+        for (const project of projects) {
+          if (deletedCount >= 200) break; // Increased limit for aggressive cleanup
+
+          const isTestProject = testProjectPatterns.some(pattern => pattern.test(project.name));
+          if (isTestProject) {
+            try {
+              await page.request.delete(`http://localhost:8947/api/v1/projects/${project.id}`);
+              deletedCount++;
+            } catch (e) {
+              // Skip if deletion fails
+            }
+          }
+        }
+        console.log(`✅ Cleanup complete - deleted ${deletedCount} test projects`);
+      }
+    } catch (e) {
+      console.log('⚠️ Cleanup failed, continuing with tests:', e);
+    } finally {
+      await page.close();
+      await context.close();
+    }
+  });
+
   test.beforeEach(async ({ page, context }) => {
     // Set localStorage BEFORE navigating to prevent onboarding modal
     await context.addInitScript(() => {
@@ -23,9 +82,6 @@ test.describe('Project Management Workflows', () => {
 
     // Force close any open dialogs from previous tests
     await projectsPage.forceCloseDialogs();
-
-    // NOTE: Cleanup removed from beforeEach to prevent timeouts when many test projects exist.
-    // Each test cleans up its own projects in the test body or afterEach phase.
   });
 
   test.describe('Create Project Workflow', () => {
@@ -39,10 +95,8 @@ test.describe('Project Management Workflows', () => {
       const projectExists = await projectsPage.verifyProjectExists(uniqueName);
       expect(projectExists).toBe(true);
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
-      await projectsPage.waitForProjectToBeRemoved(uniqueName);
+      // Cleanup via API (faster and more reliable than UI with 650+ projects)
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
     test.skip('should create project with budget limit', async () => {
@@ -62,10 +116,8 @@ test.describe('Project Management Workflows', () => {
       const projectText = await projectRow.textContent();
       expect(projectText).toContain('1000');
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
-      await projectsPage.waitForProjectToBeRemoved(uniqueName);
+      // Cleanup via API
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
     test('should validate project name is required', async () => {
@@ -114,8 +166,7 @@ test.describe('Project Management Workflows', () => {
 
       // Cleanup
       await projectsPage.clickButton('cancel');
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
   });
 
@@ -148,9 +199,8 @@ test.describe('Project Management Workflows', () => {
       const projectsTable = projectsPage.page.getByTestId('projects-table');
       expect(await projectsTable.isVisible()).toBe(true);
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
+      // Cleanup via API
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
     test.skip('should show budget utilization in project details', async () => {
@@ -181,9 +231,8 @@ test.describe('Project Management Workflows', () => {
       await projectsPage.page.getByTestId('back-to-projects-button').click();
       await projectsPage.page.waitForTimeout(500);
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
+      // Cleanup via API
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
   });
 
@@ -226,9 +275,8 @@ test.describe('Project Management Workflows', () => {
       const projectExists = await projectsPage.verifyProjectExists(uniqueName);
       expect(projectExists).toBe(true);
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
+      // Cleanup via API
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
     test.skip('should prevent deleting project with active resources', async () => {
@@ -259,14 +307,9 @@ test.describe('Project Management Workflows', () => {
       expect(await projectsPage.verifyProjectExists(name1)).toBe(true);
       expect(await projectsPage.verifyProjectExists(name2)).toBe(true);
 
-      // Cleanup
-      await projectsPage.deleteProject(name1);
-      await projectsPage.page.getByTestId('confirm-delete-button').click();
-      await projectsPage.waitForProjectToBeRemoved(name1);
-
-      await projectsPage.deleteProject(name2);
-      await projectsPage.page.getByTestId('confirm-delete-button').click();
-      await projectsPage.waitForProjectToBeRemoved(name2);
+      // Cleanup via API (faster and more reliable than UI with 650+ projects)
+      await projectsPage.deleteProjectViaAPI(name1);
+      await projectsPage.deleteProjectViaAPI(name2);
     });
 
     test('should show project statistics', async () => {
@@ -299,6 +342,9 @@ test.describe('Project Management Workflows', () => {
       await projectsPage.createProject(activeName, 'Active project');
       await projectsPage.createProject(suspendedName, 'Suspended project');
 
+      // Wait for table to stabilize after creating both projects
+      await projectsPage.page.waitForTimeout(1000);
+
       // Verify both projects exist before applying filter
       expect(await projectsPage.verifyProjectExists(activeName)).toBe(true);
       expect(await projectsPage.verifyProjectExists(suspendedName)).toBe(true);
@@ -313,18 +359,9 @@ test.describe('Project Management Workflows', () => {
       expect(await projectsPage.verifyProjectExists(activeName)).toBe(true);
       expect(await projectsPage.verifyProjectExists(suspendedName)).toBe(true);
 
-      // Switch to "All Projects" filter for cleanup
-      await filterSelect.click();
-      await projectsPage.page.locator('[data-value="all"]').click();
-
-      // Cleanup
-      await projectsPage.deleteProject(activeName);
-      await projectsPage.page.getByTestId('confirm-delete-button').click();
-      await projectsPage.waitForProjectToBeRemoved(activeName);
-
-      await projectsPage.deleteProject(suspendedName);
-      await projectsPage.page.getByTestId('confirm-delete-button').click();
-      await projectsPage.waitForProjectToBeRemoved(suspendedName);
+      // Cleanup via API (faster and more reliable than UI with 650+ projects)
+      await projectsPage.deleteProjectViaAPI(activeName);
+      await projectsPage.deleteProjectViaAPI(suspendedName);
     });
   });
 
@@ -345,9 +382,8 @@ test.describe('Project Management Workflows', () => {
       // Should show current spend
       expect(projectText).toMatch(/\$\d+\.\d{2}/);
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
+      // Cleanup via API
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
     test.skip('should alert when approaching budget limit', async () => {
@@ -363,9 +399,8 @@ test.describe('Project Management Workflows', () => {
       const alert = projectsPage.page.locator('[data-testid="budget-alert"]');
       expect(await alert.isVisible()).toBe(true);
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
+      // Cleanup via API
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
     test.skip('should prevent operations when budget exceeded', async () => {
@@ -381,9 +416,8 @@ test.describe('Project Management Workflows', () => {
       const error = projectsPage.page.locator('text=/budget.*exceeded/i');
       expect(await error.isVisible()).toBe(true);
 
-      // Cleanup
-      await projectsPage.deleteProject(uniqueName);
-      await projectsPage.confirmDeletion();
+      // Cleanup via API
+      await projectsPage.deleteProjectViaAPI(uniqueName);
     });
   });
 });

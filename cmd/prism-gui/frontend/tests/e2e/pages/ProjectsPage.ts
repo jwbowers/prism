@@ -37,6 +37,63 @@ export class ProjectsPage extends BasePage {
   }
 
   /**
+   * Clean up old test projects (projects with test-related names)
+   * This helps prevent test pollution and keeps pagination manageable
+   */
+  async cleanupOldTestProjects() {
+    await this.navigate();
+
+    // Set filter to "All Projects" to see everything
+    const filterSelect = this.page.getByTestId('project-filter-select');
+    if (await filterSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await filterSelect.click({ timeout: 2000 }).catch(() => {});
+      await this.page.locator('[data-value="all"]').click({ timeout: 2000 }).catch(() => {});
+      await this.page.waitForTimeout(1000);
+    }
+
+    // Look for test project patterns and delete them
+    const testPatterns = [
+      /^list-test-\d+-\d+$/,
+      /^active-project-\d+$/,
+      /^suspended-project-\d+$/,
+      /^cancel-delete-test-\d+$/,
+      /^delete-test-\d+$/
+    ];
+
+    // Get all project name cells
+    const cells = this.page.getByRole('cell').filter({ hasText: /-test-|-project-/ });
+    const count = await cells.count();
+
+    // Iterate through pages to find and delete test projects
+    let deletedCount = 0;
+    for (let i = 0; i < count && deletedCount < 50; i++) {
+      try {
+        const cellText = await cells.nth(i).textContent({ timeout: 1000 });
+        if (!cellText) continue;
+
+        // Check if this matches any test pattern
+        const isTestProject = testPatterns.some(pattern => pattern.test(cellText));
+        if (isTestProject) {
+          try {
+            await this.deleteProject(cellText);
+            await this.page.getByTestId('confirm-delete-button').click({ timeout: 2000 });
+            await this.waitForProjectToBeRemoved(cellText);
+            deletedCount++;
+            // Navigate back to page 1 after each deletion
+            await this.navigate();
+          } catch (e) {
+            // Skip if deletion fails (project might not exist anymore)
+            continue;
+          }
+        }
+      } catch (e) {
+        // Skip if we can't read the cell
+        continue;
+      }
+    }
+  }
+
+  /**
    * Navigate to Invitations tab
    */
   async navigateToInvitations() {
@@ -105,29 +162,33 @@ export class ProjectsPage extends BasePage {
 
   /**
    * Delete a project - opens confirmation modal, test must confirm deletion
+   * NOTE: Most tests should use deleteProjectViaAPI() for cleanup - it's faster and more reliable
+   * This method is primarily for tests that specifically test the deletion UI workflow
    * @param projectName Name of the project to delete
    */
   async deleteProject(projectName: string) {
     await this.navigate();
 
-    // Navigate to page 1 to ensure newly created projects are visible
-    // (projects are sorted by created_at descending, so new projects should be on page 1)
-    const page1Button = this.page.getByRole('button', { name: 'Page 1' });
-    if (await page1Button.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await page1Button.click();
-      // Wait a bit for the table to update after pagination change
-      await this.page.waitForTimeout(500);
-    }
-
-    // Wait for the project to appear in the table before trying to interact with it
+    // Wait for project to be visible on page (assumes it's on current page, typically page 1 for new projects)
     await this.page.getByRole('cell', { name: projectName, exact: true }).waitFor({ state: 'visible', timeout: 10000 });
 
     const projectRow = this.getProjectByName(projectName);
 
-    // Click actions dropdown
+    // Click actions dropdown with retry logic for element detachment
     const actionsButton = projectRow.getByRole('button', { name: /actions/i });
     await actionsButton.waitFor({ state: 'visible', timeout: 5000 });
-    await actionsButton.click();
+
+    // Retry click if element gets detached (common during table updates)
+    let clickSuccess = false;
+    for (let attempt = 0; attempt < 3 && !clickSuccess; attempt++) {
+      try {
+        await actionsButton.click({ timeout: 5000 });
+        clickSuccess = true;
+      } catch (e) {
+        if (attempt === 2) throw e; // Throw on final attempt
+        await this.page.waitForTimeout(1000); // Wait for table to stabilize
+      }
+    }
 
     // Wait for menu to appear (deterministic)
     const deleteOption = this.page.getByRole('menuitem', { name: /delete/i });
@@ -227,6 +288,42 @@ export class ProjectsPage extends BasePage {
       await this.page.waitForTimeout(200); // Small delay between polls
     }
     throw new Error(`Project "${projectName}" was not removed within ${timeout}ms`);
+  }
+
+  /**
+   * Delete project via API (for test cleanup - much faster and more reliable than UI)
+   */
+  async deleteProjectViaAPI(projectName: string) {
+    try {
+      // Get all projects
+      const response = await this.page.request.get('http://localhost:8947/api/v1/projects');
+      if (!response.ok()) {
+        console.warn(`Failed to get projects: ${response.status()}`);
+        return;
+      }
+
+      const data = await response.json();
+      const projects = data.projects || [];
+
+      // Find project by name
+      const project = projects.find((p: any) => p.name === projectName);
+      if (!project) {
+        console.warn(`Project "${projectName}" not found via API`);
+        return;
+      }
+
+      // Delete project
+      const deleteResponse = await this.page.request.delete(`http://localhost:8947/api/v1/projects/${project.id}`);
+      if (!deleteResponse.ok()) {
+        console.warn(`Failed to delete project "${projectName}": ${deleteResponse.status()}`);
+        return;
+      }
+
+      // Wait for UI to update
+      await this.page.waitForTimeout(500);
+    } catch (error) {
+      console.warn(`Error deleting project "${projectName}" via API:`, error);
+    }
   }
 
   // ==================== USER MANAGEMENT ====================
