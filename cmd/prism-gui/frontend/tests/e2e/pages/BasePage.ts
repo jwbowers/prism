@@ -255,7 +255,12 @@ export class BasePage {
    * If multiple buttons match, clicks the last visible one (usually in a modal/dialog)
    */
   async clickButton(text: string) {
-    const button = this.page.getByRole('button', { name: new RegExp(text, 'i') });
+    // Use exact match for Cancel to avoid matching resource names like "cancel-delete-test"
+    const options = text.toLowerCase() === 'cancel'
+      ? { name: 'Cancel', exact: true }
+      : { name: new RegExp(text, 'i') };
+
+    const button = this.page.getByRole('button', options);
     const count = await button.count();
 
     if (count > 1) {

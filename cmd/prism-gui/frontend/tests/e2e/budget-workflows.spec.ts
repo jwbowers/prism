@@ -157,7 +157,7 @@ test.describe('Budget Workflows', () => {
     await dialog.getByLabel('Budget Name').fill('Test Budget to Cancel');
 
     // Click cancel
-    await dialog.getByRole('button', { name: /cancel/i }).click();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
 
     // Verify modal is closed
     await page.waitForTimeout(500);

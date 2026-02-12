@@ -351,7 +351,7 @@ test.describe('Backup Management Workflows', () => {
       const dialog = page.locator('[role="dialog"]:visible').first();
 
       // Click Cancel
-      await page.getByRole('button', { name: /cancel/i }).click();
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       await page.waitForTimeout(500);
 
       // Dialog should close (check if no visible dialogs)

@@ -288,7 +288,7 @@ test.describe('Form Validation', () => {
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
     // Find and click cancel button
-    const cancelButton = page.getByRole('button', { name: /cancel/i }).last();
+    const cancelButton = page.getByRole('button', { name: 'Cancel', exact: true }).last();
     await cancelButton.click();
 
     // Dialog should be hidden

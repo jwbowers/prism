@@ -16,10 +16,12 @@ export class LaunchDialog {
 
   /**
    * Get dialog container
-   * Uses "Launch Research Environment" to distinguish from "Quick Start - Launch Workspace"
+   * Matches any "Launch [Template Name]" dialog (e.g., "Launch Python Machine Learning")
+   * Uses flexible pattern to distinguish from "Quick Start - Launch Workspace"
    */
   getDialog(): Locator {
-    return this.page.getByLabel(/launch research environment/i);
+    // Match "Launch" followed by template name, excluding "Quick Start"
+    return this.page.locator('[role="dialog"]').filter({ hasText: /^Launch\s+(?!Quick Start)/ });
   }
 
   /**
@@ -30,10 +32,10 @@ export class LaunchDialog {
   }
 
   /**
-   * Fill instance name
+   * Fill instance/workspace name
    */
   async fillInstanceName(name: string) {
-    const nameInput = this.page.getByLabel(/instance name/i);
+    const nameInput = this.page.getByLabel(/workspace name/i);
     await nameInput.fill(name);
   }
 

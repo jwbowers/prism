@@ -1861,6 +1861,12 @@ export default function PrismApp() {
   const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<InstanceSnapshot | null>(null);
   const [restoreInstanceName, setRestoreInstanceName] = useState('');
 
+  // Storage creation modal state
+  const [createEFSModalVisible, setCreateEFSModalVisible] = useState(false);
+  const [createEBSModalVisible, setCreateEBSModalVisible] = useState(false);
+  const [storageVolumeName, setStorageVolumeName] = useState('');
+  const [storageVolumeSize, setStorageVolumeSize] = useState('');
+
   // Create Project modal state
   const [projectModalVisible, setProjectModalVisible] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -3770,8 +3776,13 @@ export default function PrismApp() {
                       description="Elastic File System volumes for multi-workspace data sharing and collaboration"
                       counter={`(${state.efsVolumes.length} volumes)`}
                       actions={
-                        <Button variant="primary">
-                          Create Shared Storage
+                        <Button
+                          variant="primary"
+                          onClick={() => {
+                            setCreateEFSModalVisible(true);
+                          }}
+                        >
+                          Create EFS Volume
                         </Button>
                       }
                       info={
@@ -3868,7 +3879,14 @@ export default function PrismApp() {
                             Create shared storage (EFS) for collaborative projects and data that needs to be accessed by multiple workspaces.
                           </Box>
                           <Box textAlign="center">
-                            <Button variant="primary">Create Shared Storage</Button>
+                            <Button
+                              variant="primary"
+                              onClick={() => {
+                                setCreateEFSModalVisible(true);
+                              }}
+                            >
+                              Create EFS Volume
+                            </Button>
                           </Box>
                         </SpaceBetween>
                       </Box>
@@ -3889,8 +3907,13 @@ export default function PrismApp() {
                       description="Elastic Block Store volumes for high-performance workspace-specific data"
                       counter={`(${state.ebsVolumes.length} volumes)`}
                       actions={
-                        <Button variant="primary">
-                          Create Private Storage
+                        <Button
+                          variant="primary"
+                          onClick={() => {
+                            setCreateEBSModalVisible(true);
+                          }}
+                        >
+                          Create EBS Volume
                         </Button>
                       }
                       info={
@@ -4019,7 +4042,14 @@ export default function PrismApp() {
                             Create private storage (EBS) for workspace-specific data and high-performance applications.
                           </Box>
                           <Box textAlign="center">
-                            <Button variant="primary">Create Private Storage</Button>
+                            <Button
+                              variant="primary"
+                              onClick={() => {
+                                setCreateEBSModalVisible(true);
+                              }}
+                            >
+                              Create EBS Volume
+                            </Button>
                           </Box>
                         </SpaceBetween>
                       </Box>
@@ -11426,6 +11456,178 @@ export default function PrismApp() {
             The token can be found in your invitation email or shared by the project admin.
           </Alert>
         </SpaceBetween>
+      </Modal>
+
+      {/* Create EFS Volume Modal */}
+      <Modal
+        visible={createEFSModalVisible}
+        onDismiss={() => {
+          setCreateEFSModalVisible(false);
+          setStorageVolumeName('');
+        }}
+        header="Create EFS Volume"
+        size="medium"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => {
+                setCreateEFSModalVisible(false);
+                setStorageVolumeName('');
+              }}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={!storageVolumeName.trim()}
+                onClick={async () => {
+                  try {
+                    await api.createEFSVolume(storageVolumeName);
+                    setCreateEFSModalVisible(false);
+                    setStorageVolumeName('');
+                    await loadData();
+                    setState(prev => ({
+                      ...prev,
+                      notifications: [
+                        ...prev.notifications,
+                        {
+                          type: 'success',
+                          header: 'EFS Volume Created',
+                          content: `Successfully created EFS volume "${storageVolumeName}"`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }
+                      ]
+                    }));
+                  } catch (error) {
+                    setState(prev => ({
+                      ...prev,
+                      notifications: [
+                        ...prev.notifications,
+                        {
+                          type: 'error',
+                          header: 'Failed to Create EFS Volume',
+                          content: error instanceof Error ? error.message : 'Unknown error occurred',
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }
+                      ]
+                    }));
+                  }
+                }}
+              >
+                Create
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <Form>
+          <SpaceBetween size="m">
+            <FormField
+              label="Volume Name"
+              description="Enter a name for your EFS volume"
+            >
+              <Input
+                value={storageVolumeName}
+                onChange={({ detail }) => setStorageVolumeName(detail.value)}
+                placeholder="my-shared-data"
+              />
+            </FormField>
+          </SpaceBetween>
+        </Form>
+      </Modal>
+
+      {/* Create EBS Volume Modal */}
+      <Modal
+        visible={createEBSModalVisible}
+        onDismiss={() => {
+          setCreateEBSModalVisible(false);
+          setStorageVolumeName('');
+          setStorageVolumeSize('');
+        }}
+        header="Create EBS Volume"
+        size="medium"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => {
+                setCreateEBSModalVisible(false);
+                setStorageVolumeName('');
+                setStorageVolumeSize('');
+              }}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={!storageVolumeName.trim() || !storageVolumeSize.trim()}
+                onClick={async () => {
+                  try {
+                    await api.createEBSVolume(storageVolumeName, storageVolumeSize);
+                    setCreateEBSModalVisible(false);
+                    setStorageVolumeName('');
+                    setStorageVolumeSize('');
+                    await loadData();
+                    setState(prev => ({
+                      ...prev,
+                      notifications: [
+                        ...prev.notifications,
+                        {
+                          type: 'success',
+                          header: 'EBS Volume Created',
+                          content: `Successfully created EBS volume "${storageVolumeName}"`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }
+                      ]
+                    }));
+                  } catch (error) {
+                    setState(prev => ({
+                      ...prev,
+                      notifications: [
+                        ...prev.notifications,
+                        {
+                          type: 'error',
+                          header: 'Failed to Create EBS Volume',
+                          content: error instanceof Error ? error.message : 'Unknown error occurred',
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }
+                      ]
+                    }));
+                  }
+                }}
+              >
+                Create
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <Form>
+          <SpaceBetween size="m">
+            <FormField
+              label="Volume Name"
+              description="Enter a name for your EBS volume"
+            >
+              <Input
+                value={storageVolumeName}
+                onChange={({ detail }) => setStorageVolumeName(detail.value)}
+                placeholder="my-private-data"
+              />
+            </FormField>
+            <FormField
+              label="Size (GB)"
+              description="Enter the size of the volume in gigabytes"
+            >
+              <Input
+                value={storageVolumeSize}
+                onChange={({ detail }) => setStorageVolumeSize(detail.value)}
+                placeholder="100"
+                type="number"
+              />
+            </FormField>
+          </SpaceBetween>
+        </Form>
       </Modal>
     </>
   );

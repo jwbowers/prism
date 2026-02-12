@@ -90,7 +90,7 @@ test.describe('User Management Workflows', () => {
       expect(validationError).toMatch(/username.*required/i);
 
       // Cancel
-      await dialog.getByRole('button', { name: /cancel/i }).click();
+      await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     });
 
     test('should validate email format', async () => {
@@ -117,7 +117,7 @@ test.describe('User Management Workflows', () => {
       expect(validationError).toMatch(/valid email address/i);
 
       // Cancel
-      await dialog.getByRole('button', { name: /cancel/i }).click();
+      await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     });
 
     test('should prevent duplicate usernames', async () => {
