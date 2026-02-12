@@ -72,10 +72,10 @@ export class StoragePage extends BasePage {
    */
   async createEFSVolume(name: string) {
     await this.switchToEFS();
-    const createButton = this.page.getByRole('button', { name: /create.*efs/i });
+    const createButton = this.page.getByTestId('create-efs-header-button');
     await createButton.click();
 
-    await this.fillInput('volume name', name);
+    await this.page.getByRole('textbox', { name: 'EFS Volume Name' }).fill(name);
     await this.clickButton('create');
   }
 
@@ -84,11 +84,11 @@ export class StoragePage extends BasePage {
    */
   async createEBSVolume(name: string, size: string) {
     await this.switchToEBS();
-    const createButton = this.page.getByRole('button', { name: /create.*ebs/i });
+    const createButton = this.page.getByTestId('create-ebs-header-button');
     await createButton.click();
 
-    await this.fillInput('volume name', name);
-    await this.fillInput('size', size);
+    await this.page.getByRole('textbox', { name: 'EBS Volume Name' }).fill(name);
+    await this.page.getByRole('spinbutton', { name: 'EBS Volume Size' }).fill(size);
     await this.clickButton('create');
   }
 

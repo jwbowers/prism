@@ -40,10 +40,10 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.switchToEFS();
 
       // Click create button
-      await storagePage.page.getByRole('button', { name: /create.*efs/i }).click();
+      await storagePage.page.getByTestId('create-efs-header-button').click();
 
       // Fill form
-      await storagePage.fillInput('volume name', 'test-efs-volume');
+      await storagePage.page.getByRole('textbox', { name: 'EFS Volume Name' }).fill('test-efs-volume');
       await storagePage.clickButton('create');
 
       // Wait for creation
@@ -61,7 +61,7 @@ test.describe('Storage Management Workflows', () => {
     test('should validate EFS volume name is required', async () => {
       await storagePage.switchToEFS();
 
-      await storagePage.page.getByRole('button', { name: /create.*efs/i }).click();
+      await storagePage.page.getByTestId('create-efs-header-button').click();
 
       // Don't fill name, just click create
       await storagePage.clickButton('create');
@@ -215,11 +215,11 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.switchToEBS();
 
       // Click create button
-      await storagePage.page.getByRole('button', { name: /create.*ebs/i }).click();
+      await storagePage.page.getByTestId('create-ebs-header-button').click();
 
       // Fill form
-      await storagePage.fillInput('volume name', 'test-ebs-volume');
-      await storagePage.fillInput('size', '100');
+      await storagePage.page.getByRole('textbox', { name: 'EBS Volume Name' }).fill('test-ebs-volume');
+      await storagePage.page.getByRole('spinbutton', { name: 'EBS Volume Size' }).fill('100');
       await storagePage.clickButton('create');
 
       // Wait for creation
@@ -237,10 +237,10 @@ test.describe('Storage Management Workflows', () => {
     test('should validate EBS volume size is required', async () => {
       await storagePage.switchToEBS();
 
-      await storagePage.page.getByRole('button', { name: /create.*ebs/i }).click();
+      await storagePage.page.getByTestId('create-ebs-header-button').click();
 
       // Fill name but not size
-      await storagePage.fillInput('volume name', 'size-validation-test');
+      await storagePage.page.getByRole('textbox', { name: 'EBS Volume Name' }).fill('size-validation-test');
       await storagePage.clickButton('create');
 
       // Should show validation error
@@ -251,10 +251,10 @@ test.describe('Storage Management Workflows', () => {
     test('should validate EBS volume size is positive number', async () => {
       await storagePage.switchToEBS();
 
-      await storagePage.page.getByRole('button', { name: /create.*ebs/i }).click();
+      await storagePage.page.getByTestId('create-ebs-header-button').click();
 
-      await storagePage.fillInput('volume name', 'size-validation-test');
-      await storagePage.fillInput('size', '-10');
+      await storagePage.page.getByRole('textbox', { name: 'EBS Volume Name' }).fill('size-validation-test');
+      await storagePage.page.getByRole('spinbutton', { name: 'EBS Volume Size' }).fill('-10');
       await storagePage.clickButton('create');
 
       // Should show validation error

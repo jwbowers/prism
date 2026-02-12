@@ -3778,6 +3778,7 @@ export default function PrismApp() {
                       actions={
                         <Button
                           variant="primary"
+                          data-testid="create-efs-header-button"
                           onClick={() => {
                             setCreateEFSModalVisible(true);
                           }}
@@ -3909,6 +3910,7 @@ export default function PrismApp() {
                       actions={
                         <Button
                           variant="primary"
+                          data-testid="create-ebs-header-button"
                           onClick={() => {
                             setCreateEBSModalVisible(true);
                           }}
@@ -11524,13 +11526,14 @@ export default function PrismApp() {
         <Form>
           <SpaceBetween size="m">
             <FormField
-              label="Volume Name"
+              label="EFS Volume Name"
               description="Enter a name for your EFS volume"
             >
               <Input
                 value={storageVolumeName}
                 onChange={({ detail }) => setStorageVolumeName(detail.value)}
                 placeholder="my-shared-data"
+                ariaLabel="EFS Volume Name"
               />
             </FormField>
           </SpaceBetween>
@@ -11606,17 +11609,18 @@ export default function PrismApp() {
         <Form>
           <SpaceBetween size="m">
             <FormField
-              label="Volume Name"
+              label="EBS Volume Name"
               description="Enter a name for your EBS volume"
             >
               <Input
                 value={storageVolumeName}
                 onChange={({ detail }) => setStorageVolumeName(detail.value)}
                 placeholder="my-private-data"
+                ariaLabel="EBS Volume Name"
               />
             </FormField>
             <FormField
-              label="Size (GB)"
+              label="EBS Volume Size (GB)"
               description="Enter the size of the volume in gigabytes"
             >
               <Input
@@ -11624,6 +11628,7 @@ export default function PrismApp() {
                 onChange={({ detail }) => setStorageVolumeSize(detail.value)}
                 placeholder="100"
                 type="number"
+                ariaLabel="EBS Volume Size"
               />
             </FormField>
           </SpaceBetween>
