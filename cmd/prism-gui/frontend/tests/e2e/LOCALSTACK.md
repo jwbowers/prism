@@ -8,6 +8,52 @@ E2E tests can now run against **LocalStack** instead of real AWS, providing:
 - ✅ **Zero AWS costs** - no charges for test runs
 - ✅ **Offline development** - works without AWS credentials
 
+## ⚠️ Important Limitations
+
+### EFS Not Supported in LocalStack Community Edition
+
+**LocalStack Community (free tier) does NOT support EFS (Elastic File System).**
+
+```
+Error: The API for service efs is either not included in your current
+license plan or has not yet been emulated by LocalStack.
+```
+
+**Impact on Storage Tests:**
+- ❌ **EFS volume creation tests** - Will fail with HTTP 501 errors
+- ✅ **EBS volume tests** - Work perfectly with LocalStack Community
+- ✅ **Empty state tests** - Work fine
+
+**Options:**
+
+1. **Mixed Approach (Recommended for Free Tier)**:
+   ```bash
+   # Fast EBS tests with LocalStack
+   PRISM_USE_LOCALSTACK=true npx playwright test storage-workflows.spec.ts --grep "EBS"
+
+   # EFS tests with real AWS
+   npx playwright test storage-workflows.spec.ts --grep "EFS"
+   ```
+
+2. **LocalStack Pro ($50/month)**:
+   - Full EFS support
+   - All storage tests work
+   - Worth it for frequent testing
+   - [LocalStack Pro](https://localstack.cloud/pricing)
+
+3. **Use Real AWS for All Tests**:
+   - Most realistic
+   - ~10-15 minutes per run
+   - Small AWS costs (~$0.50/run with cleanup)
+
+### Other Service Limitations
+
+LocalStack Community also lacks:
+- ❌ **Lambda Layers** - Basic Lambda only
+- ❌ **CloudFormation** - Limited template support
+- ❌ **RDS** - Database services require Pro
+- ✅ **EC2, S3, IAM, SSM** - Fully supported
+
 ## Quick Start
 
 ### Prerequisites
@@ -64,30 +110,39 @@ When LocalStack mode is enabled:
 
 ### 3. AWS Service Mocking
 
-LocalStack provides mock implementations of:
-- **EC2** - Instance launching, management
-- **EFS** - File system creation (instant, no 10-30 second wait)
-- **EBS** - Volume creation and attachment
-- **SSM** - Parameter Store for AMI discovery
-- **S3** - Backup storage
+**LocalStack Community (Free) provides:**
+- ✅ **EC2** - Instance launching, management
+- ✅ **EBS** - Volume creation and attachment
+- ✅ **SSM** - Parameter Store for AMI discovery
+- ✅ **S3** - Backup storage
+- ✅ **IAM** - Basic roles and policies
+- ✅ **STS** - Temporary credentials
+
+**LocalStack Pro ($50/month) adds:**
+- 💰 **EFS** - File system creation (instant, no 10-30 second wait)
+- 💰 **Lambda Layers** - Advanced Lambda features
+- 💰 **RDS** - Database services
+- 💰 **CloudFormation** - Full template support
 
 ## Comparison: LocalStack vs Real AWS
 
 ### Test Execution Time
 
-| Test Suite | Real AWS | LocalStack | Speedup |
-|------------|----------|------------|---------|
-| storage-workflows.spec.ts (23 tests) | ~10 min | ~2 min | 5x |
-| instance-workflows.spec.ts (25 tests) | ~15 min | ~3 min | 5x |
-| backup-workflows.spec.ts (18 tests) | ~8 min | ~1.5 min | 5x |
+| Test Suite | Real AWS | LocalStack Community | LocalStack Pro |
+|------------|----------|---------------------|----------------|
+| storage-workflows.spec.ts | ~10 min | ⚠️ Partial (EBS only) | ~2 min (5x) |
+| instance-workflows.spec.ts | ~15 min | ~3 min (5x) | ~3 min (5x) |
+| backup-workflows.spec.ts | ~8 min | ~1.5 min (5x) | ~1.5 min (5x) |
+
+**Note**: Storage tests are only partially supported with LocalStack Community (EFS tests fail).
 
 ### Resource Creation Speed
 
-| Operation | Real AWS | LocalStack |
-|-----------|----------|------------|
-| EFS Volume Creation | 10-30 seconds | <1 second |
-| EBS Volume Creation | 5-15 seconds | <1 second |
-| EC2 Instance Launch | 30-90 seconds | 1-2 seconds |
+| Operation | Real AWS | LocalStack Community | LocalStack Pro |
+|-----------|----------|---------------------|----------------|
+| EFS Volume Creation | 10-30 seconds | ❌ Not supported | <1 second |
+| EBS Volume Creation | 5-15 seconds | <1 second | <1 second |
+| EC2 Instance Launch | 30-90 seconds | 1-2 seconds | 1-2 seconds |
 
 ### Deterministic Behavior
 
