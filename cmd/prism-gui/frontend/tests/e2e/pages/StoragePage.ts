@@ -333,7 +333,7 @@ export class StoragePage extends BasePage {
   /**
    * Wait for volume to reach specific state (deterministic DOM polling)
    * AWS EFS/EBS transitions: creating → available → in-use → deleting → deleted
-   * Uses Playwright's waitFor() for deterministic state checking
+   * Uses Playwright's expect with polling for deterministic state checking
    */
   async waitForVolumeState(
     name: string,
@@ -351,14 +351,28 @@ export class StoragePage extends BasePage {
     const statusBadge = volume.locator('[data-testid="status-badge"]');
 
     try {
-      await statusBadge.waitFor({ state: 'visible', timeout: 5000 });
+      // Wait for status badge to contain the target state
       await this.page.waitForFunction(
-        ({ badge, target }) => {
-          const element = badge as HTMLElement;
-          const text = element.textContent?.toLowerCase().trim() || '';
-          return text === target.toLowerCase();
+        (args) => {
+          const { volumeName, targetState: target, volumeType } = args;
+          const table = volumeType === 'efs'
+            ? document.querySelector('[data-testid="efs-table"]')
+            : document.querySelector('[data-testid="ebs-table"]');
+
+          if (!table) return false;
+
+          const rows = Array.from(table.querySelectorAll('tbody tr'));
+          const volumeRow = rows.find(row => row.textContent?.includes(volumeName));
+
+          if (!volumeRow) return false;
+
+          const statusBadge = volumeRow.querySelector('[data-testid="status-badge"]');
+          if (!statusBadge) return false;
+
+          const statusText = statusBadge.textContent?.toLowerCase().trim() || '';
+          return statusText === target.toLowerCase();
         },
-        { badge: statusBadge, target: targetState },
+        { volumeName: name, targetState, volumeType: type },
         { timeout }
       );
       return true;
