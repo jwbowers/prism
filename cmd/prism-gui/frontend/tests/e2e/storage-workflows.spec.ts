@@ -63,8 +63,9 @@ test.describe('Storage Management Workflows', () => {
       // Don't fill name, just click create
       await storagePage.clickButton('create');
 
-      // Should show validation error
-      const validationError = await storagePage.page.locator('[data-testid="validation-error"]').textContent();
+      // Should show validation error (scope to EFS modal to avoid strict mode violation)
+      const efsModal = storagePage.page.getByRole('dialog', { name: 'Create EFS Volume' });
+      const validationError = await efsModal.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/name.*required/i);
     });
 
@@ -239,8 +240,9 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.page.getByRole('textbox', { name: 'EBS Volume Name' }).fill('size-validation-test');
       await storagePage.clickButton('create');
 
-      // Should show validation error
-      const validationError = await storagePage.page.locator('[data-testid="validation-error"]').textContent();
+      // Should show validation error (scope to EBS modal to avoid strict mode violation)
+      const ebsModal = storagePage.page.getByRole('dialog', { name: 'Create EBS Volume' });
+      const validationError = await ebsModal.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/size.*required/i);
     });
 
@@ -253,8 +255,9 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.page.getByRole('spinbutton', { name: 'EBS Volume Size' }).fill('-10');
       await storagePage.clickButton('create');
 
-      // Should show validation error
-      const validationError = await storagePage.page.locator('[data-testid="validation-error"]').textContent();
+      // Should show validation error (scope to EBS modal to avoid strict mode violation)
+      const ebsModal = storagePage.page.getByRole('dialog', { name: 'Create EBS Volume' });
+      const validationError = await ebsModal.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/positive|invalid.*size/i);
     });
 
