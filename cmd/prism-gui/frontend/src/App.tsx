@@ -11539,6 +11539,11 @@ export default function PrismApp() {
       >
         <Form>
           <SpaceBetween size="m">
+            {storageVolumeNameError && (
+              <Box data-testid="validation-error" color="text-status-error">
+                {storageVolumeNameError}
+              </Box>
+            )}
             <FormField
               label="EFS Volume Name"
               description="Enter a name for your EFS volume"
@@ -11649,6 +11654,11 @@ export default function PrismApp() {
       >
         <Form>
           <SpaceBetween size="m">
+            {(storageVolumeNameError || storageVolumeSizeError) && (
+              <Box data-testid="validation-error" color="text-status-error">
+                {storageVolumeNameError || storageVolumeSizeError}
+              </Box>
+            )}
             <FormField
               label="EBS Volume Name"
               description="Enter a name for your EBS volume"
