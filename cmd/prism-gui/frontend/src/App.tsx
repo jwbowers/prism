@@ -11486,7 +11486,7 @@ export default function PrismApp() {
                     await api.createEFSVolume(storageVolumeName);
                     setCreateEFSModalVisible(false);
                     setStorageVolumeName('');
-                    await loadData();
+                    await loadApplicationData();
                     setState(prev => ({
                       ...prev,
                       notifications: [
@@ -11569,7 +11569,7 @@ export default function PrismApp() {
                     setCreateEBSModalVisible(false);
                     setStorageVolumeName('');
                     setStorageVolumeSize('');
-                    await loadData();
+                    await loadApplicationData();
                     setState(prev => ({
                       ...prev,
                       notifications: [

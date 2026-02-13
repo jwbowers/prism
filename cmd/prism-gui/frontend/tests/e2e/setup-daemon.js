@@ -43,6 +43,15 @@ async function startDaemon() {
 
   console.log(`Setting PRISM_TEMPLATE_DIR=${templatesPath}`)
 
+  // Check if LocalStack mode is enabled
+  const useLocalStack = process.env.PRISM_USE_LOCALSTACK === 'true'
+
+  if (useLocalStack) {
+    console.log('🚀 LocalStack mode enabled - tests will use local AWS emulation')
+  } else {
+    console.log('☁️  Real AWS mode - tests will use actual AWS resources')
+  }
+
   const daemon = spawn(daemonPath, [], {
     detached: true,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -50,9 +59,12 @@ async function startDaemon() {
       ...process.env,
       PRISM_TEST_MODE: 'true',
       PRISM_TEMPLATE_DIR: templatesPath,
-      AWS_PROFILE: 'aws',
+      // LocalStack configuration (pkg/aws/localstack/config.go handles endpoint setup)
+      PRISM_USE_LOCALSTACK: useLocalStack ? 'true' : undefined,
+      // AWS configuration (only set if NOT using LocalStack)
+      AWS_PROFILE: useLocalStack ? undefined : 'aws',
       AWS_REGION: 'us-west-2',
-      AWS_SDK_LOAD_CONFIG: '1',
+      AWS_SDK_LOAD_CONFIG: useLocalStack ? undefined : '1',
       AWS_EC2_METADATA_DISABLED: 'true'
     }
   })

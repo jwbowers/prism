@@ -172,7 +172,10 @@ export class StoragePage extends BasePage {
    * Search volumes
    */
   async searchVolumes(query: string) {
-    const searchInput = this.page.getByPlaceholder(/search/i);
+    // Use data-testid for storage-specific search to avoid strict mode violations
+    const searchInput = this.page.getByTestId('storage-search-input').or(
+      this.page.locator('input[placeholder*="Search"]').first()
+    );
     await searchInput.fill(query);
     // Wait for the table to update after search filter
     await this.page.waitForLoadState('domcontentloaded');
@@ -213,41 +216,35 @@ export class StoragePage extends BasePage {
   }
 
   /**
-   * Wait for EFS volume to appear (with polling)
+   * Wait for EFS volume to appear (deterministic DOM polling)
    * AWS EFS creation can take 10-30+ seconds
+   * Uses Playwright's built-in waitFor() for deterministic waiting
    */
   async waitForEFSVolumeToExist(name: string, timeout: number = 60000): Promise<boolean> {
-    const startTime = Date.now();
-    while (Date.now() - startTime < timeout) {
-      await this.switchToEFS();
-      const volume = this.getEFSVolumeByName(name);
-      const exists = await this.elementExists(volume);
-      if (exists) {
-        return true;
-      }
-      // Wait 2 seconds before next poll
-      await this.page.waitForTimeout(2000);
+    await this.switchToEFS();
+    const volume = this.getEFSVolumeByName(name);
+    try {
+      await volume.waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      return false;
     }
-    return false;
   }
 
   /**
-   * Wait for EBS volume to appear (with polling)
+   * Wait for EBS volume to appear (deterministic DOM polling)
    * AWS EBS creation can take 10-30+ seconds
+   * Uses Playwright's built-in waitFor() for deterministic waiting
    */
   async waitForEBSVolumeToExist(name: string, timeout: number = 60000): Promise<boolean> {
-    const startTime = Date.now();
-    while (Date.now() - startTime < timeout) {
-      await this.switchToEBS();
-      const volume = this.getEBSVolumeByName(name);
-      const exists = await this.elementExists(volume);
-      if (exists) {
-        return true;
-      }
-      // Wait 2 seconds before next poll
-      await this.page.waitForTimeout(2000);
+    await this.switchToEBS();
+    const volume = this.getEBSVolumeByName(name);
+    try {
+      await volume.waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      return false;
     }
-    return false;
   }
 
   /**
