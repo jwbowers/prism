@@ -46,11 +46,8 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.page.getByRole('textbox', { name: 'EFS Volume Name' }).fill('test-efs-volume');
       await storagePage.clickButton('create');
 
-      // Wait for creation
-      await storagePage.page.waitForTimeout(3000);
-
-      // Verify volume appears in list
-      const volumeExists = await storagePage.verifyEFSVolumeExists('test-efs-volume');
+      // Wait for AWS EFS creation to complete (can take 10-30+ seconds)
+      const volumeExists = await storagePage.waitForEFSVolumeToExist('test-efs-volume', 60000);
       expect(volumeExists).toBe(true);
 
       // Cleanup
@@ -76,10 +73,9 @@ test.describe('Storage Management Workflows', () => {
 
       // Create volume first
       await storagePage.createEFSVolume('delete-test-efs');
-      await storagePage.page.waitForTimeout(2000);
 
-      // Verify it exists
-      let volumeExists = await storagePage.verifyEFSVolumeExists('delete-test-efs');
+      // Wait for AWS EFS creation to complete
+      let volumeExists = await storagePage.waitForEFSVolumeToExist('delete-test-efs', 60000);
       expect(volumeExists).toBe(true);
 
       // Delete volume
@@ -119,7 +115,10 @@ test.describe('Storage Management Workflows', () => {
 
       // Create EFS volume
       await storagePage.createEFSVolume('mount-test-efs');
-      await storagePage.page.waitForTimeout(2000);
+
+      // Wait for AWS EFS creation to complete before mounting
+      const volumeCreated = await storagePage.waitForEFSVolumeToExist('mount-test-efs', 60000);
+      expect(volumeCreated).toBe(true);
 
       // Mount to instance
       await storagePage.mountEFSVolume('mount-test-efs', instanceName);
@@ -222,11 +221,8 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.page.getByRole('spinbutton', { name: 'EBS Volume Size' }).fill('100');
       await storagePage.clickButton('create');
 
-      // Wait for creation
-      await storagePage.page.waitForTimeout(3000);
-
-      // Verify volume appears in list
-      const volumeExists = await storagePage.verifyEBSVolumeExists('test-ebs-volume');
+      // Wait for AWS EBS creation to complete (can take 10-30+ seconds)
+      const volumeExists = await storagePage.waitForEBSVolumeToExist('test-ebs-volume', 60000);
       expect(volumeExists).toBe(true);
 
       // Cleanup
@@ -267,10 +263,9 @@ test.describe('Storage Management Workflows', () => {
 
       // Create volume first
       await storagePage.createEBSVolume('delete-test-ebs', '50');
-      await storagePage.page.waitForTimeout(2000);
 
-      // Verify it exists
-      let volumeExists = await storagePage.verifyEBSVolumeExists('delete-test-ebs');
+      // Wait for AWS EBS creation to complete
+      let volumeExists = await storagePage.waitForEBSVolumeToExist('delete-test-ebs', 60000);
       expect(volumeExists).toBe(true);
 
       // Delete volume
@@ -310,7 +305,10 @@ test.describe('Storage Management Workflows', () => {
 
       // Create EBS volume
       await storagePage.createEBSVolume('attach-test-ebs', '100');
-      await storagePage.page.waitForTimeout(2000);
+
+      // Wait for AWS EBS creation to complete before attaching
+      const volumeCreated = await storagePage.waitForEBSVolumeToExist('attach-test-ebs', 60000);
+      expect(volumeCreated).toBe(true);
 
       // Attach to instance
       await storagePage.attachEBSVolume('attach-test-ebs', instanceName);

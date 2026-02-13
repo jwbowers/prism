@@ -213,6 +213,44 @@ export class StoragePage extends BasePage {
   }
 
   /**
+   * Wait for EFS volume to appear (with polling)
+   * AWS EFS creation can take 10-30+ seconds
+   */
+  async waitForEFSVolumeToExist(name: string, timeout: number = 60000): Promise<boolean> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      await this.switchToEFS();
+      const volume = this.getEFSVolumeByName(name);
+      const exists = await this.elementExists(volume);
+      if (exists) {
+        return true;
+      }
+      // Wait 2 seconds before next poll
+      await this.page.waitForTimeout(2000);
+    }
+    return false;
+  }
+
+  /**
+   * Wait for EBS volume to appear (with polling)
+   * AWS EBS creation can take 10-30+ seconds
+   */
+  async waitForEBSVolumeToExist(name: string, timeout: number = 60000): Promise<boolean> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      await this.switchToEBS();
+      const volume = this.getEBSVolumeByName(name);
+      const exists = await this.elementExists(volume);
+      if (exists) {
+        return true;
+      }
+      // Wait 2 seconds before next poll
+      await this.page.waitForTimeout(2000);
+    }
+    return false;
+  }
+
+  /**
    * Get volume status
    */
   async getVolumeStatus(name: string, type: 'efs' | 'ebs'): Promise<string | null> {
