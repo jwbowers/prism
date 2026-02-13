@@ -1866,6 +1866,8 @@ export default function PrismApp() {
   const [createEBSModalVisible, setCreateEBSModalVisible] = useState(false);
   const [storageVolumeName, setStorageVolumeName] = useState('');
   const [storageVolumeSize, setStorageVolumeSize] = useState('');
+  const [storageVolumeNameError, setStorageVolumeNameError] = useState('');
+  const [storageVolumeSizeError, setStorageVolumeSizeError] = useState('');
 
   // Create Project modal state
   const [projectModalVisible, setProjectModalVisible] = useState(false);
@@ -3814,16 +3816,18 @@ export default function PrismApp() {
                         id: "status",
                         header: "Status",
                         cell: (item: EFSVolume) => (
-                          <StatusIndicator
-                            type={
-                              item.state === 'available' ? 'success' :
-                              item.state === 'creating' ? 'in-progress' :
-                              item.state === 'deleting' ? 'warning' : 'error'
-                            }
-                            ariaLabel={getStatusLabel('volume', item.state)}
-                          >
-                            {item.state}
-                          </StatusIndicator>
+                          <div data-testid="status-badge">
+                            <StatusIndicator
+                              type={
+                                item.state === 'available' ? 'success' :
+                                item.state === 'creating' ? 'in-progress' :
+                                item.state === 'deleting' ? 'warning' : 'error'
+                              }
+                              ariaLabel={getStatusLabel('volume', item.state)}
+                            >
+                              {item.state}
+                            </StatusIndicator>
+                          </div>
                         )
                       },
                       {
@@ -3946,17 +3950,19 @@ export default function PrismApp() {
                         id: "status",
                         header: "Status",
                         cell: (item: EBSVolume) => (
-                          <StatusIndicator
-                            type={
-                              item.state === 'available' ? 'success' :
-                              item.state === 'in-use' ? 'success' :
-                              item.state === 'creating' ? 'in-progress' :
-                              item.state === 'deleting' ? 'warning' : 'error'
-                            }
-                            ariaLabel={getStatusLabel('volume', item.state)}
-                          >
-                            {item.state}
-                          </StatusIndicator>
+                          <div data-testid="status-badge">
+                            <StatusIndicator
+                              type={
+                                item.state === 'available' ? 'success' :
+                                item.state === 'in-use' ? 'success' :
+                                item.state === 'creating' ? 'in-progress' :
+                                item.state === 'deleting' ? 'warning' : 'error'
+                              }
+                              ariaLabel={getStatusLabel('volume', item.state)}
+                            >
+                              {item.state}
+                            </StatusIndicator>
+                          </div>
                         )
                       },
                       {
@@ -11466,6 +11472,7 @@ export default function PrismApp() {
         onDismiss={() => {
           setCreateEFSModalVisible(false);
           setStorageVolumeName('');
+          setStorageVolumeNameError('');
         }}
         header="Create EFS Volume"
         size="medium"
@@ -11475,17 +11482,24 @@ export default function PrismApp() {
               <Button variant="link" onClick={() => {
                 setCreateEFSModalVisible(false);
                 setStorageVolumeName('');
+                setStorageVolumeNameError('');
               }}>
                 Cancel
               </Button>
               <Button
                 variant="primary"
-                disabled={!storageVolumeName.trim()}
                 onClick={async () => {
+                  // Validate volume name
+                  if (!storageVolumeName.trim()) {
+                    setStorageVolumeNameError('Volume name is required');
+                    return;
+                  }
+
                   try {
                     await api.createEFSVolume(storageVolumeName);
                     setCreateEFSModalVisible(false);
                     setStorageVolumeName('');
+                    setStorageVolumeNameError('');
                     await loadApplicationData();
                     setState(prev => ({
                       ...prev,
@@ -11528,10 +11542,14 @@ export default function PrismApp() {
             <FormField
               label="EFS Volume Name"
               description="Enter a name for your EFS volume"
+              errorText={storageVolumeNameError}
             >
               <Input
                 value={storageVolumeName}
-                onChange={({ detail }) => setStorageVolumeName(detail.value)}
+                onChange={({ detail }) => {
+                  setStorageVolumeName(detail.value);
+                  setStorageVolumeNameError(''); // Clear error on change
+                }}
                 placeholder="my-shared-data"
                 ariaLabel="EFS Volume Name"
               />
@@ -11547,6 +11565,8 @@ export default function PrismApp() {
           setCreateEBSModalVisible(false);
           setStorageVolumeName('');
           setStorageVolumeSize('');
+          setStorageVolumeNameError('');
+          setStorageVolumeSizeError('');
         }}
         header="Create EBS Volume"
         size="medium"
@@ -11557,18 +11577,39 @@ export default function PrismApp() {
                 setCreateEBSModalVisible(false);
                 setStorageVolumeName('');
                 setStorageVolumeSize('');
+                setStorageVolumeNameError('');
+                setStorageVolumeSizeError('');
               }}>
                 Cancel
               </Button>
               <Button
                 variant="primary"
-                disabled={!storageVolumeName.trim() || !storageVolumeSize.trim()}
                 onClick={async () => {
+                  // Validate volume name
+                  if (!storageVolumeName.trim()) {
+                    setStorageVolumeNameError('Volume name is required');
+                    return;
+                  }
+
+                  // Validate volume size
+                  if (!storageVolumeSize.trim()) {
+                    setStorageVolumeSizeError('Volume size is required');
+                    return;
+                  }
+
+                  const sizeNum = parseInt(storageVolumeSize);
+                  if (isNaN(sizeNum) || sizeNum <= 0) {
+                    setStorageVolumeSizeError('Volume size must be a positive number');
+                    return;
+                  }
+
                   try {
                     await api.createEBSVolume(storageVolumeName, storageVolumeSize);
                     setCreateEBSModalVisible(false);
                     setStorageVolumeName('');
                     setStorageVolumeSize('');
+                    setStorageVolumeNameError('');
+                    setStorageVolumeSizeError('');
                     await loadApplicationData();
                     setState(prev => ({
                       ...prev,
@@ -11611,10 +11652,14 @@ export default function PrismApp() {
             <FormField
               label="EBS Volume Name"
               description="Enter a name for your EBS volume"
+              errorText={storageVolumeNameError}
             >
               <Input
                 value={storageVolumeName}
-                onChange={({ detail }) => setStorageVolumeName(detail.value)}
+                onChange={({ detail }) => {
+                  setStorageVolumeName(detail.value);
+                  setStorageVolumeNameError(''); // Clear error on change
+                }}
                 placeholder="my-private-data"
                 ariaLabel="EBS Volume Name"
               />
@@ -11622,10 +11667,14 @@ export default function PrismApp() {
             <FormField
               label="EBS Volume Size (GB)"
               description="Enter the size of the volume in gigabytes"
+              errorText={storageVolumeSizeError}
             >
               <Input
                 value={storageVolumeSize}
-                onChange={({ detail }) => setStorageVolumeSize(detail.value)}
+                onChange={({ detail }) => {
+                  setStorageVolumeSize(detail.value);
+                  setStorageVolumeSizeError(''); // Clear error on change
+                }}
                 placeholder="100"
                 type="number"
                 ariaLabel="EBS Volume Size"
