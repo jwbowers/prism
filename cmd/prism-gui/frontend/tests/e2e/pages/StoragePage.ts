@@ -94,32 +94,73 @@ export class StoragePage extends BasePage {
 
   /**
    * Delete EFS volume
+   * Waits for volume to be in "available" state before deletion (AWS requires this)
    */
   async deleteEFSVolume(name: string) {
+    // Wait for volume to be available before attempting deletion
+    // AWS doesn't allow deleting volumes in "creating" state
+    const isAvailable = await this.waitForVolumeState(name, 'efs', 'available', 120000);
+    if (!isAvailable) {
+      throw new Error(`EFS volume "${name}" did not reach available state within timeout`);
+    }
+
     await this.switchToEFS();
     const volume = this.getEFSVolumeByName(name);
-    const deleteButton = volume.getByRole('button', { name: /delete/i });
-    await deleteButton.click();
+
+    // Click the Actions dropdown button
+    const actionsButton = volume.getByRole('button', { name: 'Actions' });
+    await actionsButton.click();
+
+    // Wait for menu to appear and click Delete option
+    const deleteOption = this.page.getByRole('menuitem', { name: /delete/i });
+    await deleteOption.click();
   }
 
   /**
    * Delete EBS volume
+   * Waits for volume to be in "available" state before deletion (AWS requires this)
    */
   async deleteEBSVolume(name: string) {
+    // Wait for volume to be available before attempting deletion
+    // AWS doesn't allow deleting volumes in "creating" state
+    const isAvailable = await this.waitForVolumeState(name, 'ebs', 'available', 120000);
+    if (!isAvailable) {
+      throw new Error(`EBS volume "${name}" did not reach available state within timeout`);
+    }
+
     await this.switchToEBS();
     const volume = this.getEBSVolumeByName(name);
-    const deleteButton = volume.getByRole('button', { name: /delete/i });
-    await deleteButton.click();
+
+    // Click the Actions dropdown button
+    const actionsButton = volume.getByRole('button', { name: 'Actions' });
+    await actionsButton.click();
+
+    // Wait for menu to appear and click Delete option
+    const deleteOption = this.page.getByRole('menuitem', { name: /delete/i });
+    await deleteOption.click();
   }
 
   /**
    * Mount EFS volume to instance
+   * Waits for volume to be in "available" state before mounting (AWS requires this)
    */
   async mountEFSVolume(volumeName: string, instanceName: string) {
+    // Wait for volume to be available before attempting mount
+    const isAvailable = await this.waitForVolumeState(volumeName, 'efs', 'available', 120000);
+    if (!isAvailable) {
+      throw new Error(`EFS volume "${volumeName}" did not reach available state within timeout`);
+    }
+
     await this.switchToEFS();
     const volume = this.getEFSVolumeByName(volumeName);
-    const mountButton = volume.getByRole('button', { name: /mount/i });
-    await mountButton.click();
+
+    // Click the Actions dropdown button
+    const actionsButton = volume.getByRole('button', { name: 'Actions' });
+    await actionsButton.click();
+
+    // Wait for menu to appear and click Mount option
+    const mountOption = this.page.getByRole('menuitem', { name: /mount/i });
+    await mountOption.click();
 
     // Select instance in dialog
     const instanceSelect = this.page.getByLabel(/instance/i);
@@ -133,8 +174,14 @@ export class StoragePage extends BasePage {
   async unmountEFSVolume(volumeName: string, instanceName: string) {
     await this.switchToEFS();
     const volume = this.getEFSVolumeByName(volumeName);
-    const unmountButton = volume.getByRole('button', { name: /unmount/i });
-    await unmountButton.click();
+
+    // Click the Actions dropdown button
+    const actionsButton = volume.getByRole('button', { name: 'Actions' });
+    await actionsButton.click();
+
+    // Wait for menu to appear and click Unmount option
+    const unmountOption = this.page.getByRole('menuitem', { name: /unmount/i });
+    await unmountOption.click();
 
     // Confirm unmount
     await this.clickButton('unmount');
@@ -142,12 +189,25 @@ export class StoragePage extends BasePage {
 
   /**
    * Attach EBS volume to instance
+   * Waits for volume to be in "available" state before attaching (AWS requires this)
    */
   async attachEBSVolume(volumeName: string, instanceName: string) {
+    // Wait for volume to be available before attempting attach
+    const isAvailable = await this.waitForVolumeState(volumeName, 'ebs', 'available', 120000);
+    if (!isAvailable) {
+      throw new Error(`EBS volume "${volumeName}" did not reach available state within timeout`);
+    }
+
     await this.switchToEBS();
     const volume = this.getEBSVolumeByName(volumeName);
-    const attachButton = volume.getByRole('button', { name: /attach/i });
-    await attachButton.click();
+
+    // Click the Actions dropdown button
+    const actionsButton = volume.getByRole('button', { name: 'Actions' });
+    await actionsButton.click();
+
+    // Wait for menu to appear and click Attach option
+    const attachOption = this.page.getByRole('menuitem', { name: /attach/i });
+    await attachOption.click();
 
     // Select instance in dialog
     const instanceSelect = this.page.getByLabel(/instance/i);
@@ -161,8 +221,14 @@ export class StoragePage extends BasePage {
   async detachEBSVolume(volumeName: string) {
     await this.switchToEBS();
     const volume = this.getEBSVolumeByName(volumeName);
-    const detachButton = volume.getByRole('button', { name: /detach/i });
-    await detachButton.click();
+
+    // Click the Actions dropdown button
+    const actionsButton = volume.getByRole('button', { name: 'Actions' });
+    await actionsButton.click();
+
+    // Wait for menu to appear and click Detach option
+    const detachOption = this.page.getByRole('menuitem', { name: /detach/i });
+    await detachOption.click();
 
     // Confirm detach
     await this.clickButton('detach');
@@ -261,6 +327,43 @@ export class StoragePage extends BasePage {
       const volume = this.getEBSVolumeByName(name);
       const statusBadge = volume.locator('[data-testid="status-badge"]');
       return await this.getTextContent(statusBadge);
+    }
+  }
+
+  /**
+   * Wait for volume to reach specific state (deterministic DOM polling)
+   * AWS EFS/EBS transitions: creating → available → in-use → deleting → deleted
+   * Uses Playwright's waitFor() for deterministic state checking
+   */
+  async waitForVolumeState(
+    name: string,
+    type: 'efs' | 'ebs',
+    targetState: string,
+    timeout: number = 120000
+  ): Promise<boolean> {
+    if (type === 'efs') {
+      await this.switchToEFS();
+    } else {
+      await this.switchToEBS();
+    }
+
+    const volume = type === 'efs' ? this.getEFSVolumeByName(name) : this.getEBSVolumeByName(name);
+    const statusBadge = volume.locator('[data-testid="status-badge"]');
+
+    try {
+      await statusBadge.waitFor({ state: 'visible', timeout: 5000 });
+      await this.page.waitForFunction(
+        ({ badge, target }) => {
+          const element = badge as HTMLElement;
+          const text = element.textContent?.toLowerCase().trim() || '';
+          return text === target.toLowerCase();
+        },
+        { badge: statusBadge, target: targetState },
+        { timeout }
+      );
+      return true;
+    } catch {
+      return false;
     }
   }
 }
