@@ -9,6 +9,9 @@ import { test, expect } from '@playwright/test';
 import { StoragePage, InstancesPage, ConfirmDialog } from './pages';
 
 test.describe('Storage Management Workflows', () => {
+  // Increase timeout for storage tests since AWS EFS/EBS creation takes 60-120+ seconds
+  test.setTimeout(180000); // 3 minutes
+
   let storagePage: StoragePage;
   let instancesPage: InstancesPage;
   let confirmDialog: ConfirmDialog;

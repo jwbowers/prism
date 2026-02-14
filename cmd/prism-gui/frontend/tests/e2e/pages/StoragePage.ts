@@ -283,10 +283,10 @@ export class StoragePage extends BasePage {
 
   /**
    * Wait for EFS volume to appear (deterministic DOM polling)
-   * AWS EFS creation can take 10-30+ seconds
+   * AWS EFS creation can take 60-120+ seconds in real environments
    * Uses Playwright's built-in waitFor() for deterministic waiting
    */
-  async waitForEFSVolumeToExist(name: string, timeout: number = 60000): Promise<boolean> {
+  async waitForEFSVolumeToExist(name: string, timeout: number = 120000): Promise<boolean> {
     await this.switchToEFS();
     const volume = this.getEFSVolumeByName(name);
     try {
@@ -299,10 +299,10 @@ export class StoragePage extends BasePage {
 
   /**
    * Wait for EBS volume to appear (deterministic DOM polling)
-   * AWS EBS creation can take 10-30+ seconds
+   * AWS EBS creation can take 60-120+ seconds in real environments
    * Uses Playwright's built-in waitFor() for deterministic waiting
    */
-  async waitForEBSVolumeToExist(name: string, timeout: number = 60000): Promise<boolean> {
+  async waitForEBSVolumeToExist(name: string, timeout: number = 120000): Promise<boolean> {
     await this.switchToEBS();
     const volume = this.getEBSVolumeByName(name);
     try {
