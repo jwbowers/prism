@@ -238,13 +238,19 @@ export class StoragePage extends BasePage {
    * Search volumes
    */
   async searchVolumes(query: string) {
+    // Wait for table to have data before searching
+    await this.page.waitForSelector('[data-testid="efs-table"] tbody tr, [data-testid="ebs-table"] tbody tr',
+      { timeout: 10000 }
+    );
+
     // Use data-testid for storage-specific search to avoid strict mode violations
     const searchInput = this.page.getByTestId('storage-search-input').or(
       this.page.locator('input[placeholder*="Search"]').first()
     );
     await searchInput.fill(query);
-    // Wait for the table to update after search filter
-    await this.page.waitForLoadState('domcontentloaded');
+
+    // Wait for React to re-render with filtered results
+    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -279,6 +285,44 @@ export class StoragePage extends BasePage {
     await this.switchToEBS();
     const volume = this.getEBSVolumeByName(name);
     return await this.elementExists(volume);
+  }
+
+  /**
+   * Wait for volume data to be visible in table
+   */
+  async waitForVolumeDataVisible(volumeType: 'ebs' | 'efs'): Promise<void> {
+    const tableTestId = volumeType === 'ebs' ? 'ebs-table' : 'efs-table';
+
+    // Wait for table rows with actual data (not just loading state)
+    await this.page.waitForFunction(
+      (testId) => {
+        const table = document.querySelector(`[data-testid="${testId}"]`);
+        if (!table) return false;
+        const rows = table.querySelectorAll('tbody tr');
+        return rows.length > 0 && rows[0].textContent && rows[0].textContent.trim().length > 0;
+      },
+      tableTestId,
+      { timeout: 15000 }
+    );
+  }
+
+  /**
+   * Get visible volume count after filtering
+   */
+  async getVisibleVolumeCount(volumeType: 'ebs' | 'efs'): Promise<number> {
+    const tableTestId = volumeType === 'ebs' ? 'ebs-table' : 'efs-table';
+    const rows = await this.page.locator(`[data-testid="${tableTestId}"] tbody tr`).all();
+
+    // Filter out "No matches" or empty state rows
+    const dataRows = [];
+    for (const row of rows) {
+      const text = await row.textContent();
+      if (text && !text.includes('No matches') && !text.includes('No volumes')) {
+        dataRows.push(row);
+      }
+    }
+
+    return dataRows.length;
   }
 
   /**

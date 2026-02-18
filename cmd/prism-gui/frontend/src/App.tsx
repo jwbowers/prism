@@ -1935,6 +1935,11 @@ export default function PrismApp() {
   const [efsFilterText, setEfsFilterText] = useState<string>('');
   const [ebsFilterText, setEbsFilterText] = useState<string>('');
 
+  // EBS attachment modal state
+  const [attachModalVisible, setAttachModalVisible] = useState(false);
+  const [attachModalVolume, setAttachModalVolume] = useState<EBSVolume | null>(null);
+  const [selectedAttachInstance, setSelectedAttachInstance] = useState<string>('');
+
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
   const [budgetName, setBudgetName] = useState('');
@@ -3691,14 +3696,13 @@ export default function PrismApp() {
             setDeleteModalVisible(true);
             return;
           case 'attach':
+            // Show modal for instance selection
+            setAttachModalVolume(volume as EBSVolume);
             if (state.instances.length > 0) {
-              const instance = state.instances[0].name;
-              await api.attachEBSVolume(volume.name, instance);
-              actionMessage = `Attached EBS volume ${volume.name} to ${instance}`;
-            } else {
-              throw new Error('No running workspaces available for attachment');
+              setSelectedAttachInstance(state.instances[0].name); // Default to first
             }
-            break;
+            setAttachModalVisible(true);
+            return; // Don't execute API call yet
           case 'detach':
             await api.detachEBSVolume(volume.name);
             actionMessage = `Detached EBS volume ${volume.name}`;
@@ -4151,6 +4155,126 @@ export default function PrismApp() {
             }
           ]}
         />
+
+        {/* Attach EBS Volume Modal */}
+        <Modal
+          visible={attachModalVisible}
+          onDismiss={() => {
+            setAttachModalVisible(false);
+            setAttachModalVolume(null);
+            setSelectedAttachInstance('');
+          }}
+          header="Attach Volume to Workspace"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setAttachModalVisible(false);
+                    setAttachModalVolume(null);
+                    setSelectedAttachInstance('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (attachModalVolume && selectedAttachInstance) {
+                      setState(prev => ({ ...prev, loading: true }));
+                      try {
+                        await api.attachEBSVolume(attachModalVolume.name, selectedAttachInstance);
+                        setState(prev => ({
+                          ...prev,
+                          loading: false,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'success',
+                              header: 'Volume Attached',
+                              content: `EBS volume ${attachModalVolume.name} attached to ${selectedAttachInstance}`,
+                              dismissible: true,
+                              onDismiss: () => setState(prev => ({
+                                ...prev,
+                                notifications: prev.notifications.slice(1)
+                              }))
+                            }
+                          ]
+                        }));
+                        setAttachModalVisible(false);
+                        setAttachModalVolume(null);
+                        setSelectedAttachInstance('');
+                        await loadStorageData();
+                      } catch (error) {
+                        setState(prev => ({
+                          ...prev,
+                          loading: false,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'error',
+                              header: 'Attachment Failed',
+                              content: `Failed to attach volume: ${error instanceof Error ? error.message : String(error)}`,
+                              dismissible: true,
+                              onDismiss: () => setState(prev => ({
+                                ...prev,
+                                notifications: prev.notifications.slice(1)
+                              }))
+                            }
+                          ]
+                        }));
+                      }
+                    }
+                  }}
+                  disabled={!selectedAttachInstance}
+                  data-testid="attach-button"
+                >
+                  Attach
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            {attachModalVolume && (
+              <>
+                <Box>
+                  <Box variant="strong">Volume:</Box> {attachModalVolume.name}
+                  <br />
+                  <Box variant="strong">Type:</Box> {attachModalVolume.volume_type.toUpperCase()}
+                  <br />
+                  <Box variant="strong">Size:</Box> {attachModalVolume.size_gb} GB
+                </Box>
+
+                <FormField
+                  label="Instance"
+                  description="Select the workspace to attach this volume to"
+                >
+                  <Select
+                    selectedOption={
+                      selectedAttachInstance
+                        ? { label: selectedAttachInstance, value: selectedAttachInstance }
+                        : null
+                    }
+                    onChange={({ detail }) => setSelectedAttachInstance(detail.selectedOption.value || '')}
+                    options={state.instances
+                      .filter(inst => inst.state === 'running')
+                      .map(inst => ({
+                        label: inst.name,
+                        value: inst.name,
+                        description: `${inst.template} - ${inst.public_ip || 'No IP'}`
+                      }))
+                    }
+                    placeholder="Choose a workspace"
+                    empty="No running workspaces available"
+                    data-testid="instance-select"
+                  />
+                </FormField>
+              </>
+            )}
+          </SpaceBetween>
+        </Modal>
 
         {/* Storage Statistics */}
         <Container
