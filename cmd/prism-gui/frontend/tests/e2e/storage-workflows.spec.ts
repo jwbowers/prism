@@ -9,11 +9,12 @@ import { test, expect } from '@playwright/test';
 import { StoragePage, InstancesPage, ConfirmDialog } from './pages';
 
 test.describe('Storage Management Workflows', () => {
-  // Increase timeout for storage tests since AWS EFS/EBS creation takes 60-120+ seconds
-  test.setTimeout(180000); // 3 minutes test timeout
+  // Increase timeout for storage tests since AWS operations now wait for resources to be ready
+  // Backend waits up to 5 minutes for EBS/EFS to become available, so tests need 7 minutes total
+  test.setTimeout(420000); // 7 minutes test timeout (5 min AWS + 1 min UI + 1 min buffer)
 
   // Configure Playwright to use longer action timeout for AWS operations
-  test.use({ actionTimeout: 180000 }); // 3 minutes action timeout (matches test timeout)
+  test.use({ actionTimeout: 420000 }); // 7 minutes action timeout (matches test timeout)
 
   let storagePage: StoragePage;
   let instancesPage: InstancesPage;

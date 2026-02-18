@@ -1343,6 +1343,14 @@ func (m *Manager) CreateVolume(req ctypes.VolumeCreateRequest) (*ctypes.StorageV
 		return nil, fmt.Errorf("failed to create EFS file system: %w", err)
 	}
 
+	// Wait for file system to become available (60-180 seconds typical)
+	log.Printf("Waiting for EFS file system to become available...")
+	err = m.waitForEFSAvailable(ctx, *result.FileSystemId, 5*time.Minute)
+	if err != nil {
+		return nil, fmt.Errorf("EFS created but not available: %w", err)
+	}
+	log.Printf("EFS file system %s is now available", *result.FileSystemId)
+
 	sizeBytes := int64(0) // Will be updated as files are added
 	volume := &ctypes.StorageVolume{
 		Name:            req.Name,
@@ -1383,7 +1391,10 @@ func (m *Manager) DeleteVolume(name string) error {
 
 	log.Printf("Deleting EFS volume '%s' (filesystem ID: %s)...", name, fsId)
 
-	ctx := context.Background()
+	// Delete mount targets with 5-minute timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
 	// 1. Delete all mount targets first
 	// List mount targets for the file system
 	mtResp, err := m.efs.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
@@ -1412,7 +1423,14 @@ func (m *Manager) DeleteVolume(name string) error {
 		log.Printf("Waiting for mount targets to be deleted...")
 
 		// Poll until all mount targets are gone
-		for i := 0; i < 30; i++ { // Try for up to 5 minutes (30 * 10 seconds)
+		for {
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("timeout deleting mount targets: %w", ctx.Err())
+			default:
+				// Continue
+			}
+
 			// Check if mount targets still exist
 			mtCheck, err := m.efs.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
 				FileSystemId: aws.String(fsId),
@@ -1422,7 +1440,13 @@ func (m *Manager) DeleteVolume(name string) error {
 				if strings.Contains(err.Error(), "FileSystemNotFound") {
 					break
 				}
-				return fmt.Errorf("error checking mount targets: %w", err)
+				// If can't list, wait and retry
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(10 * time.Second):
+					continue
+				}
 			}
 
 			// If no mount targets remain, we can proceed
@@ -1431,7 +1455,12 @@ func (m *Manager) DeleteVolume(name string) error {
 			}
 
 			// Wait before checking again
-			time.Sleep(10 * time.Second)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(10 * time.Second):
+				// Continue loop
+			}
 		}
 	}
 
@@ -1446,6 +1475,44 @@ func (m *Manager) DeleteVolume(name string) error {
 
 	// 4. Remove from state
 	return m.stateManager.RemoveStorageVolume(name)
+}
+
+// waitForEFSAvailable polls EFS status until available
+func (m *Manager) waitForEFSAvailable(ctx context.Context, fsID string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	pollInterval := 10 * time.Second
+
+	for time.Now().Before(deadline) {
+		output, err := m.efs.DescribeFileSystems(ctx, &efs.DescribeFileSystemsInput{
+			FileSystemId: aws.String(fsID),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to describe EFS: %w", err)
+		}
+
+		if len(output.FileSystems) == 0 {
+			return fmt.Errorf("EFS %s not found", fsID)
+		}
+
+		fs := output.FileSystems[0]
+		if fs.LifeCycleState == efsTypes.LifeCycleStateAvailable {
+			return nil // Success!
+		}
+
+		if fs.LifeCycleState == efsTypes.LifeCycleStateError {
+			return fmt.Errorf("EFS entered error state")
+		}
+
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(pollInterval):
+			// Continue polling
+		}
+	}
+
+	return fmt.Errorf("timeout waiting for EFS to become available")
 }
 
 // MountVolume mounts an EFS volume to an instance
@@ -1900,6 +1967,19 @@ func (m *Manager) CreateStorage(req ctypes.StorageCreateRequest) (*ctypes.Storag
 		return nil, fmt.Errorf("failed to create EBS volume: %w", err)
 	}
 
+	// Wait for volume to become available (30-120 seconds typical)
+	log.Printf("Waiting for EBS volume to become available...")
+	waiter := ec2.NewVolumeAvailableWaiter(m.ec2)
+	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Minute) // 5-minute max timeout
+	defer cancel()
+	err = waiter.Wait(waitCtx, &ec2.DescribeVolumesInput{
+		VolumeIds: []string{*result.VolumeId},
+	}, 5*time.Minute)
+	if err != nil {
+		return nil, fmt.Errorf("volume created but not available: %w", err)
+	}
+	log.Printf("EBS volume %s is now available", *result.VolumeId)
+
 	// Calculate cost per GB per month
 	costPerGB := m.getEBSCostPerGB(volumeType)
 
@@ -1935,6 +2015,19 @@ func (m *Manager) DeleteStorage(name string) error {
 	}
 
 	ctx := context.Background()
+
+	// First, wait for volume to be available (can't delete if attached/creating)
+	log.Printf("Ensuring volume %s is in available state...", volumeID)
+	waiter := ec2.NewVolumeAvailableWaiter(m.ec2)
+	waitCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
+	err = waiter.Wait(waitCtx, &ec2.DescribeVolumesInput{
+		VolumeIds: []string{volumeID},
+	}, 3*time.Minute)
+	if err != nil {
+		return fmt.Errorf("volume not available for deletion: %w", err)
+	}
+
 	// Delete the volume
 	_, err = m.ec2.DeleteVolume(ctx, &ec2.DeleteVolumeInput{
 		VolumeId: aws.String(volumeID),
@@ -1973,6 +2066,19 @@ func (m *Manager) AttachStorage(volumeName, instanceName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to attach volume: %w", err)
 	}
+
+	// Wait for attachment to complete
+	log.Printf("Waiting for volume attachment to complete...")
+	waiter := ec2.NewVolumeInUseWaiter(m.ec2)
+	waitCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
+	err = waiter.Wait(waitCtx, &ec2.DescribeVolumesInput{
+		VolumeIds: []string{volumeID},
+	}, 3*time.Minute)
+	if err != nil {
+		return fmt.Errorf("volume attachment timed out: %w", err)
+	}
+	log.Printf("Volume %s successfully attached to instance %s", volumeID, instanceID)
 
 	return nil
 }
