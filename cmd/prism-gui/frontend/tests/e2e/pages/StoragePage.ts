@@ -258,7 +258,8 @@ export class StoragePage extends BasePage {
    */
   async getEFSVolumeCount(): Promise<number> {
     await this.switchToEFS();
-    return await this.getEFSVolumeRows().count();
+    // Use getVisibleVolumeCount to filter out loading/empty state rows
+    return await this.getVisibleVolumeCount('efs');
   }
 
   /**
@@ -266,7 +267,8 @@ export class StoragePage extends BasePage {
    */
   async getEBSVolumeCount(): Promise<number> {
     await this.switchToEBS();
-    return await this.getEBSVolumeRows().count();
+    // Use getVisibleVolumeCount to filter out loading/empty state rows
+    return await this.getVisibleVolumeCount('ebs');
   }
 
   /**
@@ -313,11 +315,14 @@ export class StoragePage extends BasePage {
     const tableTestId = volumeType === 'ebs' ? 'ebs-table' : 'efs-table';
     const rows = await this.page.locator(`[data-testid="${tableTestId}"] tbody tr`).all();
 
-    // Filter out "No matches" or empty state rows
+    // Filter out loading, "No matches", and empty state rows
     const dataRows = [];
     for (const row of rows) {
       const text = await row.textContent();
-      if (text && !text.includes('No matches') && !text.includes('No volumes')) {
+      if (text &&
+          !text.includes('Loading') &&
+          !text.includes('No matches') &&
+          !text.includes('No volumes')) {
         dataRows.push(row);
       }
     }
