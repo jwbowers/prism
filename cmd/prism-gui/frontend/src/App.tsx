@@ -42,7 +42,9 @@ import {
   TextContent,
   Textarea,
   Toggle,
-  Pagination
+  Pagination,
+  TextFilter,
+  Checkbox
 } from '@cloudscape-design/components';
 
 // Type definitions
@@ -853,6 +855,14 @@ class SafePrismAPI {
     await this.safeRequest(`/api/v1/volumes/${volumeName}/unmount`, 'POST', { instance });
   }
 
+  async syncEFSVolume(volumeName: string): Promise<EFSVolume> {
+    return this.safeRequest(`/api/v1/volumes/${volumeName}/sync`, 'POST');
+  }
+
+  async syncAllEFSVolumes(): Promise<EFSVolume[]> {
+    return this.safeRequest('/api/v1/volumes/sync', 'POST');
+  }
+
   // EBS Storage Management (using unified API)
   async getEBSVolumes(): Promise<EBSVolume[]> {
     try {
@@ -888,6 +898,14 @@ class SafePrismAPI {
 
   async detachEBSVolume(storageName: string): Promise<void> {
     await this.safeRequest(`/api/v1/storage/${storageName}/detach`, 'POST');
+  }
+
+  async syncEBSVolume(storageName: string): Promise<EBSVolume> {
+    return this.safeRequest(`/api/v1/storage/${storageName}/sync`, 'POST');
+  }
+
+  async syncAllEBSVolumes(): Promise<EBSVolume[]> {
+    return this.safeRequest('/api/v1/storage/sync', 'POST');
   }
 
   // Snapshot/Backup Management APIs
@@ -1790,7 +1808,10 @@ export default function PrismApp() {
   const [launchModalVisible, setLaunchModalVisible] = useState(false);
   const [launchConfig, setLaunchConfig] = useState({
     name: '',
-    size: 'M'
+    size: 'M',
+    spot: false,
+    hibernation: false,
+    dryRun: false
   });
 
   // Delete confirmation modal state
@@ -1909,6 +1930,10 @@ export default function PrismApp() {
   const [selectedUserForProvision, setSelectedUserForProvision] = useState<User | null>(null);
   const [selectedWorkspaceForProvision, setSelectedWorkspaceForProvision] = useState<string>('');
   const [provisioningInProgress, setProvisioningInProgress] = useState(false);
+
+  // Storage filtering state
+  const [efsFilterText, setEfsFilterText] = useState<string>('');
+  const [ebsFilterText, setEbsFilterText] = useState<string>('');
 
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
@@ -2772,13 +2797,11 @@ export default function PrismApp() {
             <SpaceBetween size="m">
               <TextContent>
                 <h1>Welcome to Prism</h1>
-                <p>
-                  <Box variant="p" fontSize="heading-m" color="text-body-secondary">
-                    {isFirstTimeUser
-                      ? 'Launch your research workspace in seconds'
-                      : 'Manage your research workspaces'}
-                  </Box>
-                </p>
+                <Box variant="p" fontSize="heading-m" color="text-body-secondary">
+                  {isFirstTimeUser
+                    ? 'Launch your research workspace in seconds'
+                    : 'Manage your research workspaces'}
+                </Box>
               </TextContent>
               {isFirstTimeUser && (
                 <>
@@ -2948,7 +2971,14 @@ export default function PrismApp() {
 
   // Templates View
   const TemplateSelectionView = () => {
-    const templateList = Object.values(state.templates);
+    // Deduplicate templates by name (keep first occurrence)
+    const templateList = Object.values(state.templates).reduce((acc, template) => {
+      const name = getTemplateName(template);
+      if (!acc.some(t => getTemplateName(t) === name)) {
+        acc.push(template);
+      }
+      return acc;
+    }, [] as Template[]);
 
     if (state.loading) {
       return (
@@ -3004,9 +3034,9 @@ export default function PrismApp() {
         >
           {/* Working Template Cards Implementation */}
           <SpaceBetween size="m" data-testid="cards">
-            {templateList.map((template) => (
+            {templateList.map((template, index) => (
               <Container
-                key={getTemplateName(template)}
+                key={getTemplateSlug(template) || `${getTemplateName(template)}-${index}`}
                 data-testid="template-card"
               >
                 <SpaceBetween size="s">
@@ -3317,6 +3347,33 @@ export default function PrismApp() {
     });
   };
 
+  // Filter EFS volumes based on search text
+  const getFilteredEFSVolumes = () => {
+    if (!efsFilterText.trim()) {
+      return state.efsVolumes;
+    }
+    const searchValue = efsFilterText.toLowerCase();
+    return state.efsVolumes.filter((volume) =>
+      volume.name.toLowerCase().includes(searchValue) ||
+      volume.filesystem_id.toLowerCase().includes(searchValue) ||
+      volume.state.toLowerCase().includes(searchValue)
+    );
+  };
+
+  // Filter EBS volumes based on search text
+  const getFilteredEBSVolumes = () => {
+    if (!ebsFilterText.trim()) {
+      return state.ebsVolumes;
+    }
+    const searchValue = ebsFilterText.toLowerCase();
+    return state.ebsVolumes.filter((volume) =>
+      volume.name.toLowerCase().includes(searchValue) ||
+      volume.volume_id.toLowerCase().includes(searchValue) ||
+      volume.state.toLowerCase().includes(searchValue) ||
+      volume.volume_type.toLowerCase().includes(searchValue)
+    );
+  };
+
   // Instances View
   const InstanceManagementView = () => (
     <SpaceBetween size="l">
@@ -3328,7 +3385,11 @@ export default function PrismApp() {
             counter={`(${state.instances.length})`}
             actions={
               <SpaceBetween direction="horizontal" size="xs">
-                <Button onClick={loadApplicationData} disabled={state.loading}>
+                <Button
+                  onClick={loadApplicationData}
+                  disabled={state.loading}
+                  data-testid="refresh-instances-button"
+                >
                   {state.loading ? <Spinner /> : 'Refresh'}
                 </Button>
                 <Button
@@ -3348,7 +3409,7 @@ export default function PrismApp() {
         <PropertyFilter
           query={instancesFilterQuery}
           onChange={({ detail }) => setInstancesFilterQuery(detail)}
-          filteringPlaceholder="Search workspaces"
+          filteringPlaceholder="Search instances by name or filter by status"
           filteringProperties={[
             {
               key: 'name',
@@ -3426,7 +3487,7 @@ export default function PrismApp() {
             {
               id: "name",
               header: "Workspace Name",
-              cell: (item: Instance) => <Link fontSize="body-m">{item.name}</Link>,
+              cell: (item: Instance) => <Link fontSize="body-m" data-testid="instance-name">{item.name}</Link>,
               sortingField: "name"
             },
             {
@@ -3439,6 +3500,7 @@ export default function PrismApp() {
               header: "Status",
               cell: (item: Instance) => (
                 <StatusIndicator
+                  data-testid="instance-status"
                   type={
                     item.state === 'running' ? 'success' :
                     item.state === 'stopped' ? 'stopped' :
@@ -3800,6 +3862,15 @@ export default function PrismApp() {
                 >
                   <Table
                     data-testid="efs-table"
+                    filter={
+                      <TextFilter
+                        data-testid="storage-search-input"
+                        filteringText={efsFilterText}
+                        onChange={({ detail }) => setEfsFilterText(detail.filteringText)}
+                        filteringPlaceholder="Search EFS volumes"
+                        filteringAriaLabel="Filter EFS volumes"
+                      />
+                    }
                     columnDefinitions={[
                       {
                         id: "name",
@@ -3833,7 +3904,7 @@ export default function PrismApp() {
                       {
                         id: "size",
                         header: "Size",
-                        cell: (item: EFSVolume) => `${Math.round(item.size_bytes / (1024 * 1024 * 1024))} GB`
+                        cell: (item: EFSVolume) => <div data-testid="volume-size">{`${Math.round(item.size_bytes / (1024 * 1024 * 1024))} GB`}</div>
                       },
                       {
                         id: "cost",
@@ -3870,7 +3941,7 @@ export default function PrismApp() {
                         )
                       }
                     ]}
-                    items={state.efsVolumes}
+                    items={getFilteredEFSVolumes()}
                     loadingText="Loading shared storage volumes from AWS"
                     loading={state.loading}
                     trackBy="name"
@@ -3934,6 +4005,15 @@ export default function PrismApp() {
                 >
                   <Table
                     data-testid="ebs-table"
+                    filter={
+                      <TextFilter
+                        data-testid="storage-search-input"
+                        filteringText={ebsFilterText}
+                        onChange={({ detail }) => setEbsFilterText(detail.filteringText)}
+                        filteringPlaceholder="Search EBS volumes"
+                        filteringAriaLabel="Filter EBS volumes"
+                      />
+                    }
                     columnDefinitions={[
                       {
                         id: "name",
@@ -3969,21 +4049,23 @@ export default function PrismApp() {
                         id: "type",
                         header: "Type",
                         cell: (item: EBSVolume) => (
-                          <SpaceBetween direction="horizontal" size="xs">
-                            <Box>{item.volume_type.toUpperCase()}</Box>
-                            {item.volume_type.startsWith('gp') && (
-                              <Badge color="blue">General Purpose</Badge>
-                            )}
-                            {item.volume_type.startsWith('io') && (
-                              <Badge color="green">High Performance</Badge>
-                            )}
-                          </SpaceBetween>
+                          <div data-testid="volume-type">
+                            <SpaceBetween direction="horizontal" size="xs">
+                              <Box>{item.volume_type.toUpperCase()}</Box>
+                              {item.volume_type.startsWith('gp') && (
+                                <Badge color="blue">General Purpose</Badge>
+                              )}
+                              {item.volume_type.startsWith('io') && (
+                                <Badge color="green">High Performance</Badge>
+                              )}
+                            </SpaceBetween>
+                          </div>
                         )
                       },
                       {
                         id: "size",
                         header: "Size",
-                        cell: (item: EBSVolume) => `${item.size_gb} GB`
+                        cell: (item: EBSVolume) => <div data-testid="volume-size">{`${item.size_gb} GB`}</div>
                       },
                       {
                         id: "attached_to",
@@ -4036,7 +4118,7 @@ export default function PrismApp() {
                         )
                       }
                     ]}
-                    items={state.ebsVolumes}
+                    items={getFilteredEBSVolumes()}
                     loadingText="Loading private storage volumes from AWS"
                     loading={state.loading}
                     trackBy="name"
@@ -9609,7 +9691,7 @@ export default function PrismApp() {
                 { label: "Large (L) - Heavy compute", value: "L" },
                 { label: "Extra Large (XL) - Maximum performance", value: "XL" }
               ]}
-              data-testid="select"
+              data-testid="instance-size-select"
             />
           </FormField>
 
@@ -9627,6 +9709,38 @@ export default function PrismApp() {
               </Box>
             </Alert>
           )}
+
+          <FormField
+            label="Instance Options"
+            description="Configure advanced instance settings"
+          >
+            <SpaceBetween size="s">
+              <Checkbox
+                checked={launchConfig.spot || false}
+                onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, spot: detail.checked }))}
+              >
+                Spot instance - use lower-cost spot pricing
+              </Checkbox>
+              <Checkbox
+                checked={launchConfig.hibernation || false}
+                onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, hibernation: detail.checked }))}
+              >
+                Hibernation - enable instance hibernation support
+              </Checkbox>
+            </SpaceBetween>
+          </FormField>
+
+          <FormField
+            label="Validation"
+            description="Test your configuration without actually launching resources"
+          >
+            <Checkbox
+              checked={launchConfig.dryRun || false}
+              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, dryRun: detail.checked }))}
+            >
+              Dry run mode - validate without creating resources
+            </Checkbox>
+          </FormField>
         </SpaceBetween>
       </Form>
     </Modal>
@@ -11497,6 +11611,8 @@ export default function PrismApp() {
 
                   try {
                     await api.createEFSVolume(storageVolumeName);
+                    // Sync volume state from AWS to ensure we have current state
+                    await api.syncEFSVolume(storageVolumeName);
                     setCreateEFSModalVisible(false);
                     setStorageVolumeName('');
                     setStorageVolumeNameError('');
@@ -11610,6 +11726,8 @@ export default function PrismApp() {
 
                   try {
                     await api.createEBSVolume(storageVolumeName, storageVolumeSize);
+                    // Sync volume state from AWS to ensure we have current state
+                    await api.syncEBSVolume(storageVolumeName);
                     setCreateEBSModalVisible(false);
                     setStorageVolumeName('');
                     setStorageVolumeSize('');

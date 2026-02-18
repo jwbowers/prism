@@ -95,6 +95,8 @@ func (s *Server) handleStorageOperations(w http.ResponseWriter, r *http.Request)
 			s.handleAttachStorage(w, r, storageName)
 		case "detach":
 			s.handleDetachStorage(w, r, storageName)
+		case "sync":
+			s.handleSyncStorage(w, r, storageName)
 		default:
 			s.writeError(w, http.StatusNotFound, "Unknown operation")
 		}
@@ -195,4 +197,95 @@ func (s *Server) handleDetachStorage(w http.ResponseWriter, r *http.Request, sto
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleSyncStorage syncs a specific EBS volume's state from AWS
+func (s *Server) handleSyncStorage(w http.ResponseWriter, r *http.Request, storageName string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Load current state
+	state, err := s.stateManager.LoadState()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "Failed to load state")
+		return
+	}
+
+	// Get storage from state
+	storage, exists := state.StorageVolumes[storageName]
+	if !exists || !storage.IsWorkspace() {
+		s.writeError(w, http.StatusNotFound, "Storage not found")
+		return
+	}
+
+	// Query AWS for current state
+	awsManager, err := s.createAWSManagerFromRequest(r)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create AWS manager: %v", err))
+		return
+	}
+
+	currentState, err := awsManager.GetEBSVolumeState(storage.VolumeID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get storage state from AWS: %v", err))
+		return
+	}
+
+	// Update state if changed
+	if currentState != storage.State {
+		storage.State = currentState
+		if err := s.stateManager.SaveStorageVolume(storage); err != nil {
+			s.writeError(w, http.StatusInternalServerError, "Failed to save storage state")
+			return
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(storage)
+}
+
+// handleSyncAllStorage syncs all EBS volumes' states from AWS
+func (s *Server) handleSyncAllStorage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	awsManager, err := s.createAWSManagerFromRequest(r)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create AWS manager: %v", err))
+		return
+	}
+
+	// Query AWS for all EBS volumes
+	awsVolumes, err := awsManager.ListEBSVolumes()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to list storage from AWS: %v", err))
+		return
+	}
+
+	// Update local state with AWS data
+	for _, awsVol := range awsVolumes {
+		if err := s.stateManager.SaveStorageVolume(awsVol); err != nil {
+			// Log error but continue with other volumes
+			fmt.Printf("Warning: Failed to save storage %s: %v\n", awsVol.Name, err)
+		}
+	}
+
+	// Return updated storage
+	state, err := s.stateManager.LoadState()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "Failed to load state")
+		return
+	}
+
+	// Build list from unified StorageVolumes
+	storage := make([]*types.StorageVolume, 0)
+	for _, vol := range state.StorageVolumes {
+		volCopy := vol
+		storage = append(storage, &volCopy)
+	}
+
+	_ = json.NewEncoder(w).Encode(storage)
 }

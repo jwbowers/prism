@@ -423,6 +423,14 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 		)
 	}
 
+	// Add test mode tags for E2E tests (helps identify and cleanup test resources)
+	if os.Getenv("PRISM_TEST_MODE") == "true" {
+		tags = append(tags,
+			ec2types.Tag{Key: aws.String("prism:test-mode"), Value: aws.String("e2e")},
+			ec2types.Tag{Key: aws.String("prism:test-run"), Value: aws.String(time.Now().Format("20060102-150405"))},
+		)
+	}
+
 	// Use NetworkInterfaces format to enable public IP assignment (Issue #439)
 	// This ensures instances get public IPs even in subnets with MapPublicIpOnLaunch=false
 	runInput := &ec2.RunInstancesInput{
@@ -1304,19 +1312,29 @@ func (m *Manager) CreateVolume(req ctypes.VolumeCreateRequest) (*ctypes.StorageV
 	}
 
 	// Create EFS file system
+	efsTags := []efsTypes.Tag{
+		{
+			Key:   aws.String("Name"),
+			Value: aws.String(req.Name),
+		},
+		{
+			Key:   aws.String("Prism"),
+			Value: aws.String("true"),
+		},
+	}
+
+	// Add test mode tags for E2E tests
+	if os.Getenv("PRISM_TEST_MODE") == "true" {
+		efsTags = append(efsTags,
+			efsTypes.Tag{Key: aws.String("prism:test-mode"), Value: aws.String("e2e")},
+			efsTypes.Tag{Key: aws.String("prism:test-run"), Value: aws.String(time.Now().Format("20060102-150405"))},
+		)
+	}
+
 	input := &efs.CreateFileSystemInput{
 		PerformanceMode: efsTypes.PerformanceMode(performanceMode),
 		ThroughputMode:  efsTypes.ThroughputMode(throughputMode),
-		Tags: []efsTypes.Tag{
-			{
-				Key:   aws.String("Name"),
-				Value: aws.String(req.Name),
-			},
-			{
-				Key:   aws.String("Prism"),
-				Value: aws.String("true"),
-			},
-		},
+		Tags:            efsTags,
 	}
 
 	ctx := context.Background()
@@ -1659,6 +1677,169 @@ func (m *Manager) executeScriptOnInstance(instanceID, script string) error {
 	return fmt.Errorf("SSM command %s timed out after waiting 5 minutes", commandID)
 }
 
+// GetEFSVolumeState gets the current state of an EFS volume from AWS
+func (m *Manager) GetEFSVolumeState(fileSystemID string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := m.efs.DescribeFileSystems(ctx, &efs.DescribeFileSystemsInput{
+		FileSystemId: aws.String(fileSystemID),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to describe EFS file system %s: %w", fileSystemID, err)
+	}
+
+	if len(result.FileSystems) == 0 {
+		return "", fmt.Errorf("EFS file system %s not found", fileSystemID)
+	}
+
+	return string(result.FileSystems[0].LifeCycleState), nil
+}
+
+// GetEBSVolumeState gets the current state of an EBS volume from AWS
+func (m *Manager) GetEBSVolumeState(volumeID string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := m.ec2.DescribeVolumes(ctx, &ec2.DescribeVolumesInput{
+		VolumeIds: []string{volumeID},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to describe EBS volume %s: %w", volumeID, err)
+	}
+
+	if len(result.Volumes) == 0 {
+		return "", fmt.Errorf("EBS volume %s not found", volumeID)
+	}
+
+	return string(result.Volumes[0].State), nil
+}
+
+// ListEFSVolumes lists all EFS file systems with Prism tag
+func (m *Manager) ListEFSVolumes() ([]ctypes.StorageVolume, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := m.efs.DescribeFileSystems(ctx, &efs.DescribeFileSystemsInput{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EFS file systems: %w", err)
+	}
+
+	var volumes []ctypes.StorageVolume
+	for _, fs := range result.FileSystems {
+		// Check if it has the Prism tag
+		hasPrismTag := false
+		var name string
+		for _, tag := range fs.Tags {
+			if tag.Key != nil && *tag.Key == "Prism" && tag.Value != nil && *tag.Value == "true" {
+				hasPrismTag = true
+			}
+			if tag.Key != nil && *tag.Key == "Name" && tag.Value != nil {
+				name = *tag.Value
+			}
+		}
+
+		if !hasPrismTag || name == "" {
+			continue
+		}
+
+		sizeBytes := fs.SizeInBytes.Value
+		volume := ctypes.StorageVolume{
+			Name:            name,
+			Type:            ctypes.StorageTypeShared,
+			AWSService:      ctypes.AWSServiceEFS,
+			Region:          m.region,
+			State:           string(fs.LifeCycleState),
+			CreationTime:    *fs.CreationTime,
+			SizeBytes:       &sizeBytes,
+			FileSystemID:    *fs.FileSystemId,
+			MountTargets:    []string{},
+			PerformanceMode: string(fs.PerformanceMode),
+			ThroughputMode:  string(fs.ThroughputMode),
+			EstimatedCostGB: m.getRegionalEFSPrice(),
+		}
+		volumes = append(volumes, volume)
+	}
+
+	return volumes, nil
+}
+
+// ListEBSVolumes lists all EBS volumes with Prism tag
+func (m *Manager) ListEBSVolumes() ([]ctypes.StorageVolume, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Filter for volumes with Prism tag
+	result, err := m.ec2.DescribeVolumes(ctx, &ec2.DescribeVolumesInput{
+		Filters: []ec2types.Filter{
+			{
+				Name:   aws.String("tag:Prism"),
+				Values: []string{"true"},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EBS volumes: %w", err)
+	}
+
+	var volumes []ctypes.StorageVolume
+	for _, vol := range result.Volumes {
+		// Get volume name from tags
+		var name string
+		for _, tag := range vol.Tags {
+			if tag.Key != nil && *tag.Key == "Name" && tag.Value != nil {
+				name = *tag.Value
+				break
+			}
+		}
+
+		if name == "" {
+			continue
+		}
+
+		// Get attached instance name if attached
+		attachedTo := ""
+		if len(vol.Attachments) > 0 && vol.Attachments[0].InstanceId != nil {
+			// Try to get instance name from state
+			state, err := m.stateManager.LoadState()
+			if err == nil {
+				for _, inst := range state.Instances {
+					if inst.ID == *vol.Attachments[0].InstanceId {
+						attachedTo = inst.Name
+						break
+					}
+				}
+			}
+		}
+
+		sizeGB := *vol.Size
+		iops := vol.Iops
+		throughput := vol.Throughput
+		volumeType := string(vol.VolumeType)
+
+		costPerGB := m.getEBSCostPerGB(volumeType)
+
+		volume := ctypes.StorageVolume{
+			Name:            name,
+			Type:            ctypes.StorageTypeWorkspace,
+			AWSService:      ctypes.AWSServiceEBS,
+			Region:          m.region,
+			State:           string(vol.State),
+			CreationTime:    *vol.CreateTime,
+			SizeGB:          &sizeGB,
+			VolumeID:        *vol.VolumeId,
+			VolumeType:      volumeType,
+			IOPS:            iops,
+			Throughput:      throughput,
+			AttachedTo:      attachedTo,
+			EstimatedCostGB: costPerGB,
+		}
+		volumes = append(volumes, volume)
+	}
+
+	return volumes, nil
+}
+
 // CreateStorage creates a new EBS volume
 func (m *Manager) CreateStorage(req ctypes.StorageCreateRequest) (*ctypes.StorageVolume, error) {
 	// Parse size from t-shirt sizes or use direct GB value
@@ -1676,6 +1857,20 @@ func (m *Manager) CreateStorage(req ctypes.StorageCreateRequest) (*ctypes.Storag
 	// Calculate IOPS and throughput for gp3 volumes
 	iops, throughput := m.calculatePerformanceParams(volumeType, sizeGB)
 
+	// Build tags for EBS volume
+	ebsTags := []ec2types.Tag{
+		{Key: aws.String("Name"), Value: aws.String(req.Name)},
+		{Key: aws.String("Prism"), Value: aws.String("true")},
+	}
+
+	// Add test mode tags for E2E tests (helps identify and cleanup test resources)
+	if os.Getenv("PRISM_TEST_MODE") == "true" {
+		ebsTags = append(ebsTags,
+			ec2types.Tag{Key: aws.String("prism:test-mode"), Value: aws.String("e2e")},
+			ec2types.Tag{Key: aws.String("prism:test-run"), Value: aws.String(time.Now().Format("20060102-150405"))},
+		)
+	}
+
 	// Create EBS volume
 	input := &ec2.CreateVolumeInput{
 		Size:             aws.Int32(int32(sizeGB)),
@@ -1684,16 +1879,7 @@ func (m *Manager) CreateStorage(req ctypes.StorageCreateRequest) (*ctypes.Storag
 		TagSpecifications: []ec2types.TagSpecification{
 			{
 				ResourceType: ec2types.ResourceTypeVolume,
-				Tags: []ec2types.Tag{
-					{
-						Key:   aws.String("Name"),
-						Value: aws.String(req.Name),
-					},
-					{
-						Key:   aws.String("Prism"),
-						Value: aws.String("true"),
-					},
-				},
+				Tags:         ebsTags,
 			},
 		},
 	}

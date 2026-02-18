@@ -25,6 +25,37 @@ export class InstancesPage extends BasePage {
       state: 'visible',
       timeout: 10000
     });
+
+    // Wait for instances table to be populated
+    await this.waitForInstancesTable();
+  }
+
+  /**
+   * Wait for instances table to be ready
+   * This ensures the table has loaded (either with data or empty state)
+   */
+  async waitForInstancesTable() {
+    // Wait for the instances API call to complete
+    try {
+      await this.page.waitForResponse(
+        response => response.url().includes('/api/v1/instances') && response.status() === 200,
+        { timeout: 10000 }
+      );
+    } catch {
+      // API might have already been called, continue
+    }
+
+    // Wait a moment for React to render the response
+    await this.page.waitForTimeout(500);
+
+    // Ensure either table with rows or empty state is visible
+    await this.page.waitForFunction(() => {
+      const table = document.querySelector('[data-testid="instances-table"] tbody');
+      const emptyState = document.querySelector('[data-testid="empty-instances"]');
+      return (table && table.children.length > 0) || emptyState !== null;
+    }, { timeout: 5000 }).catch(() => {
+      // If neither condition is met, that's ok - tests will handle appropriately
+    });
   }
 
   /**
@@ -143,7 +174,7 @@ export class InstancesPage extends BasePage {
    * Refresh instance list
    */
   async refreshInstances() {
-    const refreshButton = this.page.getByRole('button', { name: /refresh/i });
+    const refreshButton = this.page.getByTestId('refresh-instances-button');
     await refreshButton.click();
     await this.waitForLoadingComplete();
   }

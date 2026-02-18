@@ -58,7 +58,8 @@ type Server struct {
 	healthMonitor    *HealthMonitor
 
 	// Background state monitoring (v0.5.8)
-	stateMonitor *StateMonitor
+	stateMonitor        *StateMonitor
+	storageStateMonitor *StorageStateMonitor
 
 	// Cost optimization components
 	budgetTracker   *project.BudgetTracker
@@ -357,6 +358,9 @@ func NewServer(port string) (*Server, error) {
 	// Initialize state monitor for background instance monitoring (v0.5.8)
 	stateMonitor := NewStateMonitor(awsManager, stateManager)
 
+	// Initialize storage state monitor for background volume monitoring
+	storageStateMonitor := NewStorageStateMonitor(awsManager, stateManager)
+
 	// Initialize CloudWatch client for rightsizing metrics
 	var cloudwatchClient *cloudwatch.Client
 	if awsManager != nil {
@@ -385,6 +389,7 @@ func NewServer(port string) (*Server, error) {
 		reliabilityManager:  reliabilityManager,
 		stabilityManager:    stabilityManager,
 		stateMonitor:        stateMonitor,
+		storageStateMonitor: storageStateMonitor,
 		budgetTracker:       budgetTracker,
 		alertManager:        alertManager,
 		rateLimiter:         rateLimiter,
@@ -527,6 +532,11 @@ func (s *Server) Start() error {
 		logger.Warn("Failed to start state monitor", "error", err)
 	}
 
+	// Start background storage state monitor for async volume state tracking
+	if err := s.storageStateMonitor.Start(); err != nil {
+		logger.Warn("Failed to start storage state monitor", "error", err)
+	}
+
 	// Enable memory management
 	s.stabilityManager.EnableForceGC(true)
 	logger.Info("Daemon stability systems started")
@@ -588,6 +598,9 @@ func (s *Server) Start() error {
 		// Stop state monitor (v0.5.8)
 		s.stateMonitor.Stop()
 
+		// Stop storage state monitor
+		s.storageStateMonitor.Stop()
+
 		// Stop security manager
 		if err := s.securityManager.Stop(); err != nil {
 			logger.Warn("Failed to stop security manager", "error", err)
@@ -624,6 +637,9 @@ func (s *Server) Stop() error {
 
 	// Stop state monitor (v0.5.8)
 	s.stateMonitor.Stop()
+
+	// Stop storage state monitor
+	s.storageStateMonitor.Stop()
 
 	// Stop idle scheduler to prevent goroutine leaks
 	if s.idleScheduler != nil {
@@ -840,6 +856,10 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// Storage operations (requires AWS)
 	mux.HandleFunc("/api/v1/storage", applyAWSMiddleware(s.handleStorage))
 	mux.HandleFunc("/api/v1/storage/", applyAWSMiddleware(s.handleStorageOperations))
+
+	// Volume and storage sync operations (requires AWS)
+	mux.HandleFunc("/api/v1/volumes/sync", applyAWSMiddleware(s.handleSyncAllVolumes))
+	mux.HandleFunc("/api/v1/storage/sync", applyAWSMiddleware(s.handleSyncAllStorage))
 
 	// Storage transfer operations (requires AWS - S3-backed file transfers) (v0.5.7)
 	mux.HandleFunc("/api/v1/storage/transfer", applyAWSMiddleware(s.handleStorageTransfer))

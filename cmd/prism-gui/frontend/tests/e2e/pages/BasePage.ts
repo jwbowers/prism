@@ -255,9 +255,13 @@ export class BasePage {
    * If multiple buttons match, clicks the last visible one (usually in a modal/dialog)
    */
   async clickButton(text: string) {
-    // Use exact match for Cancel to avoid matching resource names like "cancel-delete-test"
-    const options = text.toLowerCase() === 'cancel'
-      ? { name: 'Cancel', exact: true }
+    // Use exact match for common action buttons to avoid matching resource names
+    // like "cancel-delete-test", "delete-test-efs", "create-test-project", etc.
+    const lowerText = text.toLowerCase();
+    const exactMatchButtons = ['cancel', 'create', 'delete', 'attach', 'detach', 'mount', 'unmount', 'confirm'];
+
+    const options = exactMatchButtons.includes(lowerText)
+      ? { name: text.charAt(0).toUpperCase() + text.slice(1), exact: true }
       : { name: new RegExp(text, 'i') };
 
     const button = this.page.getByRole('button', options);

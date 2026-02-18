@@ -84,7 +84,8 @@ export class TemplatesPage extends BasePage {
    */
   async clickLaunchOnTemplate(name: string) {
     const template = this.getTemplateByName(name);
-    const launchButton = template.getByRole('button', { name: /launch/i });
+    // Use .first() to handle any remaining duplicates gracefully
+    const launchButton = template.getByRole('button', { name: /launch/i }).first();
     await launchButton.click();
   }
 

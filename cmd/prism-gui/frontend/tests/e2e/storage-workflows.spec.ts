@@ -10,7 +10,10 @@ import { StoragePage, InstancesPage, ConfirmDialog } from './pages';
 
 test.describe('Storage Management Workflows', () => {
   // Increase timeout for storage tests since AWS EFS/EBS creation takes 60-120+ seconds
-  test.setTimeout(180000); // 3 minutes
+  test.setTimeout(180000); // 3 minutes test timeout
+
+  // Configure Playwright to use longer action timeout for AWS operations
+  test.use({ actionTimeout: 180000 }); // 3 minutes action timeout (matches test timeout)
 
   let storagePage: StoragePage;
   let instancesPage: InstancesPage;
@@ -49,8 +52,8 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.page.getByRole('textbox', { name: 'EFS Volume Name' }).fill('test-efs-volume');
       await storagePage.clickButton('create');
 
-      // Wait for AWS EFS creation to complete (can take 10-30+ seconds)
-      const volumeExists = await storagePage.waitForEFSVolumeToExist('test-efs-volume', 60000);
+      // Wait for AWS EFS creation to complete (polls until visible or test timeout)
+      const volumeExists = await storagePage.waitForEFSVolumeToExist('test-efs-volume');
       expect(volumeExists).toBe(true);
 
       // Cleanup
@@ -78,8 +81,8 @@ test.describe('Storage Management Workflows', () => {
       // Create volume first
       await storagePage.createEFSVolume('delete-test-efs');
 
-      // Wait for AWS EFS creation to complete
-      let volumeExists = await storagePage.waitForEFSVolumeToExist('delete-test-efs', 60000);
+      // Wait for AWS EFS creation to complete (polls until visible or test timeout)
+      let volumeExists = await storagePage.waitForEFSVolumeToExist('delete-test-efs');
       expect(volumeExists).toBe(true);
 
       // Delete volume
@@ -120,8 +123,8 @@ test.describe('Storage Management Workflows', () => {
       // Create EFS volume
       await storagePage.createEFSVolume('mount-test-efs');
 
-      // Wait for AWS EFS creation to complete before mounting
-      const volumeCreated = await storagePage.waitForEFSVolumeToExist('mount-test-efs', 60000);
+      // Wait for AWS EFS creation to complete before mounting (polls until visible or test timeout)
+      const volumeCreated = await storagePage.waitForEFSVolumeToExist('mount-test-efs');
       expect(volumeCreated).toBe(true);
 
       // Mount to instance
@@ -185,8 +188,13 @@ test.describe('Storage Management Workflows', () => {
         return;
       }
 
-      const firstVolume = await storagePage.page.locator('[data-testid="efs-table"] tbody tr').first();
-      const volumeName = await firstVolume.locator('[data-testid="volume-name"]').textContent();
+      // Wait for table to fully render with data
+      const firstVolume = storagePage.page.locator('[data-testid="efs-table"] tbody tr').first();
+      await firstVolume.waitFor({ state: 'visible' });
+
+      const volumeNameElement = firstVolume.locator('[data-testid="volume-name"]');
+      await volumeNameElement.waitFor({ state: 'visible' });
+      const volumeName = await volumeNameElement.textContent();
 
       if (!volumeName) {
         // Skip: Could not get volume name
@@ -225,8 +233,8 @@ test.describe('Storage Management Workflows', () => {
       await storagePage.page.getByRole('spinbutton', { name: 'EBS Volume Size' }).fill('100');
       await storagePage.clickButton('create');
 
-      // Wait for AWS EBS creation to complete (can take 10-30+ seconds)
-      const volumeExists = await storagePage.waitForEBSVolumeToExist('test-ebs-volume', 60000);
+      // Wait for AWS EBS creation to complete (polls until visible or test timeout)
+      const volumeExists = await storagePage.waitForEBSVolumeToExist('test-ebs-volume');
       expect(volumeExists).toBe(true);
 
       // Cleanup
@@ -270,8 +278,8 @@ test.describe('Storage Management Workflows', () => {
       // Create volume first
       await storagePage.createEBSVolume('delete-test-ebs', '50');
 
-      // Wait for AWS EBS creation to complete
-      let volumeExists = await storagePage.waitForEBSVolumeToExist('delete-test-ebs', 60000);
+      // Wait for AWS EBS creation to complete (polls until visible or test timeout)
+      let volumeExists = await storagePage.waitForEBSVolumeToExist('delete-test-ebs');
       expect(volumeExists).toBe(true);
 
       // Delete volume
@@ -312,8 +320,8 @@ test.describe('Storage Management Workflows', () => {
       // Create EBS volume
       await storagePage.createEBSVolume('attach-test-ebs', '100');
 
-      // Wait for AWS EBS creation to complete before attaching
-      const volumeCreated = await storagePage.waitForEBSVolumeToExist('attach-test-ebs', 60000);
+      // Wait for AWS EBS creation to complete before attaching (polls until visible or test timeout)
+      const volumeCreated = await storagePage.waitForEBSVolumeToExist('attach-test-ebs');
       expect(volumeCreated).toBe(true);
 
       // Attach to instance
@@ -397,7 +405,7 @@ test.describe('Storage Management Workflows', () => {
       const volumeText = await firstVolume.textContent();
 
       // Should display volume type (gp2, gp3, io1, etc.)
-      const hasVolumeType = /gp2|gp3|io1|io2|st1|sc1/.test(volumeText || '');
+      const hasVolumeType = /gp2|gp3|io1|io2|st1|sc1/i.test(volumeText || '');
       expect(hasVolumeType).toBe(true);
     });
   });
@@ -414,8 +422,13 @@ test.describe('Storage Management Workflows', () => {
         return;
       }
 
-      const firstVolume = await storagePage.page.locator('[data-testid="efs-table"] tbody tr').first();
-      const volumeName = await firstVolume.locator('[data-testid="volume-name"]').textContent();
+      // Wait for table to fully render with data
+      const firstVolume = storagePage.page.locator('[data-testid="efs-table"] tbody tr').first();
+      await firstVolume.waitFor({ state: 'visible' });
+
+      const volumeNameElement = firstVolume.locator('[data-testid="volume-name"]');
+      await volumeNameElement.waitFor({ state: 'visible' });
+      const volumeName = await volumeNameElement.textContent();
 
       if (!volumeName) {
         // Skip: Could not get volume name
@@ -443,8 +456,13 @@ test.describe('Storage Management Workflows', () => {
         return;
       }
 
-      const firstVolume = await storagePage.page.locator('[data-testid="ebs-table"] tbody tr').first();
-      const volumeName = await firstVolume.locator('[data-testid="volume-name"]').textContent();
+      // Wait for table to fully render with data
+      const firstVolume = storagePage.page.locator('[data-testid="ebs-table"] tbody tr').first();
+      await firstVolume.waitFor({ state: 'visible' });
+
+      const volumeNameElement = firstVolume.locator('[data-testid="volume-name"]');
+      await volumeNameElement.waitFor({ state: 'visible' });
+      const volumeName = await volumeNameElement.textContent();
 
       if (!volumeName) {
         // Skip: Could not get volume name

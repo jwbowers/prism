@@ -97,7 +97,7 @@ export class ConfirmDialog {
    */
   async confirmDelete() {
     await this.waitForDialog();
-    const deleteButton = this.page.getByRole('button', { name: /delete/i });
+    const deleteButton = this.page.getByRole('button', { name: 'Delete', exact: true });
     await deleteButton.click();
   }
 
