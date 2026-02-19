@@ -3868,7 +3868,7 @@ export default function PrismApp() {
                     data-testid="efs-table"
                     filter={
                       <TextFilter
-                        data-testid="storage-search-input"
+                        data-testid="efs-search-input"
                         filteringText={efsFilterText}
                         onChange={({ detail }) => setEfsFilterText(detail.filteringText)}
                         filteringPlaceholder="Search EFS volumes"
@@ -4011,7 +4011,7 @@ export default function PrismApp() {
                     data-testid="ebs-table"
                     filter={
                       <TextFilter
-                        data-testid="storage-search-input"
+                        data-testid="ebs-search-input"
                         filteringText={ebsFilterText}
                         onChange={({ detail }) => setEbsFilterText(detail.filteringText)}
                         filteringPlaceholder="Search EBS volumes"

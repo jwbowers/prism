@@ -26,6 +26,11 @@ export class StoragePage extends BasePage {
    */
   async switchToEFS() {
     const efsTab = this.page.getByRole('tab', { name: /efs/i });
+
+    // Wait for tab to be ready before clicking
+    await efsTab.waitFor({ state: 'visible' });
+    await this.page.waitForTimeout(500);  // Give UI time to be fully interactive
+
     await efsTab.click();
     await this.waitForLoadingComplete();
   }
@@ -35,6 +40,11 @@ export class StoragePage extends BasePage {
    */
   async switchToEBS() {
     const ebsTab = this.page.getByRole('tab', { name: /ebs/i });
+
+    // Wait for tab to be ready before clicking
+    await ebsTab.waitFor({ state: 'visible' });
+    await this.page.waitForTimeout(500);  // Give UI time to be fully interactive
+
     await ebsTab.click();
     await this.waitForLoadingComplete();
   }
@@ -243,10 +253,18 @@ export class StoragePage extends BasePage {
       { timeout: 10000 }
     );
 
-    // Use data-testid for storage-specific search to avoid strict mode violations
-    const searchInput = this.page.getByTestId('storage-search-input').or(
-      this.page.locator('input[placeholder*="Search"]').first()
-    );
+    // Determine which tab is active to use correct search input
+    const activeTab = await this.page.evaluate(() => {
+      const selectedTab = document.querySelector('[role="tab"][aria-selected="true"]');
+      return selectedTab?.textContent || '';
+    });
+
+    // Use unique test-id based on active tab (efs-search-input or ebs-search-input)
+    const testId = activeTab.toLowerCase().includes('ebs') || activeTab.toLowerCase().includes('private')
+      ? 'ebs-search-input'
+      : 'efs-search-input';
+
+    const searchInput = this.page.getByTestId(testId);
     await searchInput.fill(query);
 
     // Wait for React to re-render with filtered results
