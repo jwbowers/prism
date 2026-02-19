@@ -11733,13 +11733,33 @@ export default function PrismApp() {
                     return;
                   }
 
+                  const volumeName = storageVolumeName;
+
+                  // Close modal immediately - don't wait for AWS to finish
+                  setCreateEFSModalVisible(false);
+                  setStorageVolumeName('');
+                  setStorageVolumeNameError('');
+
+                  // Show notification that creation is in progress
+                  setState(prev => ({
+                    ...prev,
+                    notifications: [
+                      ...prev.notifications,
+                      {
+                        type: 'info',
+                        header: 'Creating EFS Volume',
+                        content: `Creating EFS volume "${volumeName}"... This may take 1-3 minutes.`,
+                        dismissible: true,
+                        id: Date.now().toString()
+                      }
+                    ]
+                  }));
+
+                  // Start creation in background - backend will wait for AWS
                   try {
-                    await api.createEFSVolume(storageVolumeName);
+                    await api.createEFSVolume(volumeName);
                     // Sync volume state from AWS to ensure we have current state
-                    await api.syncEFSVolume(storageVolumeName);
-                    setCreateEFSModalVisible(false);
-                    setStorageVolumeName('');
-                    setStorageVolumeNameError('');
+                    await api.syncEFSVolume(volumeName);
                     await loadApplicationData();
                     setState(prev => ({
                       ...prev,
@@ -11748,7 +11768,7 @@ export default function PrismApp() {
                         {
                           type: 'success',
                           header: 'EFS Volume Created',
-                          content: `Successfully created EFS volume "${storageVolumeName}"`,
+                          content: `Successfully created EFS volume "${volumeName}"`,
                           dismissible: true,
                           id: Date.now().toString()
                         }
@@ -11848,15 +11868,36 @@ export default function PrismApp() {
                     return;
                   }
 
+                  const volumeName = storageVolumeName;
+                  const volumeSize = storageVolumeSize;
+
+                  // Close modal immediately - don't wait for AWS to finish
+                  setCreateEBSModalVisible(false);
+                  setStorageVolumeName('');
+                  setStorageVolumeSize('');
+                  setStorageVolumeNameError('');
+                  setStorageVolumeSizeError('');
+
+                  // Show notification that creation is in progress
+                  setState(prev => ({
+                    ...prev,
+                    notifications: [
+                      ...prev.notifications,
+                      {
+                        type: 'info',
+                        header: 'Creating EBS Volume',
+                        content: `Creating EBS volume "${volumeName}" (${volumeSize} GB)... This may take 30-120 seconds.`,
+                        dismissible: true,
+                        id: Date.now().toString()
+                      }
+                    ]
+                  }));
+
+                  // Start creation in background - backend will wait for AWS
                   try {
-                    await api.createEBSVolume(storageVolumeName, storageVolumeSize);
+                    await api.createEBSVolume(volumeName, volumeSize);
                     // Sync volume state from AWS to ensure we have current state
-                    await api.syncEBSVolume(storageVolumeName);
-                    setCreateEBSModalVisible(false);
-                    setStorageVolumeName('');
-                    setStorageVolumeSize('');
-                    setStorageVolumeNameError('');
-                    setStorageVolumeSizeError('');
+                    await api.syncEBSVolume(volumeName);
                     await loadApplicationData();
                     setState(prev => ({
                       ...prev,
@@ -11865,7 +11906,7 @@ export default function PrismApp() {
                         {
                           type: 'success',
                           header: 'EBS Volume Created',
-                          content: `Successfully created EBS volume "${storageVolumeName}"`,
+                          content: `Successfully created EBS volume "${volumeName}"`,
                           dismissible: true,
                           id: Date.now().toString()
                         }
