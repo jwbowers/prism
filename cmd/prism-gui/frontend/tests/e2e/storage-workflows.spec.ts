@@ -9,12 +9,8 @@ import { test, expect } from '@playwright/test';
 import { StoragePage, InstancesPage, ConfirmDialog } from './pages';
 
 test.describe('Storage Management Workflows', () => {
-  // Increase timeout for storage tests since AWS operations now wait for resources to be ready
-  // Backend waits up to 5 minutes for EBS/EFS to become available, so tests need 7 minutes total
-  test.setTimeout(420000); // 7 minutes test timeout (5 min AWS + 1 min UI + 1 min buffer)
-
-  // Configure Playwright to use longer action timeout for AWS operations
-  test.use({ actionTimeout: 420000 }); // 7 minutes action timeout (matches test timeout)
+  // No artificial timeouts - backend uses AWS SDK waiters that poll until resources are ready (up to 30 minutes)
+  // Tests complete when operations complete naturally (typically 30s - 5 minutes)
 
   let storagePage: StoragePage;
   let instancesPage: InstancesPage;
@@ -32,6 +28,28 @@ test.describe('Storage Management Workflows', () => {
 
     await storagePage.goto();
     await storagePage.navigate();
+
+    // Create shared test volumes for display/search tests
+    // These persist across tests in this suite to avoid re-creating for every test
+    // Individual tests that need specific volumes create their own
+    try {
+      // Check if setup volumes already exist
+      const efsExists = await storagePage.verifyEFSVolumeExists('test-setup-efs');
+      const ebsExists = await storagePage.verifyEBSVolumeExists('test-setup-ebs');
+
+      if (!efsExists) {
+        await storagePage.createEFSVolume('test-setup-efs');
+        await storagePage.waitForEFSVolumeToExist('test-setup-efs');
+      }
+
+      if (!ebsExists) {
+        await storagePage.createEBSVolume('test-setup-ebs', '50');
+        await storagePage.waitForEBSVolumeToExist('test-setup-ebs');
+      }
+    } catch (error) {
+      console.warn('Could not create setup volumes:', error);
+      // Continue anyway - individual tests will handle missing data
+    }
   });
 
   test.describe('EFS Volume Management', () => {
@@ -102,20 +120,13 @@ test.describe('Storage Management Workflows', () => {
       await instancesPage.navigate();
       const instanceCount = await instancesPage.getInstanceCount();
 
-      if (instanceCount === 0) {
-        // Skip: No instances available for mount testing
-        test.skip();
-        return;
-      }
+      expect(instanceCount).toBeGreaterThan(0);
 
       const firstInstance = await page.locator('[data-testid="instances-table"] tbody tr').first();
+      await firstInstance.waitFor({ state: 'visible' });
       const instanceName = await firstInstance.locator('[data-testid="instance-name"]').textContent();
 
-      if (!instanceName) {
-        // Skip: Could not get instance name
-        test.skip();
-        return;
-      }
+      expect(instanceName).toBeTruthy();
 
       // Navigate back to storage
       await storagePage.navigate();
@@ -129,7 +140,7 @@ test.describe('Storage Management Workflows', () => {
       expect(volumeCreated).toBe(true);
 
       // Mount to instance
-      await storagePage.mountEFSVolume('mount-test-efs', instanceName);
+      await storagePage.mountEFSVolume('mount-test-efs', instanceName!);
       await storagePage.page.waitForTimeout(2000);
 
       // Verify mount success (check status or mounted indicator)
@@ -138,7 +149,7 @@ test.describe('Storage Management Workflows', () => {
       expect(volumeText).toMatch(/mounted|attached/i);
 
       // Cleanup: Unmount and delete
-      await storagePage.unmountEFSVolume('mount-test-efs', instanceName);
+      await storagePage.unmountEFSVolume('mount-test-efs', instanceName!);
       await confirmDialog.confirm();
       await storagePage.page.waitForTimeout(1000);
       await storagePage.deleteEFSVolume('mount-test-efs');
@@ -146,48 +157,45 @@ test.describe('Storage Management Workflows', () => {
     });
 
     test('should unmount EFS volume from instance', async ({ page }) => {
-      // This test assumes there's a mounted EFS volume
+      // First ensure we have an instance
+      await instancesPage.navigate();
+      const instanceCount = await instancesPage.getInstanceCount();
+      expect(instanceCount).toBeGreaterThan(0);
+
+      const firstInstance = await page.locator('[data-testid="instances-table"] tbody tr').first();
+      await firstInstance.waitFor({ state: 'visible' });
+      const instanceName = await firstInstance.locator('[data-testid="instance-name"]').textContent();
+      expect(instanceName).toBeTruthy();
+
+      // Navigate to storage and create/mount a volume
+      await storagePage.navigate();
       await storagePage.switchToEFS();
 
-      // Look for mounted volume
-      const mountedVolume = page.locator('tr:has-text("mounted")').first();
-      const hasMountedVolume = await mountedVolume.isVisible();
+      // Create EFS volume
+      await storagePage.createEFSVolume('unmount-test-efs');
+      const volumeCreated = await storagePage.waitForEFSVolumeToExist('unmount-test-efs');
+      expect(volumeCreated).toBe(true);
 
-      if (!hasMountedVolume) {
-        // Skip: No mounted EFS volumes available for testing
-        test.skip();
-        return;
-      }
+      // Mount it first
+      await storagePage.mountEFSVolume('unmount-test-efs', instanceName!);
+      await storagePage.page.waitForTimeout(2000);
 
-      const volumeName = await mountedVolume.locator('[data-testid="volume-name"]').textContent();
-      const instanceName = await mountedVolume.locator('[data-testid="mounted-instance"]').textContent();
-
-      if (!volumeName || !instanceName) {
-        // Skip: Could not get volume or instance name
-        test.skip();
-        return;
-      }
-
-      // Unmount volume
-      await storagePage.unmountEFSVolume(volumeName, instanceName);
+      // Now unmount it
+      await storagePage.unmountEFSVolume('unmount-test-efs', instanceName!);
       await confirmDialog.confirm();
       await storagePage.page.waitForTimeout(2000);
 
       // Verify unmount success
-      const status = await storagePage.getVolumeStatus(volumeName, 'efs');
+      const status = await storagePage.getVolumeStatus('unmount-test-efs', 'efs');
       expect(status).toMatch(/available|unmounted/i);
+
+      // Cleanup
+      await storagePage.deleteEFSVolume('unmount-test-efs');
+      await confirmDialog.confirmDelete();
     });
 
     test('should show EFS volume status correctly', async () => {
       await storagePage.switchToEFS();
-
-      const volumeCount = await storagePage.getEFSVolumeCount();
-
-      if (volumeCount === 0) {
-        // Skip: No EFS volumes available for status testing
-        test.skip();
-        return;
-      }
 
       // Wait for table to fully render with data
       const firstVolume = storagePage.page.locator('[data-testid="efs-table"] tbody tr').first();
@@ -197,14 +205,10 @@ test.describe('Storage Management Workflows', () => {
       await volumeNameElement.waitFor({ state: 'visible' });
       const volumeName = await volumeNameElement.textContent();
 
-      if (!volumeName) {
-        // Skip: Could not get volume name
-        test.skip();
-        return;
-      }
+      expect(volumeName).toBeTruthy();
 
       // Get volume status
-      const status = await storagePage.getVolumeStatus(volumeName, 'efs');
+      const status = await storagePage.getVolumeStatus(volumeName!, 'efs');
       expect(status).toBeTruthy();
 
       // Status should be valid
@@ -299,20 +303,13 @@ test.describe('Storage Management Workflows', () => {
       await instancesPage.navigate();
       const instanceCount = await instancesPage.getInstanceCount();
 
-      if (instanceCount === 0) {
-        // Skip: No instances available for attach testing
-        test.skip();
-        return;
-      }
+      expect(instanceCount).toBeGreaterThan(0);
 
       const firstInstance = await page.locator('[data-testid="instances-table"] tbody tr').first();
+      await firstInstance.waitFor({ state: 'visible' });
       const instanceName = await firstInstance.locator('[data-testid="instance-name"]').textContent();
 
-      if (!instanceName) {
-        // Skip: Could not get instance name
-        test.skip();
-        return;
-      }
+      expect(instanceName).toBeTruthy();
 
       // Navigate back to storage
       await storagePage.navigate();
@@ -326,7 +323,7 @@ test.describe('Storage Management Workflows', () => {
       expect(volumeCreated).toBe(true);
 
       // Attach to instance
-      await storagePage.attachEBSVolume('attach-test-ebs', instanceName);
+      await storagePage.attachEBSVolume('attach-test-ebs', instanceName!);
       await storagePage.page.waitForTimeout(2000);
 
       // Verify attach success
@@ -343,48 +340,48 @@ test.describe('Storage Management Workflows', () => {
     });
 
     test('should detach EBS volume from instance', async ({ page }) => {
+      // First ensure we have an instance
+      await instancesPage.navigate();
+      const instanceCount = await instancesPage.getInstanceCount();
+      expect(instanceCount).toBeGreaterThan(0);
+
+      const firstInstance = await page.locator('[data-testid="instances-table"] tbody tr').first();
+      await firstInstance.waitFor({ state: 'visible' });
+      const instanceName = await firstInstance.locator('[data-testid="instance-name"]').textContent();
+      expect(instanceName).toBeTruthy();
+
+      // Navigate to storage and create/attach a volume
+      await storagePage.navigate();
       await storagePage.switchToEBS();
 
-      // Look for attached volume
-      const attachedVolume = page.locator('tr:has-text("attached")').first();
-      const hasAttachedVolume = await attachedVolume.isVisible();
+      // Create EBS volume
+      await storagePage.createEBSVolume('detach-test-ebs', '50');
+      const volumeCreated = await storagePage.waitForEBSVolumeToExist('detach-test-ebs');
+      expect(volumeCreated).toBe(true);
 
-      if (!hasAttachedVolume) {
-        // Skip: No attached EBS volumes available for testing
-        test.skip();
-        return;
-      }
+      // Attach it first
+      await storagePage.attachEBSVolume('detach-test-ebs', instanceName!);
+      await storagePage.page.waitForTimeout(2000);
 
-      const volumeName = await attachedVolume.locator('[data-testid="volume-name"]').textContent();
-
-      if (!volumeName) {
-        // Skip: Could not get volume name
-        test.skip();
-        return;
-      }
-
-      // Detach volume
-      await storagePage.detachEBSVolume(volumeName);
+      // Now detach it
+      await storagePage.detachEBSVolume('detach-test-ebs');
       await confirmDialog.confirm();
       await storagePage.page.waitForTimeout(2000);
 
       // Verify detach success
-      const status = await storagePage.getVolumeStatus(volumeName, 'ebs');
+      const status = await storagePage.getVolumeStatus('detach-test-ebs', 'ebs');
       expect(status).toMatch(/available|detached/i);
+
+      // Cleanup
+      await storagePage.deleteEBSVolume('detach-test-ebs');
+      await confirmDialog.confirmDelete();
     });
 
     test('should show EBS volume size in list', async () => {
       await storagePage.switchToEBS();
 
-      const volumeCount = await storagePage.getEBSVolumeCount();
-
-      if (volumeCount === 0) {
-        // Skip: No EBS volumes available for size display testing
-        test.skip();
-        return;
-      }
-
       const firstVolume = await storagePage.page.locator('[data-testid="ebs-table"] tbody tr').first();
+      await firstVolume.waitFor({ state: 'visible' });
       const volumeText = await firstVolume.textContent();
 
       // Should display size information (e.g., "100 GB")
@@ -394,15 +391,8 @@ test.describe('Storage Management Workflows', () => {
     test('should show EBS volume type', async () => {
       await storagePage.switchToEBS();
 
-      const volumeCount = await storagePage.getEBSVolumeCount();
-
-      if (volumeCount === 0) {
-        // Skip: No EBS volumes available for type display testing
-        test.skip();
-        return;
-      }
-
       const firstVolume = await storagePage.page.locator('[data-testid="ebs-table"] tbody tr').first();
+      await firstVolume.waitFor({ state: 'visible' });
       const volumeText = await firstVolume.textContent();
 
       // Should display volume type (gp2, gp3, io1, etc.)
@@ -415,14 +405,6 @@ test.describe('Storage Management Workflows', () => {
     test('should search EFS volumes by name', async () => {
       await storagePage.switchToEFS();
 
-      const volumeCount = await storagePage.getEFSVolumeCount();
-
-      if (volumeCount === 0) {
-        // Skip: No EFS volumes available for search testing
-        test.skip();
-        return;
-      }
-
       // Wait for table to fully render with data
       const firstVolume = storagePage.page.locator('[data-testid="efs-table"] tbody tr').first();
       await firstVolume.waitFor({ state: 'visible' });
@@ -431,14 +413,10 @@ test.describe('Storage Management Workflows', () => {
       await volumeNameElement.waitFor({ state: 'visible' });
       const volumeName = await volumeNameElement.textContent();
 
-      if (!volumeName) {
-        // Skip: Could not get volume name
-        test.skip();
-        return;
-      }
+      expect(volumeName).toBeTruthy();
 
       // Search for volume
-      await storagePage.searchVolumes(volumeName);
+      await storagePage.searchVolumes(volumeName!);
       await storagePage.page.waitForTimeout(500);
 
       // Verify search results
@@ -449,14 +427,6 @@ test.describe('Storage Management Workflows', () => {
     test('should search EBS volumes by name', async () => {
       await storagePage.switchToEBS();
 
-      const volumeCount = await storagePage.getEBSVolumeCount();
-
-      if (volumeCount === 0) {
-        // Skip: No EBS volumes available for search testing
-        test.skip();
-        return;
-      }
-
       // Wait for table to fully render with data
       const firstVolume = storagePage.page.locator('[data-testid="ebs-table"] tbody tr').first();
       await firstVolume.waitFor({ state: 'visible' });
@@ -465,14 +435,10 @@ test.describe('Storage Management Workflows', () => {
       await volumeNameElement.waitFor({ state: 'visible' });
       const volumeName = await volumeNameElement.textContent();
 
-      if (!volumeName) {
-        // Skip: Could not get volume name
-        test.skip();
-        return;
-      }
+      expect(volumeName).toBeTruthy();
 
       // Search for volume
-      await storagePage.searchVolumes(volumeName);
+      await storagePage.searchVolumes(volumeName!);
       await storagePage.page.waitForTimeout(500);
 
       // Verify search results

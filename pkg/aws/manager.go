@@ -224,8 +224,9 @@ func (m *Manager) GetTemplate(name string) (*ctypes.Template, error) {
 
 // LaunchInstance launches a new EC2 instance
 func (m *Manager) LaunchInstance(req ctypes.LaunchRequest) (*ctypes.Instance, error) {
-	// Use context with reasonable timeout for AWS operations
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	// Use context with generous timeout to accommodate AWS variability
+	// No artificial limits - let AWS SDK waiters poll as long as needed
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	return m.LaunchInstanceWithContext(ctx, req)
@@ -796,8 +797,8 @@ func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec
 		return l.createDryRunInstance(req, hourlyRate, services, primaryUsername), nil
 	}
 
-	// Launch instance with AZ failover (v0.7.0) - with timeout to prevent hangs
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	// Launch instance with AZ failover (v0.7.0) - generous timeout to accommodate AWS variability
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	instance, err := l.executeInstanceLaunch(ctx, runInput, instanceType)
 	if err != nil {
@@ -875,8 +876,8 @@ func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *c
 
 // launchWithUnifiedTemplateSystem launches instance using unified template system with SOLID orchestration (SOLID: Single Responsibility)
 func (m *Manager) launchWithUnifiedTemplateSystem(req ctypes.LaunchRequest, arch string) (*ctypes.Instance, error) {
-	// Legacy method - create context with default timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	// Generous timeout to accommodate AWS variability
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	return m.launchWithUnifiedTemplateSystemWithContext(ctx, req, arch)
 }
@@ -1343,9 +1344,10 @@ func (m *Manager) CreateVolume(req ctypes.VolumeCreateRequest) (*ctypes.StorageV
 		return nil, fmt.Errorf("failed to create EFS file system: %w", err)
 	}
 
-	// Wait for file system to become available (60-180 seconds typical)
+	// Wait for file system to become available (typically 60-180 seconds, but can take longer)
+	// No artificial timeout - let polling continue as long as needed
 	log.Printf("Waiting for EFS file system to become available...")
-	err = m.waitForEFSAvailable(ctx, *result.FileSystemId, 5*time.Minute)
+	err = m.waitForEFSAvailable(ctx, *result.FileSystemId, 30*time.Minute)
 	if err != nil {
 		return nil, fmt.Errorf("EFS created but not available: %w", err)
 	}
@@ -1391,8 +1393,8 @@ func (m *Manager) DeleteVolume(name string) error {
 
 	log.Printf("Deleting EFS volume '%s' (filesystem ID: %s)...", name, fsId)
 
-	// Delete mount targets with 5-minute timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// Delete mount targets with generous timeout - can take considerable time
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	// 1. Delete all mount targets first
@@ -1967,14 +1969,13 @@ func (m *Manager) CreateStorage(req ctypes.StorageCreateRequest) (*ctypes.Storag
 		return nil, fmt.Errorf("failed to create EBS volume: %w", err)
 	}
 
-	// Wait for volume to become available (30-120 seconds typical)
+	// Wait for volume to become available (typically 30-120 seconds, but can take longer)
+	// No artificial timeout - let AWS SDK waiter poll until resource is ready
 	log.Printf("Waiting for EBS volume to become available...")
 	waiter := ec2.NewVolumeAvailableWaiter(m.ec2)
-	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Minute) // 5-minute max timeout
-	defer cancel()
-	err = waiter.Wait(waitCtx, &ec2.DescribeVolumesInput{
+	err = waiter.Wait(ctx, &ec2.DescribeVolumesInput{
 		VolumeIds: []string{*result.VolumeId},
-	}, 5*time.Minute)
+	}, 30*time.Minute) // Generous timeout to accommodate AWS variability
 	if err != nil {
 		return nil, fmt.Errorf("volume created but not available: %w", err)
 	}
@@ -2017,13 +2018,12 @@ func (m *Manager) DeleteStorage(name string) error {
 	ctx := context.Background()
 
 	// First, wait for volume to be available (can't delete if attached/creating)
+	// No artificial timeout - let AWS SDK waiter poll until resource is ready
 	log.Printf("Ensuring volume %s is in available state...", volumeID)
 	waiter := ec2.NewVolumeAvailableWaiter(m.ec2)
-	waitCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
-	defer cancel()
-	err = waiter.Wait(waitCtx, &ec2.DescribeVolumesInput{
+	err = waiter.Wait(ctx, &ec2.DescribeVolumesInput{
 		VolumeIds: []string{volumeID},
-	}, 3*time.Minute)
+	}, 30*time.Minute) // Generous timeout to accommodate detachment delays
 	if err != nil {
 		return fmt.Errorf("volume not available for deletion: %w", err)
 	}
@@ -2068,15 +2068,14 @@ func (m *Manager) AttachStorage(volumeName, instanceName string) error {
 	}
 
 	// Wait for attachment to complete
+	// No artificial timeout - let AWS SDK waiter poll until resource is ready
 	log.Printf("Waiting for volume attachment to complete...")
 	waiter := ec2.NewVolumeInUseWaiter(m.ec2)
-	waitCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
-	defer cancel()
-	err = waiter.Wait(waitCtx, &ec2.DescribeVolumesInput{
+	err = waiter.Wait(ctx, &ec2.DescribeVolumesInput{
 		VolumeIds: []string{volumeID},
-	}, 3*time.Minute)
+	}, 30*time.Minute) // Generous timeout to accommodate AWS variability
 	if err != nil {
-		return fmt.Errorf("volume attachment timed out: %w", err)
+		return fmt.Errorf("volume attachment failed: %w", err)
 	}
 	log.Printf("Volume %s successfully attached to instance %s", volumeID, instanceID)
 
@@ -4511,12 +4510,13 @@ func (m *Manager) stopInstanceForResize(ctx context.Context, instanceID string) 
 	}
 
 	// Wait for instance to stop
+	// No artificial timeout - let AWS SDK waiter poll until instance is stopped
 	waiter := ec2.NewInstanceStoppedWaiter(m.ec2)
 	err = waiter.Wait(ctx, &ec2.DescribeInstancesInput{
 		InstanceIds: []string{instanceID},
-	}, 5*time.Minute)
+	}, 30*time.Minute) // Generous timeout to accommodate AWS variability
 	if err != nil {
-		return fmt.Errorf("timeout waiting for instance to stop: %w", err)
+		return fmt.Errorf("failed waiting for instance to stop: %w", err)
 	}
 
 	return nil
@@ -4547,13 +4547,14 @@ func (m *Manager) startInstanceAfterResize(ctx context.Context, instanceID strin
 	}
 
 	// Wait for instance to start if requested
+	// No artificial timeout - let AWS SDK waiter poll until instance is running
 	if wait {
 		waiter := ec2.NewInstanceRunningWaiter(m.ec2)
 		err = waiter.Wait(ctx, &ec2.DescribeInstancesInput{
 			InstanceIds: []string{instanceID},
-		}, 5*time.Minute)
+		}, 30*time.Minute) // Generous timeout to accommodate AWS variability
 		if err != nil {
-			return fmt.Errorf("timeout waiting for instance to start: %w", err)
+			return fmt.Errorf("failed waiting for instance to start: %w", err)
 		}
 	}
 
@@ -4726,14 +4727,15 @@ func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2Cli
 // 2. AWS system status checks (2/2 passing)
 // 3. SSH port (22) being accessible
 func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, progressCallback func(stage string, progress float64, description string)) error {
-	// Use context with reasonable timeout for readiness checks (5 minutes total)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// Use context with generous timeout to accommodate AWS variability
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
 	// Get regional EC2 client
 	regionalClient := m.getRegionalEC2Client(region)
 
-	// Step 1: Wait for instance to reach "running" state (typically 30-60 seconds)
+	// Step 1: Wait for instance to reach "running" state (typically 30-60 seconds, but can take longer)
+	// No artificial timeout - let AWS SDK waiter poll until instance is running
 	if progressCallback != nil {
 		progressCallback("instance_ready", 0.0, "Waiting for instance to start...")
 	}
@@ -4741,9 +4743,9 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 	waiter := ec2.NewInstanceRunningWaiter(regionalClient)
 	err := waiter.Wait(ctx, &ec2.DescribeInstancesInput{
 		InstanceIds: []string{instanceID},
-	}, 3*time.Minute) // Give it 3 minutes to start
+	}, 30*time.Minute) // Generous timeout to accommodate AWS variability
 	if err != nil {
-		return fmt.Errorf("timeout waiting for instance to start: %w", err)
+		return fmt.Errorf("failed waiting for instance to start: %w", err)
 	}
 
 	if progressCallback != nil {
