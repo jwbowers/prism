@@ -241,9 +241,9 @@ export class BasePage {
   async waitForLoadingComplete() {
     try {
       // Wait for common loading indicators to disappear
+      // No timeout specified - uses test-level timeout to accommodate AWS operations
       await this.page.waitForSelector('[data-testid="loading"], .loading-spinner', {
         state: 'hidden',
-        timeout: 10000,
       });
     } catch {
       // Loading indicator might not exist, that's okay

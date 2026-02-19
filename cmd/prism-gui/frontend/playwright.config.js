@@ -49,7 +49,7 @@ export default defineConfig({
   },
 
   // Global timeout for each test (includes setup, test body, and cleanup)
-  timeout: 90000, // 90s per test - allows for test execution (~30s) + cleanup (~30s) + buffer
+  timeout: 180000, // 3 minutes per test - allows for AWS operations (30-180s) + test execution + cleanup
 
   // Configure projects for Wails WebView engines only (desktop only - CloudWorkstation is not mobile)
   // - Chromium: Windows (WebView2)

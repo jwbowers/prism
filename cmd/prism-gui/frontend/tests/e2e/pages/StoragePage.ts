@@ -349,39 +349,45 @@ export class StoragePage extends BasePage {
   }
 
   /**
-   * Wait for EFS volume to appear (deterministic DOM polling)
+   * Wait for EFS volume to be created and reach "available" state
    * AWS EFS creation timing varies by region and load (typically 30-180+ seconds)
    * Uses Playwright's built-in waitFor() with test-level timeout (no hard-coded limits)
    * Relies on storage state monitor to update volume state from AWS
    */
   async waitForEFSVolumeToExist(name: string): Promise<boolean> {
     await this.switchToEFS();
+
+    // First, wait for volume row to appear in table
     const volume = this.getEFSVolumeByName(name);
     try {
-      // No timeout specified - uses test's configured timeout (e.g., 180s)
       await volume.waitFor({ state: 'visible' });
-      return true;
     } catch {
       return false;
     }
+
+    // Then wait for volume to reach "available" state (AWS operation complete)
+    return await this.waitForVolumeState(name, 'efs', 'available');
   }
 
   /**
-   * Wait for EBS volume to appear (deterministic DOM polling)
-   * AWS EBS creation timing varies by region and load (typically 60-180+ seconds)
+   * Wait for EBS volume to be created and reach "available" state
+   * AWS EBS creation timing varies by region and load (typically 30-120+ seconds)
    * Uses Playwright's built-in waitFor() with test-level timeout (no hard-coded limits)
    * Relies on storage state monitor to update volume state from AWS
    */
   async waitForEBSVolumeToExist(name: string): Promise<boolean> {
     await this.switchToEBS();
+
+    // First, wait for volume row to appear in table
     const volume = this.getEBSVolumeByName(name);
     try {
-      // No timeout specified - uses test's configured timeout (e.g., 180s)
       await volume.waitFor({ state: 'visible' });
-      return true;
     } catch {
       return false;
     }
+
+    // Then wait for volume to reach "available" state (AWS operation complete)
+    return await this.waitForVolumeState(name, 'ebs', 'available');
   }
 
   /**
