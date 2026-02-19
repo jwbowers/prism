@@ -16,6 +16,10 @@ test.describe('Storage Management Workflows', () => {
   let instancesPage: InstancesPage;
   let confirmDialog: ConfirmDialog;
 
+  // Track if shared test volumes have been created in this test run
+  // This prevents re-creating volumes for every test (beforeEach runs 46 times!)
+  let sharedVolumesCreated = false;
+
   test.beforeEach(async ({ page, context }) => {
     // Set localStorage BEFORE navigating to prevent onboarding modal
     await context.addInitScript(() => {
@@ -32,34 +36,39 @@ test.describe('Storage Management Workflows', () => {
     // Wait for UI to fully render tabs (tabs need time to become interactive)
     await page.waitForTimeout(2000);
 
-    // Create shared test volumes for display/search tests
+    // Create shared test volumes for display/search tests ONLY ONCE
     // These persist across tests in this suite to avoid re-creating for every test
     // Individual tests that need specific volumes create their own
     // Note: No try/catch - setup failures should fail the test with clear errors
 
-    // Check if setup volumes already exist
-    const efsExists = await storagePage.verifyEFSVolumeExists('test-setup-efs');
-    if (!efsExists) {
-      console.log('Creating shared EFS volume: test-setup-efs');
-      await storagePage.createEFSVolume('test-setup-efs');
+    if (!sharedVolumesCreated) {
+      // Check if setup volumes already exist from previous test runs
+      const efsExists = await storagePage.verifyEFSVolumeExists('test-setup-efs');
+      if (!efsExists) {
+        console.log('Creating shared EFS volume: test-setup-efs');
+        await storagePage.createEFSVolume('test-setup-efs');
 
-      const created = await storagePage.waitForEFSVolumeToExist('test-setup-efs');
-      if (!created) {
-        throw new Error('Failed to create shared EFS volume: test-setup-efs. This volume is required for display/search tests.');
+        const created = await storagePage.waitForEFSVolumeToExist('test-setup-efs');
+        if (!created) {
+          throw new Error('Failed to create shared EFS volume: test-setup-efs. This volume is required for display/search tests.');
+        }
+        console.log('✅ Shared EFS volume created successfully');
       }
-      console.log('✅ Shared EFS volume created successfully');
-    }
 
-    const ebsExists = await storagePage.verifyEBSVolumeExists('test-setup-ebs');
-    if (!ebsExists) {
-      console.log('Creating shared EBS volume: test-setup-ebs');
-      await storagePage.createEBSVolume('test-setup-ebs', '50');
+      const ebsExists = await storagePage.verifyEBSVolumeExists('test-setup-ebs');
+      if (!ebsExists) {
+        console.log('Creating shared EBS volume: test-setup-ebs');
+        await storagePage.createEBSVolume('test-setup-ebs', '50');
 
-      const created = await storagePage.waitForEBSVolumeToExist('test-setup-ebs');
-      if (!created) {
-        throw new Error('Failed to create shared EBS volume: test-setup-ebs. This volume is required for display/search tests.');
+        const created = await storagePage.waitForEBSVolumeToExist('test-setup-ebs');
+        if (!created) {
+          throw new Error('Failed to create shared EBS volume: test-setup-ebs. This volume is required for display/search tests.');
+        }
+        console.log('✅ Shared EBS volume created successfully');
       }
-      console.log('✅ Shared EBS volume created successfully');
+
+      // Mark volumes as created so we don't try again for remaining 45 tests
+      sharedVolumesCreated = true;
     }
   });
 
