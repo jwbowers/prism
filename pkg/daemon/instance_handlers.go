@@ -132,12 +132,19 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// In test mode, add a mock running instance so mount/attach tests can find one
+	// In test mode, add mock instances so lifecycle/connect/mount/attach tests can find them
 	if s.testMode {
 		filteredInstances = append(filteredInstances, types.Instance{
 			ID:           "i-testmockrunning001",
 			Name:         "prism-mock-running",
 			State:        "running",
+			InstanceType: "t3.medium",
+			Template:     "python-ml",
+			Username:     "ubuntu",
+		}, types.Instance{
+			ID:           "i-testmockstopped001",
+			Name:         "prism-mock-stopped",
+			State:        "stopped",
 			InstanceType: "t3.medium",
 			Template:     "python-ml",
 			Username:     "ubuntu",
@@ -668,6 +675,12 @@ func (s *Server) refreshInstanceStateFromAWS(awsManager *aws.Manager, instanceNa
 func (s *Server) handleStartInstance(w http.ResponseWriter, r *http.Request, identifier string) {
 	if r.Method != http.MethodPost {
 		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// In test mode, mock instances respond immediately without AWS calls
+	if s.testMode && strings.HasPrefix(identifier, "prism-mock-") {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 

@@ -4771,9 +4771,15 @@ export default function PrismApp() {
                   </Button>
                 </SpaceBetween>
               </FormField>
-              {connectionInfo.webPort && (
+              {/* web-url is always in DOM (even when empty) for ConnectionDialog.hasWebURL() to work */}
+              <span data-testid="web-url" aria-hidden="true" style={{ display: 'none' }}>
+                {connectionInfo.publicIP && connectionInfo.webPort
+                  ? `http://${connectionInfo.publicIP}:${connectionInfo.webPort}`
+                  : ''}
+              </span>
+              {connectionInfo.publicIP && connectionInfo.webPort && (
                 <FormField label="Web URL" description="Access web services running on this instance">
-                  <Box data-testid="web-url">http://{connectionInfo.publicIP}:{connectionInfo.webPort}</Box>
+                  <Box>{`http://${connectionInfo.publicIP}:${connectionInfo.webPort}`}</Box>
                 </FormField>
               )}
             </SpaceBetween>
