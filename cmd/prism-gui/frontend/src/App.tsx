@@ -3801,6 +3801,7 @@ export default function PrismApp() {
             return;
           case 'attach':
             // Show modal for instance selection
+            setState(prev => ({ ...prev, loading: false }));
             setAttachModalVolume(volume as EBSVolume);
             if (state.instances.length > 0) {
               setSelectedAttachInstance(state.instances[0].name); // Default to first
