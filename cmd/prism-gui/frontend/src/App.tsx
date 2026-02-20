@@ -1935,10 +1935,28 @@ export default function PrismApp() {
   const [efsFilterText, setEfsFilterText] = useState<string>('');
   const [ebsFilterText, setEbsFilterText] = useState<string>('');
 
+  // Storage tab state - kept at App level so it persists across StorageManagementView remounts
+  // (StorageManagementView is defined inline in App body, so React remounts it on every App re-render,
+  // resetting any local useState back to the default. Moving activeTabId here prevents that reset.)
+  const [storageActiveTabId, setStorageActiveTabId] = useState('shared');
+
   // EBS attachment modal state
   const [attachModalVisible, setAttachModalVisible] = useState(false);
   const [attachModalVolume, setAttachModalVolume] = useState<EBSVolume | null>(null);
   const [selectedAttachInstance, setSelectedAttachInstance] = useState<string>('');
+
+  // EFS mount modal state
+  const [mountModalVisible, setMountModalVisible] = useState(false);
+  const [mountModalVolume, setMountModalVolume] = useState<EFSVolume | null>(null);
+  const [selectedMountInstance, setSelectedMountInstance] = useState<string>('');
+
+  // EFS unmount confirmation modal state
+  const [unmountModalVisible, setUnmountModalVisible] = useState(false);
+  const [unmountModalVolume, setUnmountModalVolume] = useState<EFSVolume | null>(null);
+
+  // EBS detach confirmation modal state
+  const [detachModalVisible, setDetachModalVisible] = useState(false);
+  const [detachModalVolume, setDetachModalVolume] = useState<EBSVolume | null>(null);
 
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
@@ -2330,29 +2348,47 @@ export default function PrismApp() {
       return;
     }
 
+    // Capture inputs before closing modal
+    const templateSlug = getTemplateSlug(state.selectedTemplate);
+    const templateName = getTemplateName(state.selectedTemplate);
+    const instanceName = launchConfig.name;
+    const instanceSize = launchConfig.size;
+
+    // Close modal IMMEDIATELY
+    handleModalDismiss();
+
+    // Show progress notification
+    setState(prev => ({
+      ...prev,
+      notifications: [
+        {
+          type: 'info',
+          header: 'Launching Workspace',
+          content: `Launching ${instanceName}... This may take a few minutes.`,
+          dismissible: true,
+          id: Date.now().toString()
+        },
+        ...prev.notifications
+      ]
+    }));
+
+    // Fire-and-forget
     try {
-      const templateSlug = getTemplateSlug(state.selectedTemplate);
-      const templateName = getTemplateName(state.selectedTemplate);
-
-      await api.launchInstance(templateSlug, launchConfig.name, launchConfig.size);
-
+      await api.launchInstance(templateSlug, instanceName, instanceSize);
+      await loadApplicationData();
       setState(prev => ({
         ...prev,
         notifications: [
           {
             type: 'success',
             header: 'Workspace Launched',
-            content: `Successfully launched ${launchConfig.name} using ${templateName}`,
+            content: `Successfully launched ${instanceName} using ${templateName}`,
             dismissible: true,
             id: Date.now().toString()
           },
           ...prev.notifications
         ]
       }));
-
-      handleModalDismiss();
-      loadApplicationData();
-
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -2360,7 +2396,7 @@ export default function PrismApp() {
           {
             type: 'error',
             header: 'Launch Failed',
-            content: `Failed to launch workspace: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            content: `Failed to launch ${instanceName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
             dismissible: true,
             id: Date.now().toString()
           },
@@ -3070,28 +3106,79 @@ export default function PrismApp() {
 
   // Comprehensive Instance Action Handler
   const handleInstanceAction = async (action: string, instance: Instance) => {
+    // Lifecycle actions use fire-and-forget (no global loading state)
+    const lifecycleActions: Record<string, [string, string]> = {
+      start: ['Starting', 'Started'],
+      stop: ['Stopping', 'Stopped'],
+      hibernate: ['Hibernating', 'Hibernated'],
+      resume: ['Resuming', 'Resumed'],
+    };
+
+    if (lifecycleActions[action]) {
+      const [progressLabel, completeLabel] = lifecycleActions[action];
+
+      // Show progress notification immediately (no loading state)
+      setState(prev => ({
+        ...prev,
+        notifications: [
+          ...prev.notifications,
+          {
+            type: 'info',
+            header: `${progressLabel} Workspace`,
+            content: `${progressLabel} ${instance.name}...`,
+            dismissible: true,
+            id: Date.now().toString()
+          }
+        ]
+      }));
+
+      // Fire-and-forget
+      try {
+        switch (action) {
+          case 'start': await api.startInstance(instance.name); break;
+          case 'stop': await api.stopInstance(instance.name); break;
+          case 'hibernate': await api.hibernateInstance(instance.name); break;
+          case 'resume': await api.resumeInstance(instance.name); break;
+        }
+        await loadApplicationData();
+        setState(prev => ({
+          ...prev,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'success',
+              header: `Workspace ${completeLabel}`,
+              content: `${instance.name} ${completeLabel.toLowerCase()} successfully`,
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+      } catch (error) {
+        logger.error(`Failed to ${action} workspace ${instance.name}:`, error);
+        setState(prev => ({
+          ...prev,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'error',
+              header: 'Action Failed',
+              content: `Failed to ${action} ${instance.name}: ${error instanceof Error ? error.message : String(error)}`,
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+      }
+      return;
+    }
+
     try {
       setState(prev => ({ ...prev, loading: true }));
 
       let actionMessage = '';
 
       switch (action) {
-        case 'start':
-          await api.startInstance(instance.name);
-          actionMessage = `Started instance ${instance.name}`;
-          break;
-        case 'stop':
-          await api.stopInstance(instance.name);
-          actionMessage = `Stopped instance ${instance.name}`;
-          break;
-        case 'hibernate':
-          await api.hibernateInstance(instance.name);
-          actionMessage = `Hibernated instance ${instance.name}`;
-          break;
-        case 'resume':
-          await api.resumeInstance(instance.name);
-          actionMessage = `Resumed instance ${instance.name}`;
-          break;
         case 'connect': {
           const connectionInfo = await api.getConnectionInfo(instance.name);
           // Copy to clipboard and show notification
@@ -3504,18 +3591,19 @@ export default function PrismApp() {
               id: "status",
               header: "Status",
               cell: (item: Instance) => (
-                <StatusIndicator
-                  data-testid="instance-status"
-                  type={
-                    item.state === 'running' ? 'success' :
-                    item.state === 'stopped' ? 'stopped' :
-                    item.state === 'hibernated' ? 'pending' :
-                    item.state === 'pending' ? 'in-progress' : 'error'
-                  }
-                  ariaLabel={getStatusLabel('workspace', item.state)}
-                >
-                  {item.state}
-                </StatusIndicator>
+                <div data-testid="instance-status">
+                  <StatusIndicator
+                    type={
+                      item.state === 'running' ? 'success' :
+                      item.state === 'stopped' ? 'stopped' :
+                      item.state === 'hibernated' ? 'pending' :
+                      item.state === 'pending' ? 'in-progress' : 'error'
+                    }
+                    ariaLabel={getStatusLabel('workspace', item.state)}
+                  >
+                    {item.state}
+                  </StatusIndicator>
+                </div>
               )
             },
             {
@@ -3628,24 +3716,20 @@ export default function PrismApp() {
             setDeleteModalVisible(true);
             return;
           case 'mount':
-            // For demo, mount to first available instance
-            if (state.instances.length > 0) {
-              const instance = state.instances[0].name;
-              await api.mountEFSVolume(volume.name, instance);
-              actionMessage = `Mounted EFS volume ${volume.name} to ${instance}`;
-            } else {
-              throw new Error('No running workspaces available for mounting');
-            }
-            break;
+            // Show modal for instance selection
+            setState(prev => ({ ...prev, loading: false }));
+            setMountModalVolume(volume as EFSVolume);
+            setSelectedMountInstance(
+              state.instances.filter(i => i.state === 'running')[0]?.name || ''
+            );
+            setMountModalVisible(true);
+            return;
           case 'unmount':
-            if (state.instances.length > 0) {
-              const instance = state.instances[0].name;
-              await api.unmountEFSVolume(volume.name, instance);
-              actionMessage = `Unmounted EFS volume ${volume.name} from ${instance}`;
-            } else {
-              throw new Error('No workspaces to unmount from');
-            }
-            break;
+            // Show confirmation modal
+            setState(prev => ({ ...prev, loading: false }));
+            setUnmountModalVolume(volume as EFSVolume);
+            setUnmountModalVisible(true);
+            return;
           default:
             throw new Error(`Unknown EFS action: ${action}`);
         }
@@ -3704,9 +3788,11 @@ export default function PrismApp() {
             setAttachModalVisible(true);
             return; // Don't execute API call yet
           case 'detach':
-            await api.detachEBSVolume(volume.name);
-            actionMessage = `Detached EBS volume ${volume.name}`;
-            break;
+            // Show confirmation modal
+            setState(prev => ({ ...prev, loading: false }));
+            setDetachModalVolume(volume as EBSVolume);
+            setDetachModalVisible(true);
+            return;
           default:
             throw new Error(`Unknown EBS action: ${action}`);
         }
@@ -3753,7 +3839,12 @@ export default function PrismApp() {
 
   // Storage Management View
   const StorageManagementView = () => {
-    const [activeTabId, setActiveTabId] = React.useState('shared');
+    // activeTabId is now in App-level state (storageActiveTabId) to prevent reset on remounts.
+    // StorageManagementView is defined inline in App, so React creates a new function reference
+    // on every App re-render, unmounting and remounting this component (losing local useState).
+    // Using App-level state preserves the active tab across remounts.
+    const activeTabId = storageActiveTabId;
+    const setActiveTabId = setStorageActiveTabId;
 
     return (
       <SpaceBetween size="l" data-testid="storage-page">
@@ -3931,7 +4022,7 @@ export default function PrismApp() {
                           <ButtonDropdown
                             expandToViewport
                             items={[
-                              { text: 'Mount to Workspace', id: 'mount', disabled: item.state !== 'available' },
+                              { text: 'Mount', id: 'mount', disabled: item.state !== 'available' },
                               { text: 'Unmount', id: 'unmount', disabled: item.state !== 'available' },
                               { text: 'View Details', id: 'details' },
                               { text: 'Delete', id: 'delete', disabled: item.state !== 'available' }
@@ -4107,7 +4198,7 @@ export default function PrismApp() {
                           <ButtonDropdown
                             expandToViewport
                             items={[
-                              { text: 'Attach to Workspace', id: 'attach', disabled: item.state !== 'available' },
+                              { text: 'Attach', id: 'attach', disabled: item.state !== 'available' },
                               { text: 'Detach', id: 'detach', disabled: item.state !== 'in-use' },
                               { text: 'View Details', id: 'details' },
                               { text: 'Create Snapshot', id: 'snapshot', disabled: item.state !== 'available' && item.state !== 'in-use' },
@@ -4182,45 +4273,58 @@ export default function PrismApp() {
                   variant="primary"
                   onClick={async () => {
                     if (attachModalVolume && selectedAttachInstance) {
-                      setState(prev => ({ ...prev, loading: true }));
+                      // Capture values before closing modal
+                      const volumeName = attachModalVolume.name;
+                      const instanceName = selectedAttachInstance;
+
+                      // Close modal IMMEDIATELY
+                      setAttachModalVisible(false);
+                      setAttachModalVolume(null);
+                      setSelectedAttachInstance('');
+
+                      // Show progress notification
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [
+                          ...prev.notifications,
+                          {
+                            type: 'info',
+                            header: 'Attaching Volume',
+                            content: `Attaching ${volumeName} to ${instanceName}...`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          }
+                        ]
+                      }));
+
+                      // Fire-and-forget
                       try {
-                        await api.attachEBSVolume(attachModalVolume.name, selectedAttachInstance);
+                        await api.attachEBSVolume(volumeName, instanceName);
+                        await loadApplicationData();
                         setState(prev => ({
                           ...prev,
-                          loading: false,
                           notifications: [
                             ...prev.notifications,
                             {
                               type: 'success',
                               header: 'Volume Attached',
-                              content: `EBS volume ${attachModalVolume.name} attached to ${selectedAttachInstance}`,
+                              content: `EBS volume ${volumeName} attached to ${instanceName}`,
                               dismissible: true,
-                              onDismiss: () => setState(prev => ({
-                                ...prev,
-                                notifications: prev.notifications.slice(1)
-                              }))
+                              id: Date.now().toString()
                             }
                           ]
                         }));
-                        setAttachModalVisible(false);
-                        setAttachModalVolume(null);
-                        setSelectedAttachInstance('');
-                        await loadStorageData();
                       } catch (error) {
                         setState(prev => ({
                           ...prev,
-                          loading: false,
                           notifications: [
                             ...prev.notifications,
                             {
                               type: 'error',
                               header: 'Attachment Failed',
-                              content: `Failed to attach volume: ${error instanceof Error ? error.message : String(error)}`,
+                              content: `Failed to attach ${volumeName}: ${error instanceof Error ? error.message : String(error)}`,
                               dismissible: true,
-                              onDismiss: () => setState(prev => ({
-                                ...prev,
-                                notifications: prev.notifications.slice(1)
-                              }))
+                              id: Date.now().toString()
                             }
                           ]
                         }));
@@ -4268,12 +4372,334 @@ export default function PrismApp() {
                     }
                     placeholder="Choose a workspace"
                     empty="No running workspaces available"
-                    data-testid="instance-select"
+                    data-testid="attach-instance-select"
                   />
                 </FormField>
               </>
             )}
           </SpaceBetween>
+        </Modal>
+
+        {/* Mount EFS Volume Modal */}
+        <Modal
+          visible={mountModalVisible}
+          onDismiss={() => {
+            setMountModalVisible(false);
+            setMountModalVolume(null);
+            setSelectedMountInstance('');
+          }}
+          header="Mount Volume to Workspace"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setMountModalVisible(false);
+                    setMountModalVolume(null);
+                    setSelectedMountInstance('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (mountModalVolume && selectedMountInstance) {
+                      // Capture values before closing modal
+                      const volumeName = mountModalVolume.name;
+                      const instanceName = selectedMountInstance;
+
+                      // Close modal IMMEDIATELY
+                      setMountModalVisible(false);
+                      setMountModalVolume(null);
+                      setSelectedMountInstance('');
+
+                      // Show progress notification
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [
+                          ...prev.notifications,
+                          {
+                            type: 'info',
+                            header: 'Mounting Volume',
+                            content: `Mounting ${volumeName} to ${instanceName}...`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          }
+                        ]
+                      }));
+
+                      // Fire-and-forget
+                      try {
+                        await api.mountEFSVolume(volumeName, instanceName);
+                        await loadApplicationData();
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'success',
+                              header: 'Volume Mounted',
+                              content: `EFS volume ${volumeName} mounted to ${instanceName}`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            }
+                          ]
+                        }));
+                      } catch (error) {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'error',
+                              header: 'Mount Failed',
+                              content: `Failed to mount ${volumeName}: ${error instanceof Error ? error.message : String(error)}`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            }
+                          ]
+                        }));
+                      }
+                    }
+                  }}
+                  disabled={!selectedMountInstance}
+                  data-testid="mount-button"
+                >
+                  Mount
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            {mountModalVolume && (
+              <>
+                <Box>
+                  <Box variant="strong">Volume:</Box> {mountModalVolume.name}
+                </Box>
+
+                <FormField
+                  label="Instance"
+                  description="Select the workspace to mount this volume to"
+                >
+                  <Select
+                    selectedOption={
+                      selectedMountInstance
+                        ? { label: selectedMountInstance, value: selectedMountInstance }
+                        : null
+                    }
+                    onChange={({ detail }) => setSelectedMountInstance(detail.selectedOption.value || '')}
+                    options={state.instances
+                      .filter(inst => inst.state === 'running')
+                      .map(inst => ({
+                        label: inst.name,
+                        value: inst.name,
+                        description: `${inst.template} - ${inst.public_ip || 'No IP'}`
+                      }))
+                    }
+                    placeholder="Choose a workspace"
+                    empty="No running workspaces available"
+                    data-testid="mount-instance-select"
+                  />
+                </FormField>
+              </>
+            )}
+          </SpaceBetween>
+        </Modal>
+
+        {/* Unmount EFS Volume Modal */}
+        <Modal
+          visible={unmountModalVisible}
+          onDismiss={() => {
+            setUnmountModalVisible(false);
+            setUnmountModalVolume(null);
+          }}
+          header="Unmount Volume"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setUnmountModalVisible(false);
+                    setUnmountModalVolume(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (unmountModalVolume) {
+                      // Capture values before closing modal
+                      const volumeName = unmountModalVolume.name;
+
+                      // Close modal IMMEDIATELY
+                      setUnmountModalVisible(false);
+                      setUnmountModalVolume(null);
+
+                      // Show progress notification
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [
+                          ...prev.notifications,
+                          {
+                            type: 'info',
+                            header: 'Unmounting Volume',
+                            content: `Unmounting ${volumeName}...`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          }
+                        ]
+                      }));
+
+                      // Fire-and-forget
+                      try {
+                        // Unmount from first available instance (backend handles actual instance resolution)
+                        if (state.instances.length > 0) {
+                          await api.unmountEFSVolume(volumeName, state.instances[0].name);
+                        }
+                        await loadApplicationData();
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'success',
+                              header: 'Volume Unmounted',
+                              content: `EFS volume ${volumeName} unmounted successfully`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            }
+                          ]
+                        }));
+                      } catch (error) {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'error',
+                              header: 'Unmount Failed',
+                              content: `Failed to unmount ${volumeName}: ${error instanceof Error ? error.message : String(error)}`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            }
+                          ]
+                        }));
+                      }
+                    }
+                  }}
+                  data-testid="unmount-button"
+                >
+                  Unmount
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          {unmountModalVolume && (
+            <Box>
+              Are you sure you want to unmount <Box variant="strong" display="inline">{unmountModalVolume.name}</Box>?
+            </Box>
+          )}
+        </Modal>
+
+        {/* Detach EBS Volume Modal */}
+        <Modal
+          visible={detachModalVisible}
+          onDismiss={() => {
+            setDetachModalVisible(false);
+            setDetachModalVolume(null);
+          }}
+          header="Detach Volume"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setDetachModalVisible(false);
+                    setDetachModalVolume(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (detachModalVolume) {
+                      // Capture values before closing modal
+                      const volumeName = detachModalVolume.name;
+
+                      // Close modal IMMEDIATELY
+                      setDetachModalVisible(false);
+                      setDetachModalVolume(null);
+
+                      // Show progress notification
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [
+                          ...prev.notifications,
+                          {
+                            type: 'info',
+                            header: 'Detaching Volume',
+                            content: `Detaching ${volumeName}...`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          }
+                        ]
+                      }));
+
+                      // Fire-and-forget
+                      try {
+                        await api.detachEBSVolume(volumeName);
+                        await loadApplicationData();
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'success',
+                              header: 'Volume Detached',
+                              content: `EBS volume ${volumeName} detached successfully`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            }
+                          ]
+                        }));
+                      } catch (error) {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            ...prev.notifications,
+                            {
+                              type: 'error',
+                              header: 'Detach Failed',
+                              content: `Failed to detach ${volumeName}: ${error instanceof Error ? error.message : String(error)}`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            }
+                          ]
+                        }));
+                      }
+                    }
+                  }}
+                  data-testid="detach-button"
+                >
+                  Detach
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          {detachModalVolume && (
+            <Box>
+              Are you sure you want to detach <Box variant="strong" display="inline">{detachModalVolume.name}</Box>?
+            </Box>
+          )}
         </Modal>
 
         {/* Storage Statistics */}
@@ -4441,17 +4867,18 @@ export default function PrismApp() {
                 id: "status",
                 header: "Status",
                 cell: (item: InstanceSnapshot) => (
-                  <StatusIndicator
-                    data-testid="status-badge"
-                    type={
-                      item.state === 'available' ? 'success' :
-                      item.state === 'creating' || item.state === 'pending' ? 'in-progress' :
-                      item.state === 'deleting' ? 'warning' : 'error'
-                    }
-                    ariaLabel={getStatusLabel('snapshot', item.state)}
-                  >
-                    {item.state}
-                  </StatusIndicator>
+                  <div data-testid="status-badge">
+                    <StatusIndicator
+                      type={
+                        item.state === 'available' ? 'success' :
+                        item.state === 'creating' || item.state === 'pending' ? 'in-progress' :
+                        item.state === 'deleting' ? 'warning' : 'error'
+                      }
+                      ariaLabel={getStatusLabel('snapshot', item.state)}
+                    >
+                      {item.state}
+                    </StatusIndicator>
+                  </div>
                 )
               },
               {
@@ -7676,7 +8103,7 @@ export default function PrismApp() {
                 <Box fontSize="heading-m">
                   {state.updateInfo.latest_version}
                   {state.updateInfo.is_update_available && (
-                    <Badge color="green" style={{ marginLeft: '8px' }}>New</Badge>
+                    <span style={{ marginLeft: '8px' }}><Badge color="green">New</Badge></span>
                   )}
                 </Box>
               </SpaceBetween>

@@ -81,6 +81,23 @@ export class InstancesPage extends BasePage {
   }
 
   /**
+   * Get the name of the first running instance
+   * Returns null if no running instances are found
+   * Used by mount/attach tests that require running instances with SSM
+   */
+  async getFirstRunningInstanceName(): Promise<string | null> {
+    const rows = await this.page.locator('[data-testid="instances-table"] tbody tr').all();
+    for (const row of rows) {
+      const statusEl = row.locator('[data-testid="instance-status"]');
+      const status = await statusEl.textContent().catch(() => '');
+      if (status?.toLowerCase().includes('running')) {
+        return await row.locator('[data-testid="instance-name"]').textContent();
+      }
+    }
+    return null;
+  }
+
+  /**
    * Check if empty state is shown
    */
   async hasEmptyState(): Promise<boolean> {
