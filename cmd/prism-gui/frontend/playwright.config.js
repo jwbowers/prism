@@ -68,12 +68,13 @@ export default defineConfig({
   ],
 
   // Start the Vite dev server for the frontend
-  // Note: reuseExistingServer set to false for reliability
-  // This ensures tests always have a fresh server and work in all environments
+  // reuseExistingServer: true allows reusing a running dev server (e.g., from a previous test run
+  // that didn't clean up). The daemon is always restarted fresh by global-setup.js, so tests
+  // remain properly isolated even when the Vite server is reused.
   webServer: {
     command: 'npm run dev',
     port: 3000,
-    reuseExistingServer: false,
+    reuseExistingServer: true,
     timeout: 120 * 1000,
   }
 })
