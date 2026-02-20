@@ -75,9 +75,13 @@ test.describe('Instance Management Workflows', () => {
       await launchDialog.enableDryRun();
       await launchDialog.clickLaunch();
 
-      await instancesPage.page.waitForTimeout(3000);
+      // Wait for fire-and-forget to complete (up to 15 seconds)
+      await instancesPage.page.locator('text=/workspace launched/i').first().waitFor({
+        state: 'visible',
+        timeout: 15000
+      }).catch(() => null);
 
-      const successMessage = await instancesPage.page.locator('text=/success|launched/i').isVisible();
+      const successMessage = await instancesPage.page.locator('text=/success|launched/i').first().isVisible();
       expect(successMessage).toBe(true);
     });
 
@@ -151,8 +155,13 @@ test.describe('Instance Management Workflows', () => {
       await launchDialog.enableDryRun();
       await launchDialog.clickLaunch();
 
-      await instancesPage.page.waitForTimeout(3000);
-      const successMessage = await instancesPage.page.locator('text=/success|launched/i').isVisible();
+      // Wait for fire-and-forget to complete (up to 15 seconds)
+      await instancesPage.page.locator('text=/workspace launched/i').first().waitFor({
+        state: 'visible',
+        timeout: 15000
+      }).catch(() => null);
+
+      const successMessage = await instancesPage.page.locator('text=/success|launched/i').first().isVisible();
       expect(successMessage).toBe(true);
     });
 

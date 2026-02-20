@@ -659,6 +659,7 @@ func (r *TemplateRegistry) resolveTemplateInheritance(template *Template) (*Temp
 	// Create a new template to merge into
 	merged := &Template{
 		Name:        template.Name,
+		Slug:        template.Slug, // Preserve child template slug (not inherited from parents)
 		Description: template.Description,
 		Base:        template.Base,
 		Version:     template.Version,

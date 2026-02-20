@@ -749,12 +749,16 @@ class SafePrismAPI {
     }
   }
 
-  async launchInstance(templateSlug: string, name: string, size: string = 'M'): Promise<Instance> {
-    return this.safeRequest('/api/v1/instances', 'POST', {
+  async launchInstance(templateSlug: string, name: string, size: string = 'M', dryRun: boolean = false): Promise<Instance> {
+    const body: Record<string, unknown> = {
       template: templateSlug,
       name,
       size,
-    });
+    };
+    if (dryRun) {
+      body.dry_run = true;
+    }
+    return this.safeRequest('/api/v1/instances', 'POST', body);
   }
 
   // Comprehensive Instance Management APIs - Using Fixed Backend Endpoints
@@ -2210,19 +2214,14 @@ export default function PrismApp() {
   };
 
   // Load data on mount and refresh periodically
+  // NOTE: Budget loading on navigation is handled by the separate effect below (line 2145)
+  // This effect intentionally uses [] deps to avoid re-triggering on every navigation
   useEffect(() => {
     loadApplicationData();
-    const interval = setInterval(() => {
-      loadApplicationData();
-      // Also refresh budgets if viewing budgets page or project detail
-      // NOTE: Removed 'projects' to avoid N+1 query problem (Issue #457)
-      if (state.activeView === 'budgets' || state.activeView === 'project-detail') {
-        loadBudgetData();
-      }
-    }, 30000);
+    const interval = setInterval(loadApplicationData, 30000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.activeView]); // Include activeView to conditionally refresh budgets
+  }, []); // Only on mount - prevents unnecessary reloads on every navigation
 
   // Check for updates on mount
   useEffect(() => {
@@ -2353,6 +2352,7 @@ export default function PrismApp() {
     const templateName = getTemplateName(state.selectedTemplate);
     const instanceName = launchConfig.name;
     const instanceSize = launchConfig.size;
+    const isDryRun = launchConfig.dryRun || false;
 
     // Close modal IMMEDIATELY
     handleModalDismiss();
@@ -2374,8 +2374,7 @@ export default function PrismApp() {
 
     // Fire-and-forget
     try {
-      await api.launchInstance(templateSlug, instanceName, instanceSize);
-      await loadApplicationData();
+      await api.launchInstance(templateSlug, instanceName, instanceSize, isDryRun);
       setState(prev => ({
         ...prev,
         notifications: [
@@ -2389,6 +2388,8 @@ export default function PrismApp() {
           ...prev.notifications
         ]
       }));
+      // Reload data in background (don't block the success notification)
+      setTimeout(loadApplicationData, 1000);
     } catch (error) {
       setState(prev => ({
         ...prev,

@@ -19,6 +19,10 @@ export class TemplatesPage extends BasePage {
   async navigate() {
     await this.navigateToTab('templates');
     await this.waitForLoadingComplete();
+    // Explicitly wait for template cards to be visible (handles any loading states)
+    await this.page.locator('[data-testid="template-card"]').first()
+      .waitFor({ state: 'visible', timeout: 30000 })
+      .catch(() => console.log('[TemplatesPage.navigate] Warning: template cards not visible after 30s'));
   }
 
   /**
@@ -41,6 +45,7 @@ export class TemplatesPage extends BasePage {
    */
   async selectTemplate(name: string) {
     const template = this.getTemplateByName(name);
+    await template.waitFor({ state: 'visible', timeout: 30000 });
     await template.click();
   }
 
@@ -86,6 +91,8 @@ export class TemplatesPage extends BasePage {
     const template = this.getTemplateByName(name);
     // Use .first() to handle any remaining duplicates gracefully
     const launchButton = template.getByRole('button', { name: /launch/i }).first();
+    // Wait for button to be visible (handles loading states that may hide template cards)
+    await launchButton.waitFor({ state: 'visible', timeout: 30000 });
     await launchButton.click();
   }
 

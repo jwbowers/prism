@@ -399,9 +399,10 @@ func NewServer(port string) (*Server, error) {
 		cloudwatchClient:    cloudwatchClient,
 		idleScheduler:       idleScheduler,
 		policyManager:       policyManager,
-		profileManager:      profileManager,       // Singleton for filesystem consistency
-		progressTracker:     NewProgressTracker(), // Launch progress monitoring (v0.7.2 - Issue #453)
-		reducedMode:         reducedMode,          // Reduced functionality mode when AWS credentials unavailable (Issue #356)
+		profileManager:      profileManager,                         // Singleton for filesystem consistency
+		progressTracker:     NewProgressTracker(),                   // Launch progress monitoring (v0.7.2 - Issue #453)
+		reducedMode:         reducedMode,                            // Reduced functionality mode when AWS credentials unavailable (Issue #356)
+		testMode:            os.Getenv("PRISM_TEST_MODE") == "true", // E2E test mode - skip AWS operations
 	}
 
 	// Print reduced mode banner if AWS credentials unavailable (Issue #356)
