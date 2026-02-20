@@ -176,6 +176,19 @@ func (s *Server) handleMountVolume(w http.ResponseWriter, r *http.Request, volum
 		mountPoint = "/mnt/" + volumeName // Default mount point
 	}
 
+	// In test mode, simulate mount by updating AttachedTo in state (no SSM needed)
+	if s.testMode {
+		st, err := s.stateManager.LoadState()
+		if err == nil {
+			if vol, exists := st.StorageVolumes[volumeName]; exists {
+				vol.AttachedTo = instanceName
+				_ = s.stateManager.SaveStorageVolume(vol)
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	awsManager, err := s.createAWSManagerFromRequest(r)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create AWS manager: %v", err))
@@ -207,6 +220,19 @@ func (s *Server) handleUnmountVolume(w http.ResponseWriter, r *http.Request, vol
 	instanceName, ok := req["instance"]
 	if !ok {
 		s.writeError(w, http.StatusBadRequest, "Missing instance name")
+		return
+	}
+
+	// In test mode, simulate unmount by clearing AttachedTo in state (no SSM needed)
+	if s.testMode {
+		st, err := s.stateManager.LoadState()
+		if err == nil {
+			if vol, exists := st.StorageVolumes[volumeName]; exists {
+				vol.AttachedTo = ""
+				_ = s.stateManager.SaveStorageVolume(vol)
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 

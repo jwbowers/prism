@@ -142,6 +142,7 @@ interface EFSVolume {
   throughput_mode: string;
   estimated_cost_gb: number;
   size_bytes: number;
+  attached_to?: string;
 }
 
 interface EBSVolume {
@@ -1962,6 +1963,15 @@ export default function PrismApp() {
   const [detachModalVisible, setDetachModalVisible] = useState(false);
   const [detachModalVolume, setDetachModalVolume] = useState<EBSVolume | null>(null);
 
+  // Connection info modal state
+  const [connectionModalVisible, setConnectionModalVisible] = useState(false);
+  const [connectionInfo, setConnectionInfo] = useState<{
+    instanceName: string;
+    publicIP: string;
+    sshCommand: string;
+    webPort: string;
+  } | null>(null);
+
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
   const [budgetName, setBudgetName] = useState('');
@@ -3181,11 +3191,19 @@ export default function PrismApp() {
 
       switch (action) {
         case 'connect': {
-          const connectionInfo = await api.getConnectionInfo(instance.name);
-          // Copy to clipboard and show notification
-          navigator.clipboard.writeText(connectionInfo);
-          actionMessage = `Connection command copied to clipboard: ${connectionInfo}`;
-          break;
+          // Show connection info modal (fire-and-forget style - no loading state)
+          const ip = instance.public_ip || '';
+          const user = instance.username || 'ubuntu';
+          const sshCmd = ip ? `ssh ${user}@${ip}` : `ssh ${user}@<instance-ip>`;
+          setState(prev => ({ ...prev, loading: false }));
+          setConnectionInfo({
+            instanceName: instance.name,
+            publicIP: ip,
+            sshCommand: sshCmd,
+            webPort: ''
+          });
+          setConnectionModalVisible(true);
+          return;
         }
         case 'terminal':
           // Open terminal view with this instance pre-selected
@@ -3998,6 +4016,13 @@ export default function PrismApp() {
                         )
                       },
                       {
+                        id: "mounted_to",
+                        header: "Mounted To",
+                        cell: (item: EFSVolume) => item.attached_to
+                          ? <Box>Mounted to {item.attached_to}</Box>
+                          : <Box color="text-body-secondary">—</Box>
+                      },
+                      {
                         id: "size",
                         header: "Size",
                         cell: (item: EFSVolume) => <div data-testid="volume-size">{`${Math.round(item.size_bytes / (1024 * 1024 * 1024))} GB`}</div>
@@ -4700,6 +4725,58 @@ export default function PrismApp() {
             <Box>
               Are you sure you want to detach <Box variant="strong" display="inline">{detachModalVolume.name}</Box>?
             </Box>
+          )}
+        </Modal>
+
+        {/* Connection Info Modal */}
+        <Modal
+          visible={connectionModalVisible}
+          onDismiss={() => {
+            setConnectionModalVisible(false);
+            setConnectionInfo(null);
+          }}
+          header="Connection Information"
+          footer={
+            <Box float="right">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setConnectionModalVisible(false);
+                  setConnectionInfo(null);
+                }}
+              >
+                Close
+              </Button>
+            </Box>
+          }
+        >
+          {connectionInfo && (
+            <SpaceBetween size="m">
+              <FormField label="Workspace">
+                <Box>{connectionInfo.instanceName}</Box>
+              </FormField>
+              {connectionInfo.publicIP && (
+                <FormField label="Public IP" description="Instance public IP address">
+                  <Box data-testid="public-ip">{connectionInfo.publicIP}</Box>
+                </FormField>
+              )}
+              <FormField label="SSH Command" description="Use this command to connect via SSH">
+                <SpaceBetween direction="horizontal" size="xs">
+                  <code data-testid="ssh-command">{connectionInfo.sshCommand}</code>
+                  <Button
+                    iconName="copy"
+                    onClick={() => navigator.clipboard.writeText(connectionInfo!.sshCommand)}
+                  >
+                    Copy SSH
+                  </Button>
+                </SpaceBetween>
+              </FormField>
+              {connectionInfo.webPort && (
+                <FormField label="Web URL" description="Access web services running on this instance">
+                  <Box data-testid="web-url">http://{connectionInfo.publicIP}:{connectionInfo.webPort}</Box>
+                </FormField>
+              )}
+            </SpaceBetween>
           )}
         </Modal>
 

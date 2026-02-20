@@ -132,6 +132,18 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// In test mode, add a mock running instance so mount/attach tests can find one
+	if s.testMode {
+		filteredInstances = append(filteredInstances, types.Instance{
+			ID:           "i-testmockrunning001",
+			Name:         "prism-mock-running",
+			State:        "running",
+			InstanceType: "t3.medium",
+			Template:     "python-ml",
+			Username:     "ubuntu",
+		})
+	}
+
 	// Calculate total cost for running instances
 	for _, instance := range filteredInstances {
 		if instance.State == "running" {

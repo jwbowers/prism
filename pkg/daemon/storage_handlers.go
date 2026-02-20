@@ -162,6 +162,20 @@ func (s *Server) handleAttachStorage(w http.ResponseWriter, r *http.Request, sto
 		return
 	}
 
+	// In test mode, simulate attach by updating state (no real AWS attach needed)
+	if s.testMode {
+		st, err := s.stateManager.LoadState()
+		if err == nil {
+			if vol, exists := st.StorageVolumes[storageName]; exists {
+				vol.State = "in-use"
+				vol.AttachedTo = instanceName
+				_ = s.stateManager.SaveStorageVolume(vol)
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	awsManager, err := s.createAWSManagerFromRequest(r)
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create AWS manager: %v", err))
@@ -181,6 +195,20 @@ func (s *Server) handleAttachStorage(w http.ResponseWriter, r *http.Request, sto
 func (s *Server) handleDetachStorage(w http.ResponseWriter, r *http.Request, storageName string) {
 	if r.Method != http.MethodPost {
 		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// In test mode, simulate detach by updating state (no real AWS detach needed)
+	if s.testMode {
+		st, err := s.stateManager.LoadState()
+		if err == nil {
+			if vol, exists := st.StorageVolumes[storageName]; exists {
+				vol.State = "available"
+				vol.AttachedTo = ""
+				_ = s.stateManager.SaveStorageVolume(vol)
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
