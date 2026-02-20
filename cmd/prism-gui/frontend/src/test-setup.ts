@@ -1,10 +1,7 @@
-import { expect, afterEach } from 'vitest';
+import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
+import '@testing-library/jest-dom/vitest';
 import * as lodash from 'lodash';
-
-// Extend Vitest's expect with jest-dom matchers
-expect.extend(matchers);
 
 // Make lodash available globally for Cloudscape components
 (globalThis as any)._ = lodash;
@@ -15,7 +12,7 @@ afterEach(() => {
 });
 
 // Global React act() warning handler for test environment
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Mock window.matchMedia for Cloudscape components
 Object.defineProperty(window, 'matchMedia', {

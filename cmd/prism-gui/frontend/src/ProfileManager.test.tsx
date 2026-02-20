@@ -15,8 +15,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
-import { server } from '../tests/msw/server';
 import App from './App';
 
 // Mock window.wails for the entire App
@@ -108,7 +106,7 @@ describe('ProfileManager', () => {
         // Default profile should have active/current indicator
         const defaultProfile = screen.getByText(/default/).closest('[data-profile-item]');
         if (defaultProfile) {
-          expect(within(defaultProfile).getByText(/current|active/i)).toBeInTheDocument();
+          expect(within(defaultProfile as HTMLElement).getByText(/current|active/i)).toBeInTheDocument();
         }
       });
     });
@@ -472,7 +470,7 @@ describe('ProfileManager', () => {
         // Research-profile should now show as current
         const researchProfile = screen.getByText(/research-profile/).closest('[data-profile-item]');
         if (researchProfile) {
-          expect(within(researchProfile).getByText(/current|active/i)).toBeInTheDocument();
+          expect(within(researchProfile as HTMLElement).getByText(/current|active/i)).toBeInTheDocument();
         }
       });
     });

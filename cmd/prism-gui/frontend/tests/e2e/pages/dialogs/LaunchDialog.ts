@@ -132,7 +132,7 @@ export class LaunchDialog {
    * Click Launch button
    */
   async clickLaunch() {
-    const launchButton = this.page.getByRole('button', { name: /^launch$/i });
+    const launchButton = this.page.getByRole('button', { name: /launch workspace/i });
     await launchButton.click();
   }
 
@@ -146,11 +146,27 @@ export class LaunchDialog {
 
   /**
    * Get validation error message
+   * Checks Cloudscape FormField errorText rendering and data-testid elements
    */
   async getValidationError(): Promise<string | null> {
-    const errorText = this.page.locator('[data-testid="validation-error"], .awsui-form-field__error');
-    if (await errorText.isVisible()) {
-      return await errorText.textContent();
+    // Cloudscape FormField renders errorText inside [class*="error-icon"] or similar
+    // Try multiple selectors for compatibility
+    const selectors = [
+      '[data-testid="validation-error"]',
+      '[class*="form-field__error"]',
+      '[class*="error__message"]',
+      '.awsui-form-field__error'
+    ];
+    for (const selector of selectors) {
+      const el = this.page.locator(selector).first();
+      if (await el.isVisible().catch(() => false)) {
+        return await el.textContent();
+      }
+    }
+    // Also check for disabled Launch button + visible errorText as form hint
+    const errorHint = this.page.locator('text=/name.*required/i').first();
+    if (await errorHint.isVisible().catch(() => false)) {
+      return await errorHint.textContent();
     }
     return null;
   }
@@ -165,10 +181,16 @@ export class LaunchDialog {
 
   /**
    * Get cost estimate value
+   * Returns null if cost estimate is not displayed in this dialog variant
    */
   async getCostEstimate(): Promise<string | null> {
     const costText = this.page.locator('[data-testid="cost-estimate"]');
-    return await costText.textContent();
+    try {
+      // Use short timeout - cost estimate may not be in all dialog variants
+      return await costText.textContent({ timeout: 2000 });
+    } catch {
+      return null;
+    }
   }
 
   /**

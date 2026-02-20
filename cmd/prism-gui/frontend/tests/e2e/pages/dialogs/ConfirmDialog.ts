@@ -31,11 +31,18 @@ export class ConfirmDialog {
   }
 
   /**
-   * Get dialog message
+   * Get dialog message text
+   * Uses the visible dialog's full text content since Cloudscape modal body
+   * uses dynamic class names (not stable selectors like .awsui-modal-body)
    */
   async getMessage(): Promise<string | null> {
-    const messageText = this.getDialog().locator('.awsui-modal-body, .modal-body');
-    return await messageText.textContent();
+    try {
+      // Get the full text of the visible dialog
+      const dialog = this.getDialog();
+      return await dialog.textContent({ timeout: 5000 });
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -48,9 +55,10 @@ export class ConfirmDialog {
 
   /**
    * Click Cancel button
+   * Scoped to the visible dialog to avoid matching other buttons on the page
    */
   async clickCancel() {
-    const cancelButton = this.page.getByRole('button', { name: /cancel|no/i });
+    const cancelButton = this.getDialog().getByRole('button', { name: /cancel/i });
     await cancelButton.click();
   }
 

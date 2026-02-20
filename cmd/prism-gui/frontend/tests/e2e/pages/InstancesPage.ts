@@ -106,85 +106,94 @@ export class InstancesPage extends BasePage {
   }
 
   /**
+   * Click the Actions dropdown for an instance and select a menu item
+   * The UI uses a ButtonDropdown component labeled "Actions" for all instance operations
+   */
+  private async clickInstanceAction(name: string, action: string) {
+    const instance = this.getInstanceByName(name);
+    const actionsButton = instance.getByRole('button', { name: 'Actions' });
+    await actionsButton.click();
+    await this.page.getByRole('menuitem', { name: action, exact: true }).click();
+  }
+
+  /**
    * Start an instance
    */
   async startInstance(name: string) {
-    const instance = this.getInstanceByName(name);
-    const startButton = instance.getByRole('button', { name: /start/i });
-    await startButton.click();
+    await this.clickInstanceAction(name, 'Start');
   }
 
   /**
    * Stop an instance
    */
   async stopInstance(name: string) {
-    const instance = this.getInstanceByName(name);
-    const stopButton = instance.getByRole('button', { name: /stop/i });
-    await stopButton.click();
+    await this.clickInstanceAction(name, 'Stop');
   }
 
   /**
-   * Terminate an instance (with confirmation)
+   * Delete/Terminate an instance (opens confirmation modal)
+   * Note: The UI calls this action "Delete" in the Actions dropdown
    */
   async terminateInstance(name: string) {
-    const instance = this.getInstanceByName(name);
-    const terminateButton = instance.getByRole('button', { name: /terminate/i });
-    await terminateButton.click();
+    await this.clickInstanceAction(name, 'Delete');
   }
 
   /**
    * Hibernate an instance
    */
   async hibernateInstance(name: string) {
-    const instance = this.getInstanceByName(name);
-    const hibernateButton = instance.getByRole('button', { name: /hibernate/i });
-    await hibernateButton.click();
+    await this.clickInstanceAction(name, 'Hibernate');
   }
 
   /**
    * Resume a hibernated instance
    */
   async resumeInstance(name: string) {
-    const instance = this.getInstanceByName(name);
-    const resumeButton = instance.getByRole('button', { name: /resume/i });
-    await resumeButton.click();
+    await this.clickInstanceAction(name, 'Resume');
   }
 
   /**
    * Connect to an instance (view connection info)
    */
   async connectToInstance(name: string) {
-    const instance = this.getInstanceByName(name);
-    const connectButton = instance.getByRole('button', { name: /connect/i });
-    await connectButton.click();
+    await this.clickInstanceAction(name, 'Connect');
   }
 
   /**
-   * Get instance status
+   * Get instance status text from the instance row
    */
   async getInstanceStatus(name: string): Promise<string | null> {
     const instance = this.getInstanceByName(name);
-    const statusBadge = instance.locator('[data-testid="status-badge"], .awsui-badge');
-    return await this.getTextContent(statusBadge);
+    // Status is in data-testid="instance-status" which contains a StatusIndicator
+    const statusEl = instance.locator('[data-testid="instance-status"]');
+    return await this.getTextContent(statusEl);
   }
 
   /**
-   * Filter instances by status
+   * Filter instances by status using the PropertyFilter component
+   * Uses keyboard type to properly trigger PropertyFilter's state machine
    */
   async filterByStatus(status: string) {
-    const filterSelect = this.page.getByLabel(/filter.*status/i);
-    await filterSelect.selectOption(status);
+    const input = this.page.getByPlaceholder(/search instances/i);
+    await input.click();
+    await input.clear();
+    await this.page.keyboard.type(status);
+    await this.page.keyboard.press('Enter');
+    await this.page.waitForTimeout(1000);
     await this.waitForLoadingComplete();
   }
 
   /**
-   * Search instances by name
+   * Search instances by name using the PropertyFilter component
+   * Uses keyboard type to properly trigger PropertyFilter's state machine
    */
   async searchInstances(query: string) {
-    const searchInput = this.page.getByPlaceholder(/search.*instances/i);
-    await searchInput.fill(query);
-    // Wait for the table to update after search filter
-    await this.page.waitForLoadState('domcontentloaded');
+    const input = this.page.getByPlaceholder(/search instances/i);
+    await input.click();
+    await input.clear();
+    await this.page.keyboard.type(query);
+    await this.page.keyboard.press('Enter');
+    await this.page.waitForTimeout(1000);
   }
 
   /**

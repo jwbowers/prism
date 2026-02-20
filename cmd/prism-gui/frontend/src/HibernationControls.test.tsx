@@ -16,8 +16,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
-import { server } from '../tests/msw/server';
 import App from './App';
 
 // Mock window.wails
