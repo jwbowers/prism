@@ -807,6 +807,7 @@ class SafePrismAPI {
       throughput_mode: vol.throughput_mode || '',
       estimated_cost_gb: vol.estimated_cost_gb,
       size_bytes: vol.size_bytes || 0,
+      attached_to: vol.attached_to,
     };
   }
 

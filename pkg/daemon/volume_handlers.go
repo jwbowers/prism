@@ -201,6 +201,14 @@ func (s *Server) handleMountVolume(w http.ResponseWriter, r *http.Request, volum
 		return
 	}
 
+	// Update state to track which instance this volume is mounted to
+	if st, loadErr := s.stateManager.LoadState(); loadErr == nil {
+		if vol, exists := st.StorageVolumes[volumeName]; exists {
+			vol.AttachedTo = instanceName
+			_ = s.stateManager.SaveStorageVolume(vol)
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -246,6 +254,14 @@ func (s *Server) handleUnmountVolume(w http.ResponseWriter, r *http.Request, vol
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to unmount volume: %v", err))
 		return
+	}
+
+	// Update state to clear the mounted instance
+	if st, loadErr := s.stateManager.LoadState(); loadErr == nil {
+		if vol, exists := st.StorageVolumes[volumeName]; exists {
+			vol.AttachedTo = ""
+			_ = s.stateManager.SaveStorageVolume(vol)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

@@ -188,6 +188,15 @@ func (s *Server) handleAttachStorage(w http.ResponseWriter, r *http.Request, sto
 		return
 	}
 
+	// Update state to reflect attached status
+	if st, loadErr := s.stateManager.LoadState(); loadErr == nil {
+		if vol, exists := st.StorageVolumes[storageName]; exists {
+			vol.State = "in-use"
+			vol.AttachedTo = instanceName
+			_ = s.stateManager.SaveStorageVolume(vol)
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -222,6 +231,15 @@ func (s *Server) handleDetachStorage(w http.ResponseWriter, r *http.Request, sto
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to detach storage: %v", err))
 		return
+	}
+
+	// Update state to reflect detached status
+	if st, loadErr := s.stateManager.LoadState(); loadErr == nil {
+		if vol, exists := st.StorageVolumes[storageName]; exists {
+			vol.State = "available"
+			vol.AttachedTo = ""
+			_ = s.stateManager.SaveStorageVolume(vol)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
