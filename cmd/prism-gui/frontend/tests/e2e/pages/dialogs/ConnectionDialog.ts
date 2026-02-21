@@ -18,7 +18,7 @@ export class ConnectionDialog {
    * Get dialog container
    */
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]', { hasText: /connection/i });
+    return this.page.getByRole('dialog', { name: 'Connection Information' });
   }
 
   /**

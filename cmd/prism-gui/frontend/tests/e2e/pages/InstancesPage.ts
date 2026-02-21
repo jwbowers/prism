@@ -110,10 +110,15 @@ export class InstancesPage extends BasePage {
    * The UI uses a ButtonDropdown component labeled "Actions" for all instance operations
    */
   private async clickInstanceAction(name: string, action: string) {
-    const instance = this.getInstanceByName(name);
+    const instance = this.getInstanceByName(name).first();
     const actionsButton = instance.getByRole('button', { name: 'Actions' });
     await actionsButton.click();
-    await this.page.getByRole('menuitem', { name: action, exact: true }).click();
+    // Cloudscape ButtonDropdown with expandToViewport renders items in a portal at page level.
+    // Wait for the item to become visible (portal is added to DOM when dropdown opens),
+    // then click it. Only the currently-open dropdown's items are visible at any time.
+    const menuItem = this.page.getByRole('menuitem', { name: action, exact: true });
+    await menuItem.waitFor({ state: 'visible', timeout: 5000 });
+    await menuItem.click();
   }
 
   /**
@@ -154,9 +159,12 @@ export class InstancesPage extends BasePage {
 
   /**
    * Connect to an instance (view connection info)
+   * Uses the dedicated connect button (data-testid) in the table row for reliability.
+   * The direct button bypasses the ButtonDropdown portal which can be unreliable in tests.
    */
   async connectToInstance(name: string) {
-    await this.clickInstanceAction(name, 'Connect');
+    const connectBtn = this.page.getByTestId(`connect-btn-${name}`);
+    await connectBtn.click();
   }
 
   /**
@@ -165,7 +173,8 @@ export class InstancesPage extends BasePage {
   async getInstanceStatus(name: string): Promise<string | null> {
     const instance = this.getInstanceByName(name);
     // Status is in data-testid="instance-status" which contains a StatusIndicator
-    const statusEl = instance.locator('[data-testid="instance-status"]');
+    // Use .first() to handle cases where duplicate rows exist (same instance in state + AWS response)
+    const statusEl = instance.locator('[data-testid="instance-status"]').first();
     return await this.getTextContent(statusEl);
   }
 

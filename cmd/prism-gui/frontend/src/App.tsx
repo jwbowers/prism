@@ -3635,24 +3635,46 @@ export default function PrismApp() {
               id: "actions",
               header: "Actions",
               cell: (item: Instance) => (
-                <ButtonDropdown
-                  expandToViewport
-                  items={[
-                    { text: 'Connect', id: 'connect', disabled: item.state !== 'running' },
-                    { text: 'Open Terminal', id: 'terminal', disabled: item.state !== 'running', iconName: 'console' },
-                    { text: 'Open Web Service', id: 'webservice', disabled: item.state !== 'running' || !item.web_services || item.web_services.length === 0, iconName: 'external' },
-                    { text: 'Stop', id: 'stop', disabled: item.state !== 'running' },
-                    { text: 'Start', id: 'start', disabled: item.state === 'running' },
-                    { text: 'Hibernate', id: 'hibernate', disabled: item.state !== 'running' },
-                    { text: 'Resume', id: 'resume', disabled: item.state !== 'stopped' },
-                    { text: 'Delete', id: 'delete', disabled: item.state === 'running' || item.state === 'pending' }
-                  ]}
-                  onItemClick={({ detail }) => {
-                    handleInstanceAction(detail.id, item);
-                  }}
-                >
-                  Actions
-                </ButtonDropdown>
+                <SpaceBetween direction="horizontal" size="xs">
+                  {item.state === 'running' && (
+                    <Button
+                      data-testid={`connect-btn-${item.name}`}
+                      iconName="external"
+                      variant="inline-link"
+                      onClick={() => {
+                        const ip = item.public_ip || '';
+                        const user = item.username || 'ubuntu';
+                        setConnectionInfo({
+                          instanceName: item.name,
+                          publicIP: ip,
+                          sshCommand: ip ? `ssh ${user}@${ip}` : `ssh ${user}@<instance-ip>`,
+                          webPort: ''
+                        });
+                        setConnectionModalVisible(true);
+                      }}
+                    >
+                      Connect
+                    </Button>
+                  )}
+                  <ButtonDropdown
+                    expandToViewport
+                    items={[
+                      { text: 'Connect', id: 'connect', disabled: item.state !== 'running' },
+                      { text: 'Open Terminal', id: 'terminal', disabled: item.state !== 'running', iconName: 'console' },
+                      { text: 'Open Web Service', id: 'webservice', disabled: item.state !== 'running' || !item.web_services || item.web_services.length === 0, iconName: 'external' },
+                      { text: 'Stop', id: 'stop', disabled: item.state !== 'running' },
+                      { text: 'Start', id: 'start', disabled: item.state === 'running' },
+                      { text: 'Hibernate', id: 'hibernate', disabled: item.state !== 'running' },
+                      { text: 'Resume', id: 'resume', disabled: item.state !== 'stopped' },
+                      { text: 'Delete', id: 'delete', disabled: item.state === 'running' || item.state === 'pending' }
+                    ]}
+                    onItemClick={({ detail }) => {
+                      handleInstanceAction(detail.id, item);
+                    }}
+                  >
+                    Actions
+                  </ButtonDropdown>
+                </SpaceBetween>
               )
             }
           ]}
@@ -4727,64 +4749,6 @@ export default function PrismApp() {
             <Box>
               Are you sure you want to detach <Box variant="strong" display="inline">{detachModalVolume.name}</Box>?
             </Box>
-          )}
-        </Modal>
-
-        {/* Connection Info Modal */}
-        <Modal
-          visible={connectionModalVisible}
-          onDismiss={() => {
-            setConnectionModalVisible(false);
-            setConnectionInfo(null);
-          }}
-          header="Connection Information"
-          footer={
-            <Box float="right">
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setConnectionModalVisible(false);
-                  setConnectionInfo(null);
-                }}
-              >
-                Close
-              </Button>
-            </Box>
-          }
-        >
-          {connectionInfo && (
-            <SpaceBetween size="m">
-              <FormField label="Workspace">
-                <Box>{connectionInfo.instanceName}</Box>
-              </FormField>
-              {connectionInfo.publicIP && (
-                <FormField label="Public IP" description="Instance public IP address">
-                  <Box data-testid="public-ip">{connectionInfo.publicIP}</Box>
-                </FormField>
-              )}
-              <FormField label="SSH Command" description="Use this command to connect via SSH">
-                <SpaceBetween direction="horizontal" size="xs">
-                  <code data-testid="ssh-command">{connectionInfo.sshCommand}</code>
-                  <Button
-                    iconName="copy"
-                    onClick={() => navigator.clipboard.writeText(connectionInfo!.sshCommand)}
-                  >
-                    Copy SSH
-                  </Button>
-                </SpaceBetween>
-              </FormField>
-              {/* web-url is always in DOM (even when empty) for ConnectionDialog.hasWebURL() to work */}
-              <span data-testid="web-url" aria-hidden="true" style={{ display: 'none' }}>
-                {connectionInfo.publicIP && connectionInfo.webPort
-                  ? `http://${connectionInfo.publicIP}:${connectionInfo.webPort}`
-                  : ''}
-              </span>
-              {connectionInfo.publicIP && connectionInfo.webPort && (
-                <FormField label="Web URL" description="Access web services running on this instance">
-                  <Box>{`http://${connectionInfo.publicIP}:${connectionInfo.webPort}`}</Box>
-                </FormField>
-              )}
-            </SpaceBetween>
           )}
         </Modal>
 
@@ -12488,6 +12452,64 @@ export default function PrismApp() {
             </FormField>
           </SpaceBetween>
         </Form>
+      </Modal>
+
+      {/* Connection Info Modal - at App level so it's always mounted regardless of active view */}
+      <Modal
+        visible={connectionModalVisible}
+        onDismiss={() => {
+          setConnectionModalVisible(false);
+          setConnectionInfo(null);
+        }}
+        header="Connection Information"
+        footer={
+          <Box float="right">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setConnectionModalVisible(false);
+                setConnectionInfo(null);
+              }}
+            >
+              Close
+            </Button>
+          </Box>
+        }
+      >
+        {connectionInfo && (
+          <SpaceBetween size="m">
+            <FormField label="Workspace">
+              <Box>{connectionInfo.instanceName}</Box>
+            </FormField>
+            {connectionInfo.publicIP && (
+              <FormField label="Public IP" description="Instance public IP address">
+                <Box data-testid="public-ip">{connectionInfo.publicIP}</Box>
+              </FormField>
+            )}
+            <FormField label="SSH Command" description="Use this command to connect via SSH">
+              <SpaceBetween direction="horizontal" size="xs">
+                <code data-testid="ssh-command">{connectionInfo.sshCommand}</code>
+                <Button
+                  iconName="copy"
+                  onClick={() => navigator.clipboard.writeText(connectionInfo!.sshCommand)}
+                >
+                  Copy SSH
+                </Button>
+              </SpaceBetween>
+            </FormField>
+            {/* web-url is always in DOM (even when empty) for ConnectionDialog.hasWebURL() to work */}
+            <span data-testid="web-url" aria-hidden="true" style={{ display: 'none' }}>
+              {connectionInfo.publicIP && connectionInfo.webPort
+                ? `http://${connectionInfo.publicIP}:${connectionInfo.webPort}`
+                : ''}
+            </span>
+            {connectionInfo.publicIP && connectionInfo.webPort && (
+              <FormField label="Web URL" description="Access web services running on this instance">
+                <Box>{`http://${connectionInfo.publicIP}:${connectionInfo.webPort}`}</Box>
+              </FormField>
+            )}
+          </SpaceBetween>
+        )}
       </Modal>
     </>
   );

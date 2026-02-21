@@ -286,8 +286,8 @@ test.describe('Instance Management Workflows', () => {
       // Wait for status change
       await page.waitForTimeout(2000);
 
-      // Verify status changed
-      const statusChanged = await page.locator('text=/starting|running/i').isVisible();
+      // Verify status changed - use .first() to avoid strict mode violation when multiple elements match
+      const statusChanged = await page.locator('text=/starting|running/i').first().isVisible();
       expect(statusChanged).toBe(true);
     });
 
