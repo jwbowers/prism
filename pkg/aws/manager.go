@@ -2017,15 +2017,33 @@ func (m *Manager) DeleteStorage(name string) error {
 
 	ctx := context.Background()
 
-	// First, wait for volume to be available (can't delete if attached/creating)
-	// No artificial timeout - let AWS SDK waiter poll until resource is ready
-	log.Printf("Ensuring volume %s is in available state...", volumeID)
-	waiter := ec2.NewVolumeAvailableWaiter(m.ec2)
-	err = waiter.Wait(ctx, &ec2.DescribeVolumesInput{
+	// Check current volume state before attempting deletion
+	describeResult, err := m.ec2.DescribeVolumes(ctx, &ec2.DescribeVolumesInput{
 		VolumeIds: []string{volumeID},
-	}, 30*time.Minute) // Generous timeout to accommodate detachment delays
+	})
 	if err != nil {
-		return fmt.Errorf("volume not available for deletion: %w", err)
+		return fmt.Errorf("failed to describe volume: %w", err)
+	}
+	if len(describeResult.Volumes) == 0 {
+		return fmt.Errorf("volume %s not found", volumeID)
+	}
+	currentState := describeResult.Volumes[0].State
+
+	// If volume is attached, refuse immediately - user must detach first
+	if currentState == ec2types.VolumeStateInUse {
+		return fmt.Errorf("failed to delete volume: volume is currently attached to an instance; detach it first")
+	}
+
+	// If volume is in a transitional state (creating/modifying), wait for available
+	if currentState != ec2types.VolumeStateAvailable {
+		log.Printf("Ensuring volume %s is in available state (current: %s)...", volumeID, currentState)
+		waiter := ec2.NewVolumeAvailableWaiter(m.ec2)
+		err = waiter.Wait(ctx, &ec2.DescribeVolumesInput{
+			VolumeIds: []string{volumeID},
+		}, 5*time.Minute)
+		if err != nil {
+			return fmt.Errorf("volume not available for deletion: %w", err)
+		}
 	}
 
 	// Delete the volume
