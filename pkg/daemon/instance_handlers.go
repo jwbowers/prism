@@ -61,7 +61,8 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 	totalCost := 0.0
 
 	// Check if refresh from AWS is explicitly requested
-	refreshFromAWS := r.URL.Query().Get("refresh") == "true"
+	// In test mode, always serve from local state to avoid real AWS calls
+	refreshFromAWS := r.URL.Query().Get("refresh") == "true" && !s.testMode
 
 	if refreshFromAWS {
 		// Query AWS for real-time status (slow but accurate)

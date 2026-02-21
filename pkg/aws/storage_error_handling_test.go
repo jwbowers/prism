@@ -399,10 +399,10 @@ func TestStorageStatePersistenceErrors(t *testing.T) {
 		mockEFS.CreateFileSystemFunc = func(ctx context.Context, params *efs.CreateFileSystemInput) (*efs.CreateFileSystemOutput, error) {
 			callCount++
 			if callCount == 1 {
-				// First call succeeds
+				// First call succeeds and returns available state immediately (no polling needed)
 				return &efs.CreateFileSystemOutput{
 					FileSystemId:   aws.String("fs-11111111"),
-					LifeCycleState: efsTypes.LifeCycleStateCreating,
+					LifeCycleState: efsTypes.LifeCycleStateAvailable,
 				}, nil
 			}
 			// Second concurrent call fails due to name conflict

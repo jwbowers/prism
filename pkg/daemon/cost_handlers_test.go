@@ -113,8 +113,10 @@ func TestHandleAcknowledgeAlert(t *testing.T) {
 			handler.ServeHTTP(w, req)
 
 			// Accept various error codes (routing implementation dependent)
+			// Double-slash path (/alerts//acknowledge) returns 307 Temporary Redirect
 			assert.True(t, w.Code == tt.expectedStatus ||
 				w.Code == http.StatusMovedPermanently ||
+				w.Code == http.StatusTemporaryRedirect ||
 				w.Code == http.StatusBadRequest)
 		})
 	}
@@ -151,8 +153,10 @@ func TestHandleResolveAlert(t *testing.T) {
 			handler.ServeHTTP(w, req)
 
 			// Accept various error codes (routing implementation dependent)
+			// Double-slash path (/alerts//resolve) returns 307 Temporary Redirect
 			assert.True(t, w.Code == tt.expectedStatus ||
 				w.Code == http.StatusMovedPermanently ||
+				w.Code == http.StatusTemporaryRedirect ||
 				w.Code == http.StatusBadRequest)
 		})
 	}

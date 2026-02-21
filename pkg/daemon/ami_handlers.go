@@ -246,6 +246,23 @@ func (s *Server) handleAMICreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// In test mode, return mock response without making AWS calls
+	if s.testMode {
+		response := map[string]interface{}{
+			"creation_id":                  "ami-test-mock-001",
+			"ami_id":                       "ami-test-mock-001",
+			"template_name":                request.TemplateName,
+			"instance_id":                  request.InstanceID,
+			"status":                       "pending",
+			"message":                      "AMI creation initiated (test mode)",
+			"estimated_completion_minutes": 12,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		json.NewEncoder(w).Encode(response) //nolint:errcheck
+		return
+	}
+
 	// Create AMI from instance using the AWS manager
 	result, err := s.awsManager.CreateAMIFromInstance(&request)
 	if err != nil {
@@ -353,6 +370,13 @@ func (s *Server) handleAMIList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// In test mode, return empty list without making AWS calls
+	if s.testMode {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]interface{}{}) //nolint:errcheck
+		return
+	}
+
 	// Get user AMIs using the AWS manager
 	userAMIs, err := s.awsManager.ListUserAMIs()
 	if err != nil {
@@ -389,6 +413,22 @@ func (s *Server) handleAMICleanup(w http.ResponseWriter, r *http.Request) {
 	// Default max age if not specified
 	if request.MaxAge == "" {
 		request.MaxAge = "30d"
+	}
+
+	// In test mode, return mock response without making AWS calls
+	if s.testMode {
+		response := map[string]interface{}{
+			"total_found":             0,
+			"total_removed":           0,
+			"storage_savings_monthly": 0.0,
+			"removed_amis":            []interface{}{},
+			"dry_run":                 request.DryRun,
+			"max_age":                 request.MaxAge,
+			"cleanup_completed_at":    time.Now(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response) //nolint:errcheck
+		return
 	}
 
 	// Perform AMI cleanup using the AWS manager
@@ -435,6 +475,21 @@ func (s *Server) handleAMIDelete(w http.ResponseWriter, r *http.Request) {
 
 	if request.AMIID == "" {
 		s.writeError(w, http.StatusBadRequest, "ami_id is required")
+		return
+	}
+
+	// In test mode, return mock response without making AWS calls
+	if s.testMode {
+		response := map[string]interface{}{
+			"ami_id":                  request.AMIID,
+			"status":                  "deleted",
+			"deleted_snapshots":       0,
+			"storage_savings_monthly": 0.0,
+			"deregister_only":         request.DeregisterOnly,
+			"deletion_completed_at":   time.Now(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response) //nolint:errcheck
 		return
 	}
 

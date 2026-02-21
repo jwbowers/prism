@@ -62,6 +62,10 @@ func (s *Server) handleAcknowledgeAlert(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	alertID := parts[0]
+	if alertID == "" {
+		http.Error(w, "Alert ID is required", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.alertManager.AcknowledgeAlert(alertID); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -85,6 +89,10 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	alertID := parts[0]
+	if alertID == "" {
+		http.Error(w, "Alert ID is required", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.alertManager.ResolveAlert(alertID); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)

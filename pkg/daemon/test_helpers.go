@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/types"
 )
 
 // setupTestProject creates a test project in the server's project manager
@@ -77,6 +78,17 @@ func setupTestBudget(t *testing.T, server *Server, projectID string, totalBudget
 	}
 
 	t.Logf("Created budget and allocation for project %s: $%.2f", projectID, totalBudget)
+
+	// Also initialize the project in the budgetTracker so cost/trends/status endpoints work
+	if server.budgetTracker != nil {
+		monthlyLimit := totalBudget
+		projectBudget := &types.ProjectBudget{
+			MonthlyLimit: &monthlyLimit,
+		}
+		if err := server.budgetTracker.InitializeProject(projectID, projectBudget); err != nil {
+			t.Logf("Warning: failed to initialize project in budget tracker: %v", err)
+		}
+	}
 }
 
 // setupTestIdlePolicy creates a test idle policy

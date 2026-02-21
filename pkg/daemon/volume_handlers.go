@@ -179,11 +179,18 @@ func (s *Server) handleMountVolume(w http.ResponseWriter, r *http.Request, volum
 	// In test mode, simulate mount by updating AttachedTo in state (no SSM needed)
 	if s.testMode {
 		st, err := s.stateManager.LoadState()
-		if err == nil {
-			if vol, exists := st.StorageVolumes[volumeName]; exists {
-				vol.AttachedTo = instanceName
-				_ = s.stateManager.SaveStorageVolume(vol)
-			}
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to mount volume: %v", err))
+			return
+		}
+		// Validate instance exists
+		if _, instanceExists := st.Instances[instanceName]; !instanceExists {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to mount volume: instance '%s' not found", instanceName))
+			return
+		}
+		if vol, exists := st.StorageVolumes[volumeName]; exists {
+			vol.AttachedTo = instanceName
+			_ = s.stateManager.SaveStorageVolume(vol)
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return

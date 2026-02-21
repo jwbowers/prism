@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/idle"
 )
 
@@ -186,8 +185,9 @@ func (s *Server) getIdleSavingsReport(w http.ResponseWriter, r *http.Request) {
 		idleHours := 0.0
 		activeHours := 0.0
 
-		if instances, err := s.awsManager.ListInstances(); err == nil {
-			for _, instance := range instances {
+		// Read from local state (fast) rather than querying AWS directly
+		if state, err := s.stateManager.LoadState(); err == nil {
+			for _, instance := range state.Instances {
 				// Get hibernation time from instance metadata or state
 				// This would track actual hibernation periods
 				// For now, estimate based on instance state history
@@ -236,27 +236,30 @@ func (s *Server) getIdleSavingsReport(w http.ResponseWriter, r *http.Request) {
 func (s *Server) generateSavingsRecommendations() []map[string]interface{} {
 	recommendations := []map[string]interface{}{}
 
-	// Get instances without idle detection
-	if instances, err := s.awsManager.ListInstances(); err == nil {
-		instancesWithoutPolicy := 0
-		for _, instance := range instances {
-			// Check if instance has idle policy (use daemon-level scheduler)
-			if s.idleScheduler != nil {
-				schedules := s.idleScheduler.GetInstanceSchedules(instance.Name)
-				if len(schedules) == 0 {
-					instancesWithoutPolicy++
-				}
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
+	if err != nil {
+		return recommendations
+	}
+
+	instancesWithoutPolicy := 0
+	for _, instance := range state.Instances {
+		// Check if instance has idle policy (use daemon-level scheduler)
+		if s.idleScheduler != nil {
+			schedules := s.idleScheduler.GetInstanceSchedules(instance.Name)
+			if len(schedules) == 0 {
+				instancesWithoutPolicy++
 			}
 		}
+	}
 
-		if instancesWithoutPolicy > 0 {
-			recommendations = append(recommendations, map[string]interface{}{
-				"type":        "enable_idle_detection",
-				"description": fmt.Sprintf("Enable idle detection on %d instances", instancesWithoutPolicy),
-				"priority":    "high",
-				"impact":      float64(instancesWithoutPolicy) * 50.0, // Estimate $50/month per instance
-			})
-		}
+	if instancesWithoutPolicy > 0 {
+		recommendations = append(recommendations, map[string]interface{}{
+			"type":        "enable_idle_detection",
+			"description": fmt.Sprintf("Enable idle detection on %d instances", instancesWithoutPolicy),
+			"priority":    "high",
+			"impact":      float64(instancesWithoutPolicy) * 50.0, // Estimate $50/month per instance
+		})
 	}
 
 	return recommendations
@@ -434,6 +437,11 @@ func (s *Server) handleIdlePolicyApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.InstanceName == "" {
+		http.Error(w, "instance_name is required", http.StatusBadRequest)
+		return
+	}
+
 	// Delegate to existing handler
 	s.applyIdlePolicyToInstance(w, r, req.InstanceName, req.PolicyID)
 }
@@ -445,35 +453,19 @@ func (s *Server) handleInstanceRecommendIdlePolicy(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Get instance details from AWS
+	// Get instance details from local state (fast)
 	var instanceType string
 
-	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
-		// Get all instances and find the one we're looking for
-		instances, err := awsManager.ListInstances()
-		if err != nil {
-			return fmt.Errorf("failed to get instance details: %w", err)
-		}
+	state, err := s.stateManager.LoadState()
+	if err != nil {
+		http.Error(w, "Failed to load state", http.StatusInternalServerError)
+		return
+	}
 
-		// Find the instance
-		var found bool
-		for _, inst := range instances {
-			if inst.Name == instanceName {
-				instanceType = inst.InstanceType
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return fmt.Errorf("instance not found: %s", instanceName)
-		}
-
-		return nil
-	})
-
-	// If withAWSManager returned early with an error, it already wrote the response
-	if instanceType == "" {
+	if inst, ok := state.Instances[instanceName]; ok {
+		instanceType = inst.InstanceType
+	} else {
+		http.Error(w, fmt.Sprintf("Instance not found: %s", instanceName), http.StatusNotFound)
 		return
 	}
 

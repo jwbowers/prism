@@ -79,6 +79,7 @@ func (m *MockProfileManager) GetProfileCredentials(ctx context.Context, profileI
 
 // TestValidateInvitation_Success tests successful invitation validation
 func TestValidateInvitation_Success(t *testing.T) {
+	t.Setenv("PRISM_STATE_DIR", t.TempDir())
 	// Create manager
 	manager, err := NewManager(nil)
 	if err != nil {
@@ -145,6 +146,7 @@ func TestValidateInvitation_Success(t *testing.T) {
 
 // TestValidateInvitation_MissingProfile tests validation with missing profile
 func TestValidateInvitation_MissingProfile(t *testing.T) {
+	t.Setenv("PRISM_STATE_DIR", t.TempDir())
 	// Create manager
 	manager, err := NewManager(nil)
 	if err != nil {
@@ -190,6 +192,7 @@ func TestValidateInvitation_MissingProfile(t *testing.T) {
 
 // TestValidateInvitation_ExpiredInvitation tests validation with expired invitation
 func TestValidateInvitation_ExpiredInvitation(t *testing.T) {
+	t.Setenv("PRISM_STATE_DIR", t.TempDir())
 	// Create manager
 	manager, err := NewManager(nil)
 	if err != nil {
@@ -243,6 +246,7 @@ func TestValidateInvitation_ExpiredInvitation(t *testing.T) {
 
 // TestGetCredentialStatus tests credential status retrieval
 func TestGetCredentialStatus(t *testing.T) {
+	t.Setenv("PRISM_STATE_DIR", t.TempDir())
 	// Create manager
 	manager, err := NewManager(nil)
 	if err != nil {
@@ -304,6 +308,7 @@ func TestGetCredentialStatus(t *testing.T) {
 
 // TestEnforceExpiration tests expiration enforcement
 func TestEnforceExpiration(t *testing.T) {
+	t.Setenv("PRISM_STATE_DIR", t.TempDir())
 	// Create manager
 	manager, err := NewManager(nil)
 	if err != nil {

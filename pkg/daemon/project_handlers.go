@@ -188,17 +188,21 @@ func (s *Server) buildProjectSummary(proj *types.Project) project.ProjectSummary
 
 func (s *Server) calculateActiveInstances(projectID string) int {
 	// Skip AWS calls in test mode
-	if os.Getenv("PRISM_TEST_MODE") == "true" {
+	if s.testMode || os.Getenv("PRISM_TEST_MODE") == "true" {
+		return 0
+	}
+
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
+	if err != nil {
 		return 0
 	}
 
 	activeInstances := 0
-	if instances, err := s.awsManager.ListInstances(); err == nil {
-		for _, instance := range instances {
-			// Only count running instances that belong to this project
-			if instance.State == "running" && instance.ProjectID == projectID {
-				activeInstances++
-			}
+	for _, instance := range state.Instances {
+		// Only count running instances that belong to this project
+		if instance.State == "running" && instance.ProjectID == projectID {
+			activeInstances++
 		}
 	}
 	return activeInstances

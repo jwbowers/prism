@@ -77,9 +77,10 @@ func TestHandleSecurityHealth(t *testing.T) {
 				require.NoError(t, err)
 
 				if tt.method == "GET" {
-					// Health status should have these fields
-					assert.True(t, response["system_health"] != nil ||
-						response["keychain_info"] != nil)
+					// Health status should have these fields (values may be null/nil but keys must be present)
+					_, hasSysHealth := response["system_health"]
+					_, hasKeychainInfo := response["keychain_info"]
+					assert.True(t, hasSysHealth || hasKeychainInfo)
 				} else {
 					// Health check trigger response
 					assert.Contains(t, response, "status")

@@ -674,13 +674,15 @@ func (s *Server) handleMarketplaceTemplateTracking(w http.ResponseWriter, r *htt
 	}
 
 	// Extract template ID from URL path
+	// Path: /api/v1/marketplace/template-tracking/{templateID}/track
+	// Parts: ["api", "v1", "marketplace", "template-tracking", "{templateID}", "track"]
 	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(pathParts) < 5 || pathParts[3] == "" || pathParts[4] != "track" {
-		s.writeError(w, http.StatusBadRequest, "invalid URL path, expected /api/v1/marketplace/templates/{template_id}/track")
+	if len(pathParts) < 6 || pathParts[4] == "" || pathParts[5] != "track" {
+		s.writeError(w, http.StatusBadRequest, "invalid URL path, expected /api/v1/marketplace/template-tracking/{template_id}/track")
 		return
 	}
 
-	templateID := pathParts[3]
+	templateID := pathParts[4]
 
 	var trackingRequest struct {
 		EventType string `json:"event_type"`

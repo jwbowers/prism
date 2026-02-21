@@ -97,8 +97,9 @@ func (s *Server) handleTemplateInfo(w http.ResponseWriter, r *http.Request) {
 	size := r.URL.Query().Get("size")
 
 	// Use the new unified template system with package manager, size, and dynamic AMI discovery (Issue #436)
+	// Skip AMI discovery in test mode to avoid real AWS calls
 	var amiDiscovery templates.AMIDiscoveryService
-	if s.awsManager != nil {
+	if s.awsManager != nil && !s.testMode {
 		amiDiscovery = s.awsManager.GetAMIDiscovery()
 	}
 

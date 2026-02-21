@@ -1345,11 +1345,13 @@ func (m *Manager) CreateVolume(req ctypes.VolumeCreateRequest) (*ctypes.StorageV
 	}
 
 	// Wait for file system to become available (typically 60-180 seconds, but can take longer)
-	// No artificial timeout - let polling continue as long as needed
-	log.Printf("Waiting for EFS file system to become available...")
-	err = m.waitForEFSAvailable(ctx, *result.FileSystemId, 30*time.Minute)
-	if err != nil {
-		return nil, fmt.Errorf("EFS created but not available: %w", err)
+	// Skip waiting if CreateFileSystem already returned available state (e.g., in mocked tests)
+	if result.LifeCycleState != efsTypes.LifeCycleStateAvailable {
+		log.Printf("Waiting for EFS file system to become available...")
+		err = m.waitForEFSAvailable(ctx, *result.FileSystemId, 30*time.Minute)
+		if err != nil {
+			return nil, fmt.Errorf("EFS created but not available: %w", err)
+		}
 	}
 	log.Printf("EFS file system %s is now available", *result.FileSystemId)
 

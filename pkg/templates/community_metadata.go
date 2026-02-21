@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -73,6 +74,7 @@ type EnhancedTemplate struct {
 // CommunityMetadataStore manages community metadata storage
 type CommunityMetadataStore struct {
 	metadataDir string
+	mu          sync.Mutex
 }
 
 // NewCommunityMetadataStore creates a new metadata store
@@ -85,6 +87,13 @@ func NewCommunityMetadataStore() *CommunityMetadataStore {
 
 // GetMetadata retrieves community metadata for a template
 func (cms *CommunityMetadataStore) GetMetadata(templateName, sourceURL string) (*CommunityMetadata, error) {
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+	return cms.getMetadataLocked(templateName, sourceURL)
+}
+
+// getMetadataLocked reads metadata from disk; caller must hold cms.mu
+func (cms *CommunityMetadataStore) getMetadataLocked(templateName, sourceURL string) (*CommunityMetadata, error) {
 	metadataPath := cms.getMetadataPath(templateName, sourceURL)
 
 	// Check if metadata exists
@@ -110,6 +119,13 @@ func (cms *CommunityMetadataStore) GetMetadata(templateName, sourceURL string) (
 
 // SetMetadata stores community metadata for a template
 func (cms *CommunityMetadataStore) SetMetadata(templateName, sourceURL string, metadata *CommunityMetadata) error {
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+	return cms.setMetadataLocked(templateName, sourceURL, metadata)
+}
+
+// setMetadataLocked writes metadata to disk; caller must hold cms.mu
+func (cms *CommunityMetadataStore) setMetadataLocked(templateName, sourceURL string, metadata *CommunityMetadata) error {
 	// Ensure metadata directory exists
 	if err := os.MkdirAll(cms.metadataDir, 0755); err != nil {
 		return fmt.Errorf("failed to create metadata directory: %w", err)
@@ -131,9 +147,12 @@ func (cms *CommunityMetadataStore) SetMetadata(templateName, sourceURL string, m
 	return nil
 }
 
-// UpdateDownloadCount increments the download counter
+// UpdateDownloadCount increments the download counter (thread-safe)
 func (cms *CommunityMetadataStore) UpdateDownloadCount(templateName, sourceURL string) error {
-	metadata, err := cms.GetMetadata(templateName, sourceURL)
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+
+	metadata, err := cms.getMetadataLocked(templateName, sourceURL)
 	if err != nil {
 		return err
 	}
@@ -141,12 +160,15 @@ func (cms *CommunityMetadataStore) UpdateDownloadCount(templateName, sourceURL s
 	metadata.Downloads++
 	metadata.LastDownloaded = time.Now()
 
-	return cms.SetMetadata(templateName, sourceURL, metadata)
+	return cms.setMetadataLocked(templateName, sourceURL, metadata)
 }
 
-// UpdateUsageStats updates usage statistics after a launch
+// UpdateUsageStats updates usage statistics after a launch (thread-safe)
 func (cms *CommunityMetadataStore) UpdateUsageStats(templateName, sourceURL string, success bool, launchTime int) error {
-	metadata, err := cms.GetMetadata(templateName, sourceURL)
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+
+	metadata, err := cms.getMetadataLocked(templateName, sourceURL)
 	if err != nil {
 		return err
 	}
@@ -158,12 +180,14 @@ func (cms *CommunityMetadataStore) UpdateUsageStats(templateName, sourceURL stri
 		metadata.UsageStats.FailedLaunches++
 	}
 
-	// Update average launch time
-	if metadata.UsageStats.AverageLaunchTime == 0 {
-		metadata.UsageStats.AverageLaunchTime = launchTime
-	} else {
-		metadata.UsageStats.AverageLaunchTime =
-			(metadata.UsageStats.AverageLaunchTime + launchTime) / 2
+	// Update average launch time (only for non-zero launch times to avoid skewing average with failures)
+	if launchTime > 0 {
+		if metadata.UsageStats.AverageLaunchTime == 0 {
+			metadata.UsageStats.AverageLaunchTime = launchTime
+		} else {
+			metadata.UsageStats.AverageLaunchTime =
+				(metadata.UsageStats.AverageLaunchTime + launchTime) / 2
+		}
 	}
 
 	metadata.UsageStats.LastUsed = time.Now()
@@ -171,12 +195,15 @@ func (cms *CommunityMetadataStore) UpdateUsageStats(templateName, sourceURL stri
 	// Calculate popularity score
 	metadata.UsageStats.PopularityScore = cms.calculatePopularityScore(metadata)
 
-	return cms.SetMetadata(templateName, sourceURL, metadata)
+	return cms.setMetadataLocked(templateName, sourceURL, metadata)
 }
 
-// UpdateSecurityScan updates security scan results
+// UpdateSecurityScan updates security scan results (thread-safe)
 func (cms *CommunityMetadataStore) UpdateSecurityScan(templateName, sourceURL string, score int) error {
-	metadata, err := cms.GetMetadata(templateName, sourceURL)
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+
+	metadata, err := cms.getMetadataLocked(templateName, sourceURL)
 	if err != nil {
 		return err
 	}
@@ -185,16 +212,19 @@ func (cms *CommunityMetadataStore) UpdateSecurityScan(templateName, sourceURL st
 	metadata.SecurityScanDate = time.Now()
 	metadata.SecurityScore = score
 
-	return cms.SetMetadata(templateName, sourceURL, metadata)
+	return cms.setMetadataLocked(templateName, sourceURL, metadata)
 }
 
-// AddRating adds a user rating to the template
+// AddRating adds a user rating to the template (thread-safe)
 func (cms *CommunityMetadataStore) AddRating(templateName, sourceURL string, rating float64) error {
 	if rating < 0 || rating > 5 {
 		return fmt.Errorf("rating must be between 0 and 5")
 	}
 
-	metadata, err := cms.GetMetadata(templateName, sourceURL)
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+
+	metadata, err := cms.getMetadataLocked(templateName, sourceURL)
 	if err != nil {
 		return err
 	}
@@ -204,7 +234,7 @@ func (cms *CommunityMetadataStore) AddRating(templateName, sourceURL string, rat
 	metadata.RatingCount++
 	metadata.Rating = (totalRating + rating) / float64(metadata.RatingCount)
 
-	return cms.SetMetadata(templateName, sourceURL, metadata)
+	return cms.setMetadataLocked(templateName, sourceURL, metadata)
 }
 
 // ListAllMetadata returns metadata for all templates

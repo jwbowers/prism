@@ -75,6 +75,12 @@ func (s *Server) handleCreateInstanceSnapshot(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// In test mode, return error without making AWS calls
+	if s.testMode {
+		s.writeError(w, http.StatusInternalServerError, "Snapshot creation not available in test mode")
+		return
+	}
+
 	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
 		// Create the snapshot
 		result, err := awsManager.CreateInstanceAMISnapshot(
@@ -109,6 +115,15 @@ func (s *Server) handleCreateInstanceSnapshot(w http.ResponseWriter, r *http.Req
 
 // handleListInstanceSnapshots lists all instance snapshots
 func (s *Server) handleListInstanceSnapshots(w http.ResponseWriter, r *http.Request) {
+	// In test mode, return empty list without making AWS calls
+	if s.testMode {
+		s.writeJSON(w, http.StatusOK, types.InstanceSnapshotListResponse{
+			Snapshots: []types.InstanceSnapshotInfo{},
+			Count:     0,
+		})
+		return
+	}
+
 	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
 		// List snapshots
 		snapshots, err := awsManager.ListInstanceSnapshots()
@@ -129,6 +144,12 @@ func (s *Server) handleListInstanceSnapshots(w http.ResponseWriter, r *http.Requ
 
 // handleGetInstanceSnapshot gets information about a specific snapshot
 func (s *Server) handleGetInstanceSnapshot(w http.ResponseWriter, r *http.Request, snapshotName string) {
+	// In test mode, return not-found without making AWS calls
+	if s.testMode {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found (test mode)", snapshotName))
+		return
+	}
+
 	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
 		// Get snapshot info
 		snapshot, err := awsManager.GetInstanceSnapshotInfo(snapshotName)
@@ -148,6 +169,12 @@ func (s *Server) handleGetInstanceSnapshot(w http.ResponseWriter, r *http.Reques
 
 // handleDeleteInstanceSnapshot deletes a snapshot
 func (s *Server) handleDeleteInstanceSnapshot(w http.ResponseWriter, r *http.Request, snapshotName string) {
+	// In test mode, return not-found without making AWS calls
+	if s.testMode {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found (test mode)", snapshotName))
+		return
+	}
+
 	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
 		// Delete the snapshot
 		result, err := awsManager.DeleteInstanceSnapshot(snapshotName)
@@ -181,6 +208,12 @@ func (s *Server) handleRestoreInstanceFromSnapshot(w http.ResponseWriter, r *htt
 
 	// Override snapshot name from URL path
 	req.SnapshotName = snapshotName
+
+	// In test mode, return error without making AWS calls
+	if s.testMode {
+		s.writeError(w, http.StatusInternalServerError, "Snapshot restore not available in test mode")
+		return
+	}
 
 	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
 		// Restore the instance

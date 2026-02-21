@@ -1,3 +1,5 @@
+//go:build integration
+
 // Package ratelimit provides integration tests for the token bucket rate limiter
 //
 // These tests verify rate limiting behavior under various scenarios including:

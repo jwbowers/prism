@@ -141,8 +141,8 @@ func (s *SystemCommands) waitForDaemonAndVerifyVersion() error {
 				return fmt.Errorf("daemon is running but version check failed: %w", err)
 			}
 
-			if daemonVersion != version.Version {
-				return fmt.Errorf("daemon version mismatch after restart (expected: %s, got: %s)", version.Version, daemonVersion)
+			if daemonVersion != s.app.version {
+				return fmt.Errorf("daemon version mismatch after restart (expected: %s, got: %s)", s.app.version, daemonVersion)
 			}
 
 			// Success - daemon is running with correct version

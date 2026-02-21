@@ -54,18 +54,19 @@ func (s *Server) performRightsizingAnalysis(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get instance information
-	instances, err := s.awsManager.ListInstances()
+	// Get instance information from local state (fast)
+	state, err := s.stateManager.LoadState()
 	if err != nil {
-		log.Printf("Failed to list instances for rightsizing analysis: %v", err)
+		log.Printf("Failed to load state for rightsizing analysis: %v", err)
 		http.Error(w, "Failed to retrieve instance information", http.StatusInternalServerError)
 		return
 	}
 
 	var targetInstance *types.Instance
-	for i := range instances {
-		if instances[i].Name == req.InstanceName {
-			targetInstance = &instances[i]
+	for name := range state.Instances {
+		if name == req.InstanceName {
+			inst := state.Instances[name]
+			targetInstance = &inst
 			break
 		}
 	}
@@ -126,11 +127,16 @@ func (s *Server) handleRightsizingRecommendations(w http.ResponseWriter, r *http
 
 // getAllRightsizingRecommendations retrieves recommendations for all instances
 func (s *Server) getAllRightsizingRecommendations(w http.ResponseWriter, r *http.Request) {
-	instances, err := s.awsManager.ListInstances()
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
 	if err != nil {
-		log.Printf("Failed to list instances for rightsizing recommendations: %v", err)
+		log.Printf("Failed to load state for rightsizing recommendations: %v", err)
 		http.Error(w, "Failed to retrieve instances", http.StatusInternalServerError)
 		return
+	}
+	instances := make([]types.Instance, 0, len(state.Instances))
+	for _, inst := range state.Instances {
+		instances = append(instances, inst)
 	}
 
 	var recommendations []types.RightsizingRecommendation
@@ -180,19 +186,17 @@ func (s *Server) getRightsizingStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	instances, err := s.awsManager.ListInstances()
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
 	if err != nil {
-		log.Printf("Failed to list instances for rightsizing stats: %v", err)
+		log.Printf("Failed to load state for rightsizing stats: %v", err)
 		http.Error(w, "Failed to retrieve instance information", http.StatusInternalServerError)
 		return
 	}
 
 	var targetInstance *types.Instance
-	for i := range instances {
-		if instances[i].Name == instanceName {
-			targetInstance = &instances[i]
-			break
-		}
+	if inst, ok := state.Instances[instanceName]; ok {
+		targetInstance = &inst
 	}
 
 	if targetInstance == nil {
@@ -225,19 +229,17 @@ func (s *Server) exportRightsizingData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	instances, err := s.awsManager.ListInstances()
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
 	if err != nil {
-		log.Printf("Failed to list instances for rightsizing export: %v", err)
+		log.Printf("Failed to load state for rightsizing export: %v", err)
 		http.Error(w, "Failed to retrieve instance information", http.StatusInternalServerError)
 		return
 	}
 
 	var targetInstance *types.Instance
-	for i := range instances {
-		if instances[i].Name == instanceName {
-			targetInstance = &instances[i]
-			break
-		}
+	if inst, ok := state.Instances[instanceName]; ok {
+		targetInstance = &inst
 	}
 
 	if targetInstance == nil {
@@ -265,17 +267,25 @@ func (s *Server) handleRightsizingSummary(w http.ResponseWriter, r *http.Request
 
 // getRightsizingSummary retrieves fleet-wide rightsizing summary
 func (s *Server) getRightsizingSummary(w http.ResponseWriter, r *http.Request) {
-	instances, err := s.awsManager.ListInstances()
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
 	if err != nil {
-		log.Printf("Failed to list instances for rightsizing summary: %v", err)
+		log.Printf("Failed to load state for rightsizing summary: %v", err)
 		http.Error(w, "Failed to retrieve instances", http.StatusInternalServerError)
 		return
+	}
+
+	instances := make([]types.Instance, 0, len(state.Instances))
+	for _, instance := range state.Instances {
+		instances = append(instances, instance)
 	}
 
 	summary := s.generateFleetRightsizingSummary(instances)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(summary)
+	if err := json.NewEncoder(w).Encode(summary); err != nil {
+		log.Printf("Failed to encode rightsizing summary: %v", err)
+	}
 }
 
 // handleInstanceMetrics handles GET /api/v1/instances/metrics
@@ -290,15 +300,16 @@ func (s *Server) handleInstanceMetrics(w http.ResponseWriter, r *http.Request) {
 
 // getInstanceMetrics retrieves metrics for all instances
 func (s *Server) getInstanceMetrics(w http.ResponseWriter, r *http.Request) {
-	instances, err := s.awsManager.ListInstances()
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
 	if err != nil {
-		log.Printf("Failed to list instances for metrics: %v", err)
+		log.Printf("Failed to load state for instance metrics: %v", err)
 		http.Error(w, "Failed to retrieve instances", http.StatusInternalServerError)
 		return
 	}
 
 	var allMetrics []types.InstanceMetrics
-	for _, instance := range instances {
+	for _, instance := range state.Instances {
 		if instance.State == "running" {
 			// Generate recent metrics for running instances
 			metrics := s.generateSampleMetrics(&instance, 10) // Last 10 data points
@@ -306,8 +317,14 @@ func (s *Server) getInstanceMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if allMetrics == nil {
+		allMetrics = []types.InstanceMetrics{}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(allMetrics)
+	if err := json.NewEncoder(w).Encode(allMetrics); err != nil {
+		log.Printf("Failed to encode instance metrics: %v", err)
+	}
 }
 
 // handleInstanceMetricsOperations handles GET /api/v1/instances/{name}/metrics
@@ -334,19 +351,17 @@ func (s *Server) handleInstanceMetricsOperations(w http.ResponseWriter, r *http.
 
 // getInstanceSpecificMetrics retrieves metrics for a specific instance
 func (s *Server) getInstanceSpecificMetrics(w http.ResponseWriter, r *http.Request, instanceName string) {
-	instances, err := s.awsManager.ListInstances()
+	// Read from local state (fast) rather than querying AWS directly
+	state, err := s.stateManager.LoadState()
 	if err != nil {
-		log.Printf("Failed to list instances for specific metrics: %v", err)
+		log.Printf("Failed to load state for specific metrics: %v", err)
 		http.Error(w, "Failed to retrieve instance information", http.StatusInternalServerError)
 		return
 	}
 
 	var targetInstance *types.Instance
-	for i := range instances {
-		if instances[i].Name == instanceName {
-			targetInstance = &instances[i]
-			break
-		}
+	if inst, ok := state.Instances[instanceName]; ok {
+		targetInstance = &inst
 	}
 
 	if targetInstance == nil {
@@ -1394,11 +1409,16 @@ func (s *Server) generateFleetRightsizingSummary(instances []types.Instance) typ
 		InstancesWithMetrics: instancesWithMetrics,
 	}
 
+	var savingsPercentage float64
+	if totalDailyCost > 0 {
+		savingsPercentage = (potentialSavings * 12 / (totalDailyCost * 365)) * 100
+	}
+
 	costOptimization := types.CostOptimizationSummary{
 		PotentialDailySavings:         potentialSavings / 30,
 		PotentialMonthlySavings:       potentialSavings,
 		PotentialAnnualSavings:        potentialSavings * 12,
-		SavingsPercentage:             (potentialSavings * 12 / (totalDailyCost * 365)) * 100,
+		SavingsPercentage:             savingsPercentage,
 		OverprovisionedInstances:      overprovisioned,
 		UnderprovisionedInstances:     underprovisioned,
 		OptimallyProvisionedInstances: optimal,

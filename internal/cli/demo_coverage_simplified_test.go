@@ -296,7 +296,7 @@ func TestSimplified_AvailableCommands(t *testing.T) {
 			case "delete":
 				args = []string{"stopped-instance"} // Use different instance to avoid affecting others
 			case "resume":
-				args = []string{"stopped-instance"} // Use stopped instance for resume test
+				args = []string{"test-instance"} // Use test-instance (always available, not affected by delete)
 			case "storage", "volume":
 				args = []string{"list"}
 			case "daemon":

@@ -140,9 +140,11 @@ func (tb *TokenBucket) Allow(ctx context.Context) error {
 	tb.updateSuccessRate()
 
 	// Calculate retry after duration
+	// Multiply by float64(time.Second) before converting to time.Duration
+	// to preserve sub-second precision (time.Duration is in nanoseconds)
 	tokensNeeded := 1.0 - tb.tokens
 	secondsPerToken := 60.0 / tb.rate
-	retryAfter := time.Duration(tokensNeeded*secondsPerToken) * time.Second
+	retryAfter := time.Duration(tokensNeeded * secondsPerToken * float64(time.Second))
 
 	return &RateLimitError{
 		Rate:          tb.rate,

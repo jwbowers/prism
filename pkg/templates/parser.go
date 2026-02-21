@@ -583,7 +583,9 @@ func (r *TemplateRegistry) ScanTemplates() error {
 			// Parse template
 			template, err := parser.ParseTemplateFile(path)
 			if err != nil {
-				return fmt.Errorf("failed to parse template %s: %w", path, err)
+				// Skip invalid template files with a warning instead of aborting the scan
+				fmt.Fprintf(os.Stderr, "Warning: skipping invalid template %s: %v\n", path, err)
+				return nil
 			}
 
 			// Store template by name (first wins - skip duplicates)
