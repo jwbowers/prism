@@ -20,18 +20,38 @@ async function isDaemonRunning() {
 async function startDaemon() {
   const daemonPath = path.join(process.cwd(), '..', '..', '..', 'bin', 'prismd')
 
-  // Check if daemon binary exists
-  if (!fs.existsSync(daemonPath)) {
+  // Check if daemon binary exists and is up-to-date
+  let needsBuild = !fs.existsSync(daemonPath)
+
+  if (!needsBuild) {
+    // Rebuild if any Go source file is newer than the binary
+    const binaryMtime = fs.statSync(daemonPath).mtimeMs
+    try {
+      const { stdout } = await execAsync(
+        `find ../../../pkg ../../../cmd/prismd ../../../internal -name "*.go" -newer "${daemonPath}" 2>/dev/null | head -1`,
+        { cwd: process.cwd() }
+      )
+      if (stdout.trim()) {
+        console.log(`Go source files changed (e.g. ${stdout.trim()}), rebuilding daemon...`)
+        needsBuild = true
+      }
+    } catch {
+      // find failed - skip stale check, use existing binary
+    }
+  } else {
     console.error(`Daemon binary not found at ${daemonPath}`)
     console.log('Building daemon...')
+  }
 
+  if (needsBuild) {
     // Build the daemon
     const buildCmd = 'cd ../../.. && go build -o bin/prismd ./cmd/prismd'
     await execAsync(buildCmd)
-    
+
     if (!fs.existsSync(daemonPath)) {
       throw new Error('Failed to build daemon')
     }
+    console.log('Daemon binary built successfully')
   }
   
   // Start daemon in background

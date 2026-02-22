@@ -32,6 +32,15 @@ test.describe('User Management Workflows', () => {
     }
   });
 
+  test.afterEach(async () => {
+    // Clean up any test users created during the test
+    try {
+      await projectsPage.cleanupTestUsers(/^testuser-|^sshtest-|^provision-test-|^delete-test-|^list-test-/);
+    } catch (e) {
+      console.warn('afterEach user cleanup failed:', e);
+    }
+  });
+
   test.describe('Create User Workflow', () => {
     test('should create a new research user', async () => {
       const uniqueUsername = `testuser-${Date.now()}`;

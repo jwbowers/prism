@@ -54,6 +54,20 @@ func (s *Server) performRightsizingAnalysis(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// In test mode, return empty analysis without making CloudWatch API calls
+	if s.testMode {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(types.RightsizingAnalysisResponse{
+			Recommendation:      nil,
+			MetricsAvailable:    false,
+			DataPointsCount:     0,
+			AnalysisPeriodHours: req.AnalysisPeriodHours,
+			LastUpdated:         time.Now(),
+			Message:             "Analysis not available in test mode",
+		})
+		return
+	}
+
 	// Get instance information from local state (fast)
 	state, err := s.stateManager.LoadState()
 	if err != nil {
@@ -127,6 +141,19 @@ func (s *Server) handleRightsizingRecommendations(w http.ResponseWriter, r *http
 
 // getAllRightsizingRecommendations retrieves recommendations for all instances
 func (s *Server) getAllRightsizingRecommendations(w http.ResponseWriter, r *http.Request) {
+	// In test mode, return empty recommendations without making CloudWatch API calls
+	if s.testMode {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(types.RightsizingRecommendationsResponse{
+			Recommendations:  []types.RightsizingRecommendation{},
+			TotalInstances:   0,
+			ActiveInstances:  0,
+			PotentialSavings: 0.0,
+			GeneratedAt:      time.Now(),
+		})
+		return
+	}
+
 	// Read from local state (fast) rather than querying AWS directly
 	state, err := s.stateManager.LoadState()
 	if err != nil {
@@ -183,6 +210,17 @@ func (s *Server) getRightsizingStats(w http.ResponseWriter, r *http.Request) {
 	instanceName := r.URL.Query().Get("instance")
 	if instanceName == "" {
 		http.Error(w, "Instance name parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	// In test mode, return empty stats without making CloudWatch API calls
+	if s.testMode {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(types.RightsizingStatsResponse{
+			InstanceName:   instanceName,
+			RecentMetrics:  []types.InstanceMetrics{},
+			Recommendation: nil,
+		})
 		return
 	}
 

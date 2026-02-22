@@ -992,9 +992,9 @@ export class ProjectsPage extends BasePage {
    * Filter invitations by status (Pending, Accepted, Declined, etc.)
    */
   async filterInvitationsByStatus(status: 'All' | 'Pending' | 'Accepted' | 'Declined' | 'Expired' | 'Revoked'): Promise<void> {
-    // Click the filter button
-    const filterButton = this.page.getByRole('button', { name: /filter by status/i });
-    await filterButton.click();
+    // Click the filter select (Cloudscape Select component)
+    const filterSelect = this.page.getByTestId('invitation-status-filter');
+    await filterSelect.click();
 
     // Wait for dropdown to appear and click the status option
     await this.page.waitForTimeout(300);
