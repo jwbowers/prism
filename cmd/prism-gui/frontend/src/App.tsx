@@ -5856,8 +5856,12 @@ export default function PrismApp() {
       return state.users;
     }
     return state.users.filter(user => {
-      const userStatus = user.status || 'active'; // Default to active if no status
-      return userStatus.toLowerCase() === userStatusFilter.toLowerCase();
+      // Mirror the display logic: a user with enabled===false is "Suspended"/"inactive"
+      if (user.enabled === false) {
+        return userStatusFilter === 'inactive';
+      }
+      const userStatus = user.status?.toLowerCase() || 'active'; // Default to active if no status
+      return userStatus === userStatusFilter.toLowerCase();
     });
   };
 
@@ -10180,6 +10184,7 @@ export default function PrismApp() {
         }}
         header={`Delete ${deleteModalConfig.type?.replace('-', ' ') || 'Resource'}?`}
         size="medium"
+        data-testid="delete-confirmation-modal"
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">

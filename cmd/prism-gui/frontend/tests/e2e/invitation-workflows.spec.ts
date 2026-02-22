@@ -120,8 +120,8 @@ test.describe('Invitation Management Workflows', () => {
       // Individual Invitations UI now implemented
       await projectsPage.switchToIndividualInvitations();
 
-      // Apply pending filter (Cloudscape dropdown pattern: click trigger, then select option)
-      const filterTrigger = projectsPage.page.getByLabel(/filter.*status|status/i);
+      // Apply pending filter using testid (Cloudscape Select trigger)
+      const filterTrigger = projectsPage.page.getByTestId('invitation-status-filter');
       await filterTrigger.click();
       await projectsPage.page.getByRole('option', { name: /pending/i }).click();
 

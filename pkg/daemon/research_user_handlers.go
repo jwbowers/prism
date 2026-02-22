@@ -135,6 +135,8 @@ func (s *Server) handleResearchUserOperations(w http.ResponseWriter, r *http.Req
 			s.handleEnableResearchUser(w, r, username)
 		case "disable":
 			s.handleDisableResearchUser(w, r, username)
+		case "provision":
+			s.handleProvisionResearchUser(w, r, username)
 		default:
 			s.writeError(w, http.StatusNotFound, "Unknown operation")
 		}
@@ -445,4 +447,39 @@ func (s *Server) handleDisableResearchUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleProvisionResearchUser provisions a research user on a workspace instance
+func (s *Server) handleProvisionResearchUser(w http.ResponseWriter, r *http.Request, username string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req struct {
+		Instance string `json:"instance"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid request body: %v", err))
+		return
+	}
+
+	if req.Instance == "" {
+		s.writeError(w, http.StatusBadRequest, "instance is required")
+		return
+	}
+
+	// In test mode, return success without actually provisioning via SSM
+	if s.testMode {
+		s.writeJSON(w, http.StatusOK, map[string]interface{}{
+			"success":  true,
+			"username": username,
+			"instance": req.Instance,
+			"message":  fmt.Sprintf("User '%s' provisioned on workspace '%s' (test mode)", username, req.Instance),
+		})
+		return
+	}
+
+	// In production, provisioning requires SSM and a running instance
+	s.writeError(w, http.StatusNotImplemented, "Workspace provisioning via SSM is not yet implemented in the daemon.")
 }

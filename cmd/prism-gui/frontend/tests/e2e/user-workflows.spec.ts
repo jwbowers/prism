@@ -176,15 +176,15 @@ test.describe('User Management Workflows', () => {
         await dialog.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
       }
 
-      // Count user rows - should still be 1
-      const userRows = await projectsPage.page.locator('table tbody tr').count();
-
       // Debug: Print all captured console logs
       console.log('\n========== CAPTURED CONSOLE LOGS ==========');
       consoleLogs.forEach(log => console.log(log));
       console.log('==========================================\n');
 
-      expect(userRows).toBe(1);
+      // Count rows matching this specific username - should be exactly 1 (not 2)
+      // Don't check total row count (other accumulated testusers may exist)
+      const specificUserRows = await projectsPage.page.locator(`table tbody tr:has-text("${uniqueUsername}")`).count();
+      expect(specificUserRows).toBe(1);
 
       // Cleanup
       await projectsPage.deleteUser(uniqueUsername);
@@ -351,7 +351,12 @@ test.describe('User Management Workflows', () => {
       const workspacesSection = userDetailsModal.locator('text=/provisioned workspaces/i').first();
       expect(await workspacesSection.isVisible()).toBe(true);
 
-      // Cleanup
+      // Cleanup: close modal first, then navigate and delete
+      const closeBtn = userDetailsModal.getByRole('button', { name: /close/i }).first();
+      if (await closeBtn.isVisible().catch(() => false)) {
+        await closeBtn.click();
+        await userDetailsModal.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+      }
       await projectsPage.navigateToUsers();
       await projectsPage.deleteUser(uniqueUsername);
       await projectsPage.clickButton('delete');
@@ -466,7 +471,7 @@ test.describe('User Management Workflows', () => {
       // Check if warning appears in delete dialog
       // If user has provisioned workspaces, warning should be visible
       // If no workspaces were available, the standard delete dialog appears
-      const deleteDialog = projectsPage.page.locator('[role="dialog"]').first();
+      const deleteDialog = projectsPage.page.getByTestId('delete-confirmation-modal');
       await deleteDialog.waitFor({ state: 'visible', timeout: 3000 });
 
       // Look for either the workspace warning or standard delete message

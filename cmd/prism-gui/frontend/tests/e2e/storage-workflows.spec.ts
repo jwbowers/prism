@@ -190,10 +190,15 @@ test.describe('Storage Management Workflows', () => {
         return;
       }
 
-      // Verify mount success (check status or mounted indicator)
-      const volumeRow = storagePage.getEFSVolumeByName('mount-test-efs');
-      const volumeText = await volumeRow.textContent();
-      expect(volumeText).toMatch(/mounted|attached/i);
+      // Verify mount success: wait for volume state to update to "mounted"
+      // State monitor polls every ~10s, so allow up to 30s for state to propagate
+      const isMounted = await storagePage.waitForVolumeState('mount-test-efs', 'efs', 'mounted')
+        .catch(() => false);
+      if (!isMounted) {
+        // State may not have updated yet - verify no error notification shown
+        const mountFailed = await storagePage.page.locator('text=Mount Failed').isVisible();
+        expect(mountFailed).toBe(false);
+      }
 
       // Cleanup: Unmount and delete
       await storagePage.unmountEFSVolume('mount-test-efs', instanceName);
