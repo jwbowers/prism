@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/types"
@@ -75,9 +76,24 @@ func (s *Server) handleCreateInstanceSnapshot(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// In test mode, return error without making AWS calls
+	// In test mode, accept mock instance names; reject others
 	if s.testMode {
-		s.writeError(w, http.StatusInternalServerError, "Snapshot creation not available in test mode")
+		if strings.HasPrefix(req.InstanceName, "prism-mock-") {
+			s.writeJSON(w, http.StatusCreated, &types.InstanceSnapshotInfo{
+				SnapshotID:         "ami-mock-new-001",
+				SnapshotName:       req.SnapshotName,
+				SourceInstance:     req.InstanceName,
+				SourceInstanceId:   "i-mock000001",
+				SourceTemplate:     "Python ML",
+				Description:        req.Description,
+				State:              "pending",
+				Architecture:       "x86_64",
+				StorageCostMonthly: 1.25,
+				CreatedAt:          time.Now(),
+			})
+		} else {
+			s.writeError(w, http.StatusInternalServerError, "Snapshot creation not available in test mode")
+		}
 		return
 	}
 
@@ -115,11 +131,37 @@ func (s *Server) handleCreateInstanceSnapshot(w http.ResponseWriter, r *http.Req
 
 // handleListInstanceSnapshots lists all instance snapshots
 func (s *Server) handleListInstanceSnapshots(w http.ResponseWriter, r *http.Request) {
-	// In test mode, return empty list without making AWS calls
+	// In test mode, return mock snapshots without making AWS calls
 	if s.testMode {
+		now := time.Now()
 		s.writeJSON(w, http.StatusOK, types.InstanceSnapshotListResponse{
-			Snapshots: []types.InstanceSnapshotInfo{},
-			Count:     0,
+			Snapshots: []types.InstanceSnapshotInfo{
+				{
+					SnapshotID:         "ami-mock000001",
+					SnapshotName:       "prism-mock-backup-1",
+					SourceInstance:     "prism-mock-instance",
+					SourceInstanceId:   "i-mock000001",
+					SourceTemplate:     "Python ML",
+					Description:        "Test backup for E2E testing",
+					State:              "available",
+					Architecture:       "x86_64",
+					StorageCostMonthly: 1.25,
+					CreatedAt:          now.Add(-24 * time.Hour),
+				},
+				{
+					SnapshotID:         "ami-mock000002",
+					SnapshotName:       "prism-mock-backup-2",
+					SourceInstance:     "prism-mock-instance",
+					SourceInstanceId:   "i-mock000002",
+					SourceTemplate:     "R Research",
+					Description:        "Second test backup for E2E testing",
+					State:              "available",
+					Architecture:       "x86_64",
+					StorageCostMonthly: 2.50,
+					CreatedAt:          now.Add(-48 * time.Hour),
+				},
+			},
+			Count: 2,
 		})
 		return
 	}
@@ -169,9 +211,16 @@ func (s *Server) handleGetInstanceSnapshot(w http.ResponseWriter, r *http.Reques
 
 // handleDeleteInstanceSnapshot deletes a snapshot
 func (s *Server) handleDeleteInstanceSnapshot(w http.ResponseWriter, r *http.Request, snapshotName string) {
-	// In test mode, return not-found without making AWS calls
+	// In test mode, accept mock snapshot names; reject others
 	if s.testMode {
-		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found (test mode)", snapshotName))
+		if strings.HasPrefix(snapshotName, "prism-mock-") {
+			s.writeJSON(w, http.StatusOK, map[string]string{
+				"message":       fmt.Sprintf("Mock snapshot '%s' deleted", snapshotName),
+				"snapshot_name": snapshotName,
+			})
+		} else {
+			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found (test mode)", snapshotName))
+		}
 		return
 	}
 
@@ -209,9 +258,17 @@ func (s *Server) handleRestoreInstanceFromSnapshot(w http.ResponseWriter, r *htt
 	// Override snapshot name from URL path
 	req.SnapshotName = snapshotName
 
-	// In test mode, return error without making AWS calls
+	// In test mode, accept mock snapshot names; reject others
 	if s.testMode {
-		s.writeError(w, http.StatusInternalServerError, "Snapshot restore not available in test mode")
+		if strings.HasPrefix(snapshotName, "prism-mock-") {
+			s.writeJSON(w, http.StatusCreated, map[string]interface{}{
+				"message":       fmt.Sprintf("Mock restore from '%s' to '%s' initiated", snapshotName, req.NewInstanceName),
+				"instance_name": req.NewInstanceName,
+				"snapshot_name": snapshotName,
+			})
+		} else {
+			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found (test mode)", snapshotName))
+		}
 		return
 	}
 
