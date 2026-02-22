@@ -6000,7 +6000,11 @@ export default function PrismApp() {
               header: "Workspaces",
               cell: (item: User) => {
                 const count = item.provisioned_instances?.length || 0;
-                return count > 0 ? count.toString() : 'None';
+                return (
+                  <span data-testid={`workspace-count-${item.username}`}>
+                    {count > 0 ? count.toString() : 'None'}
+                  </span>
+                );
               }
             },
             {

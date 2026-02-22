@@ -317,10 +317,11 @@ test.describe('User Management Workflows', () => {
       await projectsPage.clickButton('provision');
       await projectsPage.page.waitForTimeout(1500);
 
-      // Verify workspace count updated
-      const updatedRow = projectsPage.getUserByUsername(uniqueUsername);
-      const rowText = await updatedRow.textContent();
-      expect(rowText).toMatch(/1.*workspace/i);
+      // Verify workspace count updated using specific testid (cell shows count, not "None")
+      const workspaceCountCell = projectsPage.page.getByTestId(`workspace-count-${uniqueUsername}`);
+      await workspaceCountCell.waitFor({ state: 'visible', timeout: 3000 });
+      const countText = await workspaceCountCell.textContent();
+      expect(countText).toBe('1');
 
       // Cleanup
       await projectsPage.deleteUser(uniqueUsername);
@@ -351,12 +352,9 @@ test.describe('User Management Workflows', () => {
       const workspacesSection = userDetailsModal.locator('text=/provisioned workspaces/i').first();
       expect(await workspacesSection.isVisible()).toBe(true);
 
-      // Cleanup: close modal first, then navigate and delete
-      const closeBtn = userDetailsModal.getByRole('button', { name: /close/i }).first();
-      if (await closeBtn.isVisible().catch(() => false)) {
-        await closeBtn.click();
-        await userDetailsModal.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
-      }
+      // Cleanup: dismiss modal with Escape (triggers onDismiss), then navigate and delete
+      await projectsPage.page.keyboard.press('Escape');
+      await userDetailsModal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
       await projectsPage.navigateToUsers();
       await projectsPage.deleteUser(uniqueUsername);
       await projectsPage.clickButton('delete');
