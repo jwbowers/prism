@@ -2,11 +2,11 @@
  * Parallel Execution Config for Playwright
  *
  * Splits the test suite into 4 tiers by safety level, enabling faster feedback
- * by running safe tiers with increased worker counts.
+ * by running safe tiers with increased worker counts and intra-file parallelism.
  *
  * Usage:
- *   npm run test:e2e:fast    → Tiers A+B, workers:3  (~30 min vs ~60 min)
- *   npm run test:e2e:serial  → Tiers C+D, workers:1  (same as default)
+ *   npm run test:e2e:fast    → Tiers A+B, workers:4, fullyParallel  (~12 min vs ~60 min)
+ *   npm run test:e2e:serial  → Tiers C+D, workers:1  (same as default, safe)
  *
  * To run both simultaneously in separate terminals:
  *   Terminal 1: npm run test:e2e:fast
@@ -15,23 +15,29 @@
  * Tier breakdown:
  *
  *   Tier A (ui):      basic, navigation, error-boundary, form-validation, settings
- *                     → Zero mutations. Safe at workers:3.
+ *                     → Zero mutations. fullyParallel safe. ~25s vs ~75s sequential.
  *
  *   Tier B (read):    backup, hibernation, instance, budget workflows
- *                     → Read-heavy, conditional skips, dry-run modes. Safe at workers:2.
+ *                     → testMode bypasses all AWS state — daemon never mutates on mock-*
+ *                       instances. Each test has isolated browser context. fullyParallel safe.
+ *                       Hibernation alone: 18 tests, ceil(18/4)×23s=115s vs 18×23s=414s.
  *
  *   Tier C (write):   profile, project, user, invitation workflows
  *                     → Stateful. Broad cleanup patterns collide across workers. workers:1 only.
  *
  *   Tier D (storage): storage-workflows
- *                     → Hardcoded AWS resource names. Concurrent EBS/EFS ops crash daemon. workers:1 only.
+ *                     → Hardcoded AWS resource names. Concurrent EBS/EFS ops crash daemon.
+ *                       workers:1 only.
+ *
+ * Safety: fullyParallel:true is harmless for Tiers C+D because test:e2e:serial
+ * hardcodes --workers=1, and the config default is also workers:1.
  */
 
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: false, // File-level parallelism; tests within a file stay serial
+  fullyParallel: true, // Intra-file parallelism for Tiers A+B; Tiers C+D use --workers=1
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: parseInt(process.env.PLAYWRIGHT_WORKERS || '1'),

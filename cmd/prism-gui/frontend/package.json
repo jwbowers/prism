@@ -13,7 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "node tests/e2e/run-single.js",
     "test:e2e:fresh": "scripts/run-fresh-tests.sh",
-    "test:e2e:fast": "playwright test --config=playwright.parallel.config.js --project=ui-chromium --project=ui-webkit --project=read-chromium --project=read-webkit --workers=3",
+    "test:e2e:fast": "playwright test --config=playwright.parallel.config.js --project=ui-chromium --project=ui-webkit --project=read-chromium --project=read-webkit --workers=4",
     "test:e2e:serial": "playwright test --config=playwright.parallel.config.js --project=write-chromium --project=write-webkit --project=storage-chromium --project=storage-webkit --workers=1",
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:webkit": "playwright test --project=webkit",
