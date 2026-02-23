@@ -100,9 +100,17 @@ test.describe('Instance Management Workflows', () => {
       await launchDialog.clickCancel();
     });
 
-    test.skip('should validate template is selected', async () => {
-      // SKIP: Templates are now pre-selected when launching from Templates page
-      // This validation is no longer applicable in the current UI flow
+    test('should show template pre-selected when launching from Templates page', async () => {
+      // Templates are pre-selected when launching from Templates page
+      await templatesPage.navigate();
+      await templatesPage.clickLaunchOnTemplate('Python Machine Learning');
+      await launchDialog.waitForDialog();
+
+      // Verify the dialog opened (template was pre-selected - no template selection step)
+      const dialogVisible = await launchDialog.isVisible();
+      expect(dialogVisible).toBe(true);
+
+      await launchDialog.clickCancel();
     });
 
     test('should show cost estimate based on instance size', async () => {

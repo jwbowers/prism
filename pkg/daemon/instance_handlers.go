@@ -149,6 +149,13 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 			InstanceType: "t3.medium",
 			Template:     "python-ml",
 			Username:     "ubuntu",
+		}, types.Instance{
+			ID:           "i-testmockhibernated01",
+			Name:         "prism-mock-hibernated",
+			State:        "hibernated",
+			InstanceType: "t3.medium",
+			Template:     "python-ml",
+			Username:     "ubuntu",
 		})
 	}
 
@@ -757,6 +764,12 @@ func (s *Server) handleHibernateInstance(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	// In test mode, mock instances respond immediately without AWS calls
+	if s.testMode && strings.HasPrefix(identifier, "prism-mock-") {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	// Resolve identifier (name or ID) to instance name
 	instanceName, found := s.resolveInstanceIdentifier(identifier)
 	if !found {
@@ -790,6 +803,12 @@ func (s *Server) handleHibernateInstance(w http.ResponseWriter, r *http.Request,
 func (s *Server) handleResumeInstance(w http.ResponseWriter, r *http.Request, identifier string) {
 	if r.Method != http.MethodPost {
 		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// In test mode, mock instances respond immediately without AWS calls
+	if s.testMode && strings.HasPrefix(identifier, "prism-mock-") {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 

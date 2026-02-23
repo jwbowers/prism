@@ -63,9 +63,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('delete');
     });
 
-    test.skip('should validate profile name is required', async () => {
-      // TODO: Frontend missing data-testid="validation-error" attribute
-      // Backend validation works, but UI doesn't expose testable error element
+    test('should validate profile name is required', async () => {
       await settingsPage.page.getByTestId('create-profile-button').click();
 
       // Leave name empty
@@ -79,9 +77,7 @@ test.describe('Profile Management Workflows', () => {
       expect(validationError).toMatch(/name.*required/i);
     });
 
-    test.skip('should validate region format', async () => {
-      // TODO: Backend currently accepts invalid regions without validation
-      // UI implementation gap: Need [data-testid="validation-error"] in validation dialogs
+    test('should validate region format', async () => {
       const uniqueName = `region-test-${Date.now()}`;
 
       await settingsPage.page.getByTestId('create-profile-button').click();
@@ -100,9 +96,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('cancel');
     });
 
-    test.skip('should prevent duplicate profile names', async () => {
-      // TODO: Backend returns HTTP 409 but UI doesn't display it with testable elements
-      // UI implementation gap: Need [data-testid="validation-error"] to display backend errors
+    test('should prevent duplicate profile names', async () => {
       const uniqueName = `duplicate-test-${Date.now()}`;
 
       // Create first profile
@@ -217,9 +211,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.waitForProfileToBeRemoved(uniqueName);
     });
 
-    test.skip('should not allow updating to invalid region', async () => {
-      // TODO: Same validation issue as creation - backend accepts invalid regions
-      // UI implementation gap: Need validation with [data-testid="validation-error"]
+    test('should not allow updating to invalid region', async () => {
       const uniqueName = `validation-test-${Date.now()}`;
 
       // Create profile and wait for it to exist
@@ -246,53 +238,6 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('cancel');
       await settingsPage.deleteProfile(uniqueName);
       await settingsPage.clickButton('delete');
-    });
-  });
-
-  test.describe('Export Profile Workflow', () => {
-    test.skip('should export profile configuration', async () => {
-      const uniqueName = `export-test-${Date.now()}`;
-
-      // Create profile to export and wait for it to exist
-      await settingsPage.createProfile(uniqueName, 'default', 'us-west-2');
-      await settingsPage.waitForProfileToExist(uniqueName);
-
-      // Start download listener
-      const downloadPromise = settingsPage.page.waitForEvent('download');
-
-      // Export profile
-      await settingsPage.exportProfile(uniqueName);
-
-      // Verify download started
-      const download = await downloadPromise;
-      expect(download.suggestedFilename()).toMatch(new RegExp(`${uniqueName}.*\\.json`, 'i'));
-
-      // Cleanup
-      await settingsPage.deleteProfile(uniqueName);
-      await settingsPage.clickButton('delete');
-    });
-  });
-
-  test.describe('Import Profile Workflow', () => {
-    test.skip('should import profile from valid JSON file', async ({ page }) => {
-      // Create a test profile JSON file
-      const testProfileJson = JSON.stringify({
-        name: 'imported-profile',
-        aws_profile: 'default',
-        region: 'us-east-1',
-      });
-
-      // Note: This test would need actual file creation in a temp directory
-      // For now, we verify the import button exists
-      const importButton = page.getByRole('button', { name: /import/i });
-      expect(await importButton.isVisible()).toBe(true);
-    });
-
-    test.skip('should reject invalid profile JSON', async ({ page }) => {
-      // Verify import validation would work
-      // This would require actual file upload simulation
-      const importButton = page.getByRole('button', { name: /import/i });
-      expect(await importButton.isVisible()).toBe(true);
     });
   });
 

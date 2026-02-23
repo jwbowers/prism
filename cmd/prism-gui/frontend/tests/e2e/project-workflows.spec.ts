@@ -99,9 +99,7 @@ test.describe('Project Management Workflows', () => {
       await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
-    test.skip('should create project with budget limit', async () => {
-      // TODO: Budget feature removed from backend in Phase A2 fixes
-      // This test requires re-implementing budget tracking
+    test('should create project with budget limit', async () => {
       const uniqueName = `budget-test-${Date.now()}`;
 
       // Create project with budget
@@ -177,15 +175,13 @@ test.describe('Project Management Workflows', () => {
 
       // Create project
       await projectsPage.createProject(uniqueName, 'Test project for viewing', 500);
-      await projectsPage.page.waitForTimeout(1000);
 
       // View details
       await projectsPage.viewProjectDetails(uniqueName);
 
       // Verify we're on the details page using data-testid
-      await projectsPage.page.waitForTimeout(1000);
       const detailView = projectsPage.page.getByTestId('project-detail-view');
-      expect(await detailView.isVisible()).toBe(true);
+      await detailView.waitFor({ state: 'visible', timeout: 5000 });
 
       // Verify project information
       const description = await projectsPage.page.getByTestId('project-description').textContent();
@@ -193,28 +189,24 @@ test.describe('Project Management Workflows', () => {
 
       // Navigate back to projects list using back button
       await projectsPage.page.getByTestId('back-to-projects-button').click();
-      await projectsPage.page.waitForTimeout(500);
 
       // Verify we're back on projects page
       const projectsTable = projectsPage.page.getByTestId('projects-table');
-      expect(await projectsTable.isVisible()).toBe(true);
+      await projectsTable.waitFor({ state: 'visible', timeout: 5000 });
 
       // Cleanup via API
       await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
-    test.skip('should show budget utilization in project details', async () => {
-      // TODO: Budget feature removed from backend in Phase A2 fixes
-      // This test requires re-implementing budget tracking UI
+    test('should show budget utilization in project details', async () => {
       const uniqueName = `budget-view-test-${Date.now()}`;
 
       await projectsPage.createProject(uniqueName, 'Budget tracking test', 1000);
       await projectsPage.viewProjectDetails(uniqueName);
 
       // Check for budget visualization using data-testid
-      await projectsPage.page.waitForTimeout(1000);
       const budgetContainer = projectsPage.page.getByTestId('budget-utilization-container');
-      expect(await budgetContainer.isVisible()).toBe(true);
+      await budgetContainer.waitFor({ state: 'visible', timeout: 5000 });
 
       // Verify budget details are present
       const budgetLimit = await projectsPage.page.getByTestId('budget-limit').textContent();
@@ -224,12 +216,10 @@ test.describe('Project Management Workflows', () => {
       expect(currentSpend).toBeDefined();
 
       // Verify progress bar is visible
-      const progressBar = projectsPage.page.getByTestId('budget-progress-bar');
-      expect(await progressBar.isVisible()).toBe(true);
+      await expect(projectsPage.page.getByTestId('budget-progress-bar')).toBeVisible();
 
       // Navigate back
       await projectsPage.page.getByTestId('back-to-projects-button').click();
-      await projectsPage.page.waitForTimeout(500);
 
       // Cleanup via API
       await projectsPage.deleteProjectViaAPI(uniqueName);
@@ -262,14 +252,13 @@ test.describe('Project Management Workflows', () => {
 
       // Create project
       await projectsPage.createProject(uniqueName, 'Test project');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Start deletion
       await projectsPage.deleteProject(uniqueName);
 
       // Cancel
       await projectsPage.clickButton('cancel');
-      await projectsPage.page.waitForTimeout(500);
+      await projectsPage.waitForDialogClose();
 
       // Verify still exists
       const projectExists = await projectsPage.verifyProjectExists(uniqueName);
@@ -341,9 +330,6 @@ test.describe('Project Management Workflows', () => {
 
       await projectsPage.createProject(activeName, 'Active project');
       await projectsPage.createProject(suspendedName, 'Suspended project');
-
-      // Wait for table to stabilize after creating both projects
-      await projectsPage.page.waitForTimeout(1000);
 
       // Verify both projects exist before applying filter
       expect(await projectsPage.verifyProjectExists(activeName)).toBe(true);

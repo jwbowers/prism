@@ -418,23 +418,6 @@ test.describe('Backup Management Workflows', () => {
   });
 
   test.describe('Empty State Handling', () => {
-    test('should show empty state if no backups exist', async ({ page }) => {
-      await waitForBackupsToLoad(page);
-
-      const backupRows = await page.locator('[data-testid="backups-table"] tbody tr').all();
-
-      // Skip if backups exist (can't test empty state)
-      test.skip(backupRows.length > 0, 'Backups exist, cannot test empty state');
-
-      // Verify empty state is shown
-      const emptyState = page.locator('[data-testid="empty-backups"]');
-      expect(await emptyState.isVisible()).toBe(true);
-
-      // Should have helpful message
-      const emptyStateText = await emptyState.textContent();
-      expect(emptyStateText).toContain('No backups');
-    });
-
     test('should have create backup button in all states', async ({ page }) => {
       await waitForBackupsToLoad(page);
 

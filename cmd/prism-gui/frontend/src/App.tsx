@@ -1403,7 +1403,15 @@ class SafePrismAPI {
 
   // Project Details API
   async getProjectDetails(projectId: string): Promise<ProjectDetails> {
-    return this.safeRequest(`/api/v1/projects/${projectId}`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}`);
+    // Map backend types.Project format (budget.total_budget) to ProjectDetails format (budget_limit)
+    return {
+      ...data,
+      budget_limit: data.budget?.total_budget,
+      current_spend: data.budget?.spent_amount || 0,
+      members: data.members || [],
+      cost_breakdown: data.cost_breakdown || { instances: 0, storage: 0, data_transfer: 0, total: 0 }
+    };
   }
 
   // User Provisioning API
@@ -2430,18 +2438,32 @@ export default function PrismApp() {
     // Budget configuration is now managed separately via Budget/Allocation system
 
     try {
-      // Call API to create project
-      // Note: budget_limit is not sent - budget configuration is managed separately via Budget/Allocation system
+      // Call API to create project - send budget via budget.total_budget (backend format)
+      const budgetPayload = projectBudget ? { budget: { total_budget: parseFloat(projectBudget) } } : {};
       const createdProject = await api.createProject({
         name: projectName.trim(),
-        description: projectDescription.trim()
+        description: projectDescription.trim(),
+        ...budgetPayload
       });
+
+      // Map backend response (types.Project with budget.total_budget) to frontend
+      // ProjectSummary format (with budget_status.total_budget) for the optimistic update
+      const rawProject = createdProject as any;
+      const projectForState = {
+        ...createdProject,
+        budget_status: rawProject.budget ? {
+          total_budget: rawProject.budget.total_budget,
+          spent_amount: rawProject.budget.spent_amount || 0,
+          spent_percentage: 0,
+          alert_count: 0,
+        } : undefined
+      } as Project;
 
       // Optimistic UI update: add project directly to state without re-fetching
       // Prepend new project so it appears at top of list (page 1) - fixes Issue #457
       setState(prev => ({
         ...prev,
-        projects: [createdProject, ...prev.projects],
+        projects: [projectForState, ...prev.projects],
         notifications: [{
           type: 'success',
           header: 'Project Created',
@@ -3612,17 +3634,19 @@ export default function PrismApp() {
               header: "Status",
               cell: (item: Instance) => (
                 <div data-testid="instance-status">
-                  <StatusIndicator
-                    type={
-                      item.state === 'running' ? 'success' :
-                      item.state === 'stopped' ? 'stopped' :
-                      item.state === 'hibernated' ? 'pending' :
-                      item.state === 'pending' ? 'in-progress' : 'error'
-                    }
-                    ariaLabel={getStatusLabel('workspace', item.state)}
-                  >
-                    {item.state}
-                  </StatusIndicator>
+                  <span data-testid="status-badge">
+                    <StatusIndicator
+                      type={
+                        item.state === 'running' ? 'success' :
+                        item.state === 'stopped' ? 'stopped' :
+                        item.state === 'hibernated' ? 'pending' :
+                        item.state === 'pending' ? 'in-progress' : 'error'
+                      }
+                      ariaLabel={getStatusLabel('workspace', item.state)}
+                    >
+                      {item.state}
+                    </StatusIndicator>
+                  </span>
                 </div>
               )
             },
@@ -3665,7 +3689,7 @@ export default function PrismApp() {
                       { text: 'Stop', id: 'stop', disabled: item.state !== 'running' },
                       { text: 'Start', id: 'start', disabled: item.state === 'running' },
                       { text: 'Hibernate', id: 'hibernate', disabled: item.state !== 'running' },
-                      { text: 'Resume', id: 'resume', disabled: item.state !== 'stopped' },
+                      { text: 'Resume', id: 'resume', disabled: item.state !== 'stopped' && item.state !== 'hibernated' },
                       { text: 'Delete', id: 'delete', disabled: item.state === 'running' || item.state === 'pending' }
                     ]}
                     onItemClick={({ detail }) => {
@@ -5224,15 +5248,18 @@ export default function PrismApp() {
             {
               id: "budget",
               header: "Budget",
-              cell: (item: Project) => `$${(item.budget_limit || 0).toFixed(2)}`,
-              sortingField: "budget_limit"
+              cell: (item: Project) => {
+                const budget = item.budget_status?.total_budget || (item as any).budget_limit || 0;
+                return budget > 0 ? `$${budget.toFixed(2)}` : '-';
+              },
+              sortingField: "budget_status"
             },
             {
               id: "spend",
               header: "Current Spend",
               cell: (item: Project) => {
-                const spend = item.current_spend || 0;
-                const limit = item.budget_limit || 0;
+                const spend = item.budget_status?.spent_amount || (item as any).current_spend || 0;
+                const limit = item.budget_status?.total_budget || (item as any).budget_limit || 0;
                 const percentage = limit > 0 ? (spend / limit) * 100 : 0;
                 const colorType = percentage > 80 ? 'error' : percentage > 60 ? 'warning' : 'success';
 
@@ -5512,6 +5539,13 @@ export default function PrismApp() {
         setValidationError('AWS profile is required');
         return;
       }
+      if (formData.region) {
+        const regionRegex = /^[a-z]{2}(-[a-z]+)+-\d$/;
+        if (!regionRegex.test(formData.region)) {
+          setValidationError('Region must be a valid AWS region format (e.g., us-east-1, eu-west-2)');
+          return;
+        }
+      }
 
       setLoading(true);
       try {
@@ -5534,6 +5568,13 @@ export default function PrismApp() {
       if (!formData.name) {
         setValidationError('Profile name is required');
         return;
+      }
+      if (formData.region) {
+        const regionRegex = /^[a-z]{2}(-[a-z]+)+-\d$/;
+        if (!regionRegex.test(formData.region)) {
+          setValidationError('Region must be a valid AWS region format (e.g., us-east-1, eu-west-2)');
+          return;
+        }
       }
 
       setLoading(true);

@@ -27,6 +27,14 @@ test.describe('Settings Interface', () => {
     });
   });
 
+  // Helper to navigate to Settings and wait for profiles section to load
+  async function navigateToSettings(page: any) {
+    await page.getByRole('link', { name: /settings/i }).click();
+    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    // Wait for create-profile-button to appear (profiles section loaded)
+    await page.waitForSelector('[data-testid="create-profile-button"]', { timeout: 8000 }).catch(() => {});
+  }
+
   test('settings page loads successfully', async ({ page }) => {
     // Navigate to Settings
     await page.getByRole('link', { name: /settings/i }).click();
@@ -51,123 +59,93 @@ test.describe('Settings Interface', () => {
   });
 
   test('create profile button is accessible', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Check if create profile button exists
     const createButton = page.getByTestId('create-profile-button');
-    if (await createButton.isVisible().catch(() => false)) {
-      await expect(createButton).toBeEnabled();
-    } else {
-      test.skip();
-    }
+    await expect(createButton).toBeVisible({ timeout: 5000 });
+    await expect(createButton).toBeEnabled();
   });
 
   test('profile form opens when create is clicked', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Check if create profile button exists
     const createButton = page.getByTestId('create-profile-button');
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
+    await expect(createButton).toBeVisible({ timeout: 5000 });
+    await createButton.click();
 
-      // Wait for dialog
-      const dialog = page.locator('[role="dialog"]');
-      await expect(dialog).toBeVisible({ timeout: 5000 });
+    // Wait for dialog
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 5000 });
 
-      // Verify form inputs are present
-      const nameInput = page.getByTestId('profile-name-input');
-      await expect(nameInput).toBeVisible();
-    } else {
-      test.skip();
-    }
+    // Verify form inputs are present
+    const nameInput = page.getByTestId('profile-name-input');
+    await expect(nameInput).toBeVisible();
   });
 
   test('profile form validation works', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Check if create profile button exists
     const createButton = page.getByTestId('create-profile-button');
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
+    await expect(createButton).toBeVisible({ timeout: 5000 });
+    await createButton.click();
 
-      // Wait for dialog
-      const dialog = page.locator('[role="dialog"]');
-      await dialog.waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog
+    const dialog = page.locator('[role="dialog"]');
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
-      // Form should have required inputs
-      const nameInput = page.getByTestId('profile-name-input').locator('input');
-      await expect(nameInput).toBeVisible();
+    // Form should have required inputs
+    const nameInput = page.getByTestId('profile-name-input').locator('input');
+    await expect(nameInput).toBeVisible();
 
-      const awsProfileInput = page.getByTestId('aws-profile-input').locator('input');
-      await expect(awsProfileInput).toBeVisible();
+    const awsProfileInput = page.getByTestId('aws-profile-input').locator('input');
+    await expect(awsProfileInput).toBeVisible();
 
-      const regionInput = page.getByTestId('region-input').locator('input');
-      await expect(regionInput).toBeVisible();
-    } else {
-      test.skip();
-    }
+    const regionInput = page.getByTestId('region-input').locator('input');
+    await expect(regionInput).toBeVisible();
   });
 
   test('profile form accepts valid input', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Check if create profile button exists
     const createButton = page.getByTestId('create-profile-button');
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
+    await expect(createButton).toBeVisible({ timeout: 5000 });
+    await createButton.click();
 
-      // Wait for dialog
-      await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog
+    await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
 
-      // Fill form with valid data
-      const nameInput = page.getByTestId('profile-name-input').locator('input');
-      const awsProfileInput = page.getByTestId('aws-profile-input').locator('input');
-      const regionInput = page.getByTestId('region-input').locator('input');
+    // Fill form with valid data
+    const nameInput = page.getByTestId('profile-name-input').locator('input');
+    const awsProfileInput = page.getByTestId('aws-profile-input').locator('input');
+    const regionInput = page.getByTestId('region-input').locator('input');
 
-      await nameInput.fill('test-profile');
-      await awsProfileInput.fill('default');
-      await regionInput.fill('us-west-2');
+    await nameInput.fill('test-profile');
+    await awsProfileInput.fill('default');
+    await regionInput.fill('us-west-2');
 
-      // Verify inputs accepted values
-      expect(await nameInput.inputValue()).toBe('test-profile');
-      expect(await awsProfileInput.inputValue()).toBe('default');
-      expect(await regionInput.inputValue()).toBe('us-west-2');
-    } else {
-      test.skip();
-    }
+    // Verify inputs accepted values
+    expect(await nameInput.inputValue()).toBe('test-profile');
+    expect(await awsProfileInput.inputValue()).toBe('default');
+    expect(await regionInput.inputValue()).toBe('us-west-2');
   });
 
   test('profile dialog can be cancelled', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Check if create profile button exists
     const createButton = page.getByTestId('create-profile-button');
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
+    await expect(createButton).toBeVisible({ timeout: 5000 });
+    await createButton.click();
 
-      // Wait for dialog
-      const dialog = page.locator('[role="dialog"]');
-      await dialog.waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog
+    const dialog = page.locator('[role="dialog"]');
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
-      // Click cancel button
-      const cancelButton = page.getByRole('button', { name: 'Cancel', exact: true }).last();
-      await cancelButton.click();
+    // Click cancel button
+    const cancelButton = page.getByRole('button', { name: 'Cancel', exact: true }).last();
+    await cancelButton.click();
 
-      // Dialog should be hidden
-      await dialog.waitFor({ state: 'hidden', timeout: 5000 });
-    } else {
-      test.skip();
-    }
+    // Dialog should be hidden
+    await dialog.waitFor({ state: 'hidden', timeout: 5000 });
   });
 
   test('settings page remains responsive', async ({ page }) => {
@@ -221,28 +199,22 @@ test.describe('Settings Interface', () => {
   });
 
   test('settings forms use Cloudscape components', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Check if create profile button exists
     const createButton = page.getByTestId('create-profile-button');
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
+    await expect(createButton).toBeVisible({ timeout: 5000 });
+    await createButton.click();
 
-      // Wait for dialog
-      await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog
+    await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
 
-      // Verify Cloudscape form fields
-      const nameInput = page.getByTestId('profile-name-input');
-      await expect(nameInput).toBeVisible();
+    // Verify Cloudscape form fields
+    const nameInput = page.getByTestId('profile-name-input');
+    await expect(nameInput).toBeVisible();
 
-      // Input should have proper structure
-      const input = nameInput.locator('input');
-      await expect(input).toBeVisible();
-    } else {
-      test.skip();
-    }
+    // Input should have proper structure
+    const input = nameInput.locator('input');
+    await expect(input).toBeVisible();
   });
 
   test('navigation from settings to other pages works', async ({ page }) => {
