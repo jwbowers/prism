@@ -73,6 +73,11 @@ export class BasePage {
         if (isVisible) {
           // Wait for this visible dialog to be hidden
           await dialog.waitFor({ state: 'hidden', timeout });
+          // Cloudscape dialogs use a CSS fade-out animation (~300ms). The DOM
+          // hidden state is set before the animation completes, so any immediate
+          // interaction with elements beneath the dialog gets intercepted by the
+          // fading overlay. Wait for the animation to finish before returning.
+          await this.page.waitForTimeout(400);
           return; // Exit after first visible dialog closes
         }
       }
