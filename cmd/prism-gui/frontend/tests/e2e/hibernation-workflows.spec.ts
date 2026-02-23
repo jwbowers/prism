@@ -77,7 +77,6 @@ test.describe('Hibernation Workflows', () => {
       if (hasHibernateButton) {
         // Hover over hibernate button
         await hibernateButton.hover();
-        await page.waitForTimeout(500);
 
         // Tooltip should appear with educational information
         const tooltip = page.locator('[role="tooltip"], .tooltip');
@@ -265,12 +264,10 @@ test.describe('Hibernation Workflows', () => {
       await confirmDialog.waitForDialog();
       await confirmDialog.confirmHibernate();
 
-      // Wait for status change
-      await page.waitForTimeout(3000);
-
       // Verify status changed to hibernating or hibernated
-      const statusChanged = await page.locator('text=/hibernating|hibernated/i').isVisible();
-      expect(statusChanged).toBe(true);
+      const statusIndicator = page.locator('text=/hibernating|hibernated/i').first();
+      await statusIndicator.waitFor({ state: 'visible', timeout: 15000 });
+      expect(await statusIndicator.isVisible()).toBe(true);
     });
 
     test('should show success notification after hibernation', async ({ page }) => {
@@ -305,10 +302,7 @@ test.describe('Hibernation Workflows', () => {
       await confirmDialog.waitForDialog();
       await confirmDialog.confirmHibernate();
 
-      // Wait for notification
-      await page.waitForTimeout(2000);
-
-      // Should show success message
+      // Should show success message - wait for notification to appear
       const successNotification = page.locator('[data-testid="notification"], .awsui-flash');
       const hasNotification = await successNotification.isVisible();
 
@@ -351,9 +345,8 @@ test.describe('Hibernation Workflows', () => {
 
       // Cancel
       await confirmDialog.clickCancel();
-
-      // Wait a moment
-      await page.waitForTimeout(1000);
+      // Wait for dialog to be hidden before checking instance status
+      await page.getByRole('dialog').filter({ hasText: /hibernate/i }).waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
 
       // Instance should still be running
       const status = await runningInstance.locator('[data-testid="status-badge"]').textContent();
@@ -422,12 +415,10 @@ test.describe('Hibernation Workflows', () => {
       // Resume instance (should not require confirmation)
       await instancesPage.resumeInstance(instanceName);
 
-      // Wait for status change
-      await page.waitForTimeout(3000);
-
-      // Verify status changed
-      const statusChanged = await page.locator('text=/resuming|running/i').isVisible();
-      expect(statusChanged).toBe(true);
+      // Verify status changed - wait for resuming/running text to appear
+      const statusChanged = page.locator('text=/resuming|running/i').first();
+      await statusChanged.waitFor({ state: 'visible', timeout: 15000 });
+      expect(await statusChanged.isVisible()).toBe(true);
     });
 
     test('should show educational message about fast resume', async ({ page }) => {
@@ -454,7 +445,6 @@ test.describe('Hibernation Workflows', () => {
       if (hasResumeButton) {
         // Hover to see tooltip or message
         await resumeButton.hover();
-        await page.waitForTimeout(500);
 
         const tooltip = page.locator('[role="tooltip"], .tooltip');
         const hasTooltip = await tooltip.isVisible();
@@ -494,9 +484,8 @@ test.describe('Hibernation Workflows', () => {
 
       // Resume instance
       await instancesPage.resumeInstance(instanceName);
-      await page.waitForTimeout(2000);
 
-      // Should show success notification
+      // Should show success notification - wait for it to appear
       const successNotification = page.locator('[data-testid="notification"], .awsui-flash');
       const hasNotification = await successNotification.isVisible();
 

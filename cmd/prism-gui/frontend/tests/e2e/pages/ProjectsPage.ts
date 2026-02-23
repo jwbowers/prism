@@ -48,7 +48,7 @@ export class ProjectsPage extends BasePage {
     if (await filterSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
       await filterSelect.click({ timeout: 2000 }).catch(() => {});
       await this.page.locator('[data-value="all"]').click({ timeout: 2000 }).catch(() => {});
-      await this.page.waitForTimeout(1000);
+      await this.waitForLoadingComplete();
     }
 
     // Look for test project patterns and delete them
@@ -156,8 +156,6 @@ export class ProjectsPage extends BasePage {
     // This ensures the POST succeeded and the table refreshed
     await this.page.getByRole('cell', { name, exact: true }).waitFor({ state: 'visible', timeout: 10000 });
 
-    // Extra wait to ensure Cloudscape table has fully rendered
-    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -319,8 +317,6 @@ export class ProjectsPage extends BasePage {
         return;
       }
 
-      // Wait for UI to update
-      await this.page.waitForTimeout(500);
     } catch (error) {
       console.warn(`Error deleting project "${projectName}" via API:`, error);
     }
@@ -644,7 +640,7 @@ export class ProjectsPage extends BasePage {
     // Select role - use specific test ID to avoid strict mode violation (multiple role selectors on page)
     const roleSelect = this.page.getByTestId('bulk-role-select');
     await roleSelect.click();
-    await this.page.waitForTimeout(300);
+    await this.page.locator(`[data-value="${role}"]`).waitFor({ state: 'visible', timeout: 3000 });
     await this.page.locator(`[data-value="${role}"]`).click();
 
     // Select project using the test ID
@@ -689,8 +685,8 @@ export class ProjectsPage extends BasePage {
     // Select project if provided, otherwise select first available project
     const projectSelect = dialog.locator('[data-testid="token-project-select"]');
     await projectSelect.click();
-    await this.page.waitForTimeout(300);
-    // Click first option in dropdown
+    // Wait for dropdown options to appear
+    await this.page.getByRole('option').first().waitFor({ state: 'visible', timeout: 3000 });
     await this.page.getByRole('option').first().click();
 
     await this.fillInput('token name', name);
@@ -699,13 +695,13 @@ export class ProjectsPage extends BasePage {
     // Select expires in
     const expiresSelect = dialog.locator('[data-testid="expires-in-select"]');
     await expiresSelect.click();
-    await this.page.waitForTimeout(300);
+    await this.page.getByRole('option', { name: expiresIn }).waitFor({ state: 'visible', timeout: 3000 });
     await this.page.getByRole('option', { name: expiresIn }).click();
 
     // Select role
     const roleSelect = dialog.locator('[data-testid="shared-token-role-select"]');
     await roleSelect.click();
-    await this.page.waitForTimeout(300);
+    await this.page.getByRole('option', { name: role }).waitFor({ state: 'visible', timeout: 3000 });
     await this.page.getByRole('option', { name: role }).click();
 
     if (message) {
@@ -765,7 +761,7 @@ export class ProjectsPage extends BasePage {
     // Select duration using Cloudscape Select component
     const durationSelect = dialog.locator('[data-testid="extend-duration-select"]');
     await durationSelect.click();
-    await this.page.waitForTimeout(300);
+    await this.page.getByRole('option', { name: `${days} days` }).waitFor({ state: 'visible', timeout: 3000 });
     await this.page.getByRole('option', { name: `${days} days` }).click();
 
     // Confirm extension
@@ -857,8 +853,6 @@ export class ProjectsPage extends BasePage {
       if (count > 0) {
         // Wait for visible dialogs to become hidden
         await visibleDialogs.first().waitFor({ state: 'hidden', timeout });
-        // Wait for animation to complete
-        await this.page.waitForTimeout(300);
       }
     } catch {
       // Dialog already closed or timeout - safe to continue
@@ -891,8 +885,6 @@ export class ProjectsPage extends BasePage {
         const button = this.page.locator(selector).first();
         if (await button.isVisible({ timeout: 500 })) {
           await button.click();
-          // Wait for animation
-          await this.page.waitForTimeout(500);
           break;
         }
       }
@@ -997,8 +989,8 @@ export class ProjectsPage extends BasePage {
     await filterSelect.click();
 
     // Wait for dropdown to appear and click the status option
-    await this.page.waitForTimeout(300);
     const statusOption = this.page.getByRole('option', { name: new RegExp(status, 'i') });
+    await statusOption.waitFor({ state: 'visible', timeout: 3000 });
     await statusOption.click();
 
     // Wait for table to update
@@ -1267,8 +1259,6 @@ export class ProjectsPage extends BasePage {
       },
       { timeout }
     );
-    // Add small buffer for React re-render
-    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -1277,7 +1267,6 @@ export class ProjectsPage extends BasePage {
    */
   async waitForNetworkIdle(timeout: number = 5000): Promise<void> {
     await this.page.waitForLoadState('networkidle', { timeout });
-    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -1360,9 +1349,6 @@ export class ProjectsPage extends BasePage {
       : this.page.getByRole('dialog', { name: dialogNamePattern });
 
     await dialog.waitFor({ state: 'visible', timeout });
-
-    // Wait for dialog to be fully rendered (buttons, inputs, etc.)
-    await this.page.waitForTimeout(500);
 
     // Verify dialog is still visible (not a flicker)
     await dialog.waitFor({ state: 'visible', timeout: 2000 });

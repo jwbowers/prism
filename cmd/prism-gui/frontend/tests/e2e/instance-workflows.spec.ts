@@ -123,12 +123,10 @@ test.describe('Instance Management Workflows', () => {
 
       // Get cost for size M (cost estimate may not be shown in all dialog variants)
       await launchDialog.selectSize('M');
-      await instancesPage.page.waitForTimeout(500);
       const costM = await launchDialog.getCostEstimate();
 
       // Get cost for size L
       await launchDialog.selectSize('L');
-      await instancesPage.page.waitForTimeout(500);
       const costL = await launchDialog.getCostEstimate();
 
       // Cost estimates are optional - if shown, they should be non-empty strings
@@ -291,12 +289,10 @@ test.describe('Instance Management Workflows', () => {
       // Start the instance
       await instancesPage.startInstance(instanceName);
 
-      // Wait for status change
-      await page.waitForTimeout(2000);
-
-      // Verify status changed - use .first() to avoid strict mode violation when multiple elements match
-      const statusChanged = await page.locator('text=/starting|running/i').first().isVisible();
-      expect(statusChanged).toBe(true);
+      // Verify status changed - wait for starting/running text to appear
+      const statusChanged = page.locator('text=/starting|running/i').first();
+      await statusChanged.waitFor({ state: 'visible', timeout: 15000 });
+      expect(await statusChanged.isVisible()).toBe(true);
     });
 
     test('should terminate instance with confirmation', async ({ page }) => {
@@ -340,11 +336,8 @@ test.describe('Instance Management Workflows', () => {
       // Get initial count
       const initialCount = await instancesPage.getInstanceCount();
 
-      // Refresh instances
+      // Refresh instances (refreshInstances() already calls waitForLoadingComplete)
       await instancesPage.refreshInstances();
-
-      // Wait for refresh to complete
-      await instancesPage.page.waitForTimeout(2000);
 
       // Count should still be valid (same or updated)
       const newCount = await instancesPage.getInstanceCount();
@@ -470,11 +463,8 @@ test.describe('Instance Management Workflows', () => {
 
       const hasSSH = await connectionDialog.hasSSHInfo();
       if (hasSSH) {
-        // Click copy button
+        // Click copy button (clipboard access might be restricted in tests, no assertion needed)
         await connectionDialog.copySshCommand();
-
-        // Verify copy button action (clipboard access might be restricted in tests)
-        await page.waitForTimeout(500);
       }
 
       await connectionDialog.close();
@@ -493,9 +483,8 @@ test.describe('Instance Management Workflows', () => {
         return;
       }
 
-      // Filter by running status
+      // Filter by running status (filterByStatus already waits via waitForLoadingComplete)
       await instancesPage.filterByStatus('running');
-      await instancesPage.page.waitForTimeout(1000);
 
       // Verify filter was applied (count may change)
       const filteredCount = await instancesPage.getInstanceCount();
@@ -525,7 +514,6 @@ test.describe('Instance Management Workflows', () => {
 
       // Search for instance
       await instancesPage.searchInstances(instanceName);
-      await instancesPage.page.waitForTimeout(500);
 
       // Verify search results include the instance
       const searchResults = await instancesPage.getInstanceCount();
@@ -537,7 +525,6 @@ test.describe('Instance Management Workflows', () => {
 
       // Search for non-existent instance
       await instancesPage.searchInstances('nonexistent-instance-xyz');
-      await instancesPage.page.waitForTimeout(500);
 
       // Should show empty state or zero results
       const count = await instancesPage.getInstanceCount();
@@ -589,8 +576,11 @@ test.describe('Instance Management Workflows', () => {
         return;
       }
 
-      // Wait for auto-refresh interval (if implemented)
-      await instancesPage.page.waitForTimeout(5000);
+      // Wait for auto-refresh interval (if implemented) by waiting for an instances API response
+      await instancesPage.page.waitForResponse(
+        response => response.url().includes('/api/v1/instances') && response.status() === 200,
+        { timeout: 10000 }
+      ).catch(() => { /* auto-refresh may not be active */ });
 
       // Verify instances are still displayed (refresh didn't break)
       const newCount = await instancesPage.getInstanceCount();

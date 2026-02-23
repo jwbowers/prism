@@ -38,7 +38,6 @@ test.describe('Budget Workflows', () => {
     // Wait for modal to appear - use visible dialog selector
     const dialog = page.locator('[role="dialog"]:visible').first();
     await dialog.waitFor({ state: 'visible' });
-    await page.waitForTimeout(500); // Allow modal animation to complete
 
     // Fill in budget details using accessible labels - scope to dialog
     const budgetName = `Test Budget Pool ${Date.now()}`;
@@ -112,7 +111,6 @@ test.describe('Budget Workflows', () => {
     await page.locator('button:has-text("Create Budget Pool")').first().click();
     const dialog = page.locator('[role="dialog"]:visible').first();
     await dialog.waitFor({ state: 'visible' });
-    await page.waitForTimeout(500); // Allow modal animation to complete
 
     // Try to submit without filling name - scope to dialog
     await dialog.getByLabel('Total Amount (USD)').fill('50000');
@@ -131,7 +129,6 @@ test.describe('Budget Workflows', () => {
     await page.locator('button:has-text("Create Budget Pool")').first().click();
     const dialog = page.locator('[role="dialog"]:visible').first();
     await dialog.waitFor({ state: 'visible' });
-    await page.waitForTimeout(500); // Allow modal animation to complete
 
     // Fill name but invalid amount - scope to dialog
     await dialog.getByLabel('Budget Name').fill('Test Budget');
@@ -151,7 +148,6 @@ test.describe('Budget Workflows', () => {
     await page.locator('button:has-text("Create Budget Pool")').first().click();
     const dialog = page.locator('[role="dialog"]:visible').first();
     await dialog.waitFor({ state: 'visible' });
-    await page.waitForTimeout(500); // Allow modal animation to complete
 
     // Fill some data - scope to dialog
     await dialog.getByLabel('Budget Name').fill('Test Budget to Cancel');
@@ -160,7 +156,7 @@ test.describe('Budget Workflows', () => {
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
 
     // Verify modal is closed
-    await page.waitForTimeout(500);
+    await dialog.waitFor({ state: 'hidden', timeout: 5000 });
     const visibleDialogs = await page.locator('[role="dialog"]:visible').count();
     expect(visibleDialogs).toBe(0);
   });

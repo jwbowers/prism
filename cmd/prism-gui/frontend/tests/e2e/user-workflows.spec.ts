@@ -166,9 +166,6 @@ test.describe('User Management Workflows', () => {
       await dialog.getByLabel(/full name/i).fill('Test User 2');
       await dialog.getByRole('button', { name: /^create$/i }).click();
 
-      // Wait a moment for backend to process
-      await projectsPage.page.waitForTimeout(2000);
-
       // Step 3: Verify only 1 user exists (duplicate was rejected)
       // Close dialog if still open
       if (await dialog.isVisible().catch(() => false)) {
@@ -199,24 +196,23 @@ test.describe('User Management Workflows', () => {
 
       // Create user
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'SSH Test User');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Generate SSH key
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
       const actionsButton = userRow.getByTestId(`user-actions-${uniqueUsername}`);
       await actionsButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       await projectsPage.page.getByRole('menuitem', { name: /generate ssh key/i }).click();
-      await projectsPage.page.waitForTimeout(500);
 
       // Verify SSH key modal appears
       const sshModal = projectsPage.page.getByTestId('ssh-key-modal');
+      await sshModal.waitFor({ state: 'visible', timeout: 5000 });
       expect(await sshModal.isVisible()).toBe(true);
 
-      // Click Generate SSH Key button
+      // Click Generate SSH Key button and wait for key data to appear
       await projectsPage.page.getByTestId('generate-ssh-key-button').click();
-      await projectsPage.page.waitForTimeout(2000); // Wait for key generation
+      // Wait for key generation - public key display appears when generation completes
+      await projectsPage.page.getByTestId('ssh-public-key-display').waitFor({ state: 'visible', timeout: 15000 });
 
       // Verify key data is displayed
       const publicKeyDisplay = projectsPage.page.getByTestId('ssh-public-key-display');
@@ -253,14 +249,10 @@ test.describe('User Management Workflows', () => {
 
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'SSH Test User');
 
-      // Wait for user to be created
-      await projectsPage.page.waitForTimeout(500);
-
       // View user details
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
       const actionsButton = userRow.getByRole('button', { name: /actions/i });
       await actionsButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       await projectsPage.page.getByRole('menuitem', { name: /view details/i }).click();
 
@@ -274,7 +266,7 @@ test.describe('User Management Workflows', () => {
 
       // Cleanup - dismiss modal first
       await projectsPage.page.keyboard.press('Escape');
-      await projectsPage.page.waitForTimeout(300);
+      await modal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
 
       await projectsPage.navigateToUsers();
       await projectsPage.deleteUser(uniqueUsername);
@@ -288,16 +280,13 @@ test.describe('User Management Workflows', () => {
 
       // Create user
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'Provision Test User');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Provision on workspace
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
       const actionsButton = userRow.getByRole('button', { name: /actions/i });
       await actionsButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       await projectsPage.page.getByRole('menuitem', { name: /provision on workspace/i }).click();
-      await projectsPage.page.waitForTimeout(500);
 
       // Wait for provision modal to appear
       const provisionModal = projectsPage.page.getByTestId('provision-modal');
@@ -306,16 +295,13 @@ test.describe('User Management Workflows', () => {
       // Select workspace - click on the Select dropdown
       const workspaceButton = projectsPage.page.getByRole('button', { name: /Select a workspace/i });
       await workspaceButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       // Select first available workspace (if any exist)
       const firstOption = projectsPage.page.getByRole('option').first();
       await firstOption.click();
-      await projectsPage.page.waitForTimeout(300);
 
       // Confirm provisioning
       await projectsPage.clickButton('provision');
-      await projectsPage.page.waitForTimeout(1500);
 
       // Verify workspace count updated using specific testid (cell shows count, not "None")
       const workspaceCountCell = projectsPage.page.getByTestId(`workspace-count-${uniqueUsername}`);
@@ -340,7 +326,6 @@ test.describe('User Management Workflows', () => {
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
       const actionsButton = userRow.getByRole('button', { name: /actions/i });
       await actionsButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       await projectsPage.page.getByRole('menuitem', { name: /view details/i }).click();
 
@@ -391,14 +376,14 @@ test.describe('User Management Workflows', () => {
 
       // Create user
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'Test User');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Start deletion
       await projectsPage.deleteUser(uniqueUsername);
 
       // Cancel
+      const cancelDialog = projectsPage.page.getByRole('dialog', { name: /delete user\?/i });
       await projectsPage.clickButton('cancel');
-      await projectsPage.page.waitForTimeout(500);
+      await cancelDialog.waitFor({ state: 'hidden', timeout: 5000 });
 
       // Verify still exists
       const userExists = await projectsPage.verifyUserExists(uniqueUsername);
@@ -414,19 +399,16 @@ test.describe('User Management Workflows', () => {
 
       // Create user
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'Active Test User');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Try to provision on workspace (to add provisioned_instances)
       // This will only work if there's a running workspace, otherwise user will have no workspaces
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
       const actionsButton = userRow.getByRole('button', { name: /actions/i });
       await actionsButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       // Check if provision option exists and click it
       const provisionOption = projectsPage.page.getByRole('menuitem', { name: /provision on workspace/i });
       await provisionOption.click();
-      await projectsPage.page.waitForTimeout(500);
 
       // If provision modal appears, try to provision (may fail if no workspaces)
       const provisionModal = projectsPage.page.getByTestId('provision-modal');
@@ -439,16 +421,15 @@ test.describe('User Management Workflows', () => {
 
         if (hasWorkspaces) {
           await workspaceButton.click();
-          await projectsPage.page.waitForTimeout(300);
 
           const firstOption = projectsPage.page.getByRole('option').first();
           const hasOptions = await firstOption.isVisible().catch(() => false);
 
           if (hasOptions) {
             await firstOption.click();
-            await projectsPage.page.waitForTimeout(300);
             await projectsPage.clickButton('provision');
-            await projectsPage.page.waitForTimeout(1500);
+            // Wait for provision to complete or modal to close
+            await provisionModal.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
           }
         }
 
@@ -464,7 +445,6 @@ test.describe('User Management Workflows', () => {
 
       // Try to delete
       await projectsPage.deleteUser(uniqueUsername);
-      await projectsPage.page.waitForTimeout(500);
 
       // Check if warning appears in delete dialog
       // If user has provisioned workspaces, warning should be visible
@@ -561,11 +541,8 @@ test.describe('User Management Workflows', () => {
       await filterButton.click();
 
       // Wait for dropdown to appear and select 'Active' (use first to handle multiple dropdowns)
-      await projectsPage.page.waitForTimeout(300);
+      await projectsPage.page.getByRole('option', { name: 'Active', exact: true }).first().waitFor({ state: 'visible', timeout: 5000 });
       await projectsPage.page.getByRole('option', { name: 'Active', exact: true }).first().click();
-
-      // Wait for filter to apply
-      await projectsPage.page.waitForTimeout(500);
 
       // Verify only active users shown
       const rows = projectsPage.getUserRows();
@@ -592,7 +569,6 @@ test.describe('User Management Workflows', () => {
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
       const actionsButton = userRow.getByRole('button', { name: /actions/i });
       await actionsButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       await projectsPage.page.getByRole('menuitem', { name: /user status/i }).click();
 
@@ -614,17 +590,16 @@ test.describe('User Management Workflows', () => {
 
       // Create user
       await projectsPage.createUser(uniqueUsername, `${uniqueUsername}@example.com`, 'Test User');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Disable user
       const userRow = projectsPage.getUserByUsername(uniqueUsername);
       const actionsButton = userRow.getByRole('button', { name: /actions/i });
       await actionsButton.click();
-      await projectsPage.page.waitForTimeout(300);
 
       // Click "Disable User"
       await projectsPage.page.getByRole('menuitem', { name: /disable user/i }).click();
-      await projectsPage.page.waitForTimeout(1500);
+      // Wait for the status to update to "Suspended" in the table
+      await projectsPage.page.locator(`tr:has-text("${uniqueUsername}"):has-text("Suspended")`).waitFor({ state: 'visible', timeout: 10000 });
 
       // Verify status updated to "Suspended" in table
       const updatedRow = projectsPage.getUserByUsername(uniqueUsername);

@@ -73,8 +73,6 @@ export class BasePage {
         if (isVisible) {
           // Wait for this visible dialog to be hidden
           await dialog.waitFor({ state: 'hidden', timeout });
-          // INCREASED delay for Cloudscape animation to fully complete
-          await this.page.waitForTimeout(1000);
           return; // Exit after first visible dialog closes
         }
       }

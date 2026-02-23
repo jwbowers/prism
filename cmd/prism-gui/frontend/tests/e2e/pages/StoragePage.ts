@@ -376,7 +376,7 @@ export class StoragePage extends BasePage {
     }, { testId, query });
 
     // Wait for React to re-render with filtered results
-    await this.page.waitForTimeout(1000);
+    await this.waitForStorageLoaded();
   }
 
   /**

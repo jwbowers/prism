@@ -494,8 +494,6 @@ export class SettingsPage extends BasePage {
       if (count > 0) {
         // Wait for visible dialogs to become hidden
         await visibleDialogs.first().waitFor({ state: 'hidden', timeout });
-        // Wait for animation to complete
-        await this.page.waitForTimeout(300);
       }
     } catch {
       // Dialog already closed or timeout - safe to continue
@@ -529,8 +527,6 @@ export class SettingsPage extends BasePage {
         const button = this.page.locator(selector).first();
         if (await button.isVisible({ timeout: 500 })) {
           await button.click();
-          // Wait for animation
-          await this.page.waitForTimeout(500);
           break;
         }
       }

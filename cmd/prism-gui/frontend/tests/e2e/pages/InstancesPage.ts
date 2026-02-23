@@ -45,8 +45,8 @@ export class InstancesPage extends BasePage {
       // API might have already been called, continue
     }
 
-    // Wait a moment for React to render the response
-    await this.page.waitForTimeout(500);
+    // Allow React to render the response
+    await this.page.waitForLoadState('domcontentloaded');
 
     // Ensure either table with rows or empty state is visible
     await this.page.waitForFunction(() => {
@@ -188,7 +188,6 @@ export class InstancesPage extends BasePage {
     await input.clear();
     await this.page.keyboard.type(status);
     await this.page.keyboard.press('Enter');
-    await this.page.waitForTimeout(1000);
     await this.waitForLoadingComplete();
   }
 
@@ -202,7 +201,7 @@ export class InstancesPage extends BasePage {
     await input.clear();
     await this.page.keyboard.type(query);
     await this.page.keyboard.press('Enter');
-    await this.page.waitForTimeout(1000);
+    await this.waitForLoadingComplete();
   }
 
   /**
@@ -221,9 +220,8 @@ export class InstancesPage extends BasePage {
     const launchButton = this.page.getByRole('button', { name: /launch.*workspace/i });
     await launchButton.click();
 
-    // Give Cloudscape a moment to start the dialog animation
-    // The dialog exists immediately but needs time to remove awsui_hidden class
-    await this.page.waitForTimeout(500);
+    // Wait for the dialog to become visible (Cloudscape removes awsui_hidden class)
+    await this.page.getByRole('dialog').waitFor({ state: 'visible', timeout: 5000 });
   }
 
   /**

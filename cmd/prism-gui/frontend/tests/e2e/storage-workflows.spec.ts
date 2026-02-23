@@ -33,9 +33,8 @@ test.describe('Storage Management Workflows', () => {
     await storagePage.goto();
     await storagePage.navigate();
 
-    // Wait for UI to fully render tabs (tabs need time to become interactive)
-    // Using 3s to ensure previous test's async loadApplicationData has completed
-    await page.waitForTimeout(3000);
+    // Wait for storage page tabs to be interactive before proceeding
+    await page.getByRole('tab', { name: /efs/i }).waitFor({ state: 'visible', timeout: 15000 });
 
     // Create shared test volumes for display/search tests ONLY ONCE
     // These persist across tests in this suite to avoid re-creating for every test
@@ -202,7 +201,6 @@ test.describe('Storage Management Workflows', () => {
 
       // Cleanup: Unmount and delete
       await storagePage.unmountEFSVolume('mount-test-efs', instanceName);
-      await storagePage.page.waitForTimeout(1000);
       await storagePage.deleteEFSVolume('mount-test-efs');
       await confirmDialog.confirmDelete();
     });
@@ -254,7 +252,6 @@ test.describe('Storage Management Workflows', () => {
 
       // Now unmount it
       await storagePage.unmountEFSVolume('unmount-test-efs', instanceName);
-      await storagePage.page.waitForTimeout(2000);
 
       // Verify unmount success
       const status = await storagePage.getVolumeStatus('unmount-test-efs', 'efs');
@@ -548,7 +545,6 @@ test.describe('Storage Management Workflows', () => {
 
       // Search for volume
       await storagePage.searchVolumes(volumeName);
-      await storagePage.page.waitForTimeout(500);
 
       // Verify search results
       const searchResults = await storagePage.getEFSVolumeCount();
@@ -571,7 +567,6 @@ test.describe('Storage Management Workflows', () => {
 
       // Search for volume
       await storagePage.searchVolumes(volumeName!);
-      await storagePage.page.waitForTimeout(500);
 
       // Verify search results
       const searchResults = await storagePage.getEBSVolumeCount();
@@ -583,7 +578,6 @@ test.describe('Storage Management Workflows', () => {
 
       // Search for non-existent volume
       await storagePage.searchVolumes('nonexistent-volume-xyz');
-      await storagePage.page.waitForTimeout(500);
 
       // Should show zero results
       const count = await storagePage.getEFSVolumeCount();
@@ -595,33 +589,30 @@ test.describe('Storage Management Workflows', () => {
     test('should switch between EFS and EBS tabs', async () => {
       // Start with EFS
       await storagePage.switchToEFS();
-      await storagePage.page.waitForTimeout(500);
 
       // Verify EFS content
       const efsTable = storagePage.page.locator('[data-testid="efs-table"]');
+      await efsTable.waitFor({ state: 'visible', timeout: 5000 });
       expect(await efsTable.isVisible()).toBe(true);
 
       // Switch to EBS
       await storagePage.switchToEBS();
-      await storagePage.page.waitForTimeout(500);
 
       // Verify EBS content
       const ebsTable = storagePage.page.locator('[data-testid="ebs-table"]');
+      await ebsTable.waitFor({ state: 'visible', timeout: 5000 });
       expect(await ebsTable.isVisible()).toBe(true);
     });
 
     test('should preserve tab state when navigating away and back', async () => {
       // Switch to EBS tab
       await storagePage.switchToEBS();
-      await storagePage.page.waitForTimeout(500);
 
       // Navigate away
       await instancesPage.navigate();
-      await storagePage.page.waitForTimeout(500);
 
       // Navigate back
       await storagePage.navigate();
-      await storagePage.page.waitForTimeout(500);
 
       // Tab state might be preserved (implementation-dependent)
       // Just verify storage page loads correctly

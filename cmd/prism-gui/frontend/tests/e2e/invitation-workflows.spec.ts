@@ -56,10 +56,6 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.page.reload();
       await projectsPage.switchToIndividualInvitations();
 
-      // Wait for invitation to appear in the UI before tests proceed
-      // This prevents race conditions where tests start before invitation is rendered
-      await projectsPage.page.waitForTimeout(1000); // Give UI time to load data
-
       // Verify invitation row exists (wait up to 10 seconds)
       const invitationRows = projectsPage.getInvitationRows();
       await expect(invitationRows.first()).toBeVisible({ timeout: 10000 });
@@ -147,9 +143,6 @@ test.describe('Invitation Management Workflows', () => {
       // Navigate to invitations page
       await projectsPage.navigateToInvitations();
       await projectsPage.switchToIndividualInvitations();
-
-      // Wait for the component to fully mount and set up event listeners
-      await projectsPage.page.waitForTimeout(1000);
 
       // Set up API response wait BEFORE dispatching event
       const invitationsResponsePromise = projectsPage.page.waitForResponse(
@@ -375,9 +368,9 @@ test.describe('Invitation Management Workflows', () => {
 
       // Wait for dialog to close
       await confirmDialog.waitFor({ state: 'hidden', timeout: 5000 });
-      await projectsPage.page.waitForTimeout(1000);
 
-      // Verify status changed to Declined
+      // Verify status changed to Declined (assertion retries until text appears)
+      await testRow.filter({ hasText: 'Declined' }).waitFor({ state: 'visible', timeout: 10000 });
       const invitationText = await testRow.textContent();
       expect(invitationText).toContain('Declined');
 
@@ -437,9 +430,9 @@ test.describe('Invitation Management Workflows', () => {
       // Decline without reason
       await projectsPage.declineInvitation(testProjectName);
 
-      // Verify status changed
-      await projectsPage.page.waitForTimeout(1000);
+      // Verify status changed (row filter retries until 'Declined' appears)
       const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
+      await invitationRow.filter({ hasText: 'Declined' }).waitFor({ state: 'visible', timeout: 10000 });
       const invitationText = await invitationRow.textContent();
       expect(invitationText).toContain('Declined');
 
@@ -469,9 +462,9 @@ test.describe('Invitation Management Workflows', () => {
       // Send bulk invitations
       await projectsPage.sendBulkInvitations(testProjectId, emails, role);
 
-      // Verify success message/results
-      await projectsPage.page.waitForTimeout(1000);
+      // Verify success message/results appear after bulk send completes
       const resultsContainer = projectsPage.page.getByTestId('bulk-results-container');
+      await resultsContainer.waitFor({ state: 'visible', timeout: 10000 });
       expect(await resultsContainer.isVisible()).toBe(true);
 
       // Cleanup
@@ -495,9 +488,8 @@ test.describe('Invitation Management Workflows', () => {
       // Select project first
       const projectSelect = projectsPage.page.getByTestId('bulk-invite-project-select');
       await projectSelect.click();
-      await projectsPage.page.waitForTimeout(300);
       const projectOption = projectsPage.page.locator(`[data-value="${testProjectId}"]`);
-      if (await projectOption.isVisible({ timeout: 1000 })) {
+      if (await projectOption.isVisible({ timeout: 3000 })) {
         await projectOption.click();
       }
 
@@ -508,14 +500,14 @@ test.describe('Invitation Management Workflows', () => {
       // Select role
       const roleSelect = projectsPage.page.getByTestId('bulk-role-select');
       await roleSelect.click();
-      await projectsPage.page.waitForTimeout(300);
+      await projectsPage.page.locator('[data-value="member"]').waitFor({ state: 'visible', timeout: 3000 });
       await projectsPage.page.locator('[data-value="member"]').click();
 
       await projectsPage.clickButton('send bulk invitations');
 
       // Should show validation error or results with failed emails
-      await projectsPage.page.waitForTimeout(1000);
       const resultsContainer = projectsPage.page.getByTestId('bulk-results-container');
+      await resultsContainer.waitFor({ state: 'visible', timeout: 10000 });
       expect(await resultsContainer.isVisible()).toBe(true);
 
       // Cleanup
@@ -555,8 +547,8 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.sendBulkInvitations(testProjectId, emails, 'viewer');
 
       // Verify results section shows
-      await projectsPage.page.waitForTimeout(1000);
       const resultsContainer = projectsPage.page.getByTestId('bulk-results-container');
+      await resultsContainer.waitFor({ state: 'visible', timeout: 10000 });
       expect(await resultsContainer.isVisible()).toBe(true);
 
       const resultsText = await resultsContainer.textContent();
@@ -580,9 +572,9 @@ test.describe('Invitation Management Workflows', () => {
 
       await projectsPage.sendBulkInvitations(testProjectId, emails, role, message);
 
-      // Verify success
-      await projectsPage.page.waitForTimeout(1000);
+      // Verify success - results container appears after send completes
       const resultsContainer = projectsPage.page.getByTestId('bulk-results-container');
+      await resultsContainer.waitFor({ state: 'visible', timeout: 10000 });
       expect(await resultsContainer.isVisible()).toBe(true);
 
       // Cleanup
@@ -601,8 +593,8 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.createSharedToken(tokenName, 10, '7d', 'member', 'Welcome!');
 
       // Verify token appears in list
-      await projectsPage.page.waitForTimeout(1000);
       const tokenRow = projectsPage.page.locator(`tr:has-text("${tokenName}")`).first();
+      await tokenRow.waitFor({ state: 'visible', timeout: 10000 });
       expect(await tokenRow.isVisible()).toBe(true);
     });
 
@@ -612,7 +604,6 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.switchToSharedTokens();
       const tokenName = `QR Test ${Date.now()}`;
       await projectsPage.createSharedToken(tokenName, 10, '7d', 'member', 'Welcome!');
-      await projectsPage.page.waitForTimeout(1000);
 
       // View QR code
       await projectsPage.viewQRCode(tokenName);
@@ -640,7 +631,6 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.switchToSharedTokens();
       const tokenName = `Copy Test ${Date.now()}`;
       await projectsPage.createSharedToken(tokenName, 5, '30d', 'viewer');
-      await projectsPage.page.waitForTimeout(1000);
 
       await projectsPage.viewQRCode(tokenName);
 
@@ -648,9 +638,6 @@ test.describe('Invitation Management Workflows', () => {
       const copyUrlButton = projectsPage.page.getByRole('button', { name: /copy url/i });
       expect(await copyUrlButton.isVisible()).toBe(true);
       await copyUrlButton.click();
-
-      // Wait for copy action
-      await projectsPage.page.waitForTimeout(500);
 
       // Close modal
       await projectsPage.clickButton('close');
@@ -662,9 +649,10 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.switchToSharedTokens();
       const tokenName = `Redemption Test ${Date.now()}`;
       await projectsPage.createSharedToken(tokenName, 10, '30d', 'viewer');
-      await projectsPage.page.waitForTimeout(1000);
 
+      // Wait for token row to appear before reading it
       const tokenRow = projectsPage.page.locator(`tr:has-text("${tokenName}")`).first();
+      await tokenRow.waitFor({ state: 'visible', timeout: 10000 });
       const tokenText = await tokenRow.textContent();
 
       // Should show redemption count (e.g., "0 / 10")
@@ -677,14 +665,13 @@ test.describe('Invitation Management Workflows', () => {
       await projectsPage.switchToSharedTokens();
       const tokenName = `Extend Test ${Date.now()}`;
       await projectsPage.createSharedToken(tokenName, 5, '7d', 'member');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Extend the token
       await projectsPage.extendSharedToken(tokenName, '7');
 
       // Verify token still appears in list (expiration was extended)
-      await projectsPage.page.waitForTimeout(1000);
       const updatedRow = projectsPage.page.locator(`tr:has-text("${tokenName}")`).first();
+      await updatedRow.waitFor({ state: 'visible', timeout: 10000 });
       const updatedText = await updatedRow.textContent();
 
       // Expiration date should be updated (hard to verify exact date in test)
@@ -699,14 +686,13 @@ test.describe('Invitation Management Workflows', () => {
 
       // Create token
       await projectsPage.createSharedToken(tokenName, 5, '30d', 'viewer');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Revoke token
       await projectsPage.revokeSharedToken(tokenName);
 
       // Verify status changed to Revoked
-      await projectsPage.page.waitForTimeout(1000);
       const tokenRow = projectsPage.page.locator(`tr:has-text("${tokenName}")`).first();
+      await tokenRow.filter({ hasText: 'Revoked' }).waitFor({ state: 'visible', timeout: 10000 });
       const tokenText = await tokenRow.textContent();
       expect(tokenText).toContain('Revoked');
     });
@@ -736,13 +722,13 @@ test.describe('Invitation Management Workflows', () => {
 
       const tokenName = `Already Revoked ${Date.now()}`;
       await projectsPage.createSharedToken(tokenName, 5, '30d', 'viewer');
-      await projectsPage.page.waitForTimeout(1000);
 
       // Revoke the token
       await projectsPage.revokeSharedToken(tokenName);
-      await projectsPage.page.waitForTimeout(1000);
 
+      // Wait for the revoked state to appear in the table
       const revokedTokenRow = projectsPage.page.locator(`tr:has-text("${tokenName}")`).first();
+      await revokedTokenRow.filter({ hasText: 'Revoked' }).waitFor({ state: 'visible', timeout: 10000 });
 
       // Revoke button should be disabled for already revoked token
       const revokeButton = revokedTokenRow.getByRole('button', { name: /revoke/i });
@@ -781,10 +767,10 @@ test.describe('Invitation Management Workflows', () => {
 
       // Accept the invitation
       await projectsPage.acceptInvitation(testProjectName);
-      await projectsPage.page.waitForTimeout(1000);
 
       // Verify invitation status changed to Accepted
       const invitationRow = projectsPage.page.locator(`tr:has-text("${testProjectName}")`).first();
+      await invitationRow.filter({ hasText: 'Accepted' }).waitFor({ state: 'visible', timeout: 10000 });
       const invitationText = await invitationRow.textContent();
       expect(invitationText).toContain('Accepted');
 
@@ -854,7 +840,6 @@ test.describe('Invitation Management Workflows', () => {
 
         if (await removeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
           await removeButton.click();
-          await projectsPage.page.waitForTimeout(500);
 
           // Confirm removal if confirmation dialog appears
           const confirmButton = projectsPage.page.getByRole('button', { name: /remove|confirm/i });
@@ -862,8 +847,8 @@ test.describe('Invitation Management Workflows', () => {
             await confirmButton.click();
           }
 
-          // Verify removed
-          await projectsPage.page.waitForTimeout(500);
+          // Verify removed - row should be hidden after removal
+          await expiredRow.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
           expect(await expiredRow.isVisible({ timeout: 1000 }).catch(() => false)).toBe(false);
         } else {
           // No remove button available, test passes
