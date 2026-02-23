@@ -72,7 +72,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('create');
 
       // Should show validation error (get first visible dialog)
-      const dialog = settingsPage.page.locator('[role="dialog"]').first();
+      const dialog = settingsPage.page.locator('[role="dialog"]:visible').first();
       const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/name.*required/i);
     });
@@ -88,7 +88,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('create');
 
       // Should show validation error
-      const dialog = settingsPage.page.locator('[role="dialog"]').first();
+      const dialog = settingsPage.page.locator('[role="dialog"]:visible').first();
       const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/region/i);
 
@@ -115,7 +115,7 @@ test.describe('Profile Management Workflows', () => {
       await settingsPage.clickButton('create');
 
       // Should show duplicate error
-      const dialog = settingsPage.page.locator('[role="dialog"]').first();
+      const dialog = settingsPage.page.locator('[role="dialog"]:visible').first();
       const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/already exists|duplicate/i);
 
@@ -225,12 +225,12 @@ test.describe('Profile Management Workflows', () => {
       // Wait for dialog to open
       await settingsPage.page.locator('[role="dialog"]:visible').last().waitFor({ state: 'visible' });
 
-      // Fill the region input directly
-      await settingsPage.page.getByTestId('region-input').locator('input').fill('invalid-region-name');
+      // Fill the region input directly (edit dialog uses edit-region-input, not region-input)
+      await settingsPage.page.getByTestId('edit-region-input').locator('input').fill('invalid-region-name');
       await settingsPage.clickButton('save');
 
       // Should show validation error
-      const dialog = settingsPage.page.locator('[role="dialog"]').first();
+      const dialog = settingsPage.page.locator('[role="dialog"]:visible').first();
       const validationError = await dialog.locator('[data-testid="validation-error"]').textContent();
       expect(validationError).toMatch(/region/i);
 

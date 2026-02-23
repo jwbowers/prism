@@ -28,41 +28,43 @@ test.describe('Form Validation', () => {
   });
 
   test('profile form validation - name required', async ({ page }) => {
-    // Navigate to Settings > Profiles
+    // Navigate to Settings > Profiles sub-section
     await page.getByRole('link', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
-    // Wait for profiles section to load
-    await page.waitForSelector('[data-testid="create-profile-button"]', { timeout: 8000 }).catch(() => {});
+    await page.locator('a[href="#profiles"]').waitFor({ state: 'visible', timeout: 8000 });
+    await page.locator('a[href="#profiles"]').click();
+    await page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 5000 });
 
     const createButton = page.getByTestId('create-profile-button');
     await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
 
-    // Wait for dialog
-    await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog - use :visible to avoid matching all 20 Cloudscape hidden modals in DOM
+    await page.locator('[role="dialog"]:visible').first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Try to submit without filling name
     const submitButton = page.getByRole('button', { name: /create/i }).last();
     await submitButton.click();
 
     // Dialog should still be visible (validation failed)
-    const dialog = page.locator('[role="dialog"]').last();
+    const dialog = page.locator('[role="dialog"]:visible').first();
     expect(await dialog.isVisible()).toBe(true);
   });
 
   test('profile form accepts valid input', async ({ page }) => {
-    // Navigate to Settings > Profiles
+    // Navigate to Settings > Profiles sub-section
     await page.getByRole('link', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
-    // Wait for profiles section to load
-    await page.waitForSelector('[data-testid="create-profile-button"]', { timeout: 8000 }).catch(() => {});
+    await page.locator('a[href="#profiles"]').waitFor({ state: 'visible', timeout: 8000 });
+    await page.locator('a[href="#profiles"]').click();
+    await page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 5000 });
 
     const createButton = page.getByTestId('create-profile-button');
     await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
 
-    // Wait for dialog
-    await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog - use :visible to avoid matching all 20 Cloudscape hidden modals in DOM
+    await page.locator('[role="dialog"]:visible').first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Fill form with valid data
     const nameInput = page.getByTestId('profile-name-input').locator('input');
@@ -82,7 +84,7 @@ test.describe('Form Validation', () => {
   test('project form validation - name required', async ({ page }) => {
     // Navigate to Projects
     await page.getByRole('link', { name: /projects/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Open create project dialog
     const createButton = page.getByTestId('create-project-button');
@@ -108,7 +110,7 @@ test.describe('Form Validation', () => {
   test('project form accepts valid input', async ({ page }) => {
     // Navigate to Projects
     await page.getByRole('link', { name: /projects/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Open create project dialog
     const createButton = page.getByTestId('create-project-button');
@@ -223,7 +225,7 @@ test.describe('Form Validation', () => {
   test('Cloudscape forms use proper ARIA attributes', async ({ page }) => {
     // Navigate to Projects
     await page.getByRole('link', { name: /projects/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Open create project dialog
     const createButton = page.getByTestId('create-project-button');
@@ -248,7 +250,7 @@ test.describe('Form Validation', () => {
   test('forms handle empty state correctly', async ({ page }) => {
     // Navigate to Projects
     await page.getByRole('link', { name: /projects/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Verify projects table exists (even if empty)
     const projectsTable = page.locator('[data-testid="projects-table"]');

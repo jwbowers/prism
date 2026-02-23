@@ -1,5 +1,5 @@
 // Global setup for Playwright tests
-import { startDaemon, stopDaemon, isDaemonRunning } from './setup-daemon.js'
+import { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers } from './setup-daemon.js'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
@@ -58,7 +58,11 @@ async function globalSetup() {
   // Start a fresh daemon with test mode enabled
   console.log('Starting daemon for tests with PRISM_TEST_MODE...')
   daemonPid = await startDaemon()
-  
+
+  // Remove test users left over from previous runs before tests start.
+  // Prevents cleanupTestUsers() helpers from overflowing when 100+ users accumulate.
+  await cleanupTestUsers()
+
   // Return teardown function
   return async () => {
     if (daemonPid) {

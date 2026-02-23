@@ -271,9 +271,10 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 
 	// In test mode, skip AWS entirely and return mock instance
 	if s.testMode {
-		// Return mock instance for testing
+		// Return mock instance for testing — use unique ID per launch to avoid
+		// React duplicate-key warnings when multiple instances are created in a test run
 		instance = &types.Instance{
-			ID:            "i-test123456",
+			ID:            fmt.Sprintf("i-testlaunch%d", time.Now().UnixNano()%10000000000),
 			Name:          req.Name,
 			State:         "running",
 			PublicIP:      "203.0.113.1",

@@ -123,6 +123,37 @@ async function startDaemon() {
   throw new Error(`Daemon failed to start within ${maxAttempts} seconds. Check daemon logs above for errors.`)
 }
 
+// Delete test users that accumulated from previous test runs.
+// Runs after daemon starts to keep the user table clean so cleanup helpers don't overflow.
+async function cleanupTestUsers() {
+  const testUserPattern = /^(test-|status-update-test-|role-test-|list-test-|delete-test-|update-test-|bulk-|deactivate-|reactivate-|invite-|workspace-test-)/
+
+  try {
+    const res = await fetch('http://localhost:8947/api/v1/users')
+    if (!res.ok) return
+
+    const users = await res.json()
+    if (!Array.isArray(users)) return
+
+    const testUsers = users.filter(u => u.username && testUserPattern.test(u.username))
+    if (testUsers.length === 0) return
+
+    console.log(`[setup-daemon] Cleaning up ${testUsers.length} leftover test users...`)
+    let deleted = 0
+    for (const user of testUsers) {
+      const delRes = await fetch(`http://localhost:8947/api/v1/users/${user.username}`, {
+        method: 'DELETE'
+      }).catch(() => null)
+      if (delRes && (delRes.status === 204 || delRes.status === 404)) {
+        deleted++
+      }
+    }
+    console.log(`[setup-daemon] Removed ${deleted}/${testUsers.length} test users`)
+  } catch {
+    // Non-critical — tests can still run if cleanup fails
+  }
+}
+
 // Function to stop the daemon
 async function stopDaemon(pid) {
   if (pid) {
@@ -135,4 +166,4 @@ async function stopDaemon(pid) {
   }
 }
 
-export { startDaemon, stopDaemon, isDaemonRunning }
+export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers }

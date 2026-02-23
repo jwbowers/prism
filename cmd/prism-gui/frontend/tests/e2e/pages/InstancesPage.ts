@@ -220,8 +220,11 @@ export class InstancesPage extends BasePage {
     const launchButton = this.page.getByRole('button', { name: /launch.*workspace/i });
     await launchButton.click();
 
-    // Wait for the dialog to become visible (Cloudscape removes awsui_hidden class)
-    await this.page.getByRole('dialog').waitFor({ state: 'visible', timeout: 5000 });
+    // "Launch New Workspace" button navigates to the Templates page (no dialog opens here).
+    // Wait for template cards to confirm navigation succeeded.
+    await this.page.locator('[data-testid="template-card"]').first()
+      .waitFor({ state: 'visible', timeout: 15000 })
+      .catch(() => {});
   }
 
   /**

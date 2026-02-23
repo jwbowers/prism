@@ -136,34 +136,16 @@ test.describe('Hibernation Workflows', () => {
         return;
       }
 
-      // Check if instance name element exists before trying to get text
+      // Get instance name to trigger hibernate via Actions dropdown
       const instanceNameElement = runningInstance.locator('[data-testid="instance-name"]');
-      const hasInstanceName = await instanceNameElement.isVisible({ timeout: 2000 }).catch(() => false);
-
-      if (!hasInstanceName) {
-        // Skip: Instance name element not found
-        test.skip();
-        return;
-      }
-
-      const instanceName = await instanceNameElement.textContent();
+      const instanceName = await instanceNameElement.textContent().catch(() => null);
       if (!instanceName) {
-        // Skip: Could not get instance name
         test.skip();
         return;
       }
 
-      const hibernateButton = runningInstance.getByRole('button', { name: /hibernate/i });
-      const hasHibernateButton = await hibernateButton.isVisible();
-
-      if (!hasHibernateButton) {
-        // Skip: Instance does not support hibernation
-        test.skip();
-        return;
-      }
-
-      // Click hibernate
-      await hibernateButton.click();
+      // Trigger hibernate via Actions dropdown (opens confirmation dialog)
+      await instancesPage.hibernateInstance(instanceName);
 
       // Wait for confirmation dialog
       await confirmDialog.waitForDialog();
@@ -194,20 +176,18 @@ test.describe('Hibernation Workflows', () => {
         return;
       }
 
-      const hibernateButton = runningInstance.getByRole('button', { name: /hibernate/i });
-      const hasHibernateButton = await hibernateButton.isVisible();
-
-      if (!hasHibernateButton) {
-        // Skip: Instance does not support hibernation
+      // Get instance name to trigger hibernate via Actions dropdown
+      const instanceName = await runningInstance.locator('[data-testid="instance-name"]').textContent().catch(() => null);
+      if (!instanceName) {
         test.skip();
         return;
       }
 
-      // Click hibernate
-      await hibernateButton.click();
+      // Trigger hibernate via Actions dropdown (opens confirmation dialog)
+      await instancesPage.hibernateInstance(instanceName);
       await confirmDialog.waitForDialog();
 
-      // Should show cost savings
+      // Should show cost savings ($X.XX pattern)
       const hasCostSavings = await confirmDialog.hasCostSavings();
       expect(hasCostSavings).toBe(true);
 
@@ -233,38 +213,18 @@ test.describe('Hibernation Workflows', () => {
         return;
       }
 
-      // Check if instance name element exists before trying to get text
-      const instanceNameElement = runningInstance.locator('[data-testid="instance-name"]');
-      const hasInstanceName = await instanceNameElement.isVisible({ timeout: 2000 }).catch(() => false);
-
-      if (!hasInstanceName) {
-        // Skip: Instance name element not found
-        test.skip();
-        return;
-      }
-
-      const instanceName = await instanceNameElement.textContent();
+      const instanceName = await runningInstance.locator('[data-testid="instance-name"]').textContent().catch(() => null);
       if (!instanceName) {
-        // Skip: Could not get instance name
         test.skip();
         return;
       }
 
-      const hibernateButton = runningInstance.getByRole('button', { name: /hibernate/i });
-      const hasHibernateButton = await hibernateButton.isVisible();
-
-      if (!hasHibernateButton) {
-        // Skip: Instance does not support hibernation
-        test.skip();
-        return;
-      }
-
-      // Hibernate instance
-      await hibernateButton.click();
+      // Trigger hibernate via Actions dropdown, confirm in dialog
+      await instancesPage.hibernateInstance(instanceName);
       await confirmDialog.waitForDialog();
       await confirmDialog.confirmHibernate();
 
-      // Verify status changed to hibernating or hibernated
+      // Verify status changed to hibernating or hibernated (notification shows immediately)
       const statusIndicator = page.locator('text=/hibernating|hibernated/i').first();
       await statusIndicator.waitFor({ state: 'visible', timeout: 15000 });
       expect(await statusIndicator.isVisible()).toBe(true);
@@ -288,27 +248,25 @@ test.describe('Hibernation Workflows', () => {
         return;
       }
 
-      const hibernateButton = runningInstance.getByRole('button', { name: /hibernate/i });
-      const hasHibernateButton = await hibernateButton.isVisible();
-
-      if (!hasHibernateButton) {
-        // Skip: Instance does not support hibernation
+      const instanceName = await runningInstance.locator('[data-testid="instance-name"]').textContent().catch(() => null);
+      if (!instanceName) {
         test.skip();
         return;
       }
 
-      // Hibernate instance
-      await hibernateButton.click();
+      // Trigger hibernate via Actions dropdown, confirm in dialog
+      await instancesPage.hibernateInstance(instanceName);
       await confirmDialog.waitForDialog();
       await confirmDialog.confirmHibernate();
 
-      // Should show success message - wait for notification to appear
-      const successNotification = page.locator('[data-testid="notification"], .awsui-flash');
-      const hasNotification = await successNotification.isVisible();
-
-      if (hasNotification) {
-        const notificationText = await successNotification.textContent();
-        expect(notificationText).toMatch(/hibernating|success/i);
+      // The fire-and-forget pattern shows an info notification immediately
+      // Wait briefly for notification to render
+      await page.waitForTimeout(500);
+      const flashbar = page.locator('[class*="flashbar"]').first();
+      const hasFlashbar = await flashbar.isVisible().catch(() => false);
+      if (hasFlashbar) {
+        const text = await flashbar.textContent().catch(() => '');
+        expect(text).toMatch(/hibernating|success/i);
       }
     });
 
@@ -330,23 +288,20 @@ test.describe('Hibernation Workflows', () => {
         return;
       }
 
-      const hibernateButton = runningInstance.getByRole('button', { name: /hibernate/i });
-      const hasHibernateButton = await hibernateButton.isVisible();
-
-      if (!hasHibernateButton) {
-        // Skip: Instance does not support hibernation
+      const instanceName = await runningInstance.locator('[data-testid="instance-name"]').textContent().catch(() => null);
+      if (!instanceName) {
         test.skip();
         return;
       }
 
-      // Start hibernation
-      await hibernateButton.click();
+      // Trigger hibernate via Actions dropdown (opens confirmation dialog)
+      await instancesPage.hibernateInstance(instanceName);
       await confirmDialog.waitForDialog();
 
-      // Cancel
+      // Cancel — instance should not be hibernated
       await confirmDialog.clickCancel();
       // Wait for dialog to be hidden before checking instance status
-      await page.getByRole('dialog').filter({ hasText: /hibernate/i }).waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      await page.locator('[role="dialog"]:visible').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
 
       // Instance should still be running
       const status = await runningInstance.locator('[data-testid="status-badge"]').textContent();

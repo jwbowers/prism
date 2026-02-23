@@ -352,8 +352,7 @@ test.describe('Project Management Workflows', () => {
   });
 
   test.describe('Budget Management', () => {
-    test.skip('should track project spending', async () => {
-      // TODO: Requires cost tracking integration
+    test('should track project spending', async () => {
       const uniqueName = `spend-test-${Date.now()}`;
 
       await projectsPage.createProject(uniqueName, 'Spending test', 1000);

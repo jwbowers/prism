@@ -107,7 +107,7 @@ test.describe('Instance Management Workflows', () => {
       await launchDialog.waitForDialog();
 
       // Verify the dialog opened (template was pre-selected - no template selection step)
-      const dialogVisible = await launchDialog.isVisible();
+      const dialogVisible = await launchDialog.isOpen();
       expect(dialogVisible).toBe(true);
 
       await launchDialog.clickCancel();

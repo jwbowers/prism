@@ -1844,6 +1844,10 @@ export default function PrismApp() {
   });
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
 
+  // Hibernate confirmation modal state
+  const [hibernateModalVisible, setHibernateModalVisible] = useState(false);
+  const [hibernateModalInstance, setHibernateModalInstance] = useState<Instance | null>(null);
+
   // Onboarding wizard state
   const [onboardingVisible, setOnboardingVisible] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
@@ -2755,11 +2759,9 @@ export default function PrismApp() {
           {recentWorkspaces.length === 0 ? (
             <Box textAlign="center" padding={{ vertical: 'l' }}>
               <TextContent>
-                <p>
-                  <Box variant="p" color="text-body-secondary">
-                    No workspaces yet. Launch your first workspace to get started.
-                  </Box>
-                </p>
+                <Box variant="p" color="text-body-secondary">
+                  No workspaces yet. Launch your first workspace to get started.
+                </Box>
               </TextContent>
               <Button
                 variant="primary"
@@ -3140,6 +3142,13 @@ export default function PrismApp() {
 
   // Comprehensive Instance Action Handler
   const handleInstanceAction = async (action: string, instance: Instance) => {
+    // Hibernate requires a confirmation dialog with educational content
+    if (action === 'hibernate') {
+      setHibernateModalInstance(instance);
+      setHibernateModalVisible(true);
+      return;
+    }
+
     // Lifecycle actions use fire-and-forget (no global loading state)
     const lifecycleActions: Record<string, [string, string]> = {
       start: ['Starting', 'Started'],
@@ -10295,6 +10304,111 @@ export default function PrismApp() {
     );
   };
 
+  const HibernateConfirmationModal = () => {
+    if (!hibernateModalInstance) return null;
+
+    const handleConfirmHibernate = async () => {
+      const instance = hibernateModalInstance;
+      setHibernateModalVisible(false);
+      setHibernateModalInstance(null);
+
+      // Fire-and-forget: show progress notification immediately
+      setState(prev => ({
+        ...prev,
+        notifications: [
+          ...prev.notifications,
+          {
+            type: 'info',
+            header: 'Hibernating Workspace',
+            content: `Hibernating ${instance.name}...`,
+            dismissible: true,
+            id: Date.now().toString()
+          }
+        ]
+      }));
+
+      try {
+        await api.hibernateInstance(instance.name);
+        await loadApplicationData();
+        setState(prev => ({
+          ...prev,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'success',
+              header: 'Workspace Hibernated',
+              content: `${instance.name} hibernated successfully`,
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+      } catch (error) {
+        logger.error(`Failed to hibernate workspace ${instance.name}:`, error);
+        setState(prev => ({
+          ...prev,
+          notifications: [
+            ...prev.notifications,
+            {
+              type: 'error',
+              header: 'Hibernation Failed',
+              content: `Failed to hibernate ${instance.name}: ${error instanceof Error ? error.message : String(error)}`,
+              dismissible: true,
+              id: Date.now().toString()
+            }
+          ]
+        }));
+      }
+    };
+
+    return (
+      <Modal
+        visible={hibernateModalVisible}
+        onDismiss={() => {
+          setHibernateModalVisible(false);
+          setHibernateModalInstance(null);
+        }}
+        header="Hibernate Workspace?"
+        size="medium"
+        data-testid="hibernate-confirmation-modal"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button
+                variant="link"
+                onClick={() => {
+                  setHibernateModalVisible(false);
+                  setHibernateModalInstance(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleConfirmHibernate}
+                data-testid="confirm-hibernate-button"
+              >
+                Hibernate
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <SpaceBetween size="m">
+          <Alert type="info" header="Cost Optimization">
+            Hibernating preserves your workspace state for instant resume. You save approximately $0.90/hour in compute costs — only storage charges apply while hibernated (typically 80% cheaper than keeping it running).
+          </Alert>
+          <Box variant="p">
+            Workspace <strong>{hibernateModalInstance.name}</strong> will be hibernated. The instance state (RAM contents and running processes) is saved to EBS storage so you can resume exactly where you left off.
+          </Box>
+          <Box variant="p" color="text-body-secondary">
+            Resuming from hibernation is faster than a full stop/start because the state is fully preserved.
+          </Box>
+        </SpaceBetween>
+      </Modal>
+    );
+  };
+
   const LaunchModal = () => (
     <Modal
       onDismiss={handleModalDismiss}
@@ -11710,6 +11824,7 @@ export default function PrismApp() {
               <Alert
                 type="info"
                 dismissible
+                onDismiss={() => setState(prev => ({ ...prev, updateInfo: prev.updateInfo ? { ...prev.updateInfo, is_update_available: false } : null }))}
                 header={`New version available: ${state.updateInfo.latest_version}`}
               >
                 <SpaceBetween size="xs">
@@ -11793,6 +11908,7 @@ export default function PrismApp() {
       <DeleteBackupModal />
       <RestoreBackupModal />
       <DeleteConfirmationModal />
+      <HibernateConfirmationModal />
       <OnboardingWizard />
       <QuickStartWizard />
       <CreateProjectModal />

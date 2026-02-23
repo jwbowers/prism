@@ -123,7 +123,8 @@ export class ConfirmDialog {
    */
   async confirmHibernate() {
     await this.waitForDialog();
-    const hibernateButton = this.page.getByRole('button', { name: /hibernate/i });
+    // Use data-testid to avoid matching instance names that contain "hibernate" (e.g., prism-mock-hibernated)
+    const hibernateButton = this.page.getByTestId('confirm-hibernate-button');
     await hibernateButton.click();
   }
 

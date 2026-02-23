@@ -25,12 +25,14 @@ export class SettingsPage extends BasePage {
    * Switch to Profiles section
    */
   async switchToProfiles() {
-    // Settings uses SideNavigation with links, not tabs
-    const profilesLink = this.page.getByRole('link', { name: /^profiles$/i });
-    if (await this.elementExists(profilesLink)) {
-      await profilesLink.click();
-      await this.waitForLoadingComplete();
-    }
+    // Target the Settings sub-nav "Profiles" link by its unique href="#profiles".
+    // Using waitFor() instead of elementExists() prevents a race condition where
+    // the SettingsView hasn't re-rendered yet after navigateToTab('settings').
+    const profilesLink = this.page.locator('a[href="#profiles"]');
+    await profilesLink.waitFor({ state: 'visible', timeout: 8000 });
+    await profilesLink.click();
+    // Wait for the Profiles section to render before returning
+    await this.page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 5000 });
   }
 
   /**

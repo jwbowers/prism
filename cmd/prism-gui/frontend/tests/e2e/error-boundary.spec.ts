@@ -79,7 +79,7 @@ test.describe('Error Boundary and Error Handling', () => {
   test('form submission errors are handled gracefully', async ({ page }) => {
     // Navigate to Projects
     await page.getByRole('link', { name: /projects/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Try to open create project dialog
     const createButton = page.getByTestId('create-project-button');
@@ -138,7 +138,7 @@ test.describe('Error Boundary and Error Handling', () => {
   test('invalid navigation handled gracefully', async ({ page }) => {
     // Navigate to Templates
     await page.getByRole('link', { name: /templates/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="template-card"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Check if templates loaded
     const templateCard = page.locator('[data-testid="template-card"]').first();

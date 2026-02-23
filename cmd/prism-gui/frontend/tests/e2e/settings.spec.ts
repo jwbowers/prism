@@ -27,12 +27,16 @@ test.describe('Settings Interface', () => {
     });
   });
 
-  // Helper to navigate to Settings and wait for profiles section to load
+  // Helper to navigate to Settings > Profiles section
   async function navigateToSettings(page: any) {
     await page.getByRole('link', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
-    // Wait for create-profile-button to appear (profiles section loaded)
-    await page.waitForSelector('[data-testid="create-profile-button"]', { timeout: 8000 }).catch(() => {});
+    // Navigate to Profiles sub-section within Settings.
+    // Must wait for the sub-nav to render before clicking (SettingsView renders async).
+    await page.locator('a[href="#profiles"]').waitFor({ state: 'visible', timeout: 8000 });
+    await page.locator('a[href="#profiles"]').click();
+    // Wait for the Profiles section to confirm we're in the right place
+    await page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 5000 });
   }
 
   test('settings page loads successfully', async ({ page }) => {
@@ -46,16 +50,16 @@ test.describe('Settings Interface', () => {
   });
 
   test('profiles section displays correctly', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Check if profiles table or content exists
-    const profilesContent = page.locator('[data-testid="profiles-table"]');
-    const hasProfilesTable = await profilesContent.isVisible().catch(() => false);
+    // Profiles table must be visible (test mode always has at least "AWS Default" profile)
+    const profilesTable = page.locator('[data-testid="profiles-table"]');
+    await expect(profilesTable).toBeVisible({ timeout: 5000 });
 
-    // Either profiles table or empty state should be visible
-    expect(typeof hasProfilesTable).toBe('boolean');
+    // Table must have at least one profile row
+    const rows = profilesTable.locator('tbody tr');
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
   });
 
   test('create profile button is accessible', async ({ page }) => {
@@ -73,8 +77,8 @@ test.describe('Settings Interface', () => {
     await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
 
-    // Wait for dialog
-    const dialog = page.locator('[role="dialog"]');
+    // Wait for dialog - use :visible to avoid matching all 20 Cloudscape hidden modals in DOM
+    const dialog = page.locator('[role="dialog"]:visible').first();
     await expect(dialog).toBeVisible({ timeout: 5000 });
 
     // Verify form inputs are present
@@ -89,19 +93,21 @@ test.describe('Settings Interface', () => {
     await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
 
-    // Wait for dialog
-    const dialog = page.locator('[role="dialog"]');
+    // Wait for dialog - use :visible to avoid matching all 20 Cloudscape hidden modals in DOM
+    const dialog = page.locator('[role="dialog"]:visible').first();
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Form should have required inputs
-    const nameInput = page.getByTestId('profile-name-input').locator('input');
-    await expect(nameInput).toBeVisible();
+    // Submit without filling the required name field
+    await page.getByRole('button', { name: /create/i }).last().click();
 
-    const awsProfileInput = page.getByTestId('aws-profile-input').locator('input');
-    await expect(awsProfileInput).toBeVisible();
+    // Validation error must appear — form must not silently close
+    const validationError = dialog.locator('[data-testid="validation-error"]');
+    await expect(validationError).toBeVisible({ timeout: 3000 });
+    expect(await validationError.textContent()).toMatch(/name.*required/i);
 
-    const regionInput = page.getByTestId('region-input').locator('input');
-    await expect(regionInput).toBeVisible();
+    // Cleanup: close the dialog
+    await page.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+    await page.locator('[role="dialog"]:visible').waitFor({ state: 'hidden', timeout: 5000 });
   });
 
   test('profile form accepts valid input', async ({ page }) => {
@@ -111,8 +117,8 @@ test.describe('Settings Interface', () => {
     await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
 
-    // Wait for dialog
-    await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog - use :visible to avoid matching all 20 Cloudscape hidden modals in DOM
+    await page.locator('[role="dialog"]:visible').first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Fill form with valid data
     const nameInput = page.getByTestId('profile-name-input').locator('input');
@@ -136,16 +142,15 @@ test.describe('Settings Interface', () => {
     await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
 
-    // Wait for dialog
-    const dialog = page.locator('[role="dialog"]');
-    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog - use :visible to avoid matching all 20 Cloudscape hidden modals in DOM
+    await page.locator('[role="dialog"]:visible').first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Click cancel button
     const cancelButton = page.getByRole('button', { name: 'Cancel', exact: true }).last();
     await cancelButton.click();
 
-    // Dialog should be hidden
-    await dialog.waitFor({ state: 'hidden', timeout: 5000 });
+    // Wait for dialog to close - when no visible dialog remains the locator resolves as hidden
+    await page.locator('[role="dialog"]:visible').waitFor({ state: 'hidden', timeout: 5000 });
   });
 
   test('settings page remains responsive', async ({ page }) => {
@@ -182,20 +187,21 @@ test.describe('Settings Interface', () => {
   });
 
   test('settings page handles empty state', async ({ page }) => {
-    // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+    await navigateToSettings(page);
 
-    // Either profiles table or empty state should be visible
+    // Profiles section must always show meaningful content: either a populated table
+    // or at minimum the create button (if somehow no profiles exist).
+    // Both must be true in test mode — table has "AWS Default", create button is visible.
     const profilesTable = page.locator('[data-testid="profiles-table"]');
-    const hasTable = await profilesTable.isVisible().catch(() => false);
+    const createButton = page.getByTestId('create-profile-button');
 
-    if (!hasTable) {
-      // Empty state should be handled gracefully
-      const createButton = page.getByTestId('create-profile-button');
-      const hasCreateButton = await createButton.isVisible().catch(() => false);
-      expect(hasCreateButton).toBeDefined();
-    }
+    const tableVisible = await profilesTable.isVisible().catch(() => false);
+    const buttonVisible = await createButton.isVisible().catch(() => false);
+
+    // The page must never be completely blank — at least one must render
+    expect(tableVisible || buttonVisible).toBe(true);
+    // In practice both should be true (table + create button coexist)
+    expect(buttonVisible).toBe(true);
   });
 
   test('settings forms use Cloudscape components', async ({ page }) => {
@@ -205,8 +211,8 @@ test.describe('Settings Interface', () => {
     await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
 
-    // Wait for dialog
-    await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for dialog - use :visible to avoid matching all 20 Cloudscape hidden modals in DOM
+    await page.locator('[role="dialog"]:visible').first().waitFor({ state: 'visible', timeout: 5000 });
 
     // Verify Cloudscape form fields
     const nameInput = page.getByTestId('profile-name-input');

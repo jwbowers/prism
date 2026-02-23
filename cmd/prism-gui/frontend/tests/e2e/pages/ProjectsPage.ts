@@ -947,7 +947,14 @@ export class ProjectsPage extends BasePage {
       // Find the first matching user
       for (let i = 0; i < count; i++) {
         const row = rows.nth(i);
-        const text = await row.textContent();
+        // Use a short timeout: if the row is no longer in DOM (virtualized table or
+        // React re-render reduced the count), break and re-query at the next while iteration
+        let text: string | null;
+        try {
+          text = await row.textContent({ timeout: 3000 });
+        } catch {
+          break; // Row no longer available — re-query
+        }
 
         if (text && namePattern.test(text)) {
           const match = text.match(/^([a-zA-Z0-9\-_]+)/);
