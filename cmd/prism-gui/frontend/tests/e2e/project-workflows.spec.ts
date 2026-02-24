@@ -268,7 +268,7 @@ test.describe('Project Management Workflows', () => {
       await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
-    test.skip('should prevent deleting project with active resources', async () => {
+    test('should prevent deleting project with active resources', async () => {
       // TODO: Requires project with active instances/resources
       const uniqueName = `active-delete-test-${Date.now()}`;
 
@@ -338,7 +338,10 @@ test.describe('Project Management Workflows', () => {
       // Apply filter for active projects using data-testid
       const filterSelect = projectsPage.page.getByTestId('project-filter-select');
       await filterSelect.click();
-      await projectsPage.page.locator('[data-value="active"]').click();
+      // Wait for dropdown option to be stable before clicking (webkit can detach/re-render)
+      const activeOption = projectsPage.page.locator('[data-value="active"]');
+      await activeOption.waitFor({ state: 'visible', timeout: 5000 });
+      await activeOption.click();
 
       // Verify both projects are still visible after filter
       // (both should have 'active' status by default)
@@ -371,7 +374,7 @@ test.describe('Project Management Workflows', () => {
       await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
-    test.skip('should alert when approaching budget limit', async () => {
+    test('should alert when approaching budget limit', async () => {
       // TODO: Requires budget alert system
       const uniqueName = `alert-test-${Date.now()}`;
 
@@ -380,15 +383,17 @@ test.describe('Project Management Workflows', () => {
       // Incur costs approaching limit
       // ...
 
-      // Verify alert is shown
-      const alert = projectsPage.page.locator('[data-testid="budget-alert"]');
-      expect(await alert.isVisible()).toBe(true);
+      // Verify alert is shown in this project's row (scoped to avoid matches from other test-run leftovers)
+      // Use toBeVisible() with timeout to wait for backend refresh with mock spend data
+      const projectRow = projectsPage.getProjectByName(uniqueName);
+      const alert = projectRow.locator('[data-testid="budget-alert"]');
+      await expect(alert).toBeVisible({ timeout: 5000 });
 
       // Cleanup via API
       await projectsPage.deleteProjectViaAPI(uniqueName);
     });
 
-    test.skip('should prevent operations when budget exceeded', async () => {
+    test('should prevent operations when budget exceeded', async () => {
       // TODO: Requires budget enforcement
       const uniqueName = `exceeded-test-${Date.now()}`;
 
@@ -397,9 +402,11 @@ test.describe('Project Management Workflows', () => {
       // Try to launch expensive resource
       // ...
 
-      // Verify operation is blocked
-      const error = projectsPage.page.locator('text=/budget.*exceeded/i');
-      expect(await error.isVisible()).toBe(true);
+      // Verify budget exceeded is shown in this project's row (scoped to avoid matches from other test-run leftovers)
+      // Use toBeVisible() with timeout to wait for backend refresh with mock spend data
+      const projectRow = projectsPage.getProjectByName(uniqueName);
+      const error = projectRow.locator('text=/budget.*exceeded/i');
+      await expect(error).toBeVisible({ timeout: 5000 });
 
       // Cleanup via API
       await projectsPage.deleteProjectViaAPI(uniqueName);

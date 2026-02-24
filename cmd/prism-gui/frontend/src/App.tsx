@@ -2482,6 +2482,8 @@ export default function PrismApp() {
       setProjectName('');
       setProjectDescription('');
       setProjectBudget('');
+      // Refresh data from backend to get accurate budget status (e.g. test-mode mock spend)
+      setTimeout(loadApplicationData, 500);
     } catch (error: any) {
       setProjectValidationError(`Failed to create project: ${error.message || 'Unknown error'}`);
     }
@@ -5274,16 +5276,21 @@ export default function PrismApp() {
 
                 return (
                   <SpaceBetween direction="horizontal" size="xs">
-                    <StatusIndicator
-                      type={colorType}
-                      ariaLabel={getStatusLabel('budget', colorType === 'error' ? 'critical' : colorType === 'warning' ? 'warning' : 'ok', `$${spend.toFixed(2)}`)}
-                    >
-                      ${spend.toFixed(2)}
-                    </StatusIndicator>
+                    <span {...(percentage > 80 ? { 'data-testid': 'budget-alert' } : {})}>
+                      <StatusIndicator
+                        type={colorType}
+                        ariaLabel={getStatusLabel('budget', colorType === 'error' ? 'critical' : colorType === 'warning' ? 'warning' : 'ok', `$${spend.toFixed(2)}`)}
+                      >
+                        ${spend.toFixed(2)}
+                      </StatusIndicator>
+                    </span>
                     {limit > 0 && (
                       <Badge color={colorType === 'error' ? 'red' : colorType === 'warning' ? 'blue' : 'green'}>
                         {percentage.toFixed(1)}%
                       </Badge>
+                    )}
+                    {percentage >= 100 && (
+                      <Box color="text-status-error" fontSize="body-s">Budget exceeded</Box>
                     )}
                   </SpaceBetween>
                 );
@@ -8121,21 +8128,22 @@ export default function PrismApp() {
   const SettingsView = () => {
     // Settings side navigation items
     const settingsNavItems = [
-      { type: "link", text: "General", href: "#general" },
-      { type: "link", text: "Profiles", href: "#profiles" },
-      { type: "link", text: "Users", href: "#users" },
-      { type: "divider" },
+      { id: "general", type: "link", text: "General", href: "#general" },
+      { id: "profiles", type: "link", text: "Profiles", href: "#profiles" },
+      { id: "users", type: "link", text: "Users", href: "#users" },
+      { id: "divider-1", type: "divider" },
       {
+        id: "advanced",
         type: "expandable-link-group",
         text: "Advanced",
         href: "#advanced",
         items: [
-          { type: "link", text: "AMI Management", href: "#ami" },
-          { type: "link", text: "Rightsizing", href: "#rightsizing" },
-          { type: "link", text: "Policy Framework", href: "#policy" },
-          { type: "link", text: "Template Marketplace", href: "#marketplace" },
-          { type: "link", text: "Idle Detection", href: "#idle" },
-          { type: "link", text: "Logs Viewer", href: "#logs" }
+          { id: "ami", type: "link", text: "AMI Management", href: "#ami" },
+          { id: "rightsizing", type: "link", text: "Rightsizing", href: "#rightsizing" },
+          { id: "policy", type: "link", text: "Policy Framework", href: "#policy" },
+          { id: "marketplace", type: "link", text: "Template Marketplace", href: "#marketplace" },
+          { id: "idle", type: "link", text: "Idle Detection", href: "#idle" },
+          { id: "logs", type: "link", text: "Logs Viewer", href: "#logs" }
         ]
       }
     ];
