@@ -11757,12 +11757,14 @@ export default function PrismApp() {
             header={{ text: "Prism", href: "/" }}
             items={[
               {
+                id: "dashboard",
                 type: "link",
                 text: "Dashboard",
                 href: "/dashboard"
               },
-              { type: "divider" },
+              { id: "divider-1", type: "divider" },
               {
+                id: "templates",
                 type: "link",
                 text: "Templates",
                 href: "/templates",
@@ -11770,6 +11772,7 @@ export default function PrismApp() {
                       <Badge color="blue">{Object.keys(state.templates).length}</Badge> : undefined
               },
               {
+                id: "workspaces",
                 type: "link",
                 text: "My Workspaces",
                 href: "/workspaces",
@@ -11778,28 +11781,33 @@ export default function PrismApp() {
                         {state.instances.length}
                       </Badge> : undefined
               },
-              { type: "divider" },
+              { id: "divider-2", type: "divider" },
               {
+                id: "storage",
                 type: "link",
                 text: "Storage",
                 href: "/storage"
               },
               {
+                id: "backups",
                 type: "link",
                 text: "Backups",
                 href: "/backups"
               },
               {
+                id: "projects",
                 type: "link",
                 text: "Projects",
                 href: "/projects"
               },
               {
+                id: "users",
                 type: "link",
                 text: "Users",
                 href: "/users"
               },
               {
+                id: "invitations",
                 type: "link",
                 text: "Invitations",
                 href: "/invitations",
@@ -11807,14 +11815,16 @@ export default function PrismApp() {
                       <Badge color="blue">{state.invitations.filter(i => i.status === 'pending').length}</Badge> : undefined
               },
               {
+                id: "budgets",
                 type: "link",
                 text: "Budgets",
                 href: "/budgets",
                 info: state.budgetPools.length > 0 ?
                       <Badge color="blue">{state.budgetPools.length}</Badge> : undefined
               },
-              { type: "divider" },
+              { id: "divider-3", type: "divider" },
               {
+                id: "settings",
                 type: "link",
                 text: "Settings",
                 href: "/settings",

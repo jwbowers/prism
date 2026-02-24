@@ -101,6 +101,12 @@ console.error = (...args) => {
   ) {
     return;
   }
+  // Suppress React key warnings from Cloudscape internals (React 19 + Cloudscape compatibility issue)
+  // These fire from Cloudscape's ForwardRef components (SpaceBetween, ColumnLayout, Grid) and are
+  // not from our code. They don't affect functionality. Tracked: cloudscape-design/components#3xxx
+  if (args.length > 0 && typeof args[0] === 'string' && args[0].includes('Each child in a list')) {
+    return;
+  }
   originalConsoleError.apply(console, args);
 };
 
