@@ -59,6 +59,7 @@
     "gui"
   ],
   "dependencies": {
+    "@cloudscape-design/component-toolkit": "^1.0.0-beta.138",
     "@cloudscape-design/components": "^3.0.1208",
     "@cloudscape-design/design-tokens": "^3.0.61",
     "@cloudscape-design/global-styles": "^1.0.45",
