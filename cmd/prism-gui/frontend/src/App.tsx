@@ -5627,10 +5627,26 @@ export default function PrismApp() {
         // This ensures we have the correct state regardless of timing issues
         await loadProfiles();
 
-        toast({ type: 'success', content: `Switched to profile: ${activatedProfile.name}` });
+        setState(prev => ({
+          ...prev,
+          notifications: [...prev.notifications, {
+            type: 'success' as const,
+            content: `Switched to profile: ${activatedProfile.name}`,
+            dismissible: true,
+            id: Date.now().toString()
+          }]
+        }));
       } catch (error) {
         console.error('Failed to switch profile:', error);
-        toast({ type: 'error', content: `Failed to switch profile: ${error}` });
+        setState(prev => ({
+          ...prev,
+          notifications: [...prev.notifications, {
+            type: 'error' as const,
+            content: `Failed to switch profile: ${error}`,
+            dismissible: true,
+            id: Date.now().toString()
+          }]
+        }));
       }
     };
 
