@@ -20,6 +20,35 @@ test.describe('Storage Management Workflows', () => {
   // This prevents re-creating volumes for every test (beforeEach runs 46 times!)
   let sharedVolumesCreated = false;
 
+  // Delete shared volumes after all tests complete via direct API calls.
+  // test-setup-efs and test-setup-ebs are created once per run but never deleted inline.
+  // Without this cleanup they persist across runs, causing subsequent runs to find volumes
+  // in transitional states (being deleted, locked mount targets) which disables the Delete
+  // button and causes tests to fail.
+  //
+  // Uses direct API calls (not UI) for reliability at teardown time.
+  test.afterAll(async ({ request }) => {
+    test.setTimeout(120000); // 2 minutes for cleanup
+
+    const sharedVolumes = [
+      { name: 'test-setup-efs', endpoint: 'http://localhost:8947/api/v1/volumes/test-setup-efs' },
+      { name: 'test-setup-ebs', endpoint: 'http://localhost:8947/api/v1/storage/test-setup-ebs' },
+    ];
+
+    for (const vol of sharedVolumes) {
+      try {
+        const res = await request.delete(vol.endpoint);
+        if (res.ok() || res.status() === 404) {
+          console.log(`✅ Cleaned up shared volume: ${vol.name}`);
+        } else {
+          console.log(`⚠️  Could not clean up ${vol.name} (status ${res.status()}) - will be cleaned on next run`);
+        }
+      } catch (e) {
+        console.log(`⚠️  Cleanup error for ${vol.name}: ${e} - will be cleaned on next run`);
+      }
+    }
+  });
+
   test.beforeEach(async ({ page, context }) => {
     // Set localStorage BEFORE navigating to prevent onboarding modal
     await context.addInitScript(() => {

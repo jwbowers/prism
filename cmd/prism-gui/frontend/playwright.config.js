@@ -25,6 +25,7 @@ export default defineConfig({
 
   // Global setup and teardown
   globalSetup: './tests/e2e/global-setup.js',
+  globalTeardown: './tests/e2e/global-teardown.js',
 
   // Global test configuration
   use: {

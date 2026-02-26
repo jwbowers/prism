@@ -49,6 +49,7 @@ export default defineConfig({
   ],
 
   globalSetup: './tests/e2e/global-setup.js',
+  globalTeardown: './tests/e2e/global-teardown.js',
 
   use: {
     baseURL: 'http://localhost:3000',

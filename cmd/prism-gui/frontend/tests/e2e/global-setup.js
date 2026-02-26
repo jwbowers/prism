@@ -1,5 +1,5 @@
 // Global setup for Playwright tests
-import { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers } from './setup-daemon.js'
+import { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestStorage } from './setup-daemon.js'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
@@ -62,6 +62,13 @@ async function globalSetup() {
   // Remove test users left over from previous runs before tests start.
   // Prevents cleanupTestUsers() helpers from overflowing when 100+ users accumulate.
   await cleanupTestUsers()
+
+  // Remove test storage volumes (EFS + EBS) left over from previous runs.
+  // Stale volumes in transitional states (creating, deleting) cause storage test failures:
+  //   - Delete button disabled (aria-disabled="true") for volumes still being created/deleted
+  //   - waitForEFSVolumeToExist times out when previous run's volume row is missing
+  // Cleanup ensures each run starts with a known-clean set of storage resources.
+  await cleanupTestStorage()
 
   // Return teardown function
   return async () => {

@@ -154,6 +154,56 @@ async function cleanupTestUsers() {
   }
 }
 
+// Delete test storage volumes (EFS + EBS) that accumulated from previous test runs.
+// Runs after daemon starts to ensure a clean slate before storage tests begin.
+// Prevents failures caused by stale volumes in transitional states (creating, deleting, etc.)
+//
+// API routes:
+//   GET  /api/v1/storage         → list ALL volumes (EFS + EBS)
+//   DELETE /api/v1/volumes/{name} → delete EFS (shared) volume
+//   DELETE /api/v1/storage/{name} → delete EBS (workspace) volume
+async function cleanupTestStorage() {
+  const testVolumePattern = /^(test-|delete-test-|mount-test-|unmount-test-|attach-test-|detach-test-|test-setup-|test-efs-|test-ebs-)/
+
+  try {
+    const res = await fetch('http://localhost:8947/api/v1/storage')
+    if (!res.ok) return
+
+    const volumes = await res.json()
+    if (!Array.isArray(volumes)) return
+
+    const testVolumes = volumes.filter(v => v.name && testVolumePattern.test(v.name))
+    if (testVolumes.length === 0) {
+      console.log('[setup-daemon] No leftover test storage volumes found')
+      return
+    }
+
+    console.log(`[setup-daemon] Cleaning up ${testVolumes.length} leftover test storage volumes...`)
+    let deleted = 0
+    for (const vol of testVolumes) {
+      // Route to correct endpoint based on AWS service type:
+      // EFS (shared) → /api/v1/volumes/{name}
+      // EBS (workspace) → /api/v1/storage/{name}
+      const isEFS = vol.aws_service === 'efs' || vol.type === 'shared'
+      const endpoint = isEFS
+        ? `http://localhost:8947/api/v1/volumes/${encodeURIComponent(vol.name)}`
+        : `http://localhost:8947/api/v1/storage/${encodeURIComponent(vol.name)}`
+
+      const delRes = await fetch(endpoint, { method: 'DELETE' }).catch(() => null)
+      if (delRes && (delRes.status === 204 || delRes.status === 200 || delRes.status === 404)) {
+        deleted++
+        console.log(`[setup-daemon]   Deleted ${isEFS ? 'EFS' : 'EBS'}: ${vol.name}`)
+      } else if (delRes) {
+        console.log(`[setup-daemon]   Skipped ${vol.name} (status ${delRes.status} - may be in transitional state)`)
+      }
+    }
+    console.log(`[setup-daemon] Storage cleanup: removed ${deleted}/${testVolumes.length} test volumes`)
+  } catch (e) {
+    // Non-critical — tests can still run if cleanup fails
+    console.log(`[setup-daemon] Storage cleanup skipped: ${e.message}`)
+  }
+}
+
 // Function to stop the daemon
 async function stopDaemon(pid) {
   if (pid) {
@@ -166,4 +216,4 @@ async function stopDaemon(pid) {
   }
 }
 
-export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers }
+export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestStorage }
