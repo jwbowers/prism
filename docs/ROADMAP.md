@@ -1,33 +1,47 @@
 # Prism Development Roadmap
 
-**Current Version**: v0.7.0 (Released)
-**Last Released**: v0.7.0 (January 15, 2026)
-**Next Version**: v0.7.1 (Planned - February 15, 2026)
-**Last Updated**: January 15, 2026
+**Current Version**: v0.7.5 (Released)
+**Last Released**: v0.7.5 (January 27, 2026)
+**Next Version**: v0.8.0 (Planning)
+**Last Updated**: February 26, 2026
 **Status**: Active Development
 
 This roadmap outlines planned features and enhancements for Prism. All items are tracked in [GitHub Issues](https://github.com/scttfrdmn/prism/issues) and the [Prism Development Project](https://github.com/scttfrdmn/prism/projects).
 
 ---
 
-## 🎯 Current Focus: Critical Path Hardening (v0.6.1)
+## 🎯 Current State: v0.7.5 — Stable & Fully Tested
 
-**Priority**: HIGH
-**Target**: v0.6.1 (December 27, 2025)
+**Released**: January 27, 2026
 
-Following the v0.6.0 release which established baseline test infrastructure, Prism is now focused on hardening critical path reliability through comprehensive error recovery testing and core package coverage improvements.
+### What's Solid
+- ✅ **E2E test suite**: 428/428 passing, 0 failed, 0 skipped (as of Feb 2026)
+- ✅ **Parallel test tiers**: Fast (~10 min) + Serial (~40 min) via `npm run test:e2e:all`
+- ✅ **Zero zombie resources**: Pre-run cleanup + post-run EC2 zombie check + post-suite storage cleanup
+- ✅ **All features tested**: Instances, storage, hibernation, profiles, projects, users, invitations, budgets
+- ✅ **Dependencies current**: Cloudscape 3.0.1208, Wails v3 alpha.72, React 19
 
-**v0.6.0 Completed** (December 13, 2025):
-- ✅ 64 unit tests added across 4 packages (invitation, AMI, sleepwake, policy)
-- ✅ Fixed 3 compilation errors blocking test execution
-- ✅ Documented 15 Phase 4/5 API endpoints
-- ✅ Test coverage baselines established
+### v0.7.x Completed (Jan–Feb 2026)
+- ✅ Complete user management system (detail view, SSH keys, provisioning, status)
+- ✅ Hibernation workflows with mock hibernated instance in testMode
+- ✅ Budget tracking re-implemented and fully tested
+- ✅ All 66 previously-skipped E2E tests fixed and enabled
+- ✅ AWS SDK waiters for all storage operations (eliminates race conditions)
+- ✅ Real-AWS test tier (`npm run test:e2e:aws`) for integration validation
+- ✅ Zombie resource prevention (EFS/EBS cleanup + EC2 instance check)
 
-**Current Work**: [Testing Improvement Roadmap](releases/TESTING_IMPROVEMENT_ROADMAP.md)
-- Core package coverage: daemon (60%+), project (60%+), invitation (60%+)
-- AWS error injection and recovery testing
-- State corruption recovery implementation
-- Comprehensive CLI integration test suite
+## 🔭 Next: v0.8.0 — Planning
+
+Candidates (to be prioritized):
+
+| Feature | Issue | Value | Effort |
+|---------|-------|-------|--------|
+| LocalStack integration | #417 | Eliminates real-AWS test dependency, <5min tests | High |
+| Auto-update (version detection) | #419 | Users stay current | Medium |
+| GUI system tray improvements | #420 | Better macOS integration | Medium |
+| AWS quota management + AZ failover | #418 | Prevents launch failures | Medium |
+| Idle policy backend execution | #288 | Makes hibernation policy actually work | High |
+| Backup/restore commands | #285 | Core research workflow | High |
 
 ---
 
@@ -1746,28 +1760,17 @@ Reliable auto-launch requires daemon to be running OR AWS Lambda function:
 
 Prism tracks these metrics to measure progress:
 
-### Current State (v0.5.7)
-- ⏱️ **Time to first workspace**: ~15 minutes (needs improvement)
-- 🧭 **Navigation complexity**: 14 flat items (needs simplification)
-- 😃 **User confusion rate**: ~40% of support tickets (needs reduction)
-- 🎯 **CLI first-attempt success**: ~60% (needs improvement)
+### Current State (v0.7.5 — February 2026)
+- ✅ **E2E test suite**: 428/428 passing, 0 failed, 0 skipped
+- ✅ **Test execution time**: ~50 min full suite (fast 10min + serial 40min)
+- ✅ **Zombie AWS resources**: Prevented — pre/post run cleanup active
+- ✅ **Feature completeness**: Instances, storage, hibernation, profiles, projects, users, invitations, budgets
 
-### Target State (v0.5.8 + v0.5.9)
-**v0.5.8 Targets (Quick Start Experience)**:
-- ⏱️ **Time to first workspace**: 30 seconds (from 15 minutes)
-- 🎯 **First-attempt success rate**: >90%
-- 😃 **User confusion**: Reduce by 70%
-
-**v0.5.9 Targets (Navigation Restructure)**:
-- 🧭 **Navigation complexity**: 6 primary categories (from 14 items)
-- ⏱️ **Time to find features**: <10 seconds
-- 😃 **User confusion**: Further 30% reduction
-- 📱 **Advanced feature discoverability**: >95%
-
-**v0.6.0+ Targets (Enterprise Features)**:
-- 📈 **Version adoption**: >70% on latest within 7 days
-- 🔐 **Enterprise adoption**: Support institutional authentication
-- 🎯 **CLI consistency**: Predictable command patterns across all features
+### Target State (v0.8.0)
+- ⏱️ **Test execution time**: <5 minutes (via LocalStack, eliminating real-AWS dependency)
+- 📈 **Version adoption**: >70% on latest within 7 days (auto-update)
+- 🔐 **Reliability**: Pre-launch quota validation prevents 80%+ of launch failures
+- 🎯 **Idle policies**: Hibernate-on-schedule actually executes against running instances
 
 ---
 

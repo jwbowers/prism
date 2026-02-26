@@ -28,8 +28,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Prism is a command-line tool that provides academic researchers with pre-configured cloud workstations, eliminating the need for manual environment configuration.
 
-**Current Version**: v0.6.3 (Released)
-**Current Focus**: [v0.7.0 Production Hardening & Enterprise Features](ROADMAP.md#v070-march-2026-production-hardening--enterprise-features--planned) (HIGHEST PRIORITY)
+**Current Version**: v0.7.5 (Released January 27, 2026)
+**Current Focus**: [v0.8.0 Planning](ROADMAP.md) — LocalStack, auto-update, idle policy execution
 
 ---
 
@@ -87,35 +87,21 @@ See [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md) for full details. Key principle
 - ✅ v0.6.2: Enterprise Feature Testing & E2E Infrastructure
 - ✅ v0.6.3: Homebrew Template Discovery Fix (RELEASED January 14, 2026)
 
-### Current Priority: v0.7.0 Production Hardening & Enterprise Features
+### Current State: v0.7.5 — Stable & Fully Tested (February 2026)
 
-**Status**: 📋 PLANNED
-**Release Target**: March 9, 2026 (8 weeks)
-**GitHub Milestone**: [v0.7.0](https://github.com/scttfrdmn/prism/milestone/40)
+- ✅ **428/428 E2E tests passing**, 0 failed, 0 skipped
+- ✅ All enterprise features: projects, budgets, users, invitations, hibernation, storage
+- ✅ Zombie resource prevention: pre-run cleanup + post-run EC2 check
+- ✅ Dependencies current: Cloudscape 3.0.1208, Wails v3 alpha.72, React 19
 
-**Key Features**:
-- [#412](https://github.com/scttfrdmn/prism/issues/412) - Network chaos testing (500+ lines)
-- [#413](https://github.com/scttfrdmn/prism/issues/413) - AWS service outage simulation (400+ lines)
-- [#414](https://github.com/scttfrdmn/prism/issues/414) - Template edge case coverage (400+ lines)
-- [#415](https://github.com/scttfrdmn/prism/issues/415) - Instance management edge cases (500+ lines)
-- [#416](https://github.com/scttfrdmn/prism/issues/416) - Multi-region testing (300+ lines)
-- [#417](https://github.com/scttfrdmn/prism/issues/417) - LocalStack integration (700+ lines)
-- [#418](https://github.com/scttfrdmn/prism/issues/418) - AWS quota management with AZ failover
-- [#419](https://github.com/scttfrdmn/prism/issues/419) - Auto-update Phase 1 (version detection)
-- [#420](https://github.com/scttfrdmn/prism/issues/420) - GUI system tray and auto-start
+### Next: v0.8.0 Planning
 
-**Success Metrics**:
-- ✅ 2,000+ new lines of chaos and edge case tests
-- ✅ LocalStack reduces test execution time to <5 minutes
-- ✅ Pre-launch quota validation prevents 80%+ of launch failures
-- ✅ Update notifications reach 70%+ of users within 7 days
-
-### Upcoming Releases
-
-See [ROADMAP.md](ROADMAP.md) for detailed release plans:
-- **v0.7.0**: Production Hardening & Enterprise Features (March 2026)
-- **v0.7.1**: Auto-update Phase 2 & Advanced Features (Q2 2026)
-- **v0.8.0**: Multi-user Authentication & Code Cleanup (Q3 2026)
+Candidates (see [ROADMAP.md](ROADMAP.md)):
+- **#417** LocalStack integration — <5 min tests, no real-AWS dependency
+- **#419** Auto-update (version detection + notifications)
+- **#288** Idle policy backend execution — make hibernation schedules actually run
+- **#285** Backup/restore commands
+- **#418** AWS quota management + AZ failover
 
 ---
 
