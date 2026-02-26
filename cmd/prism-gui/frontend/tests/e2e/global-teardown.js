@@ -5,12 +5,13 @@
 //
 // This prevents zombie AWS resources from accumulating across test runs,
 // which wastes money and causes subsequent test runs to fail with stale state.
+//
+// NOTE: Daemon lifecycle is managed by global-setup.js (it returns a teardown
+// function that stops the daemon it started). This file must NOT kill the daemon —
+// doing so would terminate a co-running tier (e.g., killing serial's daemon when
+// fast tier finishes after ~10 minutes).
 
-import { stopDaemon, isDaemonRunning, cleanupTestStorage } from './setup-daemon.js'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execAsync = promisify(exec)
+import { isDaemonRunning, cleanupTestStorage } from './setup-daemon.js'
 
 async function globalTeardown() {
   console.log('[teardown] Running post-test cleanup...')
@@ -22,23 +23,6 @@ async function globalTeardown() {
     await cleanupTestStorage()
   } else {
     console.log('[teardown] Daemon not running - skipping storage cleanup (already cleaned up)')
-  }
-
-  // Stop the test daemon
-  try {
-    const { stdout } = await execAsync('pgrep -f prismd || true')
-    const pids = stdout.trim().split('\n').filter(Boolean)
-    if (pids.length > 0) {
-      console.log(`[teardown] Stopping daemon processes: ${pids.join(', ')}`)
-      await execAsync('pkill -SIGTERM prismd || true')
-      // Give it a few seconds for graceful shutdown
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      // Force kill if still running
-      await execAsync('pkill -9 prismd || true').catch(() => {})
-      console.log('[teardown] Daemon stopped')
-    }
-  } catch (error) {
-    // Non-critical — process may have already stopped
   }
 
   console.log('[teardown] Post-test cleanup complete')
