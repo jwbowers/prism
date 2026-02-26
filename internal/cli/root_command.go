@@ -499,22 +499,21 @@ Examples:
 
 func (r *CommandFactoryRegistry) createBackupCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:     "backup <action>",
-		Short:   "Manage data backups",
-		GroupID: "storage",
-		Long: `Create and manage Prism data backups for user files, configurations, and research data.
+		Use:                "backup <action>",
+		Short:              "Manage data backups",
+		GroupID:            "storage",
+		DisableFlagParsing: true,
+		Long: `Create and manage Prism data backups using AMI snapshots.
 
-Data backups provide granular backup capabilities with:
-• Selective file and directory backup
-• Incremental backup support
-• Multiple storage options (S3, EFS, EBS)
-• Compression and encryption
-• Cost-effective storage with deduplication
+Backups capture the complete state of your workspace including:
+• Operating system and all installed software
+• User data and configuration files
+• Template metadata for easy restoration
 
 Examples:
   prism backup create my-workspace daily-backup
   prism backup list
-  prism backup restore daily-backup target-workspace`,
+  prism backup info daily-backup`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return r.app.Backup(args)
 		},
@@ -523,21 +522,20 @@ Examples:
 
 func (r *CommandFactoryRegistry) createRestoreCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:     "restore <backup-name> <target-workspace>",
-		Short:   "Restore data from backups",
-		GroupID: "storage",
-		Long: `Restore data from Prism backups with granular control over restore operations.
+		Use:                "restore <backup-name> <target-workspace>",
+		Short:              "Restore data from backups",
+		GroupID:            "storage",
+		DisableFlagParsing: true,
+		Long: `Restore data from Prism backups.
 
 Restore capabilities include:
 • Cross-workspace restoration
-• Selective file/directory restoration
 • Multiple restore modes (safe, merge, overwrite)
-• Integrity verification
 • Progress monitoring and dry-run preview
 
 Examples:
   prism restore daily-backup my-workspace
-  prism restore daily-backup my-workspace --path /data --selective /home/user
+  prism restore daily-backup my-workspace --overwrite
   prism restore daily-backup my-workspace --dry-run`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return r.app.Restore(args)

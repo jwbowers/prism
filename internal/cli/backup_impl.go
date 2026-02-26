@@ -136,8 +136,8 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 	req := types.BackupCreateRequest{
 		InstanceName: args[0],
 		BackupName:   args[1],
-		StorageType:  "s3", // Default to S3
-		Encrypted:    true, // Default to encrypted
+		StorageType:  "ami", // Backups use AMI snapshots
+		Encrypted:    true,  // Default to encrypted
 	}
 
 	for i := 2; i < len(args); i++ {
@@ -159,7 +159,12 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 		case arg == "--incremental":
 			req.Incremental = true
 		case arg == "--storage" && i+1 < len(args):
-			req.StorageType = args[i+1]
+			storageVal := args[i+1]
+			if storageVal != "ami" && storageVal != "snapshot" {
+				return req, fmt.Errorf("only AMI snapshot backups are currently supported (got --storage=%s)\n"+
+					"file-level S3/EFS backups are planned for a future release", storageVal)
+			}
+			req.StorageType = "ami"
 			i++
 		case arg == "--no-encryption":
 			req.Encrypted = false
@@ -174,7 +179,12 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 			paths := strings.Split(strings.TrimPrefix(arg, "--exclude="), ",")
 			req.ExcludePaths = append(req.ExcludePaths, paths...)
 		case strings.HasPrefix(arg, "--storage="):
-			req.StorageType = strings.TrimPrefix(arg, "--storage=")
+			storageVal := strings.TrimPrefix(arg, "--storage=")
+			if storageVal != "ami" && storageVal != "snapshot" {
+				return req, fmt.Errorf("only AMI snapshot backups are currently supported (got --storage=%s)\n"+
+					"file-level S3/EFS backups are planned for a future release", storageVal)
+			}
+			req.StorageType = "ami"
 		default:
 			return req, fmt.Errorf("unknown option: %s", arg)
 		}
@@ -185,33 +195,26 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 
 // applyCreateBackupDefaults applies default values to backup request
 func (bc *BackupCommands) applyCreateBackupDefaults(req *types.BackupCreateRequest) {
-	if len(req.IncludePaths) == 0 {
-		req.IncludePaths = []string{"/home", "/data", "/opt/research"}
+	// AMI snapshots capture the full instance — path filters are not applicable
+	if len(req.IncludePaths) > 0 {
+		fmt.Printf("ℹ️  Note: --include paths are not supported for AMI snapshots (full backup)\n")
+		req.IncludePaths = nil
 	}
-	if len(req.ExcludePaths) == 0 {
-		req.ExcludePaths = []string{".cache", ".tmp", "*.log", "/proc", "/sys", "/dev"}
+	if len(req.ExcludePaths) > 0 {
+		fmt.Printf("ℹ️  Note: --exclude paths are not supported for AMI snapshots (full backup)\n")
+		req.ExcludePaths = nil
 	}
 }
 
 // displayCreateBackupInfo displays backup creation information
 func (bc *BackupCommands) displayCreateBackupInfo(req types.BackupCreateRequest) {
-	fmt.Printf("💾 Creating data backup '%s' from workspace '%s'...\n", req.BackupName, req.InstanceName)
-
-	if req.Incremental {
-		fmt.Printf("📈 Incremental backup mode - only changed files since last backup\n")
-	} else {
-		fmt.Printf("📦 Full backup mode - all specified files and directories\n")
+	fmt.Printf("💾 Creating backup '%s' from workspace '%s'...\n", req.BackupName, req.InstanceName)
+	fmt.Printf("📸 Type: AMI Snapshot (full workspace backup)\n")
+	fmt.Printf("   Captures: OS, software, files, and configurations\n")
+	fmt.Printf("   Restore: Creates new instance from snapshot (10-15 min)\n")
+	if !req.Encrypted {
+		fmt.Printf("⚠️  Encryption disabled\n")
 	}
-
-	if len(req.IncludePaths) > 0 {
-		fmt.Printf("📁 Including paths: %s\n", strings.Join(req.IncludePaths, ", "))
-	}
-	if len(req.ExcludePaths) > 0 {
-		fmt.Printf("🚫 Excluding paths: %s\n", strings.Join(req.ExcludePaths, ", "))
-	}
-
-	fmt.Printf("💿 Storage: %s (%s)\n", strings.ToUpper(req.StorageType),
-		map[bool]string{true: "encrypted", false: "unencrypted"}[req.Encrypted])
 }
 
 // displayCreateBackupResult displays backup creation result
@@ -1039,8 +1042,8 @@ func (bc *BackupCommands) getBackupUsageText() string {
 	return `Usage: prism backup <action> [arguments]
 
 Actions:
-  create <workspace> <backup-name> [options]    Create a data backup from workspace
-  list                                         List all data backups
+  create <workspace> <backup-name> [options]    Create an AMI snapshot backup of a workspace
+  list                                         List all backups
   info <backup-name>                          Show detailed backup information
   delete <backup-name>                        Delete a backup
   contents <backup-name> [path]               List backup contents
@@ -1048,13 +1051,12 @@ Actions:
 
 Create Options:
   --description <text>         Add a description to the backup
-  --include <paths>           Comma-separated paths to include (default: /home,/data,/opt/research)
-  --exclude <paths>           Comma-separated paths to exclude (default: .cache,.tmp,*.log)
-  --full                      Create full backup (default)
-  --incremental              Create incremental backup
-  --storage <type>           Storage type: s3, efs, ebs (default: s3)
   --no-encryption            Disable encryption (enabled by default)
   --wait                     Wait and monitor backup creation progress
+
+  Note: --include/--exclude path filters are not supported for AMI snapshots.
+  AMI snapshots capture the complete workspace (OS, software, files, configurations).
+  File-level S3 backups with selective paths are planned for a future release.
 
 Verify Options:
   --quick                    Quick verification (metadata only)
@@ -1065,29 +1067,21 @@ Contents Options:
 
 Examples:
   prism backup create my-workspace daily-backup
-  prism backup create gpu-training checkpoint-data --include /data,/results --incremental
+  prism backup create gpu-training checkpoint-data --description "before tuning run"
   prism backup list
   prism backup info daily-backup
-  prism backup contents daily-backup /home
   prism backup verify daily-backup --quick
   prism backup delete old-backup
 
-Storage Options:
-  • S3: Cost-effective, encrypted, cross-region replication
-  • EFS: Fast access, shared across instances
-  • EBS: High-performance, instance-local
-
-Cost Information:
-  Data backups are stored with compression and deduplication
-  S3: ~$0.023/GB/month, EFS: ~$0.30/GB/month, EBS: ~$0.10/GB/month
-
-💡 Data backups complement instance snapshots:
-   • Backups: User data, configurations, research files (selective)
-   • Snapshots: Complete system images (full instance state)
+Backup Type:
+  Backups use AMI snapshots — full workspace images stored in AWS.
+  • Captures: OS, all installed software, your files, and configurations
+  • Restore: Launches a new identical instance (10-15 min)
+  • Cost: ~$0.05/GB/month (EBS snapshot pricing)
 
 ⚠️  Important Notes:
-   • Backups are region-specific but can be replicated
-   • Incremental backups depend on previous full backup
+   • Backups are region-specific
+   • The source workspace should be running or stopped (not terminated)
    • Encrypted backups use AES-256 encryption at rest and in transit
    • Backup names must be unique within your account
 `

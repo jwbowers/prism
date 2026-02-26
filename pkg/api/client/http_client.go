@@ -1891,8 +1891,22 @@ func (c *HTTPClient) ListBackups(ctx context.Context) (*types.BackupListResponse
 		}
 	}
 
+	// Calculate aggregate fields
+	var totalSize int64
+	var totalCost float64
+	storageTypes := make(map[string]int)
+	for _, b := range backups {
+		totalSize += b.SizeBytes
+		totalCost += b.StorageCostMonthly
+		storageTypes[b.StorageType]++
+	}
+
 	result := &types.BackupListResponse{
-		Backups: backups,
+		Backups:      backups,
+		Count:        len(backups),
+		TotalSize:    totalSize,
+		TotalCost:    totalCost,
+		StorageTypes: storageTypes,
 	}
 
 	return result, nil

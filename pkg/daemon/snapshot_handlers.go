@@ -186,9 +186,38 @@ func (s *Server) handleListInstanceSnapshots(w http.ResponseWriter, r *http.Requ
 
 // handleGetInstanceSnapshot gets information about a specific snapshot
 func (s *Server) handleGetInstanceSnapshot(w http.ResponseWriter, r *http.Request, snapshotName string) {
-	// In test mode, return not-found without making AWS calls
+	// In test mode, return mock data for known backups; 404 for unknown names
 	if s.testMode {
-		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found (test mode)", snapshotName))
+		switch snapshotName {
+		case "prism-mock-backup-1":
+			s.writeJSON(w, http.StatusOK, &types.InstanceSnapshotInfo{
+				SnapshotID:         "ami-mock000001",
+				SnapshotName:       "prism-mock-backup-1",
+				SourceInstance:     "prism-mock-instance",
+				SourceInstanceId:   "i-mock000001",
+				SourceTemplate:     "Python ML",
+				Description:        "Test backup for E2E testing",
+				State:              "available",
+				Architecture:       "x86_64",
+				StorageCostMonthly: 1.25,
+				CreatedAt:          time.Now().Add(-24 * time.Hour),
+			})
+		case "prism-mock-backup-2":
+			s.writeJSON(w, http.StatusOK, &types.InstanceSnapshotInfo{
+				SnapshotID:         "ami-mock000002",
+				SnapshotName:       "prism-mock-backup-2",
+				SourceInstance:     "prism-mock-instance",
+				SourceInstanceId:   "i-mock000002",
+				SourceTemplate:     "R Research",
+				Description:        "Second test backup for E2E testing",
+				State:              "available",
+				Architecture:       "x86_64",
+				StorageCostMonthly: 2.50,
+				CreatedAt:          time.Now().Add(-48 * time.Hour),
+			})
+		default:
+			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found", snapshotName))
+		}
 		return
 	}
 
@@ -214,9 +243,15 @@ func (s *Server) handleDeleteInstanceSnapshot(w http.ResponseWriter, r *http.Req
 	// In test mode, accept mock snapshot names; reject others
 	if s.testMode {
 		if strings.HasPrefix(snapshotName, "prism-mock-") {
-			s.writeJSON(w, http.StatusOK, map[string]string{
-				"message":       fmt.Sprintf("Mock snapshot '%s' deleted", snapshotName),
-				"snapshot_name": snapshotName,
+			savings := 1.25
+			if snapshotName == "prism-mock-backup-2" {
+				savings = 2.50
+			}
+			s.writeJSON(w, http.StatusOK, types.InstanceSnapshotDeleteResult{
+				SnapshotName:          snapshotName,
+				SnapshotID:            fmt.Sprintf("ami-mock-%s", snapshotName),
+				StorageSavingsMonthly: savings,
+				DeletedAt:             time.Now(),
 			})
 		} else {
 			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Snapshot '%s' not found (test mode)", snapshotName))
