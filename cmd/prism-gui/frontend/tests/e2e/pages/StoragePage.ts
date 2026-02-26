@@ -289,9 +289,13 @@ export class StoragePage extends BasePage {
     await this.switchToEFS();
     const volume = this.getEFSVolumeByName(volumeName);
 
+    // Wait for the volume row to be visible before clicking (EFS state monitor can put the
+    // table into loading state after a mount operation, hiding rows temporarily)
+    await volume.waitFor({ state: 'visible', timeout: 30000 });
+
     // Click the Actions dropdown button
     const actionsButton = volume.getByRole('button', { name: 'Actions' });
-    await actionsButton.click();
+    await actionsButton.click({ timeout: 30000 });
 
     // Wait for menu to appear and click Unmount option
     const unmountOption = this.page.getByRole('menuitem', { name: 'Unmount', exact: true });
