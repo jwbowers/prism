@@ -185,6 +185,12 @@ localstack-status:
 # Run integration tests with LocalStack (legacy target kept for compatibility)
 test-integration: test-localstack
 
+# LocalStack convenience aliases (shorter names for common operations)
+.PHONY: localstack-up localstack-down localstack-test
+localstack-up: localstack-start
+localstack-down: localstack-stop
+localstack-test: test-localstack
+
 # Run AMI builder integration tests specifically
 test-ami-builder:
 	@echo "🧪 Running AMI builder integration tests..."

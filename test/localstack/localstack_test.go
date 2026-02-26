@@ -144,6 +144,9 @@ func TestLocalStackEFS(t *testing.T) {
 	if !localstack.IsLocalStackEnabled() {
 		t.Skip("LocalStack not enabled (set PRISM_USE_LOCALSTACK=true)")
 	}
+	if !localstack.HasEFSSupport() {
+		t.Skip("EFS not available in LocalStack Community edition (set LOCALSTACK_EFS_SUPPORT=true for Pro)")
+	}
 
 	f := fixtures.NewTestFixtures(t)
 	f.VerifyEFSSetup(t)
@@ -225,10 +228,14 @@ func TestLocalStackEndToEnd(t *testing.T) {
 	f.VerifyAMIsExist(t)
 	t.Log("   ✓ AMIs verified")
 
-	// 7. Verify EFS
-	t.Log("7. Verifying EFS...")
-	f.VerifyEFSSetup(t)
-	t.Log("   ✓ EFS verified")
+	// 7. Verify EFS (Pro only — Community edition does not include EFS)
+	if localstack.HasEFSSupport() {
+		t.Log("7. Verifying EFS...")
+		f.VerifyEFSSetup(t)
+		t.Log("   ✓ EFS verified")
+	} else {
+		t.Log("7. Skipping EFS verification (not available in LocalStack Community edition)")
+	}
 
 	// 8. Verify SSM
 	t.Log("8. Verifying SSM parameters...")

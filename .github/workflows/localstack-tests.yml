@@ -74,8 +74,8 @@ jobs:
           PRISM_USE_LOCALSTACK: "true"
         run: |
           # Run a subset of integration tests known to work with LocalStack
-          go test -v -tags=integration ./test/integration/phase1_workflows/... -timeout 15m -run TestBasicTemplate || true
-          echo "Note: Some tests may be skipped or fail due to LocalStack limitations"
+          go test -v -tags=integration ./test/integration/phase1_workflows/... -timeout 15m -run TestBasicTemplate
+          echo "Note: EFS tests are skipped when LOCALSTACK_EFS_SUPPORT is not set (Community edition)"
 
       - name: Show LocalStack logs on failure
         if: failure()

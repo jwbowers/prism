@@ -12,6 +12,9 @@ test.describe('Storage Management Workflows', () => {
   // 7-minute timeout: AWS operations take 30-180s + state monitor polling (10s) + test execution + cleanup
   test.setTimeout(420000);
 
+  // EFS is not available in LocalStack Community edition — skip EFS tests when LocalStack is active
+  const useLocalStack = process.env.PRISM_USE_LOCALSTACK === 'true';
+
   let storagePage: StoragePage;
   let instancesPage: InstancesPage;
   let confirmDialog: ConfirmDialog;
@@ -30,8 +33,9 @@ test.describe('Storage Management Workflows', () => {
   test.afterAll(async ({ request }) => {
     test.setTimeout(120000); // 2 minutes for cleanup
 
+    // Only delete EFS setup volume when running against real AWS (EFS not created with LocalStack)
     const sharedVolumes = [
-      { name: 'test-setup-efs', endpoint: 'http://localhost:8947/api/v1/volumes/test-setup-efs' },
+      ...(!useLocalStack ? [{ name: 'test-setup-efs', endpoint: 'http://localhost:8947/api/v1/volumes/test-setup-efs' }] : []),
       { name: 'test-setup-ebs', endpoint: 'http://localhost:8947/api/v1/storage/test-setup-ebs' },
     ];
 
@@ -71,17 +75,19 @@ test.describe('Storage Management Workflows', () => {
     // Note: No try/catch - setup failures should fail the test with clear errors
 
     if (!sharedVolumesCreated) {
-      // Check if setup volumes already exist from previous test runs
-      const efsExists = await storagePage.verifyEFSVolumeExists('test-setup-efs');
-      if (!efsExists) {
-        console.log('Creating shared EFS volume: test-setup-efs');
-        await storagePage.createEFSVolume('test-setup-efs');
+      // EFS setup: skip when using LocalStack Community (EFS not supported)
+      if (!useLocalStack) {
+        const efsExists = await storagePage.verifyEFSVolumeExists('test-setup-efs');
+        if (!efsExists) {
+          console.log('Creating shared EFS volume: test-setup-efs');
+          await storagePage.createEFSVolume('test-setup-efs');
 
-        const created = await storagePage.waitForEFSVolumeToExist('test-setup-efs');
-        if (!created) {
-          throw new Error('Failed to create shared EFS volume: test-setup-efs. This volume is required for display/search tests.');
+          const created = await storagePage.waitForEFSVolumeToExist('test-setup-efs');
+          if (!created) {
+            throw new Error('Failed to create shared EFS volume: test-setup-efs. This volume is required for display/search tests.');
+          }
+          console.log('✅ Shared EFS volume created successfully');
         }
-        console.log('✅ Shared EFS volume created successfully');
       }
 
       const ebsExists = await storagePage.verifyEBSVolumeExists('test-setup-ebs');
@@ -102,6 +108,9 @@ test.describe('Storage Management Workflows', () => {
   });
 
   test.describe('EFS Volume Management', () => {
+    // EFS requires LocalStack Pro — skip entire block when using Community edition
+    test.skip(useLocalStack, 'EFS not available in LocalStack Community edition (requires Pro or real AWS)');
+
     test('should display EFS volumes list', async () => {
       await storagePage.switchToEFS();
 
@@ -558,6 +567,7 @@ test.describe('Storage Management Workflows', () => {
 
   test.describe('Storage Search and Filtering', () => {
     test('should search EFS volumes by name', async () => {
+      test.skip(useLocalStack, 'EFS not available in LocalStack Community edition (requires Pro or real AWS)');
       await storagePage.switchToEFS();
 
       // Wait for actual data rows (not loading state rows which don't have volume-name testid)

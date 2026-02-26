@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -113,14 +114,25 @@ func GetServiceStatus(ctx context.Context) (map[string]string, error) {
 	return health.Services, nil
 }
 
-// RequiredServices lists the AWS services that Prism requires
+// RequiredServices lists the AWS services that Prism requires in LocalStack Community.
+// EFS is intentionally excluded: it requires LocalStack Pro (paid).
+// Use HasEFSSupport() to determine whether EFS tests should run.
 var RequiredServices = []string{
 	"ec2",
-	"efs",
 	"s3",
 	"ssm",
 	"iam",
 	"sts",
+}
+
+// HasEFSSupport returns true if EFS is available in the current environment.
+// Real AWS always supports EFS. LocalStack Community does not include EFS;
+// set LOCALSTACK_EFS_SUPPORT=true to enable when using LocalStack Pro.
+func HasEFSSupport() bool {
+	if !IsLocalStackEnabled() {
+		return true
+	}
+	return os.Getenv("LOCALSTACK_EFS_SUPPORT") == "true"
 }
 
 // VerifyRequiredServices checks that all required services are available in LocalStack
