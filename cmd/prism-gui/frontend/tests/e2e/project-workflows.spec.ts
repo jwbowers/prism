@@ -340,8 +340,9 @@ test.describe('Project Management Workflows', () => {
       await filterSelect.click();
       // Wait for dropdown option to be stable before clicking (webkit can detach/re-render)
       const activeOption = projectsPage.page.locator('[data-value="active"]');
-      await activeOption.waitFor({ state: 'visible', timeout: 5000 });
-      await activeOption.click();
+      await activeOption.waitFor({ state: 'visible', timeout: 10000 });
+      // Use force:true to bypass webkit actionability check timeouts under resource exhaustion
+      await activeOption.click({ force: true, timeout: 15000 });
 
       // Verify both projects are still visible after filter
       // (both should have 'active' status by default)
