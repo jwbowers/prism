@@ -11,7 +11,7 @@
 // doing so would terminate a co-running tier (e.g., killing serial's daemon when
 // fast tier finishes after ~10 minutes).
 
-import { isDaemonRunning, cleanupTestStorage } from './setup-daemon.js'
+import { isDaemonRunning, cleanupTestStorage, checkZombieInstances } from './setup-daemon.js'
 
 async function globalTeardown() {
   console.log('[teardown] Running post-test cleanup...')
@@ -24,6 +24,10 @@ async function globalTeardown() {
   } else {
     console.log('[teardown] Daemon not running - skipping storage cleanup (already cleaned up)')
   }
+
+  // Check for zombie Prism-managed EC2 instances left running in AWS.
+  // Auto-terminates test-pattern instances older than 2h; warns about others.
+  await checkZombieInstances()
 
   console.log('[teardown] Post-test cleanup complete')
 }

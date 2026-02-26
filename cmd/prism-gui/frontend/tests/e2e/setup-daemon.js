@@ -1,5 +1,5 @@
 // Setup script to start the actual daemon for E2E testing
-import { exec, spawn } from 'child_process'
+import { exec, execSync, spawn } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs'
@@ -204,6 +204,100 @@ async function cleanupTestStorage() {
   }
 }
 
+// Check for zombie Prism-managed EC2 instances left running in AWS after the test suite.
+//
+// Strategy:
+//   - AUTO-TERMINATE: instances with prism:managed=true, older than ZOMBIE_THRESHOLD_HOURS,
+//     whose name matches a test pattern (clearly temporary test resources)
+//   - WARN ONLY: instances with prism:managed=true, older than ZOMBIE_THRESHOLD_HOURS,
+//     whose name doesn't match a test pattern (may be intentional — don't auto-kill)
+//
+// Uses the same AWS_PROFILE and AWS_REGION as the daemon so credentials are consistent.
+// Non-critical: failures are logged but do not fail the test run.
+async function checkZombieInstances() {
+  // Patterns that identify clearly-temporary test instances (auto-terminate)
+  const TEST_NAME_PATTERN = /^(test-|backup-test-|target-instance-|python-ml-test-|simple-|final-test|context-fix|collab-.*-test|getinstance-|no-refresh-|.*-debug.*|.*-benchmark.*)/
+
+  // Instances must be older than this to be considered zombies
+  // (2h safely covers the longest full test run of ~50min with headroom)
+  const ZOMBIE_THRESHOLD_HOURS = 2
+
+  const awsProfile = process.env.AWS_PROFILE || 'aws'
+  const awsRegion  = process.env.AWS_REGION  || 'us-west-2'
+
+  console.log(`[teardown] Checking for zombie Prism instances (AWS_PROFILE=${awsProfile}, region=${awsRegion})...`)
+
+  try {
+    const raw = execSync(
+      `aws ec2 describe-instances \
+        --region ${awsRegion} \
+        --filters "Name=instance-state-name,Values=running" \
+                  "Name=tag:prism:managed,Values=true" \
+        --query "Reservations[*].Instances[*].[InstanceId,LaunchTime,Tags[?Key=='Name']|[0].Value,InstanceType]" \
+        --output json`,
+      {
+        encoding: 'utf8',
+        env: { ...process.env, AWS_PROFILE: awsProfile, AWS_REGION: awsRegion },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }
+    )
+
+    const instances = JSON.parse(raw).flat()
+    if (instances.length === 0) {
+      console.log('[teardown] No zombie Prism instances found ✅')
+      return
+    }
+
+    const now = Date.now()
+    const thresholdMs = ZOMBIE_THRESHOLD_HOURS * 60 * 60 * 1000
+
+    const toTerminate = []
+    const toWarn = []
+
+    for (const [id, launchTime, name, type] of instances) {
+      const ageMs = now - new Date(launchTime).getTime()
+      if (ageMs < thresholdMs) continue  // recent — skip
+
+      const ageHours = (ageMs / 3600000).toFixed(1)
+      if (name && TEST_NAME_PATTERN.test(name)) {
+        toTerminate.push({ id, name, type, ageHours })
+      } else {
+        toWarn.push({ id, name, type, ageHours })
+      }
+    }
+
+    if (toTerminate.length > 0) {
+      const ids = toTerminate.map(i => i.id).join(' ')
+      console.log(`[teardown] ⚠️  Terminating ${toTerminate.length} zombie test instance(s)...`)
+      execSync(
+        `aws ec2 terminate-instances --region ${awsRegion} --instance-ids ${ids} --output json`,
+        {
+          encoding: 'utf8',
+          env: { ...process.env, AWS_PROFILE: awsProfile, AWS_REGION: awsRegion },
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }
+      )
+      for (const { id, name, type, ageHours } of toTerminate) {
+        console.log(`[teardown]   Terminated: ${name || id} (${id}, ${type}, ${ageHours}h old)`)
+      }
+    }
+
+    if (toWarn.length > 0) {
+      console.log(`[teardown] ⚠️  ${toWarn.length} Prism instance(s) still running — review manually:`)
+      for (const { id, name, type, ageHours } of toWarn) {
+        console.log(`[teardown]   ${name || '(unnamed)'} (${id}, ${type}, ${ageHours}h old)`)
+      }
+    }
+
+    if (toTerminate.length === 0 && toWarn.length === 0) {
+      console.log('[teardown] No zombie Prism instances found ✅')
+    }
+  } catch (e) {
+    // Non-critical — don't fail the test run over a zombie check
+    console.log(`[teardown] Zombie instance check skipped: ${e.message}`)
+  }
+}
+
 // Function to stop the daemon
 async function stopDaemon(pid) {
   if (pid) {
@@ -216,4 +310,4 @@ async function stopDaemon(pid) {
   }
 }
 
-export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestStorage }
+export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestStorage, checkZombieInstances }
