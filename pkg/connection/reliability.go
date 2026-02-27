@@ -224,45 +224,14 @@ func (rm *ReliabilityManager) performReliabilityChecks(ctx context.Context) {
 }
 
 // performSingleReliabilityCheck performs a single reliability check
-func (rm *ReliabilityManager) performSingleReliabilityCheck(ctx context.Context, checkKey string) {
-	rm.mu.RLock()
-	check, exists := rm.checks[checkKey]
-	if !exists {
-		rm.mu.RUnlock()
-		return
-	}
-	// Create a copy to avoid holding the lock during the actual check
-	checkCopy := *check
-	rm.mu.RUnlock()
-
-	// Perform the actual check
-	err := rm.connMgr.TestPortAvailability(ctx, checkCopy.Target, checkCopy.Port, 10*time.Second)
-
-	// Update check results
-	rm.mu.Lock()
-	defer rm.mu.Unlock()
-
-	// Re-get the check in case it was deleted
-	check, exists = rm.checks[checkKey]
-	if !exists {
-		return
-	}
-
-	now := time.Now()
-	check.LastCheck = now
-	check.TotalChecks++
-
+// processCheckResult updates check state, status, sliding window, and metrics after a connectivity test.
+func (rm *ReliabilityManager) processCheckResult(check *ReliabilityCheck, err error, now time.Time) {
 	if err == nil {
-		// Success
 		check.ConsecutiveFailures = 0
 		check.ConsecutiveSuccesses++
 		check.LastSuccess = now
 		check.ErrorMessage = ""
-
-		// Add to sliding window
 		check.RecentResults = append(check.RecentResults, true)
-
-		// Update status based on consecutive successes
 		if check.Status == ReliabilityStatusUnhealthy && check.ConsecutiveSuccesses >= rm.recoveryThreshold {
 			check.Status = ReliabilityStatusRecovering
 		} else if check.Status == ReliabilityStatusRecovering && check.ConsecutiveSuccesses >= rm.recoveryThreshold*2 {
@@ -270,34 +239,23 @@ func (rm *ReliabilityManager) performSingleReliabilityCheck(ctx context.Context,
 		} else if check.Status != ReliabilityStatusUnhealthy && check.Status != ReliabilityStatusRecovering {
 			check.Status = ReliabilityStatusHealthy
 		}
-
 		rm.monitor.RecordValue("reliability_check_success", 1, "count")
 	} else {
-		// Failure
 		check.ConsecutiveSuccesses = 0
 		check.ConsecutiveFailures++
 		check.LastFailure = now
 		check.ErrorMessage = err.Error()
-
-		// Add to sliding window
 		check.RecentResults = append(check.RecentResults, false)
-
-		// Update status based on consecutive failures
 		if check.ConsecutiveFailures >= rm.unhealthyThreshold {
 			check.Status = ReliabilityStatusUnhealthy
 		} else if check.ConsecutiveFailures > 1 {
 			check.Status = ReliabilityStatusDegraded
 		}
-
 		rm.monitor.RecordValue("reliability_check_failure", 1, "count")
 	}
-
-	// Maintain sliding window of last 100 checks
 	if len(check.RecentResults) > 100 {
 		check.RecentResults = check.RecentResults[len(check.RecentResults)-100:]
 	}
-
-	// Calculate success rate from sliding window
 	if len(check.RecentResults) > 0 {
 		successCount := 0
 		for _, success := range check.RecentResults {
@@ -307,6 +265,32 @@ func (rm *ReliabilityManager) performSingleReliabilityCheck(ctx context.Context,
 		}
 		check.SuccessRate = float64(successCount) / float64(len(check.RecentResults))
 	}
+}
+
+func (rm *ReliabilityManager) performSingleReliabilityCheck(ctx context.Context, checkKey string) {
+	rm.mu.RLock()
+	check, exists := rm.checks[checkKey]
+	if !exists {
+		rm.mu.RUnlock()
+		return
+	}
+	checkCopy := *check
+	rm.mu.RUnlock()
+
+	err := rm.connMgr.TestPortAvailability(ctx, checkCopy.Target, checkCopy.Port, 10*time.Second)
+
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	check, exists = rm.checks[checkKey]
+	if !exists {
+		return
+	}
+
+	now := time.Now()
+	check.LastCheck = now
+	check.TotalChecks++
+	rm.processCheckResult(check, err, now)
 }
 
 // HTTPReliabilityChecker provides HTTP-specific reliability checking

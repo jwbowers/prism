@@ -898,43 +898,29 @@ func (bm *BudgetManager) ReallocateFunds(ctx context.Context, req *ReallocateFun
 	bm.reallocations[record.ID] = record
 	bm.rebuildIndexes()
 
-	// Save all changes
-	if err := bm.saveAllocations(); err != nil {
-		// Rollback changes
+	// Save all changes; roll back on any failure
+	isCrossBudget := sourceAlloc.BudgetID != destAlloc.BudgetID
+	rollback := func() {
 		sourceAlloc.AllocatedAmount += req.Amount
 		destAlloc.AllocatedAmount -= req.Amount
-		if sourceAlloc.BudgetID != destAlloc.BudgetID {
+		if isCrossBudget {
 			sourceBudget.AllocatedAmount += req.Amount
 			destBudget.AllocatedAmount -= req.Amount
 		}
 		delete(bm.reallocations, record.ID)
 		bm.rebuildIndexes()
+	}
+
+	if err := bm.saveAllocations(); err != nil {
+		rollback()
 		return nil, fmt.Errorf("failed to save allocations: %w", err)
 	}
-
 	if err := bm.saveBudgets(); err != nil {
-		// Rollback changes
-		sourceAlloc.AllocatedAmount += req.Amount
-		destAlloc.AllocatedAmount -= req.Amount
-		if sourceAlloc.BudgetID != destAlloc.BudgetID {
-			sourceBudget.AllocatedAmount += req.Amount
-			destBudget.AllocatedAmount -= req.Amount
-		}
-		delete(bm.reallocations, record.ID)
-		bm.rebuildIndexes()
+		rollback()
 		return nil, fmt.Errorf("failed to save budgets: %w", err)
 	}
-
 	if err := bm.saveReallocations(); err != nil {
-		// Rollback changes
-		sourceAlloc.AllocatedAmount += req.Amount
-		destAlloc.AllocatedAmount -= req.Amount
-		if sourceAlloc.BudgetID != destAlloc.BudgetID {
-			sourceBudget.AllocatedAmount += req.Amount
-			destBudget.AllocatedAmount -= req.Amount
-		}
-		delete(bm.reallocations, record.ID)
-		bm.rebuildIndexes()
+		rollback()
 		return nil, fmt.Errorf("failed to save reallocation record: %w", err)
 	}
 

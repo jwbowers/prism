@@ -54,51 +54,41 @@ func (f *WorkspaceCommandFactory) createLaunchCommand() *cobra.Command {
 	return cmd
 }
 
+// appendBoolFlag appends a CLI flag to args if the named bool flag is set.
+func appendBoolFlag(cmd *cobra.Command, args []string, flagName, argName string) []string {
+	if v, _ := cmd.Flags().GetBool(flagName); v {
+		return append(args, argName)
+	}
+	return args
+}
+
+// appendStringFlag appends a CLI flag + value to args if the named string flag is non-empty.
+func appendStringFlag(cmd *cobra.Command, args []string, flagName, argName string) []string {
+	if v, _ := cmd.Flags().GetString(flagName); v != "" {
+		return append(args, argName, v)
+	}
+	return args
+}
+
 func (f *WorkspaceCommandFactory) buildLaunchArgs(cmd *cobra.Command, args []string) error {
-	if hibernation, _ := cmd.Flags().GetBool("hibernation"); hibernation {
-		args = append(args, "--hibernation")
-	}
-	if spot, _ := cmd.Flags().GetBool("spot"); spot {
-		args = append(args, "--spot")
-	}
-	if size, _ := cmd.Flags().GetString("size"); size != "" {
-		args = append(args, "--size", size)
-	}
-	if subnet, _ := cmd.Flags().GetString("subnet"); subnet != "" {
-		args = append(args, "--subnet", subnet)
-	}
-	if vpc, _ := cmd.Flags().GetString("vpc"); vpc != "" {
-		args = append(args, "--vpc", vpc)
-	}
-	if project, _ := cmd.Flags().GetString("project"); project != "" {
-		args = append(args, "--project", project)
-	}
-	if funding, _ := cmd.Flags().GetString("funding"); funding != "" {
-		args = append(args, "--funding", funding)
-	}
-	if wait, _ := cmd.Flags().GetBool("wait"); wait {
-		args = append(args, "--wait")
-	}
-	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
-		args = append(args, "--dry-run")
-	}
+	args = appendBoolFlag(cmd, args, "hibernation", "--hibernation")
+	args = appendBoolFlag(cmd, args, "spot", "--spot")
+	args = appendStringFlag(cmd, args, "size", "--size")
+	args = appendStringFlag(cmd, args, "subnet", "--subnet")
+	args = appendStringFlag(cmd, args, "vpc", "--vpc")
+	args = appendStringFlag(cmd, args, "project", "--project")
+	args = appendStringFlag(cmd, args, "funding", "--funding")
+	args = appendBoolFlag(cmd, args, "wait", "--wait")
+	args = appendBoolFlag(cmd, args, "dry-run", "--dry-run")
 	if params, _ := cmd.Flags().GetStringArray("param"); len(params) > 0 {
 		for _, param := range params {
 			args = append(args, "--param", param)
 		}
 	}
-	if researchUser, _ := cmd.Flags().GetString("research-user"); researchUser != "" {
-		args = append(args, "--research-user", researchUser)
-	}
-	if sshKey, _ := cmd.Flags().GetString("ssh-key"); sshKey != "" {
-		args = append(args, "--ssh-key", sshKey)
-	}
-	if quiet, _ := cmd.Flags().GetBool("quiet"); quiet {
-		args = append(args, "--quiet")
-	}
-	if noProgress, _ := cmd.Flags().GetBool("no-progress"); noProgress {
-		args = append(args, "--no-progress")
-	}
+	args = appendStringFlag(cmd, args, "research-user", "--research-user")
+	args = appendStringFlag(cmd, args, "ssh-key", "--ssh-key")
+	args = appendBoolFlag(cmd, args, "quiet", "--quiet")
+	args = appendBoolFlag(cmd, args, "no-progress", "--no-progress")
 	return f.app.Launch(args)
 }
 
