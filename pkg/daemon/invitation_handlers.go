@@ -16,79 +16,77 @@ import (
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
-// handleInvitationOperations routes invitation-related HTTP requests
-// This handles all invitation endpoints with path-based routing
+// invitationRoute maps a path/method pattern to a handler.
+// Matching is performed by the matches() method using the exported fields.
+// Routes are evaluated in order; the first matching route wins.
+type invitationRoute struct {
+	method   string // required HTTP method
+	exact    string // path must equal this value (takes priority over prefix/suffix/contains)
+	prefix   string // path must have this prefix (optional)
+	suffix   string // path must have this suffix (optional)
+	contains string // path must contain this substring (optional)
+	handler  func(w http.ResponseWriter, r *http.Request)
+}
+
+// matches reports whether this route handles the given path and method.
+func (rt invitationRoute) matches(path, method string) bool {
+	if method != rt.method {
+		return false
+	}
+	if rt.exact != "" {
+		return path == rt.exact
+	}
+	if rt.prefix != "" && !strings.HasPrefix(path, rt.prefix) {
+		return false
+	}
+	if rt.suffix != "" && !strings.HasSuffix(path, rt.suffix) {
+		return false
+	}
+	if rt.contains != "" && !strings.Contains(path, rt.contains) {
+		return false
+	}
+	return true
+}
+
+// invitationRoutes returns the ordered routing table for invitation endpoints.
+func (s *Server) invitationRoutes() []invitationRoute {
+	return []invitationRoute{
+		{method: http.MethodPost, prefix: "/api/v1/projects/", suffix: "/invitations/bulk", handler: s.handleBulkInvitation},
+		{method: http.MethodPost, prefix: "/api/v1/projects/", suffix: "/invitations", handler: s.handleSendInvitation},
+		{method: http.MethodGet, prefix: "/api/v1/projects/", suffix: "/invitations", handler: s.handleListProjectInvitations},
+		{method: http.MethodGet, exact: "/api/v1/invitations/my", handler: s.handleListMyInvitations},
+		{method: http.MethodPost, contains: "/accept", handler: s.handleAcceptInvitation},
+		{method: http.MethodPost, contains: "/decline", handler: s.handleDeclineInvitation},
+		{method: http.MethodPost, contains: "/resend", handler: s.handleResendInvitation},
+		{method: http.MethodDelete, prefix: "/api/v1/invitations/", handler: s.handleRevokeInvitation},
+		{method: http.MethodPost, exact: "/api/v1/invitations/quota-check", handler: s.handleQuotaCheck},
+		{method: http.MethodGet, prefix: "/api/v1/invitations/by-id/", handler: s.handleGetInvitationByID},
+		{method: http.MethodPost, contains: "/validate", handler: s.handleValidateInvitation},
+		{method: http.MethodGet, contains: "/credential-status", handler: s.handleGetCredentialStatus},
+		{method: http.MethodPost, contains: "/test-credentials", handler: s.handleTestCredentials},
+		{method: http.MethodGet, prefix: "/api/v1/invitations/", handler: s.handleGetInvitation},
+	}
+}
+
+// handleInvitationOperations routes invitation-related HTTP requests.
+// It delegates to specific handlers via the routing table returned by invitationRoutes().
 func (s *Server) handleInvitationOperations(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	method := r.Method
 
-	// Route shared token operations (v0.5.13)
-	if strings.Contains(path, "/shared") || (strings.HasPrefix(path, "/api/v1/invitations/shared/")) {
+	// Shared-token operations take priority (v0.5.13)
+	if strings.Contains(path, "/shared") || strings.HasPrefix(path, "/api/v1/invitations/shared/") {
 		s.handleSharedTokenOperations(w, r)
 		return
 	}
 
-	// Determine which endpoint is being called based on path pattern
-	switch {
-	// POST /api/v1/projects/{id}/invitations/bulk - Bulk invitation
-	case strings.HasPrefix(path, "/api/v1/projects/") && strings.HasSuffix(path, "/invitations/bulk") && method == http.MethodPost:
-		s.handleBulkInvitation(w, r)
-
-	// POST /api/v1/projects/{id}/invitations - Send invitation
-	case strings.HasPrefix(path, "/api/v1/projects/") && strings.HasSuffix(path, "/invitations") && method == http.MethodPost:
-		s.handleSendInvitation(w, r)
-
-	// GET /api/v1/projects/{id}/invitations - List project invitations
-	case strings.HasPrefix(path, "/api/v1/projects/") && strings.HasSuffix(path, "/invitations") && method == http.MethodGet:
-		s.handleListProjectInvitations(w, r)
-
-	// GET /api/v1/invitations/my - List user's received invitations
-	case path == "/api/v1/invitations/my" && method == http.MethodGet:
-		s.handleListMyInvitations(w, r)
-
-	// POST /api/v1/invitations/{token}/accept - Accept invitation
-	case strings.Contains(path, "/accept") && method == http.MethodPost:
-		s.handleAcceptInvitation(w, r)
-
-	// POST /api/v1/invitations/{token}/decline - Decline invitation
-	case strings.Contains(path, "/decline") && method == http.MethodPost:
-		s.handleDeclineInvitation(w, r)
-
-	// POST /api/v1/invitations/{id}/resend - Resend invitation
-	case strings.Contains(path, "/resend") && method == http.MethodPost:
-		s.handleResendInvitation(w, r)
-
-	// DELETE /api/v1/invitations/{id} - Revoke invitation
-	case strings.HasPrefix(path, "/api/v1/invitations/") && method == http.MethodDelete:
-		s.handleRevokeInvitation(w, r)
-
-	// POST /api/v1/invitations/quota-check - Check AWS quota for bulk invitations
-	case path == "/api/v1/invitations/quota-check" && method == http.MethodPost:
-		s.handleQuotaCheck(w, r)
-
-	// GET /api/v1/invitations/by-id/{id} - Get invitation by ID (v0.6.2)
-	case strings.HasPrefix(path, "/api/v1/invitations/by-id/") && method == http.MethodGet:
-		s.handleGetInvitationByID(w, r)
-
-	// POST /api/v1/invitations/{id}/validate - Validate invitation credentials (#357)
-	case strings.Contains(path, "/validate") && method == http.MethodPost:
-		s.handleValidateInvitation(w, r)
-
-	// GET /api/v1/invitations/{id}/credential-status - Get credential status (#357)
-	case strings.Contains(path, "/credential-status") && method == http.MethodGet:
-		s.handleGetCredentialStatus(w, r)
-
-	// POST /api/v1/invitations/{id}/test-credentials - Test credentials (#357)
-	case strings.Contains(path, "/test-credentials") && method == http.MethodPost:
-		s.handleTestCredentials(w, r)
-
-	// GET /api/v1/invitations/{token} - Get invitation by token
-	case strings.HasPrefix(path, "/api/v1/invitations/") && method == http.MethodGet:
-		s.handleGetInvitation(w, r)
-
-	default:
-		http.Error(w, "Not found", http.StatusNotFound)
+	for _, route := range s.invitationRoutes() {
+		if route.matches(path, r.Method) {
+			route.handler(w, r)
+			return
+		}
 	}
+
+	http.Error(w, "Not found", http.StatusNotFound)
 }
 
 // handleSendInvitation creates and sends a new project invitation
