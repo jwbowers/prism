@@ -278,6 +278,7 @@ func (tm *TransferManager) UploadFile(ctx context.Context, localPath, bucket, ke
 		progress: progress,
 		callback: tm.options.ProgressCallback,
 		interval: tm.options.ProgressInterval,
+		mu:       &tm.mu,
 	}
 
 	// Start upload with context timeout (derived from the cancellable context)
@@ -291,15 +292,19 @@ func (tm *TransferManager) UploadFile(ctx context.Context, localPath, bucket, ke
 	})
 
 	if err != nil {
+		tm.mu.Lock()
 		progress.Status = TransferStatusFailed
 		progress.Error = err.Error()
+		tm.mu.Unlock()
 		return progress, fmt.Errorf("upload failed: %w", err)
 	}
 
 	// Mark as completed
+	tm.mu.Lock()
 	progress.Status = TransferStatusCompleted
 	progress.PercentComplete = 100
 	progress.LastUpdate = time.Now()
+	tm.mu.Unlock()
 
 	return progress, nil
 }
@@ -370,6 +375,7 @@ func (tm *TransferManager) DownloadFile(ctx context.Context, bucket, key, localP
 		progress: progress,
 		callback: tm.options.ProgressCallback,
 		interval: tm.options.ProgressInterval,
+		mu:       &tm.mu,
 	}
 
 	// Start download with context timeout (derived from the cancellable context)
@@ -382,8 +388,10 @@ func (tm *TransferManager) DownloadFile(ctx context.Context, bucket, key, localP
 	})
 
 	if err != nil {
+		tm.mu.Lock()
 		progress.Status = TransferStatusFailed
 		progress.Error = err.Error()
+		tm.mu.Unlock()
 		return progress, fmt.Errorf("download failed: %w", err)
 	}
 
@@ -391,24 +399,30 @@ func (tm *TransferManager) DownloadFile(ctx context.Context, bucket, key, localP
 	if tm.options.Checksum {
 		checksum, err := computeFileMD5(localPath)
 		if err != nil {
+			tm.mu.Lock()
 			progress.Status = TransferStatusFailed
 			progress.Error = fmt.Sprintf("checksum computation failed: %v", err)
+			tm.mu.Unlock()
 			return progress, fmt.Errorf("checksum computation failed: %w", err)
 		}
 		progress.Checksum = checksum
 
 		// Compare with S3 ETag if available
 		if headResp.ETag != nil && !verifyChecksum(*headResp.ETag, checksum) {
+			tm.mu.Lock()
 			progress.Status = TransferStatusFailed
 			progress.Error = "checksum verification failed"
+			tm.mu.Unlock()
 			return progress, fmt.Errorf("checksum verification failed")
 		}
 	}
 
 	// Mark as completed
+	tm.mu.Lock()
 	progress.Status = TransferStatusCompleted
 	progress.PercentComplete = 100
 	progress.LastUpdate = time.Now()
+	tm.mu.Unlock()
 
 	// Auto-cleanup S3 object if requested
 	if tm.options.AutoCleanup {
@@ -421,23 +435,30 @@ func (tm *TransferManager) DownloadFile(ctx context.Context, bucket, key, localP
 	return progress, nil
 }
 
-// GetTransferProgress retrieves the current progress of a transfer
+// GetTransferProgress retrieves a snapshot copy of the current progress of a transfer.
+// A copy is returned so callers can safely read fields without holding the lock.
 func (tm *TransferManager) GetTransferProgress(transferID string) (*TransferProgress, bool) {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 
 	progress, exists := tm.transfers[transferID]
-	return progress, exists
+	if !exists {
+		return nil, false
+	}
+	snapshot := *progress
+	return &snapshot, true
 }
 
-// ListTransfers returns all active transfers
+// ListTransfers returns snapshot copies of all active transfers.
+// Copies are returned so callers can safely read fields without holding the lock.
 func (tm *TransferManager) ListTransfers() []*TransferProgress {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 
 	transfers := make([]*TransferProgress, 0, len(tm.transfers))
 	for _, progress := range tm.transfers {
-		transfers = append(transfers, progress)
+		snapshot := *progress
+		transfers = append(transfers, &snapshot)
 	}
 	return transfers
 }
@@ -485,12 +506,15 @@ type progressReader struct {
 	callback func(*TransferProgress)
 	interval time.Duration
 	lastCall time.Time
+	mu       *sync.RWMutex // shared with TransferManager; protects progress field writes
 }
 
 func (pr *progressReader) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
 
-	// Update progress
+	// Update progress under the shared lock so ListTransfers/GetTransferProgress
+	// can safely copy the struct without a data race.
+	pr.mu.Lock()
 	pr.progress.TransferredBytes += int64(n)
 	pr.progress.PercentComplete = float64(pr.progress.TransferredBytes) / float64(pr.progress.TotalBytes) * 100
 	pr.progress.LastUpdate = time.Now()
@@ -509,10 +533,15 @@ func (pr *progressReader) Read(p []byte) (int, error) {
 		pr.progress.EstimatedCompletion = &eta
 	}
 
-	// Call progress callback if interval elapsed
-	if pr.callback != nil && time.Since(pr.lastCall) >= pr.interval {
-		pr.callback(pr.progress)
+	shouldCallback := pr.callback != nil && time.Since(pr.lastCall) >= pr.interval
+	if shouldCallback {
 		pr.lastCall = time.Now()
+	}
+	pr.mu.Unlock()
+
+	// Call progress callback outside the lock to avoid holding it during external code.
+	if shouldCallback {
+		pr.callback(pr.progress)
 	}
 
 	return n, err
@@ -525,7 +554,7 @@ type progressWriter struct {
 	callback func(*TransferProgress)
 	interval time.Duration
 	lastCall time.Time
-	mu       sync.Mutex
+	mu       *sync.RWMutex // shared with TransferManager; protects progress field writes
 }
 
 func (pw *progressWriter) WriteAt(p []byte, off int64) (int, error) {

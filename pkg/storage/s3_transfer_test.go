@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -519,6 +520,7 @@ func TestProgressReader(t *testing.T) {
 		progress: progress,
 		callback: callback,
 		interval: 10 * time.Millisecond,
+		mu:       &sync.RWMutex{},
 	}
 
 	// Read data in chunks
@@ -590,6 +592,7 @@ func TestProgressWriter(t *testing.T) {
 		progress: progress,
 		callback: callback,
 		interval: 10 * time.Millisecond,
+		mu:       &sync.RWMutex{},
 	}
 
 	// Write data in chunks

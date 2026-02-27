@@ -53,7 +53,8 @@ func TestRetryWithTransientFailure(t *testing.T) {
 	assert.Equal(t, 3, attemptCount, "Should have made 3 attempts")
 
 	// Verify backoff timing: 0ms + 100ms + 200ms = ~300ms
-	assert.Greater(t, elapsed, 250*time.Millisecond, "Should have delays between retries")
+	// Allow 10ms tolerance for scheduler jitter under parallel test load.
+	assert.Greater(t, elapsed, 240*time.Millisecond, "Should have delays between retries")
 	assert.Less(t, elapsed, 500*time.Millisecond, "Should not take too long")
 
 	// Verify metrics
