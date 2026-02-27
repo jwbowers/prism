@@ -108,75 +108,79 @@ func (m ProjectsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = false
 			return m, nil
 		}
-
 		m.projects = msg.Projects
 		m.loading = false
 		m.error = ""
-
-		// Update table with project data
 		m.updateProjectsTable()
 		return m, nil
 
 	case tea.KeyMsg:
-		if m.loading {
-			return m, nil
-		}
-
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "r", "f5":
-			// Refresh projects
-			m.loading = true
-			return m, m.fetchProjects
-
-		case "tab":
-			// Switch between tabs
-			m.selectedTab = (m.selectedTab + 1) % 4
-			return m, nil
-
-		case "n":
-			// Create new project (show dialog)
-			if m.selectedTab == 0 {
-				m.showCreateDialog = true
-				return m, nil
-			}
-
-		case "esc":
-			// Close dialog
-			if m.showCreateDialog {
-				m.showCreateDialog = false
-				m.createName = ""
-				m.createDescription = ""
-				return m, nil
-			}
-
-		case "enter":
-			// Handle project selection or dialog submission
-			if m.showCreateDialog {
-				// Submit create project dialog
-				return m, m.createProject
-			}
-
-		case "up", "k":
-			if m.selectedProject > 0 {
-				m.selectedProject--
-			}
-			return m, nil
-
-		case "down", "j":
-			if m.selectedProject < len(m.projects)-1 {
-				m.selectedProject++
-			}
-			return m, nil
-		}
+		return updateProjectsOnKey(m, msg)
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
 
+	return m, nil
+}
+
+// updateProjectsOnKey handles keyboard input for the projects view.
+func updateProjectsOnKey(m ProjectsModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.loading {
+		return m, nil
+	}
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	case "r", "f5":
+		m.loading = true
+		return m, m.fetchProjects
+	case "tab":
+		m.selectedTab = (m.selectedTab + 1) % 4
+		return m, nil
+	case "n":
+		if m.selectedTab == 0 {
+			m.showCreateDialog = true
+			return m, nil
+		}
+	case "esc":
+		return handleProjectsDialogKey(m, "esc")
+	case "enter":
+		return handleProjectsDialogKey(m, "enter")
+	case "up", "k":
+		return handleProjectsCursorKey(m, -1)
+	case "down", "j":
+		return handleProjectsCursorKey(m, 1)
+	}
+	return m, nil
+}
+
+// handleProjectsDialogKey handles "esc" and "enter" for the create-project dialog.
+func handleProjectsDialogKey(m ProjectsModel, key string) (ProjectsModel, tea.Cmd) {
+	switch key {
+	case "esc":
+		if m.showCreateDialog {
+			m.showCreateDialog = false
+			m.createName = ""
+			m.createDescription = ""
+		}
+	case "enter":
+		if m.showCreateDialog {
+			return m, m.createProject
+		}
+	}
+	return m, nil
+}
+
+// handleProjectsCursorKey moves the project selection up (dir<0) or down (dir>0).
+func handleProjectsCursorKey(m ProjectsModel, dir int) (ProjectsModel, tea.Cmd) {
+	if dir < 0 && m.selectedProject > 0 {
+		m.selectedProject--
+	}
+	if dir > 0 && m.selectedProject < len(m.projects)-1 {
+		m.selectedProject++
+	}
 	return m, nil
 }
 

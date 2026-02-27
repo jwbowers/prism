@@ -109,75 +109,79 @@ func (m BudgetModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = false
 			return m, nil
 		}
-
 		m.projects = msg.Projects
 		m.loading = false
 		m.error = ""
-
-		// Update table with budget data
 		m.updateBudgetsTable()
 		return m, nil
 
 	case tea.KeyMsg:
-		if m.loading {
-			return m, nil
-		}
-
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "r", "f5":
-			// Refresh budgets
-			m.loading = true
-			return m, m.fetchBudgets
-
-		case "tab":
-			// Switch between tabs
-			m.selectedTab = (m.selectedTab + 1) % 4
-			return m, nil
-
-		case "n":
-			// Create new budget (show dialog)
-			if m.selectedTab == 0 {
-				m.showCreateDialog = true
-				return m, nil
-			}
-
-		case "esc":
-			// Close dialog
-			if m.showCreateDialog {
-				m.showCreateDialog = false
-				m.createProjectName = ""
-				m.createAmount = ""
-				return m, nil
-			}
-
-		case "enter":
-			// Handle budget selection or dialog submission
-			if m.showCreateDialog {
-				// Submit create budget dialog
-				return m, m.createBudget
-			}
-
-		case "up", "k":
-			if m.selectedBudget > 0 {
-				m.selectedBudget--
-			}
-			return m, nil
-
-		case "down", "j":
-			if m.selectedBudget < len(m.projects)-1 {
-				m.selectedBudget++
-			}
-			return m, nil
-		}
+		return updateBudgetOnKey(m, msg)
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
 
+	return m, nil
+}
+
+// updateBudgetOnKey handles keyboard input for the budget view.
+func updateBudgetOnKey(m BudgetModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.loading {
+		return m, nil
+	}
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	case "r", "f5":
+		m.loading = true
+		return m, m.fetchBudgets
+	case "tab":
+		m.selectedTab = (m.selectedTab + 1) % 4
+		return m, nil
+	case "n":
+		if m.selectedTab == 0 {
+			m.showCreateDialog = true
+			return m, nil
+		}
+	case "esc":
+		return handleBudgetDialogKey(m, "esc")
+	case "enter":
+		return handleBudgetDialogKey(m, "enter")
+	case "up", "k":
+		return handleBudgetCursorKey(m, -1)
+	case "down", "j":
+		return handleBudgetCursorKey(m, 1)
+	}
+	return m, nil
+}
+
+// handleBudgetDialogKey handles "esc" and "enter" for the create-budget dialog.
+func handleBudgetDialogKey(m BudgetModel, key string) (BudgetModel, tea.Cmd) {
+	switch key {
+	case "esc":
+		if m.showCreateDialog {
+			m.showCreateDialog = false
+			m.createProjectName = ""
+			m.createAmount = ""
+		}
+	case "enter":
+		if m.showCreateDialog {
+			return m, m.createBudget
+		}
+	}
+	return m, nil
+}
+
+// handleBudgetCursorKey moves the budget selection up (dir<0) or down (dir>0).
+func handleBudgetCursorKey(m BudgetModel, dir int) (BudgetModel, tea.Cmd) {
+	if dir < 0 && m.selectedBudget > 0 {
+		m.selectedBudget--
+	}
+	if dir > 0 && m.selectedBudget < len(m.projects)-1 {
+		m.selectedBudget++
+	}
 	return m, nil
 }
 

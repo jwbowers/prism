@@ -93,7 +93,6 @@ func (m DaemonModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = false
 			return m, nil
 		}
-
 		m.status = msg.Status
 		m.loading = false
 		m.error = ""
@@ -106,60 +105,54 @@ func (m DaemonModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.error = msg.Error.Error()
 			return m, nil
 		}
-		// Refresh status after action
 		m.loading = true
 		return m, func() tea.Msg { return m.fetchStatus() }
 
 	case tea.KeyMsg:
-		if m.loading {
-			return m, nil
-		}
-
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "r", "f5":
-			// Refresh daemon status
-			m.loading = true
-			return m, func() tea.Msg { return m.fetchStatus() }
-
-		case "s":
-			// Show stop dialog
-			m.showStopDialog = true
-			return m, nil
-
-		case "R":
-			// Show restart dialog (capital R)
-			m.showRestartDialog = true
-			return m, nil
-
-		case "enter":
-			// Handle dialog confirmation
-			if m.showRestartDialog {
-				return m, m.restartDaemon()
-			}
-			if m.showStopDialog {
-				return m, m.stopDaemon()
-			}
-
-		case "esc":
-			// Close dialogs
-			if m.showRestartDialog {
-				m.showRestartDialog = false
-				return m, nil
-			}
-			if m.showStopDialog {
-				m.showStopDialog = false
-				return m, nil
-			}
-		}
+		return updateDaemonOnKey(m, msg)
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
 
+	return m, nil
+}
+
+// updateDaemonOnKey handles keyboard input for the daemon management view.
+func updateDaemonOnKey(m DaemonModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.loading {
+		return m, nil
+	}
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	case "r", "f5":
+		m.loading = true
+		return m, func() tea.Msg { return m.fetchStatus() }
+	case "s":
+		m.showStopDialog = true
+		return m, nil
+	case "R":
+		m.showRestartDialog = true
+		return m, nil
+	case "enter":
+		if m.showRestartDialog {
+			return m, m.restartDaemon()
+		}
+		if m.showStopDialog {
+			return m, m.stopDaemon()
+		}
+	case "esc":
+		if m.showRestartDialog {
+			m.showRestartDialog = false
+			return m, nil
+		}
+		if m.showStopDialog {
+			m.showStopDialog = false
+			return m, nil
+		}
+	}
 	return m, nil
 }
 
