@@ -9,7 +9,11 @@ import {
   ProgressBar,
   Table,
   Badge,
-  Spinner
+  Spinner,
+  Select,
+  Modal,
+  Form,
+  FormField
 } from '@cloudscape-design/components';
 
 interface ProjectMember {
@@ -42,12 +46,17 @@ interface ProjectDetails {
 interface ProjectDetailViewProps {
   projectId: string;
   onBack: () => void;
+  onEditMember?: (member: ProjectMember) => void;
+  onRemoveMember?: (member: ProjectMember) => void;
 }
 
-export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId, onBack }) => {
+export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId, onBack, onEditMember, onRemoveMember }) => {
   const [project, setProject] = React.useState<ProjectDetails | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [editMemberModalVisible, setEditMemberModalVisible] = React.useState(false);
+  const [memberToEdit, setMemberToEdit] = React.useState<ProjectMember | null>(null);
+  const [editMemberRole, setEditMemberRole] = React.useState('');
 
   React.useEffect(() => {
     loadProjectDetails();
@@ -274,6 +283,33 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
               cell: (item: ProjectMember) =>
                 new Date(item.joined_at).toLocaleDateString(),
               sortingField: 'joined_at'
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              cell: (item: ProjectMember) => (
+                <SpaceBetween direction="horizontal" size="xs">
+                  <Button
+                    onClick={() => {
+                      if (onEditMember) {
+                        onEditMember(item);
+                      } else {
+                        setMemberToEdit(item);
+                        setEditMemberRole(item.role);
+                        setEditMemberModalVisible(true);
+                      }
+                    }}
+                  >
+                    Change Role
+                  </Button>
+                  <Button
+                    variant="link"
+                    onClick={() => onRemoveMember && onRemoveMember(item)}
+                  >
+                    Remove
+                  </Button>
+                </SpaceBetween>
+              )
             }
           ]}
           items={project.members || []}
@@ -287,6 +323,53 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
           }
           data-testid="project-members-table"
         />
+
+        {/* Inline edit role modal for when parent doesn't provide onEditMember */}
+        <Modal
+          visible={editMemberModalVisible}
+          onDismiss={() => setEditMemberModalVisible(false)}
+          header={`Change Role — ${memberToEdit?.username || ''}`}
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setEditMemberModalVisible(false)}>Cancel</Button>
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (!memberToEdit) return;
+                    try {
+                      const apiClient = (window as any).__apiClient;
+                      if (apiClient) {
+                        await apiClient.updateProjectMember(projectId, memberToEdit.user_id, { role: editMemberRole });
+                        await loadProjectDetails();
+                      }
+                    } catch (err: any) {
+                      setError(err.message || 'Failed to update member role');
+                    } finally {
+                      setEditMemberModalVisible(false);
+                    }
+                  }}
+                >
+                  Save
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <Form>
+            <FormField label="Role">
+              <Select
+                selectedOption={{ value: editMemberRole, label: editMemberRole }}
+                onChange={({ detail }) => setEditMemberRole(detail.selectedOption.value || 'member')}
+                options={[
+                  { value: 'viewer', label: 'Viewer' },
+                  { value: 'member', label: 'Member' },
+                  { value: 'admin', label: 'Admin' }
+                ]}
+              />
+            </FormField>
+          </Form>
+        </Modal>
       </Container>
     </SpaceBetween>
   );

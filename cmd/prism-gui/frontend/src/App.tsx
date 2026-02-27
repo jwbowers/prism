@@ -670,6 +670,12 @@ interface WebService {
   description?: string;
 }
 
+interface UserUpdateRequest {
+  email?: string;
+  display_name?: string;
+  role?: string;
+}
+
 // Safe API Service with comprehensive error handling
 class SafePrismAPI {
   private baseURL = 'http://localhost:8947';
@@ -1071,6 +1077,14 @@ class SafePrismAPI {
 
   async getUserSSHKeys(username: string): Promise<UserSSHKeysResponse> {
     return this.safeRequest(`/api/v1/users/${username}/ssh-key`);
+  }
+
+  async getUser(username: string): Promise<User> {
+    return this.safeRequest(`/api/v1/users/${username}`);
+  }
+
+  async updateUser(username: string, updates: Partial<UserUpdateRequest>): Promise<User> {
+    return this.safeRequest(`/api/v1/users/${username}`, 'PUT', updates);
   }
 
   // Helper function to calculate budget status
@@ -2043,6 +2057,40 @@ export default function PrismApp() {
   const [redeemTokenModalVisible, setRedeemTokenModalVisible] = useState(false);
   const [invitationToken, setInvitationToken] = useState('');
   const [tokenValidationError, setTokenValidationError] = useState('');
+
+  // Project management modals
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [selectedProjectForEdit, setSelectedProjectForEdit] = useState<Project | null>(null);
+  const [editProjectName, setEditProjectName] = useState('');
+  const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [editProjectStatus, setEditProjectStatus] = useState('');
+  const [editProjectSubmitting, setEditProjectSubmitting] = useState(false);
+  const [showManageMembersModal, setShowManageMembersModal] = useState(false);
+  const [selectedProjectForMembers, setSelectedProjectForMembers] = useState<Project | null>(null);
+  const [manageMembersData, setManageMembersData] = useState<ProjectMember[]>([]);
+  const [manageMembersLoading, setManageMembersLoading] = useState(false);
+  const [addMemberUsername, setAddMemberUsername] = useState('');
+  const [addMemberRole, setAddMemberRole] = useState('member');
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [selectedProjectForBudget, setSelectedProjectForBudget] = useState<Project | null>(null);
+  const [budgetModalData, setBudgetModalData] = useState<BudgetData | null>(null);
+  const [budgetModalLoading, setBudgetModalLoading] = useState(false);
+  const [showCostModal, setShowCostModal] = useState(false);
+  const [selectedProjectForCosts, setSelectedProjectForCosts] = useState<Project | null>(null);
+  const [costModalData, setCostModalData] = useState<CostBreakdown | null>(null);
+  const [costModalLoading, setCostModalLoading] = useState(false);
+  const [showUsageModal, setShowUsageModal] = useState(false);
+  const [selectedProjectForUsage, setSelectedProjectForUsage] = useState<Project | null>(null);
+  const [usageModalData, setUsageModalData] = useState<ProjectUsageResponse | null>(null);
+  const [usageModalLoading, setUsageModalLoading] = useState(false);
+
+  // User management modals
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserDisplayName, setEditUserDisplayName] = useState('');
+  const [editUserRole, setEditUserRole] = useState('');
+  const [editUserSubmitting, setEditUserSubmitting] = useState(false);
 
   // Safe data loading with comprehensive error handling
   // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
@@ -5376,10 +5424,10 @@ export default function PrismApp() {
                     { text: "Cost Report", id: "costs" },
                     { text: "Usage Statistics", id: "usage" },
                     { text: "Edit Project", id: "edit" },
-                    { text: "Suspend", id: "suspend", disabled: item.status === 'suspended' },
+                    { text: item.status === 'paused' ? "Resume Project" : "Suspend Project", id: "suspend" },
                     { text: "Delete", id: "delete" }
                   ]}
-                  onItemClick={(detail) => {
+                  onItemClick={async (detail) => {
                     if (detail.detail.id === 'view') {
                       // Navigate to project detail view
                       setSelectedProjectId(item.id);
@@ -5430,21 +5478,84 @@ export default function PrismApp() {
                         }
                       });
                       setDeleteModalVisible(true);
-                    } else {
-                      // Show "coming soon" notification for other actions
-                      setState(prev => ({
-                        ...prev,
-                        notifications: [
-                          {
-                            type: 'info',
-                            header: 'Project Action',
-                            content: `${detail.detail.text} for project "${item.name}" - Feature coming soon!`,
-                            dismissible: true,
-                            id: Date.now().toString()
-                          },
-                          ...prev.notifications
-                        ]
-                      }));
+                    } else if (detail.detail.id === 'edit') {
+                      setSelectedProjectForEdit(item);
+                      setEditProjectName(item.name);
+                      setEditProjectDescription(item.description || '');
+                      setEditProjectStatus(item.status || 'active');
+                      setShowEditProjectModal(true);
+                    } else if (detail.detail.id === 'suspend') {
+                      const newStatus = item.status === 'paused' ? 'active' : 'paused';
+                      try {
+                        await api.updateProject(item.id, { status: newStatus });
+                        const updatedProjects = await api.getProjects();
+                        setState(prev => ({ ...prev, projects: updatedProjects }));
+                      } catch (error: any) {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [
+                            {
+                              type: 'error',
+                              header: 'Action Failed',
+                              content: `Failed to update project status: ${error.message || 'Unknown error'}`,
+                              dismissible: true,
+                              id: Date.now().toString()
+                            },
+                            ...prev.notifications
+                          ]
+                        }));
+                      }
+                    } else if (detail.detail.id === 'members') {
+                      setSelectedProjectForMembers(item);
+                      setManageMembersLoading(true);
+                      setShowManageMembersModal(true);
+                      try {
+                        const members = await api.getProjectMembers(item.id);
+                        setManageMembersData(members);
+                      } catch (error) {
+                        setManageMembersData([]);
+                      } finally {
+                        setManageMembersLoading(false);
+                      }
+                    } else if (detail.detail.id === 'budget') {
+                      setSelectedProjectForBudget(item);
+                      setBudgetModalLoading(true);
+                      setBudgetModalData(null);
+                      setShowBudgetModal(true);
+                      try {
+                        const data = await api.getProjectBudget(item.id);
+                        setBudgetModalData(data);
+                      } catch (error) {
+                        setBudgetModalData(null);
+                      } finally {
+                        setBudgetModalLoading(false);
+                      }
+                    } else if (detail.detail.id === 'costs') {
+                      setSelectedProjectForCosts(item);
+                      setCostModalLoading(true);
+                      setCostModalData(null);
+                      setShowCostModal(true);
+                      try {
+                        const data = await api.getProjectCosts(item.id);
+                        setCostModalData(data);
+                      } catch (error) {
+                        setCostModalData(null);
+                      } finally {
+                        setCostModalLoading(false);
+                      }
+                    } else if (detail.detail.id === 'usage') {
+                      setSelectedProjectForUsage(item);
+                      setUsageModalLoading(true);
+                      setUsageModalData(null);
+                      setShowUsageModal(true);
+                      try {
+                        const data = await api.getProjectUsage(item.id);
+                        setUsageModalData(data);
+                      } catch (error) {
+                        setUsageModalData(null);
+                      } finally {
+                        setUsageModalLoading(false);
+                      }
                     }
                   }}
                 >
@@ -6329,20 +6440,12 @@ export default function PrismApp() {
                           ]
                         }));
                       }
-                    } else if (detail.detail.id && detail.detail.text) {
-                      setState(prev => ({
-                        ...prev,
-                        notifications: [
-                          {
-                            type: 'info',
-                            header: 'User Action',
-                            content: `${detail.detail.text} for user "${item.username}" - Feature coming soon!`,
-                            dismissible: true,
-                            id: Date.now().toString()
-                          },
-                          ...prev.notifications
-                        ]
-                      }));
+                    } else if (detail.detail.id === 'edit') {
+                      setSelectedUserForEdit(item);
+                      setEditUserEmail(item.email || '');
+                      setEditUserDisplayName(item.display_name || item.full_name || '');
+                      setEditUserRole('');
+                      setShowEditUserModal(true);
                     }
                   }}
                 >
@@ -12919,6 +13022,495 @@ export default function PrismApp() {
             )}
           </SpaceBetween>
         )}
+      </Modal>
+
+      {/* Edit Project Modal (#336) */}
+      <Modal
+        visible={showEditProjectModal}
+        onDismiss={() => setShowEditProjectModal(false)}
+        header="Edit Project"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => setShowEditProjectModal(false)}>Cancel</Button>
+              <Button
+                variant="primary"
+                loading={editProjectSubmitting}
+                onClick={async () => {
+                  if (!selectedProjectForEdit) return;
+                  setEditProjectSubmitting(true);
+                  try {
+                    await api.updateProject(selectedProjectForEdit.id, {
+                      name: editProjectName,
+                      description: editProjectDescription,
+                      status: editProjectStatus
+                    });
+                    const updatedProjects = await api.getProjects();
+                    setState(prev => ({
+                      ...prev,
+                      projects: updatedProjects,
+                      notifications: [
+                        {
+                          type: 'success',
+                          header: 'Project Updated',
+                          content: `Project "${editProjectName}" updated successfully.`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        },
+                        ...prev.notifications
+                      ]
+                    }));
+                    setShowEditProjectModal(false);
+                  } catch (error: any) {
+                    setState(prev => ({
+                      ...prev,
+                      notifications: [
+                        {
+                          type: 'error',
+                          header: 'Update Failed',
+                          content: `Failed to update project: ${error.message || 'Unknown error'}`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        },
+                        ...prev.notifications
+                      ]
+                    }));
+                  } finally {
+                    setEditProjectSubmitting(false);
+                  }
+                }}
+              >
+                Save Changes
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <Form>
+          <SpaceBetween size="m">
+            <FormField label="Project Name">
+              <Input
+                value={editProjectName}
+                onChange={({ detail }) => setEditProjectName(detail.value)}
+                placeholder="Project name"
+              />
+            </FormField>
+            <FormField label="Description">
+              <Textarea
+                value={editProjectDescription}
+                onChange={({ detail }) => setEditProjectDescription(detail.value)}
+                placeholder="Project description"
+                rows={3}
+              />
+            </FormField>
+            <FormField label="Status">
+              <Select
+                selectedOption={{ value: editProjectStatus, label: editProjectStatus }}
+                onChange={({ detail }) => setEditProjectStatus(detail.selectedOption.value || 'active')}
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'paused', label: 'Paused' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'archived', label: 'Archived' }
+                ]}
+              />
+            </FormField>
+          </SpaceBetween>
+        </Form>
+      </Modal>
+
+      {/* Manage Members Modal (#332, #339) */}
+      <Modal
+        visible={showManageMembersModal}
+        onDismiss={() => {
+          setShowManageMembersModal(false);
+          setAddMemberUsername('');
+          setAddMemberRole('member');
+        }}
+        header={`Manage Members — ${selectedProjectForMembers?.name || ''}`}
+        size="large"
+        footer={
+          <Box float="right">
+            <Button variant="primary" onClick={() => setShowManageMembersModal(false)}>Close</Button>
+          </Box>
+        }
+      >
+        <SpaceBetween size="l">
+          {manageMembersLoading ? (
+            <Box textAlign="center"><Spinner /> Loading members...</Box>
+          ) : (
+            <Table
+              columnDefinitions={[
+                {
+                  id: 'username',
+                  header: 'Username',
+                  cell: (member: ProjectMember) => member.username
+                },
+                {
+                  id: 'role',
+                  header: 'Role',
+                  cell: (member: ProjectMember) => (
+                    <Badge color={member.role === 'admin' ? 'red' : member.role === 'member' ? 'blue' : 'grey'}>
+                      {member.role}
+                    </Badge>
+                  )
+                },
+                {
+                  id: 'joined_at',
+                  header: 'Joined',
+                  cell: (member: ProjectMember) => new Date(member.joined_at).toLocaleDateString()
+                },
+                {
+                  id: 'actions',
+                  header: 'Actions',
+                  cell: (member: ProjectMember) => (
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <Select
+                        selectedOption={{ value: member.role, label: member.role }}
+                        onChange={async ({ detail }) => {
+                          if (!selectedProjectForMembers) return;
+                          try {
+                            await api.updateProjectMember(selectedProjectForMembers.id, member.user_id, { role: detail.selectedOption.value });
+                            const updated = await api.getProjectMembers(selectedProjectForMembers.id);
+                            setManageMembersData(updated);
+                          } catch (error: any) {
+                            setState(prev => ({
+                              ...prev,
+                              notifications: [{ type: 'error', header: 'Update Failed', content: error.message || 'Failed to update role', dismissible: true, id: Date.now().toString() }, ...prev.notifications]
+                            }));
+                          }
+                        }}
+                        options={[
+                          { value: 'viewer', label: 'Viewer' },
+                          { value: 'member', label: 'Member' },
+                          { value: 'admin', label: 'Admin' }
+                        ]}
+                      />
+                      <Button
+                        size="small"
+                        variant="link"
+                        onClick={async () => {
+                          if (!selectedProjectForMembers) return;
+                          try {
+                            await api.removeProjectMember(selectedProjectForMembers.id, member.user_id);
+                            const updated = await api.getProjectMembers(selectedProjectForMembers.id);
+                            setManageMembersData(updated);
+                          } catch (error: any) {
+                            setState(prev => ({
+                              ...prev,
+                              notifications: [{ type: 'error', header: 'Remove Failed', content: error.message || 'Failed to remove member', dismissible: true, id: Date.now().toString() }, ...prev.notifications]
+                            }));
+                          }
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </SpaceBetween>
+                  )
+                }
+              ]}
+              items={manageMembersData}
+              empty={<Box textAlign="center">No members yet.</Box>}
+              header={<Header variant="h3">Current Members</Header>}
+            />
+          )}
+          <Container header={<Header variant="h3">Add Member</Header>}>
+            <SpaceBetween direction="horizontal" size="xs">
+              <FormField label="Username">
+                <Input
+                  value={addMemberUsername}
+                  onChange={({ detail }) => setAddMemberUsername(detail.value)}
+                  placeholder="username"
+                />
+              </FormField>
+              <FormField label="Role">
+                <Select
+                  selectedOption={{ value: addMemberRole, label: addMemberRole }}
+                  onChange={({ detail }) => setAddMemberRole(detail.selectedOption.value || 'member')}
+                  options={[
+                    { value: 'viewer', label: 'Viewer' },
+                    { value: 'member', label: 'Member' },
+                    { value: 'admin', label: 'Admin' }
+                  ]}
+                />
+              </FormField>
+              <Box padding={{ top: 'xl' }}>
+                <Button
+                  variant="primary"
+                  disabled={!addMemberUsername.trim()}
+                  onClick={async () => {
+                    if (!selectedProjectForMembers || !addMemberUsername.trim()) return;
+                    try {
+                      await api.addProjectMember(selectedProjectForMembers.id, { user_id: addMemberUsername, role: addMemberRole });
+                      const updated = await api.getProjectMembers(selectedProjectForMembers.id);
+                      setManageMembersData(updated);
+                      setAddMemberUsername('');
+                      setAddMemberRole('member');
+                    } catch (error: any) {
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [{ type: 'error', header: 'Add Failed', content: error.message || 'Failed to add member', dismissible: true, id: Date.now().toString() }, ...prev.notifications]
+                      }));
+                    }
+                  }}
+                >
+                  Add Member
+                </Button>
+              </Box>
+            </SpaceBetween>
+          </Container>
+        </SpaceBetween>
+      </Modal>
+
+      {/* Budget Analysis Modal (#333) */}
+      <Modal
+        visible={showBudgetModal}
+        onDismiss={() => setShowBudgetModal(false)}
+        header={`Budget Analysis — ${selectedProjectForBudget?.name || ''}`}
+        footer={<Box float="right"><Button variant="primary" onClick={() => setShowBudgetModal(false)}>Close</Button></Box>}
+      >
+        {budgetModalLoading ? (
+          <Box textAlign="center"><Spinner /> Loading budget data...</Box>
+        ) : budgetModalData ? (
+          <SpaceBetween size="m">
+            <ProgressBar
+              value={Math.min((budgetModalData.spent_percentage || 0) * 100, 100)}
+              status={
+                (budgetModalData.spent_percentage || 0) >= 0.95 ? 'error' :
+                (budgetModalData.spent_percentage || 0) >= 0.80 ? 'warning' : 'success'
+              }
+              label="Budget utilization"
+              description={`${((budgetModalData.spent_percentage || 0) * 100).toFixed(1)}% used`}
+            />
+            <ColumnLayout columns={3} variant="text-grid">
+              <div>
+                <Box variant="awsui-key-label">Budget Limit</Box>
+                <Box>${(budgetModalData.total_budget || 0).toFixed(2)}</Box>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">Spent to Date</Box>
+                <Box>${(budgetModalData.spent_amount || 0).toFixed(2)}</Box>
+              </div>
+              <div>
+                <Box variant="awsui-key-label">Remaining</Box>
+                <Box>${(budgetModalData.remaining || 0).toFixed(2)}</Box>
+              </div>
+            </ColumnLayout>
+            {budgetModalData.projected_monthly_spend !== undefined && (
+              <ColumnLayout columns={2} variant="text-grid">
+                <div>
+                  <Box variant="awsui-key-label">Projected Monthly Spend</Box>
+                  <Box>${budgetModalData.projected_monthly_spend.toFixed(2)}</Box>
+                </div>
+                {budgetModalData.days_until_exhausted !== undefined && (
+                  <div>
+                    <Box variant="awsui-key-label">Days Until Exhausted</Box>
+                    <Box>{budgetModalData.days_until_exhausted} days</Box>
+                  </div>
+                )}
+              </ColumnLayout>
+            )}
+            {budgetModalData.alert_count > 0 && (
+              <Box color="text-status-warning">
+                {budgetModalData.alert_count} budget alert(s) active
+              </Box>
+            )}
+          </SpaceBetween>
+        ) : (
+          <Box color="text-body-secondary">No budget data available for this project.</Box>
+        )}
+      </Modal>
+
+      {/* Cost Report Modal (#334) */}
+      <Modal
+        visible={showCostModal}
+        onDismiss={() => setShowCostModal(false)}
+        header={`Cost Report — ${selectedProjectForCosts?.name || ''}`}
+        size="medium"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              {costModalData && (
+                <Button
+                  onClick={() => {
+                    if (!costModalData) return;
+                    const rows = [
+                      ['Service', 'Amount ($)'],
+                      ['Instances', costModalData.instances?.toFixed(2) ?? '0.00'],
+                      ['Storage', costModalData.storage?.toFixed(2) ?? '0.00'],
+                      ['Data Transfer', costModalData.data_transfer?.toFixed(2) ?? '0.00'],
+                      ['Total', costModalData.total?.toFixed(2) ?? '0.00']
+                    ];
+                    const csv = rows.map(r => r.join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `cost-report-${selectedProjectForCosts?.name || 'project'}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Export CSV
+                </Button>
+              )}
+              <Button variant="primary" onClick={() => setShowCostModal(false)}>Close</Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        {costModalLoading ? (
+          <Box textAlign="center"><Spinner /> Loading cost data...</Box>
+        ) : costModalData ? (
+          <SpaceBetween size="m">
+            <Table
+              columnDefinitions={[
+                { id: 'service', header: 'Service', cell: (item: { service: string; amount: number }) => item.service },
+                { id: 'amount', header: 'Amount', cell: (item: { service: string; amount: number }) => `$${item.amount.toFixed(2)}` }
+              ]}
+              items={[
+                { service: 'Instances (EC2)', amount: costModalData.instances || 0 },
+                { service: 'Storage', amount: costModalData.storage || 0 },
+                { service: 'Data Transfer', amount: costModalData.data_transfer || 0 }
+              ]}
+              footer={
+                <Box textAlign="right" fontWeight="bold">
+                  Total: ${(costModalData.total || 0).toFixed(2)}
+                </Box>
+              }
+            />
+          </SpaceBetween>
+        ) : (
+          <Box color="text-body-secondary">No cost data available for this project.</Box>
+        )}
+      </Modal>
+
+      {/* Usage Statistics Modal (#335) */}
+      <Modal
+        visible={showUsageModal}
+        onDismiss={() => setShowUsageModal(false)}
+        header={`Usage Statistics — ${selectedProjectForUsage?.name || ''}`}
+        footer={<Box float="right"><Button variant="primary" onClick={() => setShowUsageModal(false)}>Close</Button></Box>}
+      >
+        {usageModalLoading ? (
+          <Box textAlign="center"><Spinner /> Loading usage data...</Box>
+        ) : usageModalData ? (
+          <ColumnLayout columns={2} variant="text-grid">
+            <div>
+              <Box variant="awsui-key-label">Instance Hours</Box>
+              <Box>{(usageModalData.instance_hours || 0).toFixed(1)} hrs</Box>
+            </div>
+            <div>
+              <Box variant="awsui-key-label">Storage (GB-hours)</Box>
+              <Box>{(usageModalData.storage_gb_hours || 0).toFixed(1)} GB-hrs</Box>
+            </div>
+            <div>
+              <Box variant="awsui-key-label">Data Transfer</Box>
+              <Box>{(usageModalData.data_transfer_gb || 0).toFixed(2)} GB</Box>
+            </div>
+            <div>
+              <Box variant="awsui-key-label">Period</Box>
+              <Box>{usageModalData.period || 'current'}</Box>
+            </div>
+          </ColumnLayout>
+        ) : (
+          <Box color="text-body-secondary">No usage data available for this project.</Box>
+        )}
+      </Modal>
+
+      {/* Edit User Modal (#349, #338) */}
+      <Modal
+        visible={showEditUserModal}
+        onDismiss={() => setShowEditUserModal(false)}
+        header={`Edit User — ${selectedUserForEdit?.username || ''}`}
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => setShowEditUserModal(false)}>Cancel</Button>
+              <Button
+                variant="primary"
+                loading={editUserSubmitting}
+                onClick={async () => {
+                  if (!selectedUserForEdit) return;
+                  setEditUserSubmitting(true);
+                  try {
+                    const updates: Partial<UserUpdateRequest> = {};
+                    if (editUserEmail) updates.email = editUserEmail;
+                    if (editUserDisplayName) updates.display_name = editUserDisplayName;
+                    if (editUserRole) updates.role = editUserRole;
+                    await api.updateUser(selectedUserForEdit.username, updates);
+                    const updatedUsers = await api.getUsers();
+                    setState(prev => ({
+                      ...prev,
+                      users: updatedUsers,
+                      notifications: [
+                        {
+                          type: 'success',
+                          header: 'User Updated',
+                          content: `User "${selectedUserForEdit.username}" updated successfully.`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        },
+                        ...prev.notifications
+                      ]
+                    }));
+                    setShowEditUserModal(false);
+                  } catch (error: any) {
+                    setState(prev => ({
+                      ...prev,
+                      notifications: [
+                        {
+                          type: 'error',
+                          header: 'Update Failed',
+                          content: `Failed to update user: ${error.message || 'Unknown error'}`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        },
+                        ...prev.notifications
+                      ]
+                    }));
+                  } finally {
+                    setEditUserSubmitting(false);
+                  }
+                }}
+              >
+                Save Changes
+              </Button>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        <Form>
+          <SpaceBetween size="m">
+            <FormField label="Email">
+              <Input
+                value={editUserEmail}
+                onChange={({ detail }) => setEditUserEmail(detail.value)}
+                placeholder="user@example.com"
+                type="email"
+              />
+            </FormField>
+            <FormField label="Display Name">
+              <Input
+                value={editUserDisplayName}
+                onChange={({ detail }) => setEditUserDisplayName(detail.value)}
+                placeholder="Display name"
+              />
+            </FormField>
+            <FormField label="Role" description="Leave blank to keep current role">
+              <Select
+                selectedOption={editUserRole ? { value: editUserRole, label: editUserRole } : { value: '', label: 'Keep current role' }}
+                onChange={({ detail }) => setEditUserRole(detail.selectedOption.value || '')}
+                options={[
+                  { value: '', label: 'Keep current role' },
+                  { value: 'researcher', label: 'Researcher' },
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'viewer', label: 'Viewer' }
+                ]}
+              />
+            </FormField>
+          </SpaceBetween>
+        </Form>
       </Modal>
     </>
   );
