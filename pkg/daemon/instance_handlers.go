@@ -175,6 +175,90 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// formatRetryTime converts a duration in seconds to a human-readable string.
+func formatRetryTime(seconds int) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%d seconds", seconds)
+	}
+	retryMin := seconds / 60
+	retrySec := seconds % 60
+	if retrySec > 0 {
+		return fmt.Sprintf("%d minutes %d seconds", retryMin, retrySec)
+	}
+	return fmt.Sprintf("%d minutes", retryMin)
+}
+
+// preLaunchChecks enforces rate limits, throttling, funding, and budget constraints.
+// Returns false and writes an error response if the launch should be blocked.
+func (s *Server) preLaunchChecks(req *types.LaunchRequest, w http.ResponseWriter, r *http.Request) bool {
+	if s.rateLimiter != nil {
+		if err := s.rateLimiter.CheckAndRecordLaunch(); err != nil {
+			rateLimitErr, ok := err.(*RateLimitError)
+			if !ok {
+				s.writeError(w, http.StatusTooManyRequests, err.Error())
+				return false
+			}
+			status := s.rateLimiter.GetStatus()
+			remaining := status.MaxLaunches - rateLimitErr.Current
+			retryTime := formatRetryTime(int(rateLimitErr.RetryAfter.Seconds()))
+			s.writeError(w, http.StatusTooManyRequests, fmt.Sprintf(
+				"⛔ Launch rate limit exceeded\n\n"+
+					"Current Usage: %d/%d launches in last %d minute(s)\n"+
+					"Remaining Quota: %d launches available\n"+
+					"Next Available: %s\n\n"+
+					"💡 Actions:\n"+
+					"  • Wait %s and try again\n"+
+					"  • Check status: prism admin rate-limit status\n"+
+					"  • Adjust limits: prism admin rate-limit configure --max-launches <num>\n\n"+
+					"This limit prevents accidental cost overruns and AWS API throttling.",
+				rateLimitErr.Current, rateLimitErr.Limit, int(rateLimitErr.Window.Minutes()),
+				remaining, retryTime, retryTime))
+			return false
+		}
+	}
+	if !s.checkLaunchThrottling(req, w) {
+		return false
+	}
+	if req.ProjectID != "" {
+		if err := s.resolveFundingAllocation(req, w); err != nil {
+			return false
+		}
+	}
+	return !s.isLaunchBlockedByBudget(req, w)
+}
+
+// instanceNameCheckPassed returns false if the instance name is already taken.
+// In test mode the check is skipped and the method always returns true.
+func (s *Server) instanceNameCheckPassed(req *types.LaunchRequest, w http.ResponseWriter, r *http.Request) bool {
+	if s.testMode {
+		return true
+	}
+	return !s.checkInstanceNameUniqueness(req, w, r)
+}
+
+// setupSSHIfNeeded ensures an SSH key is configured in the launch request.
+// Returns false and writes an error if setup fails.
+func (s *Server) setupSSHIfNeeded(req *types.LaunchRequest, w http.ResponseWriter) bool {
+	if req.SSHKeyName != "" || s.testMode {
+		return true
+	}
+	if err := s.setupSSHKeyForLaunch(req); err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("SSH key setup failed: %v", err))
+		return false
+	}
+	return true
+}
+
+// maybeStartProgressMonitoring starts SSH-based progress monitoring for running instances.
+// No-ops in test mode.
+func (s *Server) maybeStartProgressMonitoring(instance *types.Instance) {
+	if instance.State != "running" || s.testMode {
+		return
+	}
+	sshKeyPath := os.ExpandEnv("$HOME/.ssh/id_rsa")
+	s.progressTracker.StartMonitoring(instance, sshKeyPath)
+}
+
 // handleLaunchInstance launches a new instance
 func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 	var req types.LaunchRequest
@@ -188,82 +272,19 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		return // Error response already written by validateLaunchRequest
 	}
 
-	// Check launch rate limit (v0.5.12)
-	if s.rateLimiter != nil {
-		if err := s.rateLimiter.CheckAndRecordLaunch(); err != nil {
-			if rateLimitErr, ok := err.(*RateLimitError); ok {
-				// Get remaining quota for enhanced error message
-				status := s.rateLimiter.GetStatus()
-				remaining := status.MaxLaunches - rateLimitErr.Current
-
-				// Format retry time in user-friendly way
-				retrySeconds := int(rateLimitErr.RetryAfter.Seconds())
-				var retryTime string
-				if retrySeconds < 60 {
-					retryTime = fmt.Sprintf("%d seconds", retrySeconds)
-				} else {
-					retryMin := retrySeconds / 60
-					retrySec := retrySeconds % 60
-					if retrySec > 0 {
-						retryTime = fmt.Sprintf("%d minutes %d seconds", retryMin, retrySec)
-					} else {
-						retryTime = fmt.Sprintf("%d minutes", retryMin)
-					}
-				}
-
-				s.writeError(w, http.StatusTooManyRequests, fmt.Sprintf(
-					"⛔ Launch rate limit exceeded\n\n"+
-						"Current Usage: %d/%d launches in last %d minute(s)\n"+
-						"Remaining Quota: %d launches available\n"+
-						"Next Available: %s\n\n"+
-						"💡 Actions:\n"+
-						"  • Wait %s and try again\n"+
-						"  • Check status: prism admin rate-limit status\n"+
-						"  • Adjust limits: prism admin rate-limit configure --max-launches <num>\n\n"+
-						"This limit prevents accidental cost overruns and AWS API throttling.",
-					rateLimitErr.Current,
-					rateLimitErr.Limit,
-					int(rateLimitErr.Window.Minutes()),
-					remaining,
-					retryTime,
-					retryTime,
-				))
-				return
-			}
-			s.writeError(w, http.StatusTooManyRequests, err.Error())
-			return
-		}
-	}
-
-	// Check advanced launch throttling (v0.6.0)
-	// Multi-scope throttling with per-user, per-project limits and budget awareness
-	if !s.checkLaunchThrottling(&req, w) {
-		return // Error response already written by checkLaunchThrottling
-	}
-
-	// Resolve funding allocation (v0.5.10+)
-	if req.ProjectID != "" {
-		if err := s.resolveFundingAllocation(&req, w); err != nil {
-			return // Error response already written by resolveFundingAllocation
-		}
-	}
-
-	// Check budget hard cap if this launch is associated with a project
-	if s.isLaunchBlockedByBudget(&req, w) {
-		return // Error response already written by isLaunchBlockedByBudget
+	// Apply pre-launch checks: rate limits, throttling, funding, and budget constraints
+	if !s.preLaunchChecks(&req, w, r) {
+		return
 	}
 
 	// Check instance name uniqueness (skip in test mode)
-	if !s.testMode && s.checkInstanceNameUniqueness(&req, w, r) {
-		return // Error response already written if name exists
+	if !s.instanceNameCheckPassed(&req, w, r) {
+		return
 	}
 
-	// Handle SSH key management if not provided in request (skip in test mode)
-	if req.SSHKeyName == "" && !s.testMode {
-		if err := s.setupSSHKeyForLaunch(&req); err != nil {
-			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("SSH key setup failed: %v", err))
-			return
-		}
+	// Ensure SSH key is configured (skip in test mode)
+	if !s.setupSSHIfNeeded(&req, w) {
+		return
 	}
 
 	// Use AWS manager from request and handle launch
@@ -331,13 +352,8 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[DEBUG] handleLaunchInstance: Instance created: %s (ID: %s, State: %s)", instance.Name, instance.ID, instance.State)
 
 	// Start progress monitoring if instance is running (v0.7.2 - Issue #453)
-	if instance.State == "running" && !s.testMode {
-		log.Printf("[DEBUG] handleLaunchInstance: Starting progress monitoring for %s", instance.Name)
-		// Use default SSH key path for progress monitoring
-		sshKeyPath := os.ExpandEnv("$HOME/.ssh/id_rsa")
-		s.progressTracker.StartMonitoring(instance, sshKeyPath)
-		log.Printf("[DEBUG] handleLaunchInstance: Progress monitoring started for %s", instance.Name)
-	}
+	s.maybeStartProgressMonitoring(instance)
+	log.Printf("[DEBUG] handleLaunchInstance: Progress monitoring setup done for %s", instance.Name)
 
 	// Save state with actual current AWS state
 	log.Printf("[DEBUG] handleLaunchInstance: Saving instance state for %s", instance.Name)
