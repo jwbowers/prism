@@ -307,13 +307,20 @@ func (h *UpdateCheckHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea.Cm
 // PageNavigationHandler handles page navigation keys
 type PageNavigationHandler struct{}
 
+// pageNavKeys is the set of keys handled by PageNavigationHandler.
+var pageNavKeys = map[string]bool{
+	"1": true, "2": true, "3": true, "4": true, "5": true,
+	"6": true, "7": true, "8": true, "9": true, "0": true,
+	"m": true, "i": true, "a": true, "r": true, "l": true,
+	"d": true, "esc": true,
+}
+
 func (h *PageNavigationHandler) CanHandle(msg tea.Msg) bool {
 	keyMsg, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return false
 	}
-	key := keyMsg.String()
-	return key == "1" || key == "2" || key == "3" || key == "4" || key == "5" || key == "6" || key == "7" || key == "8" || key == "9" || key == "0" || key == "m" || key == "i" || key == "a" || key == "r" || key == "l" || key == "d" || key == "esc"
+	return pageNavKeys[keyMsg.String()]
 }
 
 func (h *PageNavigationHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea.Cmd) {
@@ -328,35 +335,9 @@ func (h *PageNavigationHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea
 		return m, cmds
 	}
 
-	// If we're in the advanced submenu, handle submenu navigation
+	// If we're in the settings advanced submenu, handle submenu navigation
 	if m.inSubmenu && m.submenuParent == SettingsPage {
-		switch key {
-		case "1":
-			m.currentPage = AMIPage
-			m.inSubmenu = false
-			cmds = append(cmds, m.amiModel.Init())
-		case "2":
-			m.currentPage = RightsizingPage
-			m.inSubmenu = false
-			cmds = append(cmds, m.rightsizingModel.Init())
-		case "3":
-			m.currentPage = IdlePage
-			m.inSubmenu = false
-			cmds = append(cmds, m.idleModel.Init())
-		case "4":
-			m.currentPage = PolicyPage
-			m.inSubmenu = false
-			cmds = append(cmds, m.policyModel.Init())
-		case "5":
-			m.currentPage = MarketplacePage
-			m.inSubmenu = false
-			cmds = append(cmds, m.marketplaceModel.Init())
-		case "6":
-			m.currentPage = LogsPage
-			m.inSubmenu = false
-			cmds = append(cmds, m.logsModel.Init())
-		}
-		return m, cmds
+		return handleSettingsSubmenuNav(m, key)
 	}
 
 	// Handle 'a' key on Settings page - enter advanced submenu
@@ -367,6 +348,44 @@ func (h *PageNavigationHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea
 	}
 
 	// Normal page navigation (not in submenu)
+	return handleMainPageNav(m, key)
+}
+
+// handleSettingsSubmenuNav handles key presses when inside the Settings advanced submenu.
+func handleSettingsSubmenuNav(m AppModel, key string) (AppModel, []tea.Cmd) {
+	var cmds []tea.Cmd
+	switch key {
+	case "1":
+		m.currentPage = AMIPage
+		m.inSubmenu = false
+		cmds = append(cmds, m.amiModel.Init())
+	case "2":
+		m.currentPage = RightsizingPage
+		m.inSubmenu = false
+		cmds = append(cmds, m.rightsizingModel.Init())
+	case "3":
+		m.currentPage = IdlePage
+		m.inSubmenu = false
+		cmds = append(cmds, m.idleModel.Init())
+	case "4":
+		m.currentPage = PolicyPage
+		m.inSubmenu = false
+		cmds = append(cmds, m.policyModel.Init())
+	case "5":
+		m.currentPage = MarketplacePage
+		m.inSubmenu = false
+		cmds = append(cmds, m.marketplaceModel.Init())
+	case "6":
+		m.currentPage = LogsPage
+		m.inSubmenu = false
+		cmds = append(cmds, m.logsModel.Init())
+	}
+	return m, cmds
+}
+
+// handleMainPageNav handles top-level page navigation key presses.
+func handleMainPageNav(m AppModel, key string) (AppModel, []tea.Cmd) {
+	var cmds []tea.Cmd
 	switch key {
 	case "1":
 		m.currentPage = DashboardPage
@@ -396,7 +415,6 @@ func (h *PageNavigationHandler) Handle(m AppModel, msg tea.Msg) (AppModel, []tea
 		m.profilesModel.SetSize(m.width, m.height)
 		cmds = append(cmds, func() tea.Msg { return models.ProfileInitMsg{} })
 	}
-
 	return m, cmds
 }
 
