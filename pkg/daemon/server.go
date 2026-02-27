@@ -96,6 +96,119 @@ type Server struct {
 	progressTracker *ProgressTracker
 }
 
+// awsInitResult bundles the outputs of initAWSManager.
+type awsInitResult struct {
+	manager        *aws.Manager
+	profileManager *profile.ManagerEnhanced
+	reducedMode    bool
+}
+
+// envAWSOptions reads AWS connection options from environment variables.
+func envAWSOptions() aws.ManagerOptions {
+	opts := aws.ManagerOptions{
+		Profile: os.Getenv("AWS_PROFILE"),
+		Region:  os.Getenv("AWS_REGION"),
+	}
+	if opts.Profile != "" {
+		logger.Info("Using AWS_PROFILE from environment", "profile", opts.Profile)
+	}
+	if opts.Region != "" {
+		logger.Info("Using AWS_REGION from environment", "region", opts.Region)
+	}
+	return opts
+}
+
+// resolveAWSOptions returns AWS options from the active Prism profile, falling back to env vars.
+func resolveAWSOptions() (aws.ManagerOptions, *profile.ManagerEnhanced) {
+	profileMgr, err := profile.NewManagerEnhanced()
+	if err != nil {
+		logger.Warn("Failed to initialize profile manager", "error", err)
+		return envAWSOptions(), nil
+	}
+	currentProfile, err := profileMgr.GetCurrentProfile()
+	if err != nil {
+		logger.Warn("Failed to get current profile, using AWS defaults", "error", err)
+		return envAWSOptions(), profileMgr
+	}
+	return aws.ManagerOptions{
+		Profile: currentProfile.AWSProfile,
+		Region:  currentProfile.Region,
+	}, profileMgr
+}
+
+// initAWSManager initializes the AWS manager from profile or environment configuration.
+// It returns a reduced-mode result (manager=nil, reducedMode=true) when credentials are
+// unavailable rather than failing, allowing the daemon to start in a degraded state.
+func initAWSManager() (awsInitResult, error) {
+	opts, profileMgr := resolveAWSOptions()
+	mgr, err := aws.NewManager(opts)
+	if err != nil {
+		if isCredentialError(err) {
+			logger.Warn("AWS credentials unavailable, starting in reduced functionality mode")
+			return awsInitResult{manager: nil, profileManager: profileMgr, reducedMode: true}, nil
+		}
+		return awsInitResult{}, fmt.Errorf("failed to initialize AWS manager: %w", err)
+	}
+	return awsInitResult{manager: mgr, profileManager: profileMgr}, nil
+}
+
+// resolvePort returns the effective port, preferring the parameter, then config, then default.
+func resolvePort(param, configPort string) string {
+	if param != "" {
+		return param
+	}
+	if configPort != "" {
+		return configPort
+	}
+	return "8947" // CWS on phone keypad
+}
+
+// initIdleComponents creates the idle scheduler and policy manager when awsMgr is available.
+func initIdleComponents(awsMgr *aws.Manager) (*idle.Scheduler, *idle.PolicyManager) {
+	if awsMgr == nil {
+		return nil, nil
+	}
+	metricsCollector := idle.NewMetricsCollector(awsMgr.GetAWSConfig())
+	scheduler := idle.NewScheduler(awsMgr, metricsCollector)
+	policyMgr := idle.NewPolicyManager()
+	policyMgr.SetScheduler(scheduler)
+	scheduler.Start()
+	logger.Info("Idle detection system initialized")
+	return scheduler, policyMgr
+}
+
+// initCloudWatchClient creates a CloudWatch client from the AWS manager, or nil if unavailable.
+func initCloudWatchClient(awsMgr *aws.Manager) *cloudwatch.Client {
+	if awsMgr == nil {
+		return nil
+	}
+	return cloudwatch.NewFromConfig(awsMgr.GetAWSConfig())
+}
+
+// makeCostDataFn returns a cost data provider function backed by the given BudgetTracker.
+func makeCostDataFn(bt *project.BudgetTracker) func(string) (float64, float64, float64, []float64, error) {
+	return func(projectID string) (float64, float64, float64, []float64, error) {
+		budgetStatus, err := bt.CheckBudgetStatus(projectID)
+		if err != nil {
+			return 0, 0, 0, []float64{}, nil
+		}
+		costHistory, err := bt.GetProjectCostHistory(projectID, 90)
+		if err != nil {
+			costHistory = []float64{}
+		}
+		dailyCost := budgetStatus.SpentAmount
+		if len(costHistory) >= 2 {
+			recentCost := costHistory[len(costHistory)-1]
+			previousCost := costHistory[len(costHistory)-2]
+			dailyCost = recentCost - previousCost
+			if dailyCost < 0 {
+				dailyCost = 0
+			}
+		}
+		return budgetStatus.SpentAmount, budgetStatus.TotalBudget, dailyCost, costHistory, nil
+	}
+}
+
 // NewServer creates a new daemon server
 func NewServer(port string) (*Server, error) {
 	// Load daemon configuration
@@ -104,14 +217,7 @@ func NewServer(port string) (*Server, error) {
 		return nil, fmt.Errorf("failed to load daemon configuration: %w", err)
 	}
 
-	// Use port from parameter or config, with fallback to default
-	if port == "" {
-		if config.Port != "" {
-			port = config.Port
-		} else {
-			port = "8947" // CWS on phone keypad - more unique than 8080
-		}
-	}
+	port = resolvePort(port, config.Port)
 
 	// Initialize state manager
 	stateManager, err := state.NewManager()
@@ -131,98 +237,19 @@ func NewServer(port string) (*Server, error) {
 	// Initialize API version manager
 	versionManager := NewAPIVersionManager("/api")
 
-	// Get current profile configuration and initialize AWS manager
-	// NOTE: AWS initialization is now non-blocking to prevent daemon startup delays
-	// when credentials are unavailable (Issue #356)
-	var awsManager *aws.Manager
-	reducedMode := false // Will be set to true if AWS initialization fails
-
-	profileManager, profileErr := profile.NewManagerEnhanced()
-	if profileErr != nil {
-		logger.Warn("Failed to initialize profile manager", "error", profileErr)
-		// Fall back to environment variables before using AWS SDK defaults
-		envProfile := os.Getenv("AWS_PROFILE")
-		envRegion := os.Getenv("AWS_REGION")
-		if envProfile != "" {
-			logger.Info("Using AWS_PROFILE from environment", "profile", envProfile)
-		}
-		if envRegion != "" {
-			logger.Info("Using AWS_REGION from environment", "region", envRegion)
-		}
-		awsManager, err = aws.NewManager(aws.ManagerOptions{
-			Profile: envProfile, // Use environment variable or AWS SDK default
-			Region:  envRegion,  // Use environment variable or AWS SDK default
-		})
-		if err != nil {
-			if isCredentialError(err) {
-				logger.Warn("AWS credentials unavailable, starting in reduced functionality mode")
-				reducedMode = true
-				awsManager = nil
-			} else {
-				return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
-			}
-		}
-	} else {
-		currentProfile, err := profileManager.GetCurrentProfile()
-		if err != nil {
-			logger.Warn("Failed to get current profile, using AWS defaults", "error", err)
-			// Fall back to environment variables before using AWS SDK defaults
-			envProfile := os.Getenv("AWS_PROFILE")
-			envRegion := os.Getenv("AWS_REGION")
-			if envProfile != "" {
-				logger.Info("Using AWS_PROFILE from environment", "profile", envProfile)
-			}
-			if envRegion != "" {
-				logger.Info("Using AWS_REGION from environment", "region", envRegion)
-			}
-			awsManager, err = aws.NewManager(aws.ManagerOptions{
-				Profile: envProfile, // Use environment variable or AWS SDK default
-				Region:  envRegion,  // Use environment variable or AWS SDK default
-			})
-			if err != nil {
-				if isCredentialError(err) {
-					logger.Warn("AWS credentials unavailable, starting in reduced functionality mode")
-					reducedMode = true
-					awsManager = nil
-				} else {
-					return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
-				}
-			}
-		} else {
-			// Use profile values from current Prism profile
-			awsManager, err = aws.NewManager(aws.ManagerOptions{
-				Profile: currentProfile.AWSProfile,
-				Region:  currentProfile.Region,
-			})
-			if err != nil {
-				if isCredentialError(err) {
-					logger.Warn("AWS credentials unavailable, starting in reduced functionality mode")
-					reducedMode = true
-					awsManager = nil
-				} else {
-					return nil, fmt.Errorf("failed to initialize AWS manager: %w", err)
-				}
-			}
-		}
+	// Get current profile configuration and initialize AWS manager.
+	// NOTE: initAWSManager returns reduced-mode instead of failing when credentials
+	// are unavailable, preventing daemon startup delays (Issue #356).
+	awsInit, err := initAWSManager()
+	if err != nil {
+		return nil, err
 	}
+	awsManager := awsInit.manager
+	profileManager := awsInit.profileManager
+	reducedMode := awsInit.reducedMode
 
 	// Initialize idle detection components as daemon singletons (Issue #289 fix)
-	var idleScheduler *idle.Scheduler
-	var policyManager *idle.PolicyManager
-	if awsManager != nil {
-		// Create metrics collector with AWS config
-		metricsCollector := idle.NewMetricsCollector(awsManager.GetAWSConfig())
-
-		// Create scheduler and policy manager as daemon-level singletons
-		idleScheduler = idle.NewScheduler(awsManager, metricsCollector)
-		policyManager = idle.NewPolicyManager()
-		policyManager.SetScheduler(idleScheduler)
-
-		// Start the scheduler
-		idleScheduler.Start()
-
-		logger.Info("Idle detection system initialized")
-	}
+	idleScheduler, policyManager := initIdleComponents(awsManager)
 
 	// Legacy idle management removed - using universal idle detection via template resolver
 
@@ -255,38 +282,9 @@ func NewServer(port string) (*Server, error) {
 
 	// Create cost data provider adapter for alert manager
 	costDataProvider := cost.NewBudgetTrackerAdapter(
-		func(projectID string) (float64, float64, float64, []float64, error) {
-			// Get budget data from tracker
-			budgetStatus, err := budgetTracker.CheckBudgetStatus(projectID)
-			if err != nil {
-				// Return zeros if project not found - allows alert manager to function even without projects
-				return 0, 0, 0, []float64{}, nil
-			}
-
-			// Extract REAL cost history from budget tracker (last 90 days)
-			costHistory, err := budgetTracker.GetProjectCostHistory(projectID, 90)
-			if err != nil {
-				costHistory = []float64{}
-			}
-
-			// Calculate real daily cost from recent history
-			dailyCost := budgetStatus.SpentAmount
-			if len(costHistory) >= 2 {
-				// Use last 24 hours if available
-				recentCost := costHistory[len(costHistory)-1]
-				previousCost := costHistory[len(costHistory)-2]
-				dailyCost = recentCost - previousCost
-				if dailyCost < 0 {
-					dailyCost = 0
-				}
-			}
-
-			return budgetStatus.SpentAmount, budgetStatus.TotalBudget, dailyCost, costHistory, nil
-		},
+		makeCostDataFn(budgetTracker),
 		func() ([]string, error) {
-			// Get all project IDs from budget tracker
-			projectIDs := budgetTracker.GetAllProjectIDs()
-			return projectIDs, nil
+			return budgetTracker.GetAllProjectIDs(), nil
 		},
 	)
 
@@ -362,12 +360,7 @@ func NewServer(port string) (*Server, error) {
 	storageStateMonitor := NewStorageStateMonitor(awsManager, stateManager)
 
 	// Initialize CloudWatch client for rightsizing metrics
-	var cloudwatchClient *cloudwatch.Client
-	if awsManager != nil {
-		// Get AWS config from the manager
-		awsConfig := awsManager.GetAWSConfig()
-		cloudwatchClient = cloudwatch.NewFromConfig(awsConfig)
-	}
+	cloudwatchClient := initCloudWatchClient(awsManager)
 
 	server := &Server{
 		config:              config,
@@ -473,55 +466,80 @@ func NewServerForTesting(port string) (*Server, error) {
 }
 
 // Start starts the daemon server
-func (s *Server) Start() error {
-	logger.Info("Starting Prism daemon", "port", s.port)
-
-	// Enforce singleton: check for existing daemon and perform takeover if necessary
+// acquireSingletonLock enforces the daemon singleton constraint. It discovers any
+// existing daemon processes, performs a graceful takeover if needed, and registers
+// the current process in the daemon registry.
+func (s *Server) acquireSingletonLock() error {
 	currentPID := os.Getpid()
 	existingProcesses, err := s.processManager.FindDaemonProcesses()
 	if err == nil && len(existingProcesses) > 0 {
 		for _, proc := range existingProcesses {
 			if proc.PID != currentPID && s.processManager.IsProcessRunning(proc.PID) {
 				logger.Info("Found existing daemon, performing singleton takeover", "existing_pid", proc.PID)
-
-				// Signal existing daemon to shut down gracefully
 				if err := s.processManager.GracefulShutdown(proc.PID); err != nil {
 					logger.Warn("Failed to gracefully shutdown existing daemon", "error", err, "pid", proc.PID)
-					// Continue anyway - might be stale registry entry
 				}
-
-				// Wait for port to be released (with timeout)
 				portReleased := false
 				for i := 0; i < 10; i++ {
 					time.Sleep(1 * time.Second)
-					// Try to bind to the port to check if it's available
-					listener, err := net.Listen("tcp", fmt.Sprintf(":%s", s.port))
-					if err == nil {
+					listener, listenErr := net.Listen("tcp", fmt.Sprintf(":%s", s.port))
+					if listenErr == nil {
 						listener.Close()
 						portReleased = true
 						break
 					}
 				}
-
 				if !portReleased {
 					return fmt.Errorf("timeout waiting for existing daemon (PID: %d) to release port %s", proc.PID, s.port)
 				}
-
 				logger.Info("Singleton lock acquired after takeover", "pid", currentPID)
 			}
 		}
 	}
-
-	// Register this daemon instance
-	pid := os.Getpid()
 	configPath := fmt.Sprintf("%s/.prism", os.Getenv("HOME"))
-	if err := s.processManager.RegisterDaemon(pid, configPath, ""); err != nil {
+	if err := s.processManager.RegisterDaemon(currentPID, configPath, ""); err != nil {
 		logger.Warn("Failed to register daemon", "error", err)
-	} else {
-		// Only log this if there was no takeover (otherwise we already logged "Singleton lock acquired")
-		if len(existingProcesses) == 0 {
-			logger.Info("Singleton lock acquired", "pid", currentPID)
+	} else if len(existingProcesses) == 0 {
+		logger.Info("Singleton lock acquired", "pid", currentPID)
+	}
+	return nil
+}
+
+// startShutdownHandler waits for OS signals and performs graceful shutdown.
+func (s *Server) startShutdownHandler(cancel context.CancelFunc) {
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		<-c
+		logger.Info("Shutting down daemon with stability management")
+		shutCtx, shutCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutCancel()
+		cancel()
+		if err := s.recoveryManager.GracefulShutdown(shutCtx); err != nil {
+			logger.Warn("Graceful shutdown had issues", "error", err)
 		}
+		if err := s.processManager.UnregisterDaemon(os.Getpid()); err != nil {
+			logger.Warn("Failed to unregister daemon", "error", err)
+		}
+		s.stopIntegratedMonitoring()
+		if s.sleepWakeMonitor != nil {
+			if err := s.sleepWakeMonitor.Stop(); err != nil {
+				logger.Warn("Failed to stop sleep/wake monitor", "error", err)
+			}
+		}
+		s.stateMonitor.Stop()
+		s.storageStateMonitor.Stop()
+		if err := s.securityManager.Stop(); err != nil {
+			logger.Warn("Failed to stop security manager", "error", err)
+		}
+	}()
+}
+
+func (s *Server) Start() error {
+	logger.Info("Starting Prism daemon", "port", s.port)
+
+	if err := s.acquireSingletonLock(); err != nil {
+		return err
 	}
 
 	// Start daemon stability and monitoring systems
@@ -572,47 +590,7 @@ func (s *Server) Start() error {
 	}
 
 	// Handle graceful shutdown with recovery manager
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		<-c
-		logger.Info("Shutting down daemon with stability management")
-
-		// Use recovery manager for graceful shutdown
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		if err := s.recoveryManager.GracefulShutdown(ctx); err != nil {
-			logger.Warn("Graceful shutdown had issues", "error", err)
-		}
-
-		// Unregister this daemon instance
-		pid := os.Getpid()
-		if err := s.processManager.UnregisterDaemon(pid); err != nil {
-			logger.Warn("Failed to unregister daemon", "error", err)
-		}
-
-		// Stop integrated monitoring
-		s.stopIntegratedMonitoring()
-
-		// Stop sleep/wake monitor (v0.5.7 - Issue #91)
-		if s.sleepWakeMonitor != nil {
-			if err := s.sleepWakeMonitor.Stop(); err != nil {
-				logger.Warn("Failed to stop sleep/wake monitor", "error", err)
-			}
-		}
-
-		// Stop state monitor (v0.5.8)
-		s.stateMonitor.Stop()
-
-		// Stop storage state monitor
-		s.storageStateMonitor.Stop()
-
-		// Stop security manager
-		if err := s.securityManager.Stop(); err != nil {
-			logger.Warn("Failed to stop security manager", "error", err)
-		}
-	}()
+	s.startShutdownHandler(cancel)
 
 	return s.httpServer.ListenAndServe()
 }
