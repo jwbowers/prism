@@ -282,6 +282,36 @@ func (s *ScalingCommands) rightsizingRecommendations(args []string) error {
 	return nil
 }
 
+// printResourceUtilizationStatus prints metric summary for a CPU or memory resource.
+func printResourceUtilizationStatus(label string, summary types.ResourceSummary) {
+	fmt.Printf("   %s:\n", label)
+	fmt.Printf("     Average: %.1f%% | Peak: %.1f%% | P95: %.1f%%\n", summary.Average, summary.Peak, summary.P95)
+	if summary.Bottleneck {
+		fmt.Printf("     ⚠️ %s bottleneck detected\n", label)
+	} else if summary.Underutilized {
+		fmt.Printf("     💡 %s underutilized - consider downsizing\n", label)
+	} else {
+		fmt.Printf("     ✅ %s utilization within optimal range\n", label)
+	}
+}
+
+// printRightsizingRecommendation prints the recommendation section.
+func printRightsizingRecommendation(rec *types.RightsizingRecommendation) {
+	fmt.Printf("\n🎯 **Current Recommendation**:\n")
+	switch rec.RecommendationType {
+	case types.RightsizingOptimal:
+		fmt.Printf("   ✅ Current size (%s) is optimal\n", rec.CurrentSize)
+	case types.RightsizingDownsize:
+		fmt.Printf("   📉 Downsize to %s (%s)\n", rec.RecommendedSize, rec.RecommendedInstanceType)
+		fmt.Printf("   Potential Savings: $%.2f/month\n", rec.CostImpact.MonthlySavings)
+	case types.RightsizingUpsize:
+		fmt.Printf("   📈 Upsize to %s (%s)\n", rec.RecommendedSize, rec.RecommendedInstanceType)
+		fmt.Printf("   Additional Cost: +$%.2f/day\n", rec.CostImpact.DailyDifference)
+	}
+	fmt.Printf("   Confidence: %s\n", rec.Confidence)
+	fmt.Printf("   Reasoning: %s\n", rec.Reasoning)
+}
+
 // rightsizingStats shows detailed usage statistics for an instance
 func (s *ScalingCommands) rightsizingStats(args []string) error {
 	if len(args) < 1 {
@@ -342,30 +372,8 @@ func (s *ScalingCommands) rightsizingStats(args []string) error {
 	// Display resource utilization summary
 	summary := response.MetricsSummary
 	fmt.Printf("\n📊 **Resource Utilization Summary**:\n")
-
-	// CPU summary
-	cpu := summary.CPUSummary
-	fmt.Printf("   CPU:\n")
-	fmt.Printf("     Average: %.1f%% | Peak: %.1f%% | P95: %.1f%%\n", cpu.Average, cpu.Peak, cpu.P95)
-	if cpu.Bottleneck {
-		fmt.Printf("     ⚠️ CPU bottleneck detected\n")
-	} else if cpu.Underutilized {
-		fmt.Printf("     💡 CPU underutilized - consider downsizing\n")
-	} else {
-		fmt.Printf("     ✅ CPU utilization within optimal range\n")
-	}
-
-	// Memory summary
-	memory := summary.MemorySummary
-	fmt.Printf("   Memory:\n")
-	fmt.Printf("     Average: %.1f%% | Peak: %.1f%% | P95: %.1f%%\n", memory.Average, memory.Peak, memory.P95)
-	if memory.Bottleneck {
-		fmt.Printf("     ⚠️ Memory bottleneck detected\n")
-	} else if memory.Underutilized {
-		fmt.Printf("     💡 Memory underutilized - consider downsizing\n")
-	} else {
-		fmt.Printf("     ✅ Memory utilization within optimal range\n")
-	}
+	printResourceUtilizationStatus("CPU", summary.CPUSummary)
+	printResourceUtilizationStatus("Memory", summary.MemorySummary)
 
 	// Storage and Network
 	storage := summary.StorageSummary
@@ -375,22 +383,7 @@ func (s *ScalingCommands) rightsizingStats(args []string) error {
 
 	// Show recommendation if available
 	if response.Recommendation != nil {
-		rec := response.Recommendation
-		fmt.Printf("\n🎯 **Current Recommendation**:\n")
-
-		switch rec.RecommendationType {
-		case types.RightsizingOptimal:
-			fmt.Printf("   ✅ Current size (%s) is optimal\n", rec.CurrentSize)
-		case types.RightsizingDownsize:
-			fmt.Printf("   📉 Downsize to %s (%s)\n", rec.RecommendedSize, rec.RecommendedInstanceType)
-			fmt.Printf("   Potential Savings: $%.2f/month\n", rec.CostImpact.MonthlySavings)
-		case types.RightsizingUpsize:
-			fmt.Printf("   📈 Upsize to %s (%s)\n", rec.RecommendedSize, rec.RecommendedInstanceType)
-			fmt.Printf("   Additional Cost: +$%.2f/day\n", rec.CostImpact.DailyDifference)
-		}
-
-		fmt.Printf("   Confidence: %s\n", rec.Confidence)
-		fmt.Printf("   Reasoning: %s\n", rec.Reasoning)
+		printRightsizingRecommendation(response.Recommendation)
 	}
 
 	// Show recent metrics if available

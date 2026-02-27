@@ -185,6 +185,26 @@ func (m *Manager) GetInvitationByToken(ctx context.Context, token string) (*type
 	return &invitationCopy, nil
 }
 
+// invitationMatchesFilter returns true if the invitation passes all active filter criteria.
+func invitationMatchesFilter(inv *types.Invitation, filter *types.InvitationFilter) bool {
+	if filter.ProjectID != "" && inv.ProjectID != filter.ProjectID {
+		return false
+	}
+	if filter.Email != "" && !strings.EqualFold(inv.Email, filter.Email) {
+		return false
+	}
+	if filter.Status != "" && inv.Status != filter.Status {
+		return false
+	}
+	if filter.InvitedBy != "" && inv.InvitedBy != filter.InvitedBy {
+		return false
+	}
+	if !filter.IncludeExpired && inv.IsExpired() {
+		return false
+	}
+	return true
+}
+
 // ListInvitations lists invitations with optional filtering
 func (m *Manager) ListInvitations(ctx context.Context, filter *types.InvitationFilter) ([]*types.Invitation, error) {
 	m.mutex.RLock()
@@ -192,40 +212,10 @@ func (m *Manager) ListInvitations(ctx context.Context, filter *types.InvitationF
 
 	var results []*types.Invitation
 
-	// Start with all invitations
-	candidates := make([]*types.Invitation, 0, len(m.invitations))
 	for _, inv := range m.invitations {
-		candidates = append(candidates, inv)
-	}
-
-	// Apply filters
-	for _, inv := range candidates {
-		// Project filter
-		if filter.ProjectID != "" && inv.ProjectID != filter.ProjectID {
-			continue
+		if invitationMatchesFilter(inv, filter) {
+			results = append(results, inv)
 		}
-
-		// Email filter
-		if filter.Email != "" && !strings.EqualFold(inv.Email, filter.Email) {
-			continue
-		}
-
-		// Status filter
-		if filter.Status != "" && inv.Status != filter.Status {
-			continue
-		}
-
-		// InvitedBy filter
-		if filter.InvitedBy != "" && inv.InvitedBy != filter.InvitedBy {
-			continue
-		}
-
-		// Expired filter
-		if !filter.IncludeExpired && inv.IsExpired() {
-			continue
-		}
-
-		results = append(results, inv)
 	}
 
 	// Sort by InvitedAt descending (newest first)

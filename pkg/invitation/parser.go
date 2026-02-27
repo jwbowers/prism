@@ -33,6 +33,20 @@ func ParseInvitationFile(filePath string) ([]types.BulkInvitationEntry, error) {
 	return ParsePlainText(file)
 }
 
+// parseCSVOptionalFields fills in optional role and message from CSV record columns 2 and 3.
+func parseCSVOptionalFields(record []string, entry *types.BulkInvitationEntry) {
+	if len(record) > 1 {
+		if role := strings.TrimSpace(record[1]); role != "" {
+			entry.Role = types.ProjectRole(role)
+		}
+	}
+	if len(record) > 2 {
+		if message := strings.TrimSpace(record[2]); message != "" {
+			entry.Message = message
+		}
+	}
+}
+
 // ParseCSV parses a CSV file with format: email,role,message
 // First row is treated as header if it contains "email"
 // Role and message columns are optional
@@ -76,26 +90,8 @@ func ParseCSV(reader io.Reader) ([]types.BulkInvitationEntry, error) {
 			return nil, fmt.Errorf("invalid email format at line %d: %s", lineNum, email)
 		}
 
-		entry := types.BulkInvitationEntry{
-			Email: email,
-		}
-
-		// Parse role (optional, column 2)
-		if len(record) > 1 {
-			role := strings.TrimSpace(record[1])
-			if role != "" {
-				entry.Role = types.ProjectRole(role)
-			}
-		}
-
-		// Parse message (optional, column 3)
-		if len(record) > 2 {
-			message := strings.TrimSpace(record[2])
-			if message != "" {
-				entry.Message = message
-			}
-		}
-
+		entry := types.BulkInvitationEntry{Email: email}
+		parseCSVOptionalFields(record, &entry)
 		entries = append(entries, entry)
 	}
 

@@ -103,33 +103,10 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 	filteredInstances := make([]types.Instance, 0)
 
 	for _, instance := range instances {
-		// Include non-terminated instances
 		if instance.State != "terminated" {
 			filteredInstances = append(filteredInstances, instance)
-			continue
-		}
-
-		// For terminated instances, check deletion time against retention period
-		if instance.DeletionTime != nil {
-			// Include if less than retention period since deletion was initiated
-			if time.Since(*instance.DeletionTime) < retentionDuration {
-				filteredInstances = append(filteredInstances, instance)
-			}
-			// Otherwise, exclude (older than retention period)
-		} else {
-			// No deletion time recorded - use conservative approach for legacy instances
-			// If retention is 0 (indefinite), always include terminated instances
-			if s.config.InstanceRetentionMinutes == 0 {
-				filteredInstances = append(filteredInstances, instance)
-			} else {
-				// Use launch time + startup buffer + retention period for legacy instances
-				timeSinceLaunch := time.Since(instance.LaunchTime)
-				conservativeRetention := (5 * time.Minute) + retentionDuration // 5min startup buffer
-				if timeSinceLaunch < conservativeRetention {
-					filteredInstances = append(filteredInstances, instance)
-				}
-			}
-			// Otherwise, exclude old terminated instances without deletion timestamps
+		} else if s.shouldIncludeTerminated(instance, retentionDuration) {
+			filteredInstances = append(filteredInstances, instance)
 		}
 	}
 
@@ -173,6 +150,20 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// shouldIncludeTerminated returns true if a terminated instance should still be shown
+// based on the configured retention policy.
+func (s *Server) shouldIncludeTerminated(instance types.Instance, retentionDuration time.Duration) bool {
+	if instance.DeletionTime != nil {
+		return time.Since(*instance.DeletionTime) < retentionDuration
+	}
+	// Legacy instances without deletion time: indefinite retention or launch-time heuristic
+	if s.config.InstanceRetentionMinutes == 0 {
+		return true
+	}
+	conservativeRetention := (5 * time.Minute) + retentionDuration
+	return time.Since(instance.LaunchTime) < conservativeRetention
 }
 
 // formatRetryTime converts a duration in seconds to a human-readable string.
