@@ -647,40 +647,112 @@ func (m *LaunchProgressMonitor) handleInstanceState(state string, elapsed int, i
 	return true, nil // Continue monitoring by default
 }
 
-// List handles the list command with optional project filtering
-func (a *App) List(args []string) error {
-	// Parse arguments for project filtering, detailed output, and refresh
-	var projectFilter string
-	var detailed bool
-	var refresh bool
+// listFlags holds the parsed flags for the List command.
+type listFlags struct {
+	projectFilter string
+	detailed      bool
+	refresh       bool
+}
+
+// parseListFlags parses optional flag arguments for the list command.
+func parseListFlags(args []string) listFlags {
+	var flags listFlags
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch {
 		case arg == "--project" && i+1 < len(args):
-			projectFilter = args[i+1]
+			flags.projectFilter = args[i+1]
 			i++
 		case arg == "--detailed" || arg == "-d":
-			detailed = true
+			flags.detailed = true
 		case arg == "--refresh" || arg == "-r":
-			refresh = true
+			flags.refresh = true
 		}
 	}
+	return flags
+}
+
+// printInstanceRow writes a single formatted instance row to the tabwriter.
+func printInstanceRow(w *tabwriter.Writer, instance types.Instance, detailed bool) {
+	projectInfo := "-"
+	if instance.ProjectID != "" {
+		projectInfo = instance.ProjectID
+	}
+	typeIndicator := "OD"
+	if instance.InstanceLifecycle == "spot" {
+		typeIndicator = "SP"
+	}
+	currentCost := fmt.Sprintf("$%.4f", instance.CurrentSpend)
+	effectiveRate := fmt.Sprintf("$%.4f", instance.EffectiveRate)
+
+	if instance.State == "stopped" || instance.State == "terminated" || instance.State == "stopping" {
+		numEBSVolumes := len(instance.AttachedEBSVolumes)
+		if numEBSVolumes == 0 {
+			numEBSVolumes = 1
+		}
+		effectiveRate = fmt.Sprintf("$%.4f", 0.005*float64(numEBSVolumes))
+	}
+
+	if detailed {
+		region := instance.Region
+		if region == "" {
+			region = "-"
+		}
+		az := instance.AvailabilityZone
+		if az == "" {
+			az = "-"
+		}
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			instance.Name, instance.Template, strings.ToUpper(instance.State),
+			typeIndicator, region, az, instance.PublicIP, projectInfo,
+			currentCost, effectiveRate, instance.LaunchTime.Format(ShortDateFormat))
+	} else {
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			instance.Name, instance.Template, strings.ToUpper(instance.State),
+			typeIndicator, instance.PublicIP, projectInfo,
+			currentCost, effectiveRate, instance.LaunchTime.Format(ShortDateFormat))
+	}
+}
+
+// printRunningCostSummary prints an aggregate cost summary for running instances.
+func printRunningCostSummary(instances []types.Instance) {
+	running, totalCurrent, totalEffective := 0, 0.0, 0.0
+	for _, inst := range instances {
+		if inst.State == "running" {
+			running++
+			totalCurrent += inst.CurrentSpend
+			totalEffective += inst.EffectiveRate
+		}
+	}
+	if running > 0 {
+		fmt.Printf("💰 Cost Summary:\n")
+		fmt.Printf("   Running workspaces: %d\n", running)
+		fmt.Printf("   Total accumulated:  $%.4f (since launch)\n", totalCurrent)
+		fmt.Printf("   Effective rate:     $%.4f/hr (actual usage)\n", totalEffective)
+		fmt.Printf("   Estimated daily:    $%.2f (at current rate)\n", totalEffective*24)
+		fmt.Printf("\n💡 Tip: Use 'prism list cost' for detailed cost breakdown with savings analysis\n")
+	}
+}
+
+// List handles the list command with optional project filtering
+func (a *App) List(args []string) error {
+	flags := parseListFlags(args)
 
 	// Ensure daemon is running (auto-start if needed)
 	if err := a.ensureDaemonRunning(); err != nil {
 		return err
 	}
 
-	response, err := a.apiClient.ListInstancesWithRefresh(a.ctx, refresh)
+	response, err := a.apiClient.ListInstancesWithRefresh(a.ctx, flags.refresh)
 	if err != nil {
 		return WrapAPIError("list workspaces", err)
 	}
 
 	// Filter instances by project if specified
 	var filteredInstances []types.Instance
-	if projectFilter != "" {
+	if flags.projectFilter != "" {
 		for _, instance := range response.Instances {
-			if instance.ProjectID == projectFilter {
+			if instance.ProjectID == flags.projectFilter {
 				filteredInstances = append(filteredInstances, instance)
 			}
 		}
@@ -689,127 +761,31 @@ func (a *App) List(args []string) error {
 	}
 
 	if len(filteredInstances) == 0 {
-		if projectFilter != "" {
-			fmt.Printf(NoInstancesFoundProjectMessage+"\n", projectFilter, projectFilter)
+		if flags.projectFilter != "" {
+			fmt.Printf(NoInstancesFoundProjectMessage+"\n", flags.projectFilter, flags.projectFilter)
 		} else {
 			fmt.Println(NoInstancesFoundMessage)
 		}
 		return nil
 	}
 
-	// Show header with project filter info
-	if projectFilter != "" {
-		fmt.Printf("Workstations in project '%s':\n\n", projectFilter)
+	if flags.projectFilter != "" {
+		fmt.Printf("Workstations in project '%s':\n\n", flags.projectFilter)
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, TabWriterMinWidth, TabWriterTabWidth, TabWriterPadding, TabWriterPadChar, TabWriterFlags)
-
-	// Show different headers based on detailed flag
-	if detailed {
+	if flags.detailed {
 		_, _ = fmt.Fprintln(w, "NAME\tTEMPLATE\tSTATE\tTYPE\tREGION\tAZ\tPUBLIC IP\tPROJECT\tTOTAL $\tEFF $/HR\tLAUNCHED")
 	} else {
 		_, _ = fmt.Fprintln(w, "NAME\tTEMPLATE\tSTATE\tTYPE\tPUBLIC IP\tPROJECT\tTOTAL $\tEFF $/HR\tLAUNCHED")
 	}
-
 	for _, instance := range filteredInstances {
-		projectInfo := "-"
-		if instance.ProjectID != "" {
-			projectInfo = instance.ProjectID
-		}
-
-		// Format spot/on-demand indicator
-		typeIndicator := "OD"
-		if instance.InstanceLifecycle == "spot" {
-			typeIndicator = "SP"
-		}
-
-		// Format cost information
-		currentCost := fmt.Sprintf("$%.4f", instance.CurrentSpend)
-		effectiveRate := fmt.Sprintf("$%.4f", instance.EffectiveRate)
-
-		// For stopped/terminated instances, compute cost goes to $0 but storage persists
-		// Calculate EBS storage cost: $0.10/GB/month = ~$0.00014/GB/hour
-		// Typical root volume is 8-100GB, so $0.001-$0.014/hour storage cost
-		if instance.State == "stopped" || instance.State == "terminated" || instance.State == "stopping" {
-			// Estimate EBS storage cost (rough estimate: ~$0.005/hr for typical volumes)
-			// In production, this should be calculated from actual EBS volumes attached
-			estimatedStorageCostPerHour := 0.005
-			numEBSVolumes := len(instance.AttachedEBSVolumes)
-			if numEBSVolumes == 0 {
-				numEBSVolumes = 1 // At least root volume
-			}
-			storageCost := estimatedStorageCostPerHour * float64(numEBSVolumes)
-
-			// CurrentSpend continues to accumulate storage costs
-			// EffectiveRate shows only ongoing storage costs (EC2 compute is $0)
-			effectiveRate = fmt.Sprintf("$%.4f", storageCost)
-
-			// Note: CurrentSpend keeps its value (accumulated costs to date)
-		}
-
-		if detailed {
-			// Detailed output with region and AZ
-			region := instance.Region
-			if region == "" {
-				region = "-"
-			}
-			az := instance.AvailabilityZone
-			if az == "" {
-				az = "-"
-			}
-
-			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				instance.Name,
-				instance.Template,
-				strings.ToUpper(instance.State),
-				typeIndicator,
-				region,
-				az,
-				instance.PublicIP,
-				projectInfo,
-				currentCost,
-				effectiveRate,
-				instance.LaunchTime.Format(ShortDateFormat),
-			)
-		} else {
-			// Standard output
-			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				instance.Name,
-				instance.Template,
-				strings.ToUpper(instance.State),
-				typeIndicator,
-				instance.PublicIP,
-				projectInfo,
-				currentCost,
-				effectiveRate,
-				instance.LaunchTime.Format(ShortDateFormat),
-			)
-		}
+		printInstanceRow(w, instance, flags.detailed)
 	}
-
 	_ = w.Flush()
 
-	// Show cost summary for running instances
 	fmt.Println()
-	runningCount := 0
-	totalCurrentCost := 0.0
-	totalEffectiveCost := 0.0
-	for _, instance := range filteredInstances {
-		if instance.State == "running" {
-			runningCount++
-			totalCurrentCost += instance.CurrentSpend
-			totalEffectiveCost += instance.EffectiveRate
-		}
-	}
-
-	if runningCount > 0 {
-		fmt.Printf("💰 Cost Summary:\n")
-		fmt.Printf("   Running workspaces: %d\n", runningCount)
-		fmt.Printf("   Total accumulated:  $%.4f (since launch)\n", totalCurrentCost)
-		fmt.Printf("   Effective rate:     $%.4f/hr (actual usage)\n", totalEffectiveCost)
-		fmt.Printf("   Estimated daily:    $%.2f (at current rate)\n", totalEffectiveCost*24)
-		fmt.Printf("\n💡 Tip: Use 'prism list cost' for detailed cost breakdown with savings analysis\n")
-	}
+	printRunningCostSummary(filteredInstances)
 
 	return nil
 }
