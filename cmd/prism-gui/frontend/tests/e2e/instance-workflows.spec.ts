@@ -18,7 +18,7 @@ test.describe('Instance Management Workflows', () => {
   test.beforeEach(async ({ page, context }) => {
     // Set localStorage BEFORE navigating to prevent onboarding modal
     await context.addInitScript(() => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
     });
 
     instancesPage = new InstancesPage(page);

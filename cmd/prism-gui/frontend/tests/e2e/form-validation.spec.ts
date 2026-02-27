@@ -11,7 +11,7 @@ test.describe('Form Validation', () => {
   test.beforeEach(async ({ page, context }) => {
     // Set localStorage to skip onboarding before navigation
     await context.addInitScript(() => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
     });
     await page.goto('/');
 

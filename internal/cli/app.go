@@ -2025,7 +2025,7 @@ func (a *App) getDetailedProgress(sshKeyPath, username, ip string) string {
 		"-o", "LogLevel=ERROR",
 		"-i", sshKeyPath,
 		fmt.Sprintf("%s@%s", username, ip),
-		"tail -5 /var/log/cws-setup.log 2>/dev/null | grep CWS-PROGRESS | tail -1 || echo ''",
+		"tail -5 /var/log/prism-setup.log 2>/dev/null | grep PRISM-PROGRESS | tail -1 || echo ''",
 	)
 
 	output, err := cmd.Output()
@@ -2034,7 +2034,7 @@ func (a *App) getDetailedProgress(sshKeyPath, username, ip string) string {
 	}
 
 	// Parse progress marker
-	// Format: [CWS-PROGRESS] STAGE:stage-name:status
+	// Format: [PRISM-PROGRESS] STAGE:stage-name:status
 	line := strings.TrimSpace(string(output))
 	if strings.Contains(line, "STAGE:") {
 		parts := strings.Split(line, "STAGE:")

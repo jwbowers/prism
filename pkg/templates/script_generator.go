@@ -280,11 +280,11 @@ echo "User created - Name: {{.Name}} (SSH key authentication)"
 echo "Service available - {{.Name}} on port {{.Port}}"
 {{end}}
 {{end}}
-echo "Setup log: /var/log/cws-setup.log"
+echo "Setup log: /var/log/prism-setup.log"
 
 # Write completion marker
-date > /var/log/cws-setup.log
-echo "Prism setup completed successfully" >> /var/log/cws-setup.log
+date > /var/log/prism-setup.log
+echo "Prism setup completed successfully" >> /var/log/prism-setup.log
 `
 
 const aptScriptTemplate = `#!/bin/bash
@@ -380,11 +380,11 @@ echo "User created - Name: {{.Name}} (SSH key authentication)"
 echo "Service available - {{.Name}} on port {{.Port}}"
 {{end}}
 {{end}}
-echo "Setup log: /var/log/cws-setup.log"
+echo "Setup log: /var/log/prism-setup.log"
 
 # Write completion marker
-date > /var/log/cws-setup.log
-echo "Prism setup completed successfully" >> /var/log/cws-setup.log
+date > /var/log/prism-setup.log
+echo "Prism setup completed successfully" >> /var/log/prism-setup.log
 `
 
 const condaScriptTemplate = `#!/bin/bash
@@ -392,13 +392,13 @@ set -euo pipefail
 
 # Prism Progress Monitoring
 # This script logs progress markers that can be monitored via SSH
-PROGRESS_LOG="/var/log/cws-setup.log"
+PROGRESS_LOG="/var/log/prism-setup.log"
 touch "$PROGRESS_LOG"
 chmod 644 "$PROGRESS_LOG"
 
 # Progress marker function
 progress() {
-    echo "[CWS-PROGRESS] $1" | tee -a "$PROGRESS_LOG"
+    echo "[PRISM-PROGRESS] $1" | tee -a "$PROGRESS_LOG"
     logger -t cws-setup "$1"
 }
 
@@ -718,11 +718,11 @@ echo "User created - Name: {{.Name}} (SSH key authentication)"
 echo "Service available - {{.Name}} on port {{.Port}}"
 {{end}}
 {{end}}
-echo "Setup log: /var/log/cws-setup.log"
+echo "Setup log: /var/log/prism-setup.log"
 
 # Write completion marker
-date > /var/log/cws-setup.log
-echo "Prism setup completed successfully" >> /var/log/cws-setup.log
+date > /var/log/prism-setup.log
+echo "Prism setup completed successfully" >> /var/log/prism-setup.log
 `
 
 const amiScriptTemplate = `#\!/bin/bash
@@ -803,11 +803,11 @@ echo "Additional user created - Name: {{.Name}} (SSH key authentication)"
 echo "Service available - {{.Name}} on port {{.Port}}"
 {{end}}
 {{end}}
-echo "Setup log: /var/log/cws-setup.log"
+echo "Setup log: /var/log/prism-setup.log"
 
 # Write completion marker
-date > /var/log/cws-setup.log
-echo "Prism AMI setup completed successfully" >> /var/log/cws-setup.log
+date > /var/log/prism-setup.log
+echo "Prism AMI setup completed successfully" >> /var/log/prism-setup.log
 `
 
 const pipScriptTemplate = `#!/bin/bash
@@ -898,9 +898,9 @@ echo "User created - Name: {{.Name}} (SSH key authentication)"
 echo "Service available - {{.Name}} on port {{.Port}}"
 {{end}}
 {{end}}
-echo "Setup log: /var/log/cws-setup.log"
+echo "Setup log: /var/log/prism-setup.log"
 
 # Write completion marker
-date > /var/log/cws-setup.log
-echo "Prism pip setup completed successfully" >> /var/log/cws-setup.log
+date > /var/log/prism-setup.log
+echo "Prism pip setup completed successfully" >> /var/log/prism-setup.log
 `

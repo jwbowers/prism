@@ -52,7 +52,7 @@ echo "www-port=8787" >> /etc/rstudio/rserver.conf
 systemctl restart rstudio-server
 # Create ubuntu user for RStudio
 # Password authentication disabled - use SSH key authentication only
-echo "Setup complete" > /var/log/cws-setup.log
+echo "Setup complete" > /var/log/prism-setup.log
 `,
 			Ports: []int{22, 8787},
 			EstimatedCostPerHour: map[string]float64{
@@ -102,7 +102,7 @@ JUPYTER_EOF
 chown -R ubuntu:ubuntu /home/ubuntu/.jupyter
 # Start Jupyter as service
 sudo -u ubuntu nohup jupyter notebook --config=/home/ubuntu/.jupyter/jupyter_notebook_config.py > /var/log/jupyter.log 2>&1 &
-echo "Setup complete" > /var/log/cws-setup.log
+echo "Setup complete" > /var/log/prism-setup.log
 `,
 			Ports: []int{22, 8888},
 			EstimatedCostPerHour: map[string]float64{
@@ -137,7 +137,7 @@ echo "Setup complete" > /var/log/cws-setup.log
 			},
 			UserData: `#!/bin/bash
 apt update -y
-echo "Setup complete" > /var/log/cws-setup.log
+echo "Setup complete" > /var/log/prism-setup.log
 `,
 			Ports: []int{22},
 			EstimatedCostPerHour: map[string]float64{

@@ -17,7 +17,7 @@ test.describe('Project Management Workflows', () => {
 
     const context = await browser.newContext();
     await context.addInitScript(() => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
     });
     const page = await context.newPage();
 
@@ -73,7 +73,7 @@ test.describe('Project Management Workflows', () => {
   test.beforeEach(async ({ page, context }) => {
     // Set localStorage BEFORE navigating to prevent onboarding modal
     await context.addInitScript(() => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
     });
 
     projectsPage = new ProjectsPage(page);

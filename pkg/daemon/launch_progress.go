@@ -179,7 +179,7 @@ func (m *LaunchProgressMonitor) parseProgressMarkers(ctx context.Context) error 
 		"-o", "LogLevel=ERROR",
 		"-i", m.sshKeyPath,
 		fmt.Sprintf("%s@%s", m.username, m.instance.PublicIP),
-		"tail -100 /var/log/cws-setup.log 2>/dev/null | grep 'CWS-PROGRESS' || echo 'NOTREADY'",
+		"tail -100 /var/log/prism-setup.log 2>/dev/null | grep 'PRISM-PROGRESS' || echo 'NOTREADY'",
 	)
 
 	output, err := cmd.Output()
@@ -193,18 +193,18 @@ func (m *LaunchProgressMonitor) parseProgressMarkers(ctx context.Context) error 
 	}
 
 	// Parse progress markers
-	// Format: [CWS-PROGRESS] STAGE:stage-name:status[:message]
-	// Example: [CWS-PROGRESS] STAGE:system-packages:START
-	// Example: [CWS-PROGRESS] STAGE:system-packages:COMPLETE
+	// Format: [PRISM-PROGRESS] STAGE:stage-name:status[:message]
+	// Example: [PRISM-PROGRESS] STAGE:system-packages:START
+	// Example: [PRISM-PROGRESS] STAGE:system-packages:COMPLETE
 	lines := strings.Split(outputStr, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if !strings.Contains(line, "[CWS-PROGRESS]") {
+		if !strings.Contains(line, "[PRISM-PROGRESS]") {
 			continue
 		}
 
 		// Extract the marker content
-		parts := strings.SplitN(line, "[CWS-PROGRESS]", 2)
+		parts := strings.SplitN(line, "[PRISM-PROGRESS]", 2)
 		if len(parts) != 2 {
 			continue
 		}

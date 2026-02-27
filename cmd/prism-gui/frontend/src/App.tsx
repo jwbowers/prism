@@ -1900,7 +1900,7 @@ export default function PrismApp() {
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [onboardingComplete, setOnboardingComplete] = useState(() => {
     // Check if user has completed onboarding before
-    const completed = localStorage.getItem('cws_onboarding_complete');
+    const completed = localStorage.getItem('prism_onboarding_complete');
     return completed === 'true';
   });
 
@@ -11337,7 +11337,7 @@ export default function PrismApp() {
         setOnboardingStep(onboardingStep + 1);
       } else {
         // Complete onboarding
-        localStorage.setItem('cws_onboarding_complete', 'true');
+        localStorage.setItem('prism_onboarding_complete', 'true');
         setOnboardingComplete(true);
         setOnboardingVisible(false);
         setOnboardingStep(0);
@@ -11351,7 +11351,7 @@ export default function PrismApp() {
     };
 
     const handleSkip = () => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
       setOnboardingComplete(true);
       setOnboardingVisible(false);
       setOnboardingStep(0);

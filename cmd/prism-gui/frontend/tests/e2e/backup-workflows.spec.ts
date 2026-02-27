@@ -103,7 +103,7 @@ test.describe('Backup Management Workflows', () => {
   test.beforeEach(async ({ page, context }) => {
     // Set localStorage BEFORE navigating to prevent onboarding modal
     await context.addInitScript(() => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
     });
 
     // Navigate to Prism GUI (uses baseURL from playwright.config.js)
