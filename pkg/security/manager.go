@@ -475,6 +475,55 @@ func validateSecurityConfig(config SecurityConfig) error {
 	return nil
 }
 
+// UpdateConfig applies an updated security configuration at runtime.
+// Fields that affect background goroutine scheduling (MonitoringEnabled,
+// CorrelationEnabled) are stored and will take full effect on the next
+// daemon restart; all other fields (AlertThreshold, LogRetentionDays, etc.)
+// take effect immediately.
+func (m *SecurityManager) UpdateConfig(newConfig SecurityConfig) error {
+	// Apply defaults and validate
+	if newConfig.MonitorInterval <= 0 {
+		newConfig.MonitorInterval = 30 * time.Second
+	}
+	if newConfig.AnalysisInterval <= 0 {
+		newConfig.AnalysisInterval = 5 * time.Minute
+	}
+	if newConfig.HealthCheckInterval <= 0 {
+		newConfig.HealthCheckInterval = 15 * time.Minute
+	}
+	if newConfig.LogRetentionDays <= 0 {
+		newConfig.LogRetentionDays = 30
+	}
+
+	if err := validateSecurityConfig(newConfig); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.config = newConfig
+
+	// Update isEnabled to reflect the new configuration
+	m.isEnabled = newConfig.MonitoringEnabled || newConfig.AuditLogEnabled || newConfig.CorrelationEnabled
+
+	// Log the configuration change if audit logging is active
+	if m.auditLogger != nil {
+		m.auditLogger.LogSecurityEvent(security.SecurityEvent{
+			EventType: "security_config_updated",
+			Success:   true,
+			Details: map[string]interface{}{
+				"alert_threshold":    newConfig.AlertThreshold,
+				"monitoring_enabled": newConfig.MonitoringEnabled,
+				"audit_enabled":      newConfig.AuditLogEnabled,
+				"correlation":        newConfig.CorrelationEnabled,
+			},
+		})
+	}
+
+	return nil
+}
+
 // GetDefaultSecurityConfig returns default security configuration
 func GetDefaultSecurityConfig() SecurityConfig {
 	// KEYCHAIN FIX: Disable security features that trigger keychain access to prevent password prompts

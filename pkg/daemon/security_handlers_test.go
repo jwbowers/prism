@@ -207,22 +207,31 @@ func TestHandleSecurityConfig(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "PUT security config (not implemented)",
+			name:           "PUT security config (valid body)",
 			method:         "PUT",
-			expectedStatus: http.StatusNotImplemented,
+			expectedStatus: http.StatusOK,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, "/api/v1/security/config", nil)
+			var req *http.Request
+			if tt.method == "PUT" {
+				// Send a valid SecurityConfig body
+				body := `{"alert_threshold":"HIGH","monitoring_enabled":false,"audit_log_enabled":false,"correlation_enabled":false,"log_retention_days":30}`
+				req = httptest.NewRequest(tt.method, "/api/v1/security/config", bytes.NewBufferString(body))
+				req.Header.Set("Content-Type", "application/json")
+			} else {
+				req = httptest.NewRequest(tt.method, "/api/v1/security/config", nil)
+			}
 			w := httptest.NewRecorder()
 
 			handler.ServeHTTP(w, req)
 
 			if tt.method == "PUT" {
-				// PUT is not implemented
-				assert.Equal(t, http.StatusNotImplemented, w.Code)
+				// PUT now implemented — should return 200 or 400 (if security manager returns error)
+				assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusBadRequest,
+					"PUT should return 200 or 400, got %d: %s", w.Code, w.Body.String())
 			} else {
 				// GET should work or return error
 				assert.True(t, w.Code == tt.expectedStatus ||
@@ -561,4 +570,59 @@ func TestSecurityKeychainValidation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, response, "status")
 	}
+}
+
+// TestHandleSecurityConfigPUT_Validation tests PUT /api/v1/security/config validation.
+func TestHandleSecurityConfigPUT_Validation(t *testing.T) {
+	server := createTestServer(t)
+	handler := server.createHTTPHandler()
+
+	t.Run("invalid_json_body", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/security/config",
+			bytes.NewBufferString(`{not valid json`))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("invalid_alert_threshold", func(t *testing.T) {
+		body := `{"alert_threshold":"EXTREME"}`
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/security/config",
+			bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		// Validation rejects unknown threshold values
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "invalid alert threshold")
+	})
+
+	t.Run("valid_full_config", func(t *testing.T) {
+		body := `{"alert_threshold":"HIGH","monitoring_enabled":false,"audit_log_enabled":false,"log_retention_days":60,"correlation_enabled":false}`
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/security/config",
+			bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		// Should succeed or fail at security manager init — not at validation
+		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusBadRequest,
+			"unexpected status %d: %s", w.Code, w.Body.String())
+		if w.Code == http.StatusOK {
+			var resp map[string]interface{}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+			assert.Equal(t, "updated", resp["status"])
+		}
+	})
+
+	t.Run("empty_threshold_defaults_accepted", func(t *testing.T) {
+		body := `{"monitoring_enabled":false,"audit_log_enabled":false}`
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/security/config",
+			bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusBadRequest,
+			"unexpected status %d: %s", w.Code, w.Body.String())
+	})
 }

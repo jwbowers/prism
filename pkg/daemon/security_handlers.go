@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/scttfrdmn/prism/pkg/profile/security"
+	secmgr "github.com/scttfrdmn/prism/pkg/security"
 )
 
 // handleSecurityStatus handles GET requests to /api/v1/security/status
@@ -228,13 +229,29 @@ func (s *Server) handleSecurityConfig(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "PUT":
-		// Update security configuration (placeholder for future implementation)
-		s.securityManager.LogSecurityEvent("security_config_update_attempted", false, "", map[string]interface{}{
+		var newConfig secmgr.SecurityConfig
+		if err := json.NewDecoder(r.Body).Decode(&newConfig); err != nil {
+			s.writeError(w, http.StatusBadRequest, "Invalid security configuration: "+err.Error())
+			return
+		}
+
+		if err := s.securityManager.UpdateConfig(newConfig); err != nil {
+			s.securityManager.LogSecurityEvent("security_config_update_failed", false, "", map[string]interface{}{
+				"client_ip": r.RemoteAddr,
+				"error":     err.Error(),
+			})
+			s.writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		s.securityManager.LogSecurityEvent("security_config_updated", true, "", map[string]interface{}{
 			"client_ip": r.RemoteAddr,
-			"reason":    "not_implemented",
 		})
 
-		http.Error(w, "Security configuration updates not yet implemented", http.StatusNotImplemented)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]string{"status": "updated"}); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		}
 
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
