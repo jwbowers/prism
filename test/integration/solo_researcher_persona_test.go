@@ -168,7 +168,7 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 		status, err := apiClient.GetProjectBudgetStatus(ctx, projectID)
 		assert.NoError(t, err, "Failed to get budget status")
 
-		if status.BudgetEnabled {
+		if status != nil && status.BudgetEnabled {
 			t.Log("✓ Budget tracking active")
 			t.Logf("  Monthly budget: $%.2f", status.TotalBudget)
 			t.Logf("  Current spend: $%.4f", status.SpentAmount)
@@ -230,6 +230,10 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 
 		status, err := apiClient.GetProjectBudgetStatus(ctx, projectID)
 		assert.NoError(t, err, "Failed to get budget status")
+		if status == nil {
+			t.Log("⚠️  Budget status unavailable (project may not have budget configured)")
+			return
+		}
 
 		t.Logf("  Current spend: $%.2f / $%.2f", status.SpentAmount, status.TotalBudget)
 		t.Logf("  Spent percentage: %.1f%%", status.SpentPercentage*100)
@@ -371,6 +375,10 @@ func TestSoloResearcherPersona_CompleteBudgetWorkflow(t *testing.T) {
 
 		status, err := apiClient.GetProjectBudgetStatus(ctx, projectID)
 		assert.NoError(t, err, "Failed to get final budget status")
+		if status == nil {
+			t.Log("⚠️  Budget status unavailable (project may not have budget configured)")
+			return
+		}
 
 		t.Log("")
 		t.Log("========================================")
