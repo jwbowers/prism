@@ -17,53 +17,34 @@ import (
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
+// amiSubcommands maps AMI subcommand names to their handler methods.
+var amiSubcommands = map[string]func(*App, []string) error{
+	"build":           (*App).handleAMIBuild,
+	"list":            (*App).handleAMIList,
+	"validate":        (*App).handleAMIValidate,
+	"publish":         (*App).handleAMIPublish,
+	"save":            (*App).handleAMISave,
+	"resolve":         (*App).handleAMIResolve,
+	"test":            (*App).handleAMITest,
+	"costs":           (*App).handleAMICosts,
+	"preview":         (*App).handleAMIPreview,
+	"create":          (*App).handleAMICreate,
+	"status":          (*App).handleAMIStatus,
+	"cleanup":         (*App).handleAMICleanup,
+	"delete":          (*App).handleAMIDelete,
+	"snapshot":        (*App).handleAMISnapshot,
+	"check-freshness": (*App).handleAMICheckFreshness,
+}
+
 // AMI processes AMI-related commands
 func (a *App) AMI(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("missing AMI command (build, list, validate, publish, save, resolve, test, costs, preview, create, status, cleanup, delete, snapshot)")
 	}
-
-	subcommand := args[0]
-	subargs := args[1:]
-
-	switch subcommand {
-	case "build":
-		return a.handleAMIBuild(subargs)
-	case "list":
-		return a.handleAMIList(subargs)
-	case "validate":
-		return a.handleAMIValidate(subargs)
-	case "publish":
-		return a.handleAMIPublish(subargs)
-	case "save":
-		return a.handleAMISave(subargs)
-	// Universal AMI System commands (Phase 5.1 Week 2)
-	case "resolve":
-		return a.handleAMIResolve(subargs)
-	case "test":
-		return a.handleAMITest(subargs)
-	case "costs":
-		return a.handleAMICosts(subargs)
-	case "preview":
-		return a.handleAMIPreview(subargs)
-	// AMI Creation commands (Phase 5.1 AMI Creation)
-	case "create":
-		return a.handleAMICreate(subargs)
-	case "status":
-		return a.handleAMIStatus(subargs)
-	// AMI Lifecycle Management commands
-	case "cleanup":
-		return a.handleAMICleanup(subargs)
-	case "delete":
-		return a.handleAMIDelete(subargs)
-	case "snapshot":
-		return a.handleAMISnapshot(subargs)
-	// AMI Freshness Checking command (v0.5.4 - Universal Version System)
-	case "check-freshness":
-		return a.handleAMICheckFreshness(subargs)
-	default:
-		return fmt.Errorf("unknown AMI command: %s", subcommand)
+	if handler, ok := amiSubcommands[args[0]]; ok {
+		return handler(a, args[1:])
 	}
+	return fmt.Errorf("unknown AMI command: %s", args[0])
 }
 
 // handleAMIBuild builds a new AMI from a template

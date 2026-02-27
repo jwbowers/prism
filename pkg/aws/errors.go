@@ -43,20 +43,11 @@ func (e *EnhancedError) Error() string {
 	return msg.String()
 }
 
-// EnhanceError wraps an AWS error with actionable guidance
-func EnhanceError(err error, operation string) error {
-	if err == nil {
-		return nil
-	}
-
-	errMsg := err.Error()
-
-	// Detect error type and provide appropriate guidance
+// enhanceNetworkAndPermissionErrors handles permissions, key pair, config, and capacity errors.
+func enhanceNetworkAndPermissionErrors(err error, errMsg, operation string) *EnhancedError {
 	if strings.Contains(errMsg, "UnauthorizedOperation") || strings.Contains(errMsg, "not authorized") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "IAM Permissions",
+			OriginalError: err, Operation: operation, Category: "IAM Permissions",
 			Suggestions: []string{
 				"Check your IAM user/role has the required EC2 permissions",
 				"Verify your AWS credentials: aws sts get-caller-identity",
@@ -66,12 +57,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/troubleshooting/permissions",
 		}
 	}
-
 	if strings.Contains(errMsg, "InvalidKeyPair.NotFound") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "SSH Key Configuration",
+			OriginalError: err, Operation: operation, Category: "SSH Key Configuration",
 			Suggestions: []string{
 				"The SSH key pair doesn't exist in your AWS region",
 				"Create a key pair: aws ec2 create-key-pair --key-name prism-key",
@@ -81,12 +69,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/getting-started/ssh-keys",
 		}
 	}
-
 	if strings.Contains(errMsg, "InvalidParameterValue") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "Invalid Configuration",
+			OriginalError: err, Operation: operation, Category: "Invalid Configuration",
 			Suggestions: []string{
 				"Check the instance type is available in your region",
 				"Verify the AMI exists in your region",
@@ -96,12 +81,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/troubleshooting/configuration",
 		}
 	}
-
 	if strings.Contains(errMsg, "InsufficientInstanceCapacity") || strings.Contains(errMsg, "capacity") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "AWS Capacity",
+			OriginalError: err, Operation: operation, Category: "AWS Capacity",
 			Suggestions: []string{
 				"AWS has insufficient capacity for this instance type in this AZ",
 				"Try a different availability zone: prism launch <template> <name> --az us-east-1b",
@@ -112,12 +94,14 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/troubleshooting/capacity",
 		}
 	}
+	return nil
+}
 
+// enhanceQuotaAndRuntimeErrors handles quota, volume, subnet, rate-limit, dry-run, and unsupported errors.
+func enhanceQuotaAndRuntimeErrors(err error, errMsg, operation string) *EnhancedError {
 	if strings.Contains(errMsg, "InstanceLimitExceeded") || strings.Contains(errMsg, "vcpu limit") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "AWS Quota Limit",
+			OriginalError: err, Operation: operation, Category: "AWS Quota Limit",
 			Suggestions: []string{
 				"You've reached your EC2 instance quota for this region",
 				"View quotas: prism admin quotas list",
@@ -128,12 +112,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/troubleshooting/quotas",
 		}
 	}
-
 	if strings.Contains(errMsg, "VolumeInUse") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "EBS Volume In Use",
+			OriginalError: err, Operation: operation, Category: "EBS Volume In Use",
 			Suggestions: []string{
 				"The EBS volume is still attached to another instance",
 				"Detach volume first: prism storage detach <volume-name>",
@@ -143,12 +124,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/storage/ebs",
 		}
 	}
-
 	if strings.Contains(errMsg, "InvalidSubnetID") || strings.Contains(errMsg, "subnet") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "Network Configuration",
+			OriginalError: err, Operation: operation, Category: "Network Configuration",
 			Suggestions: []string{
 				"Create a default VPC: aws ec2 create-default-vpc",
 				"Check available subnets: aws ec2 describe-subnets",
@@ -158,12 +136,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/networking/vpc",
 		}
 	}
-
 	if strings.Contains(errMsg, "RequestLimitExceeded") || strings.Contains(errMsg, "Throttling") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "API Rate Limit",
+			OriginalError: err, Operation: operation, Category: "API Rate Limit",
 			Suggestions: []string{
 				"AWS API rate limit exceeded (this should auto-retry)",
 				"If this persists, wait a few minutes and try again",
@@ -173,12 +148,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/troubleshooting/rate-limits",
 		}
 	}
-
 	if strings.Contains(errMsg, "DryRunOperation") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "Dry Run Mode",
+			OriginalError: err, Operation: operation, Category: "Dry Run Mode",
 			Suggestions: []string{
 				"This was a dry run - no actual resources were created",
 				"Remove --dry-run flag to actually launch the instance",
@@ -187,12 +159,9 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/cli/dry-run",
 		}
 	}
-
 	if strings.Contains(errMsg, "Unsupported") {
 		return &EnhancedError{
-			OriginalError: err,
-			Operation:     operation,
-			Category:      "Unsupported Configuration",
+			OriginalError: err, Operation: operation, Category: "Unsupported Configuration",
 			Suggestions: []string{
 				"This instance type or feature is not supported in your region",
 				"Check available instance types: aws ec2 describe-instance-types",
@@ -202,8 +171,21 @@ func EnhanceError(err error, operation string) error {
 			DocsLink: "https://docs.prism.org/troubleshooting/compatibility",
 		}
 	}
+	return nil
+}
 
-	// Default enhanced error for unrecognized errors
+// EnhanceError wraps an AWS error with actionable guidance
+func EnhanceError(err error, operation string) error {
+	if err == nil {
+		return nil
+	}
+	errMsg := err.Error()
+	if enhanced := enhanceNetworkAndPermissionErrors(err, errMsg, operation); enhanced != nil {
+		return enhanced
+	}
+	if enhanced := enhanceQuotaAndRuntimeErrors(err, errMsg, operation); enhanced != nil {
+		return enhanced
+	}
 	return &EnhancedError{
 		OriginalError: err,
 		Operation:     operation,

@@ -74,6 +74,17 @@ func (r *FixtureRegistry) Register(resourceType, id string) {
 	}
 }
 
+// cleanupResourceItems deletes each resource by ID, logging success or failure.
+func (r *FixtureRegistry) cleanupResourceItems(label string, ids []string, del func(string) error) {
+	for _, id := range ids {
+		if err := del(id); err != nil {
+			r.t.Logf("Warning: Failed to cleanup %s %s: %v", label, id, err)
+		} else {
+			r.t.Logf("Cleaned up %s: %s", label, id)
+		}
+	}
+}
+
 // cleanup removes all registered test resources in the correct order
 // Order: allocations → budgets → invitations → backups → instances → EBS volumes → EFS volumes → projects → profiles
 func (r *FixtureRegistry) cleanup() {
@@ -84,29 +95,14 @@ func (r *FixtureRegistry) cleanup() {
 	r.t.Log("Cleaning up test fixtures...")
 
 	// Clean up allocations first (must be deleted before budgets) - v0.6.2
-	for _, allocationID := range r.allocations {
-		if err := r.client.DeleteAllocation(ctx, allocationID); err != nil {
-			r.t.Logf("Warning: Failed to cleanup allocation %s: %v", allocationID, err)
-		} else {
-			r.t.Logf("Cleaned up allocation: %s", allocationID)
-		}
-	}
+	r.cleanupResourceItems("allocation", r.allocations, func(id string) error { return r.client.DeleteAllocation(ctx, id) })
 
-	// Clean up budgets (must be deleted before budgets can be fully removed) - v0.6.2
-	for _, budgetID := range r.budgets {
-		if err := r.client.DeleteBudget(ctx, budgetID); err != nil {
-			r.t.Logf("Warning: Failed to cleanup budget %s: %v", budgetID, err)
-		} else {
-			r.t.Logf("Cleaned up budget: %s", budgetID)
-		}
-	}
+	// Clean up budgets - v0.6.2
+	r.cleanupResourceItems("budget", r.budgets, func(id string) error { return r.client.DeleteBudget(ctx, id) })
 
-	// Clean up invitations (revoke pending invitations before project cleanup) - v0.6.2 (Issue #383)
+	// Clean up invitations (may already be accepted/declined/expired) - v0.6.2 (Issue #383)
 	for _, invitationID := range r.invitations {
-		// Note: We use a placeholder method name - the actual API client method needs to be verified
-		// The invitation manager has RevokeInvitation but API client might use different naming
 		if err := r.client.RevokeInvitation(ctx, invitationID); err != nil {
-			// If already accepted/declined/expired, revocation will fail - that's OK
 			r.t.Logf("Warning: Failed to cleanup invitation %s: %v (may already be accepted/declined)", invitationID, err)
 		} else {
 			r.t.Logf("Cleaned up invitation: %s", invitationID)
@@ -134,35 +130,12 @@ func (r *FixtureRegistry) cleanup() {
 		}
 	}
 
-	// Clean up EBS volumes
-	for _, storageName := range r.ebsStorages {
-		if err := r.client.DeleteStorage(ctx, storageName); err != nil {
-			r.t.Logf("Warning: Failed to cleanup EBS volume %s: %v", storageName, err)
-		} else {
-			r.t.Logf("Cleaned up EBS volume: %s", storageName)
-		}
-	}
-
-	// Clean up EFS volumes
-	for _, volumeName := range r.volumes {
-		if err := r.client.DeleteVolume(ctx, volumeName); err != nil {
-			r.t.Logf("Warning: Failed to cleanup EFS volume %s: %v", volumeName, err)
-		} else {
-			r.t.Logf("Cleaned up EFS volume: %s", volumeName)
-		}
-	}
-
-	// Clean up projects (after all resources that depend on them)
-	for _, projectID := range r.projects {
-		if err := r.client.DeleteProject(ctx, projectID); err != nil {
-			r.t.Logf("Warning: Failed to cleanup project %s: %v", projectID, err)
-		} else {
-			r.t.Logf("Cleaned up project: %s", projectID)
-		}
-	}
+	// Clean up EBS and EFS volumes, then projects
+	r.cleanupResourceItems("EBS volume", r.ebsStorages, func(id string) error { return r.client.DeleteStorage(ctx, id) })
+	r.cleanupResourceItems("EFS volume", r.volumes, func(id string) error { return r.client.DeleteVolume(ctx, id) })
+	r.cleanupResourceItems("project", r.projects, func(id string) error { return r.client.DeleteProject(ctx, id) })
 
 	// Note: Profiles are managed locally via pkg/profile package, not through daemon API
-	// They would need to be cleaned up differently if needed
 	if len(r.profiles) > 0 {
 		r.t.Logf("Note: %d profiles registered but profile cleanup not implemented (profiles managed locally)", len(r.profiles))
 	}
