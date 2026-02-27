@@ -209,6 +209,36 @@ func (v *Validator) ValidateAMI(instanceID string, template *Template) (*Validat
 	return result, nil
 }
 
+// determineValidationOutcome evaluates exitCode and output against a Validation spec.
+func determineValidationOutcome(validation Validation, exitCode int, output string) (passed bool, detail string) {
+	if validation.Success {
+		if exitCode == 0 {
+			passed = true
+			detail = "PASS: Command exited with code 0"
+		} else {
+			detail = fmt.Sprintf("FAIL: Command exited with code %d", exitCode)
+		}
+	}
+	if validation.Contains != "" {
+		if strings.Contains(output, validation.Contains) {
+			passed = true
+			detail = fmt.Sprintf("PASS: Output contains '%s'", validation.Contains)
+		} else {
+			detail = fmt.Sprintf("FAIL: Output does not contain '%s'. Got: %s", validation.Contains, output)
+		}
+	}
+	// If both checks specified, both must pass
+	if validation.Success && validation.Contains != "" {
+		if exitCode == 0 && strings.Contains(output, validation.Contains) {
+			passed = true
+			detail = fmt.Sprintf("PASS: Exit code 0 and output contains '%s'", validation.Contains)
+		} else {
+			detail = fmt.Sprintf("FAIL: Exit code %d or missing '%s'", exitCode, validation.Contains)
+		}
+	}
+	return
+}
+
 // executeValidationCommand executes a single validation command via SSM
 func (v *Validator) executeValidationCommand(instanceID string, validation Validation) (bool, string, error) {
 	if v.SSMClient == nil {
@@ -257,40 +287,7 @@ func (v *Validator) executeValidationCommand(instanceID string, validation Valid
 				output = *getOutput.StandardOutputContent
 			}
 
-			// Determine if validation passed
-			passed := false
-			detail := ""
-
-			if validation.Success {
-				// Check exit code
-				if exitCode == 0 {
-					passed = true
-					detail = "PASS: Command exited with code 0"
-				} else {
-					detail = fmt.Sprintf("FAIL: Command exited with code %d", exitCode)
-				}
-			}
-
-			if validation.Contains != "" {
-				// Check output contains string
-				if strings.Contains(output, validation.Contains) {
-					passed = true
-					detail = fmt.Sprintf("PASS: Output contains '%s'", validation.Contains)
-				} else {
-					detail = fmt.Sprintf("FAIL: Output does not contain '%s'. Got: %s", validation.Contains, output)
-				}
-			}
-
-			// If both checks specified, both must pass
-			if validation.Success && validation.Contains != "" {
-				if exitCode == 0 && strings.Contains(output, validation.Contains) {
-					passed = true
-					detail = fmt.Sprintf("PASS: Exit code 0 and output contains '%s'", validation.Contains)
-				} else {
-					detail = fmt.Sprintf("FAIL: Exit code %d or missing '%s'", exitCode, validation.Contains)
-				}
-			}
-
+			passed, detail := determineValidationOutcome(validation, exitCode, output)
 			return passed, detail, nil
 		}
 

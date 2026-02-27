@@ -885,6 +885,45 @@ func (m *Manager) launchWithUnifiedTemplateSystem(req ctypes.LaunchRequest, arch
 	return m.launchWithUnifiedTemplateSystemWithContext(ctx, req, arch)
 }
 
+// determineInstanceType resolves the EC2 instance type from the launch request size or template default.
+func (m *Manager) determineInstanceType(req ctypes.LaunchRequest, rawTemplate *templates.Template) string {
+	if req.Size != "" {
+		return m.getInstanceTypeForSize(req.Size)
+	} else if rawTemplate != nil && rawTemplate.InstanceDefaults.Type != "" {
+		return rawTemplate.InstanceDefaults.Type
+	}
+	return "t3.micro"
+}
+
+// validateQuotaAvailability checks that enough vCPU quota is available for instanceType.
+// Returns nil if quota is sufficient or quota validation is unavailable (non-fatal).
+func (m *Manager) validateQuotaAvailability(ctx context.Context, instanceType string) error {
+	quotaValidation, err := m.quotaManager.ValidateInstanceLaunch(ctx, instanceType)
+	if err != nil {
+		log.Printf("Warning: Failed to validate quota: %v. Proceeding with launch...", err)
+		return nil // Non-fatal: proceed optimistically
+	}
+	if !quotaValidation.IsValid {
+		helper := NewQuotaRequestHelper(m.quotaManager, m.region)
+		request, err := helper.GenerateQuotaIncreaseRequest(ctx, instanceType)
+		if err != nil {
+			// If we can't generate request, at least show the validation error
+			return fmt.Errorf("%s", quotaValidation.Warning)
+		}
+		// Show user-friendly error with guidance
+		errorMsg := helper.ExplainQuotaError(ctx, fmt.Errorf("quota exceeded"), instanceType)
+		guidance := helper.GenerateGuidance(request)
+		return fmt.Errorf("%s\n\n%s", errorMsg, guidance)
+	}
+	if quotaValidation.Warning != "" {
+		log.Printf("⚠️  Quota Warning: %s", quotaValidation.Warning)
+		if quotaValidation.SuggestedAction != "" {
+			log.Printf("💡 Suggested Action: %s", quotaValidation.SuggestedAction)
+		}
+	}
+	return nil
+}
+
 func (m *Manager) launchWithUnifiedTemplateSystemWithContext(ctx context.Context, req ctypes.LaunchRequest, arch string) (*ctypes.Instance, error) {
 	log.Printf("[DEBUG] launchWithUnifiedTemplateSystemWithContext: Starting for %s", req.Name)
 
@@ -896,14 +935,7 @@ func (m *Manager) launchWithUnifiedTemplateSystemWithContext(ctx context.Context
 		return nil, fmt.Errorf("failed to get template info: %w", err)
 	}
 
-	var instanceType string
-	if req.Size != "" {
-		instanceType = m.getInstanceTypeForSize(req.Size)
-	} else if rawTemplate != nil && rawTemplate.InstanceDefaults.Type != "" {
-		instanceType = rawTemplate.InstanceDefaults.Type
-	} else {
-		instanceType = "t3.micro"
-	}
+	instanceType := m.determineInstanceType(req, rawTemplate)
 
 	// Step 1: Check AWS service health
 	shouldBlock, healthWarning := m.healthMonitor.ShouldBlockLaunch(ctx, m.region)
@@ -915,36 +947,12 @@ func (m *Manager) launchWithUnifiedTemplateSystemWithContext(ctx context.Context
 	}
 
 	// Step 2: Validate quota availability
-	quotaValidation, err := m.quotaManager.ValidateInstanceLaunch(ctx, instanceType)
-	if err != nil {
-		log.Printf("Warning: Failed to validate quota: %v. Proceeding with launch...", err)
-	} else if !quotaValidation.IsValid {
-		// Quota validation failed - provide helpful error with guidance
-		helper := NewQuotaRequestHelper(m.quotaManager, m.region)
-		request, err := helper.GenerateQuotaIncreaseRequest(ctx, instanceType)
-		if err != nil {
-			// If we can't generate request, at least show the validation error
-			return nil, fmt.Errorf("%s", quotaValidation.Warning)
-		}
-
-		// Show user-friendly error with guidance
-		errorMsg := helper.ExplainQuotaError(ctx, fmt.Errorf("quota exceeded"), instanceType)
-		guidance := helper.GenerateGuidance(request)
-
-		return nil, fmt.Errorf("%s\n\n%s", errorMsg, guidance)
-	} else if quotaValidation.Warning != "" {
-		// Proactive warning (90% usage)
-		log.Printf("⚠️  Quota Warning: %s", quotaValidation.Warning)
-		if quotaValidation.SuggestedAction != "" {
-			log.Printf("💡 Suggested Action: %s", quotaValidation.SuggestedAction)
-		}
+	if err := m.validateQuotaAvailability(ctx, instanceType); err != nil {
+		return nil, err
 	}
 
 	// PHASE 2: Get template using unified template system
 	packageManager := req.PackageManager
-	if packageManager == "" {
-		packageManager = ""
-	}
 
 	var template *ctypes.RuntimeTemplate
 
@@ -2604,6 +2612,63 @@ func NewInstanceBuilder(ec2Client EC2ClientInterface, pricingClient *PricingClie
 	}
 }
 
+// resolveRunningStateStartTime determines when the instance entered "running" state for accurate billing.
+// Preference order: AWS StateTransitionReason → cached local state → estimate from launch time.
+func resolveRunningStateStartTime(ec2Instance ec2types.Instance, name, state string, launchTime time.Time, localState *ctypes.State) *time.Time {
+	if ec2Instance.StateTransitionReason != nil && *ec2Instance.StateTransitionReason != "" {
+		if strings.ToLower(state) == instanceStateRunning {
+			if parsedTime, err := parseStateTransitionReason(*ec2Instance.StateTransitionReason); err == nil {
+				log.Printf("Instance %s entered running state at %s (billing start)", name, parsedTime.Format(time.RFC3339))
+				return &parsedTime
+			} else {
+				log.Printf("Warning: Failed to parse StateTransitionReason for %s: %v", name, err)
+			}
+		}
+	}
+
+	// Use cached value if available (preserves across refreshes)
+	if localState != nil {
+		if localInstance, exists := localState.Instances[name]; exists && localInstance.RunningStateStartTime != nil {
+			return localInstance.RunningStateStartTime
+		}
+	}
+
+	// If still no cached value, estimate (LaunchTime + 45 seconds for pending state)
+	if strings.ToLower(state) == instanceStateRunning {
+		estimated := launchTime.Add(45 * time.Second) // Conservative estimate
+		log.Printf("Warning: StateTransitionReason not available for %s, estimating running state start", name)
+		return &estimated
+	}
+	return nil
+}
+
+// mergeLocalStateMetadata copies fields from local state that AWS does not track and manages
+// the IsHibernating flag transitions.
+func mergeLocalStateMetadata(instance *ctypes.Instance, name, state string, localState *ctypes.State) {
+	if localState == nil {
+		return
+	}
+	localInstance, exists := localState.Instances[name]
+	if !exists {
+		return
+	}
+	instance.DeletionTime = localInstance.DeletionTime
+
+	// Manage IsHibernating flag for accurate hibernation billing
+	// - If instance was hibernating and is now "stopped", clear the flag (hibernation complete)
+	// - If instance is "stopping" or still marked as hibernating, preserve the flag
+	if localInstance.IsHibernating {
+		if strings.ToLower(state) == instanceStateStopped {
+			// Hibernation complete - clear flag (stopped state is not billable)
+			instance.IsHibernating = false
+			log.Printf("Instance %s hibernation complete (stopped state reached, no longer billable)", name)
+		} else if strings.ToLower(state) == instanceStateStopping {
+			// Still hibernating - preserve flag (stopping state IS billable during hibernation)
+			instance.IsHibernating = true
+		}
+	}
+}
+
 // BuildInstance creates Prism instance from EC2 instance
 func (b *InstanceBuilder) BuildInstance(ec2Instance ec2types.Instance, localState *ctypes.State) *ctypes.Instance {
 	// Extract tags
@@ -2655,39 +2720,9 @@ func (b *InstanceBuilder) BuildInstance(ec2Instance ec2types.Instance, localStat
 		}
 	}
 
-	// Parse StateTransitionReason to get exact running state start time (for accurate billing)
-	// AWS only bills for time in "running" state, not "pending" state
-	var runningStateStartTime *time.Time
-	if ec2Instance.StateTransitionReason != nil && *ec2Instance.StateTransitionReason != "" {
-		// StateTransitionReason format: "User initiated (2025-10-27 22:36:06 GMT)"
-		// For running instances, this tells us when they entered running state
-		if strings.ToLower(state) == instanceStateRunning {
-			if parsedTime, err := parseStateTransitionReason(*ec2Instance.StateTransitionReason); err == nil {
-				runningStateStartTime = &parsedTime
-				log.Printf("Instance %s entered running state at %s (billing start)", name, parsedTime.Format(time.RFC3339))
-			} else {
-				log.Printf("Warning: Failed to parse StateTransitionReason for %s: %v", name, err)
-			}
-		}
-	}
-
-	// If StateTransitionReason not available or parsing failed, estimate running state start
-	// by adding typical pending duration (30-60 seconds) to LaunchTime
-	if runningStateStartTime == nil {
-		// Use cached value if available (preserves across refreshes)
-		if localState != nil {
-			if localInstance, exists := localState.Instances[name]; exists && localInstance.RunningStateStartTime != nil {
-				runningStateStartTime = localInstance.RunningStateStartTime
-			}
-		}
-
-		// If still no cached value, estimate (LaunchTime + 45 seconds for pending state)
-		if runningStateStartTime == nil && strings.ToLower(state) == instanceStateRunning {
-			estimated := launchTime.Add(45 * time.Second) // Conservative estimate
-			runningStateStartTime = &estimated
-			log.Printf("Warning: StateTransitionReason not available for %s, estimating running state start", name)
-		}
-	}
+	// Parse StateTransitionReason to get exact running state start time (for accurate billing).
+	// Falls back to cached local state, then estimates from launch time.
+	runningStateStartTime := resolveRunningStateStartTime(ec2Instance, name, state, launchTime, localState)
 
 	// Calculate cost metrics based on instance type and runtime
 	instanceType := string(ec2Instance.InstanceType)
@@ -2743,26 +2778,7 @@ func (b *InstanceBuilder) BuildInstance(ec2Instance ec2types.Instance, localStat
 	}
 
 	// Merge remaining metadata from local state if available
-	// Local state contains fields that AWS doesn't store (deletion time, etc.)
-	if localState != nil {
-		if localInstance, exists := localState.Instances[name]; exists {
-			instance.DeletionTime = localInstance.DeletionTime
-
-			// Manage IsHibernating flag for accurate hibernation billing
-			// - If instance was hibernating and is now "stopped", clear the flag (hibernation complete)
-			// - If instance is "stopping" or still marked as hibernating, preserve the flag
-			if localInstance.IsHibernating {
-				if strings.ToLower(state) == instanceStateStopped {
-					// Hibernation complete - clear flag (stopped state is not billable)
-					instance.IsHibernating = false
-					log.Printf("Instance %s hibernation complete (stopped state reached, no longer billable)", name)
-				} else if strings.ToLower(state) == instanceStateStopping {
-					// Still hibernating - preserve flag (stopping state IS billable during hibernation)
-					instance.IsHibernating = true
-				}
-			}
-		}
-	}
+	mergeLocalStateMetadata(instance, name, state, localState)
 
 	return instance
 }
@@ -4659,6 +4675,25 @@ func (m *Manager) ResizeInstance(resizeRequest ctypes.ResizeRequest) (*ctypes.Re
 // Instance Readiness Waiting
 // ==========================================
 
+// isStatusCheckPassing returns true when both system and instance status checks pass.
+func isStatusCheckPassing(s ec2types.InstanceStatus) bool {
+	return s.SystemStatus != nil && s.SystemStatus.Status == ec2types.SummaryStatusOk &&
+		s.InstanceStatus != nil && s.InstanceStatus.Status == ec2types.SummaryStatusOk
+}
+
+// statusCheckDescription returns human-readable labels for the current system and instance check states.
+func statusCheckDescription(s ec2types.InstanceStatus) (systemStatus, instanceStatus string) {
+	systemStatus = "initializing"
+	instanceStatus = "initializing"
+	if s.SystemStatus != nil {
+		systemStatus = string(s.SystemStatus.Status)
+	}
+	if s.InstanceStatus != nil {
+		instanceStatus = string(s.InstanceStatus.Status)
+	}
+	return
+}
+
 // waitForStatusChecks waits for both AWS system and instance status checks to pass
 // This ensures the instance is fully initialized before use
 func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2ClientInterface, instanceID string, progressCallback func(stage string, progress float64, description string)) error {
@@ -4692,11 +4727,9 @@ func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2Cli
 		}
 
 		status := output.InstanceStatuses[0]
-		systemOK := status.SystemStatus != nil && status.SystemStatus.Status == ec2types.SummaryStatusOk
-		instanceOK := status.InstanceStatus != nil && status.InstanceStatus.Status == ec2types.SummaryStatusOk
 
 		// Both checks must pass
-		if systemOK && instanceOK {
+		if isStatusCheckPassing(status) {
 			log.Printf("✅ Instance %s system status checks passed (2/2)", instanceID)
 			return nil
 		}
@@ -4704,14 +4737,7 @@ func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2Cli
 		// Report progress with current status
 		if progressCallback != nil {
 			progress := float64(attempt) / float64(maxAttempts)
-			systemStatus := "initializing"
-			instanceStatus := "initializing"
-			if status.SystemStatus != nil {
-				systemStatus = string(status.SystemStatus.Status)
-			}
-			if status.InstanceStatus != nil {
-				instanceStatus = string(status.InstanceStatus.Status)
-			}
+			systemStatus, instanceStatus := statusCheckDescription(status)
 			description := fmt.Sprintf("Status checks: system=%s, instance=%s (attempt %d/%d)", systemStatus, instanceStatus, attempt, maxAttempts)
 			progressCallback("status_checks", progress, description)
 		}
@@ -4727,6 +4753,52 @@ func (m *Manager) waitForStatusChecks(ctx context.Context, regionalClient EC2Cli
 	}
 
 	return fmt.Errorf("timeout: status checks did not pass within 5 minutes")
+}
+
+// waitForSSHAccessible polls until SSH port 22 is reachable on publicIP or ctx is cancelled.
+func waitForSSHAccessible(ctx context.Context, publicIP string, progressCallback func(stage string, progress float64, description string)) error {
+	if progressCallback != nil {
+		progressCallback("ssh_ready", 0.0, "Waiting for SSH to be accessible...")
+	}
+
+	maxAttempts := 20
+	attemptDelay := 3 * time.Second
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context cancelled while waiting for SSH: %w", ctx.Err())
+		default:
+		}
+
+		// Try to connect to SSH port (don't actually authenticate, just check if port is open)
+		conn, err := net.DialTimeout("tcp", publicIP+":22", 2*time.Second)
+		if err == nil {
+			conn.Close()
+			if progressCallback != nil {
+				progressCallback("ssh_ready", 1.0, "SSH is accepting connections")
+			}
+			return nil
+		}
+
+		if progressCallback != nil {
+			progress := float64(attempt) / float64(maxAttempts)
+			description := fmt.Sprintf("Waiting for SSH (attempt %d/%d)...", attempt, maxAttempts)
+			progressCallback("ssh_ready", progress, description)
+		}
+
+		if attempt < maxAttempts {
+			// Use context-aware sleep so we can cancel immediately
+			select {
+			case <-time.After(attemptDelay):
+			case <-ctx.Done():
+				return fmt.Errorf("context cancelled while waiting for SSH: %w", ctx.Err())
+			}
+		}
+	}
+
+	return fmt.Errorf("timeout waiting for SSH to become accessible after %d attempts", maxAttempts)
 }
 
 // waitForInstanceReadyWithProgress waits for an instance to be fully ready for use with progress reporting
@@ -4794,49 +4866,7 @@ func (m *Manager) waitForInstanceReadyWithProgress(instanceID, region string, pr
 	publicIP := *instance.PublicIpAddress
 
 	// Step 4: Wait for SSH to be accessible (typically 10-30 more seconds)
-	if progressCallback != nil {
-		progressCallback("ssh_ready", 0.0, "Waiting for SSH to be accessible...")
-	}
-
-	maxAttempts := 20
-	attemptDelay := 3 * time.Second
-
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		// Check if context is cancelled
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("context cancelled while waiting for SSH: %w", ctx.Err())
-		default:
-		}
-
-		// Try to connect to SSH port (don't actually authenticate, just check if port is open)
-		conn, err := net.DialTimeout("tcp", publicIP+":22", 2*time.Second)
-		if err == nil {
-			conn.Close()
-			if progressCallback != nil {
-				progressCallback("ssh_ready", 1.0, "SSH is accepting connections")
-			}
-			return nil
-		}
-
-		// Report progress
-		if progressCallback != nil {
-			progress := float64(attempt) / float64(maxAttempts)
-			description := fmt.Sprintf("Waiting for SSH (attempt %d/%d)...", attempt, maxAttempts)
-			progressCallback("ssh_ready", progress, description)
-		}
-
-		if attempt < maxAttempts {
-			// Use context-aware sleep so we can cancel immediately
-			select {
-			case <-time.After(attemptDelay):
-			case <-ctx.Done():
-				return fmt.Errorf("context cancelled while waiting for SSH: %w", ctx.Err())
-			}
-		}
-	}
-
-	return fmt.Errorf("timeout waiting for SSH to become accessible after %d attempts", maxAttempts)
+	return waitForSSHAccessible(ctx, publicIP, progressCallback)
 }
 
 // ==========================================
