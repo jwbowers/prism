@@ -25,16 +25,27 @@ func (r *PluginValidationRule) Name() string {
 
 // Validate validates template plugin configuration
 func (r *PluginValidationRule) Validate(template *Template) []ValidationResult {
-	var results []ValidationResult
-
-	// Skip if no plugins defined
 	if len(template.Plugins.Enabled) == 0 {
-		return results
+		return nil
 	}
+	results := r.validateEnabledPluginConfigs(template)
+	allPlugins, depResults := r.resolvePluginDependencies(template)
+	results = append(results, depResults...)
+	if err := r.registry.CheckConflicts(allPlugins); err != nil {
+		results = append(results, ValidationResult{
+			Level: ValidationError, Field: "plugins.enabled",
+			Message: fmt.Sprintf("Plugin conflict detected: %v", err),
+		})
+	}
+	results = append(results, r.checkRequiredDeps(template)...)
+	results = append(results, r.suggestOptionalDeps(template)...)
+	return results
+}
 
-	// Validate each enabled plugin
+// validateEnabledPluginConfigs validates each enabled plugin's existence and configuration.
+func (r *PluginValidationRule) validateEnabledPluginConfigs(template *Template) []ValidationResult {
+	var results []ValidationResult
 	for i, enabledPlugin := range template.Plugins.Enabled {
-		// Check plugin exists in registry
 		manifest, err := r.registry.GetPlugin(enabledPlugin.Name)
 		if err != nil {
 			results = append(results, ValidationResult{
@@ -44,8 +55,6 @@ func (r *PluginValidationRule) Validate(template *Template) []ValidationResult {
 			})
 			continue
 		}
-
-		// Validate version if specified
 		if enabledPlugin.Version != "" && !r.isValidVersion(enabledPlugin.Version, manifest) {
 			results = append(results, ValidationResult{
 				Level:   ValidationWarning,
@@ -53,8 +62,6 @@ func (r *PluginValidationRule) Validate(template *Template) []ValidationResult {
 				Message: fmt.Sprintf("Unknown version: %s (plugin: %s)", enabledPlugin.Version, enabledPlugin.Name),
 			})
 		}
-
-		// Validate configuration parameters
 		for key := range enabledPlugin.Configuration {
 			if _, exists := manifest.Spec.Configuration.Parameters[key]; !exists {
 				results = append(results, ValidationResult{
@@ -65,15 +72,18 @@ func (r *PluginValidationRule) Validate(template *Template) []ValidationResult {
 			}
 		}
 	}
+	return results
+}
 
-	// Resolve dependencies for all enabled plugins
-	allPlugins := make([]*PluginManifest, 0)
+// resolvePluginDependencies collects all transitive plugin deps and any resolution errors.
+func (r *PluginValidationRule) resolvePluginDependencies(template *Template) ([]*PluginManifest, []ValidationResult) {
+	var allPlugins []*PluginManifest
+	var results []ValidationResult
 	for _, enabledPlugin := range template.Plugins.Enabled {
 		manifest, err := r.registry.GetPlugin(enabledPlugin.Name)
 		if err != nil {
-			continue // Already reported above
+			continue // already reported in validateEnabledPluginConfigs
 		}
-
 		deps, err := r.registry.ResolveDependencies(manifest)
 		if err != nil {
 			results = append(results, ValidationResult{
@@ -83,26 +93,19 @@ func (r *PluginValidationRule) Validate(template *Template) []ValidationResult {
 			})
 			continue
 		}
-
 		allPlugins = append(allPlugins, deps...)
 	}
+	return allPlugins, results
+}
 
-	// Check for conflicts
-	if err := r.registry.CheckConflicts(allPlugins); err != nil {
-		results = append(results, ValidationResult{
-			Level:   ValidationError,
-			Field:   "plugins.enabled",
-			Message: fmt.Sprintf("Plugin conflict detected: %v", err),
-		})
-	}
-
-	// Check for missing required dependencies
+// checkRequiredDeps reports missing required plugin dependencies.
+func (r *PluginValidationRule) checkRequiredDeps(template *Template) []ValidationResult {
+	var results []ValidationResult
 	for _, enabledPlugin := range template.Plugins.Enabled {
 		manifest, err := r.registry.GetPlugin(enabledPlugin.Name)
 		if err != nil {
 			continue
 		}
-
 		for _, dep := range manifest.Spec.Dependencies.Required {
 			if !r.isPluginEnabled(template, dep.Plugin) {
 				results = append(results, ValidationResult{
@@ -113,14 +116,17 @@ func (r *PluginValidationRule) Validate(template *Template) []ValidationResult {
 			}
 		}
 	}
+	return results
+}
 
-	// Suggest optional dependencies
+// suggestOptionalDeps reports optional plugin dependencies that are not enabled.
+func (r *PluginValidationRule) suggestOptionalDeps(template *Template) []ValidationResult {
+	var results []ValidationResult
 	for _, enabledPlugin := range template.Plugins.Enabled {
 		manifest, err := r.registry.GetPlugin(enabledPlugin.Name)
 		if err != nil {
 			continue
 		}
-
 		for _, dep := range manifest.Spec.Dependencies.Optional {
 			if !r.isPluginEnabled(template, dep.Plugin) {
 				results = append(results, ValidationResult{
@@ -131,7 +137,6 @@ func (r *PluginValidationRule) Validate(template *Template) []ValidationResult {
 			}
 		}
 	}
-
 	return results
 }
 

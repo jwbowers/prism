@@ -705,64 +705,49 @@ func (r *TemplateRegistry) resolveTemplateInheritance(template *Template) (*Temp
 	return merged, nil
 }
 
-// mergeTemplate merges source template into target template
-func (r *TemplateRegistry) mergeTemplate(target, source *Template) {
-	// Merge package manager (child overrides parent)
-	if source.PackageManager != "" {
-		target.PackageManager = source.PackageManager
-	}
-
-	// Merge packages (append, don't override)
+// mergePackages merges the package lists from source into target (append semantics).
+func mergePackages(target, source *Template) {
 	target.Packages.System = append(target.Packages.System, source.Packages.System...)
 	target.Packages.Conda = append(target.Packages.Conda, source.Packages.Conda...)
 	target.Packages.Spack = append(target.Packages.Spack, source.Packages.Spack...)
 	target.Packages.Pip = append(target.Packages.Pip, source.Packages.Pip...)
-
-	// Merge Additional package groups
 	if source.Packages.Additional != nil {
 		if target.Packages.Additional == nil {
 			target.Packages.Additional = make(map[string][]string)
 		}
 		for groupName, groupPackages := range source.Packages.Additional {
-			// Append to existing group or create new one
 			target.Packages.Additional[groupName] = append(target.Packages.Additional[groupName], groupPackages...)
 		}
 	}
+}
 
-	// Merge users (append)
-	target.Users = append(target.Users, source.Users...)
-
-	// Merge services (append)
-	target.Services = append(target.Services, source.Services...)
-
-	// Merge tags (child overrides parent)
+// mergeMetadata merges tags, parameters, and variables from source into target (child overrides).
+func mergeMetadata(target, source *Template) {
 	if target.Tags == nil {
 		target.Tags = make(map[string]string)
 	}
 	for k, v := range source.Tags {
 		target.Tags[k] = v
 	}
-
-	// Merge AMI config (child overrides parent)
-	if source.AMIConfig.AMIs != nil {
-		target.AMIConfig = source.AMIConfig
+	if target.Parameters == nil {
+		target.Parameters = make(map[string]TemplateParameter)
 	}
-
-	// Merge post-install script (append)
-	if source.PostInstall != "" {
-		if target.PostInstall != "" {
-			target.PostInstall += "\n\n# --- From parent template ---\n" + source.PostInstall
-		} else {
-			target.PostInstall = source.PostInstall
-		}
+	for k, v := range source.Parameters {
+		target.Parameters[k] = v
 	}
+	if target.Variables == nil {
+		target.Variables = make(map[string]string)
+	}
+	for k, v := range source.Variables {
+		target.Variables[k] = v
+	}
+}
 
-	// Merge instance defaults
+// mergeInstanceDefaults merges instance type, ports, and cost estimates from source into target.
+func mergeInstanceDefaults(target, source *Template) {
 	if source.InstanceDefaults.Type != "" {
 		target.InstanceDefaults.Type = source.InstanceDefaults.Type
 	}
-
-	// Merge ports (append and deduplicate)
 	portMap := make(map[int]bool)
 	for _, port := range target.InstanceDefaults.Ports {
 		portMap[port] = true
@@ -773,31 +758,34 @@ func (r *TemplateRegistry) mergeTemplate(target, source *Template) {
 			portMap[port] = true
 		}
 	}
-
-	// Merge cost estimates (child overrides parent)
 	if target.InstanceDefaults.EstimatedCostPerHour == nil {
 		target.InstanceDefaults.EstimatedCostPerHour = make(map[string]float64)
 	}
 	for k, v := range source.InstanceDefaults.EstimatedCostPerHour {
 		target.InstanceDefaults.EstimatedCostPerHour[k] = v
 	}
+}
 
-	// Merge parameters (child overrides parent) - Issue #450
-	// Parameters are template-specific configuration, so child parameters take precedence
-	if target.Parameters == nil {
-		target.Parameters = make(map[string]TemplateParameter)
+// mergeTemplate merges source template into target template
+func (r *TemplateRegistry) mergeTemplate(target, source *Template) {
+	if source.PackageManager != "" {
+		target.PackageManager = source.PackageManager
 	}
-	for k, v := range source.Parameters {
-		target.Parameters[k] = v
+	mergePackages(target, source)
+	target.Users = append(target.Users, source.Users...)
+	target.Services = append(target.Services, source.Services...)
+	mergeMetadata(target, source)
+	if source.AMIConfig.AMIs != nil {
+		target.AMIConfig = source.AMIConfig
 	}
-
-	// Merge variables (child overrides parent)
-	if target.Variables == nil {
-		target.Variables = make(map[string]string)
+	if source.PostInstall != "" {
+		if target.PostInstall != "" {
+			target.PostInstall += "\n\n# --- From parent template ---\n" + source.PostInstall
+		} else {
+			target.PostInstall = source.PostInstall
+		}
 	}
-	for k, v := range source.Variables {
-		target.Variables[k] = v
-	}
+	mergeInstanceDefaults(target, source)
 }
 
 // validateInheritance performs basic inheritance validation

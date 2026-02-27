@@ -114,52 +114,39 @@ type UserData struct {
 	Shell  string
 }
 
+// isBuiltinPackageGroup reports whether name is a built-in package group that should not
+// be treated as an additional group when collecting system packages.
+func isBuiltinPackageGroup(name string) bool {
+	return name == "system" || name == "conda" || name == "spack" || name == "pip"
+}
+
+// collectSystemAndAdditionalPackages returns the system packages plus all non-builtin
+// additional package groups from the template.
+func collectSystemAndAdditionalPackages(tmpl *Template) []string {
+	packages := append([]string{}, tmpl.Packages.System...)
+	if tmpl.Packages.Additional != nil {
+		for groupName, groupPackages := range tmpl.Packages.Additional {
+			if !isBuiltinPackageGroup(groupName) {
+				packages = append(packages, groupPackages...)
+			}
+		}
+	}
+	return packages
+}
+
 // SelectPackagesForManager selects appropriate packages for the given package manager (exported for CLI)
 func (sg *ScriptGenerator) SelectPackagesForManager(tmpl *Template, pm PackageManagerType) []string {
 	switch pm {
 	case PackageManagerApt, PackageManagerDnf:
-		// For system package managers, collect packages from:
-		// 1. The System field
-		// 2. All additional named groups (e.g., r_dependencies, latex, databases, python)
-		packages := make([]string, 0, len(tmpl.Packages.System))
-		packages = append(packages, tmpl.Packages.System...)
-
-		// Add packages from all additional groups
-		if tmpl.Packages.Additional != nil {
-			for groupName, groupPackages := range tmpl.Packages.Additional {
-				// Skip the known fields to avoid duplication
-				if groupName == "system" || groupName == "conda" || groupName == "spack" || groupName == "pip" {
-					continue
-				}
-				packages = append(packages, groupPackages...)
-			}
-		}
-
-		return packages
-
+		return collectSystemAndAdditionalPackages(tmpl)
 	case PackageManagerConda:
-		// Only return conda packages, pip packages are handled separately in the template
 		return tmpl.Packages.Conda
-
 	case PackageManagerSpack:
 		return tmpl.Packages.Spack
-
 	case PackageManagerPip:
 		return tmpl.Packages.Pip
-
 	default:
-		// Default to system packages
-		packages := make([]string, 0, len(tmpl.Packages.System))
-		packages = append(packages, tmpl.Packages.System...)
-		if tmpl.Packages.Additional != nil {
-			for groupName, groupPackages := range tmpl.Packages.Additional {
-				if groupName == "system" || groupName == "conda" || groupName == "spack" || groupName == "pip" {
-					continue
-				}
-				packages = append(packages, groupPackages...)
-			}
-		}
-		return packages
+		return collectSystemAndAdditionalPackages(tmpl)
 	}
 }
 
