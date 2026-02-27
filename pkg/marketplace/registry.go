@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -16,6 +17,7 @@ import (
 
 // Registry implements the MarketplaceRegistry interface with DynamoDB backend
 type Registry struct {
+	mu            sync.RWMutex
 	config        *MarketplaceConfig
 	dynamoClient  *dynamodb.Client
 	templateCache map[string]*CommunityTemplate // Optional cache for performance
@@ -294,6 +296,9 @@ func (r *Registry) GetTemplate(templateID string) (*CommunityTemplate, error) {
 
 // ListCategories returns available template categories
 func (r *Registry) ListCategories() ([]TemplateCategory, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	// Update template counts
 	counts := make(map[string]int)
 	for _, template := range r.templateCache {
@@ -306,7 +311,10 @@ func (r *Registry) ListCategories() ([]TemplateCategory, error) {
 		}
 	}
 
-	return r.categories, nil
+	// Return a copy to avoid races on the caller side
+	result := make([]TemplateCategory, len(r.categories))
+	copy(result, r.categories)
+	return result, nil
 }
 
 // GetFeatured returns featured templates

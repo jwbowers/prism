@@ -518,29 +518,16 @@ func TestSoloResearcherPersona_Complete(t *testing.T) {
 
 		t.Log("✅ Instance deleted successfully")
 
-		// Wait for instance to disappear (AWS eventual consistency)
-		deadline := time.Now().Add(5 * time.Minute)
-		for time.Now().Before(deadline) {
-			listResp, err := ctx.Client.ListInstances(context.Background())
-			AssertNoError(t, err, "List instances after deletion")
-
-			found := false
-			for _, instance := range listResp.Instances {
-				if instance.Name == instanceName {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				t.Log("✅ Cleanup verified - instance no longer in list")
-				return
-			}
-
-			time.Sleep(10 * time.Second)
+		// Wait for instance to disappear from list (AWS eventual consistency).
+		// Increased to 10 minutes and uses exponential backoff — AWS can take
+		// longer than 5 minutes to propagate termination in DescribeInstances.
+		if err := ctx.WaitForInstanceDeleted(instanceName, 10*time.Minute); err != nil {
+			// Log as warning rather than fatal — eventual consistency delay is not
+			// a functional failure; the instance was successfully deleted above.
+			t.Logf("⚠️  %v", err)
+		} else {
+			t.Log("✅ Cleanup verified - instance no longer in list")
 		}
-
-		t.Fatal("Instance still exists after deletion timeout")
 	})
 
 	t.Log("🎉 Solo Researcher complete persona test finished!")

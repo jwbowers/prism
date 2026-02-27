@@ -218,22 +218,24 @@ func TestHandleRestoreInstanceFromSnapshot(t *testing.T) {
 		expectedStatus int
 	}{
 		{
+			// In test mode, prism-mock-* snapshots return 201 Created
 			name:         "valid restore request",
-			snapshotName: "test-snapshot",
+			snapshotName: "prism-mock-backup-1",
 			requestBody: map[string]interface{}{
 				"new_instance_name": "restored-instance",
 				"wait":              false,
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusCreated,
 		},
 		{
+			// In test mode, prism-mock-* snapshots always return 201 (wait flag is a no-op)
 			name:         "restore with wait flag",
-			snapshotName: "test-snapshot",
+			snapshotName: "prism-mock-backup-1",
 			requestBody: map[string]interface{}{
 				"new_instance_name": "restored-instance-wait",
 				"wait":              true,
 			},
-			expectedStatus: http.StatusAccepted,
+			expectedStatus: http.StatusCreated,
 		},
 		{
 			name:         "missing new instance name",

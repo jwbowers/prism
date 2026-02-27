@@ -235,10 +235,12 @@ func (ctx *TestContext) TrackVolume(name string) {
 	ctx.VolumeNames = append(ctx.VolumeNames, name)
 }
 
-// WaitForInstanceState waits for instance to reach desired state
+// WaitForInstanceState waits for instance to reach desired state using exponential backoff.
+// Backoff starts at 5s, doubles each attempt, caps at 30s (matches AWS eventual consistency).
 func (ctx *TestContext) WaitForInstanceState(name, desiredState string, timeout time.Duration) error {
-	ctx.T.Logf("Waiting for instance '%s' to reach state '%s'...", name, desiredState)
+	ctx.T.Logf("Waiting for instance '%s' to reach state '%s' (timeout: %v)...", name, desiredState, timeout)
 	deadline := time.Now().Add(timeout)
+	backoff := 5 * time.Second
 
 	for time.Now().Before(deadline) {
 		instance, err := ctx.Client.GetInstance(context.Background(), name)
@@ -253,10 +255,65 @@ func (ctx *TestContext) WaitForInstanceState(name, desiredState string, timeout 
 			return nil
 		}
 
-		time.Sleep(PollInterval)
+		remaining := time.Until(deadline)
+		sleep := backoff
+		if sleep > remaining {
+			sleep = remaining
+		}
+		time.Sleep(sleep)
+
+		// Exponential backoff, capped at 30s
+		backoff *= 2
+		if backoff > 30*time.Second {
+			backoff = 30 * time.Second
+		}
 	}
 
-	return fmt.Errorf("timeout waiting for instance '%s' to reach state '%s'", name, desiredState)
+	return fmt.Errorf("timeout after %v waiting for instance '%s' to reach state '%s' (AWS eventual consistency may still be propagating)", timeout, name, desiredState)
+}
+
+// WaitForInstanceDeleted waits for an instance to disappear from the list after deletion.
+// Uses exponential backoff to handle AWS eventual consistency (deletion can take several minutes to propagate).
+func (ctx *TestContext) WaitForInstanceDeleted(name string, timeout time.Duration) error {
+	ctx.T.Logf("Waiting for instance '%s' to be removed from list (timeout: %v)...", name, timeout)
+	deadline := time.Now().Add(timeout)
+	backoff := 5 * time.Second
+
+	for time.Now().Before(deadline) {
+		listResp, err := ctx.Client.ListInstances(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed to list instances: %w", err)
+		}
+
+		found := false
+		for _, instance := range listResp.Instances {
+			if instance.Name == name {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			ctx.T.Logf("Instance '%s' no longer in list — deletion propagated", name)
+			return nil
+		}
+
+		ctx.T.Logf("Instance '%s' still in list, retrying in %v...", name, backoff)
+		remaining := time.Until(deadline)
+		sleep := backoff
+		if sleep > remaining {
+			sleep = remaining
+		}
+		time.Sleep(sleep)
+
+		// Exponential backoff, capped at 30s
+		backoff *= 2
+		if backoff > 30*time.Second {
+			backoff = 30 * time.Second
+		}
+	}
+
+	return fmt.Errorf("instance '%s' still present after %v (AWS eventual consistency delay — not a functional failure)", name, timeout)
 }
 
 // WaitForInstanceRunning waits for instance to be running and returns instance details
