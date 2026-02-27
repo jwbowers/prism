@@ -98,6 +98,7 @@ export const InvitationManagementView: React.FC = () => {
     }
   }, [activeTabId, bulkProjectId]);
   const [bulkEmails, setBulkEmails] = useState('');
+  const [bulkEmailErrors, setBulkEmailErrors] = useState<string[]>([]);
   const [bulkRole, setBulkRole] = useState<'viewer' | 'member' | 'admin'>('member');
   const [bulkMessage, setBulkMessage] = useState('');
   const [bulkResults, setBulkResults] = useState<BulkInvitationResult | null>(null);
@@ -288,6 +289,20 @@ export const InvitationManagementView: React.FC = () => {
   };
 
   // ==================== BULK INVITATIONS HANDLERS ====================
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validateBulkEmails = (text: string): string[] => {
+    const lines = text.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
+    return lines
+      .filter(email => !EMAIL_REGEX.test(email))
+      .map(email => `"${email}" is not a valid email address`);
+  };
+
+  const handleBulkEmailsChange = (value: string) => {
+    setBulkEmails(value);
+    setBulkEmailErrors(validateBulkEmails(value));
+  };
 
   const handleBulkSend = async () => {
     if (!api || !bulkProjectId || !bulkEmails.trim()) {
@@ -717,16 +732,28 @@ export const InvitationManagementView: React.FC = () => {
           label="Email Addresses"
           description="One email per line"
           constraintText="Required"
+          errorText={bulkEmailErrors.length > 0 ? `${bulkEmailErrors.length} invalid email(s)` : undefined}
         >
           <Textarea
             value={bulkEmails}
-            onChange={({ detail }) => setBulkEmails(detail.value)}
+            onChange={({ detail }) => handleBulkEmailsChange(detail.value)}
             placeholder={'researcher1@example.com\nresearcher2@example.com\nresearcher3@example.com'}
             rows={6}
             data-testid="bulk-emails-textarea"
             disabled={bulkLoading}
           />
         </FormField>
+
+        {bulkEmailErrors.length > 0 && (
+          <Alert type="error" data-testid="email-validation-error">
+            <Box variant="strong">Please fix these email addresses before sending:</Box>
+            <ul>
+              {bulkEmailErrors.map((err, idx) => (
+                <li key={idx}>{err}</li>
+              ))}
+            </ul>
+          </Alert>
+        )}
 
         <FormField label="Role">
           <Select
@@ -796,7 +823,7 @@ export const InvitationManagementView: React.FC = () => {
           variant="primary"
           onClick={handleBulkSend}
           loading={bulkLoading}
-          disabled={!bulkProjectId || !bulkEmails.trim()}
+          disabled={!bulkProjectId || !bulkEmails.trim() || bulkEmailErrors.length > 0}
           data-testid="send-bulk-invitations-button"
         >
           Send Bulk Invitations
