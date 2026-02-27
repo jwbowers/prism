@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +16,61 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
+
+// newMockS3Server creates an httptest server that mimics S3 REST API responses
+// for PUT, GET, HEAD, and DELETE object operations.
+func newMockS3Server(t *testing.T, content string) (*httptest.Server, *s3.Client) {
+	t.Helper()
+
+	objects := map[string]string{}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			objects[r.URL.Path] = content
+			w.Header().Set("ETag", `"65a8e27d8879283831b664bd8b7f0ad4"`)
+			w.WriteHeader(http.StatusOK)
+		case http.MethodGet:
+			body, ok := objects[r.URL.Path]
+			if !ok {
+				body = content // Return content for any key
+			}
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))
+			w.Header().Set("ETag", `"65a8e27d8879283831b664bd8b7f0ad4"`)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(body))
+		case http.MethodHead:
+			body, ok := objects[r.URL.Path]
+			if !ok {
+				body = content
+			}
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))
+			w.Header().Set("ETag", `"65a8e27d8879283831b664bd8b7f0ad4"`)
+			w.WriteHeader(http.StatusOK)
+		case http.MethodDelete:
+			delete(objects, r.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+		config.WithBaseEndpoint(srv.URL),
+	)
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	t.Cleanup(srv.Close)
+	return srv, client
+}
 
 // MockS3Client provides a mock S3 client for testing
 type MockS3Client struct {
@@ -860,4 +917,339 @@ func TestTransferStatus_Transitions(t *testing.T) {
 	}
 
 	t.Log("✓ Transfer status transitions documented")
+}
+
+// --- httptest-based mock S3 tests (covers UploadFile, DownloadFile, DeleteObject) ---
+
+func TestUploadFile_Success(t *testing.T) {
+	_, client := newMockS3Server(t, "")
+
+	// Create a temp file to upload
+	tmpFile, err := os.CreateTemp(t.TempDir(), "upload-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	content := "Hello, Prism upload test!"
+	if _, err := tmpFile.WriteString(content); err != nil {
+		t.Fatalf("failed to write temp file: %v", err)
+	}
+	tmpFile.Close()
+
+	opts := DefaultTransferOptions()
+	opts.Checksum = false // disable to avoid MD5 mismatch with mock ETag
+	tm := NewTransferManager(client, opts)
+
+	ctx := context.Background()
+	progress, err := tm.UploadFile(ctx, tmpFile.Name(), "test-bucket", "test-key.txt")
+	if err != nil {
+		t.Fatalf("UploadFile failed: %v", err)
+	}
+
+	if progress == nil {
+		t.Fatal("Expected non-nil progress")
+	}
+	if progress.Status != TransferStatusCompleted {
+		t.Errorf("Expected status completed, got %s", progress.Status)
+	}
+	if progress.PercentComplete != 100 {
+		t.Errorf("Expected 100%% complete, got %.1f", progress.PercentComplete)
+	}
+	if progress.Type != TransferTypeUpload {
+		t.Errorf("Expected upload type, got %s", progress.Type)
+	}
+	if progress.S3Bucket != "test-bucket" {
+		t.Errorf("Expected bucket 'test-bucket', got '%s'", progress.S3Bucket)
+	}
+
+	// Verify transfer is tracked
+	tracked, exists := tm.GetTransferProgress(progress.TransferID)
+	if !exists {
+		t.Error("Expected transfer to be tracked")
+	}
+	if tracked.Status != TransferStatusCompleted {
+		t.Errorf("Expected tracked status completed, got %s", tracked.Status)
+	}
+
+	t.Log("✓ UploadFile succeeds with mock S3")
+}
+
+func TestUploadFile_S3Failure(t *testing.T) {
+	// Server that always returns 500
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+		config.WithBaseEndpoint(srv.URL),
+	)
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "upload-fail-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	_, _ = tmpFile.WriteString("test")
+	tmpFile.Close()
+
+	opts := DefaultTransferOptions()
+	opts.Checksum = false
+	tm := NewTransferManager(client, opts)
+
+	ctx := context.Background()
+	progress, err := tm.UploadFile(ctx, tmpFile.Name(), "test-bucket", "test-key.txt")
+
+	if err == nil {
+		t.Error("Expected error for S3 failure")
+	}
+	if progress == nil {
+		t.Error("Expected progress even on failure")
+	} else if progress.Status != TransferStatusFailed {
+		t.Errorf("Expected status failed, got %s", progress.Status)
+	}
+
+	t.Log("✓ UploadFile returns failed status on S3 error")
+}
+
+func TestDownloadFile_Success(t *testing.T) {
+	content := "Hello, Prism download test!"
+	_, client := newMockS3Server(t, content)
+
+	opts := DefaultTransferOptions()
+	opts.Checksum = false // disable checksum to avoid ETag mismatch with mock
+	tm := NewTransferManager(client, opts)
+
+	ctx := context.Background()
+	downloadPath := filepath.Join(t.TempDir(), "downloaded.txt")
+
+	progress, err := tm.DownloadFile(ctx, "test-bucket", "test-key.txt", downloadPath)
+	if err != nil {
+		t.Fatalf("DownloadFile failed: %v", err)
+	}
+
+	if progress == nil {
+		t.Fatal("Expected non-nil progress")
+	}
+	if progress.Status != TransferStatusCompleted {
+		t.Errorf("Expected status completed, got %s", progress.Status)
+	}
+	if progress.PercentComplete != 100 {
+		t.Errorf("Expected 100%% complete, got %.1f", progress.PercentComplete)
+	}
+	if progress.Type != TransferTypeDownload {
+		t.Errorf("Expected download type, got %s", progress.Type)
+	}
+
+	// Verify file was written
+	data, err := os.ReadFile(downloadPath)
+	if err != nil {
+		t.Fatalf("Failed to read downloaded file: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("Expected content %q, got %q", content, string(data))
+	}
+
+	t.Log("✓ DownloadFile succeeds with mock S3")
+}
+
+func TestDownloadFile_InvalidBucket(t *testing.T) {
+	// Server that returns 404 for HEAD (object not found)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+		config.WithBaseEndpoint(srv.URL),
+	)
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	tm := NewTransferManager(client, DefaultTransferOptions())
+	ctx := context.Background()
+	downloadPath := filepath.Join(t.TempDir(), "should-not-exist.txt")
+
+	_, err = tm.DownloadFile(ctx, "nonexistent-bucket", "nonexistent-key", downloadPath)
+	if err == nil {
+		t.Error("Expected error for nonexistent object")
+	}
+
+	t.Log("✓ DownloadFile returns error for nonexistent object")
+}
+
+func TestDeleteObject_WithMockS3(t *testing.T) {
+	_, client := newMockS3Server(t, "to-be-deleted")
+
+	tm := NewTransferManager(client, nil)
+	ctx := context.Background()
+
+	err := tm.DeleteObject(ctx, "test-bucket", "test-key.txt")
+	if err != nil {
+		t.Errorf("DeleteObject failed: %v", err)
+	}
+
+	t.Log("✓ TransferManager.DeleteObject succeeds with mock S3")
+}
+
+func TestDeleteObject_S3Error(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer srv.Close()
+
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+		config.WithBaseEndpoint(srv.URL),
+	)
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	tm := NewTransferManager(client, nil)
+	ctx := context.Background()
+
+	err = tm.DeleteObject(ctx, "test-bucket", "test-key.txt")
+	if err == nil {
+		t.Error("Expected error for forbidden delete")
+	}
+
+	t.Log("✓ TransferManager.DeleteObject returns error on S3 failure")
+}
+
+func TestDownloadFile_ChecksumMismatch(t *testing.T) {
+	content := "checksum-mismatch-content"
+
+	// Server returns mismatched ETag to trigger checksum verification failure
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodHead:
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+			w.Header().Set("ETag", `"000000000000000000000000BADETAG0"`) // Wrong MD5
+			w.WriteHeader(http.StatusOK)
+		case http.MethodGet:
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+			w.Header().Set("ETag", `"000000000000000000000000BADETAG0"`) // Wrong MD5
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(content))
+		}
+	}))
+	defer srv.Close()
+
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+		config.WithBaseEndpoint(srv.URL),
+	)
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	opts := DefaultTransferOptions()
+	opts.Checksum = true // enable checksum verification
+	tm := NewTransferManager(client, opts)
+	ctx := context.Background()
+	downloadPath := filepath.Join(t.TempDir(), "checksum-test.txt")
+
+	progress, err := tm.DownloadFile(ctx, "test-bucket", "test-key.txt", downloadPath)
+	if err == nil {
+		t.Error("Expected checksum mismatch error")
+	}
+	if progress == nil {
+		t.Error("Expected progress even on checksum failure")
+	} else if progress.Status != TransferStatusFailed {
+		t.Errorf("Expected failed status on checksum mismatch, got %s", progress.Status)
+	}
+
+	t.Log("✓ DownloadFile detects checksum mismatch")
+}
+
+func TestUploadFile_WithChecksum(t *testing.T) {
+	content := "Hello, World!" // Known MD5: 65a8e27d8879283831b664bd8b7f0ad4
+
+	// Server returns matching ETag
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("ETag", `"65a8e27d8879283831b664bd8b7f0ad4"`)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+		config.WithBaseEndpoint(srv.URL),
+	)
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
+	}
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "checksum-upload-*.txt")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	if _, err := tmpFile.WriteString(content); err != nil {
+		t.Fatalf("failed to write temp file: %v", err)
+	}
+	tmpFile.Close()
+
+	opts := DefaultTransferOptions()
+	opts.Checksum = true // enable checksum for upload path coverage
+	tm := NewTransferManager(client, opts)
+
+	ctx := context.Background()
+	progress, err := tm.UploadFile(ctx, tmpFile.Name(), "test-bucket", "test-key.txt")
+	if err != nil {
+		t.Fatalf("UploadFile with checksum failed: %v", err)
+	}
+	if progress.Checksum == "" {
+		t.Error("Expected checksum to be computed")
+	}
+
+	t.Log("✓ UploadFile computes and records checksum")
+}
+
+func TestDownloadFile_AutoCleanup(t *testing.T) {
+	content := "cleanup-test-content"
+	_, client := newMockS3Server(t, content)
+
+	opts := DefaultTransferOptions()
+	opts.Checksum = false
+	opts.AutoCleanup = true // enable auto-cleanup of S3 object after download
+
+	tm := NewTransferManager(client, opts)
+	ctx := context.Background()
+	downloadPath := filepath.Join(t.TempDir(), "cleanup-test.txt")
+
+	progress, err := tm.DownloadFile(ctx, "test-bucket", "test-key.txt", downloadPath)
+	if err != nil {
+		t.Fatalf("DownloadFile with AutoCleanup failed: %v", err)
+	}
+
+	if progress.Status != TransferStatusCompleted {
+		t.Errorf("Expected completed status, got %s", progress.Status)
+	}
+
+	t.Log("✓ DownloadFile with AutoCleanup succeeds")
 }
