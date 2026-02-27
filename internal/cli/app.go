@@ -322,26 +322,8 @@ func (a *App) Launch(args []string) error {
 		return nil
 	}
 
-	// Determine if we should monitor progress
-	// For package-based templates, always monitor (they take 5-10 minutes)
-	// For AMI templates, only monitor if --wait is specified
-	shouldMonitor := req.Wait
-
-	// Check if this is a package-based template (no AMI = needs package installation)
-	if !shouldMonitor {
-		templateInfo, err := a.apiClient.GetTemplate(a.ctx, req.Template)
-		if err == nil && len(templateInfo.AMI) == 0 {
-			// Package-based template - always monitor progress
-			shouldMonitor = true
-			if !req.Quiet {
-				fmt.Printf("\n💡 Package installation will take 5-10 minutes. Monitoring progress...\n")
-				fmt.Printf("   (Use Ctrl+C to return to prompt - workspace will continue setup)\n")
-			}
-		}
-	}
-
 	// Monitor launch progress if needed
-	if shouldMonitor {
+	if a.shouldMonitorLaunch(&req) {
 		if !req.Quiet {
 			fmt.Println()
 		}
@@ -350,6 +332,24 @@ func (a *App) Launch(args []string) error {
 	}
 
 	return nil
+}
+
+// shouldMonitorLaunch returns true if launch progress should be monitored.
+// It always returns true when --wait is set, and also when the template has no
+// pre-built AMI (package installation templates take 5-10 minutes).
+func (a *App) shouldMonitorLaunch(req *types.LaunchRequest) bool {
+	if req.Wait {
+		return true
+	}
+	templateInfo, err := a.apiClient.GetTemplate(a.ctx, req.Template)
+	if err == nil && len(templateInfo.AMI) == 0 {
+		if !req.Quiet {
+			fmt.Printf("\n💡 Package installation will take 5-10 minutes. Monitoring progress...\n")
+			fmt.Printf("   (Use Ctrl+C to return to prompt - workspace will continue setup)\n")
+		}
+		return true
+	}
+	return false
 }
 
 // displayCostTable displays the cost analysis table (Single Responsibility)

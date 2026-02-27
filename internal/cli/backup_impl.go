@@ -131,6 +131,28 @@ func (bc *BackupCommands) createBackup(args []string) error {
 	return nil
 }
 
+// normalizeBackupArgs expands "--flag=value" forms to "--flag" "value" pairs.
+func normalizeBackupArgs(args []string) []string {
+	result := make([]string, 0, len(args))
+	for _, arg := range args {
+		if idx := strings.Index(arg, "="); idx > 0 && strings.HasPrefix(arg, "--") {
+			result = append(result, arg[:idx], arg[idx+1:])
+		} else {
+			result = append(result, arg)
+		}
+	}
+	return result
+}
+
+// validateBackupStorageType returns an error if the storage type is not supported.
+func validateBackupStorageType(val string) error {
+	if val != "ami" && val != "snapshot" {
+		return fmt.Errorf("only AMI snapshot backups are currently supported (got --storage=%s)\n"+
+			"file-level S3/EFS backups are planned for a future release", val)
+	}
+	return nil
+}
+
 // parseCreateBackupFlags parses command-line flags for backup creation
 func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCreateRequest, error) {
 	req := types.BackupCreateRequest{
@@ -140,29 +162,26 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 		Encrypted:    true,  // Default to encrypted
 	}
 
-	for i := 2; i < len(args); i++ {
-		arg := args[i]
+	normalized := normalizeBackupArgs(args[2:])
+	for i := 0; i < len(normalized); i++ {
+		arg := normalized[i]
 		switch {
-		case arg == "--description" && i+1 < len(args):
-			req.Description = args[i+1]
+		case arg == "--description" && i+1 < len(normalized):
+			req.Description = normalized[i+1]
 			i++
-		case arg == "--include" && i+1 < len(args):
-			paths := strings.Split(args[i+1], ",")
-			req.IncludePaths = append(req.IncludePaths, paths...)
+		case arg == "--include" && i+1 < len(normalized):
+			req.IncludePaths = append(req.IncludePaths, strings.Split(normalized[i+1], ",")...)
 			i++
-		case arg == "--exclude" && i+1 < len(args):
-			paths := strings.Split(args[i+1], ",")
-			req.ExcludePaths = append(req.ExcludePaths, paths...)
+		case arg == "--exclude" && i+1 < len(normalized):
+			req.ExcludePaths = append(req.ExcludePaths, strings.Split(normalized[i+1], ",")...)
 			i++
 		case arg == "--full":
 			req.Full = true
 		case arg == "--incremental":
 			req.Incremental = true
-		case arg == "--storage" && i+1 < len(args):
-			storageVal := args[i+1]
-			if storageVal != "ami" && storageVal != "snapshot" {
-				return req, fmt.Errorf("only AMI snapshot backups are currently supported (got --storage=%s)\n"+
-					"file-level S3/EFS backups are planned for a future release", storageVal)
+		case arg == "--storage" && i+1 < len(normalized):
+			if err := validateBackupStorageType(normalized[i+1]); err != nil {
+				return req, err
 			}
 			req.StorageType = "ami"
 			i++
@@ -170,21 +189,6 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 			req.Encrypted = false
 		case arg == "--wait":
 			req.Wait = true
-		case strings.HasPrefix(arg, "--description="):
-			req.Description = strings.TrimPrefix(arg, "--description=")
-		case strings.HasPrefix(arg, "--include="):
-			paths := strings.Split(strings.TrimPrefix(arg, "--include="), ",")
-			req.IncludePaths = append(req.IncludePaths, paths...)
-		case strings.HasPrefix(arg, "--exclude="):
-			paths := strings.Split(strings.TrimPrefix(arg, "--exclude="), ",")
-			req.ExcludePaths = append(req.ExcludePaths, paths...)
-		case strings.HasPrefix(arg, "--storage="):
-			storageVal := strings.TrimPrefix(arg, "--storage=")
-			if storageVal != "ami" && storageVal != "snapshot" {
-				return req, fmt.Errorf("only AMI snapshot backups are currently supported (got --storage=%s)\n"+
-					"file-level S3/EFS backups are planned for a future release", storageVal)
-			}
-			req.StorageType = "ami"
 		default:
 			return req, fmt.Errorf("unknown option: %s", arg)
 		}

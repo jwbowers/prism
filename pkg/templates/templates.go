@@ -16,6 +16,46 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// appendIfDir appends path to dirs if it exists and is a directory.
+func appendIfDir(dirs []string, path string) []string {
+	if info, err := os.Stat(path); err == nil && info.IsDir() {
+		return append(dirs, path)
+	}
+	return dirs
+}
+
+// binaryRelativeTemplateDirs returns template dirs relative to the running executable.
+func binaryRelativeTemplateDirs() []string {
+	exe, err := os.Executable()
+	if err != nil {
+		return nil
+	}
+	exeDir := filepath.Dir(exe)
+	var dirs []string
+	dirs = appendIfDir(dirs, filepath.Clean(filepath.Join(exeDir, "..", "templates")))
+	dirs = appendIfDir(dirs, filepath.Clean(filepath.Join(exeDir, "..", "share", "templates")))
+	return dirs
+}
+
+// workdirTemplateDirs returns the cwd-relative templates directory if it exists and is not a duplicate.
+func workdirTemplateDirs(existing []string) []string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil
+	}
+	path := filepath.Join(wd, "templates")
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return nil
+	}
+	for _, dir := range existing {
+		if dir == path {
+			return nil // already present
+		}
+	}
+	return []string{path}
+}
+
 // DefaultTemplateDirs returns the default template directories to scan
 func DefaultTemplateDirs() []string {
 	log.Printf("🔍 DEFAULT TEMPLATE DIRS CALLED - STARTING DISCOVERY")
@@ -25,70 +65,22 @@ func DefaultTemplateDirs() []string {
 	if envDir := os.Getenv("PRISM_TEMPLATE_DIR"); envDir != "" {
 		envDir = filepath.Clean(envDir)
 		if info, err := os.Stat(envDir); err == nil && info.IsDir() {
-			dirs = append(dirs, envDir)
-			return dirs // Use ONLY the environment variable path when set
+			return []string{envDir} // Use ONLY the environment variable path when set
 		}
 	}
 
-	// Binary-relative path (most reliable for development and production)
-	if exe, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exe)
+	dirs = append(dirs, binaryRelativeTemplateDirs()...)
+	dirs = append(dirs, workdirTemplateDirs(dirs)...)
+	dirs = appendIfDir(dirs, filepath.Join(os.Getenv("HOME"), ".prism", "templates"))
+	dirs = appendIfDir(dirs, "/etc/prism/templates")
 
-		// Development: binary is in bin/, templates are in ../templates
-		devTemplatesPath := filepath.Clean(filepath.Join(exeDir, "..", "templates"))
-		if info, err := os.Stat(devTemplatesPath); err == nil && info.IsDir() {
-			dirs = append(dirs, devTemplatesPath)
-		}
-
-		// Homebrew installation: binary is in bin/, templates are in ../share/templates
-		homebrewTemplatesPath := filepath.Clean(filepath.Join(exeDir, "..", "share", "templates"))
-		if info, err := os.Stat(homebrewTemplatesPath); err == nil && info.IsDir() {
-			dirs = append(dirs, homebrewTemplatesPath)
-		}
-	}
-
-	// Current working directory's templates/ (fallback for development)
-	if wd, err := os.Getwd(); err == nil {
-		devTemplatesPath := filepath.Join(wd, "templates")
-		if info, err := os.Stat(devTemplatesPath); err == nil && info.IsDir() {
-			// Only add if not already in list (avoid duplicates)
-			isDuplicate := false
-			for _, dir := range dirs {
-				if dir == devTemplatesPath {
-					isDuplicate = true
-					break
-				}
-			}
-			if !isDuplicate {
-				dirs = append(dirs, devTemplatesPath)
-			}
-		}
-	}
-
-	// User templates directory
-	userTemplatesPath := filepath.Join(os.Getenv("HOME"), ".prism", "templates")
-	if info, err := os.Stat(userTemplatesPath); err == nil && info.IsDir() {
-		dirs = append(dirs, userTemplatesPath)
-	}
-
-	// System templates directory
-	systemTemplatesPath := "/etc/prism/templates"
-	if info, err := os.Stat(systemTemplatesPath); err == nil && info.IsDir() {
-		dirs = append(dirs, systemTemplatesPath)
-	}
-
-	// Add Homebrew installation paths
 	if homebrewPrefix := os.Getenv("HOMEBREW_PREFIX"); homebrewPrefix != "" {
 		dirs = append(dirs, filepath.Join(homebrewPrefix, "share", "prism", "templates"))
 	}
-
-	// Fallback for common Homebrew installations
-	commonHomebrewPaths := []string{
-		"/opt/homebrew/share/prism/templates", // Apple Silicon
-		"/usr/local/share/prism/templates",    // Intel
-	}
-
-	for _, path := range commonHomebrewPaths {
+	for _, path := range []string{
+		"/opt/homebrew/share/prism/templates",
+		"/usr/local/share/prism/templates",
+	} {
 		if _, err := os.Stat(path); err == nil {
 			dirs = append(dirs, path)
 		}
