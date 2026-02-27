@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/scttfrdmn/prism/pkg/storage"
 )
@@ -187,20 +186,23 @@ func (s *Server) handleCancelTransfer(w http.ResponseWriter, r *http.Request, tr
 		return
 	}
 
-	// Get transfer progress
+	// Verify the transfer exists before attempting cancellation
 	progress, exists := transferMgr.GetTransferProgress(transferID)
 	if !exists {
 		s.writeError(w, http.StatusNotFound, fmt.Sprintf("Transfer %s not found", transferID))
 		return
 	}
 
-	// Update status to cancelled
-	progress.Status = storage.TransferStatusCancelled
-	progress.LastUpdate = time.Now()
+	// Cancel the actual transfer operation (interrupts the underlying S3 context)
+	if err := transferMgr.CancelTransfer(transferID); err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to cancel transfer: %v", err))
+		return
+	}
 
-	// TODO: Implement actual transfer cancellation
-	// This requires modifying the TransferManager to support cancellation
-	// For now, just update the status
+	// Re-fetch progress after cancellation to return up-to-date status
+	if updated, ok := transferMgr.GetTransferProgress(transferID); ok {
+		progress = updated
+	}
 
 	_ = json.NewEncoder(w).Encode(progress)
 }

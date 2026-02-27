@@ -1253,3 +1253,108 @@ func TestDownloadFile_AutoCleanup(t *testing.T) {
 
 	t.Log("✓ DownloadFile with AutoCleanup succeeds")
 }
+
+// TestCancelTransfer_NoopForUnknownID verifies that CancelTransfer is safe to call
+// for a transfer ID that does not exist (already completed or never started).
+func TestCancelTransfer_NoopForUnknownID(t *testing.T) {
+	_, client := newMockS3Server(t, "content")
+	opts := DefaultTransferOptions()
+	tm := NewTransferManager(client, opts)
+
+	err := tm.CancelTransfer("nonexistent-id")
+	if err != nil {
+		t.Errorf("CancelTransfer for unknown ID should be a no-op, got error: %v", err)
+	}
+	t.Log("✓ CancelTransfer is safe for unknown transfer IDs")
+}
+
+// TestCancelTransfer_InterruptsInProgressTransfer verifies that CancelTransfer
+// stops the underlying upload and marks the transfer as cancelled.
+func TestCancelTransfer_InterruptsInProgressTransfer(t *testing.T) {
+	// Create a slow mock server that blocks long enough for cancellation to race
+	blockCh := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", "0")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		// Block until the test signals or the connection is closed
+		select {
+		case <-blockCh:
+		case <-r.Context().Done():
+		}
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(func() {
+		close(blockCh)
+		srv.Close()
+	})
+
+	cfg, _ := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
+		config.WithBaseEndpoint(srv.URL),
+	)
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true })
+
+	opts := DefaultTransferOptions()
+	tm := NewTransferManager(client, opts)
+
+	// Write a temp file to upload
+	tmpFile, err := os.CreateTemp(t.TempDir(), "cancel-test-*.bin")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	_, _ = tmpFile.WriteString("data to upload")
+	_ = tmpFile.Close()
+
+	// Start upload in background — it will block inside the mock server
+	uploadDone := make(chan error, 1)
+	var capturedID string
+	go func() {
+		progress, err := tm.UploadFile(context.Background(), tmpFile.Name(), "test-bucket", "cancel-key")
+		if progress != nil {
+			capturedID = progress.TransferID
+		}
+		uploadDone <- err
+	}()
+
+	// Give the goroutine time to register the transfer
+	var found bool
+	for i := 0; i < 20; i++ {
+		time.Sleep(10 * time.Millisecond)
+		transfers := tm.ListTransfers()
+		if len(transfers) > 0 {
+			capturedID = transfers[0].TransferID
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Skip("transfer did not register in time — skipping cancel race test")
+	}
+
+	// Cancel the transfer
+	if err := tm.CancelTransfer(capturedID); err != nil {
+		t.Fatalf("CancelTransfer returned error: %v", err)
+	}
+
+	// Verify the progress shows cancelled
+	progress, exists := tm.GetTransferProgress(capturedID)
+	if exists && progress != nil {
+		if progress.Status != TransferStatusCancelled {
+			t.Errorf("expected TransferStatusCancelled, got %s", progress.Status)
+		}
+	}
+
+	// The upload goroutine should finish (not hang) after cancellation
+	select {
+	case <-uploadDone:
+		// upload returned (error expected due to cancellation)
+	case <-time.After(5 * time.Second):
+		t.Error("upload goroutine did not return after CancelTransfer")
+	}
+
+	t.Log("✓ CancelTransfer interrupts an in-progress transfer")
+}

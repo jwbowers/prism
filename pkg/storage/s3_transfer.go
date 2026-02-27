@@ -175,8 +175,9 @@ type TransferManager struct {
 	downloader *manager.Downloader
 
 	// Track active transfers
-	transfers map[string]*TransferProgress
-	mu        sync.RWMutex
+	transfers   map[string]*TransferProgress
+	cancelFuncs map[string]context.CancelFunc
+	mu          sync.RWMutex
 
 	// Configuration
 	options *TransferOptions
@@ -201,11 +202,12 @@ func NewTransferManager(s3Client *s3.Client, options *TransferOptions) *Transfer
 	})
 
 	return &TransferManager{
-		s3Client:   s3Client,
-		uploader:   uploader,
-		downloader: downloader,
-		transfers:  make(map[string]*TransferProgress),
-		options:    options,
+		s3Client:    s3Client,
+		uploader:    uploader,
+		downloader:  downloader,
+		transfers:   make(map[string]*TransferProgress),
+		cancelFuncs: make(map[string]context.CancelFunc),
+		options:     options,
 	}
 }
 
@@ -248,6 +250,19 @@ func (tm *TransferManager) UploadFile(ctx context.Context, localPath, bucket, ke
 	tm.transfers[transferID] = progress
 	tm.mu.Unlock()
 
+	// Create a cancellable child context and store the cancel function so that
+	// CancelTransfer() can interrupt this upload from another goroutine/request.
+	cancelCtx, cancelFn := context.WithCancel(ctx)
+	tm.mu.Lock()
+	tm.cancelFuncs[transferID] = cancelFn
+	tm.mu.Unlock()
+	defer func() {
+		cancelFn()
+		tm.mu.Lock()
+		delete(tm.cancelFuncs, transferID)
+		tm.mu.Unlock()
+	}()
+
 	// Compute checksum if enabled
 	if tm.options.Checksum {
 		checksum, err := computeFileMD5(localPath)
@@ -265,8 +280,8 @@ func (tm *TransferManager) UploadFile(ctx context.Context, localPath, bucket, ke
 		interval: tm.options.ProgressInterval,
 	}
 
-	// Start upload with context timeout
-	uploadCtx, cancel := context.WithTimeout(ctx, TransferTimeout)
+	// Start upload with context timeout (derived from the cancellable context)
+	uploadCtx, cancel := context.WithTimeout(cancelCtx, TransferTimeout)
 	defer cancel()
 
 	_, err = tm.uploader.Upload(uploadCtx, &s3.PutObjectInput{
@@ -324,6 +339,19 @@ func (tm *TransferManager) DownloadFile(ctx context.Context, bucket, key, localP
 	tm.transfers[transferID] = progress
 	tm.mu.Unlock()
 
+	// Create a cancellable child context and store the cancel function so that
+	// CancelTransfer() can interrupt this download from another goroutine/request.
+	cancelCtx, cancelFn := context.WithCancel(ctx)
+	tm.mu.Lock()
+	tm.cancelFuncs[transferID] = cancelFn
+	tm.mu.Unlock()
+	defer func() {
+		cancelFn()
+		tm.mu.Lock()
+		delete(tm.cancelFuncs, transferID)
+		tm.mu.Unlock()
+	}()
+
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
@@ -344,8 +372,8 @@ func (tm *TransferManager) DownloadFile(ctx context.Context, bucket, key, localP
 		interval: tm.options.ProgressInterval,
 	}
 
-	// Start download with context timeout
-	downloadCtx, cancel := context.WithTimeout(ctx, TransferTimeout)
+	// Start download with context timeout (derived from the cancellable context)
+	downloadCtx, cancel := context.WithTimeout(cancelCtx, TransferTimeout)
 	defer cancel()
 
 	_, err = tm.downloader.Download(downloadCtx, progressWriter, &s3.GetObjectInput{
@@ -412,6 +440,33 @@ func (tm *TransferManager) ListTransfers() []*TransferProgress {
 		transfers = append(transfers, progress)
 	}
 	return transfers
+}
+
+// CancelTransfer cancels an in-progress transfer by its ID.
+// It calls the stored cancel function which propagates cancellation to the
+// underlying upload or download context. If the transfer does not exist or has
+// already completed, this is a no-op (returns nil).
+func (tm *TransferManager) CancelTransfer(transferID string) error {
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+
+	cancelFn, exists := tm.cancelFuncs[transferID]
+	if !exists {
+		// Transfer may have already completed or never existed — not an error
+		return nil
+	}
+
+	// Signal cancellation; the upload/download goroutine will detect the
+	// context cancellation and update progress.Status to TransferStatusFailed.
+	cancelFn()
+
+	// Update the progress status immediately so callers see the cancellation.
+	if progress, ok := tm.transfers[transferID]; ok {
+		progress.Status = TransferStatusCancelled
+		progress.LastUpdate = time.Now()
+	}
+
+	return nil
 }
 
 // DeleteObject deletes an object from S3
