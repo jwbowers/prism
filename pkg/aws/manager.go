@@ -616,14 +616,17 @@ func (l *InstanceLauncher) createDryRunInstance(req ctypes.LaunchRequest, hourly
 }
 
 // executeInstanceLaunch performs the actual EC2 instance launch with intelligent AZ failover (v0.7.0)
+// hasSubnetConfig returns true if either the direct SubnetId or a NetworkInterface SubnetId is set.
+func hasSubnetConfig(runInput *ec2.RunInstancesInput) bool {
+	return (runInput.SubnetId != nil && *runInput.SubnetId != "") ||
+		(len(runInput.NetworkInterfaces) > 0 && runInput.NetworkInterfaces[0].SubnetId != nil)
+}
+
 func (l *InstanceLauncher) executeInstanceLaunch(ctx context.Context, runInput *ec2.RunInstancesInput, instanceType string) (*ec2types.Instance, error) {
 	// When a subnet is specified, AWS automatically uses the subnet's AZ.
 	// Don't override placement AZ in this case (Issue #427, #439)
-	// Check both old format (SubnetId) and new format (NetworkInterfaces)
-	hasSubnet := (runInput.SubnetId != nil && *runInput.SubnetId != "") ||
-		(len(runInput.NetworkInterfaces) > 0 && runInput.NetworkInterfaces[0].SubnetId != nil)
 
-	if hasSubnet {
+	if hasSubnetConfig(runInput) {
 		// Launch directly without AZ failover since subnet determines the AZ
 		var result *ec2.RunInstancesOutput
 		err := WithRetry(ctx, DefaultRetryConfig(), func(ctx context.Context) error {
@@ -1102,6 +1105,36 @@ func (m *Manager) StopInstance(name string) error {
 
 // HibernateInstance hibernates (pauses) a running EC2 instance
 // This preserves the RAM state to storage for faster resume than regular stop/start
+// validateInstanceForHibernation checks hibernation prerequisites for an EC2 instance.
+// Returns (fallback-to-stop, error). If fallback is true, the caller should stop normally.
+func validateInstanceForHibernation(name string, instance ec2types.Instance) (fallback bool, err error) {
+	if instance.HibernationOptions == nil {
+		fmt.Printf("⚠️  Instance %s does not support hibernation (hibernation options not found)\n", name)
+		fmt.Printf("    Falling back to regular stop operation\n")
+		return true, nil
+	}
+	if !*instance.HibernationOptions.Configured {
+		fmt.Printf("⚠️  Instance %s does not support hibernation (hibernation not configured)\n", name)
+		fmt.Printf("    Falling back to regular stop operation\n")
+		return true, nil
+	}
+	if instance.State == nil {
+		return false, fmt.Errorf("instance state unknown")
+	}
+	if string(instance.State.Name) != instanceStateRunning {
+		return false, fmt.Errorf("instance must be in 'running' state to hibernate (current state: %s)", string(instance.State.Name))
+	}
+	if instance.LaunchTime != nil {
+		timeSinceLaunch := time.Since(*instance.LaunchTime)
+		minReadyTime := 3 * time.Minute
+		if timeSinceLaunch < minReadyTime {
+			return false, fmt.Errorf("instance not ready for hibernation yet (launched %v ago, need %v). Wait %v more",
+				timeSinceLaunch.Round(time.Second), minReadyTime, (minReadyTime - timeSinceLaunch).Round(time.Second))
+		}
+	}
+	return false, nil
+}
+
 func (m *Manager) HibernateInstance(name string) error {
 	// Get instance region
 	region, err := m.getInstanceRegion(name)
@@ -1109,66 +1142,30 @@ func (m *Manager) HibernateInstance(name string) error {
 		return fmt.Errorf("failed to get instance region: %w", err)
 	}
 
-	// Find instance by name tag
 	instanceID, err := m.findInstanceByName(name)
 	if err != nil {
 		return fmt.Errorf("failed to find instance: %w", err)
 	}
 
-	// Get regional EC2 client
 	regionalClient := m.getRegionalEC2Client(region)
-
 	ctx := context.Background()
-	// Check if instance supports hibernation
+
 	result, err := regionalClient.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
 		InstanceIds: []string{instanceID},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to describe instance: %w", err)
 	}
-
 	if len(result.Reservations) == 0 || len(result.Reservations[0].Instances) == 0 {
 		return fmt.Errorf("instance not found")
 	}
 
-	instance := result.Reservations[0].Instances[0]
-
-	// Check if hibernation is enabled for this instance
-	if instance.HibernationOptions == nil {
-		fmt.Printf("⚠️  Instance %s does not support hibernation (hibernation options not found)\n", name)
-		fmt.Printf("    Falling back to regular stop operation\n")
+	fallback, err := validateInstanceForHibernation(name, result.Reservations[0].Instances[0])
+	if err != nil {
+		return err
+	}
+	if fallback {
 		return m.StopInstance(name)
-	}
-
-	if !*instance.HibernationOptions.Configured {
-		fmt.Printf("⚠️  Instance %s does not support hibernation (hibernation not configured)\n", name)
-		fmt.Printf("    Falling back to regular stop operation\n")
-		return m.StopInstance(name)
-	}
-
-	// Check if instance is in a state that can be hibernated
-	if instance.State == nil {
-		return fmt.Errorf("instance state unknown")
-	}
-
-	instanceState := string(instance.State.Name)
-	if instanceState != instanceStateRunning {
-		return fmt.Errorf("instance must be in 'running' state to hibernate (current state: %s)", instanceState)
-	}
-
-	// Check if instance has been running long enough for hibernation agent to be ready
-	// AWS hibernation agent typically needs 2-3 minutes after launch to be ready
-	if instance.LaunchTime != nil {
-		timeSinceLaunch := time.Since(*instance.LaunchTime)
-		minReadyTime := 3 * time.Minute
-
-		if timeSinceLaunch < minReadyTime {
-			remainingTime := minReadyTime - timeSinceLaunch
-			return fmt.Errorf("instance not ready for hibernation yet (launched %v ago, need %v). Wait %v more",
-				timeSinceLaunch.Round(time.Second),
-				minReadyTime,
-				remainingTime.Round(time.Second))
-		}
 	}
 
 	// Stop the instance with hibernation
@@ -1422,49 +1419,9 @@ func (m *Manager) DeleteVolume(name string) error {
 	}
 
 	// 2. Wait for mount targets to be deleted
-	// The file system can't be deleted until all mount targets are deleted
 	if len(mtResp.MountTargets) > 0 {
-		log.Printf("Waiting for mount targets to be deleted...")
-
-		// Poll until all mount targets are gone
-		for {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("timeout deleting mount targets: %w", ctx.Err())
-			default:
-				// Continue
-			}
-
-			// Check if mount targets still exist
-			mtCheck, err := m.efs.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
-				FileSystemId: aws.String(fsId),
-			})
-			if err != nil {
-				// If the file system itself is gone, we don't care about mount targets
-				if strings.Contains(err.Error(), "FileSystemNotFound") {
-					break
-				}
-				// If can't list, wait and retry
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case <-time.After(10 * time.Second):
-					continue
-				}
-			}
-
-			// If no mount targets remain, we can proceed
-			if len(mtCheck.MountTargets) == 0 {
-				break
-			}
-
-			// Wait before checking again
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(10 * time.Second):
-				// Continue loop
-			}
+		if err := m.waitForMountTargetsDeletion(ctx, fsId); err != nil {
+			return err
 		}
 	}
 
@@ -1479,6 +1436,40 @@ func (m *Manager) DeleteVolume(name string) error {
 
 	// 4. Remove from state
 	return m.stateManager.RemoveStorageVolume(name)
+}
+
+// waitForMountTargetsDeletion polls until all mount targets for a filesystem are gone.
+func (m *Manager) waitForMountTargetsDeletion(ctx context.Context, fsId string) error {
+	log.Printf("Waiting for mount targets to be deleted...")
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout deleting mount targets: %w", ctx.Err())
+		default:
+		}
+		mtCheck, err := m.efs.DescribeMountTargets(ctx, &efs.DescribeMountTargetsInput{
+			FileSystemId: aws.String(fsId),
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "FileSystemNotFound") {
+				return nil
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(10 * time.Second):
+				continue
+			}
+		}
+		if len(mtCheck.MountTargets) == 0 {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(10 * time.Second):
+		}
+	}
 }
 
 // waitForEFSAvailable polls EFS status until available
@@ -3994,6 +3985,12 @@ func calculateActualCosts(computeHourlyRate float64, storageHourlyRate float64, 
 // calculateRunningHoursFromHistory calculates actual running hours from state transition history
 // billingStartTime is the time when billing started (running state start, not launch time)
 // isHibernating indicates if instance is currently hibernating (stopping state IS billable during hibernation)
+// isBillableState returns true if the given instance state incurs AWS billing charges.
+func isBillableState(state string, isHibernating bool) bool {
+	return state == instanceStateRunning || state == "pending" ||
+		(isHibernating && state == instanceStateStopping)
+}
+
 func calculateRunningHoursFromHistory(billingStartTime time.Time, currentState string, history []ctypes.StateTransition, isHibernating bool) float64 {
 	if len(history) == 0 {
 		// No history - use simple calculation based on current state
@@ -4035,12 +4032,7 @@ func calculateRunningHoursFromHistory(billingStartTime time.Time, currentState s
 		duration := transition.Timestamp.Sub(lastStateTime).Hours()
 
 		// Add to running hours if previous state was billable
-		// AWS billing rule: "running" and "pending" are always billable
-		// Hibernation exception: "stopping" is also billable during hibernation
-		if lastState == instanceStateRunning || lastState == "pending" {
-			runningHours += duration
-		} else if isHibernating && lastState == instanceStateStopping {
-			// Hibernation exception: stopping state IS billable during hibernation
+		if isBillableState(lastState, isHibernating) {
 			runningHours += duration
 		}
 
@@ -4050,12 +4042,8 @@ func calculateRunningHoursFromHistory(billingStartTime time.Time, currentState s
 	}
 
 	// Add time from last transition to now
-	now := time.Now()
-	finalDuration := now.Sub(lastStateTime).Hours()
-	if lastState == instanceStateRunning || lastState == "pending" {
-		runningHours += finalDuration
-	} else if isHibernating && lastState == instanceStateStopping {
-		// Hibernation exception: stopping state IS billable during hibernation
+	finalDuration := time.Now().Sub(lastStateTime).Hours()
+	if isBillableState(lastState, isHibernating) {
 		runningHours += finalDuration
 	}
 
