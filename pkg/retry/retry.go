@@ -248,46 +248,33 @@ func (r *ExponentialBackoff) calculateBackoff(attempt int) time.Duration {
 // - Throttling errors
 // - Service unavailable
 // - Internal server errors
+func isNetworkOrTimeoutError(s string) bool {
+	return strings.Contains(s, "timeout") || strings.Contains(s, "timed out") ||
+		strings.Contains(s, "connection reset") || strings.Contains(s, "connection refused") ||
+		strings.Contains(s, "temporary failure")
+}
+
+func isThrottlingError(s string) bool {
+	return strings.Contains(s, "throttl") || strings.Contains(s, "rate exceed") ||
+		strings.Contains(s, "too many requests") || strings.Contains(s, "request limit exceeded")
+}
+
+func isServiceError(s string) bool {
+	return strings.Contains(s, "service unavailable") || strings.Contains(s, "internal error") ||
+		strings.Contains(s, "internal server error") || strings.Contains(s, "503") ||
+		strings.Contains(s, "500")
+}
+
+func isCapacityError(s string) bool {
+	return strings.Contains(s, "insufficientinstancecapacity") || strings.Contains(s, "capacity")
+}
+
 func defaultRetryPredicate(err error) bool {
 	if err == nil {
 		return false
 	}
-
-	errStr := strings.ToLower(err.Error())
-
-	// Network and timeout errors
-	if strings.Contains(errStr, "timeout") ||
-		strings.Contains(errStr, "timed out") ||
-		strings.Contains(errStr, "connection reset") ||
-		strings.Contains(errStr, "connection refused") ||
-		strings.Contains(errStr, "temporary failure") {
-		return true
-	}
-
-	// AWS throttling errors
-	if strings.Contains(errStr, "throttl") ||
-		strings.Contains(errStr, "rate exceed") ||
-		strings.Contains(errStr, "too many requests") ||
-		strings.Contains(errStr, "request limit exceeded") {
-		return true
-	}
-
-	// AWS service errors
-	if strings.Contains(errStr, "service unavailable") ||
-		strings.Contains(errStr, "internal error") ||
-		strings.Contains(errStr, "internal server error") ||
-		strings.Contains(errStr, "503") ||
-		strings.Contains(errStr, "500") {
-		return true
-	}
-
-	// AWS capacity errors
-	if strings.Contains(errStr, "insufficientinstancecapacity") ||
-		strings.Contains(errStr, "capacity") {
-		return true
-	}
-
-	return false
+	s := strings.ToLower(err.Error())
+	return isNetworkOrTimeoutError(s) || isThrottlingError(s) || isServiceError(s) || isCapacityError(s)
 }
 
 // GetMetrics returns retry metrics

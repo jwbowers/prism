@@ -238,6 +238,28 @@ func (ic *InitCobraCommands) fetchTemplates() ([]*templateInfo, error) {
 	return templates, nil
 }
 
+func isMlAiTemplate(name, desc string) bool {
+	return strings.Contains(name, "ml") || strings.Contains(name, "machine learning") ||
+		strings.Contains(name, "ai") || strings.Contains(desc, "tensorflow") ||
+		strings.Contains(desc, "pytorch")
+}
+
+func isDataScienceTemplate(name, _ string) bool {
+	return strings.Contains(name, "python") || strings.Contains(name, "jupyter") ||
+		strings.Contains(name, "data") || strings.Contains(name, "r ") ||
+		strings.Contains(name, "rstudio")
+}
+
+func isBioinformaticsTemplate(name, _ string) bool {
+	return strings.Contains(name, "bio") || strings.Contains(name, "genomics") ||
+		strings.Contains(name, "blast")
+}
+
+func isWebDevTemplate(name, _ string) bool {
+	return strings.Contains(name, "web") || strings.Contains(name, "node") ||
+		strings.Contains(name, "nginx")
+}
+
 // categorizeTemplates groups templates by category
 func (ic *InitCobraCommands) categorizeTemplates(templates []*templateInfo) map[string][]*templateInfo {
 	categories := map[string][]*templateInfo{
@@ -251,30 +273,16 @@ func (ic *InitCobraCommands) categorizeTemplates(templates []*templateInfo) map[
 	for _, tmpl := range templates {
 		name := strings.ToLower(tmpl.Name)
 		desc := strings.ToLower(tmpl.Description)
-
-		// ML/AI category
-		if strings.Contains(name, "ml") || strings.Contains(name, "machine learning") ||
-			strings.Contains(name, "ai") || strings.Contains(desc, "tensorflow") ||
-			strings.Contains(desc, "pytorch") {
+		if isMlAiTemplate(name, desc) {
 			categories["ML/AI"] = append(categories["ML/AI"], tmpl)
 		}
-
-		// Data Science category
-		if strings.Contains(name, "python") || strings.Contains(name, "jupyter") ||
-			strings.Contains(name, "data") || strings.Contains(name, "r ") ||
-			strings.Contains(name, "rstudio") {
+		if isDataScienceTemplate(name, desc) {
 			categories["Data Science"] = append(categories["Data Science"], tmpl)
 		}
-
-		// Bioinformatics category
-		if strings.Contains(name, "bio") || strings.Contains(name, "genomics") ||
-			strings.Contains(name, "blast") {
+		if isBioinformaticsTemplate(name, desc) {
 			categories["Bioinformatics"] = append(categories["Bioinformatics"], tmpl)
 		}
-
-		// Web Development category
-		if strings.Contains(name, "web") || strings.Contains(name, "node") ||
-			strings.Contains(name, "nginx") {
+		if isWebDevTemplate(name, desc) {
 			categories["Web Development"] = append(categories["Web Development"], tmpl)
 		}
 	}

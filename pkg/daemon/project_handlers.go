@@ -29,34 +29,37 @@ func (s *Server) handleProjectOperations(w http.ResponseWriter, r *http.Request)
 
 // handleProjectByID routes project-specific requests
 func (s *Server) handleProjectByID(w http.ResponseWriter, r *http.Request) {
-	// Parse project ID from path
 	path := r.URL.Path[len("/api/v1/projects/"):]
 	parts := splitPath(path)
 	if len(parts) == 0 {
 		s.writeError(w, http.StatusBadRequest, "Missing project ID")
 		return
 	}
-
 	projectID := parts[0]
-
 	if len(parts) == 1 {
-		// Direct project operations
-		switch r.Method {
-		case http.MethodGet:
-			s.handleGetProject(w, r, projectID)
-		case http.MethodPut:
-			s.handleUpdateProject(w, r, projectID)
-		case http.MethodDelete:
-			s.handleDeleteProject(w, r, projectID)
-		default:
-			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		}
+		s.handleProjectDirectOp(w, r, projectID)
 		return
 	}
+	s.handleProjectSubOp(w, r, projectID, parts)
+}
 
-	// Sub-operations
-	operation := parts[1]
-	switch operation {
+// handleProjectDirectOp handles GET/PUT/DELETE directly on /api/v1/projects/{id}.
+func (s *Server) handleProjectDirectOp(w http.ResponseWriter, r *http.Request, projectID string) {
+	switch r.Method {
+	case http.MethodGet:
+		s.handleGetProject(w, r, projectID)
+	case http.MethodPut:
+		s.handleUpdateProject(w, r, projectID)
+	case http.MethodDelete:
+		s.handleDeleteProject(w, r, projectID)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleProjectSubOp handles sub-resource operations under /api/v1/projects/{id}/{operation}.
+func (s *Server) handleProjectSubOp(w http.ResponseWriter, r *http.Request, projectID string, parts []string) {
+	switch parts[1] {
 	case "members":
 		s.handleProjectMembers(w, r, projectID, parts)
 	case "budget":
@@ -76,13 +79,10 @@ func (s *Server) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 	case "allocations":
 		s.handleProjectAllocations(w, r, projectID)
 	case "invitations":
-		// Delegate to invitation handler (v0.5.11)
 		s.handleInvitationOperations(w, r)
 	case "transfer":
-		// Project ownership transfer (Issue #326)
 		s.handleProjectTransfer(w, r, projectID)
 	case "forecast":
-		// Cost forecast chart (Issue #326)
 		s.handleProjectForecast(w, r, projectID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
