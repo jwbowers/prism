@@ -6,6 +6,7 @@ import (
 
 	"github.com/scttfrdmn/prism/pkg/api/client"
 	"github.com/scttfrdmn/prism/pkg/invitation"
+	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -544,76 +545,19 @@ func (a *App) projectInvite(args []string) error {
 
 	projectName := args[0]
 	email := args[1]
-	role := "member"  // TODO: Use in API call when implemented
-	message := ""     // TODO: Use in API call when implemented
-	expiresIn := "7d" // Default: 7 days
-	expiresOn := ""   // Absolute date
 
-	// Parse flags
-	for i := 2; i < len(args); i++ {
-		arg := args[i]
-		switch {
-		case arg == "--role" && i+1 < len(args):
-			role = args[i+1]
-			i++
-		case arg == "--message" && i+1 < len(args):
-			message = args[i+1]
-			i++
-		case arg == "--expires-in" && i+1 < len(args):
-			expiresIn = args[i+1]
-			i++
-		case arg == "--expires-on" && i+1 < len(args):
-			expiresOn = args[i+1]
-			i++
-		default:
-			return fmt.Errorf("unknown option: %s", arg)
-		}
+	flags, err := parseInviteFlags(args[2:])
+	if err != nil {
+		return err
 	}
 
-	// Validate expiration flags are mutually exclusive
-	if expiresIn != "7d" && expiresOn != "" {
-		return fmt.Errorf("cannot use both --expires-in and --expires-on flags")
-	}
-
-	// Parse expiration
-	var expiresAt time.Time
-	var expirationDisplay string
-	var err error
-
-	if expiresOn != "" {
-		// Parse absolute date
-		expiresAt, err = parseAbsoluteDate(expiresOn)
-		if err != nil {
-			return fmt.Errorf("invalid date: %w\n\n"+
-				"Valid formats:\n"+
-				"  - Date: 2025-12-25\n"+
-				"  - Date and time: 2025-12-25 15:00\n"+
-				"  - ISO 8601: 2025-12-25T15:00:00Z\n"+
-				"Examples:\n"+
-				"  --expires-on 2025-12-25\n"+
-				"  --expires-on \"2025-12-25 15:00\"", err)
-		}
-		expirationDisplay = expiresOn
-	} else {
-		// Parse duration
-		duration, err := parseDuration(expiresIn)
-		if err != nil {
-			return fmt.Errorf("invalid duration: %w\n\n"+
-				"Valid formats:\n"+
-				"  - Days: 7d, 14d, 30d\n"+
-				"  - Hours: 24h, 48h\n"+
-				"  - Combinations: 7d12h\n"+
-				"Examples:\n"+
-				"  --expires-in 7d\n"+
-				"  --expires-in 14d\n"+
-				"  --expires-in 48h", err)
-		}
-		expiresAt = time.Now().Add(duration)
-		expirationDisplay = expiresIn
+	expiresAt, expirationDisplay, err := resolveExpiration(flags.expiresOn, flags.expiresIn)
+	if err != nil {
+		return err
 	}
 
 	// TODO: Use role, message, and expiration in API call when implemented
-	_, _, _ = role, message, expiresAt // Suppress unused variable warnings
+	_, _, _ = flags.role, flags.message, expiresAt // Suppress unused variable warnings
 
 	// Get project ID by name
 	projectResponse, err := a.apiClient.ListProjects(a.ctx, nil)
@@ -621,26 +565,16 @@ func (a *App) projectInvite(args []string) error {
 		return fmt.Errorf("failed to list projects: %w", err)
 	}
 
-	var projectID string
-	for _, proj := range projectResponse.Projects {
-		if proj.Name == projectName {
-			projectID = proj.ID
-			break
-		}
-	}
-
+	projectID := findProjectIDByName(projectResponse.Projects, projectName)
 	if projectID == "" {
 		return fmt.Errorf("project not found: %s", projectName)
 	}
 
-	// Parse role from string
-	projectRole := types.ProjectRole(role)
-
 	// Create invitation via API
 	req := client.SendInvitationRequest{
 		Email:     email,
-		Role:      projectRole,
-		Message:   message,
+		Role:      types.ProjectRole(flags.role),
+		Message:   flags.message,
 		ExpiresAt: &expiresAt,
 	}
 
@@ -653,9 +587,9 @@ func (a *App) projectInvite(args []string) error {
 
 	fmt.Printf("📧 Invitation Created for %s\n\n", projectName)
 	fmt.Printf("   ├─ Recipient: %s\n", email)
-	fmt.Printf("   ├─ Role: %s\n", role)
+	fmt.Printf("   ├─ Role: %s\n", flags.role)
 	fmt.Printf("   ├─ Expires: %s (%s)\n", inv.ExpiresAt.Format("2006-01-02 15:04"), formatTimeRemaining(inv.ExpiresAt))
-	if expiresOn != "" {
+	if flags.expiresOn != "" {
 		fmt.Printf("   └─ Expiration: on %s\n\n", expirationDisplay)
 	} else {
 		fmt.Printf("   └─ Expiration: in %s\n\n", expirationDisplay)
@@ -779,6 +713,167 @@ func (a *App) projectInvitationsRevoke(args []string) error {
 	return nil
 }
 
+// bulkInvitationFlags holds the parsed flags for projectInvitationsBulk.
+type bulkInvitationFlags struct {
+	file      string
+	emails    string
+	role      string
+	message   string
+	expiresIn string
+	expiresOn string
+}
+
+// parseBulkInvitationFlags parses flag arguments for the bulk invitation command.
+func parseBulkInvitationFlags(args []string) (bulkInvitationFlags, error) {
+	flags := bulkInvitationFlags{role: "member", expiresIn: "7d"}
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--file" && i+1 < len(args):
+			flags.file = args[i+1]
+			i++
+		case arg == "--emails" && i+1 < len(args):
+			flags.emails = args[i+1]
+			i++
+		case arg == "--role" && i+1 < len(args):
+			flags.role = args[i+1]
+			i++
+		case arg == "--message" && i+1 < len(args):
+			flags.message = args[i+1]
+			i++
+		case arg == "--expires-in" && i+1 < len(args):
+			flags.expiresIn = args[i+1]
+			i++
+		case arg == "--expires-on" && i+1 < len(args):
+			flags.expiresOn = args[i+1]
+			i++
+		default:
+			return bulkInvitationFlags{}, fmt.Errorf("unknown option: %s", arg)
+		}
+	}
+	return flags, nil
+}
+
+// parseBulkEntries parses invitation entries from a file or inline email string.
+func parseBulkEntries(file, emails string) ([]types.BulkInvitationEntry, error) {
+	if file != "" {
+		fmt.Printf("📄 Parsing invitation file: %s\n", file)
+		entries, err := invitation.ParseInvitationFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse file: %w", err)
+		}
+		return entries, nil
+	}
+	fmt.Printf("📧 Parsing inline email list\n")
+	entries, err := invitation.ParseInlineEmails(emails)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse emails: %w", err)
+	}
+	return entries, nil
+}
+
+// applyExpiresOn parses an expiry date string and applies it to the request.
+func applyExpiresOn(bulkReq *types.BulkInvitationRequest, expiresOn string) error {
+	if expiresOn == "" {
+		return nil
+	}
+	expiresAt, err := time.Parse("2006-01-02", expiresOn)
+	if err != nil {
+		return fmt.Errorf("invalid expires-on date (use YYYY-MM-DD): %w", err)
+	}
+	bulkReq.ExpiresAt = &expiresAt
+	bulkReq.ExpiresIn = "" // Clear ExpiresIn when ExpiresAt is set
+	return nil
+}
+
+// inviteFlags holds the parsed optional flags for projectInvite.
+type inviteFlags struct {
+	role      string
+	message   string
+	expiresIn string
+	expiresOn string
+}
+
+// parseInviteFlags parses optional flag arguments for the project invite command.
+func parseInviteFlags(args []string) (inviteFlags, error) {
+	flags := inviteFlags{role: "member", expiresIn: "7d"}
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--role" && i+1 < len(args):
+			flags.role = args[i+1]
+			i++
+		case arg == "--message" && i+1 < len(args):
+			flags.message = args[i+1]
+			i++
+		case arg == "--expires-in" && i+1 < len(args):
+			flags.expiresIn = args[i+1]
+			i++
+		case arg == "--expires-on" && i+1 < len(args):
+			flags.expiresOn = args[i+1]
+			i++
+		default:
+			return inviteFlags{}, fmt.Errorf("unknown option: %s", arg)
+		}
+	}
+	return flags, nil
+}
+
+// resolveExpiration validates the expiry flags and returns an absolute time and display string.
+func resolveExpiration(expiresOn, expiresIn string) (time.Time, string, error) {
+	if expiresOn != "" && expiresIn != "7d" {
+		return time.Time{}, "", fmt.Errorf("cannot use both --expires-in and --expires-on flags")
+	}
+	if expiresOn != "" {
+		t, err := parseAbsoluteDate(expiresOn)
+		if err != nil {
+			return time.Time{}, "", fmt.Errorf("invalid date: %w\n\n"+
+				"Valid formats:\n"+
+				"  - Date: 2025-12-25\n"+
+				"  - Date and time: 2025-12-25 15:00\n"+
+				"  - ISO 8601: 2025-12-25T15:00:00Z\n"+
+				"Examples:\n"+
+				"  --expires-on 2025-12-25\n"+
+				"  --expires-on \"2025-12-25 15:00\"", err)
+		}
+		return t, expiresOn, nil
+	}
+	d, err := parseDuration(expiresIn)
+	if err != nil {
+		return time.Time{}, "", fmt.Errorf("invalid duration: %w\n\n"+
+			"Valid formats:\n"+
+			"  - Days: 7d, 14d, 30d\n"+
+			"  - Hours: 24h, 48h\n"+
+			"  - Combinations: 7d12h\n"+
+			"Examples:\n"+
+			"  --expires-in 7d\n"+
+			"  --expires-in 14d\n"+
+			"  --expires-in 48h", err)
+	}
+	return time.Now().Add(d), expiresIn, nil
+}
+
+// validateBulkSourceFlags checks that exactly one of file or emails is set.
+func validateBulkSourceFlags(flags bulkInvitationFlags) error {
+	if flags.file == "" && flags.emails == "" {
+		return fmt.Errorf("must provide either --file or --emails")
+	}
+	if flags.file != "" && flags.emails != "" {
+		return fmt.Errorf("cannot use both --file and --emails")
+	}
+	return nil
+}
+
+// findProjectIDByName returns the ID of the project with the given name, or "".
+func findProjectIDByName(projects []project.ProjectSummary, name string) string {
+	for _, p := range projects {
+		if p.Name == name {
+			return p.ID
+		}
+	}
+	return ""
+}
+
 // projectInvitationsBulk sends bulk invitations from file or inline emails
 func (a *App) projectInvitationsBulk(args []string) error {
 	if len(args) < 1 {
@@ -787,43 +882,13 @@ func (a *App) projectInvitationsBulk(args []string) error {
 
 	projectName := args[0]
 
-	// Parse flags
-	var file, emails, role, message, expiresIn, expiresOn string
-	role = "member"  // default
-	expiresIn = "7d" // default
-
-	for i := 1; i < len(args); i++ {
-		arg := args[i]
-		switch {
-		case arg == "--file" && i+1 < len(args):
-			file = args[i+1]
-			i++
-		case arg == "--emails" && i+1 < len(args):
-			emails = args[i+1]
-			i++
-		case arg == "--role" && i+1 < len(args):
-			role = args[i+1]
-			i++
-		case arg == "--message" && i+1 < len(args):
-			message = args[i+1]
-			i++
-		case arg == "--expires-in" && i+1 < len(args):
-			expiresIn = args[i+1]
-			i++
-		case arg == "--expires-on" && i+1 < len(args):
-			expiresOn = args[i+1]
-			i++
-		default:
-			return fmt.Errorf("unknown option: %s", arg)
-		}
+	flags, err := parseBulkInvitationFlags(args[1:])
+	if err != nil {
+		return err
 	}
 
-	// Validate file or emails provided
-	if file == "" && emails == "" {
-		return fmt.Errorf("must provide either --file or --emails")
-	}
-	if file != "" && emails != "" {
-		return fmt.Errorf("cannot use both --file and --emails")
+	if err := validateBulkSourceFlags(flags); err != nil {
+		return err
 	}
 
 	// Get project ID by name
@@ -831,38 +896,17 @@ func (a *App) projectInvitationsBulk(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to list projects: %w", err)
 	}
-
-	var projectID string
-	for _, proj := range projectResponse.Projects {
-		if proj.Name == projectName {
-			projectID = proj.ID
-			break
-		}
-	}
-
+	projectID := findProjectIDByName(projectResponse.Projects, projectName)
 	if projectID == "" {
 		return fmt.Errorf("project not found: %s", projectName)
 	}
 
-	// Parse invitation entries
-	var entries []types.BulkInvitationEntry
-	if file != "" {
-		fmt.Printf("📄 Parsing invitation file: %s\n", file)
-		entries, err = invitation.ParseInvitationFile(file)
-		if err != nil {
-			return fmt.Errorf("failed to parse file: %w", err)
-		}
-	} else {
-		fmt.Printf("📧 Parsing inline email list\n")
-		entries, err = invitation.ParseInlineEmails(emails)
-		if err != nil {
-			return fmt.Errorf("failed to parse emails: %w", err)
-		}
+	// Parse and validate invitation entries
+	entries, err := parseBulkEntries(flags.file, flags.emails)
+	if err != nil {
+		return err
 	}
-
 	fmt.Printf("   Found %d email(s)\n\n", len(entries))
-
-	// Validate roles
 	if err := invitation.ValidateRoles(entries); err != nil {
 		return fmt.Errorf("invalid roles: %w", err)
 	}
@@ -870,30 +914,23 @@ func (a *App) projectInvitationsBulk(args []string) error {
 	// Build bulk invitation request
 	bulkReq := &types.BulkInvitationRequest{
 		Invitations:    entries,
-		DefaultRole:    types.ProjectRole(role),
-		DefaultMessage: message,
-		ExpiresIn:      expiresIn,
+		DefaultRole:    types.ProjectRole(flags.role),
+		DefaultMessage: flags.message,
+		ExpiresIn:      flags.expiresIn,
 	}
-
-	// Parse expires-on if provided
-	if expiresOn != "" {
-		expiresAt, err := time.Parse("2006-01-02", expiresOn)
-		if err != nil {
-			return fmt.Errorf("invalid expires-on date (use YYYY-MM-DD): %w", err)
-		}
-		bulkReq.ExpiresAt = &expiresAt
-		bulkReq.ExpiresIn = "" // Clear ExpiresIn if ExpiresAt is set
+	if err := applyExpiresOn(bulkReq, flags.expiresOn); err != nil {
+		return err
 	}
 
 	fmt.Printf("📬 Sending bulk invitations to project '%s'...\n", projectName)
-	fmt.Printf("   Default role: %s\n", role)
-	if message != "" {
-		fmt.Printf("   Default message: %s\n", message)
+	fmt.Printf("   Default role: %s\n", flags.role)
+	if flags.message != "" {
+		fmt.Printf("   Default message: %s\n", flags.message)
 	}
 	if bulkReq.ExpiresAt != nil {
 		fmt.Printf("   Expires on: %s\n", bulkReq.ExpiresAt.Format("2006-01-02"))
 	} else {
-		fmt.Printf("   Expires in: %s\n", expiresIn)
+		fmt.Printf("   Expires in: %s\n", flags.expiresIn)
 	}
 	fmt.Println()
 
@@ -903,15 +940,11 @@ func (a *App) projectInvitationsBulk(args []string) error {
 		return fmt.Errorf("failed to send bulk invitations: %w", err)
 	}
 
-	// Display formatted results
-	summary := invitation.FormatSummary(resp)
-	fmt.Println(summary)
+	fmt.Println(invitation.FormatSummary(resp))
 
-	// Return error if all failed
 	if resp.Summary.Failed == resp.Summary.Total {
 		return fmt.Errorf("all invitations failed")
 	}
-
 	return nil
 }
 
