@@ -118,98 +118,106 @@ func (m PolicyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = false
 			return m, nil
 		}
-
 		m.status = msg.Status
 		m.policySets = msg.PolicySets
 		m.loading = false
 		m.error = ""
-
-		// Update table with policy set data
 		m.updatePolicySetsTable()
 		return m, nil
 
 	case PolicyCheckResultMsg:
-		// Handle template access check result
 		if msg.Error != nil {
 			m.error = msg.Error.Error()
 			return m, nil
 		}
-
 		m.showCheckDialog = false
 		m.checkTemplateName = ""
-		// Display result (could enhance with a result dialog)
 		return m, nil
 
 	case tea.KeyMsg:
-		if m.loading {
-			return m, nil
-		}
-
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "r", "f5":
-			// Refresh policy data
-			m.loading = true
-			return m, m.fetchPolicyData
-
-		case "e":
-			// Enable policy enforcement
-			if m.status != nil && !m.status.Enabled {
-				return m, m.enableEnforcement
-			}
-
-		case "d":
-			// Disable policy enforcement
-			if m.status != nil && m.status.Enabled {
-				return m, m.disableEnforcement
-			}
-
-		case "a":
-			// Assign selected policy set
-			if m.selectedPolicySet < len(m.policySets) {
-				policySet := m.policySets[m.selectedPolicySet]
-				return m, m.assignPolicySet(policySet.ID)
-			}
-
-		case "c":
-			// Check template access (show dialog)
-			m.showCheckDialog = true
-			return m, nil
-
-		case "esc":
-			// Close dialog
-			if m.showCheckDialog {
-				m.showCheckDialog = false
-				m.checkTemplateName = ""
-				return m, nil
-			}
-
-		case "enter":
-			// Handle check dialog submission
-			if m.showCheckDialog && m.checkTemplateName != "" {
-				return m, m.checkTemplateAccess(m.checkTemplateName)
-			}
-
-		case "up", "k":
-			if m.selectedPolicySet > 0 {
-				m.selectedPolicySet--
-			}
-			return m, nil
-
-		case "down", "j":
-			if m.selectedPolicySet < len(m.policySets)-1 {
-				m.selectedPolicySet++
-			}
-			return m, nil
-		}
+		return updatePolicyOnKey(m, msg)
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
 
+	return m, nil
+}
+
+// updatePolicyOnKey handles keyboard input for the policy view.
+func updatePolicyOnKey(m PolicyModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.loading {
+		return m, nil
+	}
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+	case "r", "f5":
+		m.loading = true
+		return m, m.fetchPolicyData
+	case "e":
+		return handlePolicyEnforcementKey(m, true)
+	case "d":
+		return handlePolicyEnforcementKey(m, false)
+	case "a":
+		if m.selectedPolicySet < len(m.policySets) {
+			policySet := m.policySets[m.selectedPolicySet]
+			return m, m.assignPolicySet(policySet.ID)
+		}
+	case "c":
+		m.showCheckDialog = true
+		return m, nil
+	case "esc":
+		return handlePolicyDialogKey(m, "esc")
+	case "enter":
+		return handlePolicyDialogKey(m, "enter")
+	case "up", "k":
+		return handlePolicyCursorKey(m, -1)
+	case "down", "j":
+		return handlePolicyCursorKey(m, 1)
+	}
+	return m, nil
+}
+
+// handlePolicyEnforcementKey handles the enable ('e') and disable ('d') keys.
+func handlePolicyEnforcementKey(m PolicyModel, enable bool) (PolicyModel, tea.Cmd) {
+	if m.status == nil {
+		return m, nil
+	}
+	if enable && !m.status.Enabled {
+		return m, m.enableEnforcement
+	}
+	if !enable && m.status.Enabled {
+		return m, m.disableEnforcement
+	}
+	return m, nil
+}
+
+// handlePolicyDialogKey handles "esc" and "enter" within the check dialog.
+func handlePolicyDialogKey(m PolicyModel, key string) (PolicyModel, tea.Cmd) {
+	switch key {
+	case "esc":
+		if m.showCheckDialog {
+			m.showCheckDialog = false
+			m.checkTemplateName = ""
+		}
+	case "enter":
+		if m.showCheckDialog && m.checkTemplateName != "" {
+			return m, m.checkTemplateAccess(m.checkTemplateName)
+		}
+	}
+	return m, nil
+}
+
+// handlePolicyCursorKey moves the policy set selection up (dir<0) or down (dir>0).
+func handlePolicyCursorKey(m PolicyModel, dir int) (PolicyModel, tea.Cmd) {
+	if dir < 0 && m.selectedPolicySet > 0 {
+		m.selectedPolicySet--
+	}
+	if dir > 0 && m.selectedPolicySet < len(m.policySets)-1 {
+		m.selectedPolicySet++
+	}
 	return m, nil
 }
 

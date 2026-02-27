@@ -184,50 +184,34 @@ func (a *App) Run() error {
 
 // Init initializes the application model
 func (m AppModel) Init() tea.Cmd {
-	// Start background update check
 	updateCheckCmd := checkForUpdatesBackground()
+	return tea.Batch(updateCheckCmd, currentPageInitCmd(m))
+}
 
-	// Initialize current page
-	var pageInitCmd tea.Cmd
-	switch m.currentPage {
-	case DashboardPage:
-		pageInitCmd = m.dashboardModel.Init()
-	case InstancesPage:
-		pageInitCmd = m.instancesModel.Init()
-	case TemplatesPage:
-		pageInitCmd = m.templatesModel.Init()
-	case StoragePage:
-		pageInitCmd = m.storageModel.Init()
-	case ProjectsPage:
-		pageInitCmd = m.projectsModel.Init()
-	case BudgetPage:
-		pageInitCmd = m.budgetModel.Init()
-	case UsersPage:
-		pageInitCmd = m.usersModel.Init()
-	case PolicyPage:
-		pageInitCmd = m.policyModel.Init()
-	case MarketplacePage:
-		pageInitCmd = m.marketplaceModel.Init()
-	case IdlePage:
-		pageInitCmd = m.idleModel.Init()
-	case AMIPage:
-		pageInitCmd = m.amiModel.Init()
-	case RightsizingPage:
-		pageInitCmd = m.rightsizingModel.Init()
-	case LogsPage:
-		pageInitCmd = m.logsModel.Init()
-	case DaemonPage:
-		pageInitCmd = m.daemonModel.Init()
-	case SettingsPage:
-		pageInitCmd = m.settingsModel.Init()
-	case ProfilesPage:
-		pageInitCmd = m.profilesModel.Init()
-	default:
-		pageInitCmd = m.dashboardModel.Init()
+// currentPageInitCmd returns the Init command for the active page.
+func currentPageInitCmd(m AppModel) tea.Cmd {
+	initFns := map[PageID]func() tea.Cmd{
+		DashboardPage:   m.dashboardModel.Init,
+		InstancesPage:   m.instancesModel.Init,
+		TemplatesPage:   m.templatesModel.Init,
+		StoragePage:     m.storageModel.Init,
+		ProjectsPage:    m.projectsModel.Init,
+		BudgetPage:      m.budgetModel.Init,
+		UsersPage:       m.usersModel.Init,
+		PolicyPage:      m.policyModel.Init,
+		MarketplacePage: m.marketplaceModel.Init,
+		IdlePage:        m.idleModel.Init,
+		AMIPage:         m.amiModel.Init,
+		RightsizingPage: m.rightsizingModel.Init,
+		LogsPage:        m.logsModel.Init,
+		DaemonPage:      m.daemonModel.Init,
+		SettingsPage:    m.settingsModel.Init,
+		ProfilesPage:    m.profilesModel.Init,
 	}
-
-	// Batch both commands
-	return tea.Batch(updateCheckCmd, pageInitCmd)
+	if fn, ok := initFns[m.currentPage]; ok {
+		return fn()
+	}
+	return m.dashboardModel.Init()
 }
 
 // checkForUpdatesBackground performs a background update check
@@ -422,71 +406,86 @@ func handleMainPageNav(m AppModel, key string) (AppModel, []tea.Cmd) {
 type PageModelUpdater struct{}
 
 func (u *PageModelUpdater) UpdateCurrentPage(m AppModel, msg tea.Msg) (AppModel, tea.Cmd) {
+	if updated, cmd, ok := updatePrimaryPageModel(m, msg); ok {
+		return updated, cmd
+	}
+	return updateAdvancedPageModel(m, msg)
+}
+
+// updatePrimaryPageModel updates the model for core/primary pages (Dashboard–Policy).
+func updatePrimaryPageModel(m AppModel, msg tea.Msg) (AppModel, tea.Cmd, bool) {
 	switch m.currentPage {
 	case DashboardPage:
-		newModel, newCmd := m.dashboardModel.Update(msg)
+		newModel, cmd := m.dashboardModel.Update(msg)
 		m.dashboardModel = newModel.(models.DashboardModel)
-		return m, newCmd
+		return m, cmd, true
 	case InstancesPage:
-		newModel, newCmd := m.instancesModel.Update(msg)
+		newModel, cmd := m.instancesModel.Update(msg)
 		m.instancesModel = newModel.(models.InstancesModel)
-		return m, newCmd
+		return m, cmd, true
 	case TemplatesPage:
-		newModel, newCmd := m.templatesModel.Update(msg)
+		newModel, cmd := m.templatesModel.Update(msg)
 		m.templatesModel = newModel.(models.TemplatesModel)
-		return m, newCmd
+		return m, cmd, true
 	case StoragePage:
-		newModel, newCmd := m.storageModel.Update(msg)
+		newModel, cmd := m.storageModel.Update(msg)
 		m.storageModel = newModel.(models.StorageModel)
-		return m, newCmd
+		return m, cmd, true
 	case ProjectsPage:
-		newModel, newCmd := m.projectsModel.Update(msg)
+		newModel, cmd := m.projectsModel.Update(msg)
 		m.projectsModel = newModel.(models.ProjectsModel)
-		return m, newCmd
+		return m, cmd, true
 	case BudgetPage:
-		newModel, newCmd := m.budgetModel.Update(msg)
+		newModel, cmd := m.budgetModel.Update(msg)
 		m.budgetModel = newModel.(models.BudgetModel)
-		return m, newCmd
+		return m, cmd, true
 	case UsersPage:
-		newModel, newCmd := m.usersModel.Update(msg)
+		newModel, cmd := m.usersModel.Update(msg)
 		m.usersModel = newModel.(models.UsersModel)
-		return m, newCmd
+		return m, cmd, true
 	case PolicyPage:
-		newModel, newCmd := m.policyModel.Update(msg)
+		newModel, cmd := m.policyModel.Update(msg)
 		m.policyModel = newModel.(models.PolicyModel)
-		return m, newCmd
+		return m, cmd, true
+	}
+	return m, nil, false
+}
+
+// updateAdvancedPageModel updates the model for advanced/settings pages (Marketplace–Profiles).
+func updateAdvancedPageModel(m AppModel, msg tea.Msg) (AppModel, tea.Cmd) {
+	switch m.currentPage {
 	case MarketplacePage:
-		newModel, newCmd := m.marketplaceModel.Update(msg)
+		newModel, cmd := m.marketplaceModel.Update(msg)
 		m.marketplaceModel = newModel.(models.MarketplaceModel)
-		return m, newCmd
+		return m, cmd
 	case IdlePage:
-		newModel, newCmd := m.idleModel.Update(msg)
+		newModel, cmd := m.idleModel.Update(msg)
 		m.idleModel = newModel.(models.IdleModel)
-		return m, newCmd
+		return m, cmd
 	case AMIPage:
-		newModel, newCmd := m.amiModel.Update(msg)
+		newModel, cmd := m.amiModel.Update(msg)
 		m.amiModel = newModel.(models.AMIModel)
-		return m, newCmd
+		return m, cmd
 	case RightsizingPage:
-		newModel, newCmd := m.rightsizingModel.Update(msg)
+		newModel, cmd := m.rightsizingModel.Update(msg)
 		m.rightsizingModel = newModel.(models.RightsizingModel)
-		return m, newCmd
+		return m, cmd
 	case LogsPage:
-		newModel, newCmd := m.logsModel.Update(msg)
+		newModel, cmd := m.logsModel.Update(msg)
 		m.logsModel = newModel.(models.LogsModel)
-		return m, newCmd
+		return m, cmd
 	case DaemonPage:
-		newModel, newCmd := m.daemonModel.Update(msg)
+		newModel, cmd := m.daemonModel.Update(msg)
 		m.daemonModel = newModel.(models.DaemonModel)
-		return m, newCmd
+		return m, cmd
 	case SettingsPage:
-		newModel, newCmd := m.settingsModel.Update(msg)
+		newModel, cmd := m.settingsModel.Update(msg)
 		m.settingsModel = newModel.(models.SettingsModel)
-		return m, newCmd
+		return m, cmd
 	case ProfilesPage:
-		newModel, newCmd := m.profilesModel.Update(msg)
+		newModel, cmd := m.profilesModel.Update(msg)
 		m.profilesModel = newModel.(models.ProfilesModel)
-		return m, newCmd
+		return m, cmd
 	}
 	return m, nil
 }
@@ -544,46 +543,9 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the application
 func (m AppModel) View() string {
-	// Get base view
-	var baseView string
-	switch m.currentPage {
-	case DashboardPage:
-		baseView = m.dashboardModel.View()
-	case InstancesPage:
-		baseView = m.instancesModel.View()
-	case TemplatesPage:
-		baseView = m.templatesModel.View()
-	case StoragePage:
-		baseView = m.storageModel.View()
-	case ProjectsPage:
-		baseView = m.projectsModel.View()
-	case BudgetPage:
-		baseView = m.budgetModel.View()
-	case UsersPage:
-		baseView = m.usersModel.View()
-	case PolicyPage:
-		baseView = m.policyModel.View()
-	case MarketplacePage:
-		baseView = m.marketplaceModel.View()
-	case IdlePage:
-		baseView = m.idleModel.View()
-	case AMIPage:
-		baseView = m.amiModel.View()
-	case RightsizingPage:
-		baseView = m.rightsizingModel.View()
-	case LogsPage:
-		baseView = m.logsModel.View()
-	case DaemonPage:
-		baseView = m.daemonModel.View()
-	case SettingsPage:
-		baseView = m.settingsModel.View()
-	case ProfilesPage:
-		baseView = m.profilesModel.View()
-	default:
-		baseView = fmt.Sprintf("Prism v%s\n\nUnknown page", version.GetVersion())
-	}
+	baseView := currentPageView(m)
 
-	// If we're in the advanced submenu, overlay the submenu
+	// If we're in the advanced submenu, overlay the submenu menu
 	if m.inSubmenu && m.submenuParent == SettingsPage {
 		submenuOverlay := "\n\n" +
 			"╔═══════════════════════════════════════════════════════════╗\n" +
@@ -602,6 +564,32 @@ func (m AppModel) View() string {
 	}
 
 	return baseView
+}
+
+// currentPageView returns the rendered view for the currently active page.
+func currentPageView(m AppModel) string {
+	viewers := map[PageID]func() string{
+		DashboardPage:   m.dashboardModel.View,
+		InstancesPage:   m.instancesModel.View,
+		TemplatesPage:   m.templatesModel.View,
+		StoragePage:     m.storageModel.View,
+		ProjectsPage:    m.projectsModel.View,
+		BudgetPage:      m.budgetModel.View,
+		UsersPage:       m.usersModel.View,
+		PolicyPage:      m.policyModel.View,
+		MarketplacePage: m.marketplaceModel.View,
+		IdlePage:        m.idleModel.View,
+		AMIPage:         m.amiModel.View,
+		RightsizingPage: m.rightsizingModel.View,
+		LogsPage:        m.logsModel.View,
+		DaemonPage:      m.daemonModel.View,
+		SettingsPage:    m.settingsModel.View,
+		ProfilesPage:    m.profilesModel.View,
+	}
+	if viewer, ok := viewers[m.currentPage]; ok {
+		return viewer()
+	}
+	return fmt.Sprintf("Prism v%s\n\nUnknown page", version.GetVersion())
 }
 
 // loadAPIKeyFromState attempts to load the API key from daemon state
