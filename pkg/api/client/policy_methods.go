@@ -47,84 +47,81 @@ func (c *HTTPClient) GetPolicyStatus(ctx context.Context) (*PolicyStatusResponse
 	return response, nil
 }
 
+// parsePolicySetFromMapEntry parses one entry from the map-format policy_sets field.
+func parsePolicySetFromMapEntry(id string, setMap map[string]interface{}) PolicySetInfo {
+	info := PolicySetInfo{ID: id}
+	if name, ok := setMap["name"].(string); ok {
+		info.Name = name
+	}
+	if desc, ok := setMap["description"].(string); ok {
+		info.Description = desc
+	}
+	if policies, ok := setMap["policies"].(float64); ok {
+		info.Policies = int(policies)
+	}
+	if status, ok := setMap["status"].(string); ok {
+		info.Status = status
+	}
+	return info
+}
+
+// parsePolicySetFromArrayEntry parses one entry from the array-format policy_sets field.
+func parsePolicySetFromArrayEntry(setMap map[string]interface{}) PolicySetInfo {
+	var name, id string
+	if n, ok := setMap["name"].(string); ok {
+		name = n
+		id = n // Use name as ID if ID not present
+	}
+	if i, ok := setMap["id"].(string); ok {
+		id = i
+	}
+	info := PolicySetInfo{ID: id, Name: name}
+	if desc, ok := setMap["description"].(string); ok {
+		info.Description = desc
+	}
+	if policies, ok := setMap["policies"].(float64); ok {
+		info.Policies = int(policies)
+	} else {
+		info.Policies = 1 // Default
+	}
+	if status, ok := setMap["status"].(string); ok {
+		info.Status = status
+	} else {
+		info.Status = "active" // Default
+	}
+	return info
+}
+
 // ListPolicySets returns available policy sets
 func (c *HTTPClient) ListPolicySets(ctx context.Context) (*PolicySetsResponse, error) {
 	resp, err := c.makeRequest(ctx, "GET", "/api/v1/policies/sets", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list policy sets: %w", err)
 	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("failed to list policy sets: status %d", resp.StatusCode)
 	}
 
-	// Read and decode the response body
-	decoder := json.NewDecoder(resp.Body)
 	var rawData map[string]interface{}
-	if err := decoder.Decode(&rawData); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&rawData); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	response := &PolicySetsResponse{
-		PolicySets: make(map[string]PolicySetInfo),
-	}
+	response := &PolicySetsResponse{PolicySets: make(map[string]PolicySetInfo)}
 
-	// Check if policy_sets is a map or array
 	if policySets, ok := rawData["policy_sets"].(map[string]interface{}); ok {
-		// Map format (expected)
 		for id, setData := range policySets {
 			if setMap, ok := setData.(map[string]interface{}); ok {
-				info := PolicySetInfo{ID: id}
-				if name, ok := setMap["name"].(string); ok {
-					info.Name = name
-				}
-				if desc, ok := setMap["description"].(string); ok {
-					info.Description = desc
-				}
-				if policies, ok := setMap["policies"].(float64); ok {
-					info.Policies = int(policies)
-				}
-				if status, ok := setMap["status"].(string); ok {
-					info.Status = status
-				}
-				response.PolicySets[id] = info
+				response.PolicySets[id] = parsePolicySetFromMapEntry(id, setMap)
 			}
 		}
 	} else if policySets, ok := rawData["policy_sets"].([]interface{}); ok {
-		// Array format (test/legacy)
 		for _, setData := range policySets {
 			if setMap, ok := setData.(map[string]interface{}); ok {
-				var name, id string
-				if n, ok := setMap["name"].(string); ok {
-					name = n
-					id = n // Use name as ID if ID not present
-				}
-				if i, ok := setMap["id"].(string); ok {
-					id = i
-				}
-
-				info := PolicySetInfo{
-					ID:   id,
-					Name: name,
-				}
-				if desc, ok := setMap["description"].(string); ok {
-					info.Description = desc
-				}
-				if policies, ok := setMap["policies"].(float64); ok {
-					info.Policies = int(policies)
-				} else {
-					info.Policies = 1 // Default
-				}
-				if status, ok := setMap["status"].(string); ok {
-					info.Status = status
-				} else {
-					info.Status = "active" // Default
-				}
-				response.PolicySets[id] = info
+				info := parsePolicySetFromArrayEntry(setMap)
+				response.PolicySets[info.ID] = info
 			}
 		}
 	}

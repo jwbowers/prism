@@ -16,40 +16,46 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
+// isProjectSharedTokenPath reports whether path matches /api/v1/projects/{id}/invitations/shared.
+func isProjectSharedTokenPath(path string) bool {
+	return strings.HasPrefix(path, "/api/v1/projects/") && strings.HasSuffix(path, "/invitations/shared")
+}
+
+// isBaseSharedTokenPath reports whether path is under /api/v1/invitations/shared/.
+func isBaseSharedTokenPath(path string) bool {
+	return strings.HasPrefix(path, "/api/v1/invitations/shared/")
+}
+
 // handleSharedTokenOperations routes shared token-related HTTP requests
 func (s *Server) handleSharedTokenOperations(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	method := r.Method
 
-	// Determine which endpoint is being called
 	switch {
-	// POST /api/v1/projects/{id}/invitations/shared - Create shared token
-	case strings.HasPrefix(path, "/api/v1/projects/") && strings.HasSuffix(path, "/invitations/shared") && method == http.MethodPost:
-		s.handleCreateSharedToken(w, r)
-
-	// GET /api/v1/projects/{id}/invitations/shared - List project shared tokens
-	case strings.HasPrefix(path, "/api/v1/projects/") && strings.HasSuffix(path, "/invitations/shared") && method == http.MethodGet:
-		s.handleListSharedTokens(w, r)
-
-	// POST /api/v1/invitations/shared/redeem - Redeem shared token
 	case path == "/api/v1/invitations/shared/redeem" && method == http.MethodPost:
 		s.handleRedeemSharedToken(w, r)
 
-	// GET /api/v1/invitations/shared/{token} - Get shared token info
-	case strings.HasPrefix(path, "/api/v1/invitations/shared/") && !strings.Contains(path, "/qr") && !strings.Contains(path, "/extend") && method == http.MethodGet:
-		s.handleGetSharedToken(w, r)
+	case isProjectSharedTokenPath(path):
+		switch method {
+		case http.MethodPost:
+			s.handleCreateSharedToken(w, r)
+		case http.MethodGet:
+			s.handleListSharedTokens(w, r)
+		}
 
-	// GET /api/v1/invitations/shared/{token}/qr - Generate QR code
 	case strings.Contains(path, "/qr") && method == http.MethodGet:
 		s.handleGenerateQRCode(w, r)
 
-	// PATCH /api/v1/invitations/shared/{token}/extend - Extend expiration
 	case strings.Contains(path, "/extend") && method == http.MethodPatch:
 		s.handleExtendSharedToken(w, r)
 
-	// DELETE /api/v1/invitations/shared/{token} - Revoke shared token
-	case strings.HasPrefix(path, "/api/v1/invitations/shared/") && method == http.MethodDelete:
-		s.handleRevokeSharedToken(w, r)
+	case isBaseSharedTokenPath(path):
+		switch method {
+		case http.MethodGet:
+			s.handleGetSharedToken(w, r)
+		case http.MethodDelete:
+			s.handleRevokeSharedToken(w, r)
+		}
 
 	default:
 		http.Error(w, "Not found", http.StatusNotFound)
