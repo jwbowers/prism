@@ -1883,6 +1883,61 @@ func (tc *TemplateCommands) printTestSummary(totalPassed, totalFailed int) error
 }
 
 // templatesPackages shows what packages would be installed from a template
+// isReservedPackageGroupName reports whether a group name is handled separately
+// (system, conda, spack, pip) and should be skipped in the "additional" display.
+func isReservedPackageGroupName(name string) bool {
+	switch name {
+	case "system", "conda", "spack", "pip":
+		return true
+	}
+	return false
+}
+
+// printSystemPackages prints the system package list if non-empty.
+func printSystemPackages(packages []string) {
+	if len(packages) == 0 {
+		return
+	}
+	fmt.Printf("📋 System Packages (%d):\n", len(packages))
+	for _, pkg := range packages {
+		fmt.Printf("   • %s\n", pkg)
+	}
+	fmt.Println()
+}
+
+// printAdditionalPackages prints non-reserved additional package groups.
+func printAdditionalPackages(additional map[string][]string) {
+	if len(additional) == 0 {
+		return
+	}
+	for groupName, pkgs := range additional {
+		if isReservedPackageGroupName(groupName) {
+			continue
+		}
+		fmt.Printf("📋 %s Packages (%d):\n", groupName, len(pkgs))
+		for _, pkg := range pkgs {
+			fmt.Printf("   • %s\n", pkg)
+		}
+		fmt.Println()
+	}
+}
+
+// printCondaAndPipPackages prints conda and pip package lists if non-empty.
+func printCondaAndPipPackages(conda, pip []string) {
+	if len(conda) > 0 {
+		fmt.Printf("📋 Conda Packages (%d):\n", len(conda))
+		for _, pkg := range conda {
+			fmt.Printf("   • %s\n", pkg)
+		}
+	}
+	if len(pip) > 0 {
+		fmt.Printf("\n📋 Pip Packages (%d):\n", len(pip))
+		for _, pkg := range pip {
+			fmt.Printf("   • %s\n", pkg)
+		}
+	}
+}
+
 func (tc *TemplateCommands) templatesPackages(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("template name required")
@@ -1916,48 +1971,13 @@ func (tc *TemplateCommands) templatesPackages(args []string) error {
 
 	// Show packages by group
 	if pm == templates.PackageManagerApt || pm == templates.PackageManagerDnf {
-		// Show System packages
-		if len(tmpl.Packages.System) > 0 {
-			fmt.Printf("📋 System Packages (%d):\n", len(tmpl.Packages.System))
-			for _, pkg := range tmpl.Packages.System {
-				fmt.Printf("   • %s\n", pkg)
-			}
-			fmt.Println()
-		}
-
-		// Show Additional groups
-		if tmpl.Packages.Additional != nil && len(tmpl.Packages.Additional) > 0 {
-			for groupName, groupPackages := range tmpl.Packages.Additional {
-				// Skip known fields
-				if groupName == "system" || groupName == "conda" || groupName == "spack" || groupName == "pip" {
-					continue
-				}
-				fmt.Printf("📋 %s Packages (%d):\n", groupName, len(groupPackages))
-				for _, pkg := range groupPackages {
-					fmt.Printf("   • %s\n", pkg)
-				}
-				fmt.Println()
-			}
-		}
-
-		// Show total
+		printSystemPackages(tmpl.Packages.System)
+		printAdditionalPackages(tmpl.Packages.Additional)
 		packages := scriptGen.SelectPackagesForManager(tmpl, pm)
 		fmt.Printf("═══════════════════════════════════════════════════════════════════\n")
 		fmt.Printf("📊 Total packages to install: %d\n", len(packages))
-
 	} else if pm == templates.PackageManagerConda {
-		if len(tmpl.Packages.Conda) > 0 {
-			fmt.Printf("📋 Conda Packages (%d):\n", len(tmpl.Packages.Conda))
-			for _, pkg := range tmpl.Packages.Conda {
-				fmt.Printf("   • %s\n", pkg)
-			}
-		}
-		if len(tmpl.Packages.Pip) > 0 {
-			fmt.Printf("\n📋 Pip Packages (%d):\n", len(tmpl.Packages.Pip))
-			for _, pkg := range tmpl.Packages.Pip {
-				fmt.Printf("   • %s\n", pkg)
-			}
-		}
+		printCondaAndPipPackages(tmpl.Packages.Conda, tmpl.Packages.Pip)
 	}
 
 	return nil
