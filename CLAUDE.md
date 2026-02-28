@@ -347,6 +347,12 @@ Enhanced state management with profile integration:
 
 ## Development Commands
 
+### AWS Credentials for Testing
+- **AWS Profile**: `aws` (`AWS_PROFILE=aws`)
+- **AWS Region**: `us-west-2`
+
+Use these for all testing against real AWS — CLI integration tests, E2E tests, and template validation launches.
+
 ### Building and Testing
 ```bash
 # Build all components
