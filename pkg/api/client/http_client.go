@@ -1808,33 +1808,40 @@ func (c *HTTPClient) GetCostTrends(ctx context.Context, projectID, period string
 
 // Data Backup operations
 
-// CreateBackup creates a data backup from an instance
-// NOTE: This maps to the snapshot API (/api/v1/snapshots) as backups are implemented as AMI snapshots
+// CreateBackup creates a data backup from an instance.
+//
+// When req.StorageType is "s3", the request is routed to /api/v1/backups (S3 file-level
+// backup via SSM). All other storage types (or the default empty string) route to
+// /api/v1/snapshots (AMI snapshot backup).
 func (c *HTTPClient) CreateBackup(ctx context.Context, req types.BackupCreateRequest) (*types.BackupCreateResult, error) {
-	// Map backup request to snapshot request
+	if req.StorageType == "s3" {
+		return c.createS3Backup(ctx, req)
+	}
+	return c.createAMIBackup(ctx, req)
+}
+
+// createAMIBackup creates an AMI snapshot backup via /api/v1/snapshots.
+func (c *HTTPClient) createAMIBackup(ctx context.Context, req types.BackupCreateRequest) (*types.BackupCreateResult, error) {
 	snapshotReq := types.InstanceSnapshotRequest{
 		InstanceName: req.InstanceName,
 		SnapshotName: req.BackupName,
 		Description:  req.Description,
-		NoReboot:     false, // Default to safe snapshot with reboot
+		NoReboot:     false,
 		Wait:         false,
 	}
 
-	// Call snapshot API
 	resp, err := c.makeRequest(ctx, "POST", "/api/v1/snapshots", snapshotReq)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// Parse snapshot result
 	var snapshotResult types.InstanceSnapshotResult
 	if err := c.handleResponse(resp, &snapshotResult); err != nil {
 		return nil, err
 	}
 
-	// Convert snapshot result to backup result
-	result := &types.BackupCreateResult{
+	return &types.BackupCreateResult{
 		BackupName:                 snapshotResult.SnapshotName,
 		BackupID:                   snapshotResult.SnapshotID,
 		SourceInstance:             snapshotResult.SourceInstance,
@@ -1842,40 +1849,48 @@ func (c *HTTPClient) CreateBackup(ctx context.Context, req types.BackupCreateReq
 		StorageType:                "ami",
 		StorageLocation:            "aws",
 		EstimatedCompletionMinutes: snapshotResult.EstimatedCompletionMinutes,
-		EstimatedSizeBytes:         0, // Not available at creation time
+		EstimatedSizeBytes:         0,
 		StorageCostMonthly:         snapshotResult.StorageCostMonthly,
 		CreatedAt:                  snapshotResult.CreatedAt,
-		Encrypted:                  false, // Assume not encrypted by default
+		Encrypted:                  false,
 		Message:                    fmt.Sprintf("AMI snapshot %s created (state: %s)", snapshotResult.SnapshotID, snapshotResult.State),
-	}
-
-	return result, nil
+	}, nil
 }
 
-// ListBackups lists all data backups
-// NOTE: This maps to the snapshot API (/api/v1/snapshots) as backups are implemented as AMI snapshots
-func (c *HTTPClient) ListBackups(ctx context.Context) (*types.BackupListResponse, error) {
-	// Call snapshot API
-	resp, err := c.makeRequest(ctx, "GET", "/api/v1/snapshots", nil)
+// createS3Backup creates an S3 file-level backup via /api/v1/backups.
+func (c *HTTPClient) createS3Backup(ctx context.Context, req types.BackupCreateRequest) (*types.BackupCreateResult, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/backups", req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// Parse snapshot list response
-	var snapshotList types.InstanceSnapshotListResponse
-	if err := c.handleResponse(resp, &snapshotList); err != nil {
+	var result types.BackupCreateResult
+	if err := c.handleResponse(resp, &result); err != nil {
 		return nil, err
 	}
+	return &result, nil
+}
 
-	// Convert snapshot list to backup list
-	backups := make([]types.BackupInfo, len(snapshotList.Snapshots))
-	for i, snapshot := range snapshotList.Snapshots {
-		// Estimate size from storage cost (AWS EBS snapshots: ~$0.05/GB/month)
+// ListBackups lists all data backups, merging AMI snapshots and S3 file backups.
+func (c *HTTPClient) ListBackups(ctx context.Context) (*types.BackupListResponse, error) {
+	// Fetch AMI snapshots
+	var backups []types.BackupInfo
+
+	snapResp, err := c.makeRequest(ctx, "GET", "/api/v1/snapshots", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer snapResp.Body.Close()
+
+	var snapshotList types.InstanceSnapshotListResponse
+	if err := c.handleResponse(snapResp, &snapshotList); err != nil {
+		return nil, err
+	}
+	for _, snapshot := range snapshotList.Snapshots {
 		estimatedSizeGB := snapshot.StorageCostMonthly / 0.05
 		estimatedSizeBytes := int64(estimatedSizeGB * 1024 * 1024 * 1024)
-
-		backups[i] = types.BackupInfo{
+		backups = append(backups, types.BackupInfo{
 			BackupName:         snapshot.SnapshotName,
 			BackupID:           snapshot.SnapshotID,
 			SourceInstance:     snapshot.SourceInstance,
@@ -1885,13 +1900,22 @@ func (c *HTTPClient) ListBackups(ctx context.Context) (*types.BackupListResponse
 			StorageType:        "ami",
 			State:              snapshot.State,
 			SizeBytes:          estimatedSizeBytes,
-			CompressedBytes:    estimatedSizeBytes, // AMI compression is opaque to us
+			CompressedBytes:    estimatedSizeBytes,
 			StorageCostMonthly: snapshot.StorageCostMonthly,
 			CreatedAt:          snapshot.CreatedAt,
+		})
+	}
+
+	// Fetch S3 file backups (best-effort — ignore errors so AMI list still works)
+	s3Resp, err := c.makeRequest(ctx, "GET", "/api/v1/backups", nil)
+	if err == nil {
+		defer s3Resp.Body.Close()
+		var s3List types.BackupListResponse
+		if jsonErr := c.handleResponse(s3Resp, &s3List); jsonErr == nil {
+			backups = append(backups, s3List.Backups...)
 		}
 	}
 
-	// Calculate aggregate fields
 	var totalSize int64
 	var totalCost float64
 	storageTypes := make(map[string]int)
@@ -1901,39 +1925,41 @@ func (c *HTTPClient) ListBackups(ctx context.Context) (*types.BackupListResponse
 		storageTypes[b.StorageType]++
 	}
 
-	result := &types.BackupListResponse{
+	return &types.BackupListResponse{
 		Backups:      backups,
 		Count:        len(backups),
 		TotalSize:    totalSize,
 		TotalCost:    totalCost,
 		StorageTypes: storageTypes,
-	}
-
-	return result, nil
+	}, nil
 }
 
-// GetBackup gets detailed information about a backup
-// NOTE: This maps to the snapshot API (/api/v1/snapshots) as backups are implemented as AMI snapshots
+// GetBackup gets detailed information about a backup.
+//
+// It first checks /api/v1/snapshots (AMI backups) and falls back to
+// /api/v1/backups (S3 file backups) when the name is not found.
 func (c *HTTPClient) GetBackup(ctx context.Context, backupName string) (*types.BackupInfo, error) {
-	// Call snapshot API
+	// Try AMI snapshot first
 	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/snapshots/%s", backupName), nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// Parse snapshot info
+	// If not found as an AMI snapshot, check S3 backups
+	if resp.StatusCode == http.StatusNotFound {
+		return c.getS3BackupInfo(ctx, backupName)
+	}
+
 	var snapshot types.InstanceSnapshotInfo
 	if err := c.handleResponse(resp, &snapshot); err != nil {
 		return nil, err
 	}
 
-	// Estimate size from storage cost (AWS EBS snapshots: ~$0.05/GB/month)
 	estimatedSizeGB := snapshot.StorageCostMonthly / 0.05
 	estimatedSizeBytes := int64(estimatedSizeGB * 1024 * 1024 * 1024)
 
-	// Convert snapshot to backup info
-	result := &types.BackupInfo{
+	return &types.BackupInfo{
 		BackupName:         snapshot.SnapshotName,
 		BackupID:           snapshot.SnapshotID,
 		SourceInstance:     snapshot.SourceInstance,
@@ -1943,39 +1969,69 @@ func (c *HTTPClient) GetBackup(ctx context.Context, backupName string) (*types.B
 		StorageType:        "ami",
 		State:              snapshot.State,
 		SizeBytes:          estimatedSizeBytes,
-		CompressedBytes:    estimatedSizeBytes, // AMI compression is opaque to us
+		CompressedBytes:    estimatedSizeBytes,
 		StorageCostMonthly: snapshot.StorageCostMonthly,
 		CreatedAt:          snapshot.CreatedAt,
-	}
-
-	return result, nil
+	}, nil
 }
 
-// DeleteBackup deletes a backup
-// NOTE: This maps to the snapshot API (/api/v1/snapshots) as backups are implemented as AMI snapshots
+// getS3BackupInfo fetches a single S3 backup from /api/v1/backups/{name}.
+func (c *HTTPClient) getS3BackupInfo(ctx context.Context, backupName string) (*types.BackupInfo, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/backups/%s", backupName), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var info types.BackupInfo
+	if err := c.handleResponse(resp, &info); err != nil {
+		return nil, err
+	}
+	return &info, nil
+}
+
+// DeleteBackup deletes a backup.
+//
+// It first tries /api/v1/snapshots (AMI backups) and falls back to
+// /api/v1/backups (S3 file backups) on 404.
 func (c *HTTPClient) DeleteBackup(ctx context.Context, backupName string) (*types.BackupDeleteResult, error) {
-	// Call snapshot API
 	resp, err := c.makeRequest(ctx, "DELETE", fmt.Sprintf("/api/v1/snapshots/%s", backupName), nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// Parse snapshot delete result
+	// Fall back to S3 backup deletion if not found as a snapshot
+	if resp.StatusCode == http.StatusNotFound {
+		return c.deleteS3Backup(ctx, backupName)
+	}
+
 	var snapshotResult types.InstanceSnapshotDeleteResult
 	if err := c.handleResponse(resp, &snapshotResult); err != nil {
 		return nil, err
 	}
 
-	// Convert to backup delete result
-	result := &types.BackupDeleteResult{
+	return &types.BackupDeleteResult{
 		BackupName:            snapshotResult.SnapshotName,
 		BackupID:              snapshotResult.SnapshotID,
 		StorageSavingsMonthly: snapshotResult.StorageSavingsMonthly,
 		DeletedAt:             snapshotResult.DeletedAt,
-	}
+	}, nil
+}
 
-	return result, nil
+// deleteS3Backup deletes an S3 file backup via /api/v1/backups/{name}.
+func (c *HTTPClient) deleteS3Backup(ctx context.Context, backupName string) (*types.BackupDeleteResult, error) {
+	resp, err := c.makeRequest(ctx, "DELETE", fmt.Sprintf("/api/v1/backups/%s", backupName), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result types.BackupDeleteResult
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 // GetBackupContents lists the contents of a backup

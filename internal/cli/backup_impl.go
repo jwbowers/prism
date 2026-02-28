@@ -146,11 +146,12 @@ func normalizeBackupArgs(args []string) []string {
 
 // validateBackupStorageType returns an error if the storage type is not supported.
 func validateBackupStorageType(val string) error {
-	if val != "ami" && val != "snapshot" {
-		return fmt.Errorf("only AMI snapshot backups are currently supported (got --storage=%s)\n"+
-			"file-level S3/EFS backups are planned for a future release", val)
+	switch val {
+	case "ami", "snapshot", "s3":
+		return nil
+	default:
+		return fmt.Errorf("unsupported storage type: %s (supported: ami, s3)", val)
 	}
-	return nil
 }
 
 // parseCreateBackupFlags parses command-line flags for backup creation
@@ -183,7 +184,11 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 			if err := validateBackupStorageType(normalized[i+1]); err != nil {
 				return req, err
 			}
-			req.StorageType = "ami"
+			val := normalized[i+1]
+			if val == "snapshot" {
+				val = "ami" // normalize alias
+			}
+			req.StorageType = val
 			i++
 		case arg == "--no-encryption":
 			req.Encrypted = false
@@ -199,6 +204,10 @@ func (bc *BackupCommands) parseCreateBackupFlags(args []string) (types.BackupCre
 
 // applyCreateBackupDefaults applies default values to backup request
 func (bc *BackupCommands) applyCreateBackupDefaults(req *types.BackupCreateRequest) {
+	if req.StorageType == "s3" {
+		// S3 file backups support selective paths — keep them as-is
+		return
+	}
 	// AMI snapshots capture the full instance — path filters are not applicable
 	if len(req.IncludePaths) > 0 {
 		fmt.Printf("ℹ️  Note: --include paths are not supported for AMI snapshots (full backup)\n")
@@ -213,11 +222,25 @@ func (bc *BackupCommands) applyCreateBackupDefaults(req *types.BackupCreateReque
 // displayCreateBackupInfo displays backup creation information
 func (bc *BackupCommands) displayCreateBackupInfo(req types.BackupCreateRequest) {
 	fmt.Printf("💾 Creating backup '%s' from workspace '%s'...\n", req.BackupName, req.InstanceName)
-	fmt.Printf("📸 Type: AMI Snapshot (full workspace backup)\n")
-	fmt.Printf("   Captures: OS, software, files, and configurations\n")
-	fmt.Printf("   Restore: Creates new instance from snapshot (10-15 min)\n")
-	if !req.Encrypted {
-		fmt.Printf("⚠️  Encryption disabled\n")
+	if req.StorageType == "s3" {
+		fmt.Printf("📁 Type: S3 File Backup (selective file-level backup)\n")
+		fmt.Printf("   Storage: S3 (prism-backups-<account>-<region>)\n")
+		fmt.Printf("   Restore: Syncs files back to a running instance\n")
+		if len(req.IncludePaths) > 0 {
+			fmt.Printf("   Include paths: %s\n", strings.Join(req.IncludePaths, ", "))
+		} else {
+			fmt.Printf("   Include paths: /home, /data (defaults)\n")
+		}
+		if len(req.ExcludePaths) > 0 {
+			fmt.Printf("   Exclude paths: %s\n", strings.Join(req.ExcludePaths, ", "))
+		}
+	} else {
+		fmt.Printf("📸 Type: AMI Snapshot (full workspace backup)\n")
+		fmt.Printf("   Captures: OS, software, files, and configurations\n")
+		fmt.Printf("   Restore: Creates new instance from snapshot (10-15 min)\n")
+		if !req.Encrypted {
+			fmt.Printf("⚠️  Encryption disabled\n")
+		}
 	}
 }
 
@@ -1054,13 +1077,15 @@ Actions:
   verify <backup-name> [options]              Verify backup integrity
 
 Create Options:
+  --storage <type>             Storage type: ami (default) or s3
   --description <text>         Add a description to the backup
-  --no-encryption            Disable encryption (enabled by default)
+  --include <paths>            Comma-separated paths to back up (s3 only)
+  --exclude <paths>            Comma-separated paths to exclude (s3 only)
+  --no-encryption            Disable encryption (ami only, enabled by default)
   --wait                     Wait and monitor backup creation progress
 
-  Note: --include/--exclude path filters are not supported for AMI snapshots.
   AMI snapshots capture the complete workspace (OS, software, files, configurations).
-  File-level S3 backups with selective paths are planned for a future release.
+  S3 file backups sync selected paths to S3 (cheaper, supports selective restore).
 
 Verify Options:
   --quick                    Quick verification (metadata only)
@@ -1071,17 +1096,23 @@ Contents Options:
 
 Examples:
   prism backup create my-workspace daily-backup
+  prism backup create my-workspace daily-backup --storage s3
+  prism backup create my-workspace project-data --storage s3 --include /home/user,/data
   prism backup create gpu-training checkpoint-data --description "before tuning run"
   prism backup list
   prism backup info daily-backup
   prism backup verify daily-backup --quick
   prism backup delete old-backup
 
-Backup Type:
-  Backups use AMI snapshots — full workspace images stored in AWS.
-  • Captures: OS, all installed software, your files, and configurations
+Backup Types:
+  AMI (default): Full workspace image — OS, software, files, and configurations.
   • Restore: Launches a new identical instance (10-15 min)
   • Cost: ~$0.05/GB/month (EBS snapshot pricing)
+
+  S3 (--storage s3): File-level backup via aws s3 sync.
+  • Supports --include/--exclude for selective backup
+  • Restore: Syncs files back to a running instance
+  • Cost: ~$0.023/GB/month (S3 Standard)
 
 ⚠️  Important Notes:
    • Backups are region-specific

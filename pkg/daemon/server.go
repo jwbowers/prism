@@ -850,9 +850,13 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/storage/transfer", applyAWSMiddleware(s.handleStorageTransfer))
 	mux.HandleFunc("/api/v1/storage/transfer/", applyMiddleware(s.handleStorageTransferOperations))
 
-	// Instance snapshot operations
+	// Instance snapshot operations (AMI-based full backups)
 	mux.HandleFunc("/api/v1/snapshots", applyMiddleware(s.handleSnapshots))
 	mux.HandleFunc("/api/v1/snapshots/", applyMiddleware(s.handleSnapshotOperations))
+
+	// S3 file-level backup operations (Issue #478)
+	mux.HandleFunc("/api/v1/backups", applyAWSMiddleware(s.handleBackups))
+	mux.HandleFunc("/api/v1/backups/", applyAWSMiddleware(s.handleBackupOperations))
 
 	// User operations (Phase 5A.3: REST API Integration)
 	mux.HandleFunc("/api/v1/users", applyMiddleware(s.handleResearchUsers))
