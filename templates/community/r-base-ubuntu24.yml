@@ -55,6 +55,7 @@ plugins:
 packages:
   # R dependencies for package compilation
   r_dependencies:
+    - "software-properties-common"   # required for add-apt-repository
     - "gfortran"
     - "libcurl4-openssl-dev"
     - "libssl-dev"

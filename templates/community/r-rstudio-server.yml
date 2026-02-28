@@ -100,7 +100,8 @@ post_install: |
     RSTUDIO_VERSION="{{.rstudio_version}}"
   fi
   echo "Installing RStudio Server version: ${RSTUDIO_VERSION}"
-  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  UBUNTU_CODENAME=$(lsb_release -cs)
+  wget https://download2.rstudio.org/server/${UBUNTU_CODENAME}/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   gdebi --non-interactive rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
 
@@ -161,7 +162,8 @@ post_install: |
 
   echo "✅ RStudio Server layer installation complete!"
   echo ""
-  echo "🖥️  RStudio Server: http://\$(curl -s ifconfig.me):8787"
+  INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
+  echo "🖥️  RStudio Server: http://${INSTANCE_IP}:8787"
   echo "👤 Login with username and password"
   echo ""
 

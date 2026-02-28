@@ -132,7 +132,7 @@ packages:
     - "texlive-fonts-extra"
     - "pandoc"
     - "ghostscript"
-    - "pdftk"
+    - "pdftk-java"
     - "imagemagick"
 
   # Database clients
@@ -225,7 +225,7 @@ post_install: |
 
   # Install R 4.4.2
   echo "📊 Installing R 4.4.2..."
-  wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+  wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
   add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
   apt-get update
   apt-get install -y r-base r-base-dev
@@ -243,7 +243,8 @@ post_install: |
   else
     RSTUDIO_VERSION="{{.rstudio_version}}"
   fi
-  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  UBUNTU_CODENAME=$(lsb_release -cs)
+  wget https://download2.rstudio.org/server/${UBUNTU_CODENAME}/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   gdebi -n rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
 
@@ -332,7 +333,7 @@ post_install: |
   echo "Creating welcome message..."
   echo "Welcome to R Research Full Stack" > /home/researcher/WELCOME.txt
   echo "" >> /home/researcher/WELCOME.txt
-  echo "RStudio Server: http://\$(curl -s ifconfig.me):8787" >> /home/researcher/WELCOME.txt
+  echo "RStudio Server: http://\$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print \$1}'):8787" >> /home/researcher/WELCOME.txt
   echo "Jupyter Lab: jupyter lab --ip=0.0.0.0 --no-browser" >> /home/researcher/WELCOME.txt
   echo "" >> /home/researcher/WELCOME.txt
   echo "Installed: R 4.4+, RStudio Server, Quarto, LaTeX, Python 3.12, Jupyter" >> /home/researcher/WELCOME.txt
@@ -369,7 +370,8 @@ post_install: |
 
   echo "✅ R Research Full Stack installation complete!"
   echo ""
-  echo "📊 RStudio Server: http://$(curl -s ifconfig.me):8787"
+  INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
+  echo "📊 RStudio Server: http://${INSTANCE_IP}:8787"
   echo "🐍 Jupyter Lab: Start with 'jupyter lab --ip=0.0.0.0 --no-browser'"
   echo "📝 Welcome guide: /home/researcher/WELCOME.md"
   echo ""

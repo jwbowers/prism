@@ -115,7 +115,7 @@ packages:
     - "texlive-fonts-extra"
     - "pandoc"
     - "ghostscript"
-    - "pdftk"
+    - "pdftk-java"
     - "imagemagick"
 
   # Database clients
@@ -163,6 +163,13 @@ packages:
     - "python3.12-dev"
     - "python3.12-venv"
     - "python3-pip"
+    - "jupyter-notebook"
+    - "python3-numpy"
+    - "python3-pandas"
+    - "python3-matplotlib"
+    - "python3-seaborn"
+    - "python3-sklearn"
+    - "python3-scipy"
 
 # Users inherited from parents (researcher with sudo from R Base)
 
@@ -220,9 +227,16 @@ post_install: |
   "
 
   # Install Python packages
-  echo "🐍 Installing Python packages..."
-  pip3 install --upgrade pip
-  pip3 install jupyter jupyterlab numpy pandas matplotlib seaborn scikit-learn scipy
+  echo "🐍 Installing Python packages via apt (Ubuntu 24.04 compatible)..."
+  apt-get install -y \
+    jupyter-notebook \
+    python3-numpy \
+    python3-pandas \
+    python3-matplotlib \
+    python3-seaborn \
+    python3-sklearn \
+    python3-scipy
+  pip3 install --break-system-packages jupyterlab
   echo "✅ Jupyter and Python packages installed"
 
   # Install Git LFS
@@ -309,7 +323,8 @@ post_install: |
   echo "✅ Publishing Stack layer installation complete!"
   echo ""
   echo "📚 Full R Research Publishing Stack ready!"
-  echo "🖥️  RStudio Server: http://\$(curl -s ifconfig.me):8787"
+  INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
+  echo "🖥️  RStudio Server: http://${INSTANCE_IP}:8787"
   echo "📊 Quarto: $(quarto --version)"
   echo "📝 LaTeX: Full TeX Live 2024"
   echo "🐍 Python: $(python3 --version)"
