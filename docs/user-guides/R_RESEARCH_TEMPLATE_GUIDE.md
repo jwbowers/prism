@@ -24,12 +24,12 @@ prism launch r-research-full-stack my-r-project
 ```
 
 **Installation Components:**
-- R 4.4.2 with base packages (2-3 min)
-- RStudio Server 2024.12.0 (1-2 min)
+- R 4.5.2 with base packages (2-3 min)
+- RStudio Server 2026.01.1 (1-2 min)
 - Quarto 1.6.33 (1 min)
-- TeX Live 2024 full distribution (5-7 min)
-- Essential R packages: tidyverse, rmarkdown, knitr, ggplot2, devtools, etc. (10-15 min)
-- Python 3.12 + Jupyter Lab (2-3 min)
+- TeX Live 2024 full distribution (20-40 min — large download)
+- Essential R packages: tidyverse, rmarkdown, knitr, ggplot2, devtools, etc. (5-10 min, from Ubuntu apt)
+- Python 3.12 + Jupyter Lab (2-3 min, from Ubuntu apt)
 - Database clients and utilities (1-2 min)
 
 ### 2. Access RStudio Server
@@ -60,8 +60,8 @@ prism connect my-r-project
 ## What's Included
 
 ### Core R Environment
-- **R 4.4.2**: Latest stable R release
-- **RStudio Server 2024.12.0**: Web-based IDE on port 8787
+- **R 4.5.2**: Latest stable R release (from CRAN noble-cran40 repository)
+- **RStudio Server 2026.01.1**: Web-based IDE on port 8787
 - **40+ R packages pre-installed**:
   - **Data manipulation**: dplyr, tidyr, purrr, stringr
   - **Visualization**: ggplot2, plotly, viridis, scales
@@ -79,7 +79,7 @@ prism connect my-r-project
 - **TeX Live 2024**: Full LaTeX distribution with all packages
   - pdflatex, xelatex, lualatex
   - All fonts and packages for academic publishing
-- **Document tools**: ghostscript, pdftk, ImageMagick
+- **Document tools**: ghostscript, pdftk-java, ImageMagick
 
 ### Python Integration
 - **Python 3.12**: Latest Python for mixed workflows
@@ -464,8 +464,9 @@ sudo apt-get install -y ./quarto-1.6.33-linux-amd64.deb
 which jupyter
 jupyter --version
 
-# If needed, reinstall
-pip3 install --upgrade jupyter jupyterlab
+# If needed, reinstall (Ubuntu 24.04 uses apt for system packages)
+sudo apt-get install -y jupyter-notebook
+pip3 install --break-system-packages jupyterlab
 ```
 
 **Reticulate can't find Python:**
@@ -610,7 +611,7 @@ sessionInfo()
 ## FAQ
 
 **Q: How long does the initial launch take?**
-A: First launch: 15-20 minutes (installs everything). Create an AMI after first launch, then future launches take < 2 minutes.
+A: First launch: 25-50 minutes (TeX Live alone is 1-3 GB). Create an AMI after first launch, then future launches take < 2 minutes.
 
 **Q: Can multiple users work simultaneously?**
 A: Yes! Each user gets their own RStudio Server session. Add users with `sudo adduser username`.
@@ -639,14 +640,14 @@ A: Yes! Copy the template to `~/.prism/templates/my-r-env.yml` and modify as nee
 ## Version History
 
 - **v1.0.0** (January 2026): Initial release
-  - R 4.4.2 + RStudio Server 2024.12.0
+  - R 4.5.2 + RStudio Server 2026.01.1
   - Quarto 1.6.33 + TeX Live 2024
   - Python 3.12 + Jupyter Lab
-  - 40+ pre-installed R packages
+  - 40+ pre-installed R packages (from Ubuntu apt, no compilation needed)
   - Full collaboration support
 
 ---
 
 **Template**: `r-research-full-stack`
-**Last Updated**: January 16, 2026
-**Version**: 1.0.0
+**Last Updated**: February 28, 2026
+**Version**: 1.1.0 (v0.7.8 — R 4.5.2, RStudio Server 2026.01.1, Ubuntu 24.04 Noble)

@@ -281,6 +281,9 @@ set -euo pipefail
 # Generated script using apt package manager
 # Generated at: $(date)
 
+# Prevent interactive prompts during package installation (required for texlive etc.)
+export DEBIAN_FRONTEND=noninteractive
+
 echo "=== Prism Setup: {{.Template.Name}} ==="
 echo "Using package manager: {{.PackageManager}}"
 
@@ -376,6 +379,9 @@ echo "Prism setup completed successfully" >> /var/log/prism-setup.log
 
 const condaScriptTemplate = `#!/bin/bash
 set -euo pipefail
+
+# Prevent interactive prompts during package installation
+export DEBIAN_FRONTEND=noninteractive
 
 # Prism Progress Monitoring
 # This script logs progress markers that can be monitored via SSH
@@ -577,6 +583,9 @@ set -euo pipefail
 # Prism Template: {{.Template.Name}}
 # Generated script using spack package manager
 # Generated at: $(date)
+
+# Prevent interactive prompts during package installation
+export DEBIAN_FRONTEND=noninteractive
 
 echo "=== Prism Setup: {{.Template.Name}} ==="
 echo "Using package manager: {{.PackageManager}}"

@@ -86,6 +86,9 @@ post_install: |
   #!/bin/bash
   set -e
 
+  # Prevent interactive prompts during package installation
+  export DEBIAN_FRONTEND=noninteractive
+
   echo "🔧 Installing RStudio Server layer..."
 
   # Update system

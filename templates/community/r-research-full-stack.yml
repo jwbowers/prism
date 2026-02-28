@@ -214,6 +214,9 @@ post_install: |
   #!/bin/bash
   set -e
 
+  # Prevent interactive prompts (required for texlive, grub, etc.)
+  export DEBIAN_FRONTEND=noninteractive
+
   echo "🔧 Starting R Research Full Stack configuration..."
 
   # Update system

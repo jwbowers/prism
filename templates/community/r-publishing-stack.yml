@@ -193,6 +193,9 @@ post_install: |
   #!/bin/bash
   set -e
 
+  # Prevent interactive prompts during package installation (required for texlive etc.)
+  export DEBIAN_FRONTEND=noninteractive
+
   echo "🔧 Installing Publishing Stack layer..."
 
   # Update system
