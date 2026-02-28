@@ -127,8 +127,12 @@ post_install: |
   sudo echo "www-port=8787" >> /etc/rstudio/rserver.conf
   sudo echo "www-address=0.0.0.0" >> /etc/rstudio/rserver.conf
   
-  # Setup user passwords for web interfaces
-  echo "researcher:research123" | sudo chpasswd
+  # Generate a random password for web interface login (RStudio, Jupyter)
+  RESEARCHER_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 16)
+  echo "researcher:${RESEARCHER_PASS}" | sudo chpasswd
+  echo ""
+  echo "⚠️  SAVE THIS LOGIN PASSWORD: researcher / ${RESEARCHER_PASS}"
+  echo "   (needed to log into RStudio Server and Jupyter)"
 
 # Instance defaults for high-performance workstation
 # Idle detection configuration for hibernation support

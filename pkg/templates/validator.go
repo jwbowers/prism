@@ -181,9 +181,9 @@ func (r *PackageManagerRule) Validate(template *Template) []ValidationResult {
 	// Check package lists match package manager
 	if template.PackageManager == "conda" && len(template.Packages.System) > 0 {
 		results = append(results, ValidationResult{
-			Level:   ValidationWarning,
+			Level:   ValidationInfo,
 			Field:   "packages.system",
-			Message: "System packages specified but package manager is conda",
+			Message: "System (apt) packages specified alongside conda; they will be installed via apt before conda setup",
 		})
 	}
 
@@ -357,9 +357,21 @@ func (r *SecurityRule) Name() string { return "security" }
 func (r *SecurityRule) Validate(template *Template) []ValidationResult {
 	var results []ValidationResult
 
-	// Check for hardcoded passwords
-	if strings.Contains(template.PostInstall, "password") ||
-		strings.Contains(template.UserData, "password") {
+	// Check for hardcoded passwords — match actual literal credential patterns.
+	// Excludes variable substitutions like ${PASS} or $(generate).
+	// Matches:
+	//   echo "user:literal123" | chpasswd          → flagged (literal)
+	//   echo "user:${GENERATED}" | chpasswd        → not flagged (variable)
+	//   passwd --stdin with literal via heredoc    → flagged
+	//   password="hardcoded" in config             → flagged
+	credentialPattern := regexp.MustCompile(
+		`"[^"$({]*:[a-zA-Z0-9@#!%_\-]{6,}"[^|]*\|[^|]*chpasswd` +
+			`|passwd\s+--stdin` +
+			`|password\s*=\s*["'][^$({][^"']*["']` +
+			`|passwd\s*=\s*["'][^$({][^"']*["']`,
+	)
+	scriptContent := template.PostInstall + template.UserData
+	if credentialPattern.MatchString(scriptContent) {
 		results = append(results, ValidationResult{
 			Level:   ValidationWarning,
 			Field:   "scripts",
@@ -401,9 +413,9 @@ func (r *CostOptimizationRule) Validate(template *Template) []ValidationResult {
 	// Check instance defaults
 	if strings.Contains(template.InstanceDefaults.Type, "xlarge") {
 		results = append(results, ValidationResult{
-			Level:   ValidationWarning,
+			Level:   ValidationInfo,
 			Field:   "instance_defaults.type",
-			Message: "Default instance type is expensive, consider smaller defaults",
+			Message: "Default instance type is xlarge; appropriate for ML/research workloads but may be costly for light use",
 		})
 	}
 
