@@ -51,7 +51,7 @@ parameters:
     display_name: "RStudio Server Version"
     description: "RStudio Server version to install"
     type: "choice"
-    choices: ["latest", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
+    choices: ["latest", "2026.01.1-403", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
     default: "latest"
     group: "Development Environment"
     order: 1
@@ -238,13 +238,13 @@ post_install: |
   echo "🖥️  Installing RStudio Server..."
   apt-get install -y gdebi-core
   if [ "{{.rstudio_version}}" = "latest" ]; then
-    # Use latest available version (2026.01.0-392 as of January 2026)
-    RSTUDIO_VERSION="2026.01.0-392"
+    # Use latest available version (2026.01.1-403 as of February 2026)
+    # Posit provides jammy (Ubuntu 22.04) debs for Ubuntu 24.04 via glibc compatibility
+    RSTUDIO_VERSION="2026.01.1-403"
   else
     RSTUDIO_VERSION="{{.rstudio_version}}"
   fi
-  UBUNTU_CODENAME=$(lsb_release -cs)
-  wget https://download2.rstudio.org/server/${UBUNTU_CODENAME}/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
+  wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   gdebi -n rstudio-server-${RSTUDIO_VERSION}-amd64.deb
   rm rstudio-server-${RSTUDIO_VERSION}-amd64.deb
 

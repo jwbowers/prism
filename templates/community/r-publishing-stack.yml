@@ -59,7 +59,7 @@ parameters:
     display_name: "RStudio Server Version"
     description: "RStudio Server version to install"
     type: "choice"
-    choices: ["latest", "2024.12.1-542", "2024.09.1-394", "2024.04.2-764"]
+    choices: ["latest", "2026.01.1-403", "2026.01.0-392", "2024.12.1-542", "2024.09.1-394"]
     default: "latest"
     group: "Development Environment"
     order: 1
@@ -356,7 +356,7 @@ research_users:
 # Component versions
 components:
   r_version: "4.4.2"  # From R Base
-  rstudio_server_version: "2024.12.0"  # From R + RStudio Server
+  rstudio_server_version: "2026.01.1-403"  # From R + RStudio Server (via jammy deb)
   quarto_version: "1.6.33"
   python_version: "3.12"
   texlive_version: "2024"
