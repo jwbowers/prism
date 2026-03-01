@@ -211,6 +211,8 @@ post_install: |
   # Install R packages for publishing
   echo "📦 Installing R publishing packages..."
   Rscript -e "
+  # Use Posit Package Manager for pre-built binaries (no compilation, Ubuntu 24.04 noble)
+  options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))
   install.packages(c(
     'bookdown',      # Books and long documents
     'blogdown',      # Websites and blogs
@@ -224,7 +226,7 @@ post_install: |
     'reticulate',    # Python integration
     'shiny',         # Interactive web apps
     'plotly'         # Interactive plots
-  ), repos='https://cloud.r-project.org/')
+  ))
 
   cat('\n✅ Publishing packages installed\n')
   "

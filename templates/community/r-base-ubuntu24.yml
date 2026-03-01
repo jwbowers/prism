@@ -113,6 +113,8 @@ post_install: |
   # Install essential R packages
   echo "📦 Installing essential R packages..."
   Rscript -e "
+  # Use Posit Package Manager for pre-built binaries (no compilation, Ubuntu 24.04 noble)
+  options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))
   install.packages(c(
     'tidyverse',    # Data manipulation and visualization
     'rmarkdown',    # Dynamic documents
@@ -121,7 +123,7 @@ post_install: |
     'here',         # Project-relative paths
     'jsonlite',     # JSON handling
     'httr'          # HTTP requests
-  ), repos='https://cloud.r-project.org/')
+  ))
 
   cat('\n✅ Essential R packages installed\n')
   "
