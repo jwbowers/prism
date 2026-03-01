@@ -163,7 +163,6 @@ packages:
     - "python3.12-dev"
     - "python3.12-venv"
     - "python3-pip"
-    - "jupyter-notebook"
     - "python3-numpy"
     - "python3-pandas"
     - "python3-matplotlib"
@@ -230,18 +229,15 @@ post_install: |
   cat('\n✅ Publishing packages installed\n')
   "
 
-  # Install Python packages
-  echo "🐍 Installing Python packages via apt (Ubuntu 24.04 compatible)..."
-  apt-get install -y \
-    jupyter-notebook \
-    python3-numpy \
-    python3-pandas \
-    python3-matplotlib \
-    python3-seaborn \
-    python3-sklearn \
-    python3-scipy
-  pip3 install --break-system-packages jupyterlab
-  echo "✅ Jupyter and Python packages installed"
+  # Python data science packages (numpy, pandas, etc.) already installed via apt in packages: section
+  # Install JupyterLab in a venv with --system-site-packages so it sees apt-installed numpy/pandas/etc.
+  # This avoids pip/apt conflicts (Ubuntu 24.04 PEP 668 + traitlets RECORD issue)
+  echo "🐍 Installing JupyterLab in isolated venv..."
+  python3 -m venv --system-site-packages /opt/jupyterlab
+  /opt/jupyterlab/bin/pip install --quiet jupyterlab
+  ln -sf /opt/jupyterlab/bin/jupyter /usr/local/bin/jupyter
+  ln -sf /opt/jupyterlab/bin/jupyter-lab /usr/local/bin/jupyter-lab
+  echo "✅ JupyterLab installed at /opt/jupyterlab (jupyter command available system-wide)"
 
   # Install Git LFS
   echo "📦 Installing Git LFS..."
@@ -348,7 +344,7 @@ idle_detection:
 # Instance defaults
 instance_defaults:
   ports: [22, 8787, 8888]
-  root_volume_gb: 50  # Larger for LaTeX and all packages
+  root_volume_gb: 80  # Larger for LaTeX (texlive-full ~8 GB), R packages, and Python libs
 
 # Research user configuration
 research_users:

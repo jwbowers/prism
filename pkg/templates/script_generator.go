@@ -328,6 +328,8 @@ echo "✅ All users created - SSH access available while packages install"
 # Install template packages (users can SSH in and monitor progress)
 echo "Installing template packages..."
 apt-get install -y{{range .Packages}} {{.}}{{end}}
+# Free apt cache after large package install (avoids disk-full errors in post_install)
+apt-get clean
 {{end}}
 
 {{range .Services}}

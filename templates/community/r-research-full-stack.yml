@@ -180,6 +180,12 @@ packages:
     - "python3.12-dev"
     - "python3.12-venv"
     - "python3-pip"
+    - "python3-numpy"
+    - "python3-pandas"
+    - "python3-matplotlib"
+    - "python3-seaborn"
+    - "python3-sklearn"
+    - "python3-scipy"
 
 # Users
 users:
@@ -264,49 +270,43 @@ post_install: |
   rm quarto-1.6.33-linux-amd64.deb
   echo "✅ Quarto installed"
 
-  # Install essential R packages using Ubuntu binaries (FAST - no compilation!)
-  echo "📦 Installing essential R packages from Ubuntu (1-2 minutes)..."
-  apt-get install -y \
-    r-cran-ggplot2 \
-    r-cran-dplyr \
-    r-cran-tidyr \
-    r-cran-readr \
-    r-cran-purrr \
-    r-cran-stringr \
-    r-cran-forcats \
-    r-cran-tibble \
-    r-cran-rmarkdown \
-    r-cran-knitr \
-    r-cran-lubridate \
-    r-cran-jsonlite \
-    r-cran-here \
-    r-cran-glue \
-    r-cran-httr \
-    r-cran-xml2 \
-    r-cran-rvest \
-    r-cran-dbi \
-    r-cran-rsqlite \
-    r-cran-rpostgresql \
-    r-cran-rmysql \
-    r-cran-shiny \
-    r-cran-plotly \
-    r-cran-devtools \
-    r-cran-usethis \
-    r-cran-reticulate
-  echo "✅ Core R packages installed (pre-compiled, no compilation needed!)"
+  # Install essential R packages using Posit Package Manager (pre-built binaries for Ubuntu 24.04)
+  # P3M provides binary CRAN packages - fast install, no compilation, current versions
+  echo "📦 Installing essential R packages via Posit Package Manager..."
+  Rscript -e "
+  options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))
+  install.packages(c(
+    'tidyverse',   # ggplot2, dplyr, tidyr, readr, purrr, stringr, forcats, tibble
+    'rmarkdown',   # Dynamic documents
+    'knitr',       # Literate programming
+    'lubridate',   # Date/time handling
+    'jsonlite',    # JSON handling
+    'here',        # Project-relative paths
+    'glue',        # String interpolation
+    'httr',        # HTTP requests
+    'xml2',        # XML parsing
+    'rvest',       # Web scraping
+    'DBI',         # Database interface
+    'RSQLite',     # SQLite support
+    'RPostgres',   # PostgreSQL support
+    'RMySQL',      # MySQL support
+    'shiny',       # Interactive web apps
+    'plotly',      # Interactive plots
+    'reticulate'   # Python integration
+  ))
+  cat('\n✅ Core R packages installed\n')
+  "
   echo "📝 Note: Additional packages can be installed via RStudio as needed"
 
-  # Install Python data science packages (using Ubuntu binaries - no compilation!)
-  echo "🐍 Installing Python data science packages from Ubuntu..."
-  apt-get install -y \
-    jupyter-notebook \
-    python3-numpy \
-    python3-pandas \
-    python3-matplotlib \
-    python3-seaborn \
-    python3-sklearn \
-    python3-scipy
-  echo "✅ Jupyter and Python packages installed (pre-compiled, no pip conflicts)"
+  # Python data science packages already installed via apt in packages: section above (numpy, pandas, etc.)
+  # Install JupyterLab in a venv with --system-site-packages so it sees apt-installed numpy/pandas/etc.
+  # This avoids pip/apt conflicts (Ubuntu 24.04 PEP 668 + traitlets RECORD issue)
+  echo "🐍 Installing JupyterLab in isolated venv..."
+  python3 -m venv --system-site-packages /opt/jupyterlab
+  /opt/jupyterlab/bin/pip install --quiet jupyterlab
+  ln -sf /opt/jupyterlab/bin/jupyter /usr/local/bin/jupyter
+  ln -sf /opt/jupyterlab/bin/jupyter-lab /usr/local/bin/jupyter-lab
+  echo "✅ JupyterLab installed (jupyter command available system-wide)"
 
   # Install Git LFS
   echo "📦 Installing Git LFS..."
@@ -393,7 +393,7 @@ idle_detection:
 # Instance defaults
 instance_defaults:
   ports: [22, 8787, 8888]
-  root_volume_gb: 50  # Larger for LaTeX and R packages
+  root_volume_gb: 80  # Larger for LaTeX (texlive-full ~8 GB), R packages, and Python libs
 
 # Research user configuration
 research_users:
