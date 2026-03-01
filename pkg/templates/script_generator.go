@@ -283,6 +283,8 @@ set -euo pipefail
 
 # Prevent interactive prompts during package installation (required for texlive etc.)
 export DEBIAN_FRONTEND=noninteractive
+# Prevent needrestart from interactively asking about service restarts
+export NEEDRESTART_MODE=a
 
 echo "=== Prism Setup: {{.Template.Name}} ==="
 echo "Using package manager: {{.PackageManager}}"
@@ -382,6 +384,7 @@ set -euo pipefail
 
 # Prevent interactive prompts during package installation
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
 
 # Prism Progress Monitoring
 # This script logs progress markers that can be monitored via SSH
@@ -586,6 +589,7 @@ set -euo pipefail
 
 # Prevent interactive prompts during package installation
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
 
 echo "=== Prism Setup: {{.Template.Name}} ==="
 echo "Using package manager: {{.PackageManager}}"

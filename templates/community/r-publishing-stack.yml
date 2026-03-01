@@ -195,6 +195,7 @@ post_install: |
 
   # Prevent interactive prompts during package installation (required for texlive etc.)
   export DEBIAN_FRONTEND=noninteractive
+  export NEEDRESTART_MODE=a
 
   echo "🔧 Installing Publishing Stack layer..."
 

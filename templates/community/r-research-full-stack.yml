@@ -216,6 +216,7 @@ post_install: |
 
   # Prevent interactive prompts (required for texlive, grub, etc.)
   export DEBIAN_FRONTEND=noninteractive
+  export NEEDRESTART_MODE=a
 
   echo "🔧 Starting R Research Full Stack configuration..."
 
