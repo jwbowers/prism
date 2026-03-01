@@ -743,7 +743,7 @@ func mergeMetadata(target, source *Template) {
 	}
 }
 
-// mergeInstanceDefaults merges instance type, ports, and cost estimates from source into target.
+// mergeInstanceDefaults merges instance type, ports, cost estimates, and root volume from source into target.
 func mergeInstanceDefaults(target, source *Template) {
 	if source.InstanceDefaults.Type != "" {
 		target.InstanceDefaults.Type = source.InstanceDefaults.Type
@@ -763,6 +763,10 @@ func mergeInstanceDefaults(target, source *Template) {
 	}
 	for k, v := range source.InstanceDefaults.EstimatedCostPerHour {
 		target.InstanceDefaults.EstimatedCostPerHour[k] = v
+	}
+	// Source overrides target for root volume size (last write wins, non-zero only)
+	if source.InstanceDefaults.RootVolumeGB != 0 {
+		target.InstanceDefaults.RootVolumeGB = source.InstanceDefaults.RootVolumeGB
 	}
 }
 

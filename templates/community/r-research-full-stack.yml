@@ -394,6 +394,7 @@ idle_detection:
 instance_defaults:
   ports: [22, 8787, 8888]
   root_volume_gb: 80  # Larger for LaTeX (texlive-full ~8 GB), R packages, and Python libs
+  instance_type_preference: ["m7i.xlarge", "m6i.xlarge", "m6a.xlarge", "m7i.2xlarge"]  # Current-gen compute for R workloads
 
 # Research user configuration
 research_users:

@@ -19,7 +19,7 @@ The **R Research Full Stack** template provides a complete, production-ready R r
 # Launch R research environment
 prism launch r-research-full-stack my-r-project
 
-# Wait for installation (this takes ~15-20 minutes first time)
+# Wait for installation (this takes 45-90 minutes first time)
 # The template installs R, RStudio Server, Quarto, LaTeX, and 40+ R packages
 ```
 
@@ -27,9 +27,10 @@ prism launch r-research-full-stack my-r-project
 - R 4.5.2 with base packages (2-3 min)
 - RStudio Server 2026.01.1 (1-2 min)
 - Quarto 1.6.33 (1 min)
-- TeX Live 2024 full distribution (20-40 min — large download)
-- Essential R packages: tidyverse, rmarkdown, knitr, ggplot2, devtools, etc. (5-10 min, from Ubuntu apt)
-- Python 3.12 + Jupyter Lab (2-3 min, from Ubuntu apt)
+- TeX Live 2024 full distribution (20-40 min — large download, ~8 GB installed)
+- System packages (numpy, pandas, scipy, etc.) (3-5 min, from Ubuntu apt)
+- R packages via Posit Package Manager (20-40 min — compiles from source if binary not available)
+- Python 3.12 + Jupyter Lab in venv (2-3 min)
 - Database clients and utilities (1-2 min)
 
 ### 2. Access RStudio Server
@@ -356,25 +357,30 @@ See [Custom AMI Workflow Guide](CUSTOM_AMI_WORKFLOW.md) for details.
 
 ### Instance Sizing Recommendations
 
-**Small Projects (< 5GB data)**:
+> **Note**: The fullstack and publishing templates default to `m7i.xlarge` (4 vCPU, 16 GB).
+> Burstable `t3.*` instances are **not recommended** — texlive configuration and R package
+> compilation exhaust CPU burst credits quickly, extending install time 2-3x.
+
+**Standard Research Work (recommended default)**:
 ```bash
-prism launch r-research-full-stack my-project --size M
-# Instance: t3.medium (2 vCPU, 4GB RAM)
-# Cost: ~$0.05/hour
+prism launch r-research-full-stack my-project
+# Instance: m7i.xlarge (4 vCPU, 16 GB RAM) — template default, Intel Sapphire Rapids
+# Cost: ~$0.21/hour
+# Install time: ~60-90 min (first launch, R packages compiled from source)
 ```
 
-**Medium Projects (5-20GB data)**:
-```bash
-prism launch r-research-full-stack my-project --size L
-# Instance: t3.large (2 vCPU, 8GB RAM)
-# Cost: ~$0.10/hour
-```
-
-**Large Projects (20GB+ data, complex models)**:
+**Large Datasets / Complex Models**:
 ```bash
 prism launch r-research-full-stack my-project --size XL
-# Instance: t3.xlarge (4 vCPU, 16GB RAM)
-# Cost: ~$0.20/hour
+# Instance: m7i.2xlarge (8 vCPU, 32 GB RAM)
+# Cost: ~$0.42/hour
+```
+
+**Memory-Intensive R Work (large in-memory datasets)**:
+```bash
+prism launch r-research-full-stack my-project --instance-type r7i.xlarge
+# Instance: r7i.xlarge (4 vCPU, 32 GB RAM) — memory optimized
+# Cost: ~$0.30/hour
 ```
 
 ### Cost Optimization with Hibernation
@@ -611,7 +617,7 @@ sessionInfo()
 ## FAQ
 
 **Q: How long does the initial launch take?**
-A: First launch: 25-50 minutes (TeX Live alone is 1-3 GB). Create an AMI after first launch, then future launches take < 2 minutes.
+A: First launch: 45-90 minutes (TeX Live ~8 GB + R packages compiled from source). Create an AMI after first launch, then future launches take < 2 minutes.
 
 **Q: Can multiple users work simultaneously?**
 A: Yes! Each user gets their own RStudio Server session. Add users with `sudo adduser username`.
