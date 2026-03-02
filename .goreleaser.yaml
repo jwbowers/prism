@@ -244,8 +244,6 @@ nfpms:
         dst: /usr/share/prism/templates/foundations/
       - src: templates/base/*.yml
         dst: /usr/share/prism/templates/base/
-      - src: templates/examples/*.yml
-        dst: /usr/share/prism/templates/examples/
       - src: templates/testing/*.yml
         dst: /usr/share/prism/templates/testing/
       - src: docs/user-guides/GETTING_STARTED.md
