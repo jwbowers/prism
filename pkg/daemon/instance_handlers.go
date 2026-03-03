@@ -557,6 +557,13 @@ func (s *Server) handleDeleteInstance(w http.ResponseWriter, r *http.Request, id
 		}
 	}
 
+	// In test mode, skip AWS deletion and remove from local state
+	if s.testMode {
+		_ = s.stateManager.RemoveInstance(instanceName)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	// Initiate AWS deletion and refresh state from AWS
 	var deleteErr error
 	var updatedInstance *types.Instance
@@ -694,16 +701,16 @@ func (s *Server) handleStartInstance(w http.ResponseWriter, r *http.Request, ide
 		return
 	}
 
-	// In test mode, mock instances respond immediately without AWS calls
-	if s.testMode && strings.HasPrefix(identifier, "prism-mock-") {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
 	// Resolve identifier (name or ID) to instance name
 	instanceName, found := s.resolveInstanceIdentifier(identifier)
 	if !found {
 		s.writeError(w, http.StatusNotFound, "Instance not found")
+		return
+	}
+
+	// In test mode, skip all AWS calls for any instance
+	if s.testMode {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -743,6 +750,12 @@ func (s *Server) handleStopInstance(w http.ResponseWriter, r *http.Request, iden
 		return
 	}
 
+	// In test mode, skip all AWS calls for any instance
+	if s.testMode {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	var operationErr error
 	var updatedInstance *types.Instance
 	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
@@ -772,16 +785,16 @@ func (s *Server) handleHibernateInstance(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	// In test mode, mock instances respond immediately without AWS calls
-	if s.testMode && strings.HasPrefix(identifier, "prism-mock-") {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
 	// Resolve identifier (name or ID) to instance name
 	instanceName, found := s.resolveInstanceIdentifier(identifier)
 	if !found {
 		s.writeError(w, http.StatusNotFound, "Instance not found")
+		return
+	}
+
+	// In test mode, skip all AWS calls for any instance
+	if s.testMode {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -814,16 +827,16 @@ func (s *Server) handleResumeInstance(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 
-	// In test mode, mock instances respond immediately without AWS calls
-	if s.testMode && strings.HasPrefix(identifier, "prism-mock-") {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
 	// Resolve identifier (name or ID) to instance name
 	instanceName, found := s.resolveInstanceIdentifier(identifier)
 	if !found {
 		s.writeError(w, http.StatusNotFound, "Instance not found")
+		return
+	}
+
+	// In test mode, skip all AWS calls for any instance
+	if s.testMode {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 

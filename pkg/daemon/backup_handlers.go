@@ -70,12 +70,8 @@ func (s *Server) handleCreateS3Backup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test mode: return a plausible mock response
+	// Test mode: return a plausible mock response for any instance
 	if s.testMode {
-		if !strings.HasPrefix(req.InstanceName, "prism-mock-") {
-			s.writeError(w, http.StatusInternalServerError, "S3 backup not available in test mode for non-mock instances")
-			return
-		}
 		s.writeJSON(w, http.StatusCreated, &types.BackupCreateResult{
 			BackupName:                 req.BackupName,
 			BackupID:                   "ssm-cmd-mock-001",
