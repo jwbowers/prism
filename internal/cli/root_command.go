@@ -449,7 +449,6 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(r.createWebCommand())
 
 	// System commands (kept at root level)
-	rootCmd.AddCommand(r.createInitCommand())
 	rootCmd.AddCommand(r.app.tuiCommand)
 	rootCmd.AddCommand(NewGUICommand())
 	rootCmd.AddCommand(NewAboutCommand())
@@ -563,28 +562,6 @@ Examples:
   prism web close my-jupyter jupyter # Close specific service tunnel`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return r.app.Web(args)
-		},
-	}
-}
-
-func (r *CommandFactoryRegistry) createInitCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:     "init",
-		Short:   "Initialize Prism",
-		GroupID: "system",
-		Long: `Interactive first-time setup wizard for Prism.
-
-This wizard guides you through:
-• AWS credential detection and validation
-• Research area selection
-• Optional budget configuration
-• Hibernation policy setup
-• Template recommendations
-
-The setup takes about 2 minutes and helps you get started quickly.`,
-		RunE: func(_ *cobra.Command, args []string) error {
-			wizard := NewInitWizard(r.app.config)
-			return wizard.Run()
 		},
 	}
 }
@@ -763,6 +740,14 @@ func (a *App) Run(args []string) error {
 
 	rootCmd := a.NewRootCommand()
 	rootCmd.SetArgs(args[1:]) // Skip the first argument (program name)
+
+	// First-run suggestion: when invoked with no subcommand and never initialized,
+	// nudge the user toward `prism init` before printing the standard help.
+	if len(args) <= 1 && !IsInitialized() {
+		fmt.Println("👋 New here? Run 'prism init' to launch your first workspace in under 30 seconds.")
+		fmt.Println()
+	}
+
 	return rootCmd.Execute()
 }
 

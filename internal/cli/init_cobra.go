@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -481,6 +482,7 @@ func (ic *InitCobraCommands) displaySuccess(name string) error {
 	fmt.Println("💡 Run 'prism --help' to see all available commands")
 	fmt.Println()
 
+	writeInitialized()
 	return nil
 }
 
@@ -510,6 +512,28 @@ func (ic *InitCobraCommands) promptConfirm(prompt string) bool {
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(strings.ToLower(input))
 	return input == "y" || input == "yes"
+}
+
+// IsInitialized reports whether the user has previously completed prism init.
+func IsInitialized() bool {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(filepath.Join(homeDir, ".prism", ".initialized"))
+	return err == nil
+}
+
+// writeInitialized records that the user has completed init.
+func writeInitialized() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	dir := filepath.Join(homeDir, ".prism")
+	_ = os.MkdirAll(dir, 0700)
+	content := fmt.Sprintf("initialized: true\ndate: %s\n", time.Now().Format("2006-01-02"))
+	_ = os.WriteFile(filepath.Join(dir, ".initialized"), []byte(content), 0600)
 }
 
 // estimateCost returns estimated hourly cost for a size
