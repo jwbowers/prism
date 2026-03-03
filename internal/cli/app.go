@@ -1314,8 +1314,26 @@ func (a *App) projectInfo(args []string) error {
 		}
 	}
 
-	// Instance information (placeholder - would need API extension to get project instances)
-	fmt.Printf("\n🖥️ Instances: (Use 'prism project instances %s' for detailed list)\n", project.Name)
+	// Instance information - filter all instances by project ID
+	fmt.Printf("\n🖥️ Instances:\n")
+	instanceList, err := a.apiClient.ListInstances(a.ctx)
+	if err == nil {
+		var projectInstances []types.Instance
+		for _, inst := range instanceList.Instances {
+			if inst.ProjectID == project.ID {
+				projectInstances = append(projectInstances, inst)
+			}
+		}
+		if len(projectInstances) == 0 {
+			fmt.Printf("   None\n")
+		} else {
+			for _, inst := range projectInstances {
+				fmt.Printf("   %s (%s) — %s\n", inst.Name, inst.ID, inst.State)
+			}
+		}
+	} else {
+		fmt.Printf("   (Unable to list instances: %v)\n", err)
+	}
 
 	// Member information
 	fmt.Printf("\n👥 Members: %d\n", len(project.Members))
@@ -1512,10 +1530,64 @@ func (a *App) projectBudgetHistory(args []string) error {
 
 	projectName := args[0]
 
-	// For now, show a placeholder - this would be enhanced with actual cost history data
-	fmt.Printf("📊 Budget History for '%s':\n", projectName)
-	fmt.Printf("   (Cost history functionality would be implemented here)\n")
-	fmt.Printf("   💡 Use 'prism project budget status %s' for current spending\n", projectName)
+	// Parse optional --days flag (default 30)
+	days := 30
+	for i := 1; i < len(args)-1; i++ {
+		if args[i] == "--days" {
+			if n, err := strconv.Atoi(args[i+1]); err == nil && n > 0 {
+				days = n
+			}
+		}
+	}
+
+	// Resolve project name → ID
+	projectResponse, err := a.apiClient.ListProjects(a.ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to list projects: %w", err)
+	}
+
+	var projectID string
+	for _, proj := range projectResponse.Projects {
+		if proj.Name == projectName {
+			projectID = proj.ID
+			break
+		}
+	}
+	if projectID == "" {
+		return fmt.Errorf("project not found: %s", projectName)
+	}
+
+	history, err := a.apiClient.GetProjectBudgetHistory(a.ctx, projectID, days)
+	if err != nil {
+		return fmt.Errorf("failed to get budget history: %w", err)
+	}
+
+	fmt.Printf("📊 Budget History for '%s' (last %d days):\n\n", projectName, days)
+
+	if len(history) == 0 {
+		fmt.Printf("   No cost data recorded yet.\n")
+		fmt.Printf("   💡 Cost data is recorded as instances run.\n")
+		return nil
+	}
+
+	// Show each data point as a simple bar chart using ASCII
+	var maxCost float64
+	for _, c := range history {
+		if c > maxCost {
+			maxCost = c
+		}
+	}
+
+	for i, cost := range history {
+		barLen := 0
+		if maxCost > 0 {
+			barLen = int((cost / maxCost) * 30)
+		}
+		bar := strings.Repeat("█", barLen)
+		fmt.Printf("   [%3d] $%7.2f  %s\n", i+1, cost, bar)
+	}
+
+	fmt.Printf("\n   Total data points: %d\n", len(history))
 
 	return nil
 }
@@ -1626,10 +1698,35 @@ func (a *App) projectTemplates(args []string) error {
 
 	name := args[0]
 
-	// For now, show a placeholder since project templates integration is complex
-	fmt.Printf("🏗️ Custom templates in project '%s':\n", name)
-	fmt.Printf("(Project template integration is being developed)\n")
-	fmt.Printf("Save an instance as template with: prism save <instance> <template> --project %s\n", name)
+	// Templates don't have per-project scope yet (#122) — show the global library.
+	templateMap, err := a.apiClient.ListTemplates(a.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list templates: %w", err)
+	}
+
+	fmt.Printf("🏗️ Templates available to project '%s':\n\n", name)
+	fmt.Printf("   ℹ️  Templates are shared globally. Project-specific templates are tracked in issue #122.\n\n")
+
+	if len(templateMap) == 0 {
+		fmt.Printf("   No templates found.\n")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "   NAME\tCATEGORY\tDESCRIPTION")
+	fmt.Fprintln(w, "   ----\t--------\t-----------")
+	for tName, t := range templateMap {
+		desc := t.Description
+		if len(desc) > 60 {
+			desc = desc[:57] + "..."
+		}
+		category := t.Category
+		if category == "" {
+			category = t.Domain
+		}
+		fmt.Fprintf(w, "   %s\t%s\t%s\n", tName, category, desc)
+	}
+	w.Flush()
 
 	return nil
 }

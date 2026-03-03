@@ -63,7 +63,11 @@ func (s *Server) handleProjectSubOp(w http.ResponseWriter, r *http.Request, proj
 	case "members":
 		s.handleProjectMembers(w, r, projectID, parts)
 	case "budget":
-		s.handleProjectBudget(w, r, projectID)
+		if len(parts) >= 3 && parts[2] == "history" {
+			s.handleProjectBudgetHistory(w, r, projectID)
+		} else {
+			s.handleProjectBudget(w, r, projectID)
+		}
 	case "costs":
 		s.handleProjectCosts(w, r, projectID)
 	case "usage":
@@ -433,6 +437,40 @@ func (s *Server) handleProjectBudget(w http.ResponseWriter, r *http.Request, pro
 	default:
 		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
+}
+
+// handleProjectBudgetHistory returns daily cost history for a project
+// GET /api/v1/projects/{id}/budget/history?days=N
+func (s *Server) handleProjectBudgetHistory(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	days := 30
+	if d := r.URL.Query().Get("days"); d != "" {
+		if n, err := strconv.Atoi(d); err == nil && n > 0 {
+			days = n
+		}
+	}
+
+	if s.budgetTracker == nil {
+		s.writeError(w, http.StatusNotFound, "Budget tracker not configured")
+		return
+	}
+
+	history, err := s.budgetTracker.GetProjectCostHistory(projectID, days)
+	if err != nil {
+		s.writeError(w, http.StatusNotFound, fmt.Sprintf("No cost history for project: %v", err))
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"project_id": projectID,
+		"days":       days,
+		"history":    history,
+		"count":      len(history),
+	})
 }
 
 // handleGetProjectBudgetStatus retrieves budget status for a project

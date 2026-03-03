@@ -104,6 +104,7 @@ type PrismAPI interface {
 	DisableProjectBudget(context.Context, string) (map[string]interface{}, error)
 	GetProjectCostBreakdown(context.Context, string, time.Time, time.Time) (*types.ProjectCostBreakdown, error)
 	GetProjectResourceUsage(context.Context, string, time.Duration) (*types.ProjectResourceUsage, error)
+	GetProjectBudgetHistory(context.Context, string, int) ([]float64, error) // Issue #482
 	GetCostTrends(context.Context, string, string) (map[string]interface{}, error)
 	PreventProjectLaunches(context.Context, string) (map[string]interface{}, error)
 	AllowProjectLaunches(context.Context, string) (map[string]interface{}, error)

@@ -1546,6 +1546,25 @@ func (c *HTTPClient) AllowProjectLaunches(ctx context.Context, projectID string)
 	return result, nil
 }
 
+// GetProjectBudgetHistory returns daily cost history for a project (Issue #482)
+func (c *HTTPClient) GetProjectBudgetHistory(ctx context.Context, projectID string, days int) ([]float64, error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/budget/history?days=%d", projectID, days)
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		History []float64 `json:"history"`
+	}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result.History, nil
+}
+
 // Budget management operations (v0.6.2)
 
 // CreateBudget creates a new budget pool

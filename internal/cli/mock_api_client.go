@@ -912,6 +912,13 @@ func (m *MockAPIClient) GetProjectResourceUsage(ctx context.Context, projectID s
 	}, nil
 }
 
+func (m *MockAPIClient) GetProjectBudgetHistory(ctx context.Context, projectID string, days int) ([]float64, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []float64{}, nil
+}
+
 func (m *MockAPIClient) GetCostTrends(ctx context.Context, projectID, period string) (map[string]interface{}, error) {
 	if m.ShouldReturnError {
 		return nil, fmt.Errorf("%s", m.ErrorMessage)

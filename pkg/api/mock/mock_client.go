@@ -1069,6 +1069,11 @@ func (m *MockClient) GetProjectResourceUsage(ctx context.Context, projectID stri
 	}, nil
 }
 
+// GetProjectBudgetHistory returns daily cost history for a project (mock, Issue #482)
+func (m *MockClient) GetProjectBudgetHistory(ctx context.Context, projectID string, days int) ([]float64, error) {
+	return []float64{}, nil
+}
+
 // GetCostTrends returns cost trend data for analysis (mock)
 func (m *MockClient) GetCostTrends(ctx context.Context, projectID, period string) (map[string]interface{}, error) {
 	// Generate mock cost trend data based on period
