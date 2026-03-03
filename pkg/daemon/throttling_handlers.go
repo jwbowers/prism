@@ -42,20 +42,17 @@ func (s *Server) handleThrottlingConfigure(w http.ResponseWriter, r *http.Reques
 	// Create new throttler with updated config
 	s.launchThrottler = throttle.NewLaunchThrottler(config)
 
-	// TODO: Integrate with budget manager if budget-aware throttling is enabled
 	if config.BudgetAware && s.budgetManager != nil {
 		s.launchThrottler.SetBudgetUsageFunc(func(projectID string) (used float64, limit float64, err error) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			_, err = s.budgetManager.GetBudgetSummary(ctx, projectID)
+			summary, err := s.budgetManager.GetProjectFundingSummary(ctx, projectID)
 			if err != nil {
 				return 0, 0, err
 			}
 
-			// TODO: Budget integration - extract actual spend and limit from BudgetSummary
-			// For now, return placeholders (budget-aware throttling needs proper integration)
-			return 0, 0, nil
+			return summary.TotalSpent, summary.TotalAllocated, nil
 		})
 	}
 
