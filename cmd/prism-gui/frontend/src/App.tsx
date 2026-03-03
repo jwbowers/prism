@@ -1676,8 +1676,8 @@ class SafePrismAPI {
     }
   }
 
-  async installMarketplaceTemplate(templateId: string): Promise<void> {
-    await this.safeRequest('/api/v1/templates/install-marketplace', 'POST', { template_id: templateId });
+  async installMarketplaceTemplate(templateId: string, localName: string): Promise<void> {
+    await this.safeRequest('/api/v1/templates/install-marketplace', 'POST', { marketplace_template_id: templateId, local_name: localName });
   }
 
   // Idle Detection APIs
@@ -9419,7 +9419,7 @@ export default function PrismApp() {
       if (!selectedTemplate) return;
 
       try {
-        await api.installMarketplaceTemplate(selectedTemplate.id);
+        await api.installMarketplaceTemplate(selectedTemplate.id, selectedTemplate.id);
         setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: `Installing template: ${selectedTemplate.display_name}` }] }));
         setInstallModalVisible(false);
         setSelectedTemplate(null);
