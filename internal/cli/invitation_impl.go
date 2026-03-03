@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/api/client"
@@ -671,12 +673,38 @@ func (a *App) projectInvitationsList(args []string) error {
 		return fmt.Errorf("project not found: %s", projectName)
 	}
 
-	fmt.Printf("📋 Invitations for Project '%s'\n\n", projectName)
-	if status != "" {
-		fmt.Printf("   Status filter: %s\n", status)
+	result, err := a.apiClient.ListProjectInvitations(a.ctx, projectID, status)
+	if err != nil {
+		return fmt.Errorf("failed to list invitations: %w", err)
 	}
-	fmt.Println("\n⚠️  API integration pending")
-	fmt.Printf("   Invitations would be fetched via: GET /api/v1/projects/%s/invitations\n", projectID)
+
+	fmt.Printf("📋 Invitations for Project '%s'", projectName)
+	if status != "" {
+		fmt.Printf(" (status: %s)", status)
+	}
+	fmt.Println()
+	fmt.Println()
+
+	if len(result.Invitations) == 0 {
+		fmt.Println("   No invitations found.")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tEMAIL\tROLE\tSTATUS\tINVITED AT\tEXPIRES AT")
+	fmt.Fprintln(w, "--\t-----\t----\t------\t----------\t----------")
+	for _, inv := range result.Invitations {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+			inv.ID,
+			inv.Email,
+			inv.Role,
+			inv.Status,
+			inv.InvitedAt.Format("2006-01-02"),
+			inv.ExpiresAt.Format("2006-01-02"),
+		)
+	}
+	w.Flush() //nolint:errcheck
+	fmt.Printf("\nTotal: %d invitation(s)\n", result.Total)
 
 	return nil
 }
@@ -689,11 +717,12 @@ func (a *App) projectInvitationsResend(args []string) error {
 
 	invitationID := args[0]
 
-	fmt.Printf("🔄 Resending invitation...\n")
-	fmt.Printf("   Invitation ID: %s\n", invitationID)
-	fmt.Println("\n⚠️  API integration pending")
-	fmt.Printf("   Invitation would be resent via: POST /api/v1/invitations/%s/resend\n", invitationID)
+	if err := a.apiClient.ResendInvitation(a.ctx, invitationID); err != nil {
+		return fmt.Errorf("failed to resend invitation: %w", err)
+	}
 
+	fmt.Printf("✅ Invitation resent successfully\n")
+	fmt.Printf("   Invitation ID: %s\n", invitationID)
 	return nil
 }
 
@@ -705,11 +734,20 @@ func (a *App) projectInvitationsRevoke(args []string) error {
 
 	invitationID := args[0]
 
-	fmt.Printf("🚫 Revoking invitation...\n")
-	fmt.Printf("   Invitation ID: %s\n", invitationID)
-	fmt.Println("\n⚠️  API integration pending")
-	fmt.Printf("   Invitation would be revoked via: DELETE /api/v1/invitations/%s\n", invitationID)
+	fmt.Printf("Revoke invitation '%s'? [y/N] ", invitationID)
+	var confirm string
+	fmt.Scanln(&confirm) //nolint:errcheck
+	if confirm != "y" && confirm != "Y" {
+		fmt.Println("Cancelled.")
+		return nil
+	}
 
+	if err := a.apiClient.RevokeInvitation(a.ctx, invitationID); err != nil {
+		return fmt.Errorf("failed to revoke invitation: %w", err)
+	}
+
+	fmt.Printf("✅ Invitation revoked successfully\n")
+	fmt.Printf("   Invitation ID: %s\n", invitationID)
 	return nil
 }
 

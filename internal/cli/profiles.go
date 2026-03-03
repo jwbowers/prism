@@ -755,10 +755,9 @@ func createInvitationCommands(profilesCmd *cobra.Command, config *Config) {
 	invitationsCmd.AddCommand(createInvitationListCommand(config))
 	invitationsCmd.AddCommand(createInvitationRevokeCommand(config))
 
-	// Batch commands temporarily disabled during Phase 1 profile system simplification
-	// AddBatchInvitationCommands(invitationsCmd, config)
-	// AddBatchDeviceCommands(invitationsCmd, config)
-	// AddBatchConfigCommands(invitationsCmd, config)
+	AddBatchInvitationCommands(invitationsCmd, config)
+	AddBatchDeviceCommands(invitationsCmd, config)
+	AddBatchConfigCommands(invitationsCmd, config)
 }
 
 // createInvitationCreateCommand creates the invitation create command

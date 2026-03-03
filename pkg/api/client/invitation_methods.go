@@ -192,6 +192,42 @@ func (c *HTTPClient) ResendInvitation(ctx context.Context, invitationID string) 
 	return nil
 }
 
+// ListProjectInvitations lists all invitations for a project
+// GET /api/v1/projects/{projectID}/invitations?status={status}
+func (c *HTTPClient) ListProjectInvitations(ctx context.Context, projectID string, status string) (*ListProjectInvitationsResponse, error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/invitations", projectID)
+	if status != "" {
+		path += "?status=" + status
+	}
+
+	resp, err := c.makeRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list project invitations: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseHTTPError(resp)
+	}
+
+	var raw struct {
+		Invitations []*types.Invitation `json:"invitations"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	invitations := raw.Invitations
+	if invitations == nil {
+		invitations = []*types.Invitation{}
+	}
+
+	return &ListProjectInvitationsResponse{
+		Invitations: invitations,
+		Total:       len(invitations),
+	}, nil
+}
+
 // parseHTTPError extracts error message from HTTP response
 func parseHTTPError(resp *http.Response) error {
 	var errMsg struct {

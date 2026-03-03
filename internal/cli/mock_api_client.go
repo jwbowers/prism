@@ -2601,3 +2601,14 @@ func (m *MockAPIClient) RevokeInvitation(ctx context.Context, invitationID strin
 	}
 	return nil
 }
+
+// ListProjectInvitations lists invitations for a project (mock)
+func (m *MockAPIClient) ListProjectInvitations(ctx context.Context, projectID string, status string) (*client.ListProjectInvitationsResponse, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &client.ListProjectInvitationsResponse{
+		Invitations: []*types.Invitation{},
+		Total:       0,
+	}, nil
+}

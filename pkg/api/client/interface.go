@@ -134,8 +134,9 @@ type PrismAPI interface {
 	DeclineInvitation(context.Context, string, string) (*InvitationActionResponse, error)
 	SendInvitation(context.Context, string, SendInvitationRequest) (*SendInvitationResponse, error)
 	SendBulkInvitation(context.Context, string, *types.BulkInvitationRequest) (*types.BulkInvitationResponse, error)
-	RevokeInvitation(context.Context, string) error // v0.6.2 (Issue #383)
-	ResendInvitation(context.Context, string) error // v0.6.2 (Issue #383)
+	RevokeInvitation(context.Context, string) error                                                  // v0.6.2 (Issue #383)
+	ResendInvitation(context.Context, string) error                                                  // v0.6.2 (Issue #383)
+	ListProjectInvitations(context.Context, string, string) (*ListProjectInvitationsResponse, error) // projectID, status (Issue #50)
 
 	// Shared token operations (v0.5.13)
 	CreateSharedToken(context.Context, string, *types.CreateSharedTokenRequest) (*types.SharedInvitationToken, error)
@@ -388,4 +389,10 @@ type SendInvitationResponse struct {
 	Invitation *types.Invitation `json:"invitation"`
 	Project    *types.Project    `json:"project"`
 	Message    string            `json:"message"`
+}
+
+// ListProjectInvitationsResponse represents the response from listing project invitations
+type ListProjectInvitationsResponse struct {
+	Invitations []*types.Invitation `json:"invitations"`
+	Total       int                 `json:"total"`
 }
