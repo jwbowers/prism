@@ -1,0 +1,216 @@
+name: "Datasette Dataset Explorer"
+slug: "datasette"
+description: "Instantly publish and explore research datasets via browser — CSV, SQLite, and more"
+long_description: |
+  Datasette is a lightweight tool for exploring and publishing datasets.
+  Drop CSV or SQLite files into ~/data/ and they become instantly browsable
+  and queryable via a clean web interface — no database setup needed.
+
+  Perfect for sharing data with collaborators, exploring unfamiliar datasets,
+  or publishing research data for reproducibility.
+
+  Includes:
+  - Datasette with csvs-to-sqlite for CSV import and datasette-vega for charts
+  - Helper script ~/import-csv.sh to convert CSVs to SQLite instantly
+  - Sample SQLite database to explore the interface
+  - Any *.db files in ~/data/ are served automatically on port 8001
+
+author: "Prism Team"
+version: "1.0.0"
+base: "ubuntu-24.04"
+connection_type: "web"
+
+complexity: "simple"
+category: "Research Tools"
+domain: "research"
+icon: "🗄️"
+color: "#8b5cf6"
+popular: true
+
+package_manager: "apt"
+packages:
+  system:
+    - python3
+    - python3-pip
+    - python3-venv
+    - python3-dev
+    - git
+    - curl
+    - sqlite3
+    - htop
+
+users:
+  - name: "researcher"
+    groups: ["sudo"]
+    shell: "/bin/bash"
+
+services:
+  - name: datasette
+    port: 8001
+    type: "web"
+    start_command: "systemctl start datasette"
+    check_command: "systemctl is-active datasette"
+    enable: true
+
+post_install: |
+  #!/bin/bash
+  set -e
+  export DEBIAN_FRONTEND=noninteractive
+  export NEEDRESTART_MODE=a
+
+  echo "🗄️ Installing Datasette..."
+
+  # Create Python virtual environment
+  sudo -u researcher python3 -m venv /home/researcher/.venv
+  /home/researcher/.venv/bin/pip install --upgrade pip --quiet
+  /home/researcher/.venv/bin/pip install --quiet datasette csvs-to-sqlite datasette-vega
+
+  # Create data directory
+  mkdir -p /home/researcher/data
+
+  # Create a sample SQLite database
+  python3 << 'PYEOF'
+  import sqlite3
+
+  db_path = "/home/researcher/data/sample-research.db"
+  conn = sqlite3.connect(db_path)
+
+  conn.execute("""
+  CREATE TABLE IF NOT EXISTS publications (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    authors TEXT,
+    year INTEGER,
+    journal TEXT,
+    citations INTEGER,
+    open_access INTEGER
+  )
+  """)
+
+  sample_papers = [
+    ("Deep Learning for Scientific Discovery", "Smith J; Lee K", 2023, "Nature Methods", 142, 1),
+    ("Statistical Methods in Ecology", "Brown A; Garcia M", 2022, "Ecology", 89, 0),
+    ("Climate Data Analysis at Scale", "Johnson R", 2023, "Science", 203, 1),
+    ("Reproducible Research Workflows", "Davis E; Wilson T", 2021, "PLOS ONE", 67, 1),
+    ("Natural Language Processing in Biology", "Martinez C", 2024, "Bioinformatics", 31, 1),
+    ("Open Data in Social Sciences", "Thompson L", 2022, "Social Science Research", 45, 0),
+    ("Machine Learning for Medical Imaging", "Anderson P; White S", 2023, "Radiology", 178, 0),
+    ("Citizen Science Data Quality", "Taylor H", 2024, "PLOS ONE", 22, 1),
+  ]
+  conn.executemany(
+    "INSERT INTO publications (title, authors, year, journal, citations, open_access) VALUES (?,?,?,?,?,?)",
+    sample_papers
+  )
+  conn.commit()
+  conn.close()
+  print("Sample database created at", db_path)
+  PYEOF
+
+  # Strip leading 2-space YAML indent from the Python heredoc
+  python3 -c "
+  import textwrap, subprocess, sys
+  with open('/home/researcher/data/sample-research.db', 'rb') as f:
+    pass  # DB already created above; nothing to dedent
+  " 2>/dev/null || true
+
+  # Create Datasette metadata file
+  cat > /home/researcher/data/metadata.json << 'METAEOF'
+  {
+    "title": "Research Datasets",
+    "description": "Drop *.db files into ~/data/ and restart Datasette to publish them.",
+    "databases": {
+      "sample-research": {
+        "description": "Sample academic publications — replace with your own data"
+      }
+    }
+  }
+  METAEOF
+
+  # Strip leading 2-space YAML indent from metadata.json
+  python3 -c "
+  import textwrap
+  with open('/home/researcher/data/metadata.json') as f:
+    content = textwrap.dedent(f.read())
+  with open('/home/researcher/data/metadata.json', 'w') as f:
+    f.write(content)
+  "
+
+  # Create CSV import helper script
+  cat > /home/researcher/import-csv.sh << 'SHEOF'
+  #!/bin/bash
+  # Convert a CSV file to SQLite and reload Datasette
+  # Usage: ./import-csv.sh mydata.csv
+  if [ -z "$1" ]; then
+    echo "Usage: $0 <csv-file>"
+    exit 1
+  fi
+  BASENAME=$(basename "$1" .csv)
+  /home/researcher/.venv/bin/csvs-to-sqlite "$1" /home/researcher/data/${BASENAME}.db
+  sudo systemctl restart datasette
+  echo "Imported $1 -> ~/data/${BASENAME}.db"
+  SHEOF
+  chmod +x /home/researcher/import-csv.sh
+
+  # Create systemd service
+  cat > /etc/systemd/system/datasette.service << 'SVCEOF'
+  [Unit]
+  Description=Datasette Dataset Explorer
+  After=network.target
+
+  [Service]
+  Type=simple
+  User=researcher
+  WorkingDirectory=/home/researcher/data
+  ExecStart=/home/researcher/.venv/bin/datasette serve /home/researcher/data --host 0.0.0.0 --port 8001 --metadata /home/researcher/data/metadata.json --cors
+  Restart=always
+  RestartSec=5
+  Environment="HOME=/home/researcher"
+  Environment="PATH=/home/researcher/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+
+  [Install]
+  WantedBy=multi-user.target
+  SVCEOF
+
+  # Fix ownership
+  chown -R researcher:researcher /home/researcher
+
+  # Enable and start service
+  systemctl daemon-reload
+  systemctl enable datasette
+  systemctl start datasette
+
+  echo "✅ Datasette installation complete!"
+  echo "🗄️  Access Datasette at: http://<public-ip>:8001"
+  echo "📊 Import CSVs with: ~/import-csv.sh mydata.csv"
+  echo "🔄 Restart server:   sudo systemctl restart datasette"
+
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 30
+  hibernate_threshold_minutes: 120
+  check_interval_minutes: 10
+  check_processes:
+    - "datasette"
+    - "python3"
+
+instance_defaults:
+  type: "t3.small"
+  ports: [22, 8001]
+  root_volume_gb: 20
+  estimated_cost_per_hour:
+    x86_64: 0.0208
+
+estimated_launch_time: 5
+prerequisites:
+  - "Basic familiarity with tabular data"
+learning_resources:
+  - "https://docs.datasette.io"
+  - "https://datasette.io/tutorials"
+
+validation_status: "validated"
+tags:
+  type: "web-app"
+  language: "python"
+  interface: "browser"
+  purpose: "data-exploration"
+  domain: "research"
