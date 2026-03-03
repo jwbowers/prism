@@ -3,6 +3,7 @@ package cli
 
 import (
 	"fmt"
+	"os/user"
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/types"
@@ -42,6 +43,12 @@ func (a *App) projectInvitationsSharedCreate(args []string, name, role, message 
 		return fmt.Errorf("project not found: %s", projectName)
 	}
 
+	// Use OS username for attribution until a full auth system is in place (#484).
+	createdBy := "cli-user"
+	if u, err := user.Current(); err == nil && u.Username != "" {
+		createdBy = u.Username
+	}
+
 	// Build request
 	req := &types.CreateSharedTokenRequest{
 		ProjectID:       projectID,
@@ -50,7 +57,7 @@ func (a *App) projectInvitationsSharedCreate(args []string, name, role, message 
 		Message:         message,
 		RedemptionLimit: redemptionLimit,
 		ExpiresIn:       expiresIn,
-		CreatedBy:       "cli-user", // TODO: Get from authenticated user
+		CreatedBy:       createdBy,
 	}
 
 	// Parse expires-on if provided

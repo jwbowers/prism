@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"text/tabwriter"
 	"time"
 
@@ -329,9 +330,11 @@ func (a *App) redeemSharedToken(tokenCode string) error {
 		}
 	}
 
-	// TODO: Get actual username from authentication system
-	// For now, use a placeholder
+	// Use OS username for attribution until a full auth system is in place (#484).
 	username := "cli-user"
+	if u, err := user.Current(); err == nil && u.Username != "" {
+		username = u.Username
+	}
 
 	// Redeem token via API
 	req := &types.RedeemSharedTokenRequest{
