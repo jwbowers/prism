@@ -14,7 +14,7 @@ These principles guide every design decision and feature implementation:
 
 ### 🎯 **Default to Success**
 Every template must work out of the box in every supported region. No configuration should be required for basic usage.
-- `prism launch python-ml my-project` should always work
+- `prism workspace launch python-ml my-project` should always work
 - Smart fallbacks handle regional/architecture limitations transparently
 - Templates include battle-tested defaults for their specific use cases
 
@@ -47,9 +47,9 @@ Users should never be surprised by what they get - clear communication about wha
 
 ### 📈 **Progressive Disclosure**
 Simple by default, detailed when needed. Power users can access advanced features without cluttering basic workflows.
-- Basic: `prism launch template-name project-name`
-- Intermediate: `prism launch template-name project-name --size L`
-- Advanced: `prism launch template-name project-name --instance-type c5.2xlarge --spot`
+- Basic: `prism workspace launch template-name project-name`
+- Intermediate: `prism workspace launch template-name project-name --size L`
+- Advanced: `prism workspace launch template-name project-name --instance-type c5.2xlarge --spot`
 - Expert: Full template customization and regional optimization
 
 ## Current Status
@@ -244,7 +244,7 @@ Prism now supports template stacking and inheritance, allowing templates to buil
 #   adds: conda packages, datascientist user, jupyter service
 
 # Launch stacked template
-prism launch "Rocky Linux 9 + Conda Stack" my-analysis
+prism workspace launch "Rocky Linux 9 + Conda Stack" my-analysis
 # ↳ Gets: rocky user + datascientist user, system packages + conda packages, ports 22 + 8888
 ```
 
@@ -266,11 +266,11 @@ prism launch "Rocky Linux 9 + Conda Stack" my-analysis
 **Future Multi-Stack Architecture**:
 ```bash  
 # Planned: Complex inheritance chains
-prism launch gpu-ml-workstation my-training
+prism workspace launch gpu-ml-workstation my-training
 # ↳ Inherits: Base OS → GPU Drivers → Conda ML → Desktop GUI
 
 # Power users can override at launch
-prism launch "Rocky Linux 9 + Conda Stack" my-project --with spack
+prism workspace launch "Rocky Linux 9 + Conda Stack" my-project --with spack
 ```
 
 **Design Benefits**:
@@ -377,7 +377,7 @@ make clean
 ### Running Different Interfaces
 ```bash
 # CLI interface (traditional) - daemon auto-starts as needed
-./bin/prism launch python-ml my-project
+./bin/prism workspace launch python-ml my-project
 
 # TUI interface (interactive terminal) - daemon auto-starts as needed
 ./bin/prism tui
@@ -397,7 +397,7 @@ make clean
 ```bash
 # Test CLI functionality (daemon auto-starts)
 ./bin/prism templates
-./bin/prism list
+./bin/prism workspace list
 
 # Test TUI functionality (daemon auto-starts if needed)
 ./bin/prism tui
