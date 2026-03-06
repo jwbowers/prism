@@ -467,7 +467,7 @@ func (m AMIModel) renderRegions() string {
 	b.WriteString("\n")
 	b.WriteString(theme.SubTitle.Render("Regional Distribution") + "\n\n")
 	b.WriteString("AMIs are region-specific and must be copied to other regions for use.\n")
-	b.WriteString("Use 'cws ami publish' to copy AMIs across regions.\n")
+	b.WriteString("Use 'prism ami publish' to copy AMIs across regions.\n")
 
 	return b.String()
 }

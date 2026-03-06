@@ -98,9 +98,9 @@ install_binaries() {
     
     # Copy binaries
     cp "$PROJECT_ROOT/bin/prismd" /usr/local/bin/prismd
-    cp "$PROJECT_ROOT/bin/cws" /usr/local/bin/cws
+    cp "$PROJECT_ROOT/bin/prism" /usr/local/bin/prism
     chmod 755 /usr/local/bin/prismd
-    chmod 755 /usr/local/bin/cws
+    chmod 755 /usr/local/bin/prism
     
     # Verify binaries
     if ! /usr/local/bin/prismd --version >/dev/null 2>&1; then

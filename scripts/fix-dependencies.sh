@@ -42,7 +42,7 @@ fi
 
 # Run tests to ensure dependencies work correctly
 echo "🧪 Verifying build with dependencies..."
-if go build -o /dev/null ./cmd/cws 2>/dev/null; then
+if go build -o /dev/null ./cmd/prism 2>/dev/null; then
   echo "✅ CLI client builds successfully"
 else
   echo "❌ CLI client build failed"

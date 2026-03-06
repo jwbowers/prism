@@ -53,7 +53,7 @@
 
 - name: "area: cli"
   color: "c5def5"
-  description: "Command-line interface (cmd/cws, internal/cli)"
+  description: "Command-line interface (cmd/prism, internal/cli)"
 
 - name: "area: gui"
   color: "c5def5"

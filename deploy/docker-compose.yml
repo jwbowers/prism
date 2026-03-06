@@ -31,9 +31,9 @@ services:
       - AWS_REGION=${AWS_REGION:-us-west-2}
       - AWS_PROFILE=${AWS_PROFILE:-default}
     volumes:
-      - cws_data:/data
-      - cws_logs:/var/log/prism
-      - cws_security:/var/lib/prism/security
+      - prism_data:/data
+      - prism_logs:/var/log/prism
+      - prism_security:/var/lib/prism/security
       - ~/.aws:/root/.aws:ro  # AWS credentials (read-only)
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8947/api/v1/ping"]
@@ -50,7 +50,7 @@ services:
       - /tmp:noexec,nosuid,size=100m
 
   # Security Monitor - Dedicated security monitoring service
-  cws-security-monitor:
+  prism-security-monitor:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.security-monitor
@@ -64,8 +64,8 @@ services:
       - CWS_CORRELATION_INTERVAL=5m
       - CWS_ALERT_THRESHOLD=MEDIUM
     volumes:
-      - cws_security:/var/lib/prism/security:ro
-      - cws_logs:/var/log/prism
+      - prism_security:/var/lib/prism/security:ro
+      - prism_logs:/var/log/prism
     networks:
       - prism
     security_opt:
@@ -80,7 +80,7 @@ services:
     container_name: prism-logs
     restart: unless-stopped
     volumes:
-      - cws_logs:/var/log/prism
+      - prism_logs:/var/log/prism
       - ./fluentd.conf:/fluentd/etc/fluent.conf:ro
     networks:
       - prism
@@ -114,22 +114,22 @@ networks:
       config:
         - subnet: 172.20.0.0/16
     driver_opts:
-      com.docker.network.bridge.name: cws-br0
+      com.docker.network.bridge.name: prism-br0
 
 volumes:
-  cws_data:
+  prism_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /opt/prism/data
-  cws_logs:
+  prism_logs:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /opt/prism/logs
-  cws_security:
+  prism_security:
     driver: local
     driver_opts:
       type: none

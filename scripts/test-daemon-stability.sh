@@ -45,7 +45,7 @@ fi
 
 # Test 2: Build Test
 log "Testing build with daemon stability components"
-if go build -o bin/test-cws ./cmd/cws/; then
+if go build -o bin/test-prism ./cmd/prism/; then
     log "✅ Build successful with daemon stability"
 else
     error "❌ Build failed"
@@ -628,7 +628,7 @@ rm -f error_recovery.go
 
 # Final cleanup
 log "Cleaning up test artifacts"
-rm -f bin/test-cws bin/test-prismd
+rm -f bin/test-prism bin/test-prismd
 
 log "=== DAEMON STABILITY TEST SUMMARY ==="
 log "✅ Unit tests: PASSED"

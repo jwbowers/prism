@@ -63,13 +63,13 @@ EOD
 
 # Check if command line tools are already installed
 check_cli_tools_installed() {
-    if [[ -f "$INSTALL_DIR/cws" ]] && [[ -f "$INSTALL_DIR/prismd" ]]; then
+    if [[ -f "$INSTALL_DIR/prism" ]] && [[ -f "$INSTALL_DIR/prismd" ]]; then
         # Check if they're the same version as in the app bundle
         local installed_version
         local bundle_version
         
-        installed_version=$("$INSTALL_DIR/cws" --version 2>/dev/null | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" || echo "unknown")
-        bundle_version=$("$MACOS_DIR/cws" --version 2>/dev/null | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" || echo "unknown")
+        installed_version=$("$INSTALL_DIR/prism" --version 2>/dev/null | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" || echo "unknown")
+        bundle_version=$("$MACOS_DIR/prism" --version 2>/dev/null | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" || echo "unknown")
         
         if [[ "$installed_version" == "$bundle_version" ]] && [[ "$installed_version" != "unknown" ]]; then
             return 0  # Same version already installed
@@ -110,9 +110,9 @@ EOD
             password=$(echo "$password_result" | sed 's/.*text returned://; s/, button returned:.*//')
             
             # Install with sudo
-            if echo "$password" | sudo -S cp "$MACOS_DIR/cws" "$INSTALL_DIR/" 2>/dev/null && \
+            if echo "$password" | sudo -S cp "$MACOS_DIR/prism" "$INSTALL_DIR/" 2>/dev/null && \
                echo "$password" | sudo -S cp "$MACOS_DIR/prismd" "$INSTALL_DIR/" 2>/dev/null && \
-               echo "$password" | sudo -S chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd" 2>/dev/null; then
+               echo "$password" | sudo -S chmod +x "$INSTALL_DIR/prism" "$INSTALL_DIR/prismd" 2>/dev/null; then
                 log_success "CLI tools installed to $INSTALL_DIR"
                 return 0
             else
@@ -125,9 +125,9 @@ EOD
         fi
     else
         # Install without sudo
-        if cp "$MACOS_DIR/cws" "$INSTALL_DIR/" && \
+        if cp "$MACOS_DIR/prism" "$INSTALL_DIR/" && \
            cp "$MACOS_DIR/prismd" "$INSTALL_DIR/" && \
-           chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd"; then
+           chmod +x "$INSTALL_DIR/prism" "$INSTALL_DIR/prismd"; then
             log_success "CLI tools installed to $INSTALL_DIR"
             return 0
         else
@@ -300,14 +300,14 @@ echo "Prism v0.4.2"
 echo "======================"
 echo ""
 echo "Available commands:"
-echo "  cws --help        Show help"
-echo "  cws templates     List available templates"
-echo "  cws profiles      Manage AWS profiles"
-echo "  cws list          List running instances"
+echo "  prism --help        Show help"
+echo "  prism templates     List available templates"
+echo "  prism profiles      Manage AWS profiles"
+echo "  prism list          List running instances"
 echo ""
 echo "Getting started:"
-echo "  cws profiles create my-profile    # Setup AWS"
-echo "  cws launch python-ml my-project  # Launch workstation"
+echo "  prism profiles create my-profile    # Setup AWS"
+echo "  prism launch python-ml my-project  # Launch workstation"
 echo ""
 
 # Keep terminal open
@@ -328,7 +328,7 @@ verify_installation() {
     local errors=0
     
     # Check CLI tools
-    if command -v cws &> /dev/null && command -v prismd &> /dev/null; then
+    if command -v prism &> /dev/null && command -v prismd &> /dev/null; then
         log_success "CLI tools are accessible via PATH"
     else
         log_error "CLI tools not found in PATH"
@@ -364,7 +364,7 @@ main() {
     # Ask user about CLI tools installation
     if ! check_cli_tools_installed; then
         local install_response
-        install_response=$(show_install_dialog "Would you like to install Prism command-line tools (cws, prismd) to $INSTALL_DIR? This allows you to use Prism from any terminal window.")
+        install_response=$(show_install_dialog "Would you like to install Prism command-line tools (prism, prismd) to $INSTALL_DIR? This allows you to use Prism from any terminal window.")
         
         if [[ "$install_response" == *"Install"* ]]; then
             if install_cli_tools; then
@@ -392,7 +392,7 @@ main() {
 
 Available interfaces:
 • Prism.app - GUI interface
-• 'cws' command - Terminal interface
+• 'prism' command - Terminal interface
 • 'prismd' daemon - Background service
 
 Next steps:

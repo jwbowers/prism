@@ -225,15 +225,15 @@ detect_installation() {
     if command -v brew >/dev/null 2>&1; then
         if brew list prism >/dev/null 2>&1; then
             installation_type="homebrew"
-            binary_locations+=("$(brew --prefix)/bin/cws")
+            binary_locations+=("$(brew --prefix)/bin/prism")
             binary_locations+=("$(brew --prefix)/bin/prismd")
         fi
     fi
     
     # Check system PATH installations
-    if command -v cws >/dev/null 2>&1; then
+    if command -v prism >/dev/null 2>&1; then
         installation_type="system"
-        binary_locations+=("$(which cws)")
+        binary_locations+=("$(which prism)")
     fi
     
     if command -v prismd >/dev/null 2>&1; then
@@ -244,11 +244,11 @@ detect_installation() {
     fi
     
     # Check source installation in project directory
-    if [[ -x "$PROJECT_ROOT/bin/cws" ]] || [[ -x "$PROJECT_ROOT/bin/prismd" ]]; then
+    if [[ -x "$PROJECT_ROOT/bin/prism" ]] || [[ -x "$PROJECT_ROOT/bin/prismd" ]]; then
         if [[ "$installation_type" == "none" ]]; then
             installation_type="source"
         fi
-        [[ -x "$PROJECT_ROOT/bin/cws" ]] && binary_locations+=("$PROJECT_ROOT/bin/cws")
+        [[ -x "$PROJECT_ROOT/bin/prism" ]] && binary_locations+=("$PROJECT_ROOT/bin/prism")
         [[ -x "$PROJECT_ROOT/bin/prismd" ]] && binary_locations+=("$PROJECT_ROOT/bin/prismd")
     fi
     
@@ -300,9 +300,9 @@ stop_daemon_processes() {
     log_warning "Found ${#pids[@]} daemon process(es): ${pids[*]}"
     
     # Try graceful shutdown first via API
-    if command -v cws >/dev/null 2>&1; then
+    if command -v prism >/dev/null 2>&1; then
         log_info "Attempting graceful shutdown via API..."
-        if ! execute_command "cws daemon stop" "Graceful daemon shutdown"; then
+        if ! execute_command "prism daemon stop" "Graceful daemon shutdown"; then
             log_warning "API shutdown failed, proceeding with direct process termination"
         else
             sleep 2
@@ -397,7 +397,7 @@ uninstall_homebrew() {
 remove_system_binaries() {
     log_info "Removing system binaries..."
     
-    local binaries=("cws" "prismd")
+    local binaries=("prism" "prismd")
     local removed_any=false
     
     for binary in "${binaries[@]}"; do
@@ -583,7 +583,7 @@ verify_cleanup() {
     fi
     
     # Check for remaining binaries
-    for binary in "cws" "prismd"; do
+    for binary in "prism" "prismd"; do
         if command -v "$binary" >/dev/null 2>&1; then
             issues+=("Binary still in PATH: $binary")
         fi

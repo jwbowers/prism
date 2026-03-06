@@ -132,8 +132,8 @@ jobs:
         New-Item -ItemType Directory -Path "build/windows/release/windows-amd64" -Force | Out-Null
         
         # Build CLI
-        Write-Host "Building CLI (cws.exe)..."
-        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/cws.exe" ./cmd/cws
+        Write-Host "Building CLI (prism.exe)..."
+        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/prism.exe" ./cmd/prism
         if ($LASTEXITCODE -ne 0) { throw "CLI build failed" }
         
         # Build daemon
@@ -364,7 +364,7 @@ msiexec /i Prism-v$version-x64.msi /l*v install.log
 ```
 
 ### What's Included
-- **Core Binaries**: CLI (cws.exe), Daemon (prismd.exe), GUI (prism-gui.exe)
+- **Core Binaries**: CLI (prism.exe), Daemon (prismd.exe), GUI (prism-gui.exe)
 - **Windows Service**: Automatic daemon startup with system boot
 - **Research Templates**: Built-in templates for Python ML, R research, etc.
 - **PowerShell Integration**: PowerShell module for advanced scripting
@@ -476,15 +476,15 @@ This MSI installer is **unsigned** in the development build. For production use,
             Write-Host "✓ Installation directory created: $programFiles"
             
             # Check for key files
-            $cws = Join-Path $programFiles "bin\cws.exe"
-            if (Test-Path $cws) {
-              Write-Host "✓ CLI executable found: $cws"
+            $prism = Join-Path $programFiles "bin\prism.exe"
+            if (Test-Path $prism) {
+              Write-Host "✓ CLI executable found: $prism"
               
               # Test CLI version
-              $version = & $cws --version 2>&1
+              $version = & $prism --version 2>&1
               Write-Host "✓ CLI version: $version"
             } else {
-              throw "CLI executable not found at $cws"
+              throw "CLI executable not found at $prism"
             }
           } else {
             throw "Installation directory not created at $programFiles"

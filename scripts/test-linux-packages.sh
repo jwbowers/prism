@@ -167,11 +167,11 @@ esac
 
 # Test installation
 echo "Testing installation..."
-which cws || exit 1
+which prism || exit 1
 which prismd || exit 1
 
 # Test binary execution
-cws --version || exit 1
+prism --version || exit 1
 prismd --version || exit 1
 
 # Check systemd service
@@ -259,11 +259,11 @@ apt-get install -f -y
 
 # Test installation
 echo "Testing installation..."
-which cws || exit 1
+which prism || exit 1
 which prismd || exit 1
 
 # Test binary execution
-cws --version || exit 1
+prism --version || exit 1
 prismd --version || exit 1
 
 # Check systemd service

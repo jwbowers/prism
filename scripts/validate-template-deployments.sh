@@ -25,7 +25,7 @@ fi
 # Check AWS profile  
 if ! ./bin/prism profiles current > /dev/null 2>&1; then
     echo -e "${YELLOW}⚠️ No active AWS profile. Template deployment testing requires AWS credentials.${NC}"
-    echo -e "${BLUE}💡 Set up profile with: cws profiles add personal research --aws-profile <your-aws-profile> --region us-west-2${NC}"
+    echo -e "${BLUE}💡 Set up profile with: prism profiles add personal research --aws-profile <your-aws-profile> --region us-west-2${NC}"
     exit 1
 fi
 

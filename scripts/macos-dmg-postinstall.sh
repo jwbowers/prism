@@ -19,7 +19,7 @@ log() {
 # Installation paths
 INSTALL_PREFIX="/usr/local"
 DAEMON_PATH="$INSTALL_PREFIX/bin/prismd"
-CLI_PATH="$INSTALL_PREFIX/bin/cws"
+CLI_PATH="$INSTALL_PREFIX/bin/prism"
 SERVICE_MANAGER="$INSTALL_PREFIX/share/prism/macos-service-manager.sh"
 
 # Check if binaries were installed
@@ -99,8 +99,8 @@ show_completion() {
     echo "  • Logs: $HOME/Library/Logs/prism/"
     echo
     blue "🚀 Getting Started:"
-    echo "  cws --help                    # Show CLI help"
-    echo "  cws daemon status             # Check daemon status"
+    echo "  prism --help                    # Show CLI help"
+    echo "  prism daemon status             # Check daemon status"
     echo
     blue "🔧 Service Management:"
     echo "  $SERVICE_MANAGER status       # Check service status"

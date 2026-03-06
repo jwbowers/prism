@@ -1,6 +1,6 @@
 // Package cli implements Prism's command-line interface application.
 //
-// This package provides the CLI application logic for the Prism client (cws).
+// This package provides the CLI application logic for the Prism client.
 // It handles command parsing, API client communication, output formatting, and user
 // interaction flows while maintaining Prism's core design principles.
 //

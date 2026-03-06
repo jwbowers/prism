@@ -32,7 +32,7 @@ body:
       label: Component
       description: Which part of the codebase?
       options:
-        - CLI (cmd/cws, internal/cli)
+        - CLI (cmd/prism, internal/cli)
         - GUI (cmd/prism-gui)
         - TUI (internal/tui)
         - Daemon (cmd/prismd, pkg/daemon)

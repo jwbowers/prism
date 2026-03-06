@@ -65,7 +65,7 @@ create_label "priority: low" "0e8a16" "Low priority - nice to have"
 # Area Labels
 echo ""
 echo "Creating area labels..."
-create_label "area: cli" "c5def5" "Command-line interface (cmd/cws, internal/cli)"
+create_label "area: cli" "c5def5" "Command-line interface (cmd/prism, internal/cli)"
 create_label "area: gui" "c5def5" "Desktop GUI application (cmd/prism-gui)"
 create_label "area: tui" "c5def5" "Terminal interface (internal/tui)"
 create_label "area: daemon" "c5def5" "Backend daemon (cmd/prismd, pkg/daemon)"

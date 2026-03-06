@@ -45,7 +45,7 @@ fi
 
 # Test 2: Build Test
 log "Testing build with new connection package"
-if go build -o bin/test-cws ./cmd/cws/; then
+if go build -o bin/test-prism ./cmd/prism/; then
     log "✅ Build successful with connection reliability"
 else
     error "❌ Build failed"
@@ -411,7 +411,7 @@ rm -f error_handling.go
 
 # Final cleanup and summary
 log "Cleaning up test artifacts"
-rm -f bin/test-cws
+rm -f bin/test-prism
 
 log "=== CONNECTION RELIABILITY TEST SUMMARY ==="
 log "✅ Unit tests: PASSED"

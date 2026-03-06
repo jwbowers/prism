@@ -81,9 +81,9 @@ fi
 
 # Step 7: Binary validation
 print_step "Validating binaries..."
-if [ -f "bin/cws" ] && [ -f "bin/prismd" ]; then
+if [ -f "bin/prism" ] && [ -f "bin/prismd" ]; then
     green "    ✓ Core binaries created"
-    echo "    - $(file bin/cws)"
+    echo "    - $(file bin/prism)"
     echo "    - $(file bin/prismd)"
     
     if [ -f "bin/prism-gui" ]; then

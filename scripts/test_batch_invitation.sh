@@ -46,9 +46,9 @@ else
     echo -e "${YELLOW}Running live batch invitation tests${NC}"
 
     # Build the binary if needed
-    if [ ! -f "./bin/cws" ]; then
-        echo "Building cws binary..."
-        go build -o ./bin/prism ./cmd/cws
+    if [ ! -f "./bin/prism" ]; then
+        echo "Building prism binary..."
+        go build -o ./bin/prism ./cmd/prism
     fi
 
     # Run batch creation test

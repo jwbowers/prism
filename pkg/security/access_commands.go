@@ -66,14 +66,14 @@ func GetAccessInfo() *AccessInfo {
 		info.Instructions = []string{
 			fmt.Sprintf("✅ Direct access available from your IP: %s", config.UserIP),
 			"📱 Web interfaces accessible at: http://<instance-ip>:8888",
-			"🔄 Run 'cws access refresh' if your IP changes",
+			"🔄 Run 'prism access refresh' if your IP changes",
 		}
 	case AccessSubnet:
 		info.Instructions = []string{
 			fmt.Sprintf("✅ Subnet access configured: %s", config.SubnetCIDR),
 			"📱 Works across DHCP changes within your network",
 			"🌐 Web interfaces accessible at: http://<instance-ip>:8888",
-			"🔄 Run 'cws access refresh' if you change networks",
+			"🔄 Run 'prism access refresh' if you change networks",
 		}
 	case AccessTunneled:
 		info.Instructions = []string{

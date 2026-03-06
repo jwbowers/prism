@@ -331,7 +331,7 @@ func (n *NetworkingResolver) ResolveNetworking(req ctypes.LaunchRequest, instanc
 	} else {
 		discoveredVPC, err := n.manager.DiscoverDefaultVPC()
 		if err != nil {
-			return "", "", "", fmt.Errorf("failed to discover VPC: %w\n\n🏗️  To fix this issue:\n  1. Create a default VPC: aws ec2 create-default-vpc\n  2. Or specify a VPC: cws launch %s %s --vpc vpc-xxxxxxxxx", err, req.Template, req.Name)
+			return "", "", "", fmt.Errorf("failed to discover VPC: %w\n\n🏗️  To fix this issue:\n  1. Create a default VPC: aws ec2 create-default-vpc\n  2. Or specify a VPC: prism launch %s %s --vpc vpc-xxxxxxxxx", err, req.Template, req.Name)
 		}
 		vpcID = discoveredVPC
 	}
@@ -342,7 +342,7 @@ func (n *NetworkingResolver) ResolveNetworking(req ctypes.LaunchRequest, instanc
 		// Discover subnet that supports the instance type
 		discoveredSubnet, err := n.manager.DiscoverPublicSubnetForInstanceType(vpcID, instanceType)
 		if err != nil {
-			return "", "", "", fmt.Errorf("failed to discover subnet: %w\n\n🏗️  To fix this issue:\n  1. Create a public subnet in your VPC\n  2. Or specify a subnet: cws launch %s %s --subnet subnet-xxxxxxxxx", err, req.Template, req.Name)
+			return "", "", "", fmt.Errorf("failed to discover subnet: %w\n\n🏗️  To fix this issue:\n  1. Create a public subnet in your VPC\n  2. Or specify a subnet: prism launch %s %s --subnet subnet-xxxxxxxxx", err, req.Template, req.Name)
 		}
 		subnetID = discoveredSubnet
 	}
@@ -3417,10 +3417,10 @@ func (m *Manager) ListPrismKeyPairs() ([]string, error) {
 
 // getSSHKeyPathFromKeyName maps an AWS key pair name to local SSH key path
 func (m *Manager) getSSHKeyPathFromKeyName(keyName string) (string, error) {
-	// Prism key naming pattern: prism-<profile>-key (also accepts legacy cws-<profile>-key)
-	if (strings.HasPrefix(keyName, "prism-") || strings.HasPrefix(keyName, "cws-")) && strings.HasSuffix(keyName, "-key") {
+	// Prism key naming pattern: prism-<profile>-key
+	if strings.HasPrefix(keyName, "prism-") && strings.HasSuffix(keyName, "-key") {
 		// Extract safe name from key name (it's already safe for filesystem)
-		safeName := strings.TrimPrefix(strings.TrimPrefix(keyName, "prism-"), "cws-")
+		safeName := strings.TrimPrefix(keyName, "prism-")
 		safeName = strings.TrimSuffix(safeName, "-key")
 
 		// Get home directory

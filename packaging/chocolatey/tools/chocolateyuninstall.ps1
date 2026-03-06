@@ -35,7 +35,7 @@ if (Test-Path $shortcutDir) {
 }
 
 # Remove from PATH
-Uninstall-BinFile -Name 'cws'
+Uninstall-BinFile -Name 'prism'
 Uninstall-BinFile -Name 'prismd'
 
 Write-Host ""

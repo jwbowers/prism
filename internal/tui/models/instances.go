@@ -268,7 +268,7 @@ func (m InstancesModel) View() string {
 			Width(m.width).
 			Height(m.height-4).
 			Align(lipgloss.Center, lipgloss.Center).
-			Render("No workspaces found. Use 'cws launch' to create one.")
+			Render("No workspaces found. Use 'prism launch' to create one.")
 	} else {
 		// Main instances table
 		content = m.instancesTable.View()

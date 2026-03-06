@@ -12,7 +12,7 @@ SYSTEMD_SERVICE_FILE="/etc/systemd/system/${SYSTEMD_SERVICE_NAME}.service"
 
 # Paths
 DAEMON_PATH="/usr/local/bin/prismd"
-CLI_PATH="/usr/local/bin/cws"
+CLI_PATH="/usr/local/bin/prism"
 CONFIG_DIR="/etc/prism"
 STATE_DIR="/var/lib/prism"
 LOG_DIR="/var/log/prism"

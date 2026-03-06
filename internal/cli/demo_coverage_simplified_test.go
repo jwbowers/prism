@@ -22,7 +22,7 @@ func TestSimplified_README_QuickStartWorkflow(t *testing.T) {
 	app := NewAppWithClient("1.0.0", mockClient)
 
 	t.Run("Installation_Verification", func(t *testing.T) {
-		// Test: cws --version (verified by app creation)
+		// Test: prism --version (verified by app creation)
 		assert.NotNil(t, app)
 		assert.Equal(t, "1.0.0", app.version)
 	})
@@ -684,7 +684,7 @@ func TestSimplified_CoverageReport(t *testing.T) {
 
 		t.Logf("\n✅ Tested Commands:")
 		for _, cmd := range testedCommands {
-			t.Logf("  - cws %s", cmd)
+			t.Logf("  - prism %s", cmd)
 		}
 
 		t.Logf("\n✅ Tested Workflows:")

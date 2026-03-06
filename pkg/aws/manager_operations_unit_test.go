@@ -239,13 +239,13 @@ func TestManagerIntegrationPoints(t *testing.T) {
 			{
 				scenario:    "Template not found during launch",
 				errorType:   "TemplateNotFound",
-				userAction:  "Check template name or run 'cws templates'",
+				userAction:  "Check template name or run 'prism templates'",
 				description: "User typos in template names",
 			},
 			{
 				scenario:    "Instance not found during operations",
 				errorType:   "InstanceNotFound",
-				userAction:  "Check instance name or run 'cws list'",
+				userAction:  "Check instance name or run 'prism list'",
 				description: "User typos in instance names",
 			},
 			{

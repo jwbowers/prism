@@ -42,38 +42,38 @@ jobs:
 
       - name: Build for Linux amd64
         run: |
-          GOOS=linux GOARCH=amd64 go build -o bin/cws-linux-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
+          GOOS=linux GOARCH=amd64 go build -o bin/prism-linux-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/prism
           GOOS=linux GOARCH=amd64 go build -o bin/prismd-linux-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
-          cd bin && tar -czf cws-linux-amd64.tar.gz cws-linux-amd64 prismd-linux-amd64 && cd ..
+          cd bin && tar -czf prism-linux-amd64.tar.gz prism-linux-amd64 prismd-linux-amd64 && cd ..
 
       - name: Build for Linux arm64
         run: |
-          GOOS=linux GOARCH=arm64 go build -o bin/cws-linux-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
+          GOOS=linux GOARCH=arm64 go build -o bin/prism-linux-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/prism
           GOOS=linux GOARCH=arm64 go build -o bin/prismd-linux-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
-          cd bin && tar -czf cws-linux-arm64.tar.gz cws-linux-arm64 prismd-linux-arm64 && cd ..
+          cd bin && tar -czf prism-linux-arm64.tar.gz prism-linux-arm64 prismd-linux-arm64 && cd ..
 
       - name: Build for macOS amd64
         run: |
-          GOOS=darwin GOARCH=amd64 go build -tags crosscompile -o bin/cws-macos-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
+          GOOS=darwin GOARCH=amd64 go build -tags crosscompile -o bin/prism-macos-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/prism
           GOOS=darwin GOARCH=amd64 go build -tags crosscompile -o bin/prismd-macos-amd64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
-          cd bin && tar -czf cws-macos-amd64.tar.gz cws-macos-amd64 prismd-macos-amd64 && cd ..
+          cd bin && tar -czf prism-macos-amd64.tar.gz prism-macos-amd64 prismd-macos-amd64 && cd ..
 
       - name: Build for macOS arm64
         run: |
-          GOOS=darwin GOARCH=arm64 go build -tags crosscompile -o bin/cws-macos-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/cws
+          GOOS=darwin GOARCH=arm64 go build -tags crosscompile -o bin/prism-macos-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/prism
           GOOS=darwin GOARCH=arm64 go build -tags crosscompile -o bin/prismd-macos-arm64 -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
-          cd bin && tar -czf cws-macos-arm64.tar.gz cws-macos-arm64 prismd-macos-arm64 && cd ..
+          cd bin && tar -czf prism-macos-arm64.tar.gz prism-macos-arm64 prismd-macos-arm64 && cd ..
 
       - name: Build for Windows amd64
         run: |
-          GOOS=windows GOARCH=amd64 go build -o bin/cws-windows-amd64.exe -ldflags "-X main.Version=${VERSION}" ./cmd/cws
+          GOOS=windows GOARCH=amd64 go build -o bin/prism-windows-amd64.exe -ldflags "-X main.Version=${VERSION}" ./cmd/prism
           GOOS=windows GOARCH=amd64 go build -o bin/prismd-windows-amd64.exe -ldflags "-X main.Version=${VERSION}" ./cmd/prismd
-          cd bin && zip -r cws-windows-amd64.zip cws-windows-amd64.exe prismd-windows-amd64.exe && cd ..
+          cd bin && zip -r prism-windows-amd64.zip prism-windows-amd64.exe prismd-windows-amd64.exe && cd ..
 
       - name: Generate checksums
         run: |
           cd bin
-          sha256sum cws-linux-amd64.tar.gz cws-linux-arm64.tar.gz cws-macos-amd64.tar.gz cws-macos-arm64.tar.gz cws-windows-amd64.zip > SHA256SUMS
+          sha256sum prism-linux-amd64.tar.gz prism-linux-arm64.tar.gz prism-macos-amd64.tar.gz prism-macos-arm64.tar.gz prism-windows-amd64.zip > SHA256SUMS
           cd ..
       
       - name: Prepare package manager distributions
@@ -82,24 +82,24 @@ jobs:
           
           # Prepare Homebrew
           cp packaging/homebrew/prism.rb dist/homebrew/
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_AMD64/$(sha256sum bin/cws-macos-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_ARM64/$(sha256sum bin/cws-macos-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_AMD64/$(sha256sum bin/cws-linux-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_ARM64/$(sha256sum bin/cws-linux-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_AMD64/$(sha256sum bin/prism-macos-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_ARM64/$(sha256sum bin/prism-macos-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_AMD64/$(sha256sum bin/prism-linux-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_ARM64/$(sha256sum bin/prism-linux-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
           
           # Prepare Chocolatey
           cp -r packaging/chocolatey/* dist/chocolatey/
           mkdir -p dist/chocolatey/tools
-          cp bin/cws-windows-amd64.zip dist/chocolatey/tools/
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM/$(sha256sum bin/cws-windows-amd64.zip | cut -d' ' -f1)/g" dist/chocolatey/tools/chocolateyinstall.ps1
+          cp bin/prism-windows-amd64.zip dist/chocolatey/tools/
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM/$(sha256sum bin/prism-windows-amd64.zip | cut -d' ' -f1)/g" dist/chocolatey/tools/chocolateyinstall.ps1
           
           # Prepare Conda
           cp -r packaging/conda/* dist/conda/
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_AMD64/$(sha256sum bin/cws-linux-amd64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_ARM64/$(sha256sum bin/cws-linux-arm64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_DARWIN_AMD64/$(sha256sum bin/cws-macos-amd64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_DARWIN_ARM64/$(sha256sum bin/cws-macos-arm64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_WINDOWS/$(sha256sum bin/cws-windows-amd64.zip | cut -d' ' -f1)/g" dist/conda/meta.yaml
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_AMD64/$(sha256sum bin/prism-linux-amd64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_ARM64/$(sha256sum bin/prism-linux-arm64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_DARWIN_AMD64/$(sha256sum bin/prism-macos-amd64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_DARWIN_ARM64/$(sha256sum bin/prism-macos-arm64.tar.gz | cut -d' ' -f1)/g" dist/conda/meta.yaml
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_WINDOWS/$(sha256sum bin/prism-windows-amd64.zip | cut -d' ' -f1)/g" dist/conda/meta.yaml
       
       - name: Determine release type
         id: release_type
@@ -167,8 +167,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/cws-linux-amd64.tar.gz
-          asset_name: cws-linux-amd64.tar.gz
+          asset_path: ./bin/prism-linux-amd64.tar.gz
+          asset_name: prism-linux-amd64.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload Linux arm64 asset
@@ -177,8 +177,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/cws-linux-arm64.tar.gz
-          asset_name: cws-linux-arm64.tar.gz
+          asset_path: ./bin/prism-linux-arm64.tar.gz
+          asset_name: prism-linux-arm64.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload macOS amd64 asset
@@ -187,8 +187,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/cws-macos-amd64.tar.gz
-          asset_name: cws-macos-amd64.tar.gz
+          asset_path: ./bin/prism-macos-amd64.tar.gz
+          asset_name: prism-macos-amd64.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload macOS arm64 asset
@@ -197,8 +197,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/cws-macos-arm64.tar.gz
-          asset_name: cws-macos-arm64.tar.gz
+          asset_path: ./bin/prism-macos-arm64.tar.gz
+          asset_name: prism-macos-arm64.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload Windows amd64 asset
@@ -207,8 +207,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/cws-windows-amd64.zip
-          asset_name: cws-windows-amd64.zip
+          asset_path: ./bin/prism-windows-amd64.zip
+          asset_name: prism-windows-amd64.zip
           asset_content_type: application/zip
 
       - name: Upload checksums

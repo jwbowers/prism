@@ -172,7 +172,7 @@ case $CHOICE in
         echo "  aws_secret_access_key = $SECRET_ACCESS_KEY"
         echo ""
         echo "Then create Prism profile:"
-        echo "  cws profiles add myprofile myprofile --aws-profile $NEW_USER_NAME --region us-west-2"
+        echo "  prism profiles add myprofile myprofile --aws-profile $NEW_USER_NAME --region us-west-2"
         ;;
 
     4)

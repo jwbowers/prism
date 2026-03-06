@@ -106,16 +106,13 @@ func (m *SSHKeyManagerV2) GetKeyPath(profileName string) (string, error) {
 
 // GetKeyPathFromAWSKeyName converts AWS KeyName to local key path
 func (m *SSHKeyManagerV2) GetKeyPathFromAWSKeyName(awsKeyName string) (string, error) {
-	// Parse AWS key name: prism-<profile>-<region> (or legacy cws-<profile>-<region>)
-	if !strings.HasPrefix(awsKeyName, "prism-") && !strings.HasPrefix(awsKeyName, "cws-") {
+	// Parse AWS key name: prism-<profile>-<region>
+	if !strings.HasPrefix(awsKeyName, "prism-") {
 		return "", fmt.Errorf("not a Prism key: %s", awsKeyName)
 	}
 
 	// Extract profile name (everything between the prefix and last "-<region>")
 	trimmed := strings.TrimPrefix(awsKeyName, "prism-")
-	if trimmed == awsKeyName {
-		trimmed = strings.TrimPrefix(awsKeyName, "cws-")
-	}
 	parts := strings.SplitN(trimmed, "-", 2)
 	if len(parts) < 2 {
 		return "", fmt.Errorf("invalid Prism key name format: %s", awsKeyName)

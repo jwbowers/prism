@@ -86,7 +86,7 @@ validate_environment() {
     print_step "Validating build environment..."
     
     # Check if we're in the right directory
-    if [[ ! -f "go.mod" ]] || [[ ! -d "cmd/cws" ]] || [[ ! -d "cmd/prismd" ]]; then
+    if [[ ! -f "go.mod" ]] || [[ ! -d "cmd/prism" ]] || [[ ! -d "cmd/prismd" ]]; then
         print_error "Must run from Prism project root directory"
         exit 1
     fi
@@ -181,22 +181,22 @@ build_binaries() {
     mkdir -p bin
     
     # Build CLI
-    print_step "Building CLI binary (cws)..."
-    eval "go build $ldflags -o bin/cws ./cmd/cws"
+    print_step "Building CLI binary (prism)..."
+    eval "go build $ldflags -o bin/prism ./cmd/prism"
     
     # Build daemon
     print_step "Building daemon binary (prismd)..."
     eval "go build $ldflags -o bin/prismd ./cmd/prismd"
     
     # Verify binaries
-    if [[ ! -x "bin/cws" ]] || [[ ! -x "bin/prismd" ]]; then
+    if [[ ! -x "bin/prism" ]] || [[ ! -x "bin/prismd" ]]; then
         print_error "Failed to build binaries"
         exit 1
     fi
     
     # Show binary information
     print_success "Built binaries:"
-    echo "  CLI:    $(file bin/cws)"
+    echo "  CLI:    $(file bin/prism)"
     echo "  Daemon: $(file bin/prismd)"
     
     # Test binary execution
@@ -339,7 +339,7 @@ print_build_summary() {
     echo "   1. Configure AWS credentials in /etc/prism/aws/"
     echo "   2. Start service: sudo systemctl start prism"
     echo "   3. Enable auto-start: sudo systemctl enable prism"
-    echo "   4. Test: cws --version && cws templates"
+    echo "   4. Test: prism --version && prism templates"
     echo ""
 }
 

@@ -58,7 +58,7 @@ body:
       description: How would you like this feature to work?
       placeholder: |
         I'd like to be able to...
-        For example: `cws command --new-flag`
+        For example: `prism command --new-flag`
     validations:
       required: true
 

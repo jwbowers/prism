@@ -116,7 +116,7 @@ if [ ! -f "./bin/prismd" ]; then
     make build-daemon
 fi
 
-if [ ! -f "./bin/cws" ]; then
+if [ ! -f "./bin/prism" ]; then
     log_warning "Prism CLI not built"
     log_info "Building CLI..."
     make build-cli

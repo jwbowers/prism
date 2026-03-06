@@ -201,7 +201,7 @@ const dashboardHTML = `<!DOCTYPE html>
                     {{else}}
                     <div class="no-instances">
                         <p>No instances running</p>
-                        <p>Launch an instance using: <code>cws launch template-name my-instance</code></p>
+                        <p>Launch an instance using: <code>prism launch template-name my-instance</code></p>
                     </div>
                     {{end}}
                 </div>
@@ -596,17 +596,17 @@ async function loadCostAnalysis() {
 
 // Instance actions
 function connectSSH(instanceName) {
-    alert('SSH connection command:\\n\\ncws connect ' + instanceName);
+    alert('SSH connection command:\\n\\nprism connect ' + instanceName);
 }
 
 async function stopInstance(instanceId) {
     if (confirm('Are you sure you want to stop this instance?')) {
-        alert('Stop command:\\n\\ncws stop ' + instanceId);
+        alert('Stop command:\\n\\nprism stop ' + instanceId);
     }
 }
 
 async function startInstance(instanceId) {
-    alert('Start command:\\n\\ncws start ' + instanceId);
+    alert('Start command:\\n\\nprism start ' + instanceId);
 }
 
 // Add additional styles for new elements

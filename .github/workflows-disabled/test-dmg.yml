@@ -130,11 +130,11 @@ jobs:
           echo "✅ Main launcher found and executable"
           
           # Check for CLI tools
-          if [ ! -f "$APP_BUNDLE/Contents/MacOS/cws" ]; then
-            echo "❌ cws binary not found"
+          if [ ! -f "$APP_BUNDLE/Contents/MacOS/prism" ]; then
+            echo "❌ prism binary not found"
             exit 1
           fi
-          echo "✅ cws binary found"
+          echo "✅ prism binary found"
           
           if [ ! -f "$APP_BUNDLE/Contents/MacOS/prismd" ]; then
             echo "❌ prismd binary not found"

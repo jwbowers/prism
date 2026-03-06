@@ -8,7 +8,7 @@ $preRelease = $env:CHOCOLATEY_PRERELEASE -eq 'true'
 $version = if ($preRelease) { '0.5.1-beta' } else { '0.5.1' }
 $repoPath = if ($preRelease) { 'releases-dev' } else { 'releases' }
 
-$url = "https://github.com/scttfrdmn/prism/$repoPath/download/v$version/cws-windows-amd64.zip"
+$url = "https://github.com/scttfrdmn/prism/$repoPath/download/v$version/prism-windows-amd64.zip"
 $checksum = 'REPLACE_WITH_ACTUAL_CHECKSUM_AFTER_BUILDING'
 $checksumType = 'sha256'
 
@@ -38,9 +38,9 @@ if (Test-Path $targetPath) {
 }
 
 # Add to PATH
-$binPath = Join-Path $toolsDir 'cws.exe'
+$binPath = Join-Path $toolsDir 'prism.exe'
 $daemonPath = Join-Path $toolsDir 'prismd.exe'
-Install-BinFile -Name 'cws' -Path $binPath
+Install-BinFile -Name 'prism' -Path $binPath
 Install-BinFile -Name 'prismd' -Path $daemonPath
 
 # Install Windows service for auto-startup
@@ -65,7 +65,7 @@ Write-Host ""
 Write-Host "🎉 Prism v$version has been installed!"
 Write-Host ""
 Write-Host "📦 Installed Components:"
-Write-Host "  • CLI (cws) - Available in PATH"
+Write-Host "  • CLI (prism) - Available in PATH"
 Write-Host "  • Daemon (prismd) - Available in PATH"
 if (Test-Path $targetPath) {
     Write-Host "  • GUI - Available in Start Menu"
@@ -75,8 +75,8 @@ if (Test-Path $serviceWrapperPath) {
 }
 Write-Host ""
 Write-Host "🚀 Quick Start:"
-Write-Host "  cws --help                    # Show CLI help"
-Write-Host "  cws daemon status             # Check daemon status"
+Write-Host "  prism --help                  # Show CLI help"
+Write-Host "  prism daemon status           # Check daemon status"
 Write-Host ""
 Write-Host "🔧 Service Management:"
 Write-Host "  sc query PrismDaemon        # Check service status"

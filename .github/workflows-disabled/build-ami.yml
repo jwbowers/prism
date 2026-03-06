@@ -124,7 +124,7 @@ jobs:
           go-version: '1.24'
       
       - name: Build Prism
-        run: go build -o cws
+        run: go build -o prism
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -161,7 +161,7 @@ jobs:
           echo "Building AMI for template: ${{ matrix.template }}, region: ${{ matrix.region }}, architecture: ${{ matrix.architecture }}"
           
           # Build AMI using CLI
-          ./cws ami build ${{ matrix.template }} --region ${{ matrix.region }} --arch ${{ matrix.architecture }} --copy-to-regions "${DEFAULT_REGIONS}" | tee build.log
+          ./prism ami build ${{ matrix.template }} --region ${{ matrix.region }} --arch ${{ matrix.architecture }} --copy-to-regions "${DEFAULT_REGIONS}" | tee build.log
           
           # Extract AMI ID from the output
           AMI_ID=$(grep -oP "AMI build successful: \K[a-zA-Z0-9-]+" build.log || echo "")

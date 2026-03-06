@@ -1,9 +1,9 @@
 #!/bin/bash
-# Automated test suite for Prism v0.4.5
+# Automated test suite for Prism
 
 set -e
 
-echo "🧪 Prism Automated Test Suite v0.4.5"
+echo "🧪 Prism Automated Test Suite"
 echo "================================================"
 
 # Colors for output
@@ -49,16 +49,16 @@ run_test "Daemon startup" "curl -s http://localhost:8947/api/v1/ping | grep -q '
 echo ""
 echo "2. CLI Tests"
 echo "------------"
-run_test "CLI version" "./bin/cws --version | grep -q '0.4.5'"
-run_test "Daemon status" "./bin/cws daemon status | grep -q 'running'"
-run_test "Templates list" "./bin/cws templates | grep -q 'Available Templates'"
-run_test "Idle policies" "./bin/cws idle policy list | grep -q 'POLICY ID'"
-run_test "Profile list" "./bin/cws profiles | grep -q 'PROFILE ID'"
-run_test "Instance list" "./bin/cws list"
-run_test "Storage list" "./bin/cws storage list"
-run_test "Volume list" "./bin/cws volume list"
-run_test "Rightsizing summary" "./bin/cws rightsizing summary"
-run_test "Template validation" "./bin/cws templates validate | grep -q 'All templates are valid'"
+run_test "CLI version" "./bin/prism --version | grep -q '0.7.8'"
+run_test "Daemon status" "./bin/prism daemon status | grep -q 'running'"
+run_test "Templates list" "./bin/prism templates | grep -q 'Available Templates'"
+run_test "Idle policies" "./bin/prism idle policy list | grep -q 'POLICY ID'"
+run_test "Profile list" "./bin/prism profiles | grep -q 'PROFILE ID'"
+run_test "Instance list" "./bin/prism list"
+run_test "Storage list" "./bin/prism storage list"
+run_test "Volume list" "./bin/prism volume list"
+run_test "Rightsizing summary" "./bin/prism rightsizing summary"
+run_test "Template validation" "./bin/prism templates validate | grep -q 'All templates are valid'"
 
 echo ""
 echo "3. API Endpoint Tests"
@@ -75,14 +75,14 @@ run_test "API volumes" "curl -s http://localhost:8947/api/v1/volumes | jq -e '. 
 echo ""
 echo "4. Error Handling Tests"
 echo "-----------------------"
-run_test "Invalid instance" "./bin/cws start nonexistent 2>&1 | grep -q 'not found'"
+run_test "Invalid instance" "./bin/prism start nonexistent 2>&1 | grep -q 'not found'"
 run_test "Invalid stop" "curl -s -X POST http://localhost:8947/api/v1/instances/fake/stop | jq -e '.code == \"server_error\"'"
 run_test "Hibernation status (missing)" "curl -s http://localhost:8947/api/v1/instances/test/hibernation-status | jq -e '.hibernation_supported == false'"
 
 echo ""
 echo "5. TUI Tests"
 echo "------------"
-run_test "TUI startup" "timeout 2 ./bin/cws tui < /dev/null 2>&1 | grep -q 'Prism Dashboard' || true"
+run_test "TUI startup" "timeout 2 ./bin/prism tui < /dev/null 2>&1 | grep -q 'Prism Dashboard' || true"
 
 echo ""
 echo "6. GUI Frontend Tests (if npm available)"
@@ -117,14 +117,14 @@ echo ""
 echo "7. Integration Tests"
 echo "--------------------"
 # Test dry-run launch
-run_test "Dry-run launch" "./bin/cws launch --dry-run python-ml test-instance"
+run_test "Dry-run launch" "./bin/prism launch --dry-run python-ml test-instance"
 
 # Test idle policy details
-run_test "Idle policy details" "./bin/cws idle policy details balanced | grep -q 'Balanced Performance'"
+run_test "Idle policy details" "./bin/prism idle policy details balanced | grep -q 'Balanced Performance'"
 
 # Test help commands
-run_test "Hibernate help" "./bin/cws hibernate --help | grep -q 'preserve RAM state'"
-run_test "Resume help" "./bin/cws resume --help | grep -q 'instant startup'"
+run_test "Hibernate help" "./bin/prism hibernate --help | grep -q 'preserve RAM state'"
+run_test "Resume help" "./bin/prism resume --help | grep -q 'instant startup'"
 
 echo ""
 echo "================================================"

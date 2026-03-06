@@ -67,7 +67,7 @@ jobs:
 
       - name: Build binaries
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/cws-${{ matrix.os }}-${{ matrix.arch }} ./cmd/cws
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/prism-${{ matrix.os }}-${{ matrix.arch }} ./cmd/prism
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/prismd-${{ matrix.os }}-${{ matrix.arch }} ./cmd/prismd
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/prism-gui-${{ matrix.os }}-${{ matrix.arch }} ./cmd/prism-gui
         shell: bash
@@ -75,14 +75,14 @@ jobs:
       - name: Test binary execution (Linux/macOS)
         if: matrix.os != 'windows'
         run: |
-          chmod +x bin/cws-${{ matrix.os }}-${{ matrix.arch }}
-          ./bin/cws-${{ matrix.os }}-${{ matrix.arch }} version
+          chmod +x bin/prism-${{ matrix.os }}-${{ matrix.arch }}
+          ./bin/prism-${{ matrix.os }}-${{ matrix.arch }} version
         shell: bash
 
       - name: Test binary execution (Windows)
         if: matrix.os == 'windows'
         run: |
-          ./bin/cws-${{ matrix.os }}-${{ matrix.arch }}.exe version
+          ./bin/prism-${{ matrix.os }}-${{ matrix.arch }}.exe version
         shell: pwsh
 
       - name: Upload coverage

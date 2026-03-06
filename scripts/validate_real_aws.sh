@@ -74,7 +74,7 @@ check_prerequisites() {
         exit 1
     fi
 
-    if [ ! -f "./bin/cws" ]; then
+    if [ ! -f "./bin/prism" ]; then
         log_fail "Prism binary not found" "Run 'make build' first"
         exit 1
     fi

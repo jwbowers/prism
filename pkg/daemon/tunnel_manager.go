@@ -253,24 +253,6 @@ func (tm *TunnelManager) getSSHKeyPath(instance *types.Instance) (string, error)
 		)
 	}
 
-	// For backward compatibility, also try legacy cws-* formats
-	// Legacy naming: cws-test-{region}-key or cws-test-aws-{regionshort}-key
-	regionShort := strings.TrimPrefix(region, "us-")
-	regionShort = strings.Replace(regionShort, "-", "", -1) // west-2 → west2
-
-	legacyFormats := []string{
-		fmt.Sprintf("cws-test-%s-key", region),          // cws-test-us-west-2-key
-		fmt.Sprintf("cws-default-%s-key", region),       // cws-default-us-west-2-key
-		fmt.Sprintf("cws-test-aws-%s-key", regionShort), // cws-test-aws-west2-key
-		fmt.Sprintf("cws-aws-%s-key", regionShort),      // cws-aws-west2-key
-	}
-	for _, legacyName := range legacyFormats {
-		candidatePaths = append(candidatePaths,
-			filepath.Join(homeDir, ".ssh", legacyName),
-			filepath.Join(homeDir, ".prism", "profiles", "test", "ssh", legacyName),
-		)
-	}
-
 	for _, keyPath := range candidatePaths {
 		fmt.Printf("[DEBUG] Trying SSH key: %s\n", keyPath)
 		if _, err := os.Stat(keyPath); err == nil {
@@ -279,13 +261,13 @@ func (tm *TunnelManager) getSSHKeyPath(instance *types.Instance) (string, error)
 		}
 	}
 
-	// Final fallback: scan ~/.ssh for any prism-* or cws-* keys
+	// Final fallback: scan ~/.ssh for any prism-* keys
 	sshDir := filepath.Join(homeDir, ".ssh")
 	entries, err := os.ReadDir(sshDir)
 	if err == nil {
 		for _, entry := range entries {
 			name := entry.Name()
-			isPrismKey := (strings.HasPrefix(name, "prism-") || strings.HasPrefix(name, "cws-")) &&
+			isPrismKey := strings.HasPrefix(name, "prism-") &&
 				!strings.HasSuffix(name, ".pub")
 			if !entry.IsDir() && isPrismKey {
 				keyPath := filepath.Join(sshDir, name)

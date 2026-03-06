@@ -8,7 +8,7 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PRISM_BINARY="${PROJECT_ROOT}/bin/cws"
+PRISM_BINARY="${PROJECT_ROOT}/bin/prism"
 CWSD_BINARY="${PROJECT_ROOT}/bin/prismd"
 
 # Default values

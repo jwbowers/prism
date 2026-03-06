@@ -117,17 +117,17 @@ remove_cli_tools() {
     
     local removed_tools=()
     
-    # Remove cws binary
-    if [[ -f "$INSTALL_DIR/cws" ]]; then
+    # Remove prism binary
+    if [[ -f "$INSTALL_DIR/prism" ]]; then
         if [[ -w "$INSTALL_DIR" ]]; then
-            rm -f "$INSTALL_DIR/cws"
-            removed_tools+=("cws")
+            rm -f "$INSTALL_DIR/prism"
+            removed_tools+=("prism")
         else
             # Need sudo for removal
-            if sudo rm -f "$INSTALL_DIR/cws" 2>/dev/null; then
-                removed_tools+=("cws")
+            if sudo rm -f "$INSTALL_DIR/prism" 2>/dev/null; then
+                removed_tools+=("prism")
             else
-                log_error "Failed to remove $INSTALL_DIR/cws"
+                log_error "Failed to remove $INSTALL_DIR/prism"
             fi
         fi
     fi
@@ -193,15 +193,15 @@ clean_shell_config() {
     local cleaned_files=()
     
     for config_file in "${shell_configs[@]}"; do
-        if [[ -f "$config_file" ]] && grep -q "prism\|$INSTALL_DIR.*cws" "$config_file"; then
+        if [[ -f "$config_file" ]] && grep -q "prism\|$INSTALL_DIR.*prism" "$config_file"; then
             # Create backup
             cp "$config_file" "$config_file.bak.$(date +%Y%m%d%H%M%S)"
             
             # Remove Prism-related lines
             if [[ "$config_file" == *"config.fish" ]]; then
-                sed -i '' '/set -gx PATH.*cws/d; /Prism/d' "$config_file" 2>/dev/null || true
+                sed -i '' '/set -gx PATH.*prism/d; /Prism/d' "$config_file" 2>/dev/null || true
             else
-                sed -i '' '/export PATH.*cws/d; /Prism/d' "$config_file" 2>/dev/null || true
+                sed -i '' '/export PATH.*prism/d; /Prism/d' "$config_file" 2>/dev/null || true
             fi
             
             cleaned_files+=("$(basename "$config_file")")
@@ -296,7 +296,7 @@ verify_removal() {
     local remaining_items=()
     
     # Check for remaining binaries
-    if [[ -f "$INSTALL_DIR/cws" ]] || [[ -f "$INSTALL_DIR/prismd" ]]; then
+    if [[ -f "$INSTALL_DIR/prism" ]] || [[ -f "$INSTALL_DIR/prismd" ]]; then
         remaining_items+=("CLI tools")
     fi
     
