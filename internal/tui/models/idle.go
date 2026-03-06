@@ -153,6 +153,7 @@ func (m IdleModel) handleIdleData(msg IdleDataMsg) (tea.Model, tea.Cmd) {
 	if msg.Error != nil {
 		m.error = msg.Error.Error()
 		m.loading = false
+		m.statusBar.SetStatus("Error loading idle data", components.StatusError)
 		return m, nil
 	}
 
@@ -164,6 +165,7 @@ func (m IdleModel) handleIdleData(msg IdleDataMsg) (tea.Model, tea.Cmd) {
 	// Update tables with data
 	m.updatePoliciesTable()
 	m.updateInstancesTable()
+	m.statusBar.SetStatus(fmt.Sprintf("Loaded %d policies, %d instances", len(m.policies), len(m.instances)), components.StatusSuccess)
 	return m, nil
 }
 
@@ -173,8 +175,10 @@ func (m IdleModel) handlePolicyAction(msg IdlePolicyActionMsg) (tea.Model, tea.C
 	m.showEnableDialog = false
 	if msg.Error != nil {
 		m.error = msg.Error.Error()
+		m.statusBar.SetStatus("Action failed: "+msg.Error.Error(), components.StatusError)
 		return m, nil
 	}
+	m.statusBar.SetStatus(msg.Message, components.StatusSuccess)
 	// Refresh data after action
 	return m, m.fetchIdleData
 }
@@ -344,8 +348,10 @@ func (m IdleModel) View() string {
 		b.WriteString(errorStyle.Render("Error: " + m.error))
 	}
 
-	// Help text
-	b.WriteString("\n\n")
+	// Status bar + help text
+	b.WriteString("\n")
+	b.WriteString(m.statusBar.View())
+	b.WriteString("\n")
 	helpText := m.renderHelp()
 	b.WriteString(helpText)
 
@@ -378,7 +384,9 @@ func (m IdleModel) renderPolicies() string {
 	b.WriteString("\n\n")
 
 	if len(m.policies) == 0 {
-		b.WriteString("No idle policies configured\n")
+		b.WriteString("No idle policies configured.\n\n")
+		b.WriteString("Create a policy to automatically hibernate idle workspaces:\n")
+		b.WriteString("  prism idle policy create --name default --threshold 30 --action hibernate\n")
 		return b.String()
 	}
 
@@ -403,7 +411,9 @@ func (m IdleModel) renderInstances() string {
 	b.WriteString("\n\n")
 
 	if len(m.instances) == 0 {
-		b.WriteString("No instances available\n")
+		b.WriteString("No workspaces found.\n\n")
+		b.WriteString("Launch a workspace to enable idle detection:\n")
+		b.WriteString("  prism workspace launch <template> <name>\n")
 		return b.String()
 	}
 
@@ -431,15 +441,15 @@ func (m IdleModel) renderHistory() string {
 
 	b.WriteString(theme.SectionTitle.Render("Hibernation History"))
 	b.WriteString("\n\n")
-
-	// Sample history data (will be replaced with real data from backend)
-	b.WriteString("Recent hibernation events:\n\n")
-	b.WriteString("📅 2025-10-07 14:23 - ml-workstation hibernated after 30 min idle\n")
-	b.WriteString("📅 2025-10-07 12:15 - data-analysis stopped after 60 min idle\n")
-	b.WriteString("📅 2025-10-06 18:45 - research-env hibernated after 45 min idle\n")
+	b.WriteString("Hibernation event history is not yet available in the TUI.\n\n")
+	b.WriteString("Check workspace states and idle detection status via CLI:\n")
+	b.WriteString("  prism workspace list                    # View current workspace states\n")
+	b.WriteString("  prism idle status <name>                # Check idle detection for a workspace\n")
 	b.WriteString("\n")
-	b.WriteString(theme.SubTitle.Render("Cost Savings") + "\n")
-	b.WriteString("Estimated savings from idle detection: $127.50 this month\n")
+	b.WriteString(theme.SubTitle.Render("Enable Idle Detection") + "\n")
+	b.WriteString("Automatically hibernate workspaces after a period of inactivity:\n")
+	b.WriteString("  prism idle enable <workspace>           # Enable with default policy\n")
+	b.WriteString("  prism idle enable <workspace> --policy <name>  # Use a specific policy\n")
 
 	return b.String()
 }
@@ -565,20 +575,12 @@ func (m *IdleModel) updateInstancesTable() {
 			name = "> " + name
 		}
 
-		// Get idle detection status for instance
-		idleStatus := "Disabled"
-		policy := "-"
-		idleTime := "-"
-		status := "-"
-
-		// In real implementation, fetch idle status per instance
-		// For now, show sample data for running instances
-		if instance.State == "running" {
-			idleStatus = "Enabled"
-			policy = "default"
-			idleTime = "5 min"
-			status = "Active"
-		}
+		// Idle detection status requires per-instance API call (GetInstanceIdleStatus).
+		// Show workspace state; use 'e' to enable idle detection for a selected instance.
+		idleStatus := "—"
+		policy := "—"
+		idleTime := "—"
+		status := strings.ToUpper(instance.State)
 
 		row := table.Row{
 			name,

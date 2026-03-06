@@ -142,7 +142,7 @@ func updateBudgetOnKey(m BudgetModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "n":
 		if m.selectedTab == 0 {
-			m.showCreateDialog = true
+			m.statusBar.SetStatus("Set budget via CLI: prism project budget set <project> <amount>", components.StatusSuccess)
 			return m, nil
 		}
 	case "esc":

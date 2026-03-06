@@ -278,6 +278,12 @@ func (m TemplatesModel) View() string {
 			Height(m.height-4).
 			Align(lipgloss.Center, lipgloss.Center).
 			Render(theme.StatusError.Render("Error: " + m.error))
+	} else if len(m.templates) == 0 {
+		content = lipgloss.NewStyle().
+			Width(m.width).
+			Height(m.height-4).
+			Align(lipgloss.Center, lipgloss.Center).
+			Render("No templates found.\n\nRun 'prism templates validate' to check template files,\nor restart the daemon: prism admin daemon restart")
 	} else {
 		// Split view with templates list on left and details on right
 		leftPane := m.templateList.View()
@@ -293,7 +299,7 @@ func (m TemplatesModel) View() string {
 	}
 
 	// Help text
-	help := theme.Help.Render("r: refresh • q: quit • ↑/↓: navigate")
+	help := theme.Help.Render("r: refresh • ↑/↓: select template • PgUp/PgDn: scroll detail • q: quit")
 
 	// Join everything together
 	return lipgloss.JoinVertical(

@@ -188,7 +188,7 @@ func updateProjectsOnKey(m ProjectsModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "n":
 		if m.selectedTab == 0 {
-			m.showCreateDialog = true
+			m.statusBar.SetStatus("Create project via CLI: prism project create <name> --owner <email>", components.StatusSuccess)
 			return m, nil
 		}
 	case "esc":
