@@ -1,5 +1,13 @@
 # Scenario 5: Cross-Institutional Research Collaboration
 
+> **Implementation Status (v0.7.8)**
+> - ✅ Shared storage (EFS volumes accessible across workspaces)
+> - ✅ Project invitations for collaborators (`prism project invitations`)
+> - ✅ Per-project budget tracking
+> - 🔄 Cross-account data access — planned for a future release
+> - 🔄 Collaboration audit trails (`prism audit collaboration`) — planned for a future release
+> - 🔄 Cost chargeback by institution (`prism project chargeback`) — planned for a future release
+
 ## Personas: Multi-Site Research Consortium
 
 ### Lead Institution: Stanford University
@@ -119,7 +127,7 @@ berkeley$ prism profiles list
 ```bash
 # Dr. Johnson (MIT) develops algorithms in Stanford's account
 mit$ prism profiles use stanford-collab
-mit$ prism launch "Python Machine Learning" mit-algorithm-dev
+mit$ prism workspace launch "Python Machine Learning" mit-algorithm-dev
 
 # MIT workspace launches in Stanford's AWS account
 # - Uses Stanford's VPC and networking
@@ -128,7 +136,7 @@ mit$ prism launch "Python Machine Learning" mit-algorithm-dev
 
 # Dr. Lee (Berkeley) analyzes data in Stanford's account
 berkeley$ prism profiles use stanford-collab
-berkeley$ prism launch "R Research Environment" berkeley-analysis
+berkeley$ prism workspace launch "R Research Environment" berkeley-analysis
 
 # Berkeley workspace also in Stanford's AWS account
 # - Can access same EFS volumes as MIT
@@ -268,7 +276,7 @@ stanford$ prism profiles invitations create berkeley-collaboration \
 
 # Berkeley tries to launch expensive GPU workspace
 berkeley$ prism profiles use stanford-collab
-berkeley$ prism launch "GPU ML Workstation" expensive-gpu --size XL
+berkeley$ prism workspace launch "GPU ML Workstation" expensive-gpu --size XL
 
 # Prism blocks with helpful error:
 # ❌ Policy violation: Invitation restrictions prevent this launch
@@ -472,7 +480,7 @@ mit$ prism profiles invitations accept <STANFORD-TOKEN> stanford-collab
 
 # Launch algorithm development environment
 mit$ prism profiles use stanford-collab
-mit$ prism launch "Python Machine Learning" mit-algorithm-dev
+mit$ prism workspace launch "Python Machine Learning" mit-algorithm-dev
 
 # Mount Stanford's shared dataset
 mit$ prism volume mount neuro-dataset mit-algorithm-dev
@@ -480,7 +488,7 @@ mit$ prism volume mount neuro-dataset mit-algorithm-dev
 # 📊 50TB dataset accessible from MIT workspace
 
 # SSH into instance
-mit$ prism ssh mit-algorithm-dev
+mit$ prism workspace connect mit-algorithm-dev
 
 # Inside workspace - develop algorithms on Stanford data
 mit-instance$ ls /mnt/neuro-dataset/
@@ -509,7 +517,7 @@ berkeley$ prism profiles invitations accept <STANFORD-TOKEN> stanford-collab
 
 # Launch analysis environment
 berkeley$ prism profiles use stanford-collab
-berkeley$ prism launch "R Research Environment" berkeley-analysis
+berkeley$ prism workspace launch "R Research Environment" berkeley-analysis
 
 # Mount Stanford's shared dataset (read-write for Berkeley)
 berkeley$ prism volume mount neuro-dataset berkeley-analysis
@@ -517,7 +525,7 @@ berkeley$ prism volume mount neuro-dataset berkeley-analysis
 # 📊 Can read raw data + write analysis results
 
 # Add analysis results
-berkeley$ prism ssh berkeley-analysis
+berkeley$ prism workspace connect berkeley-analysis
 berkeley-instance$ Rscript analysis.R
 berkeley-instance$ cp results.csv /mnt/neuro-dataset/analysis-results/berkeley/
 # ✅ Results written to shared dataset (accessible by all)

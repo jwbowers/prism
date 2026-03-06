@@ -1,5 +1,14 @@
 # Scenario 4: Conference Workshop
 
+> **Implementation Status (v0.7.8)**
+> - ✅ Shared invitation links (`prism project invitations shared create/show`)
+> - ✅ Bulk invitations (`prism project invitations bulk`)
+> - ✅ Budget management and alerts
+> - 🔄 Workshop management tools (`prism workshop *`) — planned for a future release
+> - 🔄 Bulk workspace provisioning (`prism project bulk-launch`) — planned for a future release
+>
+> Core workflow (invitation links + project budgets) is fully functional. Workshop automation features are planned.
+
 ## Persona: Dr. Alex Rivera - Workshop Instructor
 
 **Background**:
@@ -48,7 +57,7 @@
 
 ```bash
 # Alex sets up workshop environment
-prism profile create neurips-workshop --aws-profile alex-research --region us-west-2
+prism profiles add neurips-workshop --aws-profile alex-research --region us-west-2
 
 # Create template-restricted project for workshop
 prism project create neurips-dl-workshop \
@@ -180,7 +189,7 @@ prism project invitations bulk neurips-dl-workshop \
 
 # Participant workflow:
 prism profiles invitations accept <INVITATION-CODE> neurips-workshop
-prism launch pytorch-ml workshop-test --size S
+prism workspace launch pytorch-ml workshop-test --size S
 
 # Alex monitors early access
 prism project workspaces neurips-dl-workshop
@@ -214,7 +223,7 @@ prism project workspaces neurips-dl-workshop
 **What should happen** (MISSING):
 ```bash
 # Alex launches workspaces with auto-terminate timer
-prism launch pytorch-ml workshop-instance --hours 6
+prism workspace launch pytorch-ml workshop-instance --hours 6
 
 # Prism output:
 # ✅ Workspace launching: workshop-instance
@@ -241,12 +250,12 @@ prism profiles invitations batch-create \
   --output-file invitations.csv
 
 # When participant tries wrong template:
-participant$ prism launch gpu-ml-workstation expensive-instance
+participant$ prism workspace launch gpu-ml-workstation expensive-instance
 # ❌ Error: Template 'gpu-ml-workstation' not allowed by your invitation policy
 #    Allowed templates: ["PyTorch Machine Learning"]
 #
 #    This is a workshop environment with restricted templates.
-#    Please use: prism launch "PyTorch Machine Learning" my-instance
+#    Please use: prism workspace launch "PyTorch Machine Learning" my-instance
 ```
 
 **Current workaround**: Trust participants + budget alerts
@@ -469,7 +478,7 @@ participant$ prism invitation accept WORKSHOP-NEURIPS-2025
 # 🎓 Role: member
 # ⏰ Access expires: Dec 9, 2025 (7 days)
 
-participant$ prism launch "PyTorch Machine Learning" test-env --hours 2
+participant$ prism workspace launch "PyTorch Machine Learning" test-env --hours 2
 # (Automatically terminates after 2 hours)
 
 # Alex monitors shared token redemptions
@@ -526,7 +535,7 @@ prism workshop bulk-provision neurips-dl-workshop \
 prism workshop dashboard neurips-dl-workshop --live
 
 # Participants launch (if not pre-provisioned):
-participant$ prism launch "PyTorch Machine Learning" workshop-instance
+participant$ prism workspace launch "PyTorch Machine Learning" workshop-instance
 # ✅ Workspace ready in 90 seconds!
 # 📓 Jupyter Lab: http://54.123.45.67:8888 (token: abc123)
 # ⏰ Workspace will auto-terminate at 3:00 PM (6 hours)
@@ -660,7 +669,7 @@ prism workshop report neurips-dl-workshop --export-pdf
 **Target**: Workshops can run without budget disasters
 
 1. **Auto-Terminate Timer** (1 week)
-   - `prism launch template name --hours 6`
+   - `prism workspace launch template name --hours 6`
    - Countdown warnings at 30min, 5min
    - Graceful termination with EBS preservation
 

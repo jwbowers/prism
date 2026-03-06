@@ -1,5 +1,14 @@
 # Scenario 2: Research Lab with Hierarchical Budget Management
 
+> **Implementation Status (v0.7.8)**
+> - ✅ Core workspace operations (`prism workspace launch/list/stop/connect`)
+> - ✅ Project management (`prism project create/members/budget`)
+> - ✅ Budget tracking and alerts (`prism budget create/list/alerts`)
+> - 🔄 Approval workflows (`prism approval *`) — planned for a future release
+> - 🔄 Project dashboard (`prism project dashboard`) — planned for a future release
+>
+> Sections marked with ⚠️ use features not yet available. Use the CLI commands shown for current functionality.
+
 ## Personas: The Smith Computational Biology Lab
 
 ### Dr. Patricia Smith (PI / Lab Director)
@@ -188,7 +197,7 @@ prism project budget alert add "NIH-R01-2023" \
 
 ```bash
 # James launches workspace
-prism launch bioinformatics-suite rnaseq-sample-42 \
+prism workspace launch bioinformatics-suite rnaseq-sample-42 \
   --project "NIH-R01-2023" \
   --size M
 
@@ -199,7 +208,7 @@ prism launch bioinformatics-suite rnaseq-sample-42 \
 # 🔗 SSH ready in ~90 seconds...
 
 # James works for 4 hours, then stops
-prism stop rnaseq-sample-42
+prism workspace stop rnaseq-sample-42
 
 # ✅ Workspace stopped - charges cease immediately
 # 💰 Real-time budget update: $9.60 "banked" back to available budget
@@ -301,12 +310,12 @@ prism project create "NIH-R01-2023" \
 **Step 2: Students Launch Workspaces (Zero Funding Complexity)**
 ```bash
 # James Wilson (PhD student) launches his workspace
-prism launch bioinformatics my-rnaseq --project NIH-R01-2023
+prism workspace launch bioinformatics my-rnaseq --project NIH-R01-2023
 # ↳ Automatically charged to NIH Grant R01-AI123456
 # ↳ James never sees funding options - just works!
 
 # Maria Garcia launches hers
-prism launch python-ml protein-folding --project NSF-2024-ML
+prism workspace launch python-ml protein-folding --project NSF-2024-ML
 # ↳ Automatically charged to NSF Grant DBI-2024-456
 # ↳ Maria focuses on research, not accounting
 ```
@@ -314,7 +323,7 @@ prism launch python-ml protein-folding --project NSF-2024-ML
 **Step 3: Dr. Smith Overrides When Needed**
 ```bash
 # Shared GPU cluster funded differently
-prism launch gpu-cluster shared-gpu \
+prism workspace launch gpu-cluster shared-gpu \
   --project NIH-R01-2023 \
   --funding "Department Equipment Fund"
 # ↳ Override: Use department fund instead of NIH grant
@@ -338,7 +347,7 @@ prism budget allocate "AWS Research Credits" \
   --project Climate-Sim-Infrastructure --amount 5000
 
 # Students/postdocs launch workspaces
-prism launch python-ml climate-model-1 --project Climate-Sim-Infrastructure
+prism workspace launch python-ml climate-model-1 --project Climate-Sim-Infrastructure
 # ↳ Uses default: NSF Grant (50k)
 
 # Dr. Smith uses department matching for storage
@@ -386,10 +395,10 @@ prism invitation accept INV-8A7F2E...
 # ✅ Distributes SSH public key to all project instances
 
 # Dr. Kim can immediately launch workspaces
-prism launch bioinformatics-suite rnaseq-collab --project "NIH-R01-2023"
+prism workspace launch bioinformatics-suite rnaseq-collab --project "NIH-R01-2023"
 
 # SSH access works instantly
-prism ssh rnaseq-collab
+prism workspace connect rnaseq-collab
 # (Uses auto-provisioned SSH key from ~/.prism/ssh_keys/)
 ```
 
@@ -436,7 +445,7 @@ prism project budget allocate "NSF-2024-ML" \
 **What should happen** (MISSING):
 ```bash
 # Maria attempts GPU launch
-prism launch gpu-ml-workstation protein-experiment --project "NSF-2024-ML"
+prism workspace launch gpu-ml-workstation protein-experiment --project "NSF-2024-ML"
 
 # Prism should prompt:
 # ⚠️  APPROVAL REQUIRED: GPU Workspace Launch
@@ -540,7 +549,7 @@ prism project policy create "NIH-R01-2023" \
   --blocked-instance-types "p3.*,p4.*"  # No GPUs
 
 # Maria tries to launch 3rd instance
-prism launch bioinformatics-suite experiment-3 --project "NIH-R01-2023"
+prism workspace launch bioinformatics-suite experiment-3 --project "NIH-R01-2023"
 
 # Prism output:
 # ❌ Launch failed: Quota exceeded
@@ -558,7 +567,7 @@ prism launch bioinformatics-suite experiment-3 --project "NIH-R01-2023"
 #    Contact: michael.torres@university.edu
 
 # Maria tries GPU workspace
-prism launch gpu-ml-workstation experiment-gpu --project "NIH-R01-2023"
+prism workspace launch gpu-ml-workstation experiment-gpu --project "NIH-R01-2023"
 
 # Prism output:
 # ❌ Launch failed: Workspace type not allowed
@@ -715,7 +724,7 @@ prism project member add "NIH-R01-2023" \
 #### Week 1: James (Grad Student) Regular Work
 ```bash
 # James launches standard analysis instance
-prism launch bioinformatics-suite rnaseq-batch-1 --project "NIH-R01-2023"
+prism workspace launch bioinformatics-suite rnaseq-batch-1 --project "NIH-R01-2023"
 
 # Auto-approved (within authority):
 # ✅ Workspace launching: rnaseq-batch-1 (r5.xlarge, $2.40/day)
@@ -726,7 +735,7 @@ prism launch bioinformatics-suite rnaseq-batch-1 --project "NIH-R01-2023"
 #### Week 2: Maria Requests GPU (Approval Flow)
 ```bash
 # Maria needs GPU for first time
-prism launch gpu-ml-workstation protein-hw --project "NSF-2024-ML"
+prism workspace launch gpu-ml-workstation protein-hw --project "NSF-2024-ML"
 
 # Approval required (exceeds authority):
 # ⚠️  GPU Workspace Approval Required
@@ -763,9 +772,9 @@ prism approval approve req-202406-015 \
 #    Time limit: 6 hours (auto-terminate at 4:30 PM today)
 #    Notes from Dr. Park: "Approved for homework..."
 #
-#    Launch with: prism launch --approval req-202406-015
+#    Launch with: prism workspace launch --approval req-202406-015
 
-prism launch --approval req-202406-015
+prism workspace launch --approval req-202406-015
 
 # Workspace launches with enforced limits:
 # ✅ Launching: protein-hw (p3.2xlarge)

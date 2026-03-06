@@ -19,14 +19,14 @@
 ---
 
 ## Version Legend
-- ✅ **v0.5.7 (Current)**: Features available today
-- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+- ✅ **v0.7.8 (Current)**: Features available today
+- 🔄 **Future**: Features planned for future versions
 
-## Current State (v0.5.7): What Works Today
+## Current State (v0.7.8): What Works Today
 
 ### ✅ Initial Setup (Day 0) - 30-Second Quick Start
 
-**New in v0.5.8 (planned)**: Interactive wizard for first-time users!
+**Available in v0.7.8**: Interactive wizard for first-time users!
 
 ```bash
 # Install Prism
@@ -109,7 +109,7 @@ Your workspace configuration:
 
   Estimated cost: $0.16/hour (~$3.84/day if running 24/7)
 
-💡 Tip: Use 'prism stop' when not in use to save costs
+💡 Tip: Use 'prism workspace stop' when not in use to save costs
 
 Launch this workspace? [y/N]: y
 
@@ -138,19 +138,17 @@ Launch this workspace? [y/N]: y
 **Alternative: Advanced users can still use direct commands**:
 ```bash
 # Direct launch (no wizard)
-prism launch bioinformatics-suite rnaseq-analysis --size M
+prism workspace launch bioinformatics-suite rnaseq-analysis --size M
 ```
 
 ### ✅ Enable Hibernation (Cost Safety Net)
 ```bash
-# Configure aggressive hibernation for budget safety
-prism idle profile create budget-safe \
-  --idle-minutes 15 \
-  --action hibernate \
-  --description "Hibernate after 15min idle - cost savings"
+# Apply the built-in aggressive hibernation policy to your workspace
+prism idle policy apply rnaseq-analysis aggressive-cost
+# Available policies: aggressive-cost, balanced, conservative, research, development
 
-# Apply to future instances
-prism idle profile set-default budget-safe
+# Check policy status
+prism idle policy status rnaseq-analysis
 ```
 
 **Result**: Any workspace automatically hibernates after 15 minutes of inactivity
@@ -188,10 +186,10 @@ After the wizard completes:
   ssh ubuntu@54.123.45.67
 
 📚 Next Steps:
-  • Connect:  prism connect rnaseq-analysis
-  • Monitor:  prism list
-  • Stop:     prism stop rnaseq-analysis
-  • Delete:   prism delete rnaseq-analysis
+  • Connect:  prism workspace connect rnaseq-analysis
+  • Monitor:  prism workspace list
+  • Stop:     prism workspace stop rnaseq-analysis
+  • Delete:   prism workspace delete rnaseq-analysis
 
 💡 Run 'prism --help' to see all available commands
 ```
@@ -203,9 +201,9 @@ After the wizard completes:
 ### ✅ Daily Work (Days 1-15)
 ```bash
 # Morning: Resume work
-prism list                    # See status: hibernated (note: now called "workspaces" in v0.5.8)
-prism start rnaseq-analysis   # Resume in 30 seconds
-prism connect rnaseq-analysis # Start working (shortcut for SSH)
+prism workspace list                    # See status: running, stopped, or hibernated
+prism workspace start rnaseq-analysis   # Resume in 30 seconds
+prism workspace connect rnaseq-analysis # Start working (shortcut for SSH)
 
 # Work session: 4 hours
 # - Run RNA-seq pipeline
@@ -219,7 +217,7 @@ prism connect rnaseq-analysis # Start working (shortcut for SSH)
 #    Budget available increases in real-time as workspaces hibernate/stop
 
 # Afternoon: Check costs
-prism cost summary
+prism budget list
 # Output:
 # Total monthly spend: $18.50
 # Running instances: 0 (all hibernated)
@@ -273,14 +271,14 @@ This addresses all the pain points Sarah currently experiences with cost managem
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Budget Enforcement (Coming in v0.5.8+)
+### ❌ Problem 1: No Budget Enforcement (Available since v0.7.x)
 **Tracking:** See issue [#138](https://github.com/scttfrdmn/prism/issues/138)
 
 **Scenario**: Week 3, Sarah accidentally launches GPU workspace
 
 ```bash
 # Sarah tries GPU template for deep learning experiment
-prism launch gpu-ml-workstation protein-folding --size L
+prism workspace launch gpu-ml-workstation protein-folding --size L
 
 # Prism output:
 # ✅ Workspace launching: protein-folding
@@ -301,7 +299,7 @@ prism launch gpu-ml-workstation protein-folding --size L
 **Current workaround**: Sarah has to remember to check costs manually
 **Risk**: One forgotten GPU workspace = entire month's budget gone in 4 days
 
-### ❌ Problem 2: No Budget Alerts (Coming in v0.5.8+)
+### ❌ Problem 2: No Budget Alerts (Available since v0.7.x)
 **Tracking:** See issue [#139](https://github.com/scttfrdmn/prism/issues/139)
 
 **Scenario**: Week 4, Sarah hits 80% of budget
@@ -321,10 +319,10 @@ prism launch gpu-ml-workstation protein-folding --size L
    Consider hibernating workspaces when not in use.
 ```
 
-**Current workaround**: Sarah checks `prism cost summary` daily
+**Current workaround**: Sarah checks `prism budget list` daily
 **Impact**: Constant cognitive load, anxiety about overspending
 
-### ❌ Problem 3: No Spending Forecasts (Coming in v0.5.8+)
+### ❌ Problem 3: No Spending Forecasts (Available since v0.7.x)
 **Tracking:** See issue [#140](https://github.com/scttfrdmn/prism/issues/140)
 
 **Scenario**: Mid-month, Sarah wants to know if she can launch another instance
@@ -353,7 +351,7 @@ prism budget forecast
 **Current workaround**: Sarah does mental math and Excel calculations
 **Impact**: Decision paralysis - hesitant to launch workspaces even when budget allows
 
-### ❌ Problem 4: No Month-End Reporting (Coming in v0.5.8+)
+### ❌ Problem 4: No Month-End Reporting (Available since v0.7.x)
 **Tracking:** See issue [#141](https://github.com/scttfrdmn/prism/issues/141)
 
 **Scenario**: End of month, PI asks "How much did you spend and on what?"
@@ -425,7 +423,7 @@ prism init
 # Setup complete! ✅
 
 # Verify budget configuration
-prism budget show
+prism budget info
 
 # Output:
 # 📊 Personal Budget
@@ -446,7 +444,7 @@ prism budget show
 
 ```bash
 # Launch workspace with budget preview
-prism launch bioinformatics-suite rnaseq-analysis --size M
+prism workspace launch bioinformatics-suite rnaseq-analysis --size M
 
 # Prism output:
 # 📊 Budget Impact Preview
@@ -501,8 +499,8 @@ prism launch bioinformatics-suite rnaseq-analysis --size M
 #
 # Actions:
 # - View details: prism budget status
-# - Adjust hibernation: prism idle profile edit budget-safe
-# - Stop all instances: prism stop --all
+# - Adjust hibernation: prism idle policy apply rnaseq-analysis balanced
+# - List workspaces:    prism workspace list
 #
 # Best,
 # Prism
@@ -542,7 +540,7 @@ prism budget status
 
 ```bash
 # Sarah tries to launch expensive GPU workspace
-prism launch gpu-ml-workstation protein-folding --size L
+prism workspace launch gpu-ml-workstation protein-folding --size L
 
 # Prism output:
 # ⚠️  BUDGET WARNING: This launch may exceed your monthly budget
@@ -681,7 +679,7 @@ prism budget report --month september --pdf --output ~/Desktop/sept-prism-report
 **Target**: Power users and special scenarios
 
 6. **Time-boxed Launches** (3 days)
-   - `prism launch template name --hours 8`
+   - `prism workspace launch template name --hours 8`
    - Auto-terminate after time limit
    - Prevents runaway costs
 

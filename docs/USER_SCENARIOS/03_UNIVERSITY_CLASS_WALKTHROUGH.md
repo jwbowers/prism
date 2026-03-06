@@ -1,5 +1,15 @@
 # Scenario 3: University Class Management
 
+> **Implementation Status (v0.7.8)**
+> - ✅ Core workspace and project operations
+> - ✅ Invitation-based access (`prism project invitations`)
+> - ✅ Budget management (`prism budget create/list/alerts`)
+> - 🔄 Teaching Assistant tools (`prism ta *`) — planned for a future release
+> - 🔄 Course management (`prism course *`) — planned for a future release
+> - 🔄 Workshop tools (`prism workshop *`) — planned for a future release
+>
+> Many sections in this scenario describe planned features. Use `prism project invitations` and bulk invitation workflows for current student enrollment.
+
 ## Personas: CS 229 - Machine Learning (Fall 2024)
 
 ### Professor Dr. Jennifer Martinez (Instructor)
@@ -122,11 +132,11 @@ prism volume create cs229-course-materials \
   --project "CS229-Fall2024"
 
 # Mount to temporary workspace for setup
-prism launch ubuntu temp-setup
+prism workspace launch ubuntu temp-setup
 prism volume mount cs229-course-materials temp-setup
 
 # Upload course materials (via SSH)
-prism ssh temp-setup
+prism workspace connect temp-setup
 # (Inside instance)
 $ cd /mnt/cs229-course-materials
 $ mkdir -p datasets notebooks lectures
@@ -136,7 +146,7 @@ $ exit
 
 # Unmount and delete temp instance
 prism volume unmount cs229-course-materials temp-setup
-prism delete temp-setup
+prism workspace delete temp-setup
 
 # Mark volume as "shared read-only" for students
 # (Manual: Configure EFS permissions)
@@ -225,7 +235,7 @@ prism project invitations bulk "CS229-Fall2024" \
 **What should happen** (MISSING):
 ```bash
 # Sophie's current state
-prism list
+prism workspace list
 # Output:
 # Instances:
 # - ml-hw3 (t3.medium): running
@@ -314,7 +324,7 @@ prism ta annotate ml-hw3 --student sophie.martinez@university.edu \
 **What should happen** (MISSING):
 ```bash
 # Emily (eager student) tries GPU workspace for fun
-emily@laptop:~$ prism launch gpu-ml-workstation homework1
+emily@laptop:~$ prism workspace launch gpu-ml-workstation homework1
 
 # Prism should block:
 # ❌ Launch BLOCKED: Template not approved for CS229-Fall2024
@@ -490,7 +500,7 @@ prism ta audit --students emily.chen@university.edu,david.kim@university.edu \
 **What should happen** (MISSING):
 ```bash
 # Sophie (struggling student) has corrupted her environment
-sophie@laptop:~$ prism ssh ml-hw4
+sophie@laptop:~$ prism workspace connect ml-hw4
 sophie@ml-hw4:~$ python train.py
 # Error: ModuleNotFoundError: No module named 'tensorflow'
 # (Sophie accidentally deleted system packages)
@@ -529,7 +539,7 @@ prism ta reset-instance ml-hw4 --student sophie.martinez@university.edu
 # "Your workspace has been reset by TA Alex Thompson. You can now continue working."
 
 # Sophie can immediately continue
-sophie@laptop:~$ prism ssh ml-hw4
+sophie@laptop:~$ prism workspace connect ml-hw4
 sophie@ml-hw4:~$ python train.py
 # (Works now!)
 ```
@@ -701,15 +711,15 @@ emily@laptop:~$ prism student join CS229-Fall2024
 #    You're ready to start!
 #
 #    Quick start:
-#    1. Launch instance: prism launch ml-cpu-student hw1
-#    2. Connect: prism ssh hw1
+#    1. Launch instance: prism workspace launch ml-cpu-student hw1
+#    2. Connect: prism workspace connect hw1
 #    3. Course materials: cd /mnt/cs229-materials
 #
 # First assignment: Homework 1 - Linear Regression
 # Due: September 2, 2024 at 11:59 PM (6 days)
 
 # Emily launches first instance
-emily@laptop:~$ prism launch ml-cpu-student hw1
+emily@laptop:~$ prism workspace launch ml-cpu-student hw1
 
 # Prism output:
 # ✅ Workspace launching: hw1 (t3.medium)
@@ -721,7 +731,7 @@ emily@laptop:~$ prism launch ml-cpu-student hw1
 #
 # 💡 Tip: Your workspace will auto-stop after 4 hours of inactivity to save your budget!
 
-emily@laptop:~$ prism ssh hw1
+emily@laptop:~$ prism workspace connect hw1
 
 # SSH session:
 # Welcome to CS 229 Prism!
@@ -759,7 +769,7 @@ emily@hw1:~/hw1$ jupyter lab --ip=0.0.0.0
 
 ```bash
 # Sophie (struggling) joins office hours
-sophie@laptop:~$ prism list
+sophie@laptop:~$ prism workspace list
 
 # Output:
 # Instances:
@@ -826,7 +836,7 @@ sophie@ml-hw3:~$
 
 ```bash
 # David (grad student) tries to launch GPU for final project
-david@laptop:~$ prism launch gpu-ml-workstation final-project
+david@laptop:~$ prism workspace launch gpu-ml-workstation final-project
 
 # Prism blocks and educates:
 # ❌ Launch BLOCKED: Template not approved for course
@@ -843,14 +853,14 @@ david@laptop:~$ prism launch gpu-ml-workstation final-project
 #    - ml-final-project (t3.large, $1.67/day) ✅ Final project only
 #
 #    For final project, use:
-#    $ prism launch ml-final-project final-project
+#    $ prism workspace launch ml-final-project final-project
 #
 #    If you believe you need GPU access:
 #    1. Email Dr. Martinez explaining your use case
 #    2. She can grant temporary GPU access if justified
 
 # David uses approved template
-david@laptop:~$ prism launch ml-final-project final-project
+david@laptop:~$ prism workspace launch ml-final-project final-project
 
 # Budget check:
 # 💰 Budget Check: Final Project Instance
