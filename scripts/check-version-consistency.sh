@@ -33,7 +33,7 @@ FAILURES=0
 echo "Checking package.json files..."
 for pkg_json in frontend/package.json cmd/prism-gui/frontend/package.json; do
     if [ -f "$pkg_json" ]; then
-        PKG_VERSION=$(grep -E '^\s*"version":\s*"' "$pkg_json" | sed -E 's/.*"version":\s*"([^"]+)".*/\1/')
+        PKG_VERSION=$(grep -E '^\s*"version":\s*"' "$pkg_json" | sed -E 's/.*"version":[ ]*"([^"]+)".*/\1/')
         if [ "$PKG_VERSION" = "$CODE_VERSION" ]; then
             echo -e "  ${GREEN}✓${NC} $pkg_json: $PKG_VERSION"
         else
