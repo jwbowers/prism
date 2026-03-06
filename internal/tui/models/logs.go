@@ -189,6 +189,27 @@ func (m LogsModel) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// Handle log type selection when dialog is open
+	if m.showTypeDialog {
+		logTypes := []string{"console", "cloud-init", "messages", "secure", "boot"}
+		switch msg.String() {
+		case "1", "2", "3", "4", "5":
+			idx := int(msg.String()[0] - '1')
+			if idx < len(logTypes) {
+				m.logType = logTypes[idx]
+				m.showTypeDialog = false
+				if m.selectedInstanceName != "" {
+					m.loading = true
+					return m, m.fetchLogs(m.selectedInstanceName, m.logType)
+				}
+			}
+			return m, nil
+		case "esc", "t":
+			return m.handleEscKey()
+		}
+		return m, nil
+	}
+
 	switch msg.String() {
 	case "ctrl+c", "q":
 		return m, tea.Quit
@@ -414,15 +435,22 @@ func (m LogsModel) renderTypeDialog() string {
 
 	var content strings.Builder
 	content.WriteString(theme.SubTitle.Render("Select Log Type") + "\n\n")
-	content.WriteString("Available log types:\n\n")
-	content.WriteString("  • console      - System console output\n")
-	content.WriteString("  • cloud-init   - Cloud-init logs\n")
-	content.WriteString("  • messages     - System messages\n")
-	content.WriteString("  • secure       - Security logs\n")
-	content.WriteString("  • boot         - Boot logs\n")
-	content.WriteString("\n")
-	content.WriteString(fmt.Sprintf("Current: %s\n\n", m.logType))
-	content.WriteString("Press Esc to close\n")
+	content.WriteString("Press a number to select:\n\n")
+	types := []struct{ key, name, desc string }{
+		{"1", "console", "System console output"},
+		{"2", "cloud-init", "Cloud-init logs"},
+		{"3", "messages", "System messages"},
+		{"4", "secure", "Security logs"},
+		{"5", "boot", "Boot logs"},
+	}
+	for _, t := range types {
+		marker := "  "
+		if t.name == m.logType {
+			marker = "▶ "
+		}
+		content.WriteString(fmt.Sprintf("  %s[%s] %-12s - %s\n", marker, t.key, t.name, t.desc))
+	}
+	content.WriteString("\nPress 1-5 to select, Esc to cancel\n")
 
 	return dialogStyle.Render(content.String())
 }
@@ -433,7 +461,7 @@ func (m LogsModel) renderHelp() string {
 
 	var helps []string
 	if m.showTypeDialog {
-		helps = []string{"esc: close"}
+		helps = []string{"1-5: select type", "esc: cancel"}
 	} else if m.selectedTab == 0 {
 		helps = []string{"↑/↓: select", "enter: view logs", "r: refresh", "q: quit"}
 	} else {

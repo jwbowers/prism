@@ -131,27 +131,11 @@ func updateDaemonOnKey(m DaemonModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.loading = true
 		return m, func() tea.Msg { return m.fetchStatus() }
 	case "s":
-		m.showStopDialog = true
+		m.statusBar.SetStatus("Stop daemon: run in terminal → prism admin daemon stop", components.StatusSuccess)
 		return m, nil
 	case "R":
-		m.showRestartDialog = true
+		m.statusBar.SetStatus("Restart daemon: run in terminal → prism admin daemon stop (next launch auto-starts)", components.StatusSuccess)
 		return m, nil
-	case "enter":
-		if m.showRestartDialog {
-			return m, m.restartDaemon()
-		}
-		if m.showStopDialog {
-			return m, m.stopDaemon()
-		}
-	case "esc":
-		if m.showRestartDialog {
-			m.showRestartDialog = false
-			return m, nil
-		}
-		if m.showStopDialog {
-			m.showStopDialog = false
-			return m, nil
-		}
 	}
 	return m, nil
 }
@@ -173,20 +157,6 @@ func (m DaemonModel) View() string {
 	// Daemon status
 	b.WriteString(m.renderStatus())
 
-	// Show restart dialog if active
-	if m.showRestartDialog {
-		dialog := m.renderRestartDialog()
-		b.WriteString("\n\n")
-		b.WriteString(dialog)
-	}
-
-	// Show stop dialog if active
-	if m.showStopDialog {
-		dialog := m.renderStopDialog()
-		b.WriteString("\n\n")
-		b.WriteString(dialog)
-	}
-
 	// Error display
 	if m.error != "" {
 		b.WriteString("\n\n")
@@ -194,8 +164,10 @@ func (m DaemonModel) View() string {
 		b.WriteString(errorStyle.Render("Error: " + m.error))
 	}
 
-	// Help text
-	b.WriteString("\n\n")
+	// Status bar + help text
+	b.WriteString("\n")
+	b.WriteString(m.statusBar.View())
+	b.WriteString("\n")
 	helpText := m.renderHelp()
 	b.WriteString(helpText)
 
@@ -295,13 +267,7 @@ func (m DaemonModel) renderStopDialog() string {
 func (m DaemonModel) renderHelp() string {
 	theme := styles.CurrentTheme
 
-	var helps []string
-	if m.showRestartDialog || m.showStopDialog {
-		helps = []string{"enter: confirm", "esc: cancel"}
-	} else {
-		helps = []string{"r: refresh", "R: restart daemon", "s: stop daemon", "q: quit"}
-	}
-
+	helps := []string{"r: refresh", "R: restart info", "s: stop info", "q: quit"}
 	return theme.Help.Render(strings.Join(helps, " • "))
 }
 

@@ -271,11 +271,17 @@ func (m DashboardModel) View() string {
 		)
 
 		// Build instances panel
+		var instancesContent string
+		if len(m.instances) == 0 {
+			instancesContent = theme.Help.Render("No workspaces running.\nprism launch <template> <name>")
+		} else {
+			instancesContent = m.instancesTable.View()
+		}
 		instancesPanel := theme.Panel.Width(m.width/2 - 4).Render(
 			lipgloss.JoinVertical(
 				lipgloss.Left,
 				theme.PanelHeader.Render("Running Instances"),
-				m.instancesTable.View(),
+				instancesContent,
 			),
 		)
 
@@ -321,7 +327,7 @@ func (m DashboardModel) View() string {
 
 	// Help text with navigation
 	help := theme.Help.Render("Navigation: 1: Dashboard • 2: Workspaces • 3: Templates • 4: Storage • 5: Users • 6: Settings\n" +
-		"Actions: r: refresh • q: quit")
+		"Actions: r: refresh • ↑/↓: navigate • q: quit")
 
 	// Join everything together
 	return lipgloss.JoinVertical(

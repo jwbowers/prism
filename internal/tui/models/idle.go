@@ -237,10 +237,10 @@ func (m IdleModel) handleTabSwitch() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleUpdatePolicy shows policy update dialog
+// handleUpdatePolicy guides user to CLI for policy updates
 func (m IdleModel) handleUpdatePolicy() (tea.Model, tea.Cmd) {
-	if m.selectedTab == 0 && len(m.policies) > 0 {
-		m.showPolicyDialog = true
+	if m.selectedTab == 0 {
+		m.statusBar.SetStatus("Update policy via CLI: prism idle policy update --name default --threshold 30", components.StatusSuccess)
 	}
 	return m, nil
 }
@@ -266,10 +266,6 @@ func (m IdleModel) handleDisableIdle() (tea.Model, tea.Cmd) {
 
 // handleEnterKey handles Enter key press (dialog confirmation)
 func (m IdleModel) handleEnterKey() (tea.Model, tea.Cmd) {
-	if m.showPolicyDialog {
-		m.showPolicyDialog = false
-		return m, nil
-	}
 	if m.showEnableDialog {
 		return m, m.enableIdleDetection(m.dialogInstanceName, "default")
 	}
@@ -278,10 +274,6 @@ func (m IdleModel) handleEnterKey() (tea.Model, tea.Cmd) {
 
 // handleEscKey handles Escape key press (close dialogs)
 func (m IdleModel) handleEscKey() (tea.Model, tea.Cmd) {
-	if m.showPolicyDialog {
-		m.showPolicyDialog = false
-		return m, nil
-	}
 	if m.showEnableDialog {
 		m.showEnableDialog = false
 		return m, nil
@@ -335,13 +327,6 @@ func (m IdleModel) View() string {
 		b.WriteString(m.renderInstances())
 	case 2:
 		b.WriteString(m.renderHistory())
-	}
-
-	// Show policy dialog if active
-	if m.showPolicyDialog {
-		dialog := m.renderPolicyDialog()
-		b.WriteString("\n\n")
-		b.WriteString(dialog)
 	}
 
 	// Show enable dialog if active
@@ -432,14 +417,13 @@ func (m IdleModel) renderInstances() string {
 
 	// Status summary
 	b.WriteString("\n\n")
-	enabledCount := 0
+	runningCount := 0
 	for _, instance := range m.instances {
-		// Check if idle detection is enabled (simplified check)
 		if instance.State == "running" {
-			enabledCount++
+			runningCount++
 		}
 	}
-	b.WriteString(fmt.Sprintf("Idle Detection: %d/%d instances monitored\n", enabledCount, len(m.instances)))
+	b.WriteString(fmt.Sprintf("Running: %d/%d workspaces • Enable idle detection: prism idle enable <name>\n", runningCount, len(m.instances)))
 
 	return b.String()
 }
@@ -506,10 +490,10 @@ func (m IdleModel) renderHelp() string {
 	theme := styles.CurrentTheme
 
 	var helps []string
-	if m.showPolicyDialog || m.showEnableDialog {
+	if m.showEnableDialog {
 		helps = []string{"enter: confirm", "esc: cancel"}
 	} else if m.selectedTab == 0 {
-		helps = []string{"↑/↓: select", "tab: switch tabs", "u: update policy", "r: refresh", "q: quit"}
+		helps = []string{"↑/↓: select", "tab: switch tabs", "u: CLI policy hint", "r: refresh", "q: quit"}
 	} else if m.selectedTab == 1 {
 		helps = []string{"↑/↓: select", "tab: switch tabs", "e: enable", "d: disable", "r: refresh", "q: quit"}
 	} else {
