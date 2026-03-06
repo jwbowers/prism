@@ -30,7 +30,7 @@ The current SSH key management has several issues that need normalization:
 
 | Component | Format | Example |
 |-----------|--------|---------|
-| **AWS KeyName** | `cws-<profile>-<region>` | `cws-research-us-west-2` |
+| **AWS KeyName** | `prism-<profile>-<region>` | `prism-research-us-west-2` |
 | **Local Private Key** | `~/.prism/keys/<profile>` | `~/.prism/keys/research` |
 | **Local Public Key** | `~/.prism/keys/<profile>.pub` | `~/.prism/keys/research.pub` |
 
@@ -45,7 +45,7 @@ The current SSH key management has several issues that need normalization:
 {
   "keys": {
     "research": {
-      "aws_key_name": "cws-research-us-west-2",
+      "aws_key_name": "prism-research-us-west-2",
       "profile": "research",
       "region": "us-west-2",
       "created_at": "2025-10-17T12:00:00Z",
@@ -97,7 +97,7 @@ func (m *Manager) GetConnectionInfo(name string) (string, error) {
 **Normalized:**
 ```go
 func (m *Manager) GetConnectionInfo(name string) (string, error) {
-    // Direct lookup: KeyName = cws-<profile>-<region>
+    // Direct lookup: KeyName = prism-<profile>-<region>
     // Local path  = ~/.prism/keys/<profile>
     keyPath := m.keyManager.GetKeyPathFromAWSKeyName(keyName)
     username := m.getUsernameForInstance(name) // From state metadata
@@ -119,7 +119,7 @@ prism keys list
 prism keys show research
 # Output:
 # Key: research
-# AWS KeyName: cws-research-us-west-2
+# AWS KeyName: prism-research-us-west-2
 # Local Path: /Users/username/.prism/keys/research
 # Public Key: ssh-rsa AAAA...xyz prism
 # Associated Instances:

@@ -72,13 +72,13 @@ prism gui
 prism templates
 
 # Launch a Python environment for data science
-prism workspace launch python-ml my-first-project
+prism launch python-ml my-first-project
 
 # Launch an R environment for statistics
-prism workspace launch r-rstudio-server statistics-project
+prism launch r-rstudio-server statistics-project
 
 # Launch basic Ubuntu for general computing
-prism workspace launch basic-ubuntu cs-assignment
+prism launch basic-ubuntu cs-assignment
 ```
 
 ## 🎓 Educational Templates
@@ -125,11 +125,11 @@ Prism includes pre-configured environments designed for educational use:
 ### Cost Optimization Tips:
 ```bash
 # Enable hibernation for classes (preserves student work)
-prism workspace hibernate my-project  # Pause when not in use
-prism workspace resume my-project     # Resume with all work intact
+prism hibernate my-project  # Pause when not in use
+prism resume my-project     # Resume with all work intact
 
 # Use spot instances for assignments
-prism workspace launch python-ml assignment --spot
+prism launch python-ml assignment --spot
 
 # Set up automatic hibernation policies
 prism idle profile create classroom --idle-minutes 30 --action hibernate
@@ -140,9 +140,9 @@ prism idle profile create classroom --idle-minutes 30 --action hibernate
 ### Multi-Student Support
 ```bash
 # Launch environments for entire class
-prism workspace launch python-ml alice-ml-project
-prism workspace launch python-ml bob-ml-project
-prism workspace launch python-ml carol-ml-project
+prism launch python-ml alice-ml-project
+prism launch python-ml bob-ml-project
+prism launch python-ml carol-ml-project
 
 # Share files between students using EFS volumes
 prism volume create class-shared-data
@@ -160,7 +160,7 @@ prism volume attach class-shared-data bob-ml-project
 ### **Computer Science Course**
 ```bash
 # Launch basic Ubuntu environment for each student
-prism workspace launch basic-ubuntu student-cs101
+prism launch basic-ubuntu student-cs101
 
 # Students get full Linux environment with:
 # - GCC compiler, Python, Node.js, Git
@@ -172,7 +172,7 @@ prism workspace launch basic-ubuntu student-cs101
 ### **Data Science Class**
 ```bash
 # Launch Python ML environment with Jupyter
-prism workspace launch python-ml student-datascience
+prism launch python-ml student-datascience
 
 # Students access via web browser:
 # - Jupyter notebooks at http://[instance-ip]:8888
@@ -185,8 +185,8 @@ prism workspace launch python-ml student-datascience
 ```bash
 # Create shared research environment
 prism volume create research-project-data
-prism workspace launch r-rstudio-server professor-research
-prism workspace launch python-ml student-researcher
+prism launch r-rstudio-server professor-research
+prism launch python-ml student-researcher
 
 # Attach shared storage for collaboration
 prism volume attach research-project-data professor-research
@@ -223,7 +223,7 @@ Templates include built-in idle detection that automatically hibernates instance
 
 To hibernate all student environments manually:
 ```bash
-prism workspace hibernate student-name-project
+prism hibernate student-name-project
 ```
 
 ### **Integration with LMS**
@@ -271,7 +271,7 @@ prism workspace hibernate student-name-project
 prism workspace list
 
 # Resume if stopped
-prism workspace resume my-project
+prism resume my-project
 ```
 
 **"High costs"**
@@ -280,7 +280,7 @@ prism workspace resume my-project
 prism workspace list
 
 # Hibernate unused environments
-prism workspace hibernate unused-project
+prism hibernate unused-project
 ```
 
 **"Student cannot access Jupyter/RStudio"**

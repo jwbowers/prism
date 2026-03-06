@@ -113,8 +113,8 @@ prism connect my-instance
 ```
 
 **Key management:**
-- Key name: `cws-<profile>-key`
-- Location: `~/.ssh/cws-<profile>-key`
+- Key name: `prism-<profile>-key`
+- Location: `~/.ssh/prism-<profile>-key`
 - AWS KeyPair created automatically
 - Reused across instances in same profile
 

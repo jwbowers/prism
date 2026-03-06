@@ -58,7 +58,7 @@ Perfect for research projects requiring web-based collaboration with non-technic
 ### Basic Launch
 ```bash
 # Launch with default settings (M size recommended)
-prism workspace launch r-research-full-stack my-research --size M --wait
+prism launch r-research-full-stack my-research --size M --wait
 
 # Check launch progress
 prism workspace list
@@ -70,19 +70,19 @@ prism workspace describe my-research
 ### Advanced Launch Options
 ```bash
 # Launch with hibernation for cost savings
-prism workspace launch r-research-full-stack my-research \
+prism launch r-research-full-stack my-research \
   --size M \
   --hibernation \
   --wait
 
 # Launch with project association
-prism workspace launch r-research-full-stack my-research \
+prism launch r-research-full-stack my-research \
   --size M \
   --project "Chile Collaboration" \
   --wait
 
 # Launch with spot instances (70% cost savings)
-prism workspace launch r-research-full-stack my-research \
+prism launch r-research-full-stack my-research \
   --size L \
   --spot \
   --wait
@@ -109,7 +109,7 @@ The initial launch takes **10-15 minutes** due to extensive package installation
 **Check status:**
 ```bash
 # Watch launch progress
-prism workspace launch r-research-full-stack my-research --size M --wait
+prism launch r-research-full-stack my-research --size M --wait
 
 # Or check status separately
 prism workspace list
@@ -345,7 +345,7 @@ prism project create "Chile Collaboration" \
   --budget-period monthly
 
 # 2. Launch workspace in project
-prism workspace launch r-research-full-stack chile-workspace \
+prism launch r-research-full-stack chile-workspace \
   --size M \
   --project "Chile Collaboration" \
   --hibernation
@@ -379,7 +379,7 @@ prism workspace schedule my-research \
 ### Spot Instances
 ```bash
 # Launch with spot for 70% savings (may be interrupted)
-prism workspace launch r-research-full-stack my-research \
+prism launch r-research-full-stack my-research \
   --size M \
   --spot \
   --hibernation
@@ -388,7 +388,7 @@ prism workspace launch r-research-full-stack my-research \
 ### Rightsizing
 ```bash
 # Start small, upgrade if needed
-prism workspace launch r-research-full-stack my-research --size M
+prism launch r-research-full-stack my-research --size M
 
 # Upgrade later if you need more power
 prism workspace resize my-research --size L
@@ -490,13 +490,13 @@ prism workspace resize-volume my-research --size 100GB
 **Solution:**
 ```bash
 # Verify your local SSH key exists
-ls -la ~/.ssh/cws-aws-default-key*
+ls -la ~/.ssh/prism-aws-default-key*
 
 # If missing, Prism will auto-generate on next launch
 # The key is automatically uploaded to AWS during workspace launch
 
 # Test SSH connection with explicit key
-ssh -i ~/.ssh/cws-aws-default-key ubuntu@YOUR_IP
+ssh -i ~/.ssh/prism-aws-default-key ubuntu@YOUR_IP
 
 # Or use the workspace connect command (recommended)
 prism workspace connect my-research
@@ -505,10 +505,10 @@ prism workspace connect my-research
 **Verify Key Fingerprints Match:**
 ```bash
 # Check local key fingerprint
-ssh-keygen -lf ~/.ssh/cws-aws-default-key.pub
+ssh-keygen -lf ~/.ssh/prism-aws-default-key.pub
 
 # Check AWS key fingerprint
-aws ec2 describe-key-pairs --key-names cws-aws-default-key --query 'KeyPairs[0].KeyFingerprint'
+aws ec2 describe-key-pairs --key-names prism-aws-default-key --query 'KeyPairs[0].KeyFingerprint'
 
 # Should match! If not, re-launch the workspace to force key sync
 ```
@@ -520,7 +520,7 @@ aws ec2 describe-key-pairs --key-names cws-aws-default-key --query 'KeyPairs[0].
 # and upload your current local key
 
 # Or manually remove AWS key
-aws ec2 delete-key-pair --key-name cws-aws-default-key
+aws ec2 delete-key-pair --key-name prism-aws-default-key
 
 # Next workspace launch will re-upload automatically
 ```

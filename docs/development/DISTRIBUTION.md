@@ -14,17 +14,17 @@ Download the latest binaries directly from our GitHub releases page:
 
 ```bash
 # Example for Linux x86_64
-curl -L https://github.com/yourusername/prism/releases/download/v0.4.1/cws-linux-amd64 -o cws
+curl -L https://github.com/yourusername/prism/releases/download/v0.4.1/prism-linux-amd64 -o cws
 chmod +x cws
 sudo mv prism /usr/local/bin/
 ```
 
 Available binaries:
-- `cws-linux-amd64` - Linux Intel/AMD
-- `cws-linux-arm64` - Linux ARM64
-- `cws-macos-amd64` - macOS Intel
-- `cws-macos-arm64` - macOS Apple Silicon
-- `cws-windows-amd64.exe` - Windows Intel/AMD
+- `prism-linux-amd64` - Linux Intel/AMD
+- `prism-linux-arm64` - Linux ARM64
+- `prism-macos-amd64` - macOS Intel
+- `prism-macos-arm64` - macOS Apple Silicon
+- `prism-windows-amd64.exe` - Windows Intel/AMD
 
 ### Homebrew (macOS and Linux)
 

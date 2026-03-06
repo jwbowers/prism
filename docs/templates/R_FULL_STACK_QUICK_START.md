@@ -16,10 +16,10 @@ A complete R research environment accessible through your web browser - no softw
 
 ```bash
 # Basic launch (recommended)
-prism workspace launch r-research-full-stack chile-collab --size M --wait
+prism launch r-research-full-stack chile-collab --size M --wait
 
 # With cost-saving hibernation
-prism workspace launch r-research-full-stack chile-collab \
+prism launch r-research-full-stack chile-collab \
   --size M \
   --hibernation \
   --wait
@@ -30,7 +30,7 @@ prism project create "Chile Collaboration" \
   --budget-limit 500 \
   --budget-period monthly
 
-prism workspace launch r-research-full-stack chile-collab \
+prism launch r-research-full-stack chile-collab \
   --size M \
   --project "Chile Collaboration" \
   --hibernation \
@@ -335,10 +335,10 @@ prism workspace start chile-collab
 prism workspace connect chile-collab
 
 # Or with explicit key path
-ssh -i ~/.ssh/cws-aws-default-key ubuntu@YOUR_IP
+ssh -i ~/.ssh/prism-aws-default-key ubuntu@YOUR_IP
 
 # If still failing, verify your local key exists
-ls -la ~/.ssh/cws-aws-default-key*
+ls -la ~/.ssh/prism-aws-default-key*
 
 # Prism auto-generates and syncs keys on workspace launch
 # If keys get out of sync, just launch a new workspace

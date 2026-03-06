@@ -38,7 +38,43 @@ prismd version
 - Automatic PATH configuration
 - Easy updates via `brew upgrade`
 
-### Method 2: Direct Binary Download
+### Method 2: DMG Installer
+
+**Best for:** Users who prefer a graphical installer or want the Prism desktop GUI.
+
+1. Go to the [Prism Releases page](https://github.com/scttfrdmn/prism/releases/latest)
+2. Download `Prism-v*-macOS.dmg` (universal binary, works on Intel and Apple Silicon)
+3. Open the `.dmg` file
+4. Drag **Prism.app** to your **Applications** folder
+5. Eject the disk image
+
+**First launch (Gatekeeper):**
+
+macOS may block the app since it is not notarized yet. To open it:
+
+1. In Finder, navigate to Applications
+2. Right-click **Prism.app** → **Open**
+3. Click **Open** in the security dialog (only required once)
+
+Or via Terminal:
+
+```bash
+xattr -d com.apple.quarantine /Applications/Prism.app
+```
+
+**Install CLI tools from the app bundle (optional):**
+
+```bash
+# Install prism and prismd to /usr/local/bin
+sudo cp /Applications/Prism.app/Contents/MacOS/prism /usr/local/bin/prism
+sudo cp /Applications/Prism.app/Contents/MacOS/prismd /usr/local/bin/prismd
+sudo chmod +x /usr/local/bin/prism /usr/local/bin/prismd
+
+# Verify
+prism --help
+```
+
+### Method 3: Direct Binary Download
 
 **Best for:** Users who prefer manual installation or don't use Homebrew.
 

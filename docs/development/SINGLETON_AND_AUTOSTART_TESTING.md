@@ -114,13 +114,13 @@ Verify that the CLI can find and start the daemon when `prismd` is only availabl
 **Test Setup**
 ```bash
 # Create temporary PATH location
-mkdir -p /tmp/cws-test-bin
-cp ./bin/prismd /tmp/cws-test-bin/
-chmod +x /tmp/cws-test-bin/prismd
+mkdir -p /tmp/prism-test-bin
+cp ./bin/prismd /tmp/prism-test-bin/
+chmod +x /tmp/prism-test-bin/prismd
 
 # Temporarily hide local prismd and add test location to PATH
 mv ./bin/prismd ./bin/prismd.backup
-export PATH="/tmp/cws-test-bin:$PATH"
+export PATH="/tmp/prism-test-bin:$PATH"
 ```
 
 **Test Execution**

@@ -39,7 +39,7 @@ def post_install
   system "mkdir", "-p", "#{ENV["HOME"]}/.prism"
   
   # Install daemon control script
-  (prefix/"bin").install "scripts/cws-daemon" if File.exist?("scripts/cws-daemon")
+  (prefix/"bin").install "scripts/prism-daemon" if File.exist?("scripts/prism-daemon")
   
   # Create log directory
   (var/"log").mkpath
@@ -70,9 +70,9 @@ def caveats
       brew services restart prism # Restart daemon service
       
     Alternative Control:
-      cws-daemon start                       # Direct daemon management
-      cws-daemon status                      # Check daemon health
-      cws-daemon restart                     # Restart with cleanup
+      prism-daemon start                       # Direct daemon management
+      prism-daemon status                      # Check daemon health
+      prism-daemon restart                     # Restart with cleanup
       
     For complete documentation:
       prism help
@@ -90,7 +90,7 @@ end
 
 ### 🛠️ **Daemon Control Script Integration**
 
-#### **Enhanced `scripts/cws-daemon` Script**
+#### **Enhanced `scripts/prism-daemon` Script**
 Based on our current `daemon-control.sh`, create a production-ready version:
 
 ```bash
@@ -126,7 +126,7 @@ fi
 ```
 
 #### **Package Integration**
-- Install `cws-daemon` script alongside `cws` and `prismd` binaries
+- Install `prism-daemon` script alongside `cws` and `prismd` binaries
 - Make script available in PATH for easy access
 - Provide both `brew services` integration and direct script control
 
@@ -172,7 +172,7 @@ fi
 
 ### **v0.4.3: Foundation & Enhanced Packaging** (4-6 weeks)
 - ✅ Enhanced `daemon-control.sh` script (completed)
-- 🎯 Create production `scripts/cws-daemon` script
+- 🎯 Create production `scripts/prism-daemon` script
 - 🎯 Update Homebrew formula with service integration
 - 🎯 Add comprehensive installation testing
 - 🎯 Documentation for new daemon management approach
