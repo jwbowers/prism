@@ -30,6 +30,7 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -291,6 +292,20 @@ func (a *App) Launch(args []string) error {
 		return err
 	}
 
+	// Show cost preview and prompt for confirmation (unless quiet/dry-run/auto-yes)
+	if !req.Quiet && !req.DryRun && !req.AutoYes {
+		confirmed, err := a.showCostPreview(&req)
+		if err != nil {
+			// Non-fatal: cost preview failed (e.g. unknown template), skip and proceed
+			if !strings.Contains(err.Error(), "not found") {
+				fmt.Printf("⚠️  Could not calculate cost estimate: %v\n\n", err)
+			}
+		} else if !confirmed {
+			fmt.Println("Launch cancelled.")
+			return nil
+		}
+	}
+
 	// Show immediate feedback with animated spinner (unless quiet mode)
 	var spinner *Spinner
 	if !req.Quiet {
@@ -332,6 +347,131 @@ func (a *App) Launch(args []string) error {
 	}
 
 	return nil
+}
+
+// showCostPreview displays an estimated cost table and prompts the user to confirm.
+// Returns (true, nil) if user confirms or if the terminal is not interactive.
+// Returns (false, nil) if user declines.
+// Returns (false, err) if template info could not be fetched.
+func (a *App) showCostPreview(req *types.LaunchRequest) (bool, error) {
+	// Resolve instance type from size or template defaults
+	instanceType := a.resolveInstanceTypeForPreview(req)
+
+	// Fetch root volume size and name from template
+	rootVolumeGB := 20 // default
+	templateDisplayName := req.Template
+	templateInfo, err := a.apiClient.GetTemplate(a.ctx, req.Template)
+	if err != nil {
+		return false, err
+	}
+	if templateInfo.RootVolumeGB > 0 {
+		rootVolumeGB = templateInfo.RootVolumeGB
+	}
+	if templateInfo.Name != "" {
+		templateDisplayName = templateInfo.Name
+	}
+
+	// Get hourly rate (with institutional discounts if configured)
+	pricingConfig, _ := pricing.LoadInstitutionalPricing()
+	pricingCalculator := pricing.NewCalculator(pricingConfig)
+
+	costCalc := &project.CostCalculator{}
+	listPrice := costCalc.GetInstanceHourlyRate(instanceType)
+	result := pricingCalculator.CalculateInstanceCost(instanceType, listPrice, "")
+
+	// Storage cost: gp3 at $0.08/GB/month
+	storageCostMonthly := float64(rootVolumeGB) * 0.08
+	storageCostHourly := storageCostMonthly / (24 * 30)
+
+	totalHourly := result.DiscountedPrice + storageCostHourly
+	totalDaily := totalHourly * 24
+	totalMonthly := totalHourly * 24 * 30
+
+	// Get instance description
+	instanceDesc := instanceType
+	if cpuMem, ok := instanceDescriptions[instanceType]; ok {
+		instanceDesc = fmt.Sprintf("%s (%s)", instanceType, cpuMem)
+	}
+
+	// Print preview box
+	fmt.Printf("\n  Cost Estimate\n")
+	fmt.Printf("  %s\n", strings.Repeat("─", 44))
+	fmt.Printf("  Template:       %s\n", templateDisplayName)
+	fmt.Printf("  Instance:       %s\n", instanceDesc)
+	fmt.Printf("  Storage:        %d GB gp3\n", rootVolumeGB)
+	if req.Spot {
+		fmt.Printf("  Pricing:        Spot (up to 90%% savings)\n")
+	}
+	fmt.Printf("  %s\n", strings.Repeat("─", 44))
+	fmt.Printf("  Hourly cost:    $%.4f\n", totalHourly)
+	fmt.Printf("  Daily cost:     $%.2f\n", totalDaily)
+	fmt.Printf("  Monthly est.:   $%.2f\n", totalMonthly)
+	if pricingConfig != nil && pricingConfig.Institution != "Default" && result.TotalDiscount > 0 {
+		fmt.Printf("  Discount:       %.0f%% (%s)\n", result.TotalDiscount*100, pricingConfig.Institution)
+	}
+	fmt.Printf("  %s\n\n", strings.Repeat("─", 44))
+
+	// In test mode, auto-confirm
+	if a.testMode {
+		return true, nil
+	}
+
+	// Check if stdin is a terminal; if not (piped/scripted), auto-confirm
+	fi, err2 := os.Stdin.Stat()
+	if err2 != nil || (fi.Mode()&os.ModeCharDevice) == 0 {
+		return true, nil
+	}
+
+	fmt.Print("  Continue with launch? [Y/n]: ")
+	reader := bufio.NewReader(os.Stdin)
+	answer, _ := reader.ReadString('\n')
+	answer = strings.TrimSpace(strings.ToLower(answer))
+
+	fmt.Println()
+	return answer == "" || answer == "y" || answer == "yes", nil
+}
+
+// instanceDescriptions provides human-readable descriptions for common instance types.
+var instanceDescriptions = map[string]string{
+	"t3.micro":     "1 vCPU, 1 GB RAM",
+	"t3.small":     "2 vCPU, 2 GB RAM",
+	"t3.medium":    "2 vCPU, 4 GB RAM",
+	"t3.large":     "2 vCPU, 8 GB RAM",
+	"t3.xlarge":    "4 vCPU, 16 GB RAM",
+	"t3.2xlarge":   "8 vCPU, 32 GB RAM",
+	"t3a.medium":   "2 vCPU, 4 GB RAM",
+	"t3a.large":    "2 vCPU, 8 GB RAM",
+	"c5.large":     "2 vCPU, 4 GB RAM",
+	"c5.xlarge":    "4 vCPU, 8 GB RAM",
+	"c5.2xlarge":   "8 vCPU, 16 GB RAM",
+	"r5.large":     "2 vCPU, 16 GB RAM",
+	"r5.xlarge":    "4 vCPU, 32 GB RAM",
+	"r5.2xlarge":   "8 vCPU, 64 GB RAM",
+	"g4dn.xlarge":  "4 vCPU, 16 GB RAM, 1x T4 GPU",
+	"g4dn.2xlarge": "8 vCPU, 32 GB RAM, 1x T4 GPU",
+	"p3.2xlarge":   "8 vCPU, 61 GB RAM, 1x V100 GPU",
+}
+
+// resolveInstanceTypeForPreview returns the instance type that will be used for launch,
+// mirroring the same logic as getInstanceTypeForLaunch in pkg/daemon/instance_handlers.go.
+func (a *App) resolveInstanceTypeForPreview(req *types.LaunchRequest) string {
+	sizeMap := map[string]string{
+		"XS": "t3.micro",
+		"S":  "t3.small",
+		"M":  "t3.medium",
+		"L":  "t3.large",
+		"XL": "t3.xlarge",
+	}
+	if req.Size != "" {
+		if t, ok := sizeMap[strings.ToUpper(req.Size)]; ok {
+			return t
+		}
+	}
+	templateInfo, err := templates.GetTemplateInfo(req.Template)
+	if err == nil && templateInfo.InstanceDefaults.Type != "" {
+		return templateInfo.InstanceDefaults.Type
+	}
+	return "t3.micro"
 }
 
 // shouldMonitorLaunch returns true if launch progress should be monitored.

@@ -63,6 +63,9 @@ func (f *LaunchCommandFactory) buildLaunchArgs(cmd *cobra.Command, args []string
 	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
 		args = append(args, "--dry-run")
 	}
+	if yes, _ := cmd.Flags().GetBool("yes"); yes {
+		args = append(args, "--yes")
+	}
 	if params, _ := cmd.Flags().GetStringArray("param"); len(params) > 0 {
 		for _, param := range params {
 			args = append(args, "--param", param)
@@ -83,6 +86,7 @@ func (f *LaunchCommandFactory) addLaunchFlags(cmd *cobra.Command) {
 	cmd.Flags().String("project", "", "Associate with project")
 	cmd.Flags().Bool("wait", false, "Wait and display launch progress in real-time")
 	cmd.Flags().Bool("dry-run", false, "Validate configuration without launching")
+	cmd.Flags().BoolP("yes", "y", false, "Skip cost confirmation prompt")
 	cmd.Flags().StringArray("param", []string{}, "Template parameter in format name=value")
 	cmd.Flags().String("research-user", "", "Automatically create and provision research user on workspace")
 }

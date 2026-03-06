@@ -44,6 +44,7 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&WaitCommand{})
 	dispatcher.RegisterCommand(&QuietCommand{})
 	dispatcher.RegisterCommand(&NoProgressCommand{})
+	dispatcher.RegisterCommand(&YesCommand{})
 	dispatcher.RegisterCommand(&ParameterCommand{})
 	dispatcher.RegisterCommand(&ResearchUserCommand{})
 	dispatcher.RegisterCommand(&VersionCommand{})
@@ -308,6 +309,18 @@ func (n *NoProgressCommand) CanHandle(arg string) bool {
 
 func (n *NoProgressCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
 	req.NoProgress = true
+	return index, nil
+}
+
+// YesCommand handles --yes / -y flag (skip cost confirmation prompt)
+type YesCommand struct{}
+
+func (y *YesCommand) CanHandle(arg string) bool {
+	return arg == "--yes" || arg == "-y"
+}
+
+func (y *YesCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	req.AutoYes = true
 	return index, nil
 }
 

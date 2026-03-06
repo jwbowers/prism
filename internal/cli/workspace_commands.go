@@ -89,6 +89,7 @@ func (f *WorkspaceCommandFactory) buildLaunchArgs(cmd *cobra.Command, args []str
 	args = appendStringFlag(cmd, args, "ssh-key", "--ssh-key")
 	args = appendBoolFlag(cmd, args, "quiet", "--quiet")
 	args = appendBoolFlag(cmd, args, "no-progress", "--no-progress")
+	args = appendBoolFlag(cmd, args, "yes", "--yes")
 	return f.app.Launch(args)
 }
 
@@ -107,6 +108,7 @@ func (f *WorkspaceCommandFactory) addLaunchFlags(cmd *cobra.Command) {
 	cmd.Flags().String("ssh-key", "", "SSH key name for instance access (defaults to first available key)")
 	cmd.Flags().Bool("quiet", false, "Suppress progress output (for scripting)")
 	cmd.Flags().Bool("no-progress", false, "Disable progress monitoring")
+	cmd.Flags().BoolP("yes", "y", false, "Skip cost confirmation prompt")
 }
 
 func (f *WorkspaceCommandFactory) createListCommand() *cobra.Command {
