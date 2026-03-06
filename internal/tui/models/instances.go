@@ -29,12 +29,22 @@ type InstancesModel struct {
 	showingActions bool
 	actionMessage  string
 
+	// Project filter
+	projectFilter    string // empty = all, otherwise project ID
+	projectFilterIdx int    // 0=none, 1..N = index in projectsList
+	projectsList     []api.ProjectResponse
+
 	// Command dispatcher for SOLID architecture
 	dispatcher *CommandDispatcher
 }
 
 // InstanceRefreshMsg is sent when instance data should be refreshed
 type InstanceRefreshMsg struct{}
+
+// InstancesProjectsMsg carries project list data for the filter feature
+type InstancesProjectsMsg struct {
+	Projects []api.ProjectResponse
+}
 
 // Note: InstanceActionMsg is defined in instance_action.go
 
@@ -85,8 +95,18 @@ func (m InstancesModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.InitialCmd(),
 		m.fetchInstances,
+		m.fetchProjectsList,
 		m.refreshTicker(),
 	)
+}
+
+// fetchProjectsList retrieves available projects for the filter feature
+func (m InstancesModel) fetchProjectsList() tea.Msg {
+	resp, err := m.apiClient.ListProjects(context.Background(), nil)
+	if err != nil {
+		return InstancesProjectsMsg{} // non-fatal; just no project names for filter
+	}
+	return InstancesProjectsMsg{Projects: resp.Projects}
 }
 
 // fetchInstances retrieves instance data from the API
@@ -143,12 +163,33 @@ func (m InstancesModel) performAction(action string) tea.Cmd {
 func (m InstancesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	// Handle global quit command
-	if keyMsg, ok := msg.(tea.KeyMsg); ok && keyMsg.String() == "q" && !m.showingActions {
-		return m, tea.Quit
+	// Handle key shortcuts before dispatcher
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "q":
+			if !m.showingActions {
+				return m, tea.Quit
+			}
+		case "p":
+			if !m.showingActions && len(m.projectsList) > 0 {
+				m.projectFilterIdx = (m.projectFilterIdx + 1) % (len(m.projectsList) + 1)
+				if m.projectFilterIdx == 0 {
+					m.projectFilter = ""
+				} else {
+					m.projectFilter = m.projectsList[m.projectFilterIdx-1].ID
+				}
+				m.updateInstancesTable()
+				filterName := "all"
+				if m.projectFilter != "" {
+					filterName = m.projectsList[m.projectFilterIdx-1].Name
+				}
+				m.statusBar.SetStatus(fmt.Sprintf("Project filter: %s", filterName), components.StatusSuccess)
+			}
+			return m, nil
+		}
 	}
 
-	// Try to dispatch command using Command Pattern
+	// Dispatch command using Command Pattern
 	newModel, cmd := m.dispatcher.Dispatch(msg, m)
 	if cmd != nil {
 		return newModel, cmd
@@ -180,6 +221,9 @@ func (m InstancesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.error = msg.Error()
 		m.statusBar.SetStatus(fmt.Sprintf("Error: %s", m.error), components.StatusError)
 
+	case InstancesProjectsMsg:
+		m.projectsList = msg.Projects
+
 	case *api.ListInstancesResponse:
 		m.loading = false
 		m.instances = msg.Instances
@@ -203,6 +247,11 @@ func (m InstancesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *InstancesModel) updateInstancesTable() {
 	rows := []table.Row{}
 	for _, instance := range m.instances {
+		// Apply project filter if active
+		if m.projectFilter != "" && instance.ProjectID != m.projectFilter {
+			continue
+		}
+
 		status := strings.ToUpper(instance.State)
 		launchTime := "N/A"
 		if !instance.LaunchTime.IsZero() {
@@ -314,7 +363,11 @@ func (m InstancesModel) View() string {
 	if m.showingActions {
 		help = theme.Help.Render("s: start • p: stop • d: delete • esc: cancel")
 	} else {
-		help = theme.Help.Render("r: refresh • a: actions • c: connect info • q: quit • ↑/↓: navigate")
+		filterLabel := ""
+		if m.projectFilter != "" && m.projectFilterIdx > 0 && m.projectFilterIdx <= len(m.projectsList) {
+			filterLabel = " [filter: " + m.projectsList[m.projectFilterIdx-1].Name + "]"
+		}
+		help = theme.Help.Render("r: refresh • a: actions • c: connect info • p: project filter" + filterLabel + " • q: quit • ↑/↓: navigate")
 	}
 
 	// Join everything together

@@ -51,6 +51,7 @@ type apiClient interface {
 
 	// Project operations (Phase 4 Enterprise)
 	ListProjects(ctx context.Context, filter *api.ProjectFilter) (*api.ListProjectsResponse, error)
+	GetProjectMembers(ctx context.Context, projectID string) (*api.ListMembersResponse, error)
 
 	// Policy operations (Phase 5A+)
 	GetPolicyStatus(ctx context.Context) (*api.PolicyStatusResponse, error)

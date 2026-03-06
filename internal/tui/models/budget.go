@@ -333,37 +333,115 @@ func (m BudgetModel) renderOverview() string {
 	return b.String()
 }
 
-// renderBreakdown displays cost breakdown by service/instance
+// truncate shortens s to at most n runes, appending "…" if truncated.
+func truncate(s string, n int) string {
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
+	if n <= 1 {
+		return "…"
+	}
+	return string(runes[:n-1]) + "…"
+}
+
+// renderASCIIBar renders a filled/empty bar of given width for the given ratio (0.0–1.0).
+func renderASCIIBar(ratio float64, width int) string {
+	if ratio < 0 {
+		ratio = 0
+	}
+	if ratio > 1 {
+		ratio = 1
+	}
+	filled := int(ratio * float64(width))
+	return strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
+}
+
+// renderBreakdown displays cost breakdown with ASCII bar charts (issue #39)
 func (m BudgetModel) renderBreakdown() string {
-	if m.selectedBudget >= len(m.projects) {
-		return "Select a project to view cost breakdown."
+	if len(m.projects) == 0 {
+		return "No projects with budgets found."
 	}
 
-	project := m.projects[m.selectedBudget]
 	var b strings.Builder
+	theme := styles.CurrentTheme
+	barWidth := 30
 
-	b.WriteString(fmt.Sprintf("Cost Breakdown for '%s'\n\n", project.Name))
+	b.WriteString(theme.SubTitle.Render("Cost Breakdown — Budget Utilization by Project"))
+	b.WriteString("\n\n")
 
-	if project.BudgetStatus == nil || project.BudgetStatus.TotalBudget <= 0 {
-		b.WriteString("No budget configured for this project.\n")
-		return b.String()
+	// Per-project budget utilization bar chart
+	maxBudget := 0.0
+	for _, proj := range m.projects {
+		if proj.BudgetStatus != nil && proj.BudgetStatus.TotalBudget > maxBudget {
+			maxBudget = proj.BudgetStatus.TotalBudget
+		}
+	}
+	if maxBudget <= 0 {
+		maxBudget = 1
 	}
 
-	// Display cost breakdown
-	b.WriteString(fmt.Sprintf("Total Spent: $%.2f\n", project.BudgetStatus.SpentAmount))
-	b.WriteString(fmt.Sprintf("Total Budget: $%.2f\n\n", project.BudgetStatus.TotalBudget))
+	for i, proj := range m.projects {
+		selector := "  "
+		if i == m.selectedBudget {
+			selector = "> "
+		}
+		if proj.BudgetStatus == nil || proj.BudgetStatus.TotalBudget <= 0 {
+			b.WriteString(fmt.Sprintf("%s%-20s  [no budget]\n", selector, truncate(proj.Name, 20)))
+			continue
+		}
 
-	// Design Decision: TUI shows budget summary; detailed cost breakdown requires CLI
-	// Rationale: Cost breakdown API returns detailed data better suited for CLI table formatting
-	// Future Enhancement: Add simple breakdown chart if TUI space permits
-	b.WriteString("Cost breakdown by service:\n")
-	b.WriteString("  EC2 Compute: (see CLI for details)\n")
-	b.WriteString("  EBS Storage: (see CLI for details)\n")
-	b.WriteString("  EFS Storage: (see CLI for details)\n")
-	b.WriteString("  Data Transfer: (see CLI for details)\n\n")
+		spent := proj.BudgetStatus.SpentAmount
+		budget := proj.BudgetStatus.TotalBudget
+		ratio := spent / budget
 
-	b.WriteString("💡 Detailed breakdown available via: prism budget breakdown " + project.Name + "\n")
+		// Color-code the bar label based on usage
+		statusMark := "  "
+		if ratio >= 0.95 {
+			statusMark = "!!"
+		} else if ratio >= 0.80 {
+			statusMark = " !"
+		}
 
+		bar := renderASCIIBar(ratio, barWidth)
+		b.WriteString(fmt.Sprintf("%s%-20s  [%s]%s  $%.0f/$%.0f (%.0f%%)\n",
+			selector, truncate(proj.Name, 20), bar, statusMark,
+			spent, budget, ratio*100))
+	}
+
+	// Selected project detail
+	if m.selectedBudget < len(m.projects) {
+		proj := m.projects[m.selectedBudget]
+		if proj.BudgetStatus != nil && proj.BudgetStatus.TotalBudget > 0 {
+			b.WriteString("\n")
+			b.WriteString(theme.SubTitle.Render(fmt.Sprintf("Detail — %s", proj.Name)))
+			b.WriteString("\n")
+
+			budget := proj.BudgetStatus
+			spent := budget.SpentAmount
+			remaining := budget.TotalBudget - spent
+			if remaining < 0 {
+				remaining = 0
+			}
+
+			// Spent vs. remaining bars
+			b.WriteString(fmt.Sprintf("  Spent     [%s]  $%.2f\n",
+				renderASCIIBar(spent/budget.TotalBudget, barWidth), spent))
+			b.WriteString(fmt.Sprintf("  Remaining [%s]  $%.2f\n",
+				renderASCIIBar(remaining/budget.TotalBudget, barWidth), remaining))
+
+			if budget.ProjectedMonthlySpend > 0 {
+				b.WriteString(fmt.Sprintf("\n  Projected Monthly: $%.2f", budget.ProjectedMonthlySpend))
+				if budget.DaysUntilBudgetExhausted != nil && *budget.DaysUntilBudgetExhausted > 0 {
+					b.WriteString(fmt.Sprintf("  |  Budget lasts: %d days", *budget.DaysUntilBudgetExhausted))
+				}
+				b.WriteString("\n")
+			}
+		}
+	}
+
+	b.WriteString("\n  !! = critical (≥95%)  ! = warning (≥80%)")
+	b.WriteString("\n  ↑/↓ select project  |  prism budget breakdown <project> (service-level detail)\n")
 	return b.String()
 }
 
@@ -403,28 +481,86 @@ func (m BudgetModel) renderForecast() string {
 	return b.String()
 }
 
-// renderSavings displays hibernation and cost optimization savings
+// renderSavings displays hibernation savings analysis with visualization (issue #40)
 func (m BudgetModel) renderSavings() string {
 	var b strings.Builder
+	theme := styles.CurrentTheme
+	barWidth := 24
 
-	b.WriteString("Cost Savings Analysis\n\n")
+	b.WriteString(theme.SubTitle.Render("Hibernation Savings Analysis"))
+	b.WriteString("\n\n")
+	b.WriteString("  Estimate: hibernating workspaces ~12h/day saves ~50% of compute costs.\n\n")
 
-	// Aggregate savings across all projects
+	type savingsRow struct {
+		name            string
+		currentMonthly  float64
+		savingsEstimate float64
+	}
+
+	var rows []savingsRow
+	totalCurrent := 0.0
 	totalSavings := 0.0
+	maxMonthly := 0.0
 
-	b.WriteString("Hibernation Savings:\n")
 	for _, proj := range m.projects {
-		if proj.BudgetStatus != nil {
-			// Design Decision: Hibernation savings API not yet implemented
-			// Rationale: Savings calculation requires historical data analysis
-			// Future Enhancement: Add savings tracking to budget status API
-			b.WriteString(fmt.Sprintf("  %s: (see CLI for details)\n", proj.Name))
+		var monthly float64
+		if proj.BudgetStatus != nil && proj.BudgetStatus.ProjectedMonthlySpend > 0 {
+			monthly = proj.BudgetStatus.ProjectedMonthlySpend
+		} else {
+			monthly = proj.TotalCost
+		}
+		// Estimate: ~80% of spend is compute; hibernating half the time saves ~40% total
+		savingsEst := monthly * 0.40
+		rows = append(rows, savingsRow{proj.Name, monthly, savingsEst})
+		totalCurrent += monthly
+		totalSavings += savingsEst
+		if monthly > maxMonthly {
+			maxMonthly = monthly
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("\nTotal Savings: $%.2f\n", totalSavings))
-	b.WriteString("\n💡 Detailed savings analysis available via: prism budget savings\n")
+	if maxMonthly <= 0 {
+		maxMonthly = 1
+	}
 
+	if len(rows) == 0 {
+		b.WriteString("  No projects found. Launch a workspace to see savings potential.\n")
+		return b.String()
+	}
+
+	// Header
+	b.WriteString(fmt.Sprintf("  %-20s  %-26s  %s\n", "PROJECT", "SAVINGS POTENTIAL", "EST. $/MO SAVED"))
+	b.WriteString(fmt.Sprintf("  %-20s  %-26s  %s\n",
+		strings.Repeat("─", 20), strings.Repeat("─", 26), strings.Repeat("─", 14)))
+
+	for _, row := range rows {
+		ratio := 0.0
+		if row.currentMonthly > 0 {
+			ratio = row.savingsEstimate / row.currentMonthly
+		}
+		bar := renderASCIIBar(ratio, barWidth)
+		b.WriteString(fmt.Sprintf("  %-20s  [%s]  $%.2f\n",
+			truncate(row.name, 20), bar, row.savingsEstimate))
+	}
+
+	// Totals
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  Current Monthly Spend (est):  $%.2f\n", totalCurrent))
+	b.WriteString(fmt.Sprintf("  Potential Savings (est):       $%.2f/mo\n", totalSavings))
+	if totalCurrent > 0 {
+		b.WriteString(fmt.Sprintf("  Savings Percentage:            %.0f%%\n", (totalSavings/totalCurrent)*100))
+	}
+
+	// Savings bar showing proportion saved
+	if totalCurrent > 0 {
+		b.WriteString("\n")
+		savingsRatio := totalSavings / totalCurrent
+		b.WriteString(fmt.Sprintf("  Savings vs. current  [%s]  %.0f%%\n",
+			renderASCIIBar(savingsRatio, barWidth), savingsRatio*100))
+	}
+
+	b.WriteString("\n  Based on 12h/day hibernation schedule (compute-heavy workloads).")
+	b.WriteString("\n  prism workspace hibernate <name>  to hibernate a workspace\n")
 	return b.String()
 }
 

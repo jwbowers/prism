@@ -172,6 +172,11 @@ func (m *mockAPIClientProfiles) ListProjects(ctx context.Context, filter *api.Pr
 	return &api.ListProjectsResponse{}, nil
 }
 
+func (m *mockAPIClientProfiles) GetProjectMembers(ctx context.Context, projectID string) (*api.ListMembersResponse, error) {
+	m.callLog = append(m.callLog, "GetProjectMembers")
+	return &api.ListMembersResponse{}, nil
+}
+
 func (m *mockAPIClientProfiles) GetPolicyStatus(ctx context.Context) (*api.PolicyStatusResponse, error) {
 	m.callLog = append(m.callLog, "GetPolicyStatus")
 	if m.shouldError {

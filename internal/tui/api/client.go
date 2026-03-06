@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	pkgapi "github.com/scttfrdmn/prism/pkg/api/client"
@@ -229,12 +230,59 @@ func (c *TUIClient) UnmountVolume(ctx context.Context, volumeName, instanceName 
 
 // ListProjects returns all projects with optional filtering
 func (c *TUIClient) ListProjects(ctx context.Context, filter *ProjectFilter) (*ListProjectsResponse, error) {
-	// The underlying client's ListProjects method will be called
-	// For now, return empty list if method doesn't exist yet
-	// This allows TUI to compile and we'll implement the backend later
-	return &ListProjectsResponse{
-		Projects: []ProjectResponse{},
-	}, nil
+	resp, err := c.client.ListProjects(ctx, nil)
+	if err != nil {
+		// Return empty list on error so TUI still renders
+		return &ListProjectsResponse{Projects: []ProjectResponse{}}, nil
+	}
+
+	projects := make([]ProjectResponse, 0, len(resp.Projects))
+	for _, p := range resp.Projects {
+		pr := ProjectResponse{
+			ID:              p.ID,
+			Name:            p.Name,
+			Owner:           p.Owner,
+			Status:          string(p.Status),
+			MemberCount:     p.MemberCount,
+			ActiveInstances: p.ActiveInstances,
+			TotalCost:       p.TotalCost,
+			CreatedAt:       p.CreatedAt,
+			LastActivity:    p.LastActivity,
+		}
+		if p.BudgetStatus != nil {
+			// Build alert list from count
+			alerts := make([]string, p.BudgetStatus.AlertCount)
+			for i := range alerts {
+				alerts[i] = fmt.Sprintf("Alert %d", i+1)
+			}
+			pr.BudgetStatus = &BudgetStatus{
+				TotalBudget:     p.BudgetStatus.TotalBudget,
+				SpentAmount:     p.BudgetStatus.SpentAmount,
+				SpentPercentage: p.BudgetStatus.SpentPercentage * 100, // 0.0-1.0 → percent
+				ActiveAlerts:    alerts,
+			}
+		}
+		projects = append(projects, pr)
+	}
+	return &ListProjectsResponse{Projects: projects}, nil
+}
+
+// GetProjectMembers returns the members of a project
+func (c *TUIClient) GetProjectMembers(ctx context.Context, projectID string) (*ListMembersResponse, error) {
+	members, err := c.client.GetProjectMembers(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	memberList := make([]MemberResponse, 0, len(members))
+	for _, m := range members {
+		memberList = append(memberList, MemberResponse{
+			UserID:  m.UserID,
+			Role:    string(m.Role),
+			AddedAt: m.AddedAt,
+			AddedBy: m.AddedBy,
+		})
+	}
+	return &ListMembersResponse{Members: memberList}, nil
 }
 
 // Policy operations (Phase 5A+)

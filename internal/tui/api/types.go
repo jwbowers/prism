@@ -76,7 +76,21 @@ type InstanceResponse struct {
 	AttachedVolumes    []string  `json:"attached_volumes"`
 	AttachedEBSVolumes []string  `json:"attached_ebs_volumes"`
 	InstanceLifecycle  string    `json:"instance_lifecycle"` // "spot" or "on-demand"
+	ProjectID          string    `json:"project_id,omitempty"`
 	Ports              []int     `json:"ports"`
+}
+
+// MemberResponse represents a project member returned from the API
+type MemberResponse struct {
+	UserID  string    `json:"user_id"`
+	Role    string    `json:"role"`
+	AddedAt time.Time `json:"added_at"`
+	AddedBy string    `json:"added_by"`
+}
+
+// ListMembersResponse represents a list of project members
+type ListMembersResponse struct {
+	Members []MemberResponse `json:"members"`
 }
 
 // ListInstancesResponse represents a list of instances returned from the API
@@ -189,6 +203,7 @@ func ToInstanceResponse(instance types.Instance) InstanceResponse {
 		AttachedVolumes:    instance.AttachedVolumes,
 		AttachedEBSVolumes: instance.AttachedEBSVolumes,
 		InstanceLifecycle:  instance.InstanceLifecycle,
+		ProjectID:          instance.ProjectID,
 		Ports:              ports,
 	}
 }

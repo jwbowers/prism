@@ -134,6 +134,10 @@ func (m *instanceActionMockClient) ListProjects(ctx context.Context, filter *api
 	return &api.ListProjectsResponse{}, nil
 }
 
+func (m *instanceActionMockClient) GetProjectMembers(ctx context.Context, projectID string) (*api.ListMembersResponse, error) {
+	return &api.ListMembersResponse{}, nil
+}
+
 func (m *instanceActionMockClient) GetPolicyStatus(ctx context.Context) (*api.PolicyStatusResponse, error) {
 	return &api.PolicyStatusResponse{}, nil
 }

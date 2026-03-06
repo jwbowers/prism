@@ -130,6 +130,10 @@ func (m *mockStorageAPIClient) ListProjects(ctx context.Context, filter *api.Pro
 	return &api.ListProjectsResponse{}, nil
 }
 
+func (m *mockStorageAPIClient) GetProjectMembers(ctx context.Context, projectID string) (*api.ListMembersResponse, error) {
+	return &api.ListMembersResponse{}, nil
+}
+
 func (m *mockStorageAPIClient) GetPolicyStatus(ctx context.Context) (*api.PolicyStatusResponse, error) {
 	return &api.PolicyStatusResponse{}, nil
 }

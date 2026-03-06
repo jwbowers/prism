@@ -18,6 +18,7 @@ import (
 type ProjectsModel struct {
 	apiClient         apiClient
 	projectsTable     components.Table
+	membersTable      components.Table
 	statusBar         components.StatusBar
 	spinner           components.Spinner
 	width             int
@@ -25,6 +26,8 @@ type ProjectsModel struct {
 	loading           bool
 	error             string
 	projects          []api.ProjectResponse
+	members           []api.MemberResponse
+	membersLoading    bool
 	selectedProject   int
 	selectedTab       int // 0=list, 1=members, 2=instances, 3=budget
 	showCreateDialog  bool
@@ -36,6 +39,13 @@ type ProjectsModel struct {
 type ProjectDataMsg struct {
 	Projects []api.ProjectResponse
 	Error    error
+}
+
+// ProjectMembersMsg represents member data retrieved from the API
+type ProjectMembersMsg struct {
+	Members   []api.MemberResponse
+	ProjectID string
+	Error     error
 }
 
 // NewProjectsModel creates a new projects model
@@ -50,8 +60,16 @@ func NewProjectsModel(apiClient apiClient) ProjectsModel {
 		{Title: "COST", Width: 12},
 		{Title: "BUDGET", Width: 12},
 	}
-
 	projectsTable := components.NewTable(columns, []table.Row{}, 80, 10, true)
+
+	// Create members table
+	memberColumns := []table.Column{
+		{Title: "USER", Width: 30},
+		{Title: "ROLE", Width: 12},
+		{Title: "ADDED BY", Width: 20},
+		{Title: "ADDED", Width: 12},
+	}
+	membersTable := components.NewTable(memberColumns, []table.Row{}, 80, 10, false)
 
 	// Create status bar and spinner
 	statusBar := components.NewStatusBar("Prism Project Management", "")
@@ -60,6 +78,7 @@ func NewProjectsModel(apiClient apiClient) ProjectsModel {
 	return ProjectsModel{
 		apiClient:       apiClient,
 		projectsTable:   projectsTable,
+		membersTable:    membersTable,
 		statusBar:       statusBar,
 		spinner:         spinner,
 		width:           80,
@@ -91,6 +110,19 @@ func (m ProjectsModel) fetchProjects() tea.Msg {
 	}
 }
 
+// fetchProjectMembers retrieves member data for the selected project
+func (m ProjectsModel) fetchProjectMembers() tea.Msg {
+	if m.selectedProject >= len(m.projects) {
+		return ProjectMembersMsg{}
+	}
+	project := m.projects[m.selectedProject]
+	resp, err := m.apiClient.GetProjectMembers(context.Background(), project.ID)
+	if err != nil {
+		return ProjectMembersMsg{Error: fmt.Errorf("failed to get members: %w", err)}
+	}
+	return ProjectMembersMsg{Members: resp.Members, ProjectID: project.ID}
+}
+
 // Update handles messages and updates the model
 func (m ProjectsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -100,6 +132,16 @@ func (m ProjectsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.projectsTable.SetSize(msg.Width-4, msg.Height-12)
+		m.membersTable.SetSize(msg.Width-4, msg.Height-14)
+		return m, nil
+
+	case ProjectMembersMsg:
+		m.membersLoading = false
+		if msg.Error != nil {
+			m.error = msg.Error.Error()
+		} else {
+			m.members = msg.Members
+		}
 		return m, nil
 
 	case ProjectDataMsg:
@@ -138,6 +180,11 @@ func updateProjectsOnKey(m ProjectsModel, msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.fetchProjects
 	case "tab":
 		m.selectedTab = (m.selectedTab + 1) % 4
+		if m.selectedTab == 1 && len(m.projects) > 0 {
+			m.membersLoading = true
+			m.members = nil
+			return m, m.fetchProjectMembers
+		}
 		return m, nil
 	case "n":
 		if m.selectedTab == 0 {
@@ -301,28 +348,48 @@ func (m ProjectsModel) renderOverview() string {
 	return b.String()
 }
 
-// renderMembers displays project members
+// renderMembers displays project members in a paginated table
 func (m ProjectsModel) renderMembers() string {
+	if len(m.projects) == 0 {
+		return "No projects found. Select a project in the Overview tab first."
+	}
 	if m.selectedProject >= len(m.projects) {
 		return "Select a project to view members."
 	}
 
 	project := m.projects[m.selectedProject]
 	var b strings.Builder
+	theme := styles.CurrentTheme
 
-	b.WriteString(fmt.Sprintf("Members for project '%s'\n\n", project.Name))
-	b.WriteString(fmt.Sprintf("Owner: %s\n", project.Owner))
-	b.WriteString(fmt.Sprintf("Total Members: %d\n\n", project.MemberCount))
+	b.WriteString(theme.SubTitle.Render(fmt.Sprintf("Members — %s", project.Name)))
+	b.WriteString(fmt.Sprintf("\nOwner: %s  |  Total Members: %d\n\n", project.Owner, project.MemberCount))
 
-	// Design Decision: TUI shows member summary; detailed member list requires CLI
-	// Rationale: Member list can be long; CLI provides better formatting for detailed operations
-	// Future Enhancement: Add paginated member list view if TUI space permits
-	b.WriteString("Member management:\n")
-	b.WriteString("  • Add members: prism project members " + project.Name + " add <email> <role>\n")
-	b.WriteString("  • Remove members: prism project members " + project.Name + " remove <email>\n")
-	b.WriteString("  • List members: prism project members " + project.Name + " list\n\n")
+	if m.membersLoading {
+		return b.String() + "  Loading members..."
+	}
 
-	b.WriteString("💡 Detailed member management available via CLI commands\n")
+	if len(m.members) == 0 {
+		b.WriteString("  No members found.\n\n")
+		b.WriteString("  Add members:    prism project members add --project " + project.Name + " <email> <role>\n")
+		b.WriteString("  Remove members: prism project members remove --project " + project.Name + " <email>\n")
+		return b.String()
+	}
+
+	rows := []table.Row{}
+	for _, member := range m.members {
+		addedAt := "-"
+		if !member.AddedAt.IsZero() {
+			addedAt = member.AddedAt.Format("2006-01-02")
+		}
+		addedBy := member.AddedBy
+		if addedBy == "" {
+			addedBy = "-"
+		}
+		rows = append(rows, table.Row{member.UserID, member.Role, addedBy, addedAt})
+	}
+	m.membersTable.SetRows(rows)
+	b.WriteString(m.membersTable.View())
+	b.WriteString("\n\n  r: refresh  |  prism project members add --project " + project.Name + " <email> <role>")
 
 	return b.String()
 }

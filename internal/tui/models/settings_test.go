@@ -167,6 +167,10 @@ func (m *mockAPIClientSettings) ListProjects(ctx context.Context, filter *api.Pr
 	return &api.ListProjectsResponse{}, nil
 }
 
+func (m *mockAPIClientSettings) GetProjectMembers(ctx context.Context, projectID string) (*api.ListMembersResponse, error) {
+	return &api.ListMembersResponse{}, nil
+}
+
 func (m *mockAPIClientSettings) GetPolicyStatus(ctx context.Context) (*api.PolicyStatusResponse, error) {
 	return &api.PolicyStatusResponse{}, nil
 }
