@@ -15,7 +15,7 @@ import (
 // NewRegistry creates a new AMI registry
 func NewRegistry(ssmClient *ssm.Client, paramPrefix string) *Registry {
 	if paramPrefix == "" {
-		paramPrefix = "/cloudworkstation/amis"
+		paramPrefix = "/prism/amis"
 	}
 	return &Registry{
 		SSMClient:       ssmClient,

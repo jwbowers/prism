@@ -1,4 +1,4 @@
-# CloudWorkstation golangci-lint configuration
+# Prism golangci-lint configuration
 # Compatible with golangci-lint v2.5+
 
 version: 2
@@ -10,7 +10,7 @@ run:
     - vendor
     - node_modules
     - .git
-    - cmd/cws-gui/frontend
+    - cmd/prism-gui/frontend
 
 output:
   format: colored-line-number

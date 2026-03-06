@@ -79,7 +79,7 @@ func (m *SSHKeyManager) getOrCreateProfileKey(profile *Profile) (string, string,
 	safeName = strings.ReplaceAll(safeName, "'", "")
 	safeName = strings.ReplaceAll(safeName, "\"", "")
 
-	privateKeyPath := filepath.Join(m.homeDir, ".ssh", fmt.Sprintf("cws-%s-key", safeName))
+	privateKeyPath := filepath.Join(m.homeDir, ".ssh", fmt.Sprintf("prism-%s-key", safeName))
 	publicKeyPath := privateKeyPath + ".pub"
 
 	if m.keyPairExists(privateKeyPath, publicKeyPath) {
@@ -103,7 +103,7 @@ func (m *SSHKeyManager) generateKeyName(profile *Profile) string {
 	// Remove any other problematic characters
 	safeName = strings.ReplaceAll(safeName, "'", "")
 	safeName = strings.ReplaceAll(safeName, "\"", "")
-	return fmt.Sprintf("cws-%s-key", safeName)
+	return fmt.Sprintf("prism-%s-key", safeName)
 }
 
 // keyPairExists checks if both private and public key files exist
@@ -161,7 +161,7 @@ func (m *SSHKeyManager) generateKeyPair(privateKeyPath, publicKeyPath string) er
 	}
 	defer publicFile.Close()
 
-	publicKeyLine := fmt.Sprintf("%s cloudworkstation-generated\n",
+	publicKeyLine := fmt.Sprintf("%s prism-generated\n",
 		strings.TrimSpace(string(ssh.MarshalAuthorizedKey(publicKey))))
 
 	if _, err := publicFile.WriteString(publicKeyLine); err != nil {
@@ -188,7 +188,7 @@ func (m *SSHKeyManager) extractKeyNameFromPublicKey(publicKeyPath string) (strin
 	filename := filepath.Base(publicKeyPath)
 	filename = strings.TrimSuffix(filename, ".pub")
 
-	return fmt.Sprintf("cws-default-%s-key", filename), nil
+	return fmt.Sprintf("prism-default-%s-key", filename), nil
 }
 
 // GetPublicKeyContent returns the content of the public key for AWS upload

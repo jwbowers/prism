@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 30
     
     # Only run on specific repository to prevent accidental runs
-    if: github.repository == 'scttfrdmn/cloudworkstation'
+    if: github.repository == 'scttfrdmn/prism'
     
     steps:
     - name: Checkout code
@@ -81,10 +81,10 @@ jobs:
         aws sts get-caller-identity
         aws ec2 describe-regions --region ${{ env.AWS_TEST_REGION }}
         
-    - name: Build CloudWorkstation
+    - name: Build Prism
       run: make build
       
-    - name: Start CloudWorkstation daemon
+    - name: Start Prism daemon
       run: |
         ./bin/prismd &
         sleep 5
@@ -129,13 +129,13 @@ jobs:
         echo "🧹 Cleaning up any remaining test resources..."
         # Force cleanup of any test resources that might be left behind
         aws ec2 describe-instances \
-          --filters "Name=tag:CreatedBy,Values=CloudWorkstationIntegrationTest" "Name=instance-state-name,Values=running,pending,stopped" \
+          --filters "Name=tag:CreatedBy,Values=PrismIntegrationTest" "Name=instance-state-name,Values=running,pending,stopped" \
           --query 'Reservations[].Instances[].InstanceId' \
           --output text | xargs -r aws ec2 terminate-instances --instance-ids
         
         # Cleanup test EFS volumes
         aws efs describe-file-systems \
-          --query 'FileSystems[?Tags[?Key==`CreatedBy` && Value==`CloudWorkstationIntegrationTest`]].FileSystemId' \
+          --query 'FileSystems[?Tags[?Key==`CreatedBy` && Value==`PrismIntegrationTest`]].FileSystemId' \
           --output text | xargs -r -I {} aws efs delete-file-system --file-system-id {}
           
     - name: Stop daemon

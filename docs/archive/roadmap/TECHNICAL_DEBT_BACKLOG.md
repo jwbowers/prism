@@ -13,7 +13,7 @@ This document tracks features that were intentionally deferred during developmen
 **Milestone**: [#2](https://github.com/scttfrdmn/prism/milestone/2)
 
 #### 🏠 #13: Home Page with Quick Start Wizard
-**Location**: `cmd/cws-gui/frontend/src/` (new HomePage component)
+**Location**: `cmd/prism-gui/frontend/src/` (new HomePage component)
 **Priority**: Critical
 **Effort**: 3-4 days
 **Implementation**:
@@ -23,7 +23,7 @@ This document tracks features that were intentionally deferred during developmen
 - Integration points: Dashboard navigation, first-run detection
 
 #### 🔀 #14: Merge Terminal/WebView into Workspaces
-**Location**: `cmd/cws-gui/frontend/src/`, TUI navigation, CLI help
+**Location**: `cmd/prism-gui/frontend/src/`, TUI navigation, CLI help
 **Priority**: Critical
 **Effort**: 2-3 days
 **Implementation**:
@@ -44,7 +44,7 @@ This document tracks features that were intentionally deferred during developmen
 - Docs: Update all user-facing documentation (ROADMAP, USER_GUIDE, etc.)
 
 #### ⚙️ #16: Collapse Advanced Features Under Settings
-**Location**: `cmd/cws-gui/frontend/src/App.tsx` navigation
+**Location**: `cmd/prism-gui/frontend/src/App.tsx` navigation
 **Priority**: Critical
 **Effort**: 2-3 days
 **Implementation**:
@@ -89,7 +89,7 @@ This document tracks features that were intentionally deferred during developmen
 **Milestone**: [#3](https://github.com/scttfrdmn/prism/milestone/3)
 
 #### 💾 #18: Unified Storage UI (EFS + EBS)
-**Location**: `cmd/cws-gui/frontend/src/pages/Storage.tsx`
+**Location**: `cmd/prism-gui/frontend/src/pages/Storage.tsx`
 **Priority**: High
 **Effort**: 5-6 days
 **Implementation**:
@@ -99,7 +99,7 @@ This document tracks features that were intentionally deferred during developmen
 - Merge `volume` and `storage` CLI commands into `prism storage`
 
 #### 💰 #19: Integrate Budgets into Projects
-**Location**: `cmd/cws-gui/frontend/src/pages/Projects.tsx`, Budget page removal
+**Location**: `cmd/prism-gui/frontend/src/pages/Projects.tsx`, Budget page removal
 **Priority**: High
 **Effort**: 4-5 days
 **Implementation**:
@@ -387,7 +387,7 @@ Recommendations:
 **GitHub Issue**: #61
 
 ### 12. GUI System Tray/Menu Bar and Auto-Start
-**Location**: `cmd/cws-gui/main.go` (Wails 3 integration)
+**Location**: `cmd/prism-gui/main.go` (Wails 3 integration)
 **Current Behavior**: No system tray, no auto-start, GUI must stay visible
 **Impact**: Reduced convenience compared to other dev tools (Docker Desktop, VS Code)
 **Implementation Needed**:

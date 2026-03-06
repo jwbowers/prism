@@ -6,7 +6,7 @@ using Microsoft.Deployment.WindowsInstaller;
 namespace SetupCustomActions
 {
     /// <summary>
-    /// Handles first-run setup and configuration for CloudWorkstation
+    /// Handles first-run setup and configuration for Prism
     /// </summary>
     public class FirstRunSetup
     {
@@ -73,7 +73,7 @@ namespace SetupCustomActions
             try
             {
                 string tempPath = Path.GetTempPath();
-                string scriptPath = Path.Combine(tempPath, "CloudWorkstation-FirstRun.ps1");
+                string scriptPath = Path.Combine(tempPath, "Prism-FirstRun.ps1");
 
                 string scriptContent = GenerateFirstRunScriptContent(installDir);
                 
@@ -98,8 +98,8 @@ namespace SetupCustomActions
             string cwsPath = Path.Combine(binPath, "cws.exe");
 
             return $@"
-# CloudWorkstation First-Run Setup
-# This script runs after CloudWorkstation installation to complete setup
+# Prism First-Run Setup
+# This script runs after Prism installation to complete setup
 
 param([switch]$Silent)
 
@@ -125,10 +125,10 @@ function Write-ColorOutput {{
 function Write-Welcome {{
     Clear-Host
     Write-ColorOutput ""======================================"" ""Cyan""
-    Write-ColorOutput ""  CloudWorkstation First-Run Setup  "" ""Cyan""
+    Write-ColorOutput ""  Prism First-Run Setup  "" ""Cyan""
     Write-ColorOutput ""======================================"" ""Cyan""
     Write-Host
-    Write-ColorOutput ""Welcome to CloudWorkstation!"" ""Green""
+    Write-ColorOutput ""Welcome to Prism!"" ""Green""
     Write-ColorOutput ""Enterprise research management platform for launching cloud environments in seconds."" ""White""
     Write-Host
 }}
@@ -143,22 +143,22 @@ function Test-Installation {{
     }}
     
     # Check service status
-    $service = Get-Service -Name ""CloudWorkstationDaemon"" -ErrorAction SilentlyContinue
+    $service = Get-Service -Name ""PrismDaemon"" -ErrorAction SilentlyContinue
     if ($service) {{
-        Write-ColorOutput ""✓ CloudWorkstation service installed"" ""Green""
+        Write-ColorOutput ""✓ Prism service installed"" ""Green""
         Write-ColorOutput ""  Status: $($service.Status)"" ""White""
         
         if ($service.Status -ne ""Running"") {{
-            Write-ColorOutput ""Starting CloudWorkstation service..."" ""Blue""
+            Write-ColorOutput ""Starting Prism service..."" ""Blue""
             try {{
-                Start-Service -Name ""CloudWorkstationDaemon""
+                Start-Service -Name ""PrismDaemon""
                 Write-ColorOutput ""✓ Service started successfully"" ""Green""
             }} catch {{
                 Write-ColorOutput ""⚠ Failed to start service: $_"" ""Yellow""
             }}
         }}
     }} else {{
-        Write-ColorOutput ""⚠ CloudWorkstation service not found"" ""Yellow""
+        Write-ColorOutput ""⚠ Prism service not found"" ""Yellow""
     }}
     
     Write-ColorOutput ""✓ Installation verification completed"" ""Green""
@@ -178,11 +178,11 @@ function Show-QuickStart {{
     Write-ColorOutput ""   cws tui                       # Interactive terminal interface"" ""White""
     Write-Host
     Write-ColorOutput ""3. Graphical User Interface (GUI):"" ""Blue""
-    Write-ColorOutput ""   cws-gui                       # Desktop application"" ""White""
+    Write-ColorOutput ""   prism-gui                       # Desktop application"" ""White""
     Write-Host
     Write-ColorOutput ""4. Service Management:"" ""Blue""
-    Write-ColorOutput ""   Get-Service CloudWorkstationDaemon  # Check service status"" ""White""
-    Write-ColorOutput ""   Restart-Service CloudWorkstationDaemon  # Restart service"" ""White""
+    Write-ColorOutput ""   Get-Service PrismDaemon  # Check service status"" ""White""
+    Write-ColorOutput ""   Restart-Service PrismDaemon  # Restart service"" ""White""
     Write-Host
     Write-ColorOutput ""Documentation:"" ""Cyan""
     Write-ColorOutput ""  • Getting Started: $InstallPath\docs\GETTING_STARTED.md"" ""White""
@@ -213,7 +213,7 @@ function Show-ConfigurationOptions {{
     Write-ColorOutput ""Configuration Options:"" ""Cyan""
     Write-Host
     Write-ColorOutput ""AWS Configuration:"" ""Blue""
-    Write-ColorOutput ""  CloudWorkstation requires AWS credentials to manage cloud resources."" ""White""
+    Write-ColorOutput ""  Prism requires AWS credentials to manage cloud resources."" ""White""
     Write-ColorOutput ""  Configure using one of these methods:"" ""White""
     Write-Host
     Write-ColorOutput ""  1. AWS CLI: aws configure"" ""White""
@@ -233,7 +233,7 @@ function Invoke-FirstRunWizard {{
         
         # Installation verification
         if (-not (Test-Installation)) {{
-            Write-ColorOutput ""Installation verification failed. Please reinstall CloudWorkstation."" ""Red""
+            Write-ColorOutput ""Installation verification failed. Please reinstall Prism."" ""Red""
             Read-Host ""Press Enter to exit""
             return
         }}
@@ -249,15 +249,15 @@ function Invoke-FirstRunWizard {{
         
         Write-Host
         Write-ColorOutput ""Setup Complete!"" ""Green""
-        Write-ColorOutput ""CloudWorkstation is ready to use. Start with 'cws --help' or 'cws tui'."" ""White""
+        Write-ColorOutput ""Prism is ready to use. Start with 'cws --help' or 'cws tui'."" ""White""
         Write-Host
         
         # Offer to launch GUI
-        $response = Read-Host ""Would you like to launch the CloudWorkstation GUI now? (y/N)""
+        $response = Read-Host ""Would you like to launch the Prism GUI now? (y/N)""
         if ($response -eq ""y"" -or $response -eq ""Y"") {{
-            Write-ColorOutput ""Launching CloudWorkstation GUI..."" ""Blue""
+            Write-ColorOutput ""Launching Prism GUI..."" ""Blue""
             try {{
-                $guiPath = Join-Path $BinPath ""cws-gui.exe""
+                $guiPath = Join-Path $BinPath ""prism-gui.exe""
                 if (Test-Path $guiPath) {{
                     Start-Process $guiPath
                     Write-ColorOutput ""✓ GUI launched successfully"" ""Green""
@@ -303,19 +303,19 @@ try {{
             try
             {
                 string tempPath = Path.GetTempPath();
-                string batchPath = Path.Combine(tempPath, "CloudWorkstation-FirstRun.bat");
+                string batchPath = Path.Combine(tempPath, "Prism-FirstRun.bat");
                 
                 string batchContent = $@"
 @echo off
 echo ======================================
-echo   CloudWorkstation First-Run Setup
+echo   Prism First-Run Setup
 echo ======================================
 echo.
-echo Welcome to CloudWorkstation!
+echo Welcome to Prism!
 echo.
 
 REM Test CLI
-echo Testing CloudWorkstation CLI...
+echo Testing Prism CLI...
 ""{Path.Combine(installDir, "bin", "cws.exe")}"" --version
 if !errorlevel! equ 0 (
     echo CLI is working correctly
@@ -330,7 +330,7 @@ echo   cws templates                 # List research templates
 echo   cws launch python-ml my-proj # Launch ML environment
 echo   cws tui                       # Interactive terminal interface
 echo.
-echo Setup complete! CloudWorkstation is ready to use.
+echo Setup complete! Prism is ready to use.
 echo.
 pause
 

@@ -20,8 +20,8 @@ class Cloudworkstation < Formula
     bin.install "bin/prismd"
     
     # Install GUI if available (optional)
-    if File.exist?("bin/cws-gui")
-      bin.install "bin/cws-gui"
+    if File.exist?("bin/prism-gui")
+      bin.install "bin/prism-gui"
     end
     
     # Install documentation
@@ -37,10 +37,10 @@ class Cloudworkstation < Formula
   end
 
   def caveats
-    gui_available = (bin/"cws-gui").exist?
+    gui_available = (bin/"prism-gui").exist?
     
     caveat_text = <<~EOS
-      CloudWorkstation has been installed with multiple interfaces:
+      Prism has been installed with multiple interfaces:
       
       Command Line Interface (CLI):
         cws --help
@@ -53,19 +53,19 @@ class Cloudworkstation < Formula
       caveat_text += <<~EOS
       
       Graphical User Interface (GUI):
-        cws-gui
+        prism-gui
         
       GUI Startup Options:
-        cws-gui -autostart        # Configure auto-start at login
-        cws-gui -remove-autostart # Remove auto-start
-        cws-gui -help            # Show GUI help
+        prism-gui -autostart        # Configure auto-start at login
+        prism-gui -remove-autostart # Remove auto-start
+        prism-gui -help            # Show GUI help
       EOS
     else
       caveat_text += <<~EOS
       
       Note: GUI not available (requires Wails CLI for building)
         Install GUI support: go install github.com/wailsapp/wails/v3/cmd/wails@latest
-        Then reinstall: brew reinstall cloudworkstation
+        Then reinstall: brew reinstall prism
       EOS
     end
     
@@ -99,13 +99,13 @@ class Cloudworkstation < Formula
     assert_predicate bin/"prismd", :exist?
     
     # Test GUI if available (optional)
-    if (bin/"cws-gui").exist?
-      assert_predicate bin/"cws-gui", :exist?
+    if (bin/"prism-gui").exist?
+      assert_predicate bin/"prism-gui", :exist?
     end
     
     # Test version command
     output = shell_output("#{bin}/cws --version 2>&1", 0)
-    assert_match "CloudWorkstation CLI v#{version}", output
+    assert_match "Prism CLI v#{version}", output
     
     # Test templates command (should work without AWS credentials)
     system "#{bin}/cws", "templates"
@@ -114,8 +114,8 @@ class Cloudworkstation < Formula
   service do
     run [opt_bin/"prismd"]
     keep_alive true
-    log_path var/"log/cloudworkstation/prismd.log"
-    error_log_path var/"log/cloudworkstation/prismd.log"
+    log_path var/"log/prism/prismd.log"
+    error_log_path var/"log/prism/prismd.log"
     working_dir HOMEBREW_PREFIX
   end
 end

@@ -104,10 +104,10 @@ func (ts *TerminalSession) connectSSH(access *InstanceAccess) {
 
 	// Try to find SSH key in ~/.ssh/ - try multiple common key names
 	possibleKeys := []string{
-		"cws-test-aws-west2-key",
-		"cws-west2-key",
-		"cws-aws-default-key",
-		"cws-test-us-west-2-key.pem",
+		"prism-test-aws-west2-key",
+		"prism-west2-key",
+		"prism-aws-default-key",
+		"prism-test-us-west-2-key.pem",
 	}
 
 	var privateKey []byte

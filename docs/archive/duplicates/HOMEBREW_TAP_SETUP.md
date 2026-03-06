@@ -119,7 +119,7 @@ class Cloudworkstation < Formula
   def install
     system "go", "mod", "tidy"
     system "make", "build"
-    bin.install "bin/cws", "bin/cwsd", "bin/cws-gui"
+    bin.install "bin/cws", "bin/cwsd", "bin/prism-gui"
     doc.install "README.md", "CLAUDE.md", "CHANGELOG.md"
     share.install "templates"
   end

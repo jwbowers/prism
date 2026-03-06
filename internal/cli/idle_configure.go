@@ -199,7 +199,7 @@ func NewIdleUpdateService() *IdleUpdateService {
 }
 
 func (s *IdleUpdateService) UpdateConfiguration(publicIP string, params *IdleConfigParams) error {
-	sshKey := "~/.ssh/cws-my-account-key"
+	sshKey := "~/.ssh/prism-my-account-key"
 
 	// Build update script
 	scriptBuilder := NewIdleScriptBuilder()
@@ -238,7 +238,7 @@ func (b *IdleScriptBuilder) BuildUpdateScript(params *IdleConfigParams) string {
 
 	// Read current config
 	scriptLines = append(scriptLines, "# Read current config")
-	scriptLines = append(scriptLines, "source /etc/cloudworkstation/idle-config 2>/dev/null || true")
+	scriptLines = append(scriptLines, "source /etc/prism/idle-config 2>/dev/null || true")
 
 	// Update variables
 	scriptLines = append(scriptLines, b.buildVariableUpdates(params)...)
@@ -251,7 +251,7 @@ func (b *IdleScriptBuilder) BuildUpdateScript(params *IdleConfigParams) string {
 
 	// Update cron if needed
 	if params.IntervalPtr != nil {
-		scriptLines = append(scriptLines, "sudo /usr/local/bin/cloudworkstation-update-cron.sh")
+		scriptLines = append(scriptLines, "sudo /usr/local/bin/prism-update-cron.sh")
 	}
 
 	return strings.Join(scriptLines, "; ")
@@ -307,8 +307,8 @@ func (b *IdleScriptBuilder) buildConfigFileCreation() []string {
 
 func (b *IdleScriptBuilder) buildFileOperations() []string {
 	return []string{
-		"sudo mv /tmp/idle-config-new /etc/cloudworkstation/idle-config",
-		"sudo chmod 644 /etc/cloudworkstation/idle-config",
+		"sudo mv /tmp/idle-config-new /etc/prism/idle-config",
+		"sudo chmod 644 /etc/prism/idle-config",
 	}
 }
 
@@ -367,7 +367,7 @@ func NewIdleConfigRetriever() *IdleConfigRetriever {
 }
 
 func (r *IdleConfigRetriever) GetConfiguration(publicIP string) (*IdleConfig, error) {
-	sshKey := "~/.ssh/cws-my-account-key"
+	sshKey := "~/.ssh/prism-my-account-key"
 
 	// Get configuration via SSH
 	cmd := exec.Command("ssh",
@@ -375,7 +375,7 @@ func (r *IdleConfigRetriever) GetConfiguration(publicIP string) (*IdleConfig, er
 		"-o", "LogLevel=ERROR",
 		"-i", sshKey,
 		fmt.Sprintf("ubuntu@%s", publicIP),
-		"sudo bash -c 'source /etc/cloudworkstation/idle-config && echo $ENABLED $IDLE_THRESHOLD_MINUTES $HIBERNATE_THRESHOLD_MINUTES $CHECK_INTERVAL_MINUTES'",
+		"sudo bash -c 'source /etc/prism/idle-config && echo $ENABLED $IDLE_THRESHOLD_MINUTES $HIBERNATE_THRESHOLD_MINUTES $CHECK_INTERVAL_MINUTES'",
 	)
 
 	output, err := cmd.CombinedOutput()

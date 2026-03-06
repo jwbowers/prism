@@ -50,7 +50,7 @@ func TestNewResearchUserProvisioner(t *testing.T) {
 	assert.Equal(t, uidMapper, provisioner.uidMapper)
 	assert.Equal(t, keyManager, provisioner.sshKeyMgr)
 	assert.Equal(t, 10*time.Minute, provisioner.provisioningTimeout)
-	assert.Equal(t, "/tmp/cws-provisioning", provisioner.scriptDir)
+	assert.Equal(t, "/tmp/prism-provisioning", provisioner.scriptDir)
 }
 
 // TestProvisionResearchUser tests single user provisioning
@@ -637,7 +637,7 @@ func TestProvisionerConfiguration(t *testing.T) {
 
 	// Test default configuration
 	assert.Equal(t, 10*time.Minute, provisioner.provisioningTimeout)
-	assert.Equal(t, "/tmp/cws-provisioning", provisioner.scriptDir)
+	assert.Equal(t, "/tmp/prism-provisioning", provisioner.scriptDir)
 
 	// Test component integration
 	assert.NotNil(t, provisioner.userManager)

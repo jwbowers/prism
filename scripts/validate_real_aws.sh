@@ -75,7 +75,7 @@ check_prerequisites() {
     fi
 
     if [ ! -f "./bin/cws" ]; then
-        log_fail "CloudWorkstation binary not found" "Run 'make build' first"
+        log_fail "Prism binary not found" "Run 'make build' first"
         exit 1
     fi
 
@@ -219,7 +219,7 @@ test_efs_storage() {
     INSTANCE1="${TEST_PREFIX}-efs1"
     INSTANCE2="${TEST_PREFIX}-efs2"
     TEST_FILE="test-$(date +%s).txt"
-    TEST_DATA="CloudWorkstation Test Data - $(date)"
+    TEST_DATA="Prism Test Data - $(date)"
 
     # Create volume
     log "Creating EFS volume: $VOLUME_NAME..."
@@ -342,7 +342,7 @@ test_error_handling() {
 # Main execution
 main() {
     log "========================================="
-    log "CloudWorkstation Real AWS Validation"
+    log "Prism Real AWS Validation"
     log "========================================="
     log "Test Run ID: $TEST_PREFIX"
     log "Results Directory: $RESULTS_DIR"

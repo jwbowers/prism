@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Help us improve CloudWorkstation's documentation! Clear documentation is essential for researchers.
+        Help us improve Prism's documentation! Clear documentation is essential for researchers.
 
   - type: dropdown
     id: doc-type

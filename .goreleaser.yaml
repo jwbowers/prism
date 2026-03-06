@@ -275,8 +275,8 @@ nfpms:
 # TODO: Uncomment for production releases with Docker support
 # dockers:
 ##   - image_templates:
-#      - "ghcr.io/scttfrdmn/cloudworkstation:{{ .Version }}-amd64"
-#      - "ghcr.io/scttfrdmn/cloudworkstation:latest-amd64"
+#      - "ghcr.io/scttfrdmn/prism:{{ .Version }}-amd64"
+#      - "ghcr.io/scttfrdmn/prism:latest-amd64"
 #    use: buildx
 #    dockerfile: Dockerfile
 #    build_flag_templates:
@@ -291,8 +291,8 @@ nfpms:
 #      - "--label=org.opencontainers.image.licenses=MIT"
 #
 #  - image_templates:
-#      - "ghcr.io/scttfrdmn/cloudworkstation:{{ .Version }}-arm64"
-#      - "ghcr.io/scttfrdmn/cloudworkstation:latest-arm64"
+#      - "ghcr.io/scttfrdmn/prism:{{ .Version }}-arm64"
+#      - "ghcr.io/scttfrdmn/prism:latest-arm64"
 #    use: buildx
 #    dockerfile: Dockerfile
 #    build_flag_templates:
@@ -309,15 +309,15 @@ nfpms:
 #
 ## Docker manifest (multi-arch support)
 #docker_manifests:
-#  - name_template: "ghcr.io/scttfrdmn/cloudworkstation:{{ .Version }}"
+#  - name_template: "ghcr.io/scttfrdmn/prism:{{ .Version }}"
 #    image_templates:
-#      - "ghcr.io/scttfrdmn/cloudworkstation:{{ .Version }}-amd64"
-#      - "ghcr.io/scttfrdmn/cloudworkstation:{{ .Version }}-arm64"
+#      - "ghcr.io/scttfrdmn/prism:{{ .Version }}-amd64"
+#      - "ghcr.io/scttfrdmn/prism:{{ .Version }}-arm64"
 #
-#  - name_template: "ghcr.io/scttfrdmn/cloudworkstation:latest"
+#  - name_template: "ghcr.io/scttfrdmn/prism:latest"
 #    image_templates:
-#      - "ghcr.io/scttfrdmn/cloudworkstation:latest-amd64"
-#      - "ghcr.io/scttfrdmn/cloudworkstation:latest-arm64"
+#      - "ghcr.io/scttfrdmn/prism:latest-amd64"
+#      - "ghcr.io/scttfrdmn/prism:latest-arm64"
 #
 # GitHub Release configuration
 release:
@@ -383,5 +383,5 @@ release:
 # announce:
 #   slack:
 #     enabled: true
-#     message_template: 'CloudWorkstation {{ .Tag }} is out! Check it out: {{ .ReleaseURL }}'
+#     message_template: 'Prism {{ .Tag }} is out! Check it out: {{ .ReleaseURL }}'
 #     channel: '#releases'

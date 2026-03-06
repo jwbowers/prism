@@ -1,6 +1,6 @@
 #!/bin/bash
-# CloudWorkstation Uninstall Manager
-# Comprehensive cleanup script for CloudWorkstation removal across platforms
+# Prism Uninstall Manager
+# Comprehensive cleanup script for Prism removal across platforms
 #
 # This script provides thorough cleanup for various installation methods:
 # - Homebrew installations (macOS)
@@ -110,9 +110,9 @@ parse_args() {
 
 show_help() {
     cat << EOF
-CloudWorkstation Uninstall Manager
+Prism Uninstall Manager
 
-This script provides comprehensive cleanup for CloudWorkstation installations,
+This script provides comprehensive cleanup for Prism installations,
 ensuring no orphaned processes or files remain after uninstallation.
 
 Usage: $0 [OPTIONS]
@@ -372,7 +372,7 @@ stop_daemon_processes() {
 
 # Uninstall via Homebrew
 uninstall_homebrew() {
-    log_info "Uninstalling CloudWorkstation via Homebrew..."
+    log_info "Uninstalling Prism via Homebrew..."
     
     if ! command -v brew >/dev/null 2>&1; then
         log_error "Homebrew not found"
@@ -380,7 +380,7 @@ uninstall_homebrew() {
     fi
     
     if ! brew list prism >/dev/null 2>&1; then
-        log_warning "CloudWorkstation not installed via Homebrew"
+        log_warning "Prism not installed via Homebrew"
         return 0
     fi
     
@@ -388,7 +388,7 @@ uninstall_homebrew() {
     execute_command "brew services stop prism 2>/dev/null || true" "Stop Homebrew service"
     
     # Uninstall package (this will call our uninstall block)
-    execute_command "brew uninstall prism" "Uninstall CloudWorkstation package"
+    execute_command "brew uninstall prism" "Uninstall Prism package"
     
     log_success "Homebrew uninstallation completed"
 }
@@ -415,7 +415,7 @@ remove_system_binaries() {
                 fi
             fi
             
-            safe_remove "$binary_path" "CloudWorkstation binary"
+            safe_remove "$binary_path" "Prism binary"
             removed_any=true
         fi
     done
@@ -440,7 +440,7 @@ cleanup_config_files() {
     if [[ -d "$config_dir" ]]; then
         if [[ "$FORCE_REMOVAL" == "false" ]]; then
             echo
-            log_warning "This will remove your CloudWorkstation configuration:"
+            log_warning "This will remove your Prism configuration:"
             log_warning "  • AWS profiles and credentials"
             log_warning "  • Daemon configuration"
             log_warning "  • Instance state files"
@@ -481,7 +481,7 @@ cleanup_log_files() {
             ;;
         windows)
             log_paths+=(
-                "$HOME/AppData/Local/CloudWorkstation/logs"
+                "$HOME/AppData/Local/Prism/logs"
                 "/tmp/prism.log"
             )
             ;;
@@ -608,7 +608,7 @@ verify_cleanup() {
 
 # Main uninstallation process
 main() {
-    echo "CloudWorkstation Uninstall Manager"
+    echo "Prism Uninstall Manager"
     echo "=================================="
     echo
     
@@ -628,14 +628,14 @@ main() {
     echo
     
     if [[ "$installation_type" == "none" ]]; then
-        log_info "No CloudWorkstation installation detected"
+        log_info "No Prism installation detected"
         exit 0
     fi
     
     # Final confirmation
     if [[ "$FORCE_REMOVAL" == "false" ]] && [[ "$DRY_RUN" == "false" ]]; then
         echo
-        log_warning "This will completely remove CloudWorkstation from your system"
+        log_warning "This will completely remove Prism from your system"
         log_warning "Installation type: $installation_type"
         if [[ "$KEEP_CONFIG" == "false" ]]; then
             log_warning "Configuration files will be removed"
@@ -683,9 +683,9 @@ main() {
     
     echo
     if [[ $exit_code -eq 0 ]]; then
-        log_success "CloudWorkstation has been successfully uninstalled"
+        log_success "Prism has been successfully uninstalled"
         echo
-        log_info "Thank you for using CloudWorkstation!"
+        log_info "Thank you for using Prism!"
         if [[ "$KEEP_CONFIG" == "false" ]]; then
             log_info "AWS credentials and profiles remain unchanged"
         fi

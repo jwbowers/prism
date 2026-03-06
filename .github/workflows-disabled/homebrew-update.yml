@@ -43,12 +43,12 @@ jobs:
 
       - name: Clone tap repository
         run: |
-          git clone https://x-access-token:${{ secrets.TAP_REPO_TOKEN }}@github.com/scttfrdmn/homebrew-cloudworkstation.git
+          git clone https://x-access-token:${{ secrets.TAP_REPO_TOKEN }}@github.com/scttfrdmn/homebrew-prism.git
           
       - name: Update formula in tap repository
         run: |
-          cp packaging/homebrew/cloudworkstation.rb homebrew-cloudworkstation/Formula/
-          cd homebrew-cloudworkstation
-          git add Formula/cloudworkstation.rb
+          cp packaging/homebrew/prism.rb homebrew-prism/Formula/
+          cd homebrew-prism
+          git add Formula/prism.rb
           git commit -m "Update formula for ${{ env.VERSION }}"
           git push

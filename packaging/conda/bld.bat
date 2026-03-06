@@ -5,11 +5,11 @@ copy cws.exe %PREFIX%\Scripts\
 copy prismd.exe %PREFIX%\Scripts\
 
 :: Copy GUI if it exists
-if exist cws-gui.exe (
-    copy cws-gui.exe %PREFIX%\Scripts\
+if exist prism-gui.exe (
+    copy prism-gui.exe %PREFIX%\Scripts\
 )
 
 :: Add a message for users
-echo CloudWorkstation v0.4.1 has been installed.
+echo Prism v0.4.1 has been installed.
 echo To get started, run: cws test
 echo.

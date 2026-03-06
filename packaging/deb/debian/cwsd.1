@@ -1,13 +1,13 @@
-.TH CWSD 1 "December 2024" "CloudWorkstation 0.4.2" "System Commands"
+.TH CWSD 1 "December 2024" "Prism 0.4.2" "System Commands"
 .SH NAME
-prismd \- CloudWorkstation daemon
+prismd \- Prism daemon
 .SH SYNOPSIS
 .B prismd
 [\fIOPTIONS\fR]
 .SH DESCRIPTION
-The CloudWorkstation daemon (\fBprismd\fR) provides the backend API for managing research instances, handling AWS operations, and coordinating between multiple client interfaces (CLI, TUI, GUI).
+The Prism daemon (\fBprismd\fR) provides the backend API for managing research instances, handling AWS operations, and coordinating between multiple client interfaces (CLI, TUI, GUI).
 
-The daemon runs as a system service and provides a REST API on port 8947 for all CloudWorkstation operations including instance management, template processing, cost optimization, and project administration.
+The daemon runs as a system service and provides a REST API on port 8947 for all Prism operations including instance management, template processing, cost optimization, and project administration.
 
 .SH OPTIONS
 .TP
@@ -18,7 +18,7 @@ Show help message and exit
 Show version information and exit
 .TP
 .B \-\-config \fIPATH\fR
-Path to configuration file (default: /etc/cloudworkstation/daemon.conf)
+Path to configuration file (default: /etc/prism/daemon.conf)
 .TP
 .B \-\-listen-address \fIADDR\fR
 Listen address and port (default: 127.0.0.1:8947)
@@ -27,10 +27,10 @@ Listen address and port (default: 127.0.0.1:8947)
 Set log level: debug, info, warn, error (default: info)
 .TP
 .B \-\-log-file \fIPATH\fR
-Path to log file (default: /var/log/cloudworkstation/daemon.log)
+Path to log file (default: /var/log/prism/daemon.log)
 .TP
 .B \-\-data-dir \fIPATH\fR
-Path to data directory (default: /var/lib/cloudworkstation)
+Path to data directory (default: /var/lib/prism)
 .TP
 .B \-\-autonomous
 Run in autonomous mode suitable for systemd service
@@ -42,7 +42,7 @@ Enable debug logging and additional diagnostics
 Run in foreground instead of daemonizing (useful for debugging)
 
 .SH CONFIGURATION
-The daemon reads its configuration from \fI/etc/cloudworkstation/daemon.conf\fR by default. The configuration file uses a simple key=value format with comments supported using #.
+The daemon reads its configuration from \fI/etc/prism/daemon.conf\fR by default. The configuration file uses a simple key=value format with comments supported using #.
 
 .SS Configuration Options
 .TP
@@ -53,7 +53,7 @@ Address and port to bind the API server (default: 127.0.0.1:8947)
 Logging level: debug, info, warn, error (default: info)
 .TP
 .B log_file
-Path to log file (default: /var/log/cloudworkstation/daemon.log)
+Path to log file (default: /var/log/prism/daemon.log)
 .TP
 .B aws_region
 Default AWS region for operations
@@ -199,7 +199,7 @@ The daemon implements several security measures:
 
 .TP
 .B Process Security
-Runs as dedicated system user 'cloudworkstation' with restricted permissions
+Runs as dedicated system user 'prism' with restricted permissions
 .TP
 .B Network Security
 Binds only to localhost (127.0.0.1) by default to prevent external access
@@ -237,31 +237,31 @@ Systemd security features enabled (ProtectSystem, PrivateTmp, etc.)
 
 .SH FILES
 .TP
-.I /etc/cloudworkstation/daemon.conf
+.I /etc/prism/daemon.conf
 Main configuration file
 .TP
-.I /etc/cloudworkstation/aws/config
+.I /etc/prism/aws/config
 AWS configuration file
 .TP
-.I /etc/cloudworkstation/aws/credentials
+.I /etc/prism/aws/credentials
 AWS credentials file
 .TP
-.I /var/lib/cloudworkstation/
+.I /var/lib/prism/
 State and data directory
 .TP
-.I /var/lib/cloudworkstation/templates/
+.I /var/lib/prism/templates/
 Template cache directory
 .TP
-.I /var/lib/cloudworkstation/state.json
+.I /var/lib/prism/state.json
 Instance state file
 .TP
-.I /var/log/cloudworkstation/daemon.log
+.I /var/log/prism/daemon.log
 Main log file
 .TP
-.I /lib/systemd/system/cloudworkstation.service
+.I /lib/systemd/system/prism.service
 Systemd service file
 .TP
-.I /etc/systemd/system/cloudworkstation.service.d/
+.I /etc/systemd/system/prism.service.d/
 Local systemd service overrides
 
 .SH ENVIRONMENT
@@ -285,7 +285,7 @@ Path to daemon configuration file
 Enable debug logging when set to "true"
 .TP
 .B HOME
-Home directory for cloudworkstation user
+Home directory for prism user
 
 .SH SIGNALS
 .TP
@@ -336,11 +336,11 @@ Start daemon with custom configuration:
 .SS Service Management
 Use systemd for production deployment:
 .br
-.B systemctl start cloudworkstation
+.B systemctl start prism
 .br
-.B systemctl enable cloudworkstation
+.B systemctl enable prism
 .br
-.B systemctl status cloudworkstation
+.B systemctl status prism
 
 .SS Health Check
 Check daemon health via API:
@@ -348,7 +348,7 @@ Check daemon health via API:
 
 .SS Log Monitoring
 Monitor daemon logs:
-.B journalctl -u cloudworkstation -f
+.B journalctl -u prism -f
 
 .SH TROUBLESHOOTING
 .SS Common Issues
@@ -357,13 +357,13 @@ Monitor daemon logs:
 Another process is using port 8947. Use \fB--listen-address\fR to specify different port.
 .TP
 .B Permission denied
-Ensure daemon runs as cloudworkstation user with proper permissions.
+Ensure daemon runs as prism user with proper permissions.
 .TP
 .B AWS authentication failed
-Verify AWS credentials are properly configured in /etc/cloudworkstation/aws/.
+Verify AWS credentials are properly configured in /etc/prism/aws/.
 .TP
 .B Service won't start
-Check systemd logs: \fBjournalctl -u cloudworkstation\fR
+Check systemd logs: \fBjournalctl -u prism\fR
 
 .SS Debug Mode
 Enable debug logging to troubleshoot issues:
@@ -379,7 +379,7 @@ Report bugs at: https://github.com/scttfrdmn/prism/issues
 Online documentation: https://github.com/scttfrdmn/prism
 
 .SH AUTHOR
-CloudWorkstation Team
+Prism Team
 
 .SH COPYRIGHT
-Copyright 2024 CloudWorkstation Project. Licensed under the MIT License.
+Copyright 2024 Prism Project. Licensed under the MIT License.

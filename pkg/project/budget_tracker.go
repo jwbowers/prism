@@ -982,13 +982,13 @@ func (bt *BudgetTracker) sendWebhookAlert(projectID string, alertEvent AlertEven
 
 	// Construct standard webhook payload
 	payload := map[string]interface{}{
-		"event":            "budget_alert",
-		"project_id":       projectID,
-		"alert_type":       alertEvent.AlertType,
-		"spent_amount":     alertEvent.SpentAmount,
-		"threshold":        alertEvent.Threshold,
-		"timestamp":        alertEvent.Timestamp.Format(time.RFC3339),
-		"cloudworkstation": "v0.5.1",
+		"event":        "budget_alert",
+		"project_id":   projectID,
+		"alert_type":   alertEvent.AlertType,
+		"spent_amount": alertEvent.SpentAmount,
+		"threshold":    alertEvent.Threshold,
+		"timestamp":    alertEvent.Timestamp.Format(time.RFC3339),
+		"prism":        "v0.5.1",
 	}
 
 	payloadBytes, err := json.Marshal(payload)

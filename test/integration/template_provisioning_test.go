@@ -20,7 +20,7 @@ import (
 
 const (
 	// SSH key for integration tests
-	testSSHKeyName = "cws-test-aws-west2-key"
+	testSSHKeyName = "prism-test-aws-west2-key"
 )
 
 // getSSHKeyPath returns the path to the test SSH private key

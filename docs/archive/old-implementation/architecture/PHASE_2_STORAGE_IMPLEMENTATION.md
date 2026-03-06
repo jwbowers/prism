@@ -305,7 +305,7 @@ func (g *PrismGUI) createEFSVolume(request types.VolumeCreateRequest) {
 ## Files Modified
 
 ### **Core GUI Storage Implementation**
-- `cmd/cws-gui/main.go` - Complete Storage/Volumes section implementation
+- `cmd/prism-gui/main.go` - Complete Storage/Volumes section implementation
   - Added `createStorageSection()` for tabbed storage interface
   - Implemented `createEFSVolumesView()` and `createEBSStorageView()` for tab content
   - Added `refreshStorage()`, `refreshEFSVolumes()`, `refreshEBSStorage()` for data loading

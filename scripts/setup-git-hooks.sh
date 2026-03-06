@@ -1,7 +1,7 @@
 #!/bin/bash
-# Setup script for CloudWorkstation git hooks
+# Setup script for Prism git hooks
 
-echo "🔧 Setting up CloudWorkstation git hooks..."
+echo "🔧 Setting up Prism git hooks..."
 
 # Colors for output
 GREEN='\033[0;32m'

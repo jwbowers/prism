@@ -53,7 +53,7 @@ var (
 // to reduce keychain password prompts during development
 func isDevelopmentMode() bool {
 	// Check for explicit development environment indicators
-	if os.Getenv("GO_ENV") == "test" || os.Getenv("CLOUDWORKSTATION_DEV") == "true" {
+	if os.Getenv("GO_ENV") == "test" || os.Getenv("PRISM_DEV") == "true" {
 		return true
 	}
 

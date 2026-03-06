@@ -4,12 +4,12 @@ on:
   push:
     branches: [ main, wails3x-gui-redesign ]
     paths:
-      - 'cmd/cws-gui/**'
+      - 'cmd/prism-gui/**'
       - '.github/workflows/gui-tests.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'cmd/cws-gui/**'
+      - 'cmd/prism-gui/**'
       - '.github/workflows/gui-tests.yml'
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: cmd/cws-gui/frontend
+        working-directory: cmd/prism-gui/frontend
     
     steps:
       - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: cmd/cws-gui/frontend/package-lock.json
+          cache-dependency-path: cmd/prism-gui/frontend/package-lock.json
       
       - name: Install dependencies
         run: npm ci
@@ -43,7 +43,7 @@ jobs:
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
-          directory: ./cmd/cws-gui/frontend/coverage
+          directory: ./cmd/prism-gui/frontend/coverage
           flags: gui-frontend
           name: gui-frontend-coverage
         env:
@@ -54,7 +54,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: cmd/cws-gui/frontend
+        working-directory: cmd/prism-gui/frontend
     
     steps:
       - name: Checkout code
@@ -65,7 +65,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: cmd/cws-gui/frontend/package-lock.json
+          cache-dependency-path: cmd/prism-gui/frontend/package-lock.json
       
       - name: Install dependencies
         run: npm ci
@@ -84,7 +84,7 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: cmd/cws-gui/frontend/playwright-report/
+          path: cmd/prism-gui/frontend/playwright-report/
           retention-days: 7
       
       - name: Upload test videos
@@ -92,7 +92,7 @@ jobs:
         if: failure()
         with:
           name: playwright-videos
-          path: cmd/cws-gui/frontend/test-results/
+          path: cmd/prism-gui/frontend/test-results/
           retention-days: 7
 
   visual-tests:
@@ -101,7 +101,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: cmd/cws-gui/frontend
+        working-directory: cmd/prism-gui/frontend
     
     steps:
       - name: Checkout code
@@ -112,7 +112,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: cmd/cws-gui/frontend/package-lock.json
+          cache-dependency-path: cmd/prism-gui/frontend/package-lock.json
       
       - name: Install dependencies
         run: npm ci
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     
     services:
-      # Mock CloudWorkstation daemon for integration testing
+      # Mock Prism daemon for integration testing
       daemon-mock:
         image: nginx:alpine
         ports:
@@ -147,7 +147,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: cmd/cws-gui/frontend
+        working-directory: cmd/prism-gui/frontend
     
     steps:
       - name: Checkout code
@@ -158,7 +158,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: cmd/cws-gui/frontend/package-lock.json
+          cache-dependency-path: cmd/prism-gui/frontend/package-lock.json
       
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -194,8 +194,8 @@ jobs:
         run: npm ci
       
       - name: Build GUI backend
-        working-directory: cmd/cws-gui
-        run: go build -o cws-gui .
+        working-directory: cmd/prism-gui
+        run: go build -o prism-gui .
       
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
@@ -204,7 +204,7 @@ jobs:
         run: |
           # Start GUI backend in background
           cd ../
-          ./cws-gui &
+          ./prism-gui &
           GUI_PID=$!
           
           # Wait for GUI to start
@@ -222,7 +222,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: cmd/cws-gui/frontend
+        working-directory: cmd/prism-gui/frontend
     
     steps:
       - name: Checkout code
@@ -233,7 +233,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: cmd/cws-gui/frontend/package-lock.json
+          cache-dependency-path: cmd/prism-gui/frontend/package-lock.json
       
       - name: Install dependencies
         run: npm ci
@@ -274,7 +274,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: cmd/cws-gui/frontend
+        working-directory: cmd/prism-gui/frontend
     
     steps:
       - name: Checkout code
@@ -285,7 +285,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: cmd/cws-gui/frontend/package-lock.json
+          cache-dependency-path: cmd/prism-gui/frontend/package-lock.json
       
       - name: Install dependencies
         run: npm ci

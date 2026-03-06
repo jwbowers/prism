@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🧪 CloudWorkstation Template Deployment Validation"
+echo "🧪 Prism Template Deployment Validation"
 echo "=================================================="
 
 # Color codes for output

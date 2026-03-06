@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# benchmark-launch.sh - Performance benchmarking for CloudWorkstation launch operations
+# benchmark-launch.sh - Performance benchmarking for Prism launch operations
 # Usage: ./benchmark-launch.sh [options]
 
 set -euo pipefail
@@ -29,7 +29,7 @@ NC='\033[0m' # No Color
 # Functions
 print_usage() {
     cat << EOF
-CloudWorkstation Launch Performance Benchmark
+Prism Launch Performance Benchmark
 
 Usage: $0 [OPTIONS]
 
@@ -113,18 +113,18 @@ if ! [[ "$TIMEOUT" =~ ^[0-9]+$ ]] || [ "$TIMEOUT" -lt 30 ]; then
 fi
 
 if [ ! -x "$PRISM_BINARY" ]; then
-    error "CloudWorkstation CLI not found at $PRISM_BINARY. Run 'make build' first."
+    error "Prism CLI not found at $PRISM_BINARY. Run 'make build' first."
     exit 1
 fi
 
 if [ ! -x "$CWSD_BINARY" ]; then
-    error "CloudWorkstation daemon not found at $CWSD_BINARY. Run 'make build' first."
+    error "Prism daemon not found at $CWSD_BINARY. Run 'make build' first."
     exit 1
 fi
 
 # Check if daemon is running
 if ! pgrep -f "$CWSD_BINARY" >/dev/null; then
-    log "Starting CloudWorkstation daemon..."
+    log "Starting Prism daemon..."
     "$CWSD_BINARY" &
     sleep 5
     
@@ -141,7 +141,7 @@ if ! pgrep -f "$CWSD_BINARY" >/dev/null; then
     done
 fi
 
-log "Starting CloudWorkstation launch performance benchmark"
+log "Starting Prism launch performance benchmark"
 log "Configuration:"
 log "  Iterations: $ITERATIONS"
 log "  Templates: $TEMPLATES"

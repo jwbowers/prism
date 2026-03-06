@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Help us improve CloudWorkstation's usability! We prioritize changes that make the tool easier to learn and use for researchers.
+        Help us improve Prism's usability! We prioritize changes that make the tool easier to learn and use for researchers.
 
   - type: dropdown
     id: component

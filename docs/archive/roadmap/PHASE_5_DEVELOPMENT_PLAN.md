@@ -82,7 +82,7 @@ This comprehensive development plan transforms Prism from an EC2 launcher into a
 - [ ] Update TUI to show policy restrictions in profile pages
 - [ ] Add GUI policy display in profile management tab
 
-**Files to modify**: `internal/cli/profiles.go`, `internal/tui/`, `cmd/cws-gui/`
+**Files to modify**: `internal/cli/profiles.go`, `internal/tui/`, `cmd/prism-gui/`
 
 ### **Epic 3: Research User Provisioning**
 
@@ -392,7 +392,7 @@ This comprehensive development plan transforms Prism from an EC2 launcher into a
 - [ ] Create research workflow-optimized layouts and arrangements
 - [ ] Implement theme-aware cost and status displays
 
-**Files to modify**: `cmd/cws-gui/components/`, `cmd/cws-gui/theme/` (new directory)
+**Files to modify**: `cmd/prism-gui/components/`, `cmd/prism-gui/theme/` (new directory)
 
 #### **Task 12.3: Theme Distribution and Management**
 - [ ] Create theme package format (.cwstheme files)

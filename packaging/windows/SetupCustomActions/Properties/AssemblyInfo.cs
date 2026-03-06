@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CloudWorkstation Setup Custom Actions")]
-[assembly: AssemblyDescription("Custom actions for CloudWorkstation Windows installer")]
+[assembly: AssemblyTitle("Prism Setup Custom Actions")]
+[assembly: AssemblyDescription("Custom actions for Prism Windows installer")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("CloudWorkstation Project")]
-[assembly: AssemblyProduct("CloudWorkstation")]
-[assembly: AssemblyCopyright("Copyright © CloudWorkstation Project 2024")]
+[assembly: AssemblyCompany("Prism Project")]
+[assembly: AssemblyProduct("Prism")]
+[assembly: AssemblyCopyright("Copyright © Prism Project 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

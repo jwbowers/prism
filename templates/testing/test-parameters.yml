@@ -84,7 +84,7 @@ prerequisites:
 # Template metadata
 version: "1.0.0"
 validation_status: "testing"
-maintainer: "CloudWorkstation Team"
+maintainer: "Prism Team"
 tags:
   test: "true"
   parameters: "true"

@@ -1566,16 +1566,16 @@ if ! command -v mount.efs &> /dev/null; then
 fi
 
 # Create Prism shared group if it doesn't exist
-if ! getent group cloudworkstation-shared >/dev/null 2>&1; then
-    sudo groupadd -g 3000 cloudworkstation-shared
-    echo "Created cloudworkstation-shared group (gid: 3000)"
+if ! getent group prism-shared >/dev/null 2>&1; then
+    sudo groupadd -g 3000 prism-shared
+    echo "Created prism-shared group (gid: 3000)"
 fi
 
 # Add current user to shared group if not already a member
 CURRENT_USER=$(whoami)
-if ! groups "$CURRENT_USER" | grep -q cloudworkstation-shared; then
-    sudo usermod -a -G cloudworkstation-shared "$CURRENT_USER"
-    echo "Added $CURRENT_USER to cloudworkstation-shared group"
+if ! groups "$CURRENT_USER" | grep -q prism-shared; then
+    sudo usermod -a -G prism-shared "$CURRENT_USER"
+    echo "Added $CURRENT_USER to prism-shared group"
 fi
 
 # Create mount directory
@@ -1586,17 +1586,17 @@ sudo mount -t efs %s:/ %s -o tls,_netdev,gid=3000
 
 # Set proper permissions for shared access
 sudo chmod 2775 %s  # Group sticky bit + group writable
-sudo chgrp cloudworkstation-shared %s
+sudo chgrp prism-shared %s
 
 # Create shared subdirectories with proper permissions
 sudo mkdir -p %s/shared %s/users
 sudo chmod 2775 %s/shared
 sudo chmod 2755 %s/users
-sudo chgrp cloudworkstation-shared %s/shared %s/users
+sudo chgrp prism-shared %s/shared %s/users
 
 # Create user-specific directory if it doesn't exist
 sudo mkdir -p %s/users/$CURRENT_USER
-sudo chown $CURRENT_USER:cloudworkstation-shared %s/users/$CURRENT_USER
+sudo chown $CURRENT_USER:prism-shared %s/users/$CURRENT_USER
 sudo chmod 755 %s/users/$CURRENT_USER
 
 # Add to fstab for persistence with group mount option
@@ -1611,7 +1611,7 @@ echo "umask 002" | sudo tee -a /etc/zsh/zshrc >/dev/null 2>&1 || true
 echo "EFS volume mounted successfully at %s with shared group access"
 echo "  - Shared files: %s/shared (all users)"
 echo "  - User files: %s/users/$CURRENT_USER (personal)" 
-echo "  - Group: cloudworkstation-shared (gid: 3000)"
+echo "  - Group: prism-shared (gid: 3000)"
 `, mountPoint, fsId, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, mountPoint, fsId, fsId, mountPoint, mountPoint, mountPoint, mountPoint)
 
 	// Execute mount script on the instance via SSM
@@ -3363,7 +3363,7 @@ func (m *Manager) EnsureKeyPairExists(keyName, publicKeyContent string) error {
 					},
 					{
 						Key:   aws.String("ManagedBy"),
-						Value: aws.String("cws"),
+						Value: aws.String("prism"),
 					},
 				},
 			},
@@ -3417,10 +3417,10 @@ func (m *Manager) ListPrismKeyPairs() ([]string, error) {
 
 // getSSHKeyPathFromKeyName maps an AWS key pair name to local SSH key path
 func (m *Manager) getSSHKeyPathFromKeyName(keyName string) (string, error) {
-	// Prism key naming pattern: cws-<profile>-key
-	if strings.HasPrefix(keyName, "cws-") && strings.HasSuffix(keyName, "-key") {
+	// Prism key naming pattern: prism-<profile>-key (also accepts legacy cws-<profile>-key)
+	if (strings.HasPrefix(keyName, "prism-") || strings.HasPrefix(keyName, "cws-")) && strings.HasSuffix(keyName, "-key") {
 		// Extract safe name from key name (it's already safe for filesystem)
-		safeName := strings.TrimPrefix(keyName, "cws-")
+		safeName := strings.TrimPrefix(strings.TrimPrefix(keyName, "prism-"), "cws-")
 		safeName = strings.TrimSuffix(safeName, "-key")
 
 		// Get home directory
@@ -3430,7 +3430,7 @@ func (m *Manager) getSSHKeyPathFromKeyName(keyName string) (string, error) {
 		}
 
 		// Construct key path using the same naming
-		keyPath := filepath.Join(homeDir, ".ssh", fmt.Sprintf("cws-%s-key", safeName))
+		keyPath := filepath.Join(homeDir, ".ssh", fmt.Sprintf("prism-%s-key", safeName))
 
 		// Check if key exists
 		if _, err := os.Stat(keyPath); os.IsNotExist(err) {
@@ -3626,7 +3626,7 @@ func (m *Manager) isSubnetPublic(subnetID string) (bool, error) {
 
 // GetOrCreatePrismSecurityGroup creates or finds the Prism security group
 func (m *Manager) GetOrCreatePrismSecurityGroup(vpcID string) (string, error) {
-	securityGroupName := "cloudworkstation-access"
+	securityGroupName := "prism-access"
 
 	ctx := context.Background()
 	// Try to find existing security group

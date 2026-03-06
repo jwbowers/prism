@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CloudWorkstation DMG Code Signing Script
+# Prism DMG Code Signing Script
 # Signs application bundle and DMG for macOS distribution
 # Usage: ./scripts/sign-dmg.sh [DMG_PATH] [--dev-id IDENTITY]
 
@@ -36,9 +36,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --help             Show this help"
             echo ""
             echo "Examples:"
-            echo "  $0 dist/dmg/CloudWorkstation-v0.4.2.dmg"
+            echo "  $0 dist/dmg/Prism-v0.4.2.dmg"
             echo "  $0 --dev-id 'Developer ID Application: Your Name (TEAM123)'"
-            echo "  $0 --verify-only dist/dmg/CloudWorkstation-v0.4.2.dmg"
+            echo "  $0 --verify-only dist/dmg/Prism-v0.4.2.dmg"
             exit 0
             ;;
         *)
@@ -409,11 +409,11 @@ process_dmg() {
 
 # Main execution function
 main() {
-    log_info "CloudWorkstation DMG Code Signing"
+    log_info "Prism DMG Code Signing"
     
     # Default DMG path if not provided
     if [[ -z "$DMG_PATH" ]]; then
-        DMG_PATH="$PROJECT_ROOT/dist/dmg/CloudWorkstation-v0.4.2.dmg"
+        DMG_PATH="$PROJECT_ROOT/dist/dmg/Prism-v0.4.2.dmg"
         log_info "Using default DMG path: $DMG_PATH"
     fi
     

@@ -17,7 +17,7 @@ Phase 2 of Prism development has been **COMPLETED** with the successful implemen
 - **✅ Dynamic Content**: All sections load data dynamically from daemon API
 
 **Key Implementation Details:**
-- **cmd/cws-gui/main.go**: Complete GUI application with tabbed interface
+- **cmd/prism-gui/main.go**: Complete GUI application with tabbed interface
 - **Daemon Port**: Changed from 8080 to 8947 (CWS on phone keypad) for uniqueness
 - **Graceful Shutdown**: Added POST /api/v1/shutdown endpoint for clean daemon management
 - **Profile Integration**: Enhanced profile system with AWS credentials management
@@ -153,7 +153,7 @@ Prism now provides three complete, synchronized interfaces:
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │ CLI Client  │  │ TUI Client  │  │ GUI Client  │
-│ (cmd/cws)   │  │ (prism tui)   │  │ (cmd/cws-gui)│
+│ (cmd/cws)   │  │ (prism tui)   │  │ (cmd/prism-gui)│
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │                │                │
        └────────────────┼────────────────┘

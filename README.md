@@ -319,8 +319,8 @@ prism doctor                      # System health check
 
 ### v0.5.6 - Complete Prism Rebrand
 - **Project Rename**: CloudWorkStation → Prism (complete rebrand)
-- **Repository Rename**: `cloudworkstation` → `prism` on GitHub
-- **Configuration Directory**: `.cloudworkstation` → `.prism`
+- **Repository Rename**: `prism` → `prism` on GitHub
+- **Configuration Directory**: `.prism` → `.prism`
 - **Module Path Update**: Complete Go module path migration
 
 ### v0.5.5 - AWS Research Services Integration

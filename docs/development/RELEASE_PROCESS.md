@@ -29,7 +29,7 @@ make test
 make build
 
 # Run any specific test suites (example from v0.4.6)
-cd cmd/cws-gui/frontend
+cd cmd/prism-gui/frontend
 npm run build
 npx vitest run src/App.behavior.test.tsx --reporter=verbose
 
@@ -37,7 +37,7 @@ npx vitest run src/App.behavior.test.tsx --reporter=verbose
 ./bin/cws tui
 
 # Verify GUI functionality
-./bin/cws-gui
+./bin/prism-gui
 
 # Verify CLI functionality
 ./bin/cws templates
@@ -163,10 +163,10 @@ If including GUI components, build them separately:
 ```bash
 # Build GUI (requires Wails v3 and platform-specific dependencies)
 # Frontend must be built first
-cd cmd/cws-gui/frontend && npm run build && cd ../../..
+cd cmd/prism-gui/frontend && npm run build && cd ../../..
 # Then build Wails application
-go build -o bin/release/darwin-amd64/cws-gui ./cmd/cws-gui
-go build -o bin/release/darwin-arm64/cws-gui ./cmd/cws-gui
+go build -o bin/release/darwin-amd64/prism-gui ./cmd/prism-gui
+go build -o bin/release/darwin-arm64/prism-gui ./cmd/prism-gui
 # Note: GUI may not be available on all platforms
 ```
 
@@ -388,7 +388,7 @@ def caveats
 
   if OS.mac?
     s += <<~EOS
-      • GUI (cws-gui) - Desktop application with system tray
+      • GUI (prism-gui) - Desktop application with system tray
     EOS
   end
 
@@ -504,7 +504,7 @@ prism volumes list
 prism tui  # Test storage interface
 
 # Test GUI functionality
-cws-gui  # Test volume management interface
+prism-gui  # Test volume management interface
 ```
 
 ## Troubleshooting Common Issues

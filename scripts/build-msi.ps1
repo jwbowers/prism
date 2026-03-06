@@ -1,4 +1,4 @@
-# CloudWorkstation Windows MSI Build Script (PowerShell)
+# Prism Windows MSI Build Script (PowerShell)
 # Builds a professional Windows installer using WiX Toolset
 
 param(
@@ -82,7 +82,7 @@ function Write-ErrorMessage {
 
 # Main build function
 function Build-MSI {
-    Write-Step "CloudWorkstation Windows MSI Builder"
+    Write-Step "Prism Windows MSI Builder"
     
     try {
         # Step 0: Environment validation
@@ -305,15 +305,15 @@ function Prepare-SupportingFiles {
     
     # Create PowerShell module
     Write-Task "Creating PowerShell module..."
-    $psModuleSource = Join-Path $ProjectRoot "scripts\CloudWorkstation.psm1"
-    $psModuleTarget = Join-Path $ReleaseDir "scripts\CloudWorkstation.psm1"
+    $psModuleSource = Join-Path $ProjectRoot "scripts\Prism.psm1"
+    $psModuleTarget = Join-Path $ReleaseDir "scripts\Prism.psm1"
     
     if (Test-Path $psModuleSource) {
         Copy-Item $psModuleSource $psModuleTarget
     } else {
         Write-Warning "PowerShell module not found, creating basic one"
         @"
-# CloudWorkstation PowerShell Module
+# Prism PowerShell Module
 function Get-Prism { prism --help }
 Export-ModuleMember -Function Get-Prism
 "@ | Out-File $psModuleTarget -Encoding UTF8
@@ -322,8 +322,8 @@ Export-ModuleMember -Function Get-Prism
     
     # Prepare application icon
     Write-Task "Preparing application icon..."
-    $iconSource = Join-Path $ProjectRoot "assets\cloudworkstation.ico"
-    $iconTarget = Join-Path $ReleaseDir "assets\cloudworkstation.ico"
+    $iconSource = Join-Path $ProjectRoot "assets\prism.ico"
+    $iconTarget = Join-Path $ReleaseDir "assets\prism.ico"
     
     if (Test-Path $iconSource) {
         Copy-Item $iconSource $iconTarget
@@ -376,9 +376,9 @@ function Compile-WixSource {
             "-dVersion=$Version"
         )
         
-        $objFile = Join-Path $BuildDir "obj\CloudWorkstation.wixobj"
+        $objFile = Join-Path $BuildDir "obj\Prism.wixobj"
         
-        & candle -arch x64 $wixVariables -out $objFile CloudWorkstation.wxs -ext WixUtilExtension 2>$LogFile
+        & candle -arch x64 $wixVariables -out $objFile Prism.wxs -ext WixUtilExtension 2>$LogFile
         if ($LASTEXITCODE -ne 0) {
             $errorContent = Get-Content $LogFile -Raw
             throw "WiX Candle compilation failed: $errorContent"
@@ -398,7 +398,7 @@ function Link-MsiPackage {
     
     Write-Task "Running WiX Light linker..."
     
-    $objFile = Join-Path $BuildDir "obj\CloudWorkstation.wixobj"
+    $objFile = Join-Path $BuildDir "obj\Prism.wixobj"
     $msiFile = Join-Path $BuildDir $MsiName
     $stringsFile = Join-Path $WixDir "strings_en-us.wxl"
     
@@ -481,7 +481,7 @@ function Show-BuildSummary {
     Write-ColorOutput "======================================" "Green"
     Write-Host
     
-    Write-ColorOutput "CloudWorkstation Windows Installer:" "Cyan"
+    Write-ColorOutput "Prism Windows Installer:" "Cyan"
     Write-ColorOutput "  Location: $(Join-Path $DistDir $MsiName)" "White"
     Write-ColorOutput "  Version:  $Version" "White"
     Write-ColorOutput "  Platform: Windows x64" "White"

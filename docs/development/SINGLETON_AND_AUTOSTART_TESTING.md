@@ -254,19 +254,19 @@ The singleton and auto-start system is production-ready and addresses all origin
 ## 8. GUI Singleton Enforcement and Auto-Start
 
 ### GUI Singleton Enforcement - TESTED ✅
-- **Location**: `cmd/cws-gui/singleton.go` (150+ lines)
-- **PID File**: `~/.prism/cws-gui.pid`
+- **Location**: `cmd/prism-gui/singleton.go` (150+ lines)
+- **PID File**: `~/.prism/prism-gui.pid`
 - **Status**: ✅ Fully tested and working
 
 **Test Results**:
 ```bash
 # First GUI starts successfully
-./bin/cws-gui > /tmp/gui1.log 2>&1 &
+./bin/prism-gui > /tmp/gui1.log 2>&1 &
 # Output: First GUI started with PID: 99249
 # Log: ✅ GUI singleton lock acquired (PID: 99249)
 
 # Second GUI attempt is rejected
-./bin/cws-gui > /tmp/gui2.log 2>&1 &
+./bin/prism-gui > /tmp/gui2.log 2>&1 &
 # Output: Second GUI exited (singleton worked)
 # Log: ❌ another Prism GUI is already running (PID: 99249)
 #      💡 Only one GUI can run at a time.
@@ -280,7 +280,7 @@ The singleton and auto-start system is production-ready and addresses all origin
 - PID file properly tracks running GUI instance
 
 ### GUI Auto-Start of Daemon - TESTED ✅
-- **Location**: `cmd/cws-gui/main.go` (startDaemon function)
+- **Location**: `cmd/prism-gui/main.go` (startDaemon function)
 - **CLI Command**: `prism gui` (internal/cli/gui.go)
 - **Status**: ✅ Fully tested and working
 

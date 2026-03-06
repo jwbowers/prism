@@ -1,4 +1,4 @@
-# CloudWorkstation MSI Code Signing Script
+# Prism MSI Code Signing Script
 # Signs the MSI package with a digital certificate for trusted distribution
 
 param(
@@ -59,7 +59,7 @@ function Write-ErrorMessage {
 }
 
 function Sign-MSI {
-    Write-Step "CloudWorkstation MSI Code Signing"
+    Write-Step "Prism MSI Code Signing"
     
     try {
         # Validate parameters
@@ -67,7 +67,7 @@ function Sign-MSI {
             # Try to find MSI file in dist directory
             $projectRoot = Split-Path -Parent $PSScriptRoot
             $distDir = Join-Path $projectRoot "dist\windows"
-            $msiFiles = Get-ChildItem -Path $distDir -Filter "CloudWorkstation-*.msi" -ErrorAction SilentlyContinue
+            $msiFiles = Get-ChildItem -Path $distDir -Filter "Prism-*.msi" -ErrorAction SilentlyContinue
             
             if ($msiFiles.Count -eq 1) {
                 $MsiPath = $msiFiles[0].FullName
@@ -141,7 +141,7 @@ function Sign-WithFileCertificate {
     
     $signArgs += @(
         "/t", $TimestampUrl,
-        "/d", "CloudWorkstation: Enterprise Research Management Platform",
+        "/d", "Prism: Enterprise Research Management Platform",
         "/du", "https://github.com/scttfrdmn/prism",
         "/v",
         "`"$MsiPath`""
@@ -162,7 +162,7 @@ function Sign-WithStoreCertificate {
     
     # Look for suitable certificates in the current user's personal store
     $certs = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object {
-        $_.Subject -match "CloudWorkstation" -or
+        $_.Subject -match "Prism" -or
         $_.Subject -match "Scott" -or
         $_.EnhancedKeyUsageList -match "Code Signing" -or
         $_.EnhancedKeyUsageList -match "1.3.6.1.5.5.7.3.3"
@@ -172,7 +172,7 @@ function Sign-WithStoreCertificate {
         # Try machine store
         Write-Task "Checking machine certificate store..."
         $certs = Get-ChildItem -Path "Cert:\LocalMachine\My" | Where-Object {
-            $_.Subject -match "CloudWorkstation" -or
+            $_.Subject -match "Prism" -or
             $_.EnhancedKeyUsageList -match "Code Signing" -or
             $_.EnhancedKeyUsageList -match "1.3.6.1.5.5.7.3.3"
         }
@@ -196,7 +196,7 @@ function Sign-WithStoreCertificate {
         "sign",
         "/sha1", $cert.Thumbprint,
         "/t", $TimestampUrl,
-        "/d", "CloudWorkstation: Enterprise Research Management Platform",
+        "/d", "Prism: Enterprise Research Management Platform",
         "/du", "https://github.com/scttfrdmn/prism",
         "/v",
         "`"$MsiPath`""
@@ -217,7 +217,7 @@ function Create-TestCertificate {
     
     try {
         # Create a self-signed certificate for testing
-        $cert = New-SelfSignedCertificate -Subject "CN=CloudWorkstation Test Certificate" -CertStoreLocation "Cert:\CurrentUser\My" -KeyUsage DigitalSignature -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -Type CodeSigningCert
+        $cert = New-SelfSignedCertificate -Subject "CN=Prism Test Certificate" -CertStoreLocation "Cert:\CurrentUser\My" -KeyUsage DigitalSignature -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -Type CodeSigningCert
         
         Write-Success "Test certificate created"
         Write-ColorOutput "  Thumbprint: $($cert.Thumbprint)" "White"
@@ -229,7 +229,7 @@ function Create-TestCertificate {
             "sign",
             "/sha1", $cert.Thumbprint,
             "/t", $TimestampUrl,
-            "/d", "CloudWorkstation: Enterprise Research Management Platform (Test Build)",
+            "/d", "Prism: Enterprise Research Management Platform (Test Build)",
             "/du", "https://github.com/scttfrdmn/prism",
             "/v",
             "`"$MsiPath`""
@@ -290,7 +290,7 @@ function Show-SigningSummary {
 
 function Show-Usage {
     Write-Host @"
-CloudWorkstation MSI Code Signing Script
+Prism MSI Code Signing Script
 
 USAGE:
     sign-msi.ps1 [options]

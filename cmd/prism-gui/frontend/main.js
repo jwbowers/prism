@@ -1,4 +1,4 @@
-// CloudWorkstation GUI - Progressive Disclosure Interface
+// Prism GUI - Progressive Disclosure Interface
 // Minimal, professional UI for academic researchers
 
 let selectedTemplate = null;
@@ -53,20 +53,20 @@ let connectionTypeCache = new Map(); // Cache for connection type detection
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('CloudWorkstation GUI starting...');
+    console.log('Prism GUI starting...');
     
     // Initialize UI state
     await initializeApp();
     
     // Initialize connection manager
-    connectionManager = new CloudWorkstationConnectionManager();
+    connectionManager = new PrismConnectionManager();
     
     // Start periodic updates
     setInterval(updateInstances, 30000); // Update every 30 seconds
     setInterval(updateClock, 1000); // Update clock every second
     setInterval(updateConnectionDurations, 1000); // Update connection durations
     
-    console.log('CloudWorkstation GUI ready');
+    console.log('Prism GUI ready');
 });
 
 // Initialize application state
@@ -94,7 +94,7 @@ async function initializeApp() {
 // Load and display templates
 async function loadTemplates() {
     try {
-        templates = await window.wails.CloudWorkstationService.GetTemplates();
+        templates = await window.wails.PrismService.GetTemplates();
         renderTemplates();
     } catch (error) {
         console.error('Failed to load templates:', error);
@@ -442,7 +442,7 @@ async function launchInstance() {
     launchBtn.innerHTML = '<div class="loading-spinner"></div> Launching...';
     
     try {
-        await window.wails.CloudWorkstationService.LaunchInstance({
+        await window.wails.PrismService.LaunchInstance({
             Template: selectedTemplate.Name,
             Name: instanceName,
             Size: sizeSelect.value
@@ -472,7 +472,7 @@ async function launchInstance() {
 // Load and display instances
 async function loadInstances() {
     try {
-        instances = await window.wails.CloudWorkstationService.GetInstances();
+        instances = await window.wails.PrismService.GetInstances();
         renderInstances();
     } catch (error) {
         console.error('Failed to load instances:', error);
@@ -593,7 +593,7 @@ async function stopInstance(name) {
     }
     
     try {
-        await window.wails.CloudWorkstationService.StopInstance(name);
+        await window.wails.PrismService.StopInstance(name);
         showSuccess(`Instance "${name}" is stopping`);
         await loadInstances(); // Refresh
     } catch (error) {
@@ -687,10 +687,10 @@ function renderInstanceError() {
 // ============================================================================
 
 /**
- * CloudWorkstation NICE DCV Manager
+ * Prism NICE DCV Manager
  * Handles remote desktop connections with security and multi-session support
  */
-class CloudWorkstationDCVManager {
+class PrismDCVManager {
     constructor() {
         this.activeSessions = new Map();
         this.dcvClients = new Map();
@@ -698,11 +698,11 @@ class CloudWorkstationDCVManager {
         this.sessionTimers = new Map();
         this.qualityManager = new DCVQualityManager();
         
-        console.log('CloudWorkstation DCV Manager initialized');
+        console.log('Prism DCV Manager initialized');
     }
 
     /**
-     * Connect to a CloudWorkstation instance via NICE DCV
+     * Connect to a Prism instance via NICE DCV
      * @param {string} instanceName - Name of the instance to connect to
      * @returns {Promise<boolean>} - Success status
      */
@@ -713,7 +713,7 @@ class CloudWorkstationDCVManager {
             // Update UI to show connecting state
             this.updateConnectionStatus(instanceName, 'connecting');
             
-            // 1. Get DCV session details from CloudWorkstation daemon
+            // 1. Get DCV session details from Prism daemon
             const sessionInfo = await this.getDCVSessionInfo(instanceName);
             
             // 2. Validate session info and security
@@ -744,18 +744,18 @@ class CloudWorkstationDCVManager {
     }
 
     /**
-     * Get DCV session information from CloudWorkstation daemon
+     * Get DCV session information from Prism daemon
      * @param {string} instanceName - Instance to get session info for
      * @returns {Promise<Object>} - Session information with auth tokens
      */
     async getDCVSessionInfo(instanceName) {
         try {
-            // Call CloudWorkstation daemon API for DCV session details
+            // Call Prism daemon API for DCV session details
             const response = await fetch(`http://localhost:8947/api/v1/instances/${instanceName}/dcv`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CloudWorkstation-Client': 'GUI'
+                    'X-Prism-Client': 'GUI'
                 }
             });
             
@@ -1456,7 +1456,7 @@ class DCVQualityManager {
  */
 function initializeDCVManager() {
     if (!dcvManager) {
-        dcvManager = new CloudWorkstationDCVManager();
+        dcvManager = new PrismDCVManager();
         console.log('DCV Manager initialized');
     }
 }
@@ -1637,10 +1637,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 
 /**
- * CloudWorkstation Connection Manager
+ * Prism Connection Manager
  * Automatically detects whether to use NICE DCV (GUI instances) or SSH Terminal (headless instances)
  */
-class CloudWorkstationConnectionManager {
+class PrismConnectionManager {
     constructor() {
         this.dcvSessions = new Map();
         this.sshSessions = new Map();
@@ -1648,7 +1648,7 @@ class CloudWorkstationConnectionManager {
         this.activeConnections = new Map();
         this.connectionTimers = new Map();
         
-        console.log('CloudWorkstation Connection Manager initialized');
+        console.log('Prism Connection Manager initialized');
     }
 
     /**
@@ -1735,7 +1735,7 @@ class CloudWorkstationConnectionManager {
     async getInstanceConnectionInfo(instanceName) {
         try {
             // Try to get detailed instance info from backend
-            const response = await window.wails.CloudWorkstationService.GetInstanceConnectionInfo(instanceName);
+            const response = await window.wails.PrismService.GetInstanceConnectionInfo(instanceName);
             return response;
         } catch (error) {
             // Fallback: analyze based on template information
@@ -2022,7 +2022,7 @@ class CloudWorkstationConnectionManager {
      */
     async getSSHConnectionInfo(instanceName) {
         try {
-            return await window.wails.CloudWorkstationService.GetSSHConnectionInfo(instanceName);
+            return await window.wails.PrismService.GetSSHConnectionInfo(instanceName);
         } catch (error) {
             // Fallback to instance IP if available
             const instance = instances.find(inst => inst.Name === instanceName);
@@ -2061,7 +2061,7 @@ class CloudWorkstationConnectionManager {
                 console.log(`SSH Terminal: Connecting to ${sshInfo.username}@${sshInfo.host}:${sshInfo.port}`);
 
                 return new Promise((resolve, reject) => {
-                    // Connect to CloudWorkstation daemon's WebSocket terminal endpoint
+                    // Connect to Prism daemon's WebSocket terminal endpoint
                     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                     const wsUrl = `${wsProtocol}//${window.location.host}/api/terminal`;
 
@@ -2207,7 +2207,7 @@ class CloudWorkstationConnectionManager {
      */
     async getWebInterfaceInfo(instanceName) {
         try {
-            return await window.wails.CloudWorkstationService.GetWebInterfaceInfo(instanceName);
+            return await window.wails.PrismService.GetWebInterfaceInfo(instanceName);
         } catch (error) {
             // Fallback: use instance IP and common ports
             const instance = instances.find(inst => inst.Name === instanceName);
@@ -2349,7 +2349,7 @@ class CloudWorkstationConnectionManager {
             if (container) {
                 const activeInterface = webInterface.activeInterface;
 
-                // Use proxy URL through CloudWorkstation daemon to handle CORS and authentication
+                // Use proxy URL through Prism daemon to handle CORS and authentication
                 const proxyUrl = `/proxy/${instanceName}${activeInterface.path}`;
 
                 // Embed web application in iframe
@@ -2752,7 +2752,7 @@ class CloudWorkstationConnectionManager {
         this.showNotification(`Retrying connection to ${instanceName}...`, 'info');
 
         // Get instance info and attempt to connect
-        const instances = await window.wails.CloudWorkstationService.GetInstances();
+        const instances = await window.wails.PrismService.GetInstances();
         const instance = instances.find(i => i.Name === instanceName);
 
         if (instance) {
@@ -3021,7 +3021,7 @@ function exportSettings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "cloudworkstation-settings.json";
+    a.download = "prism-settings.json";
     a.click();
     URL.revokeObjectURL(url);
 }

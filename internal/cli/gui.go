@@ -136,18 +136,18 @@ func startDaemonForGUI() error {
 	return nil
 }
 
-// findGUIBinary locates the cws-gui binary
+// findGUIBinary locates the prism-gui binary
 func findGUIBinary() (string, error) {
 	// Try in PATH first
-	if guiPath, err := exec.LookPath("cws-gui"); err == nil {
+	if guiPath, err := exec.LookPath("prism-gui"); err == nil {
 		return guiPath, nil
 	}
 
 	// Try in bin directory (relative to current working directory)
 	paths := []string{
-		"./bin/cws-gui",
-		"../bin/cws-gui",
-		"./cmd/cws-gui/cws-gui", // Development location
+		"./bin/prism-gui",
+		"../bin/prism-gui",
+		"./cmd/prism-gui/prism-gui", // Development location
 	}
 
 	for _, path := range paths {
@@ -156,12 +156,12 @@ func findGUIBinary() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf(`GUI binary 'cws-gui' not found
+	return "", fmt.Errorf(`GUI binary 'prism-gui' not found
 
-The Prism GUI requires the cws-gui binary to be built and available.
+The Prism GUI requires the prism-gui binary to be built and available.
 
 Installation options:
-  • Homebrew (includes GUI): brew install cloudworkstation
+  • Homebrew (includes GUI): brew install prism
   • Manual build: make build-gui (requires Wails CLI)
   • Alternative: Use TUI instead with 'prism tui'
 

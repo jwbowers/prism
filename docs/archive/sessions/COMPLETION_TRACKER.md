@@ -122,8 +122,8 @@
 - ⏳ internal/cli/research_user_cobra.go - Update user API
 
 #### GUI Placeholders (1/2) ✅ 50% COMPLETE
-- ✅ cmd/cws-gui/service.go - RestartDaemon method - IMPLEMENTED
-- ⏳ cmd/cws-gui/service.go - One more service method
+- ✅ cmd/prism-gui/service.go - RestartDaemon method - IMPLEMENTED
+- ⏳ cmd/prism-gui/service.go - One more service method
 
 ### Simulated/Mock Logic (0/30)
 - ⏳ internal/cli/scaling_commands.go - Usage data analysis (3 locations)

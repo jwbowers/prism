@@ -42,7 +42,7 @@ func (m *EFSManager) CreateEFSFilesystem(req StorageRequest) (*StorageInfo, erro
 
 	// Create EFS filesystem
 	input := &efs.CreateFileSystemInput{
-		CreationToken: aws.String(fmt.Sprintf("cws-efs-%s-%d", req.Name, time.Now().Unix())),
+		CreationToken: aws.String(fmt.Sprintf("prism-efs-%s-%d", req.Name, time.Now().Unix())),
 	}
 
 	// Set performance mode based on workload

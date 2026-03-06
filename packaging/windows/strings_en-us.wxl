@@ -5,23 +5,23 @@
   <String Id="LANG">1033</String>
   
   <!-- Product information strings -->
-  <String Id="ProductName">CloudWorkstation</String>
+  <String Id="ProductName">Prism</String>
   <String Id="ProductVersion">0.5.1</String>
-  <String Id="Manufacturer">CloudWorkstation Project</String>
+  <String Id="Manufacturer">Prism Project</String>
   <String Id="ProductDescription">Enterprise research management platform for launching cloud research environments</String>
   
   <!-- Installation strings -->
   <String Id="InstallDirDlgTitle">Select Installation Directory</String>
-  <String Id="InstallDirDlgDescription">Select the directory where you want to install CloudWorkstation</String>
+  <String Id="InstallDirDlgDescription">Select the directory where you want to install Prism</String>
   <String Id="InstallDirDlgBannerText">Destination Folder</String>
-  <String Id="InstallDirDlgInstallDirLabel">Install CloudWorkstation to:</String>
+  <String Id="InstallDirDlgInstallDirLabel">Install Prism to:</String>
   
   <!-- Feature strings -->
-  <String Id="CoreFeatureTitle">CloudWorkstation Core</String>
-  <String Id="CoreFeatureDescription">Core CloudWorkstation binaries and daemon service (required)</String>
+  <String Id="CoreFeatureTitle">Prism Core</String>
+  <String Id="CoreFeatureDescription">Core Prism binaries and daemon service (required)</String>
   
   <String Id="ServiceFeatureTitle">Windows Service</String>
-  <String Id="ServiceFeatureDescription">Install CloudWorkstation daemon as a Windows service with automatic startup</String>
+  <String Id="ServiceFeatureDescription">Install Prism daemon as a Windows service with automatic startup</String>
   
   <String Id="TemplatesFeatureTitle">Research Templates</String>
   <String Id="TemplatesFeatureDescription">Built-in research environment templates for Python, R, machine learning, and data analysis</String>
@@ -30,25 +30,25 @@
   <String Id="DocumentationFeatureDescription">User guides, getting started documentation, and troubleshooting guides</String>
   
   <String Id="StartMenuFeatureTitle">Start Menu Integration</String>
-  <String Id="StartMenuFeatureDescription">Start Menu shortcuts for easy access to CloudWorkstation tools</String>
+  <String Id="StartMenuFeatureDescription">Start Menu shortcuts for easy access to Prism tools</String>
   
   <String Id="DesktopShortcutFeatureTitle">Desktop Shortcut</String>
-  <String Id="DesktopShortcutFeatureDescription">Desktop shortcut for quick access to CloudWorkstation GUI</String>
+  <String Id="DesktopShortcutFeatureDescription">Desktop shortcut for quick access to Prism GUI</String>
   
   <String Id="PowerShellFeatureTitle">PowerShell Integration</String>
   <String Id="PowerShellFeatureDescription">PowerShell module for advanced scripting and automation</String>
   
   <!-- Dialog strings -->
-  <String Id="WelcomeDlgTitle">Welcome to CloudWorkstation Setup</String>
-  <String Id="WelcomeDlgDescription">CloudWorkstation helps researchers launch cloud environments in seconds rather than spending hours on setup.</String>
+  <String Id="WelcomeDlgTitle">Welcome to Prism Setup</String>
+  <String Id="WelcomeDlgDescription">Prism helps researchers launch cloud environments in seconds rather than spending hours on setup.</String>
   <String Id="WelcomeDlgBannerText">Welcome</String>
   
   <String Id="LicenseAgreementDlgTitle">End-User License Agreement</String>
   <String Id="LicenseAgreementDlgDescription">Please read the following license agreement carefully.</String>
   <String Id="LicenseAgreementDlgBannerText">License Agreement</String>
-  <String Id="LicenseText">CloudWorkstation is released under the MIT License.
+  <String Id="LicenseText">Prism is released under the MIT License.
 
-Copyright (c) 2024 CloudWorkstation Project
+Copyright (c) 2024 Prism Project
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -76,26 +76,26 @@ SOFTWARE.</String>
   <String Id="CustomizeDlgSizeLabel">Size</String>
   
   <String Id="ReadyToInstallDlgTitle">Ready to Install</String>
-  <String Id="ReadyToInstallDlgDescription">CloudWorkstation is ready to be installed on your computer</String>
+  <String Id="ReadyToInstallDlgDescription">Prism is ready to be installed on your computer</String>
   <String Id="ReadyToInstallDlgBannerText">Ready to Install</String>
   <String Id="ReadyToInstallText">Click Install to begin the installation. If you want to review or change any of your installation settings, click Back. Click Cancel to exit the wizard.</String>
   
-  <String Id="InstallationProgressDlgTitle">Installing CloudWorkstation</String>
-  <String Id="InstallationProgressDlgDescription">Please wait while CloudWorkstation is being installed</String>
+  <String Id="InstallationProgressDlgTitle">Installing Prism</String>
+  <String Id="InstallationProgressDlgDescription">Please wait while Prism is being installed</String>
   <String Id="InstallationProgressDlgBannerText">Installing</String>
-  <String Id="InstallationProgressText">Installing CloudWorkstation. This may take several minutes.</String>
+  <String Id="InstallationProgressText">Installing Prism. This may take several minutes.</String>
   
   <String Id="InstallationCompleteDlgTitle">Installation Complete</String>
-  <String Id="InstallationCompleteDlgDescription">CloudWorkstation has been successfully installed</String>
+  <String Id="InstallationCompleteDlgDescription">Prism has been successfully installed</String>
   <String Id="InstallationCompleteDlgBannerText">Installation Complete</String>
-  <String Id="InstallationCompleteText">CloudWorkstation has been installed successfully. 
+  <String Id="InstallationCompleteText">Prism has been installed successfully. 
 
-The CloudWorkstation daemon service has been installed and started automatically.
+The Prism daemon service has been installed and started automatically.
 
 You can now use:
 • Command Line: Open Command Prompt and type 'cws --help'
 • Terminal Interface: Type 'cws tui' for interactive terminal interface
-• Graphical Interface: Launch 'CloudWorkstation GUI' from the Start Menu
+• Graphical Interface: Launch 'Prism GUI' from the Start Menu
 
 For help getting started, see the documentation in the Start Menu or visit:
 https://github.com/scttfrdmn/prism</String>
@@ -105,10 +105,10 @@ https://github.com/scttfrdmn/prism</String>
   <String Id="WarningDlgTitle">Warning</String>
   <String Id="InformationDlgTitle">Information</String>
   
-  <String Id="InsufficientPrivilegesError">CloudWorkstation requires administrator privileges for installation. Please run the installer as administrator.</String>
-  <String Id="UnsupportedOSError">CloudWorkstation requires Windows 10 version 1903 or later.</String>
+  <String Id="InsufficientPrivilegesError">Prism requires administrator privileges for installation. Please run the installer as administrator.</String>
+  <String Id="UnsupportedOSError">Prism requires Windows 10 version 1903 or later.</String>
   <String Id="InsufficientDiskSpaceError">Insufficient disk space for installation. Please free up disk space and try again.</String>
-  <String Id="ServiceInstallationWarning">The CloudWorkstation service could not be configured properly. You may need to start the service manually after installation.</String>
+  <String Id="ServiceInstallationWarning">The Prism service could not be configured properly. You may need to start the service manually after installation.</String>
   
   <!-- Button strings -->
   <String Id="NextButton">&amp;Next &gt;</String>
@@ -134,8 +134,8 @@ https://github.com/scttfrdmn/prism</String>
   <String Id="ActionRunningCustomActions">Performing configuration tasks</String>
   
   <!-- Maintenance mode strings -->
-  <String Id="MaintenanceWelcomeDlgTitle">Welcome to CloudWorkstation Maintenance</String>
-  <String Id="MaintenanceWelcomeDlgDescription">The CloudWorkstation installer will help you modify, repair, or remove CloudWorkstation.</String>
+  <String Id="MaintenanceWelcomeDlgTitle">Welcome to Prism Maintenance</String>
+  <String Id="MaintenanceWelcomeDlgDescription">The Prism installer will help you modify, repair, or remove Prism.</String>
   <String Id="MaintenanceTypeDlgTitle">Change, repair or remove installation</String>
   <String Id="MaintenanceTypeDlgDescription">Select the maintenance operation you want to perform.</String>
   <String Id="MaintenanceTypeDlgModifyButton">&amp;Modify</String>
@@ -143,6 +143,6 @@ https://github.com/scttfrdmn/prism</String>
   <String Id="MaintenanceTypeDlgRepairButton">&amp;Repair</String>
   <String Id="MaintenanceTypeDlgRepairText">Repair installation</String>
   <String Id="MaintenanceTypeDlgRemoveButton">&amp;Remove</String>
-  <String Id="MaintenanceTypeDlgRemoveText">Remove CloudWorkstation</String>
+  <String Id="MaintenanceTypeDlgRemoveText">Remove Prism</String>
   
 </WixLocalization>

@@ -497,7 +497,7 @@ Connect: prism connect ml-workspace-1
 - Complete code rename (29,225 files across 3 PRs)
 - GitHub repository rename: `scttfrdmn/prism`
 - All binaries renamed: `cws` → `prism`, `prismd` → `prismd`
-- Configuration directory: `.cloudworkstation` → `.prism`
+- Configuration directory: `.prism` → `.prism`
 - Go module: `github.com/scttfrdmn/prism`
 
 ### Added
@@ -550,7 +550,7 @@ Connect: prism connect ml-workspace-1
 Existing users should:
 1. Update git remotes: `git remote set-url origin git@github.com:scttfrdmn/prism.git`
 2. Rebuild binaries: `make build`
-3. Configuration automatically migrates from `.cloudworkstation` to `.prism`
+3. Configuration automatically migrates from `.prism` to `.prism`
 4. Old commands still work via shell aliases (optional)
 
 **Note**: GitHub automatically redirects old repository URLs, so existing clones continue to work without changes.

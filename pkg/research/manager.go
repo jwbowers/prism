@@ -69,7 +69,7 @@ func (rum *ResearchUserManager) CreateResearchUser(profileID, username string, f
 
 	// Use provided email or generate default
 	if email == "" {
-		email = fmt.Sprintf("%s@cloudworkstation.local", username)
+		email = fmt.Sprintf("%s@prism.local", username)
 	}
 
 	// Create research user config

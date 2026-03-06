@@ -4,7 +4,7 @@ using Microsoft.Deployment.WindowsInstaller;
 namespace SetupCustomActions
 {
     /// <summary>
-    /// Main entry point for CloudWorkstation installer custom actions
+    /// Main entry point for Prism installer custom actions
     /// </summary>
     public class CustomActions
     {
@@ -95,14 +95,14 @@ namespace SetupCustomActions
                 }
 
                 // Configure service recovery options
-                if (!serviceManager.ConfigureServiceRecovery("CloudWorkstationDaemon"))
+                if (!serviceManager.ConfigureServiceRecovery("PrismDaemon"))
                 {
                     session.Log("Warning: Failed to configure service recovery options");
                     // Continue with installation even if recovery configuration fails
                 }
 
                 // Set service description with more details
-                if (!serviceManager.SetServiceDescription("CloudWorkstationDaemon", 
+                if (!serviceManager.SetServiceDescription("PrismDaemon", 
                     "Enterprise research management platform daemon for launching cloud research environments. " +
                     "This service manages AWS infrastructure, templates, and provides API access for CLI, TUI, and GUI clients."))
                 {
@@ -111,7 +111,7 @@ namespace SetupCustomActions
                 }
 
                 // Configure service to start automatically (already done by WiX, but verify)
-                if (!serviceManager.VerifyServiceConfiguration("CloudWorkstationDaemon"))
+                if (!serviceManager.VerifyServiceConfiguration("PrismDaemon"))
                 {
                     session.Log("Warning: Service configuration verification failed");
                     // Continue with installation
@@ -144,19 +144,19 @@ namespace SetupCustomActions
                 System.Threading.Thread.Sleep(3000);
                 
                 // Check if service is running
-                if (!serviceManager.IsServiceRunning("CloudWorkstationDaemon"))
+                if (!serviceManager.IsServiceRunning("PrismDaemon"))
                 {
-                    session.Log("Warning: CloudWorkstation service is not running");
+                    session.Log("Warning: Prism service is not running");
                     
                     // Try to start the service
-                    if (serviceManager.StartService("CloudWorkstationDaemon"))
+                    if (serviceManager.StartService("PrismDaemon"))
                     {
-                        session.Log("Successfully started CloudWorkstation service");
+                        session.Log("Successfully started Prism service");
                         
                         // Wait a moment and verify it's still running
                         System.Threading.Thread.Sleep(2000);
                         
-                        if (!serviceManager.IsServiceRunning("CloudWorkstationDaemon"))
+                        if (!serviceManager.IsServiceRunning("PrismDaemon"))
                         {
                             session.Log("Warning: Service started but stopped immediately");
                         }
@@ -167,12 +167,12 @@ namespace SetupCustomActions
                     }
                     else
                     {
-                        session.Log("Warning: Failed to start CloudWorkstation service");
+                        session.Log("Warning: Failed to start Prism service");
                     }
                 }
                 else
                 {
-                    session.Log("CloudWorkstation service is running successfully");
+                    session.Log("Prism service is running successfully");
                 }
 
                 // Test daemon connectivity (optional)
@@ -276,7 +276,7 @@ namespace SetupCustomActions
                 // Check if path is already in PATH
                 if (currentPath != null && currentPath.Contains(binPath))
                 {
-                    session.Log("CloudWorkstation bin path already in system PATH");
+                    session.Log("Prism bin path already in system PATH");
                     return ActionResult.Success;
                 }
 
@@ -301,7 +301,7 @@ namespace SetupCustomActions
         }
 
         /// <summary>
-        /// Removes CloudWorkstation from system PATH during uninstall
+        /// Removes Prism from system PATH during uninstall
         /// </summary>
         [CustomAction]
         public static ActionResult RemoveFromSystemPath(Session session)
@@ -336,7 +336,7 @@ namespace SetupCustomActions
                 }
                 else
                 {
-                    session.Log("CloudWorkstation bin path not found in system PATH");
+                    session.Log("Prism bin path not found in system PATH");
                 }
 
                 return ActionResult.Success;

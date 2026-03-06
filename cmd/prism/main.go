@@ -1,27 +1,27 @@
-// Prism CLI client (cws) - Launch research computing environments.
+// Prism CLI client - Launch research computing environments.
 //
-// The cws command-line tool provides a simple interface for managing cloud
+// The prism command-line tool provides a simple interface for managing cloud
 // research workstations. It communicates with the Prism daemon (prismd)
 // to launch pre-configured environments optimized for academic research.
 //
 // Core Commands:
 //
-//	cws launch template-name instance-name  # Launch new research environment
-//	cws list                                # Show running instances and costs
-//	cws connect instance-name               # Get connection information
-//	cws stop/start instance-name            # Manage instance lifecycle
+//	prism launch template-name instance-name  # Launch new research environment
+//	prism list                                # Show running instances and costs
+//	prism connect instance-name               # Get connection information
+//	prism stop/start instance-name            # Manage instance lifecycle
 //
 // Storage Commands:
 //
-//	cws volumes create/list/delete          # Manage EFS shared storage
-//	cws storage create/list/delete          # Manage EBS high-performance storage
+//	prism volumes create/list/delete          # Manage EFS shared storage
+//	prism storage create/list/delete          # Manage EBS high-performance storage
 //
 // Examples:
 //
-//	cws launch r-research my-analysis       # Launch R environment
-//	cws launch python-ml gpu-training --size GPU-L  # Launch ML environment
-//	cws list                                # Show all instances
-//	cws connect my-analysis                 # Get SSH/web URLs
+//	prism launch r-research my-analysis       # Launch R environment
+//	prism launch python-ml gpu-training --size GPU-L  # Launch ML environment
+//	prism list                                # Show all instances
+//	prism connect my-analysis                 # Get SSH/web URLs
 //
 // The CLI implements Prism's "Default to Success" principle -
 // every command works out of the box with smart defaults while providing

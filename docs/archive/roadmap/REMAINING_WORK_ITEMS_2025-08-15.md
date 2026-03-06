@@ -119,7 +119,7 @@ Based on existing roadmap documentation:
 
 - **66 test files** across all major packages
 - **Sophisticated build system** with make targets and cross-compilation
-- **Multi-binary architecture** (cws, cwsd, cws-gui) 
+- **Multi-binary architecture** (cws, cwsd, prism-gui) 
 - **Comprehensive functionality** covering the full research computing lifecycle
 - **Enterprise-grade features** including project management, budgets, and cost optimization
 - **Professional documentation** with implementation guides and technical specifications

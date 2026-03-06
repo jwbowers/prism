@@ -1,5 +1,5 @@
 @echo off
-REM CloudWorkstation Windows MSI Build Script
+REM Prism Windows MSI Build Script
 REM Builds a professional Windows installer using WiX Toolset
 
 setlocal enabledelayedexpansion
@@ -24,7 +24,7 @@ set WHITE=%ESC%[37m
 set RESET=%ESC%[0m
 
 echo %CYAN%========================================%RESET%
-echo %CYAN%  CloudWorkstation Windows MSI Builder%RESET%
+echo %CYAN%  Prism Windows MSI Builder%RESET%
 echo %CYAN%========================================%RESET%
 echo.
 
@@ -138,23 +138,23 @@ echo %GREEN%✓ Documentation copied%RESET%
 REM Create PowerShell module
 echo %BLUE%Creating PowerShell module...%RESET%
 if not exist "%BUILD_DIR%\release\scripts" mkdir "%BUILD_DIR%\release\scripts"
-copy "%SOURCE_DIR%\scripts\CloudWorkstation.psm1" "%BUILD_DIR%\release\scripts\" >nul 2>&1
+copy "%SOURCE_DIR%\scripts\Prism.psm1" "%BUILD_DIR%\release\scripts\" >nul 2>&1
 if !errorlevel! neq 0 (
     echo %YELLOW%⚠ PowerShell module not found, creating basic one%RESET%
-    echo # CloudWorkstation PowerShell Module > "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
-    echo function Get-Prism { prism --help } >> "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
-    echo Export-ModuleMember -Function Get-Prism >> "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
+    echo # Prism PowerShell Module > "%BUILD_DIR%\release\scripts\Prism.psm1"
+    echo function Get-Prism { prism --help } >> "%BUILD_DIR%\release\scripts\Prism.psm1"
+    echo Export-ModuleMember -Function Get-Prism >> "%BUILD_DIR%\release\scripts\Prism.psm1"
 )
 echo %GREEN%✓ PowerShell module prepared%RESET%
 
 REM Create application icon (if not exists, create a simple one)
 echo %BLUE%Preparing application icon...%RESET%
 if not exist "%BUILD_DIR%\release\assets" mkdir "%BUILD_DIR%\release\assets"
-if not exist "%SOURCE_DIR%\assets\cloudworkstation.ico" (
+if not exist "%SOURCE_DIR%\assets\prism.ico" (
     echo %YELLOW%⚠ Application icon not found, using default%RESET%
-    copy "%SystemRoot%\System32\shell32.dll" "%BUILD_DIR%\release\assets\cloudworkstation.ico" >nul
+    copy "%SystemRoot%\System32\shell32.dll" "%BUILD_DIR%\release\assets\prism.ico" >nul
 ) else (
-    copy "%SOURCE_DIR%\assets\cloudworkstation.ico" "%BUILD_DIR%\release\assets\" >nul
+    copy "%SOURCE_DIR%\assets\prism.ico" "%BUILD_DIR%\release\assets\" >nul
 )
 echo %GREEN%✓ Application icon prepared%RESET%
 
@@ -194,7 +194,7 @@ cd /d "%WIX_DIR%"
 REM Set WiX variables
 set WIX_VARIABLES=-dSourceDir="%BUILD_DIR%\release" -dVersion="%VERSION%"
 
-candle -arch x64 %WIX_VARIABLES% -out "%BUILD_DIR%\obj\CloudWorkstation.wixobj" "CloudWorkstation.wxs" -ext WixUtilExtension 2>"%LOG_FILE%"
+candle -arch x64 %WIX_VARIABLES% -out "%BUILD_DIR%\obj\Prism.wixobj" "Prism.wxs" -ext WixUtilExtension 2>"%LOG_FILE%"
 if !errorlevel! neq 0 (
     echo %RED%Error: WiX Candle compilation failed%RESET%
     echo %YELLOW%Check log file: %LOG_FILE%%RESET%
@@ -208,7 +208,7 @@ echo.
 echo %CYAN%Step 5: Linking MSI package...%RESET%
 
 echo %BLUE%Running WiX Light linker...%RESET%
-light -out "%BUILD_DIR%\%MSI_NAME%" "%BUILD_DIR%\obj\CloudWorkstation.wixobj" -ext WixUIExtension -ext WixUtilExtension -cultures:en-US -loc "%WIX_DIR%\strings_en-us.wxl" 2>>"%LOG_FILE%"
+light -out "%BUILD_DIR%\%MSI_NAME%" "%BUILD_DIR%\obj\Prism.wixobj" -ext WixUIExtension -ext WixUtilExtension -cultures:en-US -loc "%WIX_DIR%\strings_en-us.wxl" 2>>"%LOG_FILE%"
 if !errorlevel! neq 0 (
     echo %RED%Error: WiX Light linking failed%RESET%
     echo %YELLOW%Check log file: %LOG_FILE%%RESET%
@@ -274,7 +274,7 @@ echo %GREEN%========================================%RESET%
 echo %GREEN%  BUILD COMPLETED SUCCESSFULLY!%RESET%
 echo %GREEN%========================================%RESET%
 echo.
-echo %CYAN%CloudWorkstation Windows Installer:%RESET%
+echo %CYAN%Prism Windows Installer:%RESET%
 echo %WHITE%  Location: %DIST_DIR%\%MSI_NAME%%RESET%
 echo %WHITE%  Version:  %VERSION%%RESET%
 echo %WHITE%  Platform: Windows x64%RESET%

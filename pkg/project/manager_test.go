@@ -28,7 +28,7 @@ func TestNewManager(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temporary directory for testing
-			tempDir, err := os.MkdirTemp("", "cws-project-test-*")
+			tempDir, err := os.MkdirTemp("", "prism-project-test-*")
 			require.NoError(t, err)
 			defer func() { _ = os.RemoveAll(tempDir) }()
 
@@ -685,7 +685,7 @@ func setupTestManager(t *testing.T) *Manager {
 	t.Helper()
 
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-project-test-*")
+	tempDir, err := os.MkdirTemp("", "prism-project-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = os.RemoveAll(tempDir)
@@ -1527,7 +1527,7 @@ func TestManager_ConcurrentOperations(t *testing.T) {
 // TestManager_StatePersistence tests that changes are persisted
 func TestManager_StatePersistence(t *testing.T) {
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-project-persist-*")
+	tempDir, err := os.MkdirTemp("", "prism-project-persist-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tempDir) }()
 

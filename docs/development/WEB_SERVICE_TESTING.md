@@ -160,7 +160,7 @@ prism show test-services | grep -i service
 
 ```bash
 # Start GUI
-cws-gui
+prism-gui
 
 # In GUI:
 # 1. Select instance with web services

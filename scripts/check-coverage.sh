@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CloudWorkstation coverage enforcement script
+# Prism coverage enforcement script
 # Checks test coverage meets minimum requirements
 
 set -e
 
-echo "📊 Checking CloudWorkstation test coverage requirements..."
+echo "📊 Checking Prism test coverage requirements..."
 
 # Color functions
 red() { echo -e "\033[31m$*\033[0m"; }
@@ -16,7 +16,7 @@ blue() { echo -e "\033[34m$*\033[0m"; }
 # Coverage thresholds
 MIN_TOTAL_COVERAGE=60    # Minimum total coverage percentage
 MIN_PKG_COVERAGE=40      # Minimum per-package coverage percentage
-EXCLUDE_PACKAGES="cmd/cws-gui"  # Packages to exclude from coverage requirements
+EXCLUDE_PACKAGES="cmd/prism-gui"  # Packages to exclude from coverage requirements
 
 # Generate coverage report
 echo "Generating coverage report..."

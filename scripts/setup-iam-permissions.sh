@@ -1,10 +1,10 @@
 #!/bin/bash
-# CloudWorkstation IAM Permissions Setup Script
-# This script helps users set up the required IAM permissions for CloudWorkstation
+# Prism IAM Permissions Setup Script
+# This script helps users set up the required IAM permissions for Prism
 
 set -e
 
-echo "🔐 CloudWorkstation IAM Permissions Setup"
+echo "🔐 Prism IAM Permissions Setup"
 echo "==========================================="
 echo ""
 
@@ -55,8 +55,8 @@ echo ""
 # Prompt for action
 echo "What would you like to do?"
 echo "  1) Create new IAM policy and attach to current $ENTITY_TYPE"
-echo "  2) Attach existing CloudWorkstation policy to current $ENTITY_TYPE"
-echo "  3) Create new IAM user for CloudWorkstation"
+echo "  2) Attach existing Prism policy to current $ENTITY_TYPE"
+echo "  3) Create new IAM user for Prism"
 echo "  4) Show policy JSON only (no changes)"
 echo "  5) Exit"
 echo ""
@@ -65,10 +65,10 @@ read -p "Enter choice [1-5]: " CHOICE
 case $CHOICE in
     1)
         echo ""
-        echo "📝 Creating CloudWorkstation IAM policy..."
+        echo "📝 Creating Prism IAM policy..."
 
         # Check if policy already exists
-        POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/CloudWorkstationAccess"
+        POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/PrismAccess"
         if aws iam get-policy --policy-arn "$POLICY_ARN" &> /dev/null; then
             echo "⚠️  Policy already exists: $POLICY_ARN"
             read -p "Would you like to create a new version? [y/N]: " CREATE_VERSION
@@ -84,9 +84,9 @@ case $CHOICE in
         else
             # Create new policy
             aws iam create-policy \
-                --policy-name CloudWorkstationAccess \
+                --policy-name PrismAccess \
                 --policy-document file://$(dirname "$0")/../docs/prism-iam-policy.json \
-                --description "Full access permissions for CloudWorkstation research platform"
+                --description "Full access permissions for Prism research platform"
             echo "✅ Created policy: $POLICY_ARN"
         fi
 
@@ -104,12 +104,12 @@ case $CHOICE in
 
         echo "✅ Policy attached successfully"
         echo ""
-        echo "🎉 Setup complete! You can now use CloudWorkstation."
+        echo "🎉 Setup complete! You can now use Prism."
         ;;
 
     2)
         echo ""
-        POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/CloudWorkstationAccess"
+        POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/PrismAccess"
         echo "📎 Attaching existing policy: $POLICY_ARN"
 
         # Check if policy exists
@@ -145,13 +145,13 @@ case $CHOICE in
         ACCESS_KEY_ID=$(echo "$ACCESS_KEY" | jq -r '.AccessKey.AccessKeyId')
         SECRET_ACCESS_KEY=$(echo "$ACCESS_KEY" | jq -r '.AccessKey.SecretAccessKey')
 
-        echo "📝 Creating CloudWorkstation policy..."
-        POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/CloudWorkstationAccess"
+        echo "📝 Creating Prism policy..."
+        POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/PrismAccess"
         if ! aws iam get-policy --policy-arn "$POLICY_ARN" &> /dev/null; then
             aws iam create-policy \
-                --policy-name CloudWorkstationAccess \
+                --policy-name PrismAccess \
                 --policy-document file://$(dirname "$0")/../docs/prism-iam-policy.json \
-                --description "Full access permissions for CloudWorkstation research platform"
+                --description "Full access permissions for Prism research platform"
         fi
 
         echo "📎 Attaching policy to user..."
@@ -171,19 +171,19 @@ case $CHOICE in
         echo "  aws_access_key_id = $ACCESS_KEY_ID"
         echo "  aws_secret_access_key = $SECRET_ACCESS_KEY"
         echo ""
-        echo "Then create CloudWorkstation profile:"
+        echo "Then create Prism profile:"
         echo "  cws profiles add myprofile myprofile --aws-profile $NEW_USER_NAME --region us-west-2"
         ;;
 
     4)
         echo ""
-        echo "📄 CloudWorkstation IAM Policy:"
+        echo "📄 Prism IAM Policy:"
         echo "================================"
         cat "$(dirname "$0")/../docs/prism-iam-policy.json"
         echo ""
         echo "To apply manually:"
         echo "  aws iam create-policy \\"
-        echo "    --policy-name CloudWorkstationAccess \\"
+        echo "    --policy-name PrismAccess \\"
         echo "    --policy-document file://docs/prism-iam-policy.json"
         ;;
 

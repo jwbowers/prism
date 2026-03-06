@@ -1,5 +1,5 @@
 #!/bin/bash
-# CloudWorkstation Linux Package Testing Script
+# Prism Linux Package Testing Script
 # Tests RPM and DEB packages in Docker containers
 
 set -euo pipefail
@@ -42,7 +42,7 @@ declare -A DEB_DISTROS=(
 # Functions
 print_header() {
     echo -e "${BOLD}${BLUE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${BLUE}║                    CloudWorkstation Package Testing                          ║${NC}"
+    echo -e "${BOLD}${BLUE}║                    Prism Package Testing                          ║${NC}"
     echo -e "${BOLD}${BLUE}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BOLD}${BLUE}║${NC} Testing Linux package installation across distributions                   ${BOLD}${BLUE}║${NC}"
     echo -e "${BOLD}${BLUE}║${NC} Version: $VERSION                                                          ${BOLD}${BLUE}║${NC}"
@@ -155,7 +155,7 @@ case "$1" in
 esac
 
 # Install package
-echo "Installing CloudWorkstation package..."
+echo "Installing Prism package..."
 case "$1" in
     dnf)
         dnf install -y /tmp/package.rpm
@@ -253,7 +253,7 @@ apt-get update
 apt-get install -y systemd curl
 
 # Install package
-echo "Installing CloudWorkstation package..."
+echo "Installing Prism package..."
 dpkg -i /tmp/package.deb || true
 apt-get install -f -y
 
@@ -418,7 +418,7 @@ main() {
                 shift
                 ;;
             --help|-h)
-                echo "CloudWorkstation Linux Package Testing Script"
+                echo "Prism Linux Package Testing Script"
                 echo ""
                 echo "Usage: $0 [OPTIONS]"
                 echo ""

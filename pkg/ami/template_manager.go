@@ -103,7 +103,7 @@ type TemplateExportOptions struct {
 // Example:
 //
 //	parser := ami.NewParser(baseAMIs)
-//	registry := ami.NewRegistry(ssmClient, "/cloudworkstation/ami")
+//	registry := ami.NewRegistry(ssmClient, "/prism/ami")
 //	manager := ami.NewTemplateManager(parser, registry, "./templates")
 func NewTemplateManager(parser *Parser, registry *Registry, templateDir string) *TemplateManager {
 	// Create schema validator
@@ -319,7 +319,7 @@ func (m *TemplateManager) ImportFromURL(url string, options *TemplateManagerImpo
 // Example:
 //
 //	template, err := manager.ImportFromGitHub(
-//	    "cloudworkstation/templates",
+//	    "prism/templates",
 //	    "r-research.yaml",
 //	    "main",
 //	    nil,

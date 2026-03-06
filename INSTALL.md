@@ -152,7 +152,7 @@ scoop bucket rm scttfrdmn
 ### Manual
 ```bash
 # Remove binaries
-sudo rm -f /usr/local/bin/cws /usr/local/bin/prismd /usr/local/bin/cws-gui
+sudo rm -f /usr/local/bin/cws /usr/local/bin/prismd /usr/local/bin/prism-gui
 
 # Remove configuration (optional)
 rm -rf ~/.prism

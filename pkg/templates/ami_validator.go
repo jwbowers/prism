@@ -45,12 +45,12 @@ func NewAMIConfigValidator() *AMIConfigValidator {
 
 	// Trusted AWS accounts (Prism, major vendors, etc.)
 	trustedAccounts := map[string]string{
-		"099720109477":     "Canonical (Ubuntu)",
-		"137112412989":     "Amazon Web Services",
-		"309956199498":     "Red Hat",
-		"679593333241":     "MathWorks",
-		"aws-marketplace":  "AWS Marketplace",
-		"cloudworkstation": "Prism Community",
+		"099720109477":    "Canonical (Ubuntu)",
+		"137112412989":    "Amazon Web Services",
+		"309956199498":    "Red Hat",
+		"679593333241":    "MathWorks",
+		"aws-marketplace": "AWS Marketplace",
+		"prism":           "Prism Community",
 	}
 
 	// AMI ID regex pattern

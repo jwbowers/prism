@@ -301,7 +301,7 @@ ssh <connection> "ps aux | grep python"
 **User**: Prefers GUI, not comfortable with CLI
 
 **Test Steps**:
-1. Launch GUI: `./bin/cws-gui`
+1. Launch GUI: `./bin/prism-gui`
 2. Browse templates visually
 3. Launch instance via GUI
 4. Monitor instance status in GUI

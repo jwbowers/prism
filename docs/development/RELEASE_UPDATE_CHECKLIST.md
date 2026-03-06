@@ -53,7 +53,7 @@ class Prism < Formula
     bin.install "bin/cws"
     bin.install "bin/prismd"
     if OS.mac?
-      bin.install "bin/cws-gui"  # GUI available on macOS
+      bin.install "bin/prism-gui"  # GUI available on macOS
     end
   end
 end

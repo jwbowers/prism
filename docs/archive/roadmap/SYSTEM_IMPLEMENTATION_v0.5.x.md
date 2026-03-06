@@ -17,7 +17,7 @@ The v0.5.x series introduces the **Universal AMI System** as a foundational comp
 │                   Prism v0.5.x                  │
 ├─────────────────────────────────────────────────────────────┤
 │  CLI Client  │  TUI Client  │  GUI Client  │  REST API     │
-│  (cmd/cws)   │  (prism tui)   │  (cws-gui)   │  (external)   │
+│  (cmd/cws)   │  (prism tui)   │  (prism-gui)   │  (external)   │
 └──────┬───────┴──────┬───────┴──────┬───────┴───────┬────────┘
        │              │              │               │
        └──────────────┼──────────────┼───────────────┘

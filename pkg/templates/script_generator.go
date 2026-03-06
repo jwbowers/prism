@@ -397,7 +397,7 @@ chmod 644 "$PROGRESS_LOG"
 # Progress marker function
 progress() {
     echo "[PRISM-PROGRESS] $1" | tee -a "$PROGRESS_LOG"
-    logger -t cws-setup "$1"
+    logger -t prism-setup "$1"
 }
 
 progress "STAGE:init:START"

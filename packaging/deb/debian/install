@@ -1,4 +1,4 @@
-# CloudWorkstation Debian Installation Rules
+# Prism Debian Installation Rules
 # This file specifies which files to install and where
 
 # Main binaries
@@ -6,17 +6,17 @@ build/cws usr/bin
 build/prismd usr/bin
 
 # Systemd service file
-systemd/prismd.service lib/systemd/system/cloudworkstation.service
+systemd/prismd.service lib/systemd/system/prism.service
 
 # Configuration templates
-debian/daemon.conf etc/cloudworkstation
-debian/aws-config.template etc/cloudworkstation/aws/config.template
-debian/aws-credentials.template etc/cloudworkstation/aws/credentials.template
+debian/daemon.conf etc/prism
+debian/aws-config.template etc/prism/aws/config.template
+debian/aws-credentials.template etc/prism/aws/credentials.template
 
 # Documentation
-README.md usr/share/doc/cloudworkstation
-CHANGELOG.md usr/share/doc/cloudworkstation
-LICENSE usr/share/doc/cloudworkstation
+README.md usr/share/doc/prism
+CHANGELOG.md usr/share/doc/prism
+LICENSE usr/share/doc/prism
 
 # Man pages
 debian/cws.1 usr/share/man/man1

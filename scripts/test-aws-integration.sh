@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CloudWorkstation AWS Integration Test Runner
+# Prism AWS Integration Test Runner
 # Runs AWS integration tests with proper environment setup
 
 set -e
@@ -34,7 +34,7 @@ AWS_TEST_REGION="${AWS_TEST_REGION:-us-east-1}"
 TEST_TIMEOUT="${AWS_TEST_TIMEOUT:-15}"
 TEST_SCOPE="${1:-quick}"
 
-echo "🚀 CloudWorkstation AWS Integration Test Runner"
+echo "🚀 Prism AWS Integration Test Runner"
 echo "=============================================="
 echo ""
 log_info "Configuration:"
@@ -51,7 +51,7 @@ if [ "$RUN_AWS_TESTS" != "true" ]; then
 fi
 
 # Verify build
-log_info "Building CloudWorkstation..."
+log_info "Building Prism..."
 if ! make build > /dev/null 2>&1; then
     log_error "Build failed"
     exit 1

@@ -145,7 +145,7 @@ prism daemon status                            # Prism-specific status
 ```bash
 # GUI integration for desktop users
 # Add to post_install for source builds:
-if [[ -x "./bin/cws-gui" ]]; then
+if [[ -x "./bin/prism-gui" ]]; then
     # Create LaunchAgent for GUI auto-start
     cp scripts/com.prism.gui.plist ~/Library/LaunchAgents/
     launchctl load ~/Library/LaunchAgents/com.prism.gui.plist

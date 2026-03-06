@@ -1,5 +1,5 @@
 [Unit]
-Description=CloudWorkstation Daemon - Autonomous Research Instance Management
+Description=Prism Daemon - Autonomous Research Instance Management
 Documentation=https://github.com/scttfrdmn/prism
 After=network-online.target multi-user.target
 Wants=network-online.target
@@ -7,8 +7,8 @@ ConditionPathExists=/usr/local/bin/cwsd
 
 [Service]
 Type=simple
-User=cloudworkstation
-Group=cloudworkstation
+User=prism
+Group=prism
 ExecStart=/usr/local/bin/cwsd -autonomous
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStop=/bin/kill -TERM $MAINPID
@@ -34,19 +34,19 @@ RestrictRealtime=yes
 RestrictSUIDSGID=yes
 
 # Allow access to configuration and state directories
-ReadWritePaths=/var/lib/cloudworkstation
-ReadOnlyPaths=/etc/cloudworkstation
+ReadWritePaths=/var/lib/prism
+ReadOnlyPaths=/etc/prism
 
 # Environment
-Environment=HOME=/var/lib/cloudworkstation
-Environment=XDG_CONFIG_HOME=/var/lib/cloudworkstation/.config
-Environment=AWS_CONFIG_FILE=/etc/cloudworkstation/aws/config
-Environment=AWS_SHARED_CREDENTIALS_FILE=/etc/cloudworkstation/aws/credentials
+Environment=HOME=/var/lib/prism
+Environment=XDG_CONFIG_HOME=/var/lib/prism/.config
+Environment=AWS_CONFIG_FILE=/etc/prism/aws/config
+Environment=AWS_SHARED_CREDENTIALS_FILE=/etc/prism/aws/credentials
 
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=cloudworkstation
+SyslogIdentifier=prism
 
 # Startup timeout (allow time for AWS initialization)
 TimeoutStartSec=60s

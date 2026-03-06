@@ -126,7 +126,7 @@ idle_detection:
   check_interval_minutes: 10
 
 version: "2.0.0"
-maintainer: "CloudWorkstation Team"
+maintainer: "Prism Team"
 last_updated: "2025-10-04T23:30:00Z"
 tags:
   type: "research"

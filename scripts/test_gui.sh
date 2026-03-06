@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Test script for CloudWorkstation GUI
+# Test script for Prism GUI
 
 # Set error handling
 set -e
 
 # Print test header
-echo "==== CloudWorkstation GUI Tests ===="
+echo "==== Prism GUI Tests ===="
 echo "Running tests for the GUI components"
 echo "====================================="
 
@@ -26,7 +26,7 @@ cd "$(dirname "$0")/.."
 
 # Run the GUI tests
 echo "Running GUI tests..."
-go test -v ./cmd/cws-gui/tests/... -count=1 | tee test_results/gui_test_results.log
+go test -v ./cmd/prism-gui/tests/... -count=1 | tee test_results/gui_test_results.log
 
 # Check exit status
 if [ "${PIPESTATUS[0]}" -eq 0 ]; then
@@ -38,7 +38,7 @@ fi
 
 # Run with coverage
 echo "Running GUI tests with coverage..."
-go test -v ./cmd/cws-gui/tests/... -coverprofile=test_results/gui_coverage.out
+go test -v ./cmd/prism-gui/tests/... -coverprofile=test_results/gui_coverage.out
 
 # Generate coverage report
 go tool cover -html=test_results/gui_coverage.out -o test_results/gui_coverage.html

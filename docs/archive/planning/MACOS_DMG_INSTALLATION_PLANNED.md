@@ -99,7 +99,7 @@ The DMG installer can automatically install command-line tools:
 │   │   ├── Prism          # Main launcher script
 │   │   ├── prism                       # CLI client binary
 │   │   ├── cwsd                      # Daemon binary
-│   │   └── cws-gui                   # GUI binary (full build only)
+│   │   └── prism-gui                   # GUI binary (full build only)
 │   ├── Resources/
 │   │   ├── Prism.icns     # Application icon
 │   │   ├── templates/                # Built-in templates

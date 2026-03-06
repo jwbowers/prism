@@ -301,7 +301,7 @@ func (p *SecureCredentialProvider) getEncryptionKey() ([keySize]byte, error) {
 	// Use PBKDF2 key derivation function with home directory and service name
 	// This provides cryptographically secure key derivation
 	password := []byte(homeDir + p.service)
-	salt := []byte("cloudworkstation-v1") // Static salt for deterministic keys
+	salt := []byte("prism-v1") // Static salt for deterministic keys
 
 	// Use PBKDF2 with SHA-256, 100000 iterations (OWASP recommendation)
 	derivedKey := pbkdf2.Key(password, salt, 100000, 32, sha256.New)

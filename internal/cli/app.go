@@ -2035,10 +2035,10 @@ func (a *App) findSSHKey(region string) (string, error) {
 		return "", err
 	}
 
-	// Standard format: cws-test-{region}-key
+	// Standard format: prism-test-{region}-key
 	keyPaths := []string{
-		filepath.Join(homeDir, ".ssh", fmt.Sprintf("cws-test-%s-key", region)),
-		filepath.Join(homeDir, ".prism", "profiles", "test", "ssh", fmt.Sprintf("cws-test-%s-key", region)),
+		filepath.Join(homeDir, ".ssh", fmt.Sprintf("prism-test-%s-key", region)),
+		filepath.Join(homeDir, ".prism", "profiles", "test", "ssh", fmt.Sprintf("prism-test-%s-key", region)),
 	}
 
 	for _, path := range keyPaths {

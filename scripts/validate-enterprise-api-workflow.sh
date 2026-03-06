@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🏢 CloudWorkstation Enterprise API Workflow Validation"
+echo "🏢 Prism Enterprise API Workflow Validation"
 echo "========================================================"
 
 # Color codes for output

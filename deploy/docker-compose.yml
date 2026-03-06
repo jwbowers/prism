@@ -1,6 +1,6 @@
-# CloudWorkstation Production Deployment Configuration
+# Prism Production Deployment Configuration
 # 
-# This docker-compose file provides a production-ready deployment for CloudWorkstation
+# This docker-compose file provides a production-ready deployment for Prism
 # with enterprise-grade security features enabled.
 #
 # Usage:
@@ -11,12 +11,12 @@
 version: '3.8'
 
 services:
-  # CloudWorkstation Daemon - Main service
+  # Prism Daemon - Main service
   prismd:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.prismd
-    container_name: cloudworkstation-daemon
+    container_name: prism-daemon
     restart: unless-stopped
     ports:
       - "8947:8947"  # CWS API port
@@ -32,8 +32,8 @@ services:
       - AWS_PROFILE=${AWS_PROFILE:-default}
     volumes:
       - cws_data:/data
-      - cws_logs:/var/log/cloudworkstation
-      - cws_security:/var/lib/cloudworkstation/security
+      - cws_logs:/var/log/prism
+      - cws_security:/var/lib/prism/security
       - ~/.aws:/root/.aws:ro  # AWS credentials (read-only)
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8947/api/v1/ping"]
@@ -42,7 +42,7 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - cloudworkstation
+      - prism
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -54,7 +54,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.security-monitor
-    container_name: cloudworkstation-security-monitor
+    container_name: prism-security-monitor
     restart: unless-stopped
     depends_on:
       - prismd
@@ -64,10 +64,10 @@ services:
       - CWS_CORRELATION_INTERVAL=5m
       - CWS_ALERT_THRESHOLD=MEDIUM
     volumes:
-      - cws_security:/var/lib/cloudworkstation/security:ro
-      - cws_logs:/var/log/cloudworkstation
+      - cws_security:/var/lib/prism/security:ro
+      - cws_logs:/var/log/prism
     networks:
-      - cloudworkstation
+      - prism
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -77,13 +77,13 @@ services:
   # Log Aggregator - Centralized logging
   log-aggregator:
     image: fluent/fluentd:v1.16-debian-1
-    container_name: cloudworkstation-logs
+    container_name: prism-logs
     restart: unless-stopped
     volumes:
-      - cws_logs:/var/log/cloudworkstation
+      - cws_logs:/var/log/prism
       - ./fluentd.conf:/fluentd/etc/fluent.conf:ro
     networks:
-      - cloudworkstation
+      - prism
     security_opt:
       - no-new-privileges:true
 
@@ -92,7 +92,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.metrics
-    container_name: cloudworkstation-metrics
+    container_name: prism-metrics
     restart: unless-stopped
     depends_on:
       - prismd
@@ -102,13 +102,13 @@ services:
       - CWS_DAEMON_URL=http://prismd:8947
       - METRICS_PORT=9090
     networks:
-      - cloudworkstation
+      - prism
     security_opt:
       - no-new-privileges:true
     read_only: true
 
 networks:
-  cloudworkstation:
+  prism:
     driver: bridge
     ipam:
       config:
@@ -122,16 +122,16 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /opt/cloudworkstation/data
+      device: /opt/prism/data
   cws_logs:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /opt/cloudworkstation/logs
+      device: /opt/prism/logs
   cws_security:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /opt/cloudworkstation/security
+      device: /opt/prism/security

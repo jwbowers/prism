@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# CloudWorkstation service management script
+# Prism service management script
 
 # Colors for output
 RED='\033[0;31m'
@@ -26,7 +26,7 @@ SERVICE_NAME="prismd"
 
 # Service management functions
 start_service() {
-    log_info "Starting CloudWorkstation service..."
+    log_info "Starting Prism service..."
     if systemctl start $SERVICE_NAME; then
         log_success "Service started successfully"
         systemctl status $SERVICE_NAME --no-pager -l
@@ -37,7 +37,7 @@ start_service() {
 }
 
 stop_service() {
-    log_info "Stopping CloudWorkstation service..."
+    log_info "Stopping Prism service..."
     if systemctl stop $SERVICE_NAME; then
         log_success "Service stopped successfully"
     else
@@ -47,7 +47,7 @@ stop_service() {
 }
 
 restart_service() {
-    log_info "Restarting CloudWorkstation service..."
+    log_info "Restarting Prism service..."
     if systemctl restart $SERVICE_NAME; then
         log_success "Service restarted successfully"
         systemctl status $SERVICE_NAME --no-pager -l
@@ -58,7 +58,7 @@ restart_service() {
 }
 
 enable_service() {
-    log_info "Enabling CloudWorkstation service for auto-start..."
+    log_info "Enabling Prism service for auto-start..."
     if systemctl enable $SERVICE_NAME; then
         log_success "Service enabled for auto-start"
     else
@@ -68,7 +68,7 @@ enable_service() {
 }
 
 disable_service() {
-    log_info "Disabling CloudWorkstation service auto-start..."
+    log_info "Disabling Prism service auto-start..."
     if systemctl disable $SERVICE_NAME; then
         log_success "Service auto-start disabled"
     else
@@ -82,7 +82,7 @@ status_service() {
 }
 
 logs_service() {
-    log_info "Showing CloudWorkstation service logs (Ctrl+C to exit)..."
+    log_info "Showing Prism service logs (Ctrl+C to exit)..."
     journalctl -u $SERVICE_NAME -f --no-pager
 }
 
@@ -90,25 +90,25 @@ show_config() {
     log_info "Current configuration:"
     echo
     
-    if [[ -f /etc/cloudworkstation/config.json ]]; then
-        echo "Main config (/etc/cloudworkstation/config.json):"
-        cat /etc/cloudworkstation/config.json | jq . 2>/dev/null || cat /etc/cloudworkstation/config.json
+    if [[ -f /etc/prism/config.json ]]; then
+        echo "Main config (/etc/prism/config.json):"
+        cat /etc/prism/config.json | jq . 2>/dev/null || cat /etc/prism/config.json
         echo
     else
         log_warning "Main config file not found"
     fi
     
-    if [[ -f /etc/cloudworkstation/aws/config ]]; then
-        echo "AWS config (/etc/cloudworkstation/aws/config):"
-        cat /etc/cloudworkstation/aws/config
+    if [[ -f /etc/prism/aws/config ]]; then
+        echo "AWS config (/etc/prism/aws/config):"
+        cat /etc/prism/aws/config
         echo
     else
         log_warning "AWS config file not found"
     fi
     
-    if [[ -f /var/lib/cloudworkstation/.cloudworkstation/idle.json ]]; then
-        echo "Idle config (/var/lib/cloudworkstation/.cloudworkstation/idle.json):"
-        cat /var/lib/cloudworkstation/.cloudworkstation/idle.json | jq . 2>/dev/null || head -20 /var/lib/cloudworkstation/.cloudworkstation/idle.json
+    if [[ -f /var/lib/prism/.prism/idle.json ]]; then
+        echo "Idle config (/var/lib/prism/.prism/idle.json):"
+        cat /var/lib/prism/.prism/idle.json | jq . 2>/dev/null || head -20 /var/lib/prism/.prism/idle.json
         echo
     fi
 }
@@ -124,9 +124,9 @@ show_state() {
     echo
     
     # Runtime state
-    if [[ -f /var/lib/cloudworkstation/.cloudworkstation/autonomous_state.json ]]; then
+    if [[ -f /var/lib/prism/.prism/autonomous_state.json ]]; then
         echo "Autonomous state:"
-        cat /var/lib/cloudworkstation/.cloudworkstation/autonomous_state.json | jq . 2>/dev/null || head -20 /var/lib/cloudworkstation/.cloudworkstation/autonomous_state.json
+        cat /var/lib/prism/.prism/autonomous_state.json | jq . 2>/dev/null || head -20 /var/lib/prism/.prism/autonomous_state.json
     else
         log_info "No autonomous state file found"
     fi
@@ -138,8 +138,8 @@ enable_autonomous() {
     # Update config to enable autonomous execution
     if command -v jq >/dev/null 2>&1; then
         tmp_file=$(mktemp)
-        jq '.autonomous.auto_execute = true | .autonomous.dry_run = false' /etc/cloudworkstation/config.json > "$tmp_file"
-        mv "$tmp_file" /etc/cloudworkstation/config.json
+        jq '.autonomous.auto_execute = true | .autonomous.dry_run = false' /etc/prism/config.json > "$tmp_file"
+        mv "$tmp_file" /etc/prism/config.json
         
         log_success "Enabled autonomous execution"
         log_warning "The service will now automatically hibernate/stop idle instances"
@@ -147,7 +147,7 @@ enable_autonomous() {
         # Restart service to pick up new config
         restart_service
     else
-        log_error "jq command not found - please manually edit /etc/cloudworkstation/config.json"
+        log_error "jq command not found - please manually edit /etc/prism/config.json"
         log_info "Set: autonomous.auto_execute = true, autonomous.dry_run = false"
     fi
 }
@@ -158,21 +158,21 @@ disable_autonomous() {
     # Update config to disable autonomous execution
     if command -v jq >/dev/null 2>&1; then
         tmp_file=$(mktemp)
-        jq '.autonomous.auto_execute = false | .autonomous.dry_run = true' /etc/cloudworkstation/config.json > "$tmp_file"
-        mv "$tmp_file" /etc/cloudworkstation/config.json
+        jq '.autonomous.auto_execute = false | .autonomous.dry_run = true' /etc/prism/config.json > "$tmp_file"
+        mv "$tmp_file" /etc/prism/config.json
         
         log_success "Disabled autonomous execution (dry run mode)"
         
         # Restart service to pick up new config
         restart_service
     else
-        log_error "jq command not found - please manually edit /etc/cloudworkstation/config.json"
+        log_error "jq command not found - please manually edit /etc/prism/config.json"
         log_info "Set: autonomous.auto_execute = false, autonomous.dry_run = true"
     fi
 }
 
 show_help() {
-    echo "CloudWorkstation Service Management"
+    echo "Prism Service Management"
     echo
     echo "Usage: $0 COMMAND"
     echo

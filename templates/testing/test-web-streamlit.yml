@@ -58,4 +58,4 @@ instance_defaults:
 # Template metadata
 version: "1.0.0"
 validation_status: "testing"
-maintainer: "CloudWorkstation Team"
+maintainer: "Prism Team"

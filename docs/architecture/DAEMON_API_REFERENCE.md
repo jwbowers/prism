@@ -15,7 +15,7 @@
 The Prism daemon provides a unified REST API that serves all client interfaces:
 - **CLI Client** (`cmd/cws`) - Command-line interface
 - **TUI Client** (`prism tui`) - Interactive terminal interface  
-- **GUI Client** (`cmd/cws-gui`) - Desktop application (Wails 3.x)
+- **GUI Client** (`cmd/prism-gui`) - Desktop application (Wails 3.x)
 
 All clients use the same API endpoints through the `pkg/api/client` library for consistent functionality across interfaces.
 

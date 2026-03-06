@@ -24,9 +24,9 @@ func findTemplateCLIBinary(t *testing.T) string {
 
 	candidates := []string{
 		"../../../bin/prism",
-		"../../../bin/cws",
+		"../../../bin/prism",
 		filepath.Join(os.Getenv("GOPATH"), "bin", "prism"),
-		filepath.Join(os.Getenv("GOPATH"), "bin", "cws"),
+		filepath.Join(os.Getenv("GOPATH"), "bin", "prism"),
 	}
 
 	for _, candidate := range candidates {
@@ -39,7 +39,7 @@ func findTemplateCLIBinary(t *testing.T) string {
 		}
 	}
 
-	t.Fatal("Could not find prism/cws binary. Run 'make build' first.")
+	t.Fatal("Could not find prism binary. Run 'make build' first.")
 	return ""
 }
 

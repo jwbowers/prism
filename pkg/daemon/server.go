@@ -309,7 +309,7 @@ func NewServer(port string) (*Server, error) {
 	// Initialize template marketplace registry
 	marketplaceConfig := &marketplace.MarketplaceConfig{
 		RegistryEndpoint:      "https://marketplace.prism.org",
-		S3Bucket:              "cloudworkstation-marketplace",
+		S3Bucket:              "prism-marketplace",
 		DynamoDBTable:         "marketplace-templates",
 		CDNEndpoint:           "https://cdn.prism.org",
 		AutoAMIGeneration:     true,

@@ -110,7 +110,7 @@ func (s *Service) GetPolicyViolationMessage(response *PolicyResponse, action str
 		}
 	}
 
-	baseMsg += fmt.Sprintf("\n\nTo modify policies, use: cws policy %s", action)
+	baseMsg += fmt.Sprintf("\n\nTo modify policies, use: prism policy %s", action)
 
 	return baseMsg
 }

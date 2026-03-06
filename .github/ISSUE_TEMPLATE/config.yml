@@ -2,13 +2,13 @@ blank_issues_enabled: false
 contact_links:
   - name: 💬 Ask a Question
     url: https://github.com/scttfrdmn/prism/discussions/new?category=q-a
-    about: Ask questions about using CloudWorkstation
+    about: Ask questions about using Prism
   - name: 💡 Share an Idea
     url: https://github.com/scttfrdmn/prism/discussions/new?category=ideas
     about: Suggest new features or improvements (informal discussion before creating issues)
   - name: 🎉 Show and Tell
     url: https://github.com/scttfrdmn/prism/discussions/new?category=show-and-tell
-    about: Share your CloudWorkstation projects and research workflows
+    about: Share your Prism projects and research workflows
   - name: 📚 Documentation
     url: https://github.com/scttfrdmn/prism/tree/main/docs
     about: Read the user guides, architecture docs, and persona walkthroughs

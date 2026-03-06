@@ -1,7 +1,7 @@
-Source: cloudworkstation
+Source: prism
 Section: admin
 Priority: optional
-Maintainer: CloudWorkstation Team <team@cloudworkstation.io>
+Maintainer: Prism Team <team@prism.io>
 Build-Depends: debhelper-compat (= 13),
                golang-go (>= 2:1.20~),
                dh-systemd,
@@ -12,7 +12,7 @@ Vcs-Git: https://github.com/scttfrdmn/prism.git
 Vcs-Browser: https://github.com/scttfrdmn/prism
 Rules-Requires-Root: no
 
-Package: cloudworkstation
+Package: prism
 Architecture: amd64 arm64
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -24,7 +24,7 @@ Recommends: openssh-client,
 Suggests: docker.io,
           aws-shell
 Description: Autonomous Research Instance Management Platform
- CloudWorkstation is a command-line tool that allows academic researchers
+ Prism is a command-line tool that allows academic researchers
  to launch pre-configured cloud workstations in seconds rather than spending
  hours setting up research environments.
  .
@@ -40,18 +40,18 @@ Description: Autonomous Research Instance Management Platform
  This package provides both the command-line interface (cws) and the
  backend daemon (prismd) with systemd integration for autonomous operation.
 
-Package: cloudworkstation-dev
+Package: prism-dev
 Architecture: amd64 arm64
-Depends: cloudworkstation (= ${binary:Version}),
+Depends: prism (= ${binary:Version}),
          ${shlibs:Depends},
          ${misc:Depends}
 Recommends: golang-go (>= 2:1.20~),
             build-essential,
             git
-Description: Development tools for CloudWorkstation
- This package contains development tools and utilities for CloudWorkstation,
+Description: Development tools for Prism
+ This package contains development tools and utilities for Prism,
  including template development tools, debugging utilities, and development
  server configurations.
  .
  This package is intended for developers who want to create custom templates
- or contribute to the CloudWorkstation project.
+ or contribute to the Prism project.

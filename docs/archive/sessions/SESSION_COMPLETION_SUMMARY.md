@@ -201,7 +201,7 @@ These are documented future enhancements, not placeholder code.
 ```bash
 ✅ go build ./cmd/cws/      # CLI client
 ✅ go build ./cmd/cwsd/     # Daemon
-✅ go build ./cmd/cws-gui/  # GUI client
+✅ go build ./cmd/prism-gui/  # GUI client
 ```
 
 ### Test Status

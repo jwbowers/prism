@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CloudWorkstation macOS Post-Installation Script
+# Prism macOS Post-Installation Script
 # Handles PATH setup, service installation, and initial configuration
 # This script runs automatically after DMG installation
 
@@ -41,7 +41,7 @@ log_error() {
 show_install_dialog() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation Installation" buttons {"Skip", "Install"} default button "Install" with icon note
+        display dialog "$message" with title "Prism Installation" buttons {"Skip", "Install"} default button "Install" with icon note
 EOD
 }
 
@@ -49,7 +49,7 @@ EOD
 show_info_dialog() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation Setup" buttons {"OK"} default button "OK" with icon note
+        display dialog "$message" with title "Prism Setup" buttons {"OK"} default button "OK" with icon note
 EOD
 }
 
@@ -57,7 +57,7 @@ EOD
 show_error_dialog() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation Setup Error" buttons {"OK"} default button "OK" with icon stop
+        display dialog "$message" with title "Prism Setup Error" buttons {"OK"} default button "OK" with icon stop
 EOD
 }
 
@@ -80,7 +80,7 @@ check_cli_tools_installed() {
 
 # Install command line tools
 install_cli_tools() {
-    log_info "Installing CloudWorkstation command-line tools..."
+    log_info "Installing Prism command-line tools..."
     
     # Check if installation directory exists
     if [[ ! -d "$INSTALL_DIR" ]]; then
@@ -98,7 +98,7 @@ install_cli_tools() {
         # Use AppleScript to get password
         local password_result
         password_result=$(osascript << 'EOD'
-            display dialog "Administrator password required to install CloudWorkstation CLI tools:" with title "CloudWorkstation Installation" default answer "" with hidden answer buttons {"Cancel", "OK"} default button "OK"
+            display dialog "Administrator password required to install Prism CLI tools:" with title "Prism Installation" default answer "" with hidden answer buttons {"Cancel", "OK"} default button "OK"
 EOD
         ) || {
             log_warning "Installation cancelled by user"
@@ -177,7 +177,7 @@ setup_shell_path() {
         log_info "PATH already configured in $profile_file"
     else
         echo "" >> "$profile_file"
-        echo "# CloudWorkstation CLI tools" >> "$profile_file"
+        echo "# Prism CLI tools" >> "$profile_file"
         echo "$path_export" >> "$profile_file"
         log_success "PATH configured in $profile_file"
     fi
@@ -287,16 +287,16 @@ create_desktop_shortcut() {
     log_info "Creating desktop shortcut..."
     
     local desktop_dir="$HOME/Desktop"
-    local shortcut_path="$desktop_dir/CloudWorkstation.command"
+    local shortcut_path="$desktop_dir/Prism.command"
     
     if [[ -d "$desktop_dir" ]]; then
         cat > "$shortcut_path" << EOF
 #!/bin/bash
-# CloudWorkstation Desktop Shortcut
-# Double-click to open CloudWorkstation terminal interface
+# Prism Desktop Shortcut
+# Double-click to open Prism terminal interface
 
 clear
-echo "CloudWorkstation v0.4.2"
+echo "Prism v0.4.2"
 echo "======================"
 echo ""
 echo "Available commands:"
@@ -345,7 +345,7 @@ verify_installation() {
     
     # Check daemon
     if pgrep -f "prismd" > /dev/null; then
-        log_success "CloudWorkstation daemon is running"
+        log_success "Prism daemon is running"
     else
         log_info "Daemon not running (will start on next login)"
     fi
@@ -355,7 +355,7 @@ verify_installation() {
 
 # Main installation function
 main() {
-    log_info "CloudWorkstation macOS Post-Installation Setup"
+    log_info "Prism macOS Post-Installation Setup"
     log_info "App bundle: $APP_DIR"
     
     # Create application directories first
@@ -364,14 +364,14 @@ main() {
     # Ask user about CLI tools installation
     if ! check_cli_tools_installed; then
         local install_response
-        install_response=$(show_install_dialog "Would you like to install CloudWorkstation command-line tools (cws, prismd) to $INSTALL_DIR? This allows you to use CloudWorkstation from any terminal window.")
+        install_response=$(show_install_dialog "Would you like to install Prism command-line tools (cws, prismd) to $INSTALL_DIR? This allows you to use Prism from any terminal window.")
         
         if [[ "$install_response" == *"Install"* ]]; then
             if install_cli_tools; then
                 setup_shell_path
                 install_launch_agent
             else
-                show_error_dialog "Failed to install command-line tools. You can still use the CloudWorkstation.app directly."
+                show_error_dialog "Failed to install command-line tools. You can still use the Prism.app directly."
             fi
         else
             log_info "Skipping CLI tools installation"
@@ -388,10 +388,10 @@ main() {
     
     # Verify installation
     if verify_installation; then
-        show_info_dialog "CloudWorkstation installation completed successfully!
+        show_info_dialog "Prism installation completed successfully!
 
 Available interfaces:
-• CloudWorkstation.app - GUI interface
+• Prism.app - GUI interface
 • 'cws' command - Terminal interface
 • 'prismd' daemon - Background service
 
@@ -400,7 +400,7 @@ Next steps:
 2. Browse available templates
 3. Launch your first workstation
 
-Documentation: Help menu in CloudWorkstation.app"
+Documentation: Help menu in Prism.app"
         
         log_success "Post-installation setup completed successfully!"
     else

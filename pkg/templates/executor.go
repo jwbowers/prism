@@ -88,7 +88,7 @@ func (e *SSHRemoteExecutor) ExecuteScript(ctx context.Context, instanceName stri
 	}
 
 	// Create temporary script file and execute it
-	command := fmt.Sprintf("cat > /tmp/cloudworkstation-script.sh << 'EOF'\n%s\nEOF\nchmod +x /tmp/cloudworkstation-script.sh\n/tmp/cloudworkstation-script.sh\nrm -f /tmp/cloudworkstation-script.sh", script)
+	command := fmt.Sprintf("cat > /tmp/prism-script.sh << 'EOF'\n%s\nEOF\nchmod +x /tmp/prism-script.sh\n/tmp/prism-script.sh\nrm -f /tmp/prism-script.sh", script)
 
 	// Build SSH command
 	sshArgs := []string{
@@ -395,7 +395,7 @@ func (e *SystemsManagerExecutor) CopyFile(ctx context.Context, instanceName stri
 	}
 
 	// Generate unique S3 key for temporary storage
-	s3Key := fmt.Sprintf("cloudworkstation/tmp/%s/%s", instanceName, filepath.Base(localPath))
+	s3Key := fmt.Sprintf("prism/tmp/%s/%s", instanceName, filepath.Base(localPath))
 
 	// Upload to S3
 	putInput := &s3.PutObjectInput{
@@ -446,7 +446,7 @@ func (e *SystemsManagerExecutor) GetFile(ctx context.Context, instanceName strin
 	// 3. Clean up S3 object
 
 	// Generate unique S3 key for temporary storage
-	s3Key := fmt.Sprintf("cloudworkstation/tmp/%s/%s", instanceName, filepath.Base(remotePath))
+	s3Key := fmt.Sprintf("prism/tmp/%s/%s", instanceName, filepath.Base(remotePath))
 
 	// Upload from instance to S3 using SSM
 	uploadCommand := fmt.Sprintf("aws s3 cp %s s3://%s/%s", remotePath, e.s3Bucket, s3Key)

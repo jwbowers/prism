@@ -59,7 +59,7 @@ Prism-v0.4.2.dmg/
 │   │   │   ├── Prism   # Smart launcher script
 │   │   │   ├── prism               # CLI client binary
 │   │   │   ├── cwsd              # Daemon service binary
-│   │   │   └── cws-gui           # GUI application binary
+│   │   │   └── prism-gui           # GUI application binary
 │   │   ├── Resources/
 │   │   │   ├── Prism.icns  # Professional app icon
 │   │   │   ├── templates/        # Built-in template library

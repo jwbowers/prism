@@ -40,7 +40,7 @@ func checkDaemonHealth() bool {
 
 // findDaemonBinary locates the prismd daemon binary
 func findDaemonBinary() (string, error) {
-	// Get the directory where cws-gui is located
+	// Get the directory where prism-gui is located
 	exePath, err := os.Executable()
 	if err != nil {
 		return "", err
@@ -197,7 +197,7 @@ func main() {
 	// Ensure daemon is running before starting GUI
 	if err := startDaemon(); err != nil {
 		log.Printf("❌ Failed to start daemon: %v", err)
-		log.Println("Please start the daemon manually with: cws daemon start")
+		log.Println("Please start the daemon manually with: prism daemon start")
 		// Continue anyway - GUI will show connection error to user
 	}
 
@@ -294,17 +294,17 @@ OPTIONS:
 
 STARTUP CONFIGURATION:
   # Enable auto-start at login
-  cws-gui -autostart
+  prism-gui -autostart
 
   # Remove auto-start configuration
-  cws-gui -remove-autostart
+  prism-gui -remove-autostart
 
   # Start minimized (when system tray is implemented)
-  cws-gui -minimize
+  prism-gui -minimize
 
 EXAMPLES:
-  cws-gui                    # Start normally
-  cws-gui -autostart        # Configure auto-start
-  cws-gui -remove-autostart # Remove auto-start
+  prism-gui                    # Start normally
+  prism-gui -autostart        # Configure auto-start
+  prism-gui -remove-autostart # Remove auto-start
 `)
 }

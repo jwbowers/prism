@@ -463,7 +463,7 @@ Prism.app/
 │   │   ├── Prism    # Launcher script
 │   │   ├── prism                 # CLI binary
 │   │   ├── prismd                # Daemon binary
-│   │   └── cws-gui            # GUI binary
+│   │   └── prism-gui            # GUI binary
 │   ├── Resources/
 │   │   ├── Prism.icns
 │   │   ├── templates/

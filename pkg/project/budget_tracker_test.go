@@ -14,7 +14,7 @@ import (
 
 func TestNewBudgetTracker(t *testing.T) {
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-budget-test-*")
+	tempDir, err := os.MkdirTemp("", "prism-budget-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
@@ -743,7 +743,7 @@ func setupTestBudgetTracker(t *testing.T) *BudgetTracker {
 	t.Helper()
 
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-budget-test-*")
+	tempDir, err := os.MkdirTemp("", "prism-budget-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = os.RemoveAll(tempDir)
@@ -777,7 +777,7 @@ func setupTestBudgetTrackerWithMock(t *testing.T) (*BudgetTracker, *MockActionEx
 	t.Helper()
 
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-budget-test-*")
+	tempDir, err := os.MkdirTemp("", "prism-budget-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = os.RemoveAll(tempDir)

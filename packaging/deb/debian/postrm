@@ -1,15 +1,15 @@
 #!/bin/sh
-# CloudWorkstation post-removal script
+# Prism post-removal script
 # This script is run after the package is removed
 
 set -e
 
 # Package configuration
-USER="cloudworkstation"
-GROUP="cloudworkstation"
-HOME_DIR="/var/lib/cloudworkstation"
-LOG_DIR="/var/log/cloudworkstation"
-CONFIG_DIR="/etc/cloudworkstation"
+USER="prism"
+GROUP="prism"
+HOME_DIR="/var/lib/prism"
+LOG_DIR="/var/log/prism"
+CONFIG_DIR="/etc/prism"
 
 case "$1" in
     purge)
@@ -30,8 +30,8 @@ case "$1" in
         fi
         
         # Clean up systemd drop-in directory if empty
-        if [ -d "/etc/systemd/system/cloudworkstation.service.d" ]; then
-            rmdir "/etc/systemd/system/cloudworkstation.service.d" 2>/dev/null || true
+        if [ -d "/etc/systemd/system/prism.service.d" ]; then
+            rmdir "/etc/systemd/system/prism.service.d" 2>/dev/null || true
         fi
         
         # Remove state and log directories (but preserve configuration)
@@ -39,7 +39,7 @@ case "$1" in
         rm -rf "$LOG_DIR" 2>/dev/null || true
         
         echo ""
-        echo "CloudWorkstation has been completely removed from your system."
+        echo "Prism has been completely removed from your system."
         echo "Configuration files in $CONFIG_DIR have been preserved."
         echo "To completely remove all data, run:"
         echo "  sudo rm -rf $CONFIG_DIR"
@@ -60,14 +60,14 @@ esac
 # Automatically added by dh_systemd_enable/11.1.6ubuntu2
 if [ "$1" = "remove" ]; then
     if [ -x "/usr/bin/deb-systemd-helper" ]; then
-        deb-systemd-helper mask 'cloudworkstation.service' >/dev/null || true
+        deb-systemd-helper mask 'prism.service' >/dev/null || true
     fi
 fi
 
 if [ "$1" = "purge" ]; then
     if [ -x "/usr/bin/deb-systemd-helper" ]; then
-        deb-systemd-helper purge 'cloudworkstation.service' >/dev/null || true
-        deb-systemd-helper unmask 'cloudworkstation.service' >/dev/null || true
+        deb-systemd-helper purge 'prism.service' >/dev/null || true
+        deb-systemd-helper unmask 'prism.service' >/dev/null || true
     fi
 fi
 # End automatically added section

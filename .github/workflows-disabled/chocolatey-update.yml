@@ -46,12 +46,12 @@ jobs:
 
       - name: Pack Chocolatey package
         run: |
-          choco pack .\scripts\chocolatey\cloudworkstation.nuspec
+          choco pack .\scripts\chocolatey\prism.nuspec
 
       - name: Push Chocolatey package (only on release)
         if: github.event_name == 'release'
         run: |
-          $packagePath = Get-ChildItem -Path . -Filter "cloudworkstation.*.nupkg" | Select-Object -First 1 -ExpandProperty FullName
+          $packagePath = Get-ChildItem -Path . -Filter "prism.*.nupkg" | Select-Object -First 1 -ExpandProperty FullName
           choco push $packagePath -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCOLATEY_API_KEY }}
         
       - name: Upload package artifact

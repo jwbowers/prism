@@ -45,8 +45,8 @@ import { chromium } from 'playwright';
     // Test 1: Application loads without errors
     await test('Application loads without React errors', async () => {
       const title = await page.title();
-      if (title !== 'CloudWorkstation') {
-        throw new Error(`Expected title 'CloudWorkstation', got '${title}'`);
+      if (title !== 'Prism') {
+        throw new Error(`Expected title 'Prism', got '${title}'`);
       }
 
       // Check for any actual error messages or error states on page

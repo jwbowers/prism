@@ -90,7 +90,7 @@ learning_resources:
 # Template metadata
 version: "1.0.0"
 validation_status: "validated"
-maintainer: "CloudWorkstation Team"
+maintainer: "Prism Team"
 tags:
   desktop: "gnome"
   gui: "true"

@@ -10,7 +10,7 @@ beforeAll(() => {
   
   // Mock Wails runtime
   global.wails = {
-    CloudWorkstationService: {
+    PrismService: {
       GetTemplates: vi.fn(),
       GetInstances: vi.fn(),
       LaunchInstance: vi.fn(),
@@ -62,7 +62,7 @@ beforeEach(() => {
   localStorage.removeItem.mockClear()
   
   // Reset Wails service mocks
-  Object.values(global.wails.CloudWorkstationService).forEach(mock => {
+  Object.values(global.wails.PrismService).forEach(mock => {
     mock.mockClear()
   })
 })

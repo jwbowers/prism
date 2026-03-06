@@ -57,7 +57,7 @@ func TestBatchInvitationEdgeCases(t *testing.T) {
 
 func setupBatchInvitationTest(t *testing.T) *profile.BatchInvitationManager {
 	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-batch-invitation-test")
+	tempDir, err := os.MkdirTemp("", "prism-batch-invitation-test")
 	if err != nil {
 		t.Fatalf("Failed to create temporary directory: %v", err)
 	}
@@ -200,7 +200,7 @@ func testCSVExport(t *testing.T, batchManager *profile.BatchInvitationManager, r
 }
 
 func testFileOperations(t *testing.T, batchManager *profile.BatchInvitationManager) {
-	tempDir, err := os.MkdirTemp("", "cws-file-ops-test")
+	tempDir, err := os.MkdirTemp("", "prism-file-ops-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}

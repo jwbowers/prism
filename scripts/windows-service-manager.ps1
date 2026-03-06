@@ -1,5 +1,5 @@
-# CloudWorkstation Windows Service Manager
-# PowerShell script for managing CloudWorkstation daemon as a Windows service
+# Prism Windows Service Manager
+# PowerShell script for managing Prism daemon as a Windows service
 
 param(
     [Parameter(Position = 0, Mandatory = $true)]
@@ -12,15 +12,15 @@ param(
 )
 
 # Service configuration
-$ServiceName = "CloudWorkstationDaemon"
-$DisplayName = "CloudWorkstation Daemon"
+$ServiceName = "PrismDaemon"
+$DisplayName = "Prism Daemon"
 $Description = "Enterprise research management platform daemon for launching cloud research environments"
-$ServiceExecutable = "cloudworkstation-service.exe"
+$ServiceExecutable = "prism-service.exe"
 
 # Paths
-$InstallPath = "${env:ProgramFiles}\CloudWorkstation"
-$ConfigPath = "${env:ProgramData}\CloudWorkstation"
-$LogPath = "${env:ProgramData}\CloudWorkstation\Logs"
+$InstallPath = "${env:ProgramFiles}\Prism"
+$ConfigPath = "${env:ProgramData}\Prism"
+$LogPath = "${env:ProgramData}\Prism\Logs"
 $ServicePath = Join-Path $InstallPath $ServiceExecutable
 
 # Color output functions
@@ -114,14 +114,14 @@ function Test-ServiceExecutable {
 }
 
 # Install Windows service
-function Install-CloudWorkstationService {
-    Write-Log "Installing CloudWorkstation Windows service..."
+function Install-PrismService {
+    Write-Log "Installing Prism Windows service..."
     Assert-Administrator
     
     if (Test-ServiceExists) {
         if ($Force) {
             Write-Warning "Service already exists. Forcing reinstallation..."
-            Uninstall-CloudWorkstationService
+            Uninstall-PrismService
         } else {
             Write-Warning "Service already installed. Use -Force to reinstall."
             return
@@ -130,7 +130,7 @@ function Install-CloudWorkstationService {
     
     if (-not (Test-ServiceExecutable)) {
         Write-Error "Service executable not found at: $ServicePath"
-        Write-Info "Please ensure CloudWorkstation is properly installed."
+        Write-Info "Please ensure Prism is properly installed."
         return
     }
     
@@ -151,11 +151,11 @@ function Install-CloudWorkstationService {
         # Configure service recovery options
         & sc.exe failure $ServiceName reset= 30 actions= restart/5000/restart/5000/restart/5000
         
-        Write-Success "CloudWorkstation service installed successfully"
+        Write-Success "Prism service installed successfully"
         Write-Info "Service will start automatically on system boot"
         
         # Start the service
-        Start-CloudWorkstationService
+        Start-PrismService
     }
     catch {
         Write-Error "Failed to install service: $_"
@@ -163,8 +163,8 @@ function Install-CloudWorkstationService {
 }
 
 # Uninstall Windows service
-function Uninstall-CloudWorkstationService {
-    Write-Log "Uninstalling CloudWorkstation Windows service..."
+function Uninstall-PrismService {
+    Write-Log "Uninstalling Prism Windows service..."
     Assert-Administrator
     
     if (-not (Test-ServiceExists)) {
@@ -187,7 +187,7 @@ function Uninstall-CloudWorkstationService {
         
         # Remove service
         Remove-Service -Name $ServiceName
-        Write-Success "CloudWorkstation service uninstalled successfully"
+        Write-Success "Prism service uninstalled successfully"
     }
     catch {
         Write-Error "Failed to uninstall service: $_"
@@ -195,8 +195,8 @@ function Uninstall-CloudWorkstationService {
 }
 
 # Start service
-function Start-CloudWorkstationService {
-    Write-Log "Starting CloudWorkstation service..."
+function Start-PrismService {
+    Write-Log "Starting Prism service..."
     
     if (-not (Test-ServiceExists)) {
         Write-Error "Service not installed. Run 'install' first."
@@ -210,7 +210,7 @@ function Start-CloudWorkstationService {
     
     try {
         Start-Service -Name $ServiceName
-        Write-Success "CloudWorkstation service started successfully"
+        Write-Success "Prism service started successfully"
     }
     catch {
         Write-Error "Failed to start service: $_"
@@ -219,8 +219,8 @@ function Start-CloudWorkstationService {
 }
 
 # Stop service
-function Stop-CloudWorkstationService {
-    Write-Log "Stopping CloudWorkstation service..."
+function Stop-PrismService {
+    Write-Log "Stopping Prism service..."
     
     if (-not (Test-ServiceExists)) {
         Write-Warning "Service not installed"
@@ -234,7 +234,7 @@ function Stop-CloudWorkstationService {
     
     try {
         Stop-Service -Name $ServiceName -Force
-        Write-Success "CloudWorkstation service stopped successfully"
+        Write-Success "Prism service stopped successfully"
     }
     catch {
         Write-Error "Failed to stop service: $_"
@@ -242,17 +242,17 @@ function Stop-CloudWorkstationService {
 }
 
 # Restart service
-function Restart-CloudWorkstationService {
-    Write-Log "Restarting CloudWorkstation service..."
+function Restart-PrismService {
+    Write-Log "Restarting Prism service..."
     
-    Stop-CloudWorkstationService
+    Stop-PrismService
     Start-Sleep -Seconds 3
-    Start-CloudWorkstationService
+    Start-PrismService
 }
 
 # Get service status
-function Get-CloudWorkstationServiceStatus {
-    Write-Log "CloudWorkstation Service Status:"
+function Get-PrismServiceStatus {
+    Write-Log "Prism Service Status:"
     Write-Host ""
     
     if (Test-ServiceExists) {
@@ -298,8 +298,8 @@ function Get-CloudWorkstationServiceStatus {
 }
 
 # Show service logs
-function Show-CloudWorkstationServiceLogs {
-    Write-Log "Showing CloudWorkstation service logs..."
+function Show-PrismServiceLogs {
+    Write-Log "Showing Prism service logs..."
     
     # Check Windows Event Log
     try {
@@ -318,7 +318,7 @@ function Show-CloudWorkstationServiceLogs {
         }
     }
     catch {
-        Write-Warning "No event log entries found for CloudWorkstation service"
+        Write-Warning "No event log entries found for Prism service"
     }
     
     # Check daemon log files
@@ -338,8 +338,8 @@ function Show-CloudWorkstationServiceLogs {
 }
 
 # Validate service configuration
-function Test-CloudWorkstationServiceConfiguration {
-    Write-Log "Validating CloudWorkstation service configuration..."
+function Test-PrismServiceConfiguration {
+    Write-Log "Validating Prism service configuration..."
     Write-Host ""
     
     $errors = 0
@@ -419,14 +419,14 @@ function Test-CloudWorkstationServiceConfiguration {
 # Show help
 function Show-Help {
     Write-Host @"
-CloudWorkstation Windows Service Manager
+Prism Windows Service Manager
 
 USAGE:
     windows-service-manager.ps1 <command> [options]
 
 COMMANDS:
-    install     Install and start CloudWorkstation service (requires admin)
-    uninstall   Stop and uninstall CloudWorkstation service (requires admin)
+    install     Install and start Prism service (requires admin)
+    uninstall   Stop and uninstall Prism service (requires admin)
     start       Start the service (requires admin)
     stop        Stop the service (requires admin) 
     restart     Restart the service (requires admin)
@@ -458,35 +458,35 @@ NOTES:
     - Service starts automatically on system boot
     - Service automatically restarts if daemon crashes
     - Logs are written to Windows Event Log and daemon log files
-    - Configuration is stored in %ProgramData%\CloudWorkstation\
+    - Configuration is stored in %ProgramData%\Prism\
 "@
 }
 
 # Main command dispatcher
 switch ($Command.ToLower()) {
     "install" {
-        Install-CloudWorkstationService
+        Install-PrismService
     }
     "uninstall" {
-        Uninstall-CloudWorkstationService
+        Uninstall-PrismService
     }
     "start" {
-        Start-CloudWorkstationService
+        Start-PrismService
     }
     "stop" {
-        Stop-CloudWorkstationService
+        Stop-PrismService
     }
     "restart" {
-        Restart-CloudWorkstationService
+        Restart-PrismService
     }
     "status" {
-        Get-CloudWorkstationServiceStatus
+        Get-PrismServiceStatus
     }
     "logs" {
-        Show-CloudWorkstationServiceLogs
+        Show-PrismServiceLogs
     }
     "validate" {
-        Test-CloudWorkstationServiceConfiguration
+        Test-PrismServiceConfiguration
     }
     "help" {
         Show-Help

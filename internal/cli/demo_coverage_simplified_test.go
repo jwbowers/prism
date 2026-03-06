@@ -319,7 +319,7 @@ func TestSimplified_AvailableCommands(t *testing.T) {
 func TestSimplified_ErrorHandling(t *testing.T) {
 	t.Run("Daemon_Not_Running", func(t *testing.T) {
 		// Disable auto-start to test daemon not running error
-		t.Setenv("CWS_NO_AUTO_START", "1")
+		t.Setenv("PRISM_NO_AUTO_START", "1")
 
 		mockClient := NewMockAPIClientWithPingError()
 		app := NewAppWithClient("1.0.0", mockClient)

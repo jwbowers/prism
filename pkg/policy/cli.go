@@ -49,20 +49,20 @@ func (h *CLIHandler) HandlePolicyCommand(args []string) error {
 func (h *CLIHandler) showPolicyHelp() error {
 	fmt.Println("Policy Framework Commands:")
 	fmt.Println("")
-	fmt.Println("  cws policy status              Show policy enforcement status")
-	fmt.Println("  cws policy list                List available policy sets")
-	fmt.Println("  cws policy assign <policy-set> Assign a policy set to current user")
-	fmt.Println("  cws policy enable              Enable policy enforcement")
-	fmt.Println("  cws policy disable             Disable policy enforcement")
-	fmt.Println("  cws policy check <template>    Check template access permissions")
+	fmt.Println("  prism policy status              Show policy enforcement status")
+	fmt.Println("  prism policy list                List available policy sets")
+	fmt.Println("  prism policy assign <policy-set> Assign a policy set to current user")
+	fmt.Println("  prism policy enable              Enable policy enforcement")
+	fmt.Println("  prism policy disable             Disable policy enforcement")
+	fmt.Println("  prism policy check <template>    Check template access permissions")
 	fmt.Println("")
 	fmt.Println("Available Policy Sets:")
 	fmt.Println("  student     - Restricted access for educational environments")
 	fmt.Println("  researcher  - Full access for research users")
 	fmt.Println("")
 	fmt.Println("Examples:")
-	fmt.Println("  cws policy assign student")
-	fmt.Println("  cws policy check \"Python ML Research\"")
+	fmt.Println("  prism policy assign student")
+	fmt.Println("  prism policy check \"Python ML Research\"")
 	fmt.Println("")
 	return nil
 }
@@ -80,7 +80,7 @@ func (h *CLIHandler) showPolicyStatus() error {
 	}
 
 	fmt.Println()
-	fmt.Println("💡 Tip: Use 'cws policy assign <policy-set>' to configure access controls")
+	fmt.Println("💡 Tip: Use 'prism policy assign <policy-set>' to configure access controls")
 	return nil
 }
 
@@ -115,14 +115,14 @@ func (h *CLIHandler) listPolicySets() error {
 
 	w.Flush()
 	fmt.Println()
-	fmt.Println("Use 'cws policy assign <policy-set>' to assign a policy set")
+	fmt.Println("Use 'prism policy assign <policy-set>' to assign a policy set")
 	return nil
 }
 
 // assignPolicySet assigns a policy set to the current user
 func (h *CLIHandler) assignPolicySet(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("policy set name required. Use 'cws policy list' to see available sets")
+		return fmt.Errorf("policy set name required. Use 'prism policy list' to see available sets")
 	}
 
 	policySetName := args[0]
@@ -130,7 +130,7 @@ func (h *CLIHandler) assignPolicySet(args []string) error {
 	// Validate policy set exists
 	policySets := h.service.ListAvailablePolicySets()
 	if _, exists := policySets[policySetName]; !exists {
-		return fmt.Errorf("policy set '%s' not found. Use 'cws policy list' to see available sets", policySetName)
+		return fmt.Errorf("policy set '%s' not found. Use 'prism policy list' to see available sets", policySetName)
 	}
 
 	var err error
@@ -149,7 +149,7 @@ func (h *CLIHandler) assignPolicySet(args []string) error {
 
 	fmt.Printf("✅ Successfully assigned '%s' policy set\n", policySetName)
 	fmt.Println()
-	fmt.Printf("💡 Policy enforcement is %s. Use 'cws policy enable' to activate.\n",
+	fmt.Printf("💡 Policy enforcement is %s. Use 'prism policy enable' to activate.\n",
 		h.getEnforcementStatus())
 	return nil
 }

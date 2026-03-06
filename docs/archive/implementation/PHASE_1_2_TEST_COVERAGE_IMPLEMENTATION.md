@@ -6,7 +6,7 @@ This document summarizes the comprehensive test coverage implementation for the 
 
 ## Test Coverage Summary
 
-### ✅ ConnectionManager Unit Tests (`cmd/cws-gui/connection_manager_test.go`)
+### ✅ ConnectionManager Unit Tests (`cmd/prism-gui/connection_manager_test.go`)
 
 **Test Coverage**: 13 comprehensive test functions covering all ConnectionManager functionality
 - **Connection Creation**: Tests for SSH, Desktop, Web, and AWS service connections
@@ -25,7 +25,7 @@ This document summarizes the comprehensive test coverage implementation for the 
 - `TestRegisterCallback`: Real-time status change notifications
 - `TestAWSConnectionDefaults`: Default region/service handling
 
-### ✅ Service Layer Integration Tests (`cmd/cws-gui/gui_test.go`)
+### ✅ Service Layer Integration Tests (`cmd/prism-gui/gui_test.go`)
 
 **Enhanced Coverage**: Added 3 major test functions for service-layer connection management
 - **Service Layer Methods**: Complete coverage of connection CRUD operations through service layer
@@ -60,7 +60,7 @@ This document summarizes the comprehensive test coverage implementation for the 
 ### ✅ All Tests Passing
 
 ```bash
-cd /Users/scttfrdmn/src/prism/cmd/cws-gui && go test -v
+cd /Users/scttfrdmn/src/prism/cmd/prism-gui && go test -v
 === RUN   TestNewConnectionManager
 --- PASS: TestNewConnectionManager (0.00s)
 === RUN   TestCreateConnection_SSH
@@ -68,7 +68,7 @@ cd /Users/scttfrdmn/src/prism/cmd/cws-gui && go test -v
 [... 22 total tests ...]
 --- PASS: TestConnectionProxyEndpoints (0.00s)
 PASS
-ok  	github.com/scttfrdmn/prism/cmd/cws-gui	2.189s
+ok  	github.com/scttfrdmn/prism/cmd/prism-gui	2.189s
 ```
 
 **Test Statistics**:
@@ -82,7 +82,7 @@ ok  	github.com/scttfrdmn/prism/cmd/cws-gui	2.189s
 All components build successfully with zero compilation errors:
 - ✅ **Prism daemon** (cwsd)
 - ✅ **Prism CLI** (cws)
-- ✅ **Prism GUI** (cws-gui) with Wails + Cloudscape frontend
+- ✅ **Prism GUI** (prism-gui) with Wails + Cloudscape frontend
 
 ## Implementation Quality
 

@@ -98,8 +98,8 @@ func (p *Parser) ListTemplates() ([]string, error) {
 		}
 	}
 
-	// 3. System-wide /usr/local/share/cloudworkstation/templates/
-	systemTemplatesPath := "/usr/local/share/cloudworkstation/templates"
+	// 3. System-wide /usr/local/share/prism/templates/
+	systemTemplatesPath := "/usr/local/share/prism/templates"
 	if _, err := os.Stat(systemTemplatesPath); err == nil {
 		templateDirs = append(templateDirs, systemTemplatesPath)
 	}

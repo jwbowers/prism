@@ -812,7 +812,7 @@ func TestValidateTemplateComplex(t *testing.T) {
 			"JUPYTER_TOKEN":  "auto-generated",
 		},
 		Version:          "2.1.0",
-		Maintainer:       "ml-team@cloudworkstation.com",
+		Maintainer:       "ml-team@prism.com",
 		ValidationStatus: ValidationStatusValidated,
 		Tags: map[string]string{
 			"machine-learning": "true",

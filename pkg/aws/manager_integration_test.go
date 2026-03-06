@@ -73,7 +73,7 @@ func TestAWSManagerIntegration(t *testing.T) {
 	// Test Security Group operations
 	t.Run("Security Group Operations", func(t *testing.T) {
 		// Create a test security group
-		sgName := "cws-integration-test-" + time.Now().Format("20060102-150405")
+		sgName := "prism-integration-test-" + time.Now().Format("20060102-150405")
 		sgID, err := manager.CreateSecurityGroup(ctx, sgName, "Integration test SG")
 		require.NoError(t, err)
 		require.NotEmpty(t, sgID)
@@ -144,7 +144,7 @@ func TestAWSManagerIntegration(t *testing.T) {
 
 	// Test Key Pair operations
 	t.Run("Key Pair Operations", func(t *testing.T) {
-		keyName := "cws-test-" + time.Now().Format("20060102-150405")
+		keyName := "prism-test-" + time.Now().Format("20060102-150405")
 
 		// Create key pair
 		keyMaterial, err := manager.CreateKeyPair(ctx, keyName)
@@ -179,7 +179,7 @@ func TestAWSManagerIntegration(t *testing.T) {
 		az := azs[0].ZoneName
 
 		// Create test volume
-		volumeName := "cws-test-vol-" + time.Now().Format("20060102-150405")
+		volumeName := "prism-test-vol-" + time.Now().Format("20060102-150405")
 		volumeID, err := manager.CreateEBSVolume(ctx, volumeName, 10, "gp3", az)
 		require.NoError(t, err)
 		require.NotEmpty(t, volumeID)
@@ -243,7 +243,7 @@ func TestInstanceLifecycleIntegration(t *testing.T) {
 	}
 
 	// Create test instance
-	instanceName := "cws-test-" + time.Now().Format("20060102-150405")
+	instanceName := "prism-test-" + time.Now().Format("20060102-150405")
 
 	// Use minimal Ubuntu template for testing
 	template := &templates.RuntimeTemplate{
@@ -373,7 +373,7 @@ func TestEFSIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create EFS volume
-	volumeName := "cws-test-efs-" + time.Now().Format("20060102-150405")
+	volumeName := "prism-test-efs-" + time.Now().Format("20060102-150405")
 
 	fsID, err := manager.CreateEFSVolume(ctx, volumeName)
 	require.NoError(t, err)

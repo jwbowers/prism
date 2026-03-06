@@ -106,7 +106,7 @@ func (r *TemplateRollbackManager) backupConfigurationFiles(ctx context.Context, 
 	}
 
 	var backupFiles []BackupFile
-	backupDir := fmt.Sprintf("/opt/cloudworkstation/checkpoints/%s", checkpointID)
+	backupDir := fmt.Sprintf("/opt/prism/checkpoints/%s", checkpointID)
 
 	// Create backup directory
 	script := fmt.Sprintf("mkdir -p %s", backupDir)
@@ -184,14 +184,14 @@ func (r *TemplateRollbackManager) saveCheckpoint(ctx context.Context, instanceNa
 		return fmt.Errorf("failed to serialize checkpoint: %w", err)
 	}
 
-	// Create cloudworkstation directory
-	script := "mkdir -p /opt/cloudworkstation/checkpoints"
+	// Create prism directory
+	script := "mkdir -p /opt/prism/checkpoints"
 	if _, err := r.executor.Execute(ctx, instanceName, script); err != nil {
 		return fmt.Errorf("failed to create checkpoints directory: %w", err)
 	}
 
 	// Write checkpoint file
-	checkpointPath := fmt.Sprintf("/opt/cloudworkstation/checkpoints/%s.json", checkpoint.ID)
+	checkpointPath := fmt.Sprintf("/opt/prism/checkpoints/%s.json", checkpoint.ID)
 	script = fmt.Sprintf("cat > %s << 'EOF'\n%s\nEOF", checkpointPath, string(checkpointJSON))
 
 	result, err := r.executor.ExecuteScript(ctx, instanceName, script)
@@ -241,7 +241,7 @@ func (r *TemplateRollbackManager) RollbackToCheckpoint(ctx context.Context, inst
 
 // loadCheckpoint loads a checkpoint from the instance
 func (r *TemplateRollbackManager) loadCheckpoint(ctx context.Context, instanceName, checkpointID string) (*RollbackCheckpoint, error) {
-	checkpointPath := fmt.Sprintf("/opt/cloudworkstation/checkpoints/%s.json", checkpointID)
+	checkpointPath := fmt.Sprintf("/opt/prism/checkpoints/%s.json", checkpointID)
 
 	result, err := r.executor.Execute(ctx, instanceName, fmt.Sprintf("cat %s", checkpointPath))
 	if err != nil {
@@ -475,7 +475,7 @@ func (r *TemplateRollbackManager) restoreEnvironmentVariables(ctx context.Contex
 // ListCheckpoints lists available rollback checkpoints for an instance
 func (r *TemplateRollbackManager) ListCheckpoints(ctx context.Context, instanceName string) ([]RollbackCheckpoint, error) {
 	// List checkpoint files
-	result, err := r.executor.Execute(ctx, instanceName, "ls -1 /opt/cloudworkstation/checkpoints/*.json 2>/dev/null || true")
+	result, err := r.executor.Execute(ctx, instanceName, "ls -1 /opt/prism/checkpoints/*.json 2>/dev/null || true")
 	if err != nil {
 		return nil, fmt.Errorf("failed to list checkpoints: %w", err)
 	}

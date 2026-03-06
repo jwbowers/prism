@@ -11,7 +11,7 @@
 Successfully implemented comprehensive Budget Management GUI as the first of 8 missing GUI features, establishing the pattern for remaining implementations.
 
 ### **Files Modified**
-- **Primary**: `/cmd/cws-gui/frontend/src/App.tsx` (+386 lines)
+- **Primary**: `/cmd/prism-gui/frontend/src/App.tsx` (+386 lines)
 - **Components Added**: BudgetManagementView with 4 integrated tabs
 - **Build Status**: ✅ Successful (1.42s build time)
 

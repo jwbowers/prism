@@ -136,7 +136,7 @@ prism tui
 # Exit TUI
 
 # Launch GUI (if available from source build)
-cws-gui &
+prism-gui &
 # Show system tray integration, tabbed interface, visual management
 
 # API access

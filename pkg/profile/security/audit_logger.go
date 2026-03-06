@@ -96,7 +96,7 @@ func (a *SecurityAuditLogger) LogSecurityEvent(event SecurityEvent) {
 
 	// Set source if not provided
 	if event.Source == "" {
-		event.Source = "cloudworkstation-registry"
+		event.Source = "prism-registry"
 	}
 
 	// Add to buffer

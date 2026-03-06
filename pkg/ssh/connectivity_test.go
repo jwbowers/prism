@@ -328,7 +328,7 @@ func TestSSHConnectionResilience(t *testing.T) {
 // TestSSHFileTransfer tests SCP/SFTP file transfer capabilities
 func TestSSHFileTransfer(t *testing.T) {
 	// Create temp directory for testing
-	tmpDir, err := os.MkdirTemp("", "cws-ssh-test-*")
+	tmpDir, err := os.MkdirTemp("", "prism-ssh-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 

@@ -154,7 +154,7 @@ $ grep -r "not implemented (placeholder)" --include="*.go" | wc -l
 ```bash
 ✅ go build ./cmd/cws/        # CLI client
 ✅ go build ./cmd/cwsd/       # Daemon
-✅ go build ./cmd/cws-gui/    # GUI client
+✅ go build ./cmd/prism-gui/    # GUI client
 ```
 
 **Result**: All components build successfully with zero errors

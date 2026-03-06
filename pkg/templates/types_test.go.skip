@@ -336,7 +336,7 @@ func TestTemplateParameter(t *testing.T) {
 // TestMarketplaceConfig tests marketplace configuration
 func TestMarketplaceConfig(t *testing.T) {
 	marketplace := MarketplaceConfig{
-		PublisherID:   "cloudworkstation-team",
+		PublisherID:   "prism-team",
 		License:       "MIT",
 		Price:         "free",
 		SupportLevel:  "community",
@@ -350,7 +350,7 @@ func TestMarketplaceConfig(t *testing.T) {
 		SourceCode:    "https://github.com/example/template",
 	}
 
-	assert.Equal(t, "cloudworkstation-team", marketplace.PublisherID)
+	assert.Equal(t, "prism-team", marketplace.PublisherID)
 	assert.Equal(t, "MIT", marketplace.License)
 	assert.Equal(t, "free", marketplace.Price)
 	assert.Equal(t, "community", marketplace.SupportLevel)

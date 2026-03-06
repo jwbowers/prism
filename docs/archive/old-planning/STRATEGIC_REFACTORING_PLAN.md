@@ -15,14 +15,14 @@ This document outlines critical architectural refactoring needed to transition P
 
 **Current State**:
 - `internal/gui/` contains unused Wails v2 components
-- `cmd/cws-gui/cws-gui/` contains duplicate prototype module  
+- `cmd/prism-gui/prism-gui/` contains duplicate prototype module  
 - Wails v2 vs v3 dependency conflicts in build system
 
 **Action Required**:
 ```bash
 # Remove legacy GUI (safe - no dependencies)
 rm -rf internal/gui/
-rm -rf cmd/cws-gui/cws-gui/
+rm -rf cmd/prism-gui/prism-gui/
 
 # Update Makefile to remove exclusions
 sed -i '/internal\/gui/d' Makefile
@@ -290,7 +290,7 @@ type Database interface {
 **Tasks**:
 1. **Remove Legacy GUI Code** ✅ *Safe, immediate cleanup*
    - Delete `internal/gui/` directory (598+ lines removed)
-   - Remove duplicate `cmd/cws-gui/cws-gui/` module
+   - Remove duplicate `cmd/prism-gui/prism-gui/` module
    - Update Makefile and build system
    - Clean up dependency conflicts
 

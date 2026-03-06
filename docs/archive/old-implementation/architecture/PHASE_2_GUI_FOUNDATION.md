@@ -117,7 +117,7 @@ All three interfaces now use identical profile architecture:
 // CLI (internal/cli/profiles.go)
 profileManager, err := createProfileManager(config)
 
-// GUI (cmd/cws-gui/main.go)  
+// GUI (cmd/prism-gui/main.go)  
 g.profileManager, err = profile.NewManagerEnhanced()
 
 // Result: Identical profile system across all interfaces
@@ -133,7 +133,7 @@ baseClient := api.NewClientWithOptions(apiURL, client.Options{
     AWSRegion:  config.AWS.Region,
 })
 
-// GUI (cmd/cws-gui/main.go)
+// GUI (cmd/prism-gui/main.go)
 g.apiClient = api.NewClientWithOptions("http://localhost:8080", client.Options{
     AWSProfile: currentProfile.AWSProfile,
     AWSRegion:  currentProfile.Region,
@@ -152,15 +152,15 @@ g.apiClient = api.NewClientWithOptions("http://localhost:8080", client.Options{
 ```bash
 $ make build-gui-force
 ⚠️  Force building Prism GUI (may fail)...
-# github.com/scttfrdmn/prism/cmd/cws-gui
+# github.com/scttfrdmn/prism/cmd/prism-gui
 ld: warning: ignoring duplicate libraries: '-lobjc'
 # Success - only linker warnings, no compilation errors!
 ```
 
 ### ✅ **Binary Generation**
 ```bash
-$ ls -la ./bin/cws-gui
--rwxr-xr-x@ 1 scttfrdmn staff 31334386 Jul 27 15:02 ./bin/cws-gui
+$ ls -la ./bin/prism-gui
+-rwxr-xr-x@ 1 scttfrdmn staff 31334386 Jul 27 15:02 ./bin/prism-gui
 # 31MB GUI binary successfully created
 ```
 
@@ -173,7 +173,7 @@ $ ls -la ./bin/cws-gui
 ## Files Modified
 
 ### **Core GUI Application**
-- `cmd/cws-gui/main.go` - Major modernization and simplification
+- `cmd/prism-gui/main.go` - Major modernization and simplification
   - Profile system integration updated
   - API client modernized to Options pattern
   - Complex security features disabled for CLI parity
@@ -181,7 +181,7 @@ $ ls -la ./bin/cws-gui
   - Code reduced from 2000+ lines to ~1800 lines
 
 ### **System Tray Integration**
-- `cmd/cws-gui/systray/systray.go` - Compilation fixes
+- `cmd/prism-gui/systray/systray.go` - Compilation fixes
   - Menu construction corrected
   - Quit method updated to proper window close
   - Unused variable references removed

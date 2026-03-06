@@ -311,7 +311,7 @@ func TestRepositoriesModelFetchRepositories(t *testing.T) {
 
 	// Check repository data
 	assert.Equal(t, "default", repos[0].Name)
-	assert.Equal(t, "https://cloudworkstation.example.com/templates", repos[0].URL)
+	assert.Equal(t, "https://prism.example.com/templates", repos[0].URL)
 	assert.Equal(t, 100, repos[0].Priority)
 	assert.True(t, repos[0].Enabled)
 

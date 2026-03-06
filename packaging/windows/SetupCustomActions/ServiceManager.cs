@@ -7,7 +7,7 @@ using Microsoft.Deployment.WindowsInstaller;
 namespace SetupCustomActions
 {
     /// <summary>
-    /// Manages Windows service configuration for CloudWorkstation
+    /// Manages Windows service configuration for Prism
     /// </summary>
     public class ServiceManager
     {

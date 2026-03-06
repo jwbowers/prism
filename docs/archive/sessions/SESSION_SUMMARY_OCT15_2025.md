@@ -54,7 +54,7 @@
 - Graceful error handling
 
 **Files Modified**:
-- `cmd/cws-gui/main.go`: Added ~100 lines for auto-start logic
+- `cmd/prism-gui/main.go`: Added ~100 lines for auto-start logic
 - `docs/GUI_TROUBLESHOOTING.md`: Updated with v0.5.2+ behavior
 - `docs/DAEMON_AUTO_START_FEATURE.md`: Comprehensive feature documentation
 

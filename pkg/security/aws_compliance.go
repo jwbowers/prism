@@ -69,7 +69,7 @@ type AWSComplianceStatus struct {
 type ComplianceGap struct {
 	Control           string `json:"control"`
 	AWSImplementation string `json:"aws_implementation"`
-	PrismGap          string `json:"cloudworkstation_gap"`
+	PrismGap          string `json:"prism_gap"`
 	Severity          string `json:"severity"`
 	Remediation       string `json:"remediation"`
 }

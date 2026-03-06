@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CloudWorkstation DMG Notarization Script
+# Prism DMG Notarization Script
 # Submits DMG to Apple for notarization and staples the ticket
 # Usage: ./scripts/notarize-dmg.sh [DMG_PATH] [--apple-id EMAIL] [--password PASSWORD] [--team-id TEAM]
 
@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --help                      Show this help"
             echo ""
             echo "Examples:"
-            echo "  $0 dist/dmg/CloudWorkstation-v0.4.2-signed.dmg --apple-id you@example.com --password abcd-efgh-ijkl-mnop"
+            echo "  $0 dist/dmg/Prism-v0.4.2-signed.dmg --apple-id you@example.com --password abcd-efgh-ijkl-mnop"
             echo "  $0 --check-status 12345678-1234-1234-1234-123456789012"
             echo ""
             echo "Setup:"
@@ -366,7 +366,7 @@ create_notarized_dmg() {
 
 # Main execution function
 main() {
-    log_info "CloudWorkstation DMG Notarization"
+    log_info "Prism DMG Notarization"
     
     # Handle status check mode
     if [[ "$CHECK_STATUS" == true ]]; then
@@ -378,8 +378,8 @@ main() {
     # Default DMG path if not provided
     if [[ -z "$DMG_PATH" ]]; then
         # Look for signed DMG first
-        local signed_dmg="$PROJECT_ROOT/dist/dmg/CloudWorkstation-v0.4.2-signed.dmg"
-        local unsigned_dmg="$PROJECT_ROOT/dist/dmg/CloudWorkstation-v0.4.2.dmg"
+        local signed_dmg="$PROJECT_ROOT/dist/dmg/Prism-v0.4.2-signed.dmg"
+        local unsigned_dmg="$PROJECT_ROOT/dist/dmg/Prism-v0.4.2.dmg"
         
         if [[ -f "$signed_dmg" ]]; then
             DMG_PATH="$signed_dmg"

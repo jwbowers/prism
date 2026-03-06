@@ -67,7 +67,7 @@ jobs:
 
       - name: Test DMG contents
         run: |
-          DMG_FILE="dist/dmg/CloudWorkstation-v0.4.2.dmg"
+          DMG_FILE="dist/dmg/Prism-v0.4.2.dmg"
           
           if [ ! -f "$DMG_FILE" ]; then
             echo "DMG file not found: $DMG_FILE"
@@ -89,11 +89,11 @@ jobs:
           # Check required files
           echo "Checking required files..."
           
-          if [ ! -d "$MOUNT_POINT/CloudWorkstation.app" ]; then
-            echo "❌ CloudWorkstation.app not found"
+          if [ ! -d "$MOUNT_POINT/Prism.app" ]; then
+            echo "❌ Prism.app not found"
             exit 1
           fi
-          echo "✅ CloudWorkstation.app found"
+          echo "✅ Prism.app found"
           
           if [ ! -L "$MOUNT_POINT/Applications" ]; then
             echo "❌ Applications symlink not found"
@@ -108,7 +108,7 @@ jobs:
           echo "✅ README.txt found"
           
           # Check app bundle structure
-          APP_BUNDLE="$MOUNT_POINT/CloudWorkstation.app"
+          APP_BUNDLE="$MOUNT_POINT/Prism.app"
           echo "Checking app bundle structure..."
           
           if [ ! -f "$APP_BUNDLE/Contents/Info.plist" ]; then
@@ -123,7 +123,7 @@ jobs:
           fi
           echo "✅ MacOS directory found"
           
-          if [ ! -x "$APP_BUNDLE/Contents/MacOS/CloudWorkstation" ]; then
+          if [ ! -x "$APP_BUNDLE/Contents/MacOS/Prism" ]; then
             echo "❌ Main launcher not found or not executable"
             exit 1
           fi
@@ -149,7 +149,7 @@ jobs:
           fi
           echo "✅ Resources directory found"
           
-          if [ ! -f "$APP_BUNDLE/Contents/Resources/CloudWorkstation.icns" ]; then
+          if [ ! -f "$APP_BUNDLE/Contents/Resources/Prism.icns" ]; then
             echo "⚠️ Application icon not found (may be using fallback)"
           else
             echo "✅ Application icon found"
@@ -192,7 +192,7 @@ jobs:
           ./scripts/sign-dmg.sh --help
           
           # Test verification mode (should fail gracefully without certs)
-          ./scripts/sign-dmg.sh --verify-only dist/dmg/CloudWorkstation-v0.4.2.dmg || echo "Expected to fail without signing certificates"
+          ./scripts/sign-dmg.sh --verify-only dist/dmg/Prism-v0.4.2.dmg || echo "Expected to fail without signing certificates"
 
       - name: Test notarization script (dry run)
         run: |
@@ -219,8 +219,8 @@ jobs:
         run: |
           echo "=== DMG Build Test Results ==="
           echo ""
-          if [ -f "dist/dmg/CloudWorkstation-v0.4.2.dmg" ]; then
-            DMG_SIZE=$(du -h "dist/dmg/CloudWorkstation-v0.4.2.dmg" | cut -f1)
+          if [ -f "dist/dmg/Prism-v0.4.2.dmg" ]; then
+            DMG_SIZE=$(du -h "dist/dmg/Prism-v0.4.2.dmg" | cut -f1)
             echo "✅ DMG created successfully ($DMG_SIZE)"
           else
             echo "❌ DMG creation failed"

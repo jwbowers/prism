@@ -132,7 +132,7 @@ func TestLaunchCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Disable daemon auto-start for daemon-related error tests
 			if tt.errorType == "daemon" || tt.errorType == "api" {
-				t.Setenv("CWS_NO_AUTO_START", "1")
+				t.Setenv("PRISM_NO_AUTO_START", "1")
 			}
 
 			mockClient := NewMockAPIClient()

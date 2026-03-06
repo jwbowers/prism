@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CloudWorkstation Cross-Platform Service Manager
-# Universal service management for CloudWorkstation daemon across macOS, Linux, and Windows
+# Prism Cross-Platform Service Manager
+# Universal service management for Prism daemon across macOS, Linux, and Windows
 
 set -euo pipefail
 
@@ -110,7 +110,7 @@ show_platform_help() {
     local os="$(detect_os)"
     local manager="$(get_platform_manager "$os")"
     
-    log "CloudWorkstation Cross-Platform Service Manager"
+    log "Prism Cross-Platform Service Manager"
     log "Detected OS: $os"
     echo
     
@@ -150,7 +150,7 @@ show_platform_help() {
 # Show general help information
 show_general_help() {
     cat << 'EOF'
-CloudWorkstation Cross-Platform Service Manager
+Prism Cross-Platform Service Manager
 
 This script provides unified service management across different operating systems.
 It automatically detects your platform and delegates to the appropriate service manager.
@@ -164,8 +164,8 @@ USAGE:
     service-manager.sh <command> [options]
 
 COMMON COMMANDS:
-    install     Install and start CloudWorkstation service
-    uninstall   Stop and uninstall CloudWorkstation service
+    install     Install and start Prism service
+    uninstall   Stop and uninstall Prism service
     start       Start the service
     stop        Stop the service
     restart     Restart the service
@@ -205,7 +205,7 @@ Windows:
     - Requires Administrator privileges
     - Uses Windows Service Control Manager
     - Logs written to Windows Event Log
-    - Configuration in %ProgramData%\CloudWorkstation\
+    - Configuration in %ProgramData%\Prism\
 
 REQUIREMENTS:
     macOS:      - macOS 10.14+ with launchd
@@ -221,7 +221,7 @@ EOF
 show_system_info() {
     local os="$(detect_os)"
     
-    log "CloudWorkstation System Information:"
+    log "Prism System Information:"
     echo
     
     case "$os" in

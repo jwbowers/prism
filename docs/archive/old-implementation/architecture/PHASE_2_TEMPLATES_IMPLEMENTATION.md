@@ -237,7 +237,7 @@ Following Prism's core design principles:
 ## Files Modified
 
 ### **Core GUI Implementation**
-- `cmd/cws-gui/main.go` - Major Templates section rewrite
+- `cmd/prism-gui/main.go` - Major Templates section rewrite
   - Added `refreshTemplates()` method for API integration
   - Implemented `displayTemplates()` for dynamic rendering
   - Created `createTemplateCard()` for rich information display

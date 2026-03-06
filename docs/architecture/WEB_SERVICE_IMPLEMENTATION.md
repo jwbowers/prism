@@ -28,7 +28,7 @@ Prism now provides automatic SSH tunneling for web services (Jupyter Lab, RStudi
    - `prism web open <instance> <service>` - Open service in browser
    - `prism web close <instance> [service]` - Close tunnels
 
-5. **GUI Integration** (`cmd/cws-gui/service.go`)
+5. **GUI Integration** (`cmd/prism-gui/service.go`)
    - `OpenInstanceWebService()` - Create tunnel and return connection config
    - `ListInstanceWebServices()` - List services with tunnel status
    - Infrastructure for embedded web viewing (iframe-ready)
@@ -212,7 +212,7 @@ func (s *PrismService) OpenInstanceWebService(
 5. `internal/cli/app.go` - Web command routing
 6. `internal/cli/instance_impl.go` - Auto-tunneling on connect
 7. `internal/cli/root_command.go` - Web command registration
-8. `cmd/cws-gui/service.go` - GUI tunnel methods
+8. `cmd/prism-gui/service.go` - GUI tunnel methods
 
 ### Total Impact
 - **~1,100 lines** of new functionality

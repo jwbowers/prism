@@ -625,12 +625,12 @@ func (r *TemplateResolver) UpdateAMIRegistry(ctx context.Context, ssmClient inte
 	r.AMIRegistry = make(map[string]map[string]map[string]string)
 
 	// Real SSM Parameter Store query for Prism AMIs
-	// Parameters are stored at: /cloudworkstation/amis/{template-slug}/{region}/{arch}
+	// Parameters are stored at: /prism/amis/{template-slug}/{region}/{arch}
 	//
 	// Example SSM structure:
-	//   /cloudworkstation/amis/python-ml/us-east-1/x86_64 = ami-0abc123
-	//   /cloudworkstation/amis/python-ml/us-east-1/arm64  = ami-0def456
-	//   /cloudworkstation/amis/r-research/us-west-2/x86_64 = ami-0ghi789
+	//   /prism/amis/python-ml/us-east-1/x86_64 = ami-0abc123
+	//   /prism/amis/python-ml/us-east-1/arm64  = ami-0def456
+	//   /prism/amis/r-research/us-west-2/x86_64 = ami-0ghi789
 	//
 	// This integrates with pkg/ami.Registry which creates these parameters
 	// when AMIs are built via the AMI build system
@@ -642,12 +642,12 @@ func (r *TemplateResolver) UpdateAMIRegistry(ctx context.Context, ssmClient inte
 	//
 	// ssmSvc := ssmClient.(*ssm.Client)
 	// params, err := ssmSvc.GetParametersByPath(ctx, &ssm.GetParametersByPathInput{
-	//     Path:      aws.String("/cloudworkstation/amis"),
+	//     Path:      aws.String("/prism/amis"),
 	//     Recursive: aws.Bool(true),
 	// })
 	//
 	// for _, param := range params.Parameters {
-	//     // Parse path: /cloudworkstation/amis/{template}/{region}/{arch}
+	//     // Parse path: /prism/amis/{template}/{region}/{arch}
 	//     parts := strings.Split(*param.Name, "/")
 	//     if len(parts) == 6 {
 	//         template := parts[3]
@@ -671,18 +671,18 @@ func (r *TemplateResolver) UpdateAMIRegistry(ctx context.Context, ssmClient inte
 		// Python ML template AMIs (example structure)
 		"python-ml": {
 			"us-east-1": {
-				"x86_64": "ami-cloudworkstation-python-ml-x86",
-				"arm64":  "ami-cloudworkstation-python-ml-arm64",
+				"x86_64": "ami-prism-python-ml-x86",
+				"arm64":  "ami-prism-python-ml-arm64",
 			},
 			"us-west-2": {
-				"x86_64": "ami-cloudworkstation-python-ml-x86-west",
-				"arm64":  "ami-cloudworkstation-python-ml-arm64-west",
+				"x86_64": "ami-prism-python-ml-x86-west",
+				"arm64":  "ami-prism-python-ml-arm64-west",
 			},
 		},
 		// R Research environment AMIs
 		"r-research": {
 			"us-east-1": {
-				"x86_64": "ami-cloudworkstation-r-research-x86",
+				"x86_64": "ami-prism-r-research-x86",
 			},
 		},
 		// Additional template AMIs discovered via SSM

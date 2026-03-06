@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to fix common errcheck issues in CloudWorkstation
+# Script to fix common errcheck issues in Prism
 
 echo "🔧 Fixing errcheck issues..."
 

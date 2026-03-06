@@ -46,11 +46,11 @@ go tool cover -html=coverage.out
 #### GUI Testing
 ```bash
 # Backend service tests
-cd cmd/cws-gui
+cd cmd/prism-gui
 go test -v
 
 # Frontend E2E tests (requires daemon running)
-cd cmd/cws-gui/frontend
+cd cmd/prism-gui/frontend
 npm test:e2e
 ```
 
@@ -63,7 +63,7 @@ npm test:e2e
 │   ├── daemon/           # Daemon server tests
 │   └── project/          # Project management tests
 ├── internal/cli/         # CLI command tests
-└── cmd/cws-gui/
+└── cmd/prism-gui/
     ├── gui_test.go       # GUI backend tests
     └── frontend/tests/   # Frontend E2E tests
 ```

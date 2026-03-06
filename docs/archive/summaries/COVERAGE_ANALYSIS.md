@@ -132,7 +132,7 @@
 - Basic command parsing ✅
 - **Gaps**: Subcommand execution, argument validation
 
-**cmd/cws-gui/** - GUI binary structure only
+**cmd/prism-gui/** - GUI binary structure only
 - Basic GUI app creation ✅
 - **Gaps**: Event handling, state synchronization, error dialogs
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# CloudWorkstation Template Creator
+# Prism Template Creator
 # Creates a new AMI template with the basic structure
 
 set -e

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CloudWorkstation AWS Integration Test Setup Validation
+# Prism AWS Integration Test Setup Validation
 # This script validates the AWS integration test environment
 
 set -e
 
-echo "🔧 CloudWorkstation AWS Integration Test Setup Validation"
+echo "🔧 Prism AWS Integration Test Setup Validation"
 echo "========================================================"
 
 # Colors for output
@@ -108,26 +108,26 @@ else
     echo "Consider adding EFS full access for storage tests"
 fi
 
-# Check 6: CloudWorkstation Build
-log_info "Checking CloudWorkstation build..."
+# Check 6: Prism Build
+log_info "Checking Prism build..."
 if [ ! -f "./bin/prismd" ]; then
-    log_warning "CloudWorkstation daemon not built"
+    log_warning "Prism daemon not built"
     log_info "Building daemon..."
     make build-daemon
 fi
 
 if [ ! -f "./bin/cws" ]; then
-    log_warning "CloudWorkstation CLI not built"
+    log_warning "Prism CLI not built"
     log_info "Building CLI..."
     make build-cli
 fi
 
-log_success "CloudWorkstation binaries available"
+log_success "Prism binaries available"
 
 # Check 7: Daemon Connectivity
-log_info "Checking CloudWorkstation daemon..."
+log_info "Checking Prism daemon..."
 if ! pgrep -f "prismd" > /dev/null; then
-    log_warning "CloudWorkstation daemon not running"
+    log_warning "Prism daemon not running"
     log_info "Start daemon with: ./bin/prismd &"
     
     # Try to start daemon for testing
@@ -148,9 +148,9 @@ if ! pgrep -f "prismd" > /dev/null; then
     fi
 else
     if curl -s "$DAEMON_URL/api/v1/ping" > /dev/null; then
-        log_success "CloudWorkstation daemon accessible"
+        log_success "Prism daemon accessible"
     else
-        log_error "CloudWorkstation daemon not responding at $DAEMON_URL"
+        log_error "Prism daemon not responding at $DAEMON_URL"
         echo "Check daemon status and URL configuration"
         exit 1
     fi

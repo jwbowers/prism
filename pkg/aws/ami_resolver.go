@@ -406,7 +406,7 @@ func (r *UniversalAMIResolver) CreateAMIFromInstance(ctx context.Context, reques
 	// Generate unique AMI name if not provided
 	amiName := request.Name
 	if amiName == "" {
-		amiName = fmt.Sprintf("cws-%s-%d", request.TemplateName, time.Now().Unix())
+		amiName = fmt.Sprintf("prism-%s-%d", request.TemplateName, time.Now().Unix())
 	}
 
 	// Prepare AMI creation parameters

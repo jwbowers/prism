@@ -1,4 +1,4 @@
-// Mock Service Worker for CloudWorkstation Daemon API
+// Mock Service Worker for Prism Daemon API
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 
@@ -162,7 +162,7 @@ const handlers = [
     
     return HttpResponse.json({
       ssh: {
-        command: `ssh -i ~/.ssh/cloudworkstation.pem ec2-user@${instance.public_ip}`,
+        command: `ssh -i ~/.ssh/prism.pem ec2-user@${instance.public_ip}`,
         host: instance.public_ip,
         user: 'ec2-user',
         port: 22
@@ -171,7 +171,7 @@ const handlers = [
         jupyter: {
           url: `http://${instance.public_ip}:8888`,
           token: 'mock_token_' + Math.random().toString(36).substring(2, 20),
-          local_forward: `ssh -L 8888:localhost:8888 -i ~/.ssh/cloudworkstation.pem ec2-user@${instance.public_ip}`
+          local_forward: `ssh -L 8888:localhost:8888 -i ~/.ssh/prism.pem ec2-user@${instance.public_ip}`
         }
       }
     })

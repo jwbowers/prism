@@ -147,15 +147,15 @@ jobs:
         if ($LASTEXITCODE -ne 0) { throw "Service wrapper build failed" }
         
         # Build GUI (best effort)
-        Write-Host "Building GUI (cws-gui.exe)..."
+        Write-Host "Building GUI (prism-gui.exe)..."
         $env:CGO_ENABLED = "1"
-        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/cws-gui.exe" ./cmd/cws-gui 2>$null
+        go build -ldflags $ldflags -o "build/windows/release/windows-amd64/prism-gui.exe" ./cmd/prism-gui 2>$null
         if ($LASTEXITCODE -eq 0) {
           Write-Host "✓ GUI built successfully"
         } else {
           Write-Host "⚠️ GUI build failed (creating placeholder)"
           # Create placeholder GUI
-          Copy-Item "$env:SystemRoot\System32\cmd.exe" "build/windows/release/windows-amd64/cws-gui.exe"
+          Copy-Item "$env:SystemRoot\System32\cmd.exe" "build/windows/release/windows-amd64/prism-gui.exe"
         }
         
         Write-Host "✓ Go binaries built successfully"
@@ -183,11 +183,11 @@ jobs:
         
         # Copy PowerShell module
         New-Item -ItemType Directory -Path "$releaseDir/scripts" -Force | Out-Null
-        Copy-Item "scripts/CloudWorkstation.psm1" "$releaseDir/scripts/" -ErrorAction SilentlyContinue
+        Copy-Item "scripts/Prism.psm1" "$releaseDir/scripts/" -ErrorAction SilentlyContinue
         
         # Create placeholder assets
         New-Item -ItemType Directory -Path "$releaseDir/assets" -Force | Out-Null
-        New-Item -ItemType File -Path "$releaseDir/assets/cloudworkstation.ico" -Force | Out-Null
+        New-Item -ItemType File -Path "$releaseDir/assets/prism.ico" -Force | Out-Null
         
         Write-Host "✓ Supporting files prepared"
     
@@ -228,7 +228,7 @@ jobs:
             Write-Host "✓ MSI installer built successfully"
             
             # Verify MSI file exists
-            $msiFile = "dist/windows/CloudWorkstation-v$env:VERSION-x64.msi"
+            $msiFile = "dist/windows/Prism-v$env:VERSION-x64.msi"
             if (Test-Path $msiFile) {
               $msiSize = (Get-Item $msiFile).Length
               Write-Host "MSI file: $msiFile ($msiSize bytes)"
@@ -248,7 +248,7 @@ jobs:
       run: |
         Write-Host "Testing MSI installer..."
         
-        $msiFile = "dist/windows/CloudWorkstation-v$env:VERSION-x64.msi"
+        $msiFile = "dist/windows/Prism-v$env:VERSION-x64.msi"
         
         if (-not (Test-Path $msiFile)) {
           throw "MSI file not found: $msiFile"
@@ -309,10 +309,10 @@ jobs:
     - name: Upload MSI artifact
       uses: actions/upload-artifact@v4
       with:
-        name: CloudWorkstation-Windows-MSI-${{ steps.version.outputs.version }}
+        name: Prism-Windows-MSI-${{ steps.version.outputs.version }}
         path: |
-          dist/windows/CloudWorkstation-v${{ steps.version.outputs.version }}-x64.msi
-          dist/windows/CloudWorkstation-v${{ steps.version.outputs.version }}-x64.msi.sha256
+          dist/windows/Prism-v${{ steps.version.outputs.version }}-x64.msi
+          dist/windows/Prism-v${{ steps.version.outputs.version }}-x64.msi.sha256
         retention-days: 30
     
     - name: Upload build logs
@@ -331,12 +331,12 @@ jobs:
         Write-Host "Preparing release assets..."
         
         $version = "${{ steps.version.outputs.version }}"
-        $msiFile = "dist/windows/CloudWorkstation-v$version-x64.msi"
-        $hashFile = "dist/windows/CloudWorkstation-v$version-x64.msi.sha256"
+        $msiFile = "dist/windows/Prism-v$version-x64.msi"
+        $hashFile = "dist/windows/Prism-v$version-x64.msi.sha256"
         
         # Create release notes
         $releaseNotes = @"
-# CloudWorkstation v$version - Windows MSI Installer
+# Prism v$version - Windows MSI Installer
 
 ## Installation
 
@@ -350,21 +350,21 @@ jobs:
 
 #### Silent Installation
 ```cmd
-msiexec /i CloudWorkstation-v$version-x64.msi /quiet
+msiexec /i Prism-v$version-x64.msi /quiet
 ```
 
 #### Interactive Installation
 ```cmd
-msiexec /i CloudWorkstation-v$version-x64.msi
+msiexec /i Prism-v$version-x64.msi
 ```
 
 #### With Logging
 ```cmd
-msiexec /i CloudWorkstation-v$version-x64.msi /l*v install.log
+msiexec /i Prism-v$version-x64.msi /l*v install.log
 ```
 
 ### What's Included
-- **Core Binaries**: CLI (cws.exe), Daemon (prismd.exe), GUI (cws-gui.exe)
+- **Core Binaries**: CLI (cws.exe), Daemon (prismd.exe), GUI (prism-gui.exe)
 - **Windows Service**: Automatic daemon startup with system boot
 - **Research Templates**: Built-in templates for Python ML, R research, etc.
 - **PowerShell Integration**: PowerShell module for advanced scripting
@@ -379,7 +379,7 @@ After installation, the first-run setup wizard will help you configure:
 
 ### Uninstallation
 ```cmd
-msiexec /x CloudWorkstation-v$version-x64.msi /quiet
+msiexec /x Prism-v$version-x64.msi /quiet
 ```
 
 ## Security Note
@@ -390,7 +390,7 @@ This MSI installer is **unsigned** in the development build. For production use,
 - **Size**: $((Get-Item $msiFile).Length) bytes
 
 ## Support
-- **Documentation**: Installed in Start Menu → CloudWorkstation → Documentation  
+- **Documentation**: Installed in Start Menu → Prism → Documentation  
 - **Issues**: https://github.com/scttfrdmn/prism/issues
 - **Discussions**: https://github.com/scttfrdmn/prism/discussions
 "@
@@ -408,18 +408,18 @@ This MSI installer is **unsigned** in the development build. For production use,
         Write-Host ""
         
         $version = "${{ steps.version.outputs.version }}"
-        $msiFile = "dist/windows/CloudWorkstation-v$version-x64.msi"
+        $msiFile = "dist/windows/Prism-v$version-x64.msi"
         
         if (Test-Path $msiFile) {
           $msiSize = (Get-Item $msiFile).Length
           $msiSizeMB = [math]::Round($msiSize / 1024 / 1024, 2)
           
-          Write-Host "✓ MSI Installer: CloudWorkstation-v$version-x64.msi"
+          Write-Host "✓ MSI Installer: Prism-v$version-x64.msi"
           Write-Host "  Size: $msiSizeMB MB ($msiSize bytes)"
           Write-Host "  Location: $msiFile"
           
-          if (Test-Path "dist/windows/CloudWorkstation-v$version-x64.msi.sha256") {
-            $hash = Get-Content "dist/windows/CloudWorkstation-v$version-x64.msi.sha256"
+          if (Test-Path "dist/windows/Prism-v$version-x64.msi.sha256") {
+            $hash = Get-Content "dist/windows/Prism-v$version-x64.msi.sha256"
             Write-Host "  SHA256: $hash"
           }
           
@@ -447,7 +447,7 @@ This MSI installer is **unsigned** in the development build. For production use,
     - name: Download MSI artifact
       uses: actions/download-artifact@v4
       with:
-        name: CloudWorkstation-Windows-MSI-*
+        name: Prism-Windows-MSI-*
         path: ./msi
     
     - name: Test MSI installation
@@ -471,7 +471,7 @@ This MSI installer is **unsigned** in the development build. For production use,
           Write-Host "✓ Silent installation completed"
           
           # Check if files were installed
-          $programFiles = "${env:ProgramFiles}\CloudWorkstation"
+          $programFiles = "${env:ProgramFiles}\Prism"
           if (Test-Path $programFiles) {
             Write-Host "✓ Installation directory created: $programFiles"
             

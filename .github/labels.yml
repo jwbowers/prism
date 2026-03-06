@@ -1,4 +1,4 @@
-# GitHub Labels Configuration for CloudWorkstation
+# GitHub Labels Configuration for Prism
 # This file defines all labels used for issue and PR management
 #
 # To apply these labels, use: gh label sync --labels .github/labels.yml
@@ -57,7 +57,7 @@
 
 - name: "area: gui"
   color: "c5def5"
-  description: "Desktop GUI application (cmd/cws-gui)"
+  description: "Desktop GUI application (cmd/prism-gui)"
 
 - name: "area: tui"
   color: "c5def5"

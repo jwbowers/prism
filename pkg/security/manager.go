@@ -365,8 +365,8 @@ func (m *SecurityManager) initializeComponents() error {
 	// Initialize secure registry client if enabled
 	if m.config.RegistrySecurityEnabled {
 		registryConfig := security.S3RegistryConfig{
-			BucketName: "cloudworkstation-registry", // Default bucket name
-			Region:     "us-west-2",                 // Default region
+			BucketName: "prism-registry", // Default bucket name
+			Region:     "us-west-2",      // Default region
 			Enabled:    true,
 		}
 

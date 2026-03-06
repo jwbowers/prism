@@ -170,7 +170,7 @@ import { Form, Container, FormField, Input, Select, ExpandableSection } from '@c
 
 #### 1.1 Install Cloudscape Packages
 ```bash
-cd cmd/cws-gui/frontend
+cd cmd/prism-gui/frontend
 npm install @cloudscape-design/components @cloudscape-design/global-styles @cloudscape-design/design-tokens
 npm uninstall react-router-dom # Replace with Cloudscape navigation
 ```
@@ -190,7 +190,7 @@ npm uninstall react-router-dom # Replace with Cloudscape navigation
 
 #### 1.3 Create Base Layout
 ```typescript
-// cmd/cws-gui/frontend/src/App.tsx
+// cmd/prism-gui/frontend/src/App.tsx
 import '@cloudscape-design/global-styles/index.css';
 import { AppLayout, SideNavigation, TopNavigation } from '@cloudscape-design/components';
 

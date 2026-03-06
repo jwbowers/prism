@@ -1,4 +1,4 @@
-{% set name = "cloudworkstation" %}
+{% set name = "prism" %}
 {% set version = "0.5.1" %}
 
 package:
@@ -46,7 +46,7 @@ about:
   license_file: LICENSE
   summary: 'Launch research environments in the cloud in seconds'
   description: |
-    CloudWorkstation helps you launch pre-configured research environments in the 
+    Prism helps you launch pre-configured research environments in the 
     cloud in seconds, not hours. It provides templates for Python, R, and specialized 
     research domains, with automatic configuration and cost optimization. The tool offers 
     a CLI, TUI, and GUI interface for managing your cloud workstations.

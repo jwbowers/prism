@@ -1,4 +1,4 @@
-/* CloudWorkstation Custom Theme - User Customizable */
+/* Prism Custom Theme - User Customizable */
 
 @import url('core.css');
 
@@ -6,7 +6,7 @@
  * CUSTOMIZATION GUIDE
  * ==================
  * 
- * This theme file can be modified to create your own CloudWorkstation GUI appearance.
+ * This theme file can be modified to create your own Prism GUI appearance.
  * Simply override the CSS variables below to change colors, spacing, and typography.
  * 
  * STEP 1: Choose your color palette
@@ -127,6 +127,6 @@
  * 3. Create custom layouts for specific elements
  * 4. Add institution-specific branding elements
  * 
- * Remember: Changes to this file persist across CloudWorkstation updates,
+ * Remember: Changes to this file persist across Prism updates,
  * allowing you to maintain your custom appearance.
  */

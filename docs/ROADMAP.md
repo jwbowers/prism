@@ -210,7 +210,7 @@ Candidates (to be prioritized):
 #### Features Delivered
 
 **Template Discovery Fix**:
-- ✅ Fixed template discovery paths to use "prism" instead of "cloudworkstation"
+- ✅ Fixed template discovery paths to use "prism" instead of "prism"
 - ✅ Updated Homebrew installation paths (/opt/homebrew/share/prism/templates)
 - ✅ Updated system-wide installation paths (/usr/share/prism/templates)
 - ✅ `prism templates info` now works correctly with Homebrew installation

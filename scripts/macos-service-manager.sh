@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CloudWorkstation macOS Service Manager
-# Manages launchd service for CloudWorkstation daemon across user and system contexts
+# Prism macOS Service Manager
+# Manages launchd service for Prism daemon across user and system contexts
 
 set -euo pipefail
 
@@ -105,10 +105,10 @@ generate_plist() {
 # Check if daemon binary exists
 check_daemon_binary() {
     if [[ ! -x "$DAEMON_PATH/prismd" ]]; then
-        error_exit "CloudWorkstation daemon (prismd) not found at $DAEMON_PATH. Please install CloudWorkstation first."
+        error_exit "Prism daemon (prismd) not found at $DAEMON_PATH. Please install Prism first."
     fi
     
-    log "✅ Found CloudWorkstation daemon at $DAEMON_PATH/prismd"
+    log "✅ Found Prism daemon at $DAEMON_PATH/prismd"
 }
 
 # Install service
@@ -116,7 +116,7 @@ install_service() {
     local context="$(get_install_context)"
     get_paths "$context"
     
-    log "Installing CloudWorkstation service ($context mode)..."
+    log "Installing Prism service ($context mode)..."
     
     # Check if already installed
     if service_installed; then
@@ -135,7 +135,7 @@ install_service() {
         launchctl load "$PLIST_PATH/$SERVICE_NAME.plist"
     fi
     
-    green "✅ CloudWorkstation service installed and started successfully"
+    green "✅ Prism service installed and started successfully"
     log "Service will start automatically on system boot"
     
     # Show status
@@ -147,7 +147,7 @@ uninstall_service() {
     local context="$(get_install_context)"
     get_paths "$context"
     
-    log "Uninstalling CloudWorkstation service ($context mode)..."
+    log "Uninstalling Prism service ($context mode)..."
     
     if ! service_installed; then
         yellow "⚠️  Service not installed"
@@ -161,12 +161,12 @@ uninstall_service() {
     # Remove plist file
     rm -f "$PLIST_PATH/$SERVICE_NAME.plist"
     
-    green "✅ CloudWorkstation service uninstalled successfully"
+    green "✅ Prism service uninstalled successfully"
 }
 
 # Reinstall service (update configuration)
 reinstall_service() {
-    log "Reinstalling CloudWorkstation service..."
+    log "Reinstalling Prism service..."
     
     if service_installed; then
         uninstall_service
@@ -184,7 +184,7 @@ start_service() {
         error_exit "Service not installed. Run 'install' first."
     fi
     
-    log "Starting CloudWorkstation service..."
+    log "Starting Prism service..."
     
     if [[ "$context" == "system" ]]; then
         launchctl start "$SERVICE_NAME"
@@ -192,14 +192,14 @@ start_service() {
         launchctl start "$SERVICE_NAME"
     fi
     
-    green "✅ CloudWorkstation service started"
+    green "✅ Prism service started"
 }
 
 # Stop service
 stop_service() {
     local context="$(get_install_context)"
     
-    log "Stopping CloudWorkstation service..."
+    log "Stopping Prism service..."
     
     if [[ "$context" == "system" ]]; then
         launchctl stop "$SERVICE_NAME" 2>/dev/null || true
@@ -207,12 +207,12 @@ stop_service() {
         launchctl stop "$SERVICE_NAME" 2>/dev/null || true
     fi
     
-    green "✅ CloudWorkstation service stopped"
+    green "✅ Prism service stopped"
 }
 
 # Restart service
 restart_service() {
-    log "Restarting CloudWorkstation service..."
+    log "Restarting Prism service..."
     stop_service
     sleep 2
     start_service
@@ -231,7 +231,7 @@ show_status() {
     local context="$(get_install_context)"
     get_paths "$context"
     
-    log "CloudWorkstation Service Status ($context mode):"
+    log "Prism Service Status ($context mode):"
     echo
     
     if service_installed; then
@@ -277,7 +277,7 @@ show_logs() {
     local log_file="$LOG_PATH/prism-daemon.log"
     
     if [[ -f "$log_file" ]]; then
-        log "Showing CloudWorkstation service logs..."
+        log "Showing Prism service logs..."
         echo
         if command -v less >/dev/null 2>&1; then
             less "$log_file"
@@ -297,7 +297,7 @@ follow_logs() {
     local log_file="$LOG_PATH/prism-daemon.log"
     
     if [[ -f "$log_file" ]]; then
-        log "Following CloudWorkstation service logs... (Press Ctrl+C to stop)"
+        log "Following Prism service logs... (Press Ctrl+C to stop)"
         echo
         tail -f "$log_file"
     else
@@ -311,7 +311,7 @@ validate_service() {
     local context="$(get_install_context)"
     get_paths "$context"
     
-    log "Validating CloudWorkstation service configuration..."
+    log "Validating Prism service configuration..."
     echo
     
     local errors=0
@@ -361,14 +361,14 @@ validate_service() {
 # Show help
 show_help() {
     cat << 'EOF'
-CloudWorkstation macOS Service Manager
+Prism macOS Service Manager
 
 USAGE:
     macos-service-manager.sh <command>
 
 COMMANDS:
-    install     Install and start CloudWorkstation service
-    uninstall   Stop and uninstall CloudWorkstation service  
+    install     Install and start Prism service
+    uninstall   Stop and uninstall Prism service  
     reinstall   Update service configuration (uninstall + install)
     start       Start the service
     stop        Stop the service

@@ -1,4 +1,4 @@
-cloudworkstation (0.4.3-1) unstable; urgency=medium
+prism (0.4.3-1) unstable; urgency=medium
 
   * Stable Release: Build System and Quality Improvements
     - Fixed critical compilation errors for stable build system
@@ -12,9 +12,9 @@ cloudworkstation (0.4.3-1) unstable; urgency=medium
     - Distribution package creation and validation
     - Release infrastructure improvements
 
- -- CloudWorkstation Team <team@cloudworkstation.io>  Mon, 19 Aug 2025 21:00:00 +0000
+ -- Prism Team <team@prism.io>  Mon, 19 Aug 2025 21:00:00 +0000
 
-cloudworkstation (0.4.2-1) unstable; urgency=medium
+prism (0.4.2-1) unstable; urgency=medium
 
   * Phase 4 Complete: Enterprise Research Management Platform
     - Project-based organization with role-based access control
@@ -43,9 +43,9 @@ cloudworkstation (0.4.2-1) unstable; urgency=medium
     - Advanced keychain integration and tamper detection
     - Secure profile management with encryption
 
- -- CloudWorkstation Team <team@cloudworkstation.dev>  Mon, 16 Dec 2024 10:00:00 +0000
+ -- Prism Team <team@prism.dev>  Mon, 16 Dec 2024 10:00:00 +0000
 
-cloudworkstation (0.4.1-1) unstable; urgency=medium
+prism (0.4.1-1) unstable; urgency=medium
 
   * Template System Enhancements
     - Template inheritance support with multi-level stacking
@@ -64,9 +64,9 @@ cloudworkstation (0.4.1-1) unstable; urgency=medium
     - Improved error handling and user feedback
     - Performance optimizations for large-scale deployments
 
- -- CloudWorkstation Team <team@cloudworkstation.dev>  Fri, 15 Nov 2024 14:30:00 +0000
+ -- Prism Team <team@prism.dev>  Fri, 15 Nov 2024 14:30:00 +0000
 
-cloudworkstation (0.4.0-1) unstable; urgency=medium
+prism (0.4.0-1) unstable; urgency=medium
 
   * Major Release: Multi-Modal Access Implementation
     - New cross-platform GUI interface with Fyne framework
@@ -86,9 +86,9 @@ cloudworkstation (0.4.0-1) unstable; urgency=medium
     - Profile switching across all interfaces
     - Enhanced security with keychain integration
 
- -- CloudWorkstation Team <team@cloudworkstation.dev>  Mon, 28 Oct 2024 16:45:00 +0000
+ -- Prism Team <team@prism.dev>  Mon, 28 Oct 2024 16:45:00 +0000
 
-cloudworkstation (0.3.0-1) unstable; urgency=medium
+prism (0.3.0-1) unstable; urgency=medium
 
   * Advanced Research Features Implementation
     - Multi-package manager support (DNF, APT, Conda, Spack)
@@ -108,9 +108,9 @@ cloudworkstation (0.3.0-1) unstable; urgency=medium
     - Faster template processing and validation
     - Improved AWS API integration efficiency
 
- -- CloudWorkstation Team <team@cloudworkstation.dev>  Wed, 25 Sep 2024 11:20:00 +0000
+ -- Prism Team <team@prism.dev>  Wed, 25 Sep 2024 11:20:00 +0000
 
-cloudworkstation (0.2.0-1) unstable; urgency=medium
+prism (0.2.0-1) unstable; urgency=medium
 
   * Distributed Architecture Implementation
     - Daemon + CLI client architecture for better scalability
@@ -129,9 +129,9 @@ cloudworkstation (0.2.0-1) unstable; urgency=medium
     - Enhanced credential management and encryption
     - Improved access control and permission handling
 
- -- CloudWorkstation Team <team@cloudworkstation.dev>  Tue, 20 Aug 2024 09:15:00 +0000
+ -- Prism Team <team@prism.dev>  Tue, 20 Aug 2024 09:15:00 +0000
 
-cloudworkstation (0.1.0-1) unstable; urgency=medium
+prism (0.1.0-1) unstable; urgency=medium
 
   * Initial Debian package release
   * Core functionality for research instance management
@@ -151,4 +151,4 @@ cloudworkstation (0.1.0-1) unstable; urgency=medium
     - Cost estimation and budget management
     - Region and availability zone optimization
 
- -- CloudWorkstation Team <team@cloudworkstation.dev>  Mon, 15 Jul 2024 13:45:00 +0000
+ -- Prism Team <team@prism.dev>  Mon, 15 Jul 2024 13:45:00 +0000

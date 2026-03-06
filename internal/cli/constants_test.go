@@ -14,7 +14,7 @@ func TestConstants(t *testing.T) {
 	// Test network constants
 	assert.Equal(t, "http://localhost:8947", DefaultDaemonURL)
 	assert.Equal(t, "8947", DefaultDaemonPort)
-	assert.Equal(t, "CWSD_URL", DaemonURLEnvVar)
+	assert.Equal(t, "PRISMD_URL", DaemonURLEnvVar)
 
 	// Test configuration constants
 	assert.Equal(t, "gp3", DefaultVolumeType)

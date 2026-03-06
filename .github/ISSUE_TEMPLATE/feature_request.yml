@@ -30,7 +30,7 @@ body:
     id: component
     attributes:
       label: Component
-      description: Which part of CloudWorkstation would this affect?
+      description: Which part of Prism would this affect?
       options:
         - CLI
         - GUI (Desktop App)

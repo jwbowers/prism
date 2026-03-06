@@ -376,7 +376,7 @@ func (i *InstanceStateInspector) inspectPorts(ctx context.Context, instanceName 
 // loadAppliedTemplates loads the history of applied templates
 func (i *InstanceStateInspector) loadAppliedTemplates(ctx context.Context, instanceName string) ([]AppliedTemplate, error) {
 	// Try to load template application history from a known location
-	result, err := i.executor.Execute(ctx, instanceName, "cat /opt/cloudworkstation/applied-templates.json 2>/dev/null")
+	result, err := i.executor.Execute(ctx, instanceName, "cat /opt/prism/applied-templates.json 2>/dev/null")
 	if err != nil || result.ExitCode != 0 {
 		// No history file, return empty list
 		return []AppliedTemplate{}, nil

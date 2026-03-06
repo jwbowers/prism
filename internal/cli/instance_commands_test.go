@@ -98,7 +98,7 @@ func TestInstanceCommands_Connect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Disable daemon auto-start for daemon-related error tests
 			if tt.name == "Daemon not running" || tt.name == "API error" {
-				t.Setenv("CWS_NO_AUTO_START", "1")
+				t.Setenv("PRISM_NO_AUTO_START", "1")
 			}
 
 			mockClient := NewMockAPIClient()
@@ -169,7 +169,7 @@ func TestInstanceCommands_Stop(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Disable daemon auto-start for daemon-related error tests
 			if tt.name == "Daemon not running" || tt.name == "API error" {
-				t.Setenv("CWS_NO_AUTO_START", "1")
+				t.Setenv("PRISM_NO_AUTO_START", "1")
 			}
 
 			mockClient := NewMockAPIClient()
@@ -267,7 +267,7 @@ func TestInstanceCommands_Start(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Disable daemon auto-start for daemon-related error tests
 			if tt.name == "Daemon not running" || tt.name == "API error on list" {
-				t.Setenv("CWS_NO_AUTO_START", "1")
+				t.Setenv("PRISM_NO_AUTO_START", "1")
 			}
 
 			mockClient := NewMockAPIClient()
@@ -338,7 +338,7 @@ func TestInstanceCommands_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Disable daemon auto-start for daemon-related error tests
 			if tt.name == "Daemon not running" || tt.name == "API error" {
-				t.Setenv("CWS_NO_AUTO_START", "1")
+				t.Setenv("PRISM_NO_AUTO_START", "1")
 			}
 
 			mockClient := NewMockAPIClient()
@@ -418,7 +418,7 @@ func TestInstanceCommands_Hibernate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Disable daemon auto-start for daemon-related error tests
 			if tt.name == "Daemon not running" || tt.name == "API error on hibernation status" {
-				t.Setenv("CWS_NO_AUTO_START", "1")
+				t.Setenv("PRISM_NO_AUTO_START", "1")
 			}
 
 			mockClient := NewMockAPIClient()
@@ -489,7 +489,7 @@ func TestInstanceCommands_Resume(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Disable daemon auto-start for daemon-related error tests
 			if tt.name == "Daemon not running" || tt.name == "API error" {
-				t.Setenv("CWS_NO_AUTO_START", "1")
+				t.Setenv("PRISM_NO_AUTO_START", "1")
 			}
 
 			mockClient := NewMockAPIClient()

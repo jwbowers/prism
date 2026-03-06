@@ -1,4 +1,4 @@
-# CloudWorkstation Daemon Production Dockerfile
+# Prism Daemon Production Dockerfile
 #
 # Multi-stage build for optimized production image with security features
 

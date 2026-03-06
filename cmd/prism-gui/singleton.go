@@ -13,7 +13,7 @@ import (
 
 const (
 	// PIDFileName is the name of the PID file for GUI
-	GUIPIDFileName = "cws-gui.pid"
+	GUIPIDFileName = "prism-gui.pid"
 
 	// ShutdownTimeout is how long to wait for graceful shutdown
 	GUIShutdownTimeout = 5 * time.Second
@@ -120,12 +120,12 @@ func (s *GUISingletonManager) isProcessRunning(pid int) bool {
 		return false
 	}
 
-	// Additional check: verify it's actually cws-gui
-	return s.isCWSGUIProcess(pid)
+	// Additional check: verify it's actually prism-gui
+	return s.isPrismGUIProcess(pid)
 }
 
-// isCWSGUIProcess checks if the process is actually cws-gui
-func (s *GUISingletonManager) isCWSGUIProcess(pid int) bool {
+// isPrismGUIProcess checks if the process is actually prism-gui
+func (s *GUISingletonManager) isPrismGUIProcess(pid int) bool {
 	// On macOS/Linux, read process name from ps
 	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "comm=")
 	output, err := cmd.Output()
@@ -134,7 +134,7 @@ func (s *GUISingletonManager) isCWSGUIProcess(pid int) bool {
 	}
 
 	procName := strings.TrimSpace(string(output))
-	return strings.Contains(procName, "cws-gui")
+	return strings.Contains(procName, "prism-gui")
 }
 
 // GetPID returns the PID from the PID file, or 0 if not running

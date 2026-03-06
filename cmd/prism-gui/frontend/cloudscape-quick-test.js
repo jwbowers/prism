@@ -35,7 +35,7 @@ import { chromium } from 'playwright';
     const hasCloudscapeCSS = stylesheets.some(href => href && href.includes('cloudscape'));
     console.log(`${hasCloudscapeCSS ? '✅' : '❌'} Cloudscape CSS: ${hasCloudscapeCSS ? 'Found' : 'Not found'}`);
 
-    // Test 3: Check for CloudWorkstation header/title
+    // Test 3: Check for Prism header/title
     const headerText = await page.evaluate(() => {
       const headers = document.querySelectorAll('h1, h2, .title, [data-testid="title"]');
       return Array.from(headers).map(h => h.textContent).join(', ');
@@ -91,13 +91,13 @@ import { chromium } from 'playwright';
       const bodyText = document.body.textContent.toLowerCase();
       const hasError = bodyText.includes('error') || bodyText.includes('failed');
       const hasLoading = bodyText.includes('loading') || bodyText.includes('loading...');
-      const hasContent = bodyText.includes('template') || bodyText.includes('instance') || bodyText.includes('cloudworkstation');
+      const hasContent = bodyText.includes('template') || bodyText.includes('instance') || bodyText.includes('prism');
       return { hasError, hasLoading, hasContent, length: bodyText.length };
     });
 
     console.log(`${errorText.hasError ? '⚠️' : '✅'} Error state: ${errorText.hasError ? 'Errors found' : 'No errors'}`);
     console.log(`${errorText.hasLoading ? 'ℹ️' : '✅'} Loading state: ${errorText.hasLoading ? 'Loading detected' : 'Content loaded'}`);
-    console.log(`${errorText.hasContent ? '✅' : '❌'} Content loaded: ${errorText.hasContent ? 'CloudWorkstation content found' : 'No content found'}`);
+    console.log(`${errorText.hasContent ? '✅' : '❌'} Content loaded: ${errorText.hasContent ? 'Prism content found' : 'No content found'}`);
     console.log(`✅ Page content length: ${errorText.length} characters`);
 
     console.log('\n🎉 Cloudscape Quick Test Complete!');

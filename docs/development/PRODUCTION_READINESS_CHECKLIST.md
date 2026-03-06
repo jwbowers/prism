@@ -133,13 +133,13 @@ This checklist verifies that Prism v0.5.1 (GUI Accessibility & UX Polish) is rea
 ### Binary Verification ✅ Complete
 - [x] **cws**: CLI binary built successfully
 - [x] **prismd**: Daemon binary built successfully
-- [x] **cws-gui**: GUI binary built successfully
+- [x] **prism-gui**: GUI binary built successfully
 - [x] **All binaries executable**: Proper permissions set
 
 ### Runtime Verification ✅ Complete
 - [x] **Daemon starts**: prismd launches without errors
 - [x] **CLI connects**: prism commands work with daemon
-- [x] **GUI connects**: cws-gui communicates with daemon
+- [x] **GUI connects**: prism-gui communicates with daemon
 - [x] **API functional**: REST endpoints respond correctly
 
 ### Dependency Verification

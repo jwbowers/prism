@@ -490,11 +490,11 @@ func (m *MockClient) ConnectInstance(ctx context.Context, name string) (string, 
 	if instance, exists := m.Instances[name]; exists {
 		switch m.Templates[instance.Template].Name {
 		case "r-research":
-			return fmt.Sprintf("RStudio Server: http://%s:8787 (username: rstudio, password: cloudworkstation)", instance.PublicIP), nil
+			return fmt.Sprintf("RStudio Server: http://%s:8787 (username: rstudio, password: prism)", instance.PublicIP), nil
 		case "python-ml":
-			return fmt.Sprintf("JupyterLab: http://%s:8888 (token: cloudworkstation)", instance.PublicIP), nil
+			return fmt.Sprintf("JupyterLab: http://%s:8888 (token: prism)", instance.PublicIP), nil
 		case "desktop-research":
-			return fmt.Sprintf("NICE DCV: https://%s:8443 (username: ubuntu, password: cloudworkstation)", instance.PublicIP), nil
+			return fmt.Sprintf("NICE DCV: https://%s:8443 (username: ubuntu, password: prism)", instance.PublicIP), nil
 		default:
 			return fmt.Sprintf("ssh ubuntu@%s", instance.PublicIP), nil
 		}

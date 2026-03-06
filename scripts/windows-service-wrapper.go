@@ -22,9 +22,9 @@ const (
 	description = "Enterprise research management platform daemon for launching cloud research environments"
 )
 
-type cloudWorkstationService struct{}
+type prismWindowsService struct{}
 
-func (m *cloudWorkstationService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (m *prismWindowsService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 	changes <- svc.Status{State: svc.StartPending}
 
@@ -49,7 +49,7 @@ func (m *cloudWorkstationService) Execute(args []string, r <-chan svc.ChangeRequ
 }
 
 // startDaemonProcess initializes and starts the daemon process
-func (m *cloudWorkstationService) startDaemonProcess(elog *eventlog.Log) (*exec.Cmd, error) {
+func (m *prismWindowsService) startDaemonProcess(elog *eventlog.Log) (*exec.Cmd, error) {
 	elog.Info(1, fmt.Sprintf("%s service starting", displayName))
 
 	// Find prismd binary
@@ -81,7 +81,7 @@ func (m *cloudWorkstationService) startDaemonProcess(elog *eventlog.Log) (*exec.
 }
 
 // runServiceLoop handles the main service execution loop
-func (m *cloudWorkstationService) runServiceLoop(elog *eventlog.Log, cmd *exec.Cmd, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (bool, uint32) {
+func (m *prismWindowsService) runServiceLoop(elog *eventlog.Log, cmd *exec.Cmd, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (bool, uint32) {
 	for {
 		select {
 		case c := <-r:
@@ -98,7 +98,7 @@ func (m *cloudWorkstationService) runServiceLoop(elog *eventlog.Log, cmd *exec.C
 }
 
 // handleServiceCommand processes incoming service commands
-func (m *cloudWorkstationService) handleServiceCommand(elog *eventlog.Log, cmd *exec.Cmd, c svc.ChangeRequest, changes chan<- svc.Status) bool {
+func (m *prismWindowsService) handleServiceCommand(elog *eventlog.Log, cmd *exec.Cmd, c svc.ChangeRequest, changes chan<- svc.Status) bool {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 
 	switch c.Cmd {
@@ -117,7 +117,7 @@ func (m *cloudWorkstationService) handleServiceCommand(elog *eventlog.Log, cmd *
 }
 
 // handleServiceStop handles service stop/shutdown commands
-func (m *cloudWorkstationService) handleServiceStop(elog *eventlog.Log, cmd *exec.Cmd, changes chan<- svc.Status) bool {
+func (m *prismWindowsService) handleServiceStop(elog *eventlog.Log, cmd *exec.Cmd, changes chan<- svc.Status) bool {
 	elog.Info(1, fmt.Sprintf("%s service stopping", displayName))
 	changes <- svc.Status{State: svc.StopPending}
 
@@ -135,7 +135,7 @@ func (m *cloudWorkstationService) handleServiceStop(elog *eventlog.Log, cmd *exe
 }
 
 // waitForDaemonExit waits for the daemon process to exit gracefully
-func (m *cloudWorkstationService) waitForDaemonExit(elog *eventlog.Log, cmd *exec.Cmd) {
+func (m *prismWindowsService) waitForDaemonExit(elog *eventlog.Log, cmd *exec.Cmd) {
 	done := make(chan error, 1)
 	go func() {
 		done <- cmd.Wait()
@@ -150,7 +150,7 @@ func (m *cloudWorkstationService) waitForDaemonExit(elog *eventlog.Log, cmd *exe
 }
 
 // checkDaemonHealth monitors daemon process health
-func (m *cloudWorkstationService) checkDaemonHealth(elog *eventlog.Log, cmd *exec.Cmd, changes chan<- svc.Status) bool {
+func (m *prismWindowsService) checkDaemonHealth(elog *eventlog.Log, cmd *exec.Cmd, changes chan<- svc.Status) bool {
 	if cmd.Process != nil {
 		// Non-blocking check using FindProcess
 		process, err := os.FindProcess(cmd.Process.Pid)
@@ -192,7 +192,7 @@ func runService() {
 		run = debug.Run
 	}
 
-	err := run(serviceName, &cloudWorkstationService{})
+	err := run(serviceName, &prismWindowsService{})
 	if err != nil {
 		log.Fatalf("Service run failed: %v", err)
 	}

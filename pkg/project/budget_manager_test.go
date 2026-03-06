@@ -14,7 +14,7 @@ import (
 // TestNewBudgetManager tests budget manager creation
 func TestNewBudgetManager(t *testing.T) {
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-budget-test-*")
+	tempDir, err := os.MkdirTemp("", "prism-budget-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
@@ -510,7 +510,7 @@ func setupTestBudgetManager(t *testing.T) *BudgetManager {
 	t.Helper()
 
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-budget-test-*")
+	tempDir, err := os.MkdirTemp("", "prism-budget-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = os.RemoveAll(tempDir)
@@ -957,7 +957,7 @@ func TestBudgetManager_ConcurrentOperations(t *testing.T) {
 // TestBudgetManager_Persistence tests data persistence
 func TestBudgetManager_Persistence(t *testing.T) {
 	// Create temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "cws-budget-persist-*")
+	tempDir, err := os.MkdirTemp("", "prism-budget-persist-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tempDir) }()
 

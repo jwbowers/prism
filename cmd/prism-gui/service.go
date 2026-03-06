@@ -1155,7 +1155,7 @@ func isLinuxAutoStartEnabled() bool {
 		return false
 	}
 
-	desktopFile := filepath.Join(homeDir, ".config", "autostart", "cloudworkstation-gui.desktop")
+	desktopFile := filepath.Join(homeDir, ".config", "autostart", "prism-gui.desktop")
 	_, err = os.Stat(desktopFile)
 	return err == nil
 }

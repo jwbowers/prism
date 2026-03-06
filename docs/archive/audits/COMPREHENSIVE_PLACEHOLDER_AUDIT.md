@@ -145,7 +145,7 @@ After a comprehensive audit, **145 placeholder comments** remain in the codebase
 **Impact**: LOW - CLI functional with limited features
 
 #### 13. TUI/GUI - 3 placeholders
-**Files**: internal/tui/, cmd/cws-gui/
+**Files**: internal/tui/, cmd/prism-gui/
 - `tui/api/types.go:168`: Default ports
 - `tui/api/client.go:152`: Hardcoded policies
 - Various GUI placeholders

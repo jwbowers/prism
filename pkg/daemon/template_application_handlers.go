@@ -328,7 +328,7 @@ func (s *Server) getSSHKeyPath() string {
 	// 3. Handle per-instance key management
 
 	// For now, return a placeholder that would be configured
-	return "~/.ssh/cloudworkstation-key.pem"
+	return "~/.ssh/prism-key.pem"
 }
 
 // getSSHUsername returns the appropriate SSH username for the instance

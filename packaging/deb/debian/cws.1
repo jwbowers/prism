@@ -1,11 +1,11 @@
-.TH CWS 1 "December 2024" "CloudWorkstation 0.4.2" "User Commands"
+.TH CWS 1 "December 2024" "Prism 0.4.2" "User Commands"
 .SH NAME
-cws \- CloudWorkstation command line interface
+cws \- Prism command line interface
 .SH SYNOPSIS
 .B cws
 [\fIGLOBAL_OPTIONS\fR] \fICOMMAND\fR [\fICOMMAND_OPTIONS\fR]
 .SH DESCRIPTION
-CloudWorkstation allows academic researchers to launch pre-configured cloud workstations in seconds rather than spending hours setting up research environments.
+Prism allows academic researchers to launch pre-configured cloud workstations in seconds rather than spending hours setting up research environments.
 
 The \fBcws\fR command provides a comprehensive interface for managing cloud research instances, templates, storage, and projects with enterprise-grade features including cost optimization, budget management, and multi-modal access.
 
@@ -142,7 +142,7 @@ Show current active profile
 Switch to a different AWS profile
 .TP
 .B profile create \fINAME\fR [\fIOPTIONS\fR]
-Create a new CloudWorkstation profile
+Create a new Prism profile
 
 .SS System Management
 .TP
@@ -150,13 +150,13 @@ Create a new CloudWorkstation profile
 Show daemon status and connectivity
 .TP
 .B daemon start
-Start the CloudWorkstation daemon
+Start the Prism daemon
 .TP
 .B daemon stop
-Stop the CloudWorkstation daemon
+Stop the Prism daemon
 .TP
 .B daemon restart
-Restart the CloudWorkstation daemon
+Restart the Prism daemon
 .TP
 .B daemon logs
 Show daemon logs
@@ -223,28 +223,28 @@ Apply template to running instance:
 
 .SH FILES
 .TP
-.I ~/.cloudworkstation/
+.I ~/.prism/
 User configuration directory
 .TP
-.I ~/.cloudworkstation/profiles/
+.I ~/.prism/profiles/
 User profile configurations
 .TP
-.I ~/.cloudworkstation/cache/
+.I ~/.prism/cache/
 Template and metadata cache
 .TP
-.I /etc/cloudworkstation/
+.I /etc/prism/
 System configuration directory
 .TP
-.I /etc/cloudworkstation/daemon.conf
+.I /etc/prism/daemon.conf
 Daemon configuration file
 .TP
-.I /etc/cloudworkstation/aws/
+.I /etc/prism/aws/
 AWS configuration directory
 .TP
-.I /var/lib/cloudworkstation/
+.I /var/lib/prism/
 System state and data directory
 .TP
-.I /var/log/cloudworkstation/
+.I /var/log/prism/
 Log files directory
 
 .SH ENVIRONMENT
@@ -299,7 +299,7 @@ Report bugs at: https://github.com/scttfrdmn/prism/issues
 Online documentation: https://github.com/scttfrdmn/prism
 
 .SH AUTHOR
-CloudWorkstation Team
+Prism Team
 
 .SH COPYRIGHT
-Copyright 2024 CloudWorkstation Project. Licensed under the MIT License.
+Copyright 2024 Prism Project. Licensed under the MIT License.

@@ -199,7 +199,7 @@
 
 #### Setup Required
 ```bash
-cd cmd/cws-gui/frontend
+cd cmd/prism-gui/frontend
 npm install --save-dev @testing-library/react @testing-library/jest-dom jest @types/jest
 ```
 

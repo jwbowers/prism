@@ -238,9 +238,9 @@ func (tm *TunnelManager) getSSHKeyPath(instance *types.Instance) (string, error)
 	// Try standardized naming with different profile names
 	// Priority: test (most common), default, no-profile
 	standardizedNames := []string{
-		fmt.Sprintf("cws-test-%s-key", region),    // cws-test-us-west-2-key (STANDARD FORMAT)
-		fmt.Sprintf("cws-default-%s-key", region), // cws-default-us-west-2-key
-		fmt.Sprintf("cws-%s-key", region),         // cws-us-west-2-key
+		fmt.Sprintf("prism-test-%s-key", region),    // prism-test-us-west-2-key (STANDARD FORMAT)
+		fmt.Sprintf("prism-default-%s-key", region), // prism-default-us-west-2-key
+		fmt.Sprintf("prism-%s-key", region),         // prism-us-west-2-key
 	}
 
 	var candidatePaths []string
@@ -253,13 +253,14 @@ func (tm *TunnelManager) getSSHKeyPath(instance *types.Instance) (string, error)
 		)
 	}
 
-	// For backward compatibility, also try legacy formats
-	// Legacy naming: cws-test-aws-{regionshort}-key where regionshort has hyphens removed
-	// Example: us-west-2 → west2, so cws-test-aws-west2-key
+	// For backward compatibility, also try legacy cws-* formats
+	// Legacy naming: cws-test-{region}-key or cws-test-aws-{regionshort}-key
 	regionShort := strings.TrimPrefix(region, "us-")
 	regionShort = strings.Replace(regionShort, "-", "", -1) // west-2 → west2
 
 	legacyFormats := []string{
+		fmt.Sprintf("cws-test-%s-key", region),          // cws-test-us-west-2-key
+		fmt.Sprintf("cws-default-%s-key", region),       // cws-default-us-west-2-key
 		fmt.Sprintf("cws-test-aws-%s-key", regionShort), // cws-test-aws-west2-key
 		fmt.Sprintf("cws-aws-%s-key", regionShort),      // cws-aws-west2-key
 	}
@@ -278,13 +279,16 @@ func (tm *TunnelManager) getSSHKeyPath(instance *types.Instance) (string, error)
 		}
 	}
 
-	// Final fallback: scan ~/.ssh for any cws-* keys
+	// Final fallback: scan ~/.ssh for any prism-* or cws-* keys
 	sshDir := filepath.Join(homeDir, ".ssh")
 	entries, err := os.ReadDir(sshDir)
 	if err == nil {
 		for _, entry := range entries {
-			if !entry.IsDir() && strings.HasPrefix(entry.Name(), "cws-") && !strings.HasSuffix(entry.Name(), ".pub") {
-				keyPath := filepath.Join(sshDir, entry.Name())
+			name := entry.Name()
+			isPrismKey := (strings.HasPrefix(name, "prism-") || strings.HasPrefix(name, "cws-")) &&
+				!strings.HasSuffix(name, ".pub")
+			if !entry.IsDir() && isPrismKey {
+				keyPath := filepath.Join(sshDir, name)
 				// Verify it's a valid SSH key file
 				if _, err := os.Stat(keyPath); err == nil {
 					return keyPath, nil
@@ -293,7 +297,7 @@ func (tm *TunnelManager) getSSHKeyPath(instance *types.Instance) (string, error)
 		}
 	}
 
-	return "", fmt.Errorf("SSH key not found. Expected format: cws-test-%s-key in ~/.ssh/ (tried %d locations + fallback scan)", region, len(candidatePaths))
+	return "", fmt.Errorf("SSH key not found. Expected format: prism-test-%s-key in ~/.ssh/ (tried %d locations + fallback scan)", region, len(candidatePaths))
 }
 
 // monitorTunnel monitors tunnel health and restarts if needed

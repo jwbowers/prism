@@ -662,7 +662,7 @@ func TestUsageStats(t *testing.T) {
 func TestMarketplaceConfig(t *testing.T) {
 	config := &MarketplaceConfig{
 		RegistryEndpoint:      "https://marketplace-api.prism.com",
-		S3Bucket:              "cloudworkstation-marketplace",
+		S3Bucket:              "prism-marketplace",
 		DynamoDBTable:         "marketplace-templates",
 		CDNEndpoint:           "https://cdn.prism.com",
 		AutoAMIGeneration:     true,
@@ -676,7 +676,7 @@ func TestMarketplaceConfig(t *testing.T) {
 	}
 
 	assert.Equal(t, "https://marketplace-api.prism.com", config.RegistryEndpoint)
-	assert.Equal(t, "cloudworkstation-marketplace", config.S3Bucket)
+	assert.Equal(t, "prism-marketplace", config.S3Bucket)
 	assert.Equal(t, "marketplace-templates", config.DynamoDBTable)
 	assert.Equal(t, "https://cdn.prism.com", config.CDNEndpoint)
 	assert.True(t, config.AutoAMIGeneration)

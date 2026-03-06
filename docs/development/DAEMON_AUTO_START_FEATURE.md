@@ -64,7 +64,7 @@ If daemon is already running:
 
 ### Files Modified
 
-**cmd/cws-gui/main.go** (~100 lines added):
+**cmd/prism-gui/main.go** (~100 lines added):
 - `checkDaemonHealth()`: HTTP health check function
 - `findDaemonBinary()`: Multi-location binary discovery
 - `startDaemon()`: Daemon launch with process group management
@@ -183,7 +183,7 @@ for i := 0; i < maxAttempts; i++ {
 ./bin/cws daemon stop
 
 # Launch GUI
-./bin/cws-gui
+./bin/prism-gui
 
 # Verify daemon auto-starts
 ./bin/cws daemon status
@@ -198,7 +198,7 @@ for i := 0; i < maxAttempts; i++ {
 ./bin/cws daemon start
 
 # Launch GUI
-./bin/cws-gui
+./bin/prism-gui
 
 # Verify no duplicate daemon
 ps aux | grep prismd | grep -v grep
@@ -213,7 +213,7 @@ ps aux | grep prismd | grep -v grep
 ./bin/cws daemon stop
 
 # Launch GUI with timeout (simulates user closing GUI)
-timeout 5s ./bin/cws-gui
+timeout 5s ./bin/prism-gui
 
 # Wait a moment
 sleep 2
@@ -360,7 +360,7 @@ curl http://localhost:8947/api/v1/health
 
 2. **DAEMON_AUTO_START_FEATURE.md**: This comprehensive feature document
 
-3. **cmd/cws-gui/main.go**: Inline code comments explaining auto-start logic
+3. **cmd/prism-gui/main.go**: Inline code comments explaining auto-start logic
 
 ---
 

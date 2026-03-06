@@ -119,7 +119,7 @@ func (l *LinuxSecretServiceNative) Store(key string, data []byte) error {
 	properties := map[string]dbus.Variant{
 		"org.freedesktop.Secret.Item.Label": dbus.MakeVariant("Prism: " + key),
 		"org.freedesktop.Secret.Item.Attributes": dbus.MakeVariant(map[string]string{
-			"application": "cloudworkstation",
+			"application": "prism",
 			"account":     key,
 		}),
 	}
@@ -156,7 +156,7 @@ func (l *LinuxSecretServiceNative) Store(key string, data []byte) error {
 func (l *LinuxSecretServiceNative) Retrieve(key string) ([]byte, error) {
 	// Search for items
 	attributes := map[string]string{
-		"application": "cloudworkstation",
+		"application": "prism",
 		"account":     key,
 	}
 
@@ -186,7 +186,7 @@ func (l *LinuxSecretServiceNative) Retrieve(key string) ([]byte, error) {
 func (l *LinuxSecretServiceNative) Exists(key string) bool {
 	// Search for items
 	attributes := map[string]string{
-		"application": "cloudworkstation",
+		"application": "prism",
 		"account":     key,
 	}
 
@@ -203,7 +203,7 @@ func (l *LinuxSecretServiceNative) Exists(key string) bool {
 func (l *LinuxSecretServiceNative) Delete(key string) error {
 	// Search for items
 	attributes := map[string]string{
-		"application": "cloudworkstation",
+		"application": "prism",
 		"account":     key,
 	}
 

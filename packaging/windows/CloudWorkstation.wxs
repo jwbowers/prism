@@ -4,10 +4,10 @@
   
   <!-- Product Definition -->
   <Product Id="*" 
-           Name="CloudWorkstation" 
+           Name="Prism" 
            Language="1033" 
            Version="0.5.1" 
-           Manufacturer="CloudWorkstation Project"
+           Manufacturer="Prism Project"
            UpgradeCode="{12345678-1234-5678-9ABC-123456789012}">
     
     <!-- Package Configuration -->
@@ -16,16 +16,16 @@
              InstallScope="perMachine"
              Platform="x64"
              InstallPrivileges="elevated"
-             Description="CloudWorkstation: Enterprise Research Management Platform"
+             Description="Prism: Enterprise Research Management Platform"
              Comments="Launch cloud research environments in seconds"
              Keywords="Cloud, Research, AWS, Academic"
-             Manufacturer="CloudWorkstation Project" />
+             Manufacturer="Prism Project" />
     
     <!-- Installation Media -->
-    <Media Id="1" Cabinet="CloudWorkstation.cab" EmbedCab="yes" />
+    <Media Id="1" Cabinet="Prism.cab" EmbedCab="yes" />
     
     <!-- Major Upgrade Configuration -->
-    <MajorUpgrade DowngradeErrorMessage="A newer version of CloudWorkstation is already installed."
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Prism is already installed."
                   AllowDowngrades="no"
                   AllowSameVersionUpgrades="yes"
                   Schedule="afterInstallInitialize" />
@@ -33,7 +33,7 @@
     <!-- Installation Directory Structure -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFiles64Folder">
-        <Directory Id="INSTALLFOLDER" Name="CloudWorkstation">
+        <Directory Id="INSTALLFOLDER" Name="Prism">
           <Directory Id="BinFolder" Name="bin" />
           <Directory Id="TemplatesFolder" Name="templates" />
           <Directory Id="DocsFolder" Name="docs" />
@@ -42,14 +42,14 @@
       
       <!-- Program Data Directory (for configuration and logs) -->
       <Directory Id="ProgramDataFolder">
-        <Directory Id="CONFIGFOLDER" Name="CloudWorkstation">
+        <Directory Id="CONFIGFOLDER" Name="Prism">
           <Directory Id="LogsFolder" Name="Logs" />
         </Directory>
       </Directory>
       
       <!-- Start Menu -->
       <Directory Id="ProgramMenuFolder">
-        <Directory Id="StartMenuFolder" Name="CloudWorkstation" />
+        <Directory Id="StartMenuFolder" Name="Prism" />
       </Directory>
       
       <!-- Desktop -->
@@ -111,13 +111,13 @@
     <!-- Windows Service Component -->
     <Component Id="ServiceComponent" Guid="{44444444-5555-6666-7777-888888888888}" Directory="BinFolder">
       <ServiceInstall Id="CWSService"
-                      DisplayName="CloudWorkstation Daemon Service"
-                      Name="CloudWorkstationDaemon" 
+                      DisplayName="Prism Daemon Service"
+                      Name="PrismDaemon" 
                       Type="ownProcess"
                       Start="auto"
                       Account="LocalSystem"
                       ErrorControl="normal"
-                      Description="CloudWorkstation research environment management service"
+                      Description="Prism research environment management service"
                       Interactive="no"
                       Arguments="--service">
         <!-- Service Dependencies -->
@@ -126,14 +126,14 @@
       </ServiceInstall>
       
       <ServiceControl Id="CWSServiceControl"
-                      Name="CloudWorkstationDaemon"
+                      Name="PrismDaemon"
                       Start="install"
                       Stop="both"
                       Remove="uninstall"
                       Wait="yes" />
       
       <!-- Service Recovery Configuration -->
-      <util:ServiceConfig ServiceName="CloudWorkstationDaemon"
+      <util:ServiceConfig ServiceName="PrismDaemon"
                           FirstFailureActionType="restart"
                           SecondFailureActionType="restart"
                           ThirdFailureActionType="restart"
@@ -150,7 +150,7 @@
       <util:PermissionEx User="SYSTEM" GenericAll="yes" />
       
       <RegistryValue Root="HKLM" 
-                     Key="SOFTWARE\CloudWorkstation" 
+                     Key="SOFTWARE\Prism" 
                      Name="ConfigPath" 
                      Type="string" 
                      Value="[CONFIGFOLDER]"
@@ -169,29 +169,29 @@
     <!-- Start Menu Shortcuts Component -->
     <Component Id="StartMenuComponent" Guid="{77777777-8888-9999-AAAA-BBBBBBBBBBBB}" Directory="StartMenuFolder">
       <Shortcut Id="StartMenuCLI"
-                Name="CloudWorkstation CLI"
+                Name="Prism CLI"
                 Target="[BinFolder]prism.exe"
                 Arguments=""
-                Description="Launch CloudWorkstation command line interface"
-                Icon="CloudWorkstationIcon"
+                Description="Launch Prism command line interface"
+                Icon="PrismIcon"
                 WorkingDirectory="BinFolder" />
       
       <Shortcut Id="StartMenuGUI"
-                Name="CloudWorkstation GUI"
+                Name="Prism GUI"
                 Target="[BinFolder]prism-gui.exe"
-                Description="Launch CloudWorkstation graphical interface"
-                Icon="CloudWorkstationIcon"
+                Description="Launch Prism graphical interface"
+                Icon="PrismIcon"
                 WorkingDirectory="BinFolder" />
       
       <Shortcut Id="StartMenuDocumentation"
-                Name="CloudWorkstation Documentation"
+                Name="Prism Documentation"
                 Target="[DocsFolder]GETTING_STARTED.md"
-                Description="CloudWorkstation documentation and help"
-                Icon="CloudWorkstationIcon" />
+                Description="Prism documentation and help"
+                Icon="PrismIcon" />
       
       <RemoveFolder Id="RemoveStartMenuFolder" Directory="StartMenuFolder" On="uninstall" />
       <RegistryValue Root="HKCU" 
-                     Key="Software\CloudWorkstation\StartMenu" 
+                     Key="Software\Prism\StartMenu" 
                      Name="installed" 
                      Type="integer" 
                      Value="1" 
@@ -201,14 +201,14 @@
     <!-- Desktop Shortcut Component (Optional) -->
     <Component Id="DesktopShortcutComponent" Guid="{88888888-9999-AAAA-BBBB-CCCCCCCCCCCC}" Directory="DesktopFolder">
       <Shortcut Id="DesktopGUI"
-                Name="CloudWorkstation"
+                Name="Prism"
                 Target="[BinFolder]prism-gui.exe"
-                Description="CloudWorkstation: Launch cloud research environments"
-                Icon="CloudWorkstationIcon"
+                Description="Prism: Launch cloud research environments"
+                Icon="PrismIcon"
                 WorkingDirectory="BinFolder" />
       
       <RegistryValue Root="HKCU" 
-                     Key="Software\CloudWorkstation\Desktop" 
+                     Key="Software\Prism\Desktop" 
                      Name="installed" 
                      Type="integer" 
                      Value="1" 
@@ -218,7 +218,7 @@
     <!-- Registry Configuration Component -->
     <Component Id="RegistryComponent" Guid="{99999999-AAAA-BBBB-CCCC-DDDDDDDDDDDD}" Directory="INSTALLFOLDER">
       <!-- Application Registry Settings -->
-      <RegistryKey Root="HKLM" Key="SOFTWARE\CloudWorkstation">
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Prism">
         <RegistryValue Name="InstallPath" Type="string" Value="[INSTALLFOLDER]" />
         <RegistryValue Name="Version" Type="string" Value="0.5.1" />
         <RegistryValue Name="ServiceEnabled" Type="integer" Value="1" />
@@ -228,10 +228,10 @@
       </RegistryKey>
       
       <!-- Uninstall Information -->
-      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\CloudWorkstation">
-        <RegistryValue Name="DisplayName" Type="string" Value="CloudWorkstation v0.5.1" />
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Prism">
+        <RegistryValue Name="DisplayName" Type="string" Value="Prism v0.5.1" />
         <RegistryValue Name="DisplayVersion" Type="string" Value="0.5.1" />
-        <RegistryValue Name="Publisher" Type="string" Value="CloudWorkstation Project" />
+        <RegistryValue Name="Publisher" Type="string" Value="Prism Project" />
         <RegistryValue Name="InstallLocation" Type="string" Value="[INSTALLFOLDER]" />
         <RegistryValue Name="UninstallString" Type="string" Value="msiexec /x [ProductCode]" />
         <RegistryValue Name="QuietUninstallString" Type="string" Value="msiexec /x [ProductCode] /quiet" />
@@ -240,12 +240,12 @@
         <RegistryValue Name="NoRepair" Type="integer" Value="1" />
         <RegistryValue Name="HelpLink" Type="string" Value="https://github.com/scttfrdmn/prism" />
         <RegistryValue Name="URLInfoAbout" Type="string" Value="https://github.com/scttfrdmn/prism" />
-        <RegistryValue Name="Contact" Type="string" Value="CloudWorkstation Project" />
+        <RegistryValue Name="Contact" Type="string" Value="Prism Project" />
         <RegistryValue Name="InstallDate" Type="string" Value="[Date]" />
       </RegistryKey>
       
       <RegistryValue Root="HKLM" 
-                     Key="SOFTWARE\CloudWorkstation" 
+                     Key="SOFTWARE\Prism" 
                      Name="installed" 
                      Type="integer" 
                      Value="1" 
@@ -255,26 +255,26 @@
     <!-- PowerShell Module Registration Component -->
     <Component Id="PowerShellComponent" Guid="{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE}" Directory="BinFolder">
       <File Id="PowerShellModule"
-            Source="$(var.SourceDir)\scripts\CloudWorkstation.psm1"
-            Name="CloudWorkstation.psm1" />
+            Source="$(var.SourceDir)\scripts\Prism.psm1"
+            Name="Prism.psm1" />
       
       <!-- Register PowerShell module in Windows PowerShell -->
-      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\PowerShell\1\Modules\CloudWorkstation">
+      <RegistryKey Root="HKLM" Key="SOFTWARE\Microsoft\PowerShell\1\Modules\Prism">
         <RegistryValue Name="ModuleBase" Type="string" Value="[BinFolder]" />
         <RegistryValue Name="Version" Type="string" Value="0.5.1" />
       </RegistryKey>
     </Component>
     
     <!-- Icon Definition -->
-    <Icon Id="CloudWorkstationIcon" SourceFile="$(var.SourceDir)\assets\cloudworkstation.ico" />
-    <Property Id="ARPPRODUCTICON" Value="CloudWorkstationIcon" />
+    <Icon Id="PrismIcon" SourceFile="$(var.SourceDir)\assets\prism.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PrismIcon" />
     
     <!-- Installation Features -->
     <Feature Id="CoreFeature" 
-             Title="CloudWorkstation Core" 
+             Title="Prism Core" 
              Level="1" 
              Absent="disallow"
-             Description="Core CloudWorkstation binaries and daemon service">
+             Description="Core Prism binaries and daemon service">
       <ComponentRef Id="BinariesComponent" />
       <ComponentRef Id="ConfigDirectoriesComponent" />
       <ComponentRef Id="LogDirectoryComponent" />
@@ -284,7 +284,7 @@
     <Feature Id="ServiceFeature" 
              Title="Windows Service" 
              Level="1"
-             Description="Install CloudWorkstation daemon as a Windows service (auto-start on boot)">
+             Description="Install Prism daemon as a Windows service (auto-start on boot)">
       <ComponentRef Id="ServiceComponent" />
     </Feature>
     
@@ -312,7 +312,7 @@
     <Feature Id="DesktopShortcutFeature" 
              Title="Desktop Shortcut" 
              Level="2"
-             Description="Desktop shortcut for CloudWorkstation GUI">
+             Description="Desktop shortcut for Prism GUI">
       <ComponentRef Id="DesktopShortcutComponent" />
     </Feature>
     
@@ -365,15 +365,15 @@
     </InstallUISequence>
     
     <!-- Launch Conditions -->
-    <Condition Message="CloudWorkstation requires Windows 10 version 1903 or later.">
+    <Condition Message="Prism requires Windows 10 version 1903 or later.">
       <![CDATA[Installed OR (VersionNT >= 1000)]]>
     </Condition>
     
-    <Condition Message="CloudWorkstation requires a 64-bit operating system.">
+    <Condition Message="Prism requires a 64-bit operating system.">
       <![CDATA[Installed OR VersionNT64]]>
     </Condition>
     
-    <Condition Message="CloudWorkstation requires administrator privileges for installation.">
+    <Condition Message="Prism requires administrator privileges for installation.">
       <![CDATA[Installed OR Privileged]]>
     </Condition>
     

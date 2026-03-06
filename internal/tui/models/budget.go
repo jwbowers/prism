@@ -362,7 +362,7 @@ func (m BudgetModel) renderBreakdown() string {
 	b.WriteString("  EFS Storage: (see CLI for details)\n")
 	b.WriteString("  Data Transfer: (see CLI for details)\n\n")
 
-	b.WriteString("💡 Detailed breakdown available via: cws budget breakdown " + project.Name + "\n")
+	b.WriteString("💡 Detailed breakdown available via: prism budget breakdown " + project.Name + "\n")
 
 	return b.String()
 }
@@ -398,7 +398,7 @@ func (m BudgetModel) renderForecast() string {
 		}
 	}
 
-	b.WriteString("\n💡 Detailed forecasting available via: cws budget forecast " + project.Name + "\n")
+	b.WriteString("\n💡 Detailed forecasting available via: prism budget forecast " + project.Name + "\n")
 
 	return b.String()
 }
@@ -423,7 +423,7 @@ func (m BudgetModel) renderSavings() string {
 	}
 
 	b.WriteString(fmt.Sprintf("\nTotal Savings: $%.2f\n", totalSavings))
-	b.WriteString("\n💡 Detailed savings analysis available via: cws budget savings\n")
+	b.WriteString("\n💡 Detailed savings analysis available via: prism budget savings\n")
 
 	return b.String()
 }
@@ -472,8 +472,8 @@ func (m BudgetModel) createBudget() tea.Msg {
 	// Design Decision: Budget creation requires CLI for comprehensive configuration
 	// Rationale: Budgets have many optional parameters (alerts, actions, limits, etc.)
 	// TUI form input would be complex; CLI provides better UX for advanced configuration
-	// Use CLI command: cws budget create <project> <amount> [--alert ...] [--action ...]
-	return BudgetDataMsg{Error: fmt.Errorf("budget creation via TUI not implemented - use CLI: cws budget create <project> <amount>")}
+	// Use CLI command: prism budget create <project> <amount> [--alert ...] [--action ...]
+	return BudgetDataMsg{Error: fmt.Errorf("budget creation via TUI not implemented - use CLI: prism budget create <project> <amount>")}
 }
 
 // renderTabBar renders a tab bar for navigation

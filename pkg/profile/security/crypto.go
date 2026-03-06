@@ -198,7 +198,7 @@ func deriveSalt() []byte {
 		username = currentUser.Username
 	}
 
-	saltString := fmt.Sprintf("cloudworkstation-salt-%s-%s", hostname, username)
+	saltString := fmt.Sprintf("prism-salt-%s-%s", hostname, username)
 	hash := sha256.Sum256([]byte(saltString))
 	return hash[:]
 }

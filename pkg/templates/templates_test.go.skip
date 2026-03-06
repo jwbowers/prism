@@ -30,10 +30,10 @@ func TestDefaultTemplateDirs(t *testing.T) {
 	assert.NotEmpty(t, dirs, "Should return template directories")
 
 	// Check for expected path patterns
-	homeTemplateDir := filepath.Join(tmpDir, ".cloudworkstation", "templates")
+	homeTemplateDir := filepath.Join(tmpDir, ".prism", "templates")
 	assert.Contains(t, dirs, homeTemplateDir, "Should include home template directory")
 
-	systemTemplateDir := "/etc/cloudworkstation/templates"
+	systemTemplateDir := "/etc/prism/templates"
 	assert.Contains(t, dirs, systemTemplateDir, "Should include system template directory")
 
 	t.Logf("Found %d template directories: %v", len(dirs), dirs)
@@ -55,11 +55,11 @@ func TestDefaultTemplateDirsWithExistingDirectories(t *testing.T) {
 	os.Setenv("HOMEBREW_PREFIX", tmpDir)
 
 	// Create some template directories
-	homeTemplateDir := filepath.Join(tmpDir, ".cloudworkstation", "templates")
+	homeTemplateDir := filepath.Join(tmpDir, ".prism", "templates")
 	err := os.MkdirAll(homeTemplateDir, 0755)
 	require.NoError(t, err)
 
-	homebrewTemplateDir := filepath.Join(tmpDir, "opt", "cloudworkstation", "share", "templates")
+	homebrewTemplateDir := filepath.Join(tmpDir, "opt", "prism", "share", "templates")
 	err = os.MkdirAll(homebrewTemplateDir, 0755)
 	require.NoError(t, err)
 

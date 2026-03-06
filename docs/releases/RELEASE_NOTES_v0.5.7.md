@@ -107,7 +107,7 @@ files:
 - Fixed smoke test failure for GUI version extraction
 - Wails binaries don't support `--version` flag
 - Now checks GUI package.json directly
-- Handles both cmd/prism-gui and cmd/cws-gui locations
+- Handles both cmd/prism-gui and cmd/prism-gui locations
 - All version checks passing
 
 ---

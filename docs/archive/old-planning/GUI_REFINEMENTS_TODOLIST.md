@@ -345,7 +345,7 @@ jobs:
       # Build Wails application
       - name: Build GUI
         run: |
-          cd cmd/cws-gui/frontend
+          cd cmd/prism-gui/frontend
           npm ci
           npm run build
           

@@ -413,7 +413,7 @@ func (g *PrismGUI) showStartConfirmation(instanceName string) {
 ## Files Modified
 
 ### **Core GUI Instance Implementation**
-- `cmd/cws-gui/main.go` - Complete Instance management section enhancement
+- `cmd/prism-gui/main.go` - Complete Instance management section enhancement
   - Added `instancesContainer` field for dynamic instance updates
   - Implemented `initializeInstancesContainer()` for proper container lifecycle
   - Enhanced `createInstancesView()` for dynamic loading and navigation

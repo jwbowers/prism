@@ -32,7 +32,7 @@ func NewResearchUserProvisioner(userMgr *ResearchUserManager, uidMapper *Profile
 		uidMapper:           uidMapper,
 		sshKeyMgr:           sshKeyMgr,
 		provisioningTimeout: 10 * time.Minute,
-		scriptDir:           "/tmp/cws-provisioning",
+		scriptDir:           "/tmp/prism-provisioning",
 	}
 }
 

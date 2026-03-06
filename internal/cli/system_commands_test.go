@@ -458,7 +458,7 @@ func TestGetDaemonVersion(t *testing.T) {
 // TestDaemonConfigFileOperations tests config file loading and saving
 func TestDaemonConfigFileOperations(t *testing.T) {
 	// Create temporary directory for config testing
-	tempDir, err := os.MkdirTemp("", "cws-test-config-*")
+	tempDir, err := os.MkdirTemp("", "prism-test-config-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tempDir) }()
 

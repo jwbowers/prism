@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CloudWorkstation documentation standards checker
+# Prism documentation standards checker
 # Validates documentation consistency and standards
 
 set -e
 
-echo "📚 Checking CloudWorkstation documentation standards..."
+echo "📚 Checking Prism documentation standards..."
 
 # Color functions
 red() { echo -e "\033[31m$*\033[0m"; }
@@ -78,7 +78,7 @@ echo ""
 echo "Checking README format..."
 
 # Check README format
-if grep -q "# CloudWorkstation" README.md; then
+if grep -q "# Prism" README.md; then
     green "✓ README has proper title"
 else
     red "✗ README missing proper title"

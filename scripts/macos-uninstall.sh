@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CloudWorkstation macOS Uninstaller
-# Removes all CloudWorkstation components from macOS system
+# Prism macOS Uninstaller
+# Removes all Prism components from macOS system
 # Usage: ./scripts/macos-uninstall.sh [--complete] [--keep-data]
 
 set -euo pipefail
@@ -10,8 +10,8 @@ set -euo pipefail
 readonly INSTALL_DIR="/usr/local/bin"
 readonly PRISM_DIR="$HOME/.prism"
 readonly LAUNCH_AGENT_PLIST="$HOME/Library/LaunchAgents/com.prism.daemon.plist"
-readonly APP_APPLICATIONS="/Applications/CloudWorkstation.app"
-readonly DESKTOP_SHORTCUT="$HOME/Desktop/CloudWorkstation.command"
+readonly APP_APPLICATIONS="/Applications/Prism.app"
+readonly DESKTOP_SHORTCUT="$HOME/Desktop/Prism.command"
 
 # Uninstall options
 COMPLETE_REMOVAL=false
@@ -29,7 +29,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h|--help)
-            echo "CloudWorkstation macOS Uninstaller"
+            echo "Prism macOS Uninstaller"
             echo ""
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -77,7 +77,7 @@ log_error() {
 show_confirmation_dialog() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation Uninstall" buttons {"Cancel", "Uninstall"} default button "Cancel" with icon caution
+        display dialog "$message" with title "Prism Uninstall" buttons {"Cancel", "Uninstall"} default button "Cancel" with icon caution
 EOD
 }
 
@@ -85,13 +85,13 @@ EOD
 show_completion_dialog() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation Uninstall Complete" buttons {"OK"} default button "OK" with icon note
+        display dialog "$message" with title "Prism Uninstall Complete" buttons {"OK"} default button "OK" with icon note
 EOD
 }
 
 # Stop and unload daemon
 stop_daemon() {
-    log_info "Stopping CloudWorkstation daemon..."
+    log_info "Stopping Prism daemon..."
     
     # Stop any running daemon processes
     if pgrep -f "prismd" > /dev/null; then
@@ -161,7 +161,7 @@ remove_app_bundle() {
     if [[ -d "$APP_APPLICATIONS" ]]; then
         # Stop the application if it's running
         osascript << 'EOF' 2>/dev/null || true
-            tell application "CloudWorkstation" to quit
+            tell application "Prism" to quit
 EOF
         sleep 1
         
@@ -197,11 +197,11 @@ clean_shell_config() {
             # Create backup
             cp "$config_file" "$config_file.bak.$(date +%Y%m%d%H%M%S)"
             
-            # Remove CloudWorkstation-related lines
+            # Remove Prism-related lines
             if [[ "$config_file" == *"config.fish" ]]; then
-                sed -i '' '/set -gx PATH.*cws/d; /CloudWorkstation/d' "$config_file" 2>/dev/null || true
+                sed -i '' '/set -gx PATH.*cws/d; /Prism/d' "$config_file" 2>/dev/null || true
             else
-                sed -i '' '/export PATH.*cws/d; /CloudWorkstation/d' "$config_file" 2>/dev/null || true
+                sed -i '' '/export PATH.*cws/d; /Prism/d' "$config_file" 2>/dev/null || true
             fi
             
             cleaned_files+=("$(basename "$config_file")")
@@ -222,7 +222,7 @@ remove_user_data() {
     
     local removed_items=()
     
-    # Remove CloudWorkstation directory
+    # Remove Prism directory
     if [[ -d "$PRISM_DIR" ]]; then
         rm -rf "$PRISM_DIR"
         removed_items+=(".prism directory")
@@ -243,7 +243,7 @@ remove_user_data() {
     done
     
     # Remove application support files
-    local app_support_dir="$HOME/Library/Application Support/CloudWorkstation"
+    local app_support_dir="$HOME/Library/Application Support/Prism"
     if [[ -d "$app_support_dir" ]]; then
         rm -rf "$app_support_dir"
         removed_items+=("Application Support files")
@@ -270,7 +270,7 @@ remove_logs_and_temp() {
     local temp_locations=(
         "/tmp/prismd.log"
         "/tmp/prism-*"
-        "$HOME/Library/Logs/CloudWorkstation"
+        "$HOME/Library/Logs/Prism"
     )
     
     local removed_items=()
@@ -330,17 +330,17 @@ verify_removal() {
 
 # Main uninstall function
 main() {
-    log_info "CloudWorkstation macOS Uninstaller"
+    log_info "Prism macOS Uninstaller"
     log_info "Complete removal: $COMPLETE_REMOVAL"
     log_info "Keep user data: $KEEP_USER_DATA"
     
     # Show confirmation dialog
-    local confirmation_message="Are you sure you want to uninstall CloudWorkstation?"
+    local confirmation_message="Are you sure you want to uninstall Prism?"
     
     if [[ "$COMPLETE_REMOVAL" == true ]]; then
         confirmation_message="$confirmation_message
 
-WARNING: This will remove ALL CloudWorkstation data including:
+WARNING: This will remove ALL Prism data including:
 • Application files and binaries
 • User data and AWS profiles
 • Configuration and preferences
@@ -371,7 +371,7 @@ This will remove application files but keep user data that you can restore later
         exit 0
     fi
     
-    log_info "Starting CloudWorkstation uninstallation..."
+    log_info "Starting Prism uninstallation..."
     
     # Stop daemon and services first
     stop_daemon
@@ -389,7 +389,7 @@ This will remove application files but keep user data that you can restore later
     elif [[ "$KEEP_USER_DATA" == false ]]; then
         # Default: remove data but ask for confirmation
         local data_response
-        data_response=$(show_confirmation_dialog "Do you also want to remove your CloudWorkstation data and AWS profiles? Choose 'Cancel' to keep your data for future installations.") || true
+        data_response=$(show_confirmation_dialog "Do you also want to remove your Prism data and AWS profiles? Choose 'Cancel' to keep your data for future installations.") || true
         
         if [[ "$data_response" == *"Uninstall"* ]]; then
             remove_user_data
@@ -404,15 +404,15 @@ This will remove application files but keep user data that you can restore later
     
     # Verify removal
     if verify_removal; then
-        show_completion_dialog "CloudWorkstation has been successfully uninstalled.
+        show_completion_dialog "Prism has been successfully uninstalled.
 
-If you kept your user data, it will be restored if you reinstall CloudWorkstation in the future.
+If you kept your user data, it will be restored if you reinstall Prism in the future.
 
-Thank you for using CloudWorkstation!"
+Thank you for using Prism!"
         
-        log_success "CloudWorkstation uninstallation completed successfully!"
+        log_success "Prism uninstallation completed successfully!"
     else
-        show_completion_dialog "CloudWorkstation uninstallation completed with some warnings. Please check the console for details."
+        show_completion_dialog "Prism uninstallation completed with some warnings. Please check the console for details."
         log_warning "Uninstallation completed with warnings"
     fi
     
@@ -427,7 +427,7 @@ Thank you for using CloudWorkstation!"
         echo "• User data: Preserved in $PRISM_DIR"
     fi
     echo ""
-    echo "To reinstall CloudWorkstation, download the latest DMG from:"
+    echo "To reinstall Prism, download the latest DMG from:"
     echo "https://github.com/scttfrdmn/prism/releases"
 }
 

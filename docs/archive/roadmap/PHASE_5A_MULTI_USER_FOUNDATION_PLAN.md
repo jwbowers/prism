@@ -22,7 +22,7 @@ Phase 5A represents the foundation for Prism's evolution into a comprehensive mu
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │ CLI Client  │  │ TUI Client  │  │ GUI Client  │
-│ (cmd/cws)   │  │ (prism tui)   │  │ (cmd/cws-gui)│
+│ (cmd/cws)   │  │ (prism tui)   │  │ (cmd/prism-gui)│
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │                │                │
        └────────────────┼────────────────┘

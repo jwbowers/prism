@@ -33,7 +33,7 @@ body:
       description: Which part of the codebase?
       options:
         - CLI (cmd/cws, internal/cli)
-        - GUI (cmd/cws-gui)
+        - GUI (cmd/prism-gui)
         - TUI (internal/tui)
         - Daemon (cmd/prismd, pkg/daemon)
         - AWS Integration (pkg/aws)

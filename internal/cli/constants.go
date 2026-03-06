@@ -22,10 +22,10 @@ const (
 	DefaultDaemonPort = "8947"
 
 	// DaemonURLEnvVar is the environment variable for daemon URL override
-	DaemonURLEnvVar = "CWSD_URL"
+	DaemonURLEnvVar = "PRISMD_URL"
 
 	// AutoStartDisableEnvVar is the environment variable to disable auto-daemon startup
-	AutoStartDisableEnvVar = "CWS_NO_AUTO_START"
+	AutoStartDisableEnvVar = "PRISM_NO_AUTO_START"
 )
 
 // =============================================================================

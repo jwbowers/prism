@@ -300,7 +300,7 @@ prism templates --lang en
 
 **React i18n Integration**:
 ```typescript
-// cmd/cws-gui/frontend/src/i18n.ts
+// cmd/prism-gui/frontend/src/i18n.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 

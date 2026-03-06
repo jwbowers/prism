@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# CloudWorkstation Linux Service Manager
-# Comprehensive service management for CloudWorkstation daemon on Linux systems
+# Prism Linux Service Manager
+# Comprehensive service management for Prism daemon on Linux systems
 
 set -euo pipefail
 
@@ -86,7 +86,7 @@ create_service_user() {
         useradd --system --gid "$SERVICE_USER" \
                 --home-dir "$STATE_DIR" \
                 --shell /usr/sbin/nologin \
-                --comment "CloudWorkstation Daemon" "$SERVICE_USER"
+                --comment "Prism Daemon" "$SERVICE_USER"
         green "✅ Created user: $SERVICE_USER"
     else
         log "User $SERVICE_USER already exists"
@@ -126,7 +126,7 @@ generate_systemd_service() {
     
     cat > "$SYSTEMD_SERVICE_FILE" << EOF
 [Unit]
-Description=CloudWorkstation Daemon - Enterprise Research Management Platform
+Description=Prism Daemon - Enterprise Research Management Platform
 Documentation=https://github.com/scttfrdmn/prism
 After=network-online.target multi-user.target
 Wants=network-online.target
@@ -219,7 +219,7 @@ EOF
     # AWS credentials template
     if [[ ! -f "$CONFIG_DIR/aws/credentials" ]]; then
         cat > "$CONFIG_DIR/aws/credentials" << 'EOF'
-# AWS credentials for CloudWorkstation
+# AWS credentials for Prism
 # Replace with your actual AWS credentials
 [default]
 aws_access_key_id = YOUR_ACCESS_KEY_HERE
@@ -288,7 +288,7 @@ setup_ssh_keys() {
 install_service() {
     local init_system="$(detect_init_system)"
     
-    log "Installing CloudWorkstation service ($init_system)..."
+    log "Installing Prism service ($init_system)..."
     require_root
     
     case "$init_system" in
@@ -299,7 +299,7 @@ install_service() {
             fi
             
             if ! daemon_binary_exists; then
-                error_exit "CloudWorkstation daemon not found at $DAEMON_PATH. Please install CloudWorkstation first."
+                error_exit "Prism daemon not found at $DAEMON_PATH. Please install Prism first."
             fi
             
             create_service_user
@@ -311,7 +311,7 @@ install_service() {
             systemctl daemon-reload
             systemctl enable "$SYSTEMD_SERVICE_NAME"
             
-            green "✅ CloudWorkstation service installed successfully"
+            green "✅ Prism service installed successfully"
             log "Service will start automatically on system boot"
             
             # Start the service
@@ -327,7 +327,7 @@ install_service() {
 uninstall_service() {
     local init_system="$(detect_init_system)"
     
-    log "Uninstalling CloudWorkstation service ($init_system)..."
+    log "Uninstalling Prism service ($init_system)..."
     require_root
     
     case "$init_system" in
@@ -346,7 +346,7 @@ uninstall_service() {
             systemctl daemon-reload
             systemctl reset-failed "$SYSTEMD_SERVICE_NAME" || true
             
-            green "✅ CloudWorkstation service uninstalled successfully"
+            green "✅ Prism service uninstalled successfully"
             
             yellow "⚠️  Configuration and data directories preserved:"
             echo "   Config: $CONFIG_DIR"
@@ -354,7 +354,7 @@ uninstall_service() {
             echo "   Logs: $LOG_DIR"
             echo "   User: $SERVICE_USER"
             echo
-            echo "To completely remove CloudWorkstation:"
+            echo "To completely remove Prism:"
             echo "   sudo userdel $SERVICE_USER"
             echo "   sudo groupdel $SERVICE_USER"
             echo "   sudo rm -rf $CONFIG_DIR $STATE_DIR $LOG_DIR"
@@ -367,7 +367,7 @@ uninstall_service() {
 
 # Reinstall service (update configuration)
 reinstall_service() {
-    log "Reinstalling CloudWorkstation service..."
+    log "Reinstalling Prism service..."
     
     if systemd_service_exists; then
         uninstall_service
@@ -386,9 +386,9 @@ start_service() {
                 error_exit "Service not installed. Run 'install' first."
             fi
             
-            log "Starting CloudWorkstation service..."
+            log "Starting Prism service..."
             systemctl start "$SYSTEMD_SERVICE_NAME"
-            green "✅ CloudWorkstation service started"
+            green "✅ Prism service started"
             ;;
         *)
             error_exit "Unsupported init system: $init_system"
@@ -402,9 +402,9 @@ stop_service() {
     
     case "$init_system" in
         systemd)
-            log "Stopping CloudWorkstation service..."
+            log "Stopping Prism service..."
             systemctl stop "$SYSTEMD_SERVICE_NAME" 2>/dev/null || true
-            green "✅ CloudWorkstation service stopped"
+            green "✅ Prism service stopped"
             ;;
         *)
             error_exit "Unsupported init system: $init_system"
@@ -414,7 +414,7 @@ stop_service() {
 
 # Restart service
 restart_service() {
-    log "Restarting CloudWorkstation service..."
+    log "Restarting Prism service..."
     stop_service
     sleep 2
     start_service
@@ -424,7 +424,7 @@ restart_service() {
 show_status() {
     local init_system="$(detect_init_system)"
     
-    log "CloudWorkstation Service Status ($init_system):"
+    log "Prism Service Status ($init_system):"
     echo
     
     case "$init_system" in
@@ -481,7 +481,7 @@ show_logs() {
                 return
             fi
             
-            log "Showing CloudWorkstation service logs..."
+            log "Showing Prism service logs..."
             echo
             journalctl -u "$SYSTEMD_SERVICE_NAME" --no-pager
             ;;
@@ -502,7 +502,7 @@ follow_logs() {
                 return
             fi
             
-            log "Following CloudWorkstation service logs... (Press Ctrl+C to stop)"
+            log "Following Prism service logs... (Press Ctrl+C to stop)"
             echo
             journalctl -u "$SYSTEMD_SERVICE_NAME" -f
             ;;
@@ -516,7 +516,7 @@ follow_logs() {
 validate_service() {
     local init_system="$(detect_init_system)"
     
-    log "Validating CloudWorkstation service configuration..."
+    log "Validating Prism service configuration..."
     echo
     
     local errors=0
@@ -638,14 +638,14 @@ validate_service() {
 # Show help
 show_help() {
     cat << 'EOF'
-CloudWorkstation Linux Service Manager
+Prism Linux Service Manager
 
 USAGE:
     linux-service-manager.sh <command>
 
 COMMANDS:
-    install     Install and start CloudWorkstation service (requires sudo)
-    uninstall   Stop and uninstall CloudWorkstation service (requires sudo) 
+    install     Install and start Prism service (requires sudo)
+    uninstall   Stop and uninstall Prism service (requires sudo) 
     reinstall   Update service configuration (uninstall + install, requires sudo)
     start       Start the service (requires sudo)
     stop        Stop the service (requires sudo)

@@ -418,7 +418,7 @@ exit 0
 - v0.5.6: Complete Prism Rebrand
 - Project renamed from CloudWorkStation to Prism
 - Binary rename: cws/prismd → prism/prismd
-- Configuration directory: .cloudworkstation → .prism
+- Configuration directory: .prism → .prism
 - Module path update: github.com/scttfrdmn/prism
 - 29,225 files updated across 3 major PRs
 

@@ -411,7 +411,7 @@ func (g *PrismGUI) createSettingsView() *fyne.Container {
 ## Files Modified
 
 ### **Core GUI Daemon Monitoring Implementation**
-- `cmd/cws-gui/main.go` - Complete daemon status monitoring system
+- `cmd/prism-gui/main.go` - Complete daemon status monitoring system
   - Added `daemonStatusContainer` field for dynamic daemon status updates
   - Implemented `initializeDaemonStatusContainer()` for proper container lifecycle
   - Enhanced `createSettingsView()` for daemon monitoring priority and refresh controls

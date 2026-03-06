@@ -31,7 +31,7 @@ FAILURES=0
 
 # Check package.json files
 echo "Checking package.json files..."
-for pkg_json in frontend/package.json cmd/cws-gui/frontend/package.json; do
+for pkg_json in frontend/package.json cmd/prism-gui/frontend/package.json; do
     if [ -f "$pkg_json" ]; then
         PKG_VERSION=$(grep -E '^\s*"version":\s*"' "$pkg_json" | sed -E 's/.*"version":\s*"([^"]+)".*/\1/')
         if [ "$PKG_VERSION" = "$CODE_VERSION" ]; then
@@ -83,28 +83,28 @@ check_binary_version "bin/prism" "CLI (prism)"
 
 # GUI version check - Wails binary doesn't support --version flag
 # Check if GUI binary exists and verify against package.json
-if [ -f "bin/cws-gui" ]; then
+if [ -f "bin/prism-gui" ]; then
     # GUI version comes from package.json - try both possible locations
     GUI_PKG_JSON=""
     if [ -f "cmd/prism-gui/frontend/package.json" ]; then
         GUI_PKG_JSON="cmd/prism-gui/frontend/package.json"
-    elif [ -f "cmd/cws-gui/frontend/package.json" ]; then
-        GUI_PKG_JSON="cmd/cws-gui/frontend/package.json"
+    elif [ -f "cmd/prism-gui/frontend/package.json" ]; then
+        GUI_PKG_JSON="cmd/prism-gui/frontend/package.json"
     fi
 
     if [ -n "$GUI_PKG_JSON" ]; then
         PKG_VERSION=$(grep '"version"' "$GUI_PKG_JSON" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?' | head -1)
         if [ "$PKG_VERSION" = "$CODE_VERSION" ]; then
-            echo -e "  ${GREEN}✓${NC} GUI (cws-gui): v$PKG_VERSION (from package.json)"
+            echo -e "  ${GREEN}✓${NC} GUI (prism-gui): v$PKG_VERSION (from package.json)"
         else
-            echo -e "  ${RED}✗${NC} GUI (cws-gui): package.json has v$PKG_VERSION (expected $CODE_VERSION)"
+            echo -e "  ${RED}✗${NC} GUI (prism-gui): package.json has v$PKG_VERSION (expected $CODE_VERSION)"
             FAILURES=$((FAILURES + 1))
         fi
     else
-        echo -e "  ${YELLOW}⚠${NC}  GUI (cws-gui): package.json not found"
+        echo -e "  ${YELLOW}⚠${NC}  GUI (prism-gui): package.json not found"
     fi
 else
-    echo -e "  ${YELLOW}⚠${NC}  GUI (cws-gui): binary not found (run 'make build')"
+    echo -e "  ${YELLOW}⚠${NC}  GUI (prism-gui): binary not found (run 'make build')"
 fi
 
 echo ""

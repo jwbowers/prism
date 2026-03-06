@@ -53,7 +53,7 @@ func ExportProfiles(profileManager *profile.ManagerEnhanced, profiles []profile.
 	}
 
 	// Create temporary directory for export files
-	tempDir, err := os.MkdirTemp("", "cws-profile-export")
+	tempDir, err := os.MkdirTemp("", "prism-profile-export")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
@@ -151,7 +151,7 @@ func ImportProfiles(profileManager *profile.ManagerEnhanced, inputPath string, o
 }
 
 func prepareImportDirectory(inputPath string, options ImportOptions) (string, error) {
-	tempDir, err := os.MkdirTemp("", "cws-profile-import")
+	tempDir, err := os.MkdirTemp("", "prism-profile-import")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temporary directory: %w", err)
 	}

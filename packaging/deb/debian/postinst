@@ -1,5 +1,5 @@
 #!/bin/sh
-# CloudWorkstation post-installation script
+# Prism post-installation script
 # This script is run after the package is installed
 
 set -e
@@ -8,16 +8,16 @@ set -e
 . /usr/share/debconf/confmodule
 
 # Package name
-PACKAGE="cloudworkstation"
-USER="cloudworkstation"
-GROUP="cloudworkstation"
-HOME_DIR="/var/lib/cloudworkstation"
-LOG_DIR="/var/log/cloudworkstation"
-CONFIG_DIR="/etc/cloudworkstation"
+PACKAGE="prism"
+USER="prism"
+GROUP="prism"
+HOME_DIR="/var/lib/prism"
+LOG_DIR="/var/log/prism"
+CONFIG_DIR="/etc/prism"
 
 case "$1" in
     configure)
-        # Create cloudworkstation system user and group if they don't exist
+        # Create prism system user and group if they don't exist
         if ! getent group "$GROUP" >/dev/null 2>&1; then
             addgroup --system "$GROUP"
         fi
@@ -26,7 +26,7 @@ case "$1" in
             adduser --system --ingroup "$GROUP" --home "$HOME_DIR" \
                     --no-create-home --disabled-login \
                     --shell /usr/sbin/nologin \
-                    --gecos "CloudWorkstation System User" "$USER"
+                    --gecos "Prism System User" "$USER"
         fi
         
         # Create and set ownership of directories
@@ -63,40 +63,40 @@ case "$1" in
         # Enable systemd service
         if [ -d /run/systemd/system ]; then
             systemctl --system daemon-reload >/dev/null || true
-            if ! systemctl is-enabled cloudworkstation.service >/dev/null 2>&1; then
-                systemctl enable cloudworkstation.service >/dev/null || true
+            if ! systemctl is-enabled prism.service >/dev/null 2>&1; then
+                systemctl enable prism.service >/dev/null || true
             fi
             
             # Create systemd drop-in directory for local overrides
-            mkdir -p /etc/systemd/system/cloudworkstation.service.d
+            mkdir -p /etc/systemd/system/prism.service.d
         fi
         
         # Display installation success message
         cat << 'EOF'
 
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                   CloudWorkstation Successfully Installed                    ║
+║                   Prism Successfully Installed                    ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                              ║
-║  🎉 CloudWorkstation v0.4.2 has been installed successfully!                ║
+║  🎉 Prism v0.4.2 has been installed successfully!                ║
 ║                                                                              ║
 ║  📋 What's installed:                                                        ║
 ║     ✅ Core binaries: cws, prismd                                              ║
-║     ✅ Systemd service: cloudworkstation.service                             ║
-║     ✅ Configuration: /etc/cloudworkstation/                                 ║
-║     ✅ User account: cloudworkstation (system user)                          ║
+║     ✅ Systemd service: prism.service                             ║
+║     ✅ Configuration: /etc/prism/                                 ║
+║     ✅ User account: prism (system user)                          ║
 ║                                                                              ║
 ║  🚀 Next steps:                                                              ║
 ║                                                                              ║
 ║     1. Configure AWS credentials:                                            ║
-║        sudo cp /etc/cloudworkstation/aws/credentials.template \             ║
-║               /etc/cloudworkstation/aws/credentials                          ║
-║        sudo cp /etc/cloudworkstation/aws/config.template \                  ║
-║               /etc/cloudworkstation/aws/config                               ║
-║        sudo nano /etc/cloudworkstation/aws/credentials                      ║
+║        sudo cp /etc/prism/aws/credentials.template \             ║
+║               /etc/prism/aws/credentials                          ║
+║        sudo cp /etc/prism/aws/config.template \                  ║
+║               /etc/prism/aws/config                               ║
+║        sudo nano /etc/prism/aws/credentials                      ║
 ║                                                                              ║
 ║     2. Start the service:                                                    ║
-║        sudo systemctl start cloudworkstation                                ║
+║        sudo systemctl start prism                                ║
 ║                                                                              ║
 ║     3. Test the installation:                                                ║
 ║        cws --version                                                         ║
@@ -126,17 +126,17 @@ esac
 # Automatically added by dh_systemd_enable/11.1.6ubuntu2
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
     # This will only remove masks created by d-s-h on package removal.
-    deb-systemd-helper unmask 'cloudworkstation.service' >/dev/null || true
+    deb-systemd-helper unmask 'prism.service' >/dev/null || true
 
     # was-enabled defaults to true, so new installations run enable.
-    if deb-systemd-helper --quiet was-enabled 'cloudworkstation.service'; then
+    if deb-systemd-helper --quiet was-enabled 'prism.service'; then
         # Enables the unit on first installation, creates new
         # symlinks on upgrades if the unit file has changed.
-        deb-systemd-helper enable 'cloudworkstation.service' >/dev/null || true
+        deb-systemd-helper enable 'prism.service' >/dev/null || true
     else
         # Update the statefile to add new symlinks (if any), which need to be
         # cleaned up on purge. Also remove old symlinks.
-        deb-systemd-helper update-state 'cloudworkstation.service' >/dev/null || true
+        deb-systemd-helper update-state 'prism.service' >/dev/null || true
     fi
 fi
 # End automatically added section

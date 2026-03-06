@@ -55,7 +55,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Override with environment variables
-	if url := os.Getenv("CWSD_URL"); url != "" {
+	if url := os.Getenv("PRISMD_URL"); url != "" {
 		config.Daemon.URL = url
 	}
 	if profile := os.Getenv("AWS_PROFILE"); profile != "" {

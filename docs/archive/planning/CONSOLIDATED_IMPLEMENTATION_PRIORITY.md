@@ -291,7 +291,7 @@ Final polish and documentation:
 **Priority**: LOW - cleanup task
 
 ### 7.4 CLI/TUI/GUI Polish (9-12 placeholders) ⭐
-**Files**: internal/cli/, internal/tui/, cmd/cws-gui/
+**Files**: internal/cli/, internal/tui/, cmd/prism-gui/
 **Issues**: Hardcoded policies, default ports, visualization placeholders
 
 **Impact**: LOW - UIs functional with limitations

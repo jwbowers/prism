@@ -150,7 +150,7 @@ func (m RepositoriesModel) fetchRepositories() tea.Msg {
 	repos := []types.TemplateRepository{
 		{
 			Name:     "default",
-			URL:      "https://cloudworkstation.example.com/templates",
+			URL:      "https://prism.example.com/templates",
 			Priority: 100,
 			Enabled:  true,
 		},

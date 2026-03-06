@@ -40,9 +40,9 @@ func NewRegistry(config *MarketplaceConfig) *Registry {
 		categories:     DefaultCategories(),
 		featured:       make([]*CommunityTemplate, 0),
 		lastSync:       time.Now(),
-		templatesTable: "cloudworkstation-templates",
-		reviewsTable:   "cloudworkstation-reviews",
-		analyticsTable: "cloudworkstation-analytics",
+		templatesTable: "prism-templates",
+		reviewsTable:   "prism-reviews",
+		analyticsTable: "prism-analytics",
 	}
 }
 
@@ -438,7 +438,7 @@ func (r *Registry) UpdateTemplate(templateID string, update *TemplateUpdate) err
 	template.UpdatedAt = time.Now()
 
 	// Update cache
-	// DynamoDB integration: UpdateItem on cloudworkstation-templates table
+	// DynamoDB integration: UpdateItem on prism-templates table
 	r.templateCache[templateID] = template
 
 	return nil
@@ -706,7 +706,7 @@ func (r *Registry) ForkTemplate(templateID string, fork *TemplateFork) (*Communi
 }
 
 // GetTemplateAnalytics returns comprehensive analytics for a template
-// DynamoDB integration: Query cloudworkstation-analytics with aggregation functions
+// DynamoDB integration: Query prism-analytics with aggregation functions
 func (r *Registry) GetTemplateAnalytics(templateID string) (*TemplateAnalytics, error) {
 	template, exists := r.templateCache[templateID]
 	if !exists {

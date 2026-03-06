@@ -56,7 +56,7 @@ func setupLocalstackBuilder(t *testing.T) *Builder {
 	// Create mock registry client
 	registryClient := &Registry{
 		SSMClient:       ssmClient,
-		ParameterPrefix: "/cloudworkstation/ami/",
+		ParameterPrefix: "/prism/ami/",
 	}
 
 	// Create base AMIs map for testing
@@ -261,7 +261,7 @@ func TestAMIRegistry(t *testing.T) {
 
 	registry := &Registry{
 		SSMClient:       ssmClient,
-		ParameterPrefix: "/cloudworkstation/ami/test/",
+		ParameterPrefix: "/prism/ami/test/",
 	}
 
 	// Test reference registration

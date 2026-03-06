@@ -1,5 +1,5 @@
 [Unit]
-Description=CloudWorkstation Daemon - Autonomous Research Instance Management
+Description=Prism Daemon - Autonomous Research Instance Management
 Documentation=https://github.com/scttfrdmn/prism
 Documentation=man:prismd(1)
 After=network-online.target
@@ -11,8 +11,8 @@ StartLimitBurst=3
 [Service]
 # Service configuration
 Type=notify
-User=cloudworkstation
-Group=cloudworkstation
+User=prism
+Group=prism
 ExecStart=/usr/bin/prismd --autonomous
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStop=/bin/kill -TERM $MAINPID
@@ -22,19 +22,19 @@ RestartSec=5s
 Restart=always
 
 # Environment variables
-Environment=HOME=/var/lib/cloudworkstation
-Environment=XDG_CONFIG_HOME=/var/lib/cloudworkstation/.config
-Environment=CLOUDWORKSTATION_CONFIG_DIR=/etc/cloudworkstation
+Environment=HOME=/var/lib/prism
+Environment=XDG_CONFIG_HOME=/var/lib/prism/.config
+Environment=CLOUDWORKSTATION_CONFIG_DIR=/etc/prism
 Environment=PATH=/usr/bin:/bin:/usr/sbin:/sbin
 
 # AWS configuration paths
-Environment=AWS_CONFIG_FILE=/etc/cloudworkstation/aws/config
-Environment=AWS_SHARED_CREDENTIALS_FILE=/etc/cloudworkstation/aws/credentials
+Environment=AWS_CONFIG_FILE=/etc/prism/aws/config
+Environment=AWS_SHARED_CREDENTIALS_FILE=/etc/prism/aws/credentials
 
 # Logging configuration
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=cloudworkstation
+SyslogIdentifier=prism
 
 # Resource limits
 LimitNOFILE=65536
@@ -65,10 +65,10 @@ SystemCallFilter=@system-service
 SystemCallFilter=~@debug @mount @cpu-emulation @obsolete @privileged @resources
 
 # File system access - Minimal required permissions
-ReadWritePaths=/var/lib/cloudworkstation
-ReadWritePaths=/var/log/cloudworkstation
+ReadWritePaths=/var/lib/prism
+ReadWritePaths=/var/log/prism
 ReadWritePaths=/tmp
-ReadOnlyPaths=/etc/cloudworkstation
+ReadOnlyPaths=/etc/prism
 ReadOnlyPaths=/usr/bin/prismd
 
 # Network security
@@ -85,7 +85,7 @@ KeyringMode=private
 
 [Install]
 WantedBy=multi-user.target
-Also=cloudworkstation-health.timer
+Also=prism-health.timer
 
 # Optional health check timer configuration
-# Create /etc/systemd/system/cloudworkstation-health.timer for periodic health checks
+# Create /etc/systemd/system/prism-health.timer for periodic health checks

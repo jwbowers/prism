@@ -69,7 +69,7 @@ jobs:
         run: |
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/cws-${{ matrix.os }}-${{ matrix.arch }} ./cmd/cws
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/prismd-${{ matrix.os }}-${{ matrix.arch }} ./cmd/prismd
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/cws-gui-${{ matrix.os }}-${{ matrix.arch }} ./cmd/cws-gui
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o bin/prism-gui-${{ matrix.os }}-${{ matrix.arch }} ./cmd/prism-gui
         shell: bash
 
       - name: Test binary execution (Linux/macOS)
@@ -162,12 +162,12 @@ jobs:
         run: |
           export DISPLAY=:99
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          go test -v ./cmd/cws-gui/...
+          go test -v ./cmd/prism-gui/...
 
       - name: Run GUI tests (macOS/Windows)
         if: runner.os != 'Linux'
         run: |
-          go test -v ./cmd/cws-gui/...
+          go test -v ./cmd/prism-gui/...
 
   tui-tests:
     name: TUI Tests

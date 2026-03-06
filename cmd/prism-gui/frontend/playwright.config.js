@@ -52,7 +52,7 @@ export default defineConfig({
   // Global timeout for each test (includes setup, test body, and cleanup)
   timeout: 180000, // 3 minutes per test - allows for AWS operations (30-180s) + test execution + cleanup
 
-  // Configure projects for Wails WebView engines only (desktop only - CloudWorkstation is not mobile)
+  // Configure projects for Wails WebView engines only (desktop only - Prism is not mobile)
   // - Chromium: Windows (WebView2)
   // - Webkit: macOS (WKWebView), Linux (webkit2gtk)
   // Firefox not needed as Wails doesn't use it

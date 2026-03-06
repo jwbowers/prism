@@ -198,7 +198,7 @@ prism ami submit <ami-id> --description "..." --public
 ```
 
 **Day 3-4: GUI Integration**
-- [ ] Update `cmd/cws-gui/` with AMI management interface
+- [ ] Update `cmd/prism-gui/` with AMI management interface
 - [ ] Create AMI selection and preview components
 - [ ] Add community AMI browser interface
 - [ ] Implement AMI creation wizard in GUI

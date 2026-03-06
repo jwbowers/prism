@@ -1,5 +1,5 @@
 #!/bin/sh
-# CloudWorkstation pre-removal script
+# Prism pre-removal script
 # This script is run before the package is removed
 
 set -e
@@ -7,8 +7,8 @@ set -e
 case "$1" in
     remove|upgrade|deconfigure)
         # Stop the service if it's running
-        if [ -d /run/systemd/system ] && systemctl is-active --quiet cloudworkstation.service 2>/dev/null; then
-            systemctl stop cloudworkstation.service >/dev/null 2>&1 || true
+        if [ -d /run/systemd/system ] && systemctl is-active --quiet prism.service 2>/dev/null; then
+            systemctl stop prism.service >/dev/null 2>&1 || true
         fi
         ;;
         
@@ -30,13 +30,13 @@ fi
 # Automatically added by dh_systemd_enable/11.1.6ubuntu2
 if [ "$1" = "remove" ]; then
     if [ -x "/usr/bin/deb-systemd-helper" ]; then
-        deb-systemd-helper mask 'cloudworkstation.service' >/dev/null || true
+        deb-systemd-helper mask 'prism.service' >/dev/null || true
     fi
 fi
 
 if [ "$1" = "deconfigure" ]; then
     if [ -x "/usr/bin/deb-systemd-helper" ]; then
-        deb-systemd-helper disable 'cloudworkstation.service' >/dev/null || true
+        deb-systemd-helper disable 'prism.service' >/dev/null || true
     fi
 fi
 # End automatically added section

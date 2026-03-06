@@ -318,9 +318,9 @@ func (m ProjectsModel) renderMembers() string {
 	// Rationale: Member list can be long; CLI provides better formatting for detailed operations
 	// Future Enhancement: Add paginated member list view if TUI space permits
 	b.WriteString("Member management:\n")
-	b.WriteString("  • Add members: cws project members " + project.Name + " add <email> <role>\n")
-	b.WriteString("  • Remove members: cws project members " + project.Name + " remove <email>\n")
-	b.WriteString("  • List members: cws project members " + project.Name + " list\n\n")
+	b.WriteString("  • Add members: prism project members " + project.Name + " add <email> <role>\n")
+	b.WriteString("  • Remove members: prism project members " + project.Name + " remove <email>\n")
+	b.WriteString("  • List members: prism project members " + project.Name + " list\n\n")
 
 	b.WriteString("💡 Detailed member management available via CLI commands\n")
 
@@ -343,7 +343,7 @@ func (m ProjectsModel) renderInstances() string {
 	// Design Decision: TUI shows instance summary; detailed instance list requires CLI/Instance view
 	// Rationale: Instance details are available in main Instances view (tab 3)
 	// Project-filtered instance list would duplicate existing TUI functionality
-	b.WriteString("💡 View project instances: cws project instances " + project.Name + "\n")
+	b.WriteString("💡 View project instances: prism project instances " + project.Name + "\n")
 
 	return b.String()
 }
@@ -361,7 +361,7 @@ func (m ProjectsModel) renderBudget() string {
 
 	if project.BudgetStatus == nil || project.BudgetStatus.TotalBudget <= 0 {
 		b.WriteString("No budget configured for this project.\n\n")
-		b.WriteString("💡 Set budget: cws project budget set " + project.Name + " <amount>\n")
+		b.WriteString("💡 Set budget: prism project budget set " + project.Name + " <amount>\n")
 		return b.String()
 	}
 
@@ -389,7 +389,7 @@ func (m ProjectsModel) renderBudget() string {
 		b.WriteString(fmt.Sprintf("Projected Monthly: $%.2f\n", budget.ProjectedMonthlySpend))
 	}
 
-	b.WriteString("\n💡 Budget management: cws project budget status " + project.Name + "\n")
+	b.WriteString("\n💡 Budget management: prism project budget status " + project.Name + "\n")
 
 	return b.String()
 }
@@ -438,8 +438,8 @@ func (m ProjectsModel) createProject() tea.Msg {
 	// Design Decision: Project creation requires CLI for proper input validation
 	// Rationale: TUI input forms are complex; CLI provides better error handling and validation
 	// Future Enhancement: Add TUI form dialog if demand exists
-	// Use CLI command: cws project create <name> --owner <email> [--description "..."]
-	return ProjectDataMsg{Error: fmt.Errorf("project creation via TUI not implemented - use CLI: cws project create <name> --owner <email>")}
+	// Use CLI command: prism project create <name> --owner <email> [--description "..."]
+	return ProjectDataMsg{Error: fmt.Errorf("project creation via TUI not implemented - use CLI: prism project create <name> --owner <email>")}
 }
 
 // renderProjectTabBar renders a tab bar for navigation

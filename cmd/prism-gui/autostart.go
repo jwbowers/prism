@@ -104,7 +104,7 @@ func configureLinuxAutoStart(enable bool) error {
 	}
 
 	autostartDir := filepath.Join(homeDir, ".config", "autostart")
-	desktopFile := filepath.Join(autostartDir, "cloudworkstation-gui.desktop")
+	desktopFile := filepath.Join(autostartDir, "prism-gui.desktop")
 
 	if enable {
 		// Create autostart directory if it doesn't exist
@@ -131,7 +131,7 @@ Version=1.0
 Name=Prism GUI
 Comment=Academic Research Computing Platform - Professional GUI
 Exec=%s -minimize
-Icon=cloudworkstation
+Icon=prism
 Terminal=false
 Hidden=false
 Categories=Development;Science;Education;

@@ -63,7 +63,7 @@ func runAbout() {
 	// Project Information
 	fmt.Println("🔗 Project Links")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("   Website:        https://cloudworkstation.io")
+	fmt.Println("   Website:        https://prism.io")
 	fmt.Println("   Documentation:  https://docs.prism.io")
 	fmt.Println("   GitHub:         https://github.com/scttfrdmn/prism")
 	fmt.Println("   Issues:         https://github.com/scttfrdmn/prism/issues")
@@ -99,7 +99,7 @@ func runAbout() {
 	// Quick Help
 	fmt.Println("💡 Quick Start")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("   cws --help             Show all available commands")
+	fmt.Println("   prism --help             Show all available commands")
 	fmt.Println("   prism templates          List available templates")
 	fmt.Println("   prism launch <template> <name>  Launch a new workstation")
 	fmt.Println("   prism tui                Launch terminal interface")

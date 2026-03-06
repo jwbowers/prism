@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
-    <id>cloudworkstation</id>
+    <id>prism</id>
     <version>0.5.1</version>
-    <title>CloudWorkstation</title>
-    <authors>CloudWorkstation Team</authors>
+    <title>Prism</title>
+    <authors>Prism Team</authors>
     <projectUrl>https://github.com/scttfrdmn/prism</projectUrl>
     <licenseUrl>https://github.com/scttfrdmn/prism/blob/main/LICENSE</licenseUrl>
-    <iconUrl>https://raw.githubusercontent.com/scttfrdmn/cloudworkstation/main/docs/images/cloudworkstation.png</iconUrl>
+    <iconUrl>https://raw.githubusercontent.com/scttfrdmn/prism/main/docs/images/prism.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>CloudWorkstation helps you launch pre-configured research environments in the cloud in seconds, not hours. It provides templates for Python, R, and specialized research domains, with automatic configuration and cost optimization. The tool offers a CLI, TUI, and GUI interface for managing your cloud workstations.</description>
+    <description>Prism helps you launch pre-configured research environments in the cloud in seconds, not hours. It provides templates for Python, R, and specialized research domains, with automatic configuration and cost optimization. The tool offers a CLI, TUI, and GUI interface for managing your cloud workstations.</description>
     <summary>Launch research environments in the cloud in seconds, not hours</summary>
     <releaseNotes>https://github.com/scttfrdmn/prism/blob/main/CHANGELOG.md</releaseNotes>
-    <copyright>2024 CloudWorkstation Team</copyright>
+    <copyright>2024 Prism Team</copyright>
     <tags>cloud research aws ec2 development workstation python r</tags>
     <packageSourceUrl>https://github.com/scttfrdmn/prism/tree/main/packaging/chocolatey</packageSourceUrl>
     <docsUrl>https://github.com/scttfrdmn/prism/tree/main/docs</docsUrl>

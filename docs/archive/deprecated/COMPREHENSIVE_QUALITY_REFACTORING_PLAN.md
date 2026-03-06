@@ -68,7 +68,7 @@ Transform Prism from current F grade to A+ across:
 
 ### 🔍 Phase 2A: Comprehensive Assessment
 ```bash
-cd cmd/cws-gui/frontend/
+cd cmd/prism-gui/frontend/
 npm audit --audit-level high      # Security vulnerabilities (must be 0)
 npm run lint                      # ESLint (target: 0 errors, minimal warnings)
 npx tsc --noEmit --strict         # TypeScript strict mode compliance

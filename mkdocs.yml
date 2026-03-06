@@ -1,10 +1,10 @@
-site_name: CloudWorkstation Documentation
-site_url: https://cloudworkstation.io
+site_name: Prism Documentation
+site_url: https://prism.io
 site_description: Pre-configured cloud research environments for academic computing
-site_author: CloudWorkstation Team
+site_author: Prism Team
 
 repo_url: https://github.com/scttfrdmn/prism
-repo_name: scttfrdmn/cloudworkstation
+repo_name: scttfrdmn/prism
 edit_uri: edit/main/docs/
 
 copyright: Copyright &copy; 2024-2025 Scott Friedman and Prism Contributors
@@ -61,8 +61,8 @@ theme:
     edit: material/pencil
     view: material/eye
 
-  logo: images/cloudworkstation-transparent.png
-  favicon: images/cloudworkstation-favicon-32.png
+  logo: images/prism-transparent.png
+  favicon: images/prism-favicon-32.png
 
 plugins:
   - search:

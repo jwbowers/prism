@@ -1,9 +1,9 @@
 #!/bin/bash
-# Automated test suite for CloudWorkstation v0.4.5
+# Automated test suite for Prism v0.4.5
 
 set -e
 
-echo "🧪 CloudWorkstation Automated Test Suite v0.4.5"
+echo "🧪 Prism Automated Test Suite v0.4.5"
 echo "================================================"
 
 # Colors for output
@@ -82,13 +82,13 @@ run_test "Hibernation status (missing)" "curl -s http://localhost:8947/api/v1/in
 echo ""
 echo "5. TUI Tests"
 echo "------------"
-run_test "TUI startup" "timeout 2 ./bin/cws tui < /dev/null 2>&1 | grep -q 'CloudWorkstation Dashboard' || true"
+run_test "TUI startup" "timeout 2 ./bin/cws tui < /dev/null 2>&1 | grep -q 'Prism Dashboard' || true"
 
 echo ""
 echo "6. GUI Frontend Tests (if npm available)"
 echo "-----------------------------------------"
 if command -v npm &> /dev/null; then
-    cd cmd/cws-gui/frontend
+    cd cmd/prism-gui/frontend
     
     # Install dependencies if needed
     if [ ! -d "node_modules" ]; then
@@ -137,7 +137,7 @@ echo -e "  Failed: ${RED}$FAILED_TESTS${NC}"
 kill $DAEMON_PID 2>/dev/null || true
 
 if [ $FAILED_TESTS -eq 0 ]; then
-    echo -e "\n${GREEN}✅ All tests passed! CloudWorkstation v0.4.5 is ready for release.${NC}"
+    echo -e "\n${GREEN}✅ All tests passed! Prism v0.4.5 is ready for release.${NC}"
     exit 0
 else
     echo -e "\n${RED}❌ $FAILED_TESTS test(s) failed. Please review the errors above.${NC}"

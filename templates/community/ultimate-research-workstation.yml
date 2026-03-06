@@ -156,14 +156,14 @@ prerequisites:
   - "Familiarity with multiple tools (Python, R, terminal)"
   - "Understanding of different interface types"
 learning_resources:
-  - "https://docs.cloudworkstation.org/multi-modal"
+  - "https://docs.prism.org/multi-modal"
   - "https://jupyterlab.readthedocs.io/"
   - "https://rstudio.com/resources/"
 
 # Template metadata
 version: "1.0.0" 
 validation_status: "testing"  # Complex template under validation
-maintainer: "CloudWorkstation Team"
+maintainer: "Prism Team"
 tags:
   multi_modal: "true"
   desktop: "true"

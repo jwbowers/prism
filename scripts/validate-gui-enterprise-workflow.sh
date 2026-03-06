@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🎯 CloudWorkstation GUI Enterprise Workflow Validation"
+echo "🎯 Prism GUI Enterprise Workflow Validation"
 echo "========================================================"
 
 # Color codes for output
@@ -91,7 +91,7 @@ echo -e "${BLUE}📋 Step 5: Testing GUI configuration...${NC}"
 
 # Check GUI configuration capabilities without launching UI
 export PRISM_DEV=true
-if ./bin/prism-gui --help 2>&1 | grep -q "CloudWorkstation"; then
+if ./bin/prism-gui --help 2>&1 | grep -q "Prism"; then
     echo -e "${GREEN}✅ GUI configuration and help system functional${NC}"
 else
     echo -e "${YELLOW}⚠️ GUI help system may need attention${NC}"

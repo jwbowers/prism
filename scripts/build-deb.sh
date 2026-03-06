@@ -1,5 +1,5 @@
 #!/bin/bash
-# CloudWorkstation DEB Package Builder
+# Prism DEB Package Builder
 # Professional Ubuntu/Debian Distribution
 
 set -euo pipefail
@@ -25,7 +25,7 @@ WORK_DIR="/tmp/prism-build-$$"
 # Functions
 print_header() {
     echo -e "${BOLD}${BLUE}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${BLUE}║                     CloudWorkstation DEB Package Builder                     ║${NC}"
+    echo -e "${BOLD}${BLUE}║                     Prism DEB Package Builder                     ║${NC}"
     echo -e "${BOLD}${BLUE}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BOLD}${BLUE}║${NC} Building professional Ubuntu/Debian packages                             ${BOLD}${BLUE}║${NC}"
     echo -e "${BOLD}${BLUE}║${NC} Version: $VERSION-$REVISION                                                    ${BOLD}${BLUE}║${NC}"
@@ -99,7 +99,7 @@ validate_environment() {
     
     # Check if we're in the right directory
     if [[ ! -f "go.mod" ]] || [[ ! -d "cmd/cws" ]] || [[ ! -d "cmd/prismd" ]]; then
-        print_error "Must run from CloudWorkstation project root directory"
+        print_error "Must run from Prism project root directory"
         exit 1
     fi
     
@@ -182,7 +182,7 @@ prepare_build_directory() {
 }
 
 build_binaries() {
-    print_step "Building CloudWorkstation binaries for $ARCH..."
+    print_step "Building Prism binaries for $ARCH..."
     
     # Set build environment
     export GOOS=linux
@@ -307,7 +307,7 @@ organize_artifacts() {
     
     # Generate package list
     cat > "$DIST_DIR/PACKAGES.txt" << EOF
-CloudWorkstation DEB Packages
+Prism DEB Packages
 Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
 Version: $VERSION-$REVISION
 Architecture: $ARCH
@@ -374,7 +374,7 @@ main() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             --help|-h)
-                echo "CloudWorkstation DEB Package Builder"
+                echo "Prism DEB Package Builder"
                 echo ""
                 echo "Usage: $0 [OPTIONS]"
                 echo ""

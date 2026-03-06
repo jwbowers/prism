@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# CloudWorkstation DMG Builder
+# Prism DMG Builder
 # Creates professional macOS DMG installer package
 # Usage: ./scripts/build-dmg.sh [--universal] [--dev]
 
@@ -9,11 +9,12 @@ set -euo pipefail
 # Configuration
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-readonly VERSION="0.5.1"
+# Auto-detect version from pkg/version/version.go
+readonly VERSION="$(grep -oP '(?<=Version = ")[^"]+' "$PROJECT_ROOT/pkg/version/version.go" 2>/dev/null || echo "0.0.0")"
 readonly BUILD_DIR="$PROJECT_ROOT/dist/dmg"
-readonly VOLUME_NAME="CloudWorkstation-v$VERSION"
-readonly DMG_NAME="CloudWorkstation-v$VERSION.dmg"
-readonly APP_NAME="CloudWorkstation.app"
+readonly VOLUME_NAME="Prism-v$VERSION"
+readonly DMG_NAME="Prism-v$VERSION.dmg"
+readonly APP_NAME="Prism.app"
 
 # Build flags
 UNIVERSAL_BUILD=false
@@ -92,7 +93,7 @@ check_prerequisites() {
 
 # Build binaries
 build_binaries() {
-    log_info "Building CloudWorkstation binaries..."
+    log_info "Building Prism binaries..."
     
     cd "$PROJECT_ROOT"
     
@@ -186,7 +187,7 @@ create_app_bundle() {
     fi
     
     # Create main launcher script
-    create_launcher_script "$macos_path/CloudWorkstation"
+    create_launcher_script "$macos_path/Prism"
     
     # Make binaries and launcher executable
     chmod +x "$macos_path"/*
@@ -209,7 +210,7 @@ create_launcher_script() {
     cat > "$launcher_path" << 'EOF'
 #!/bin/bash
 
-# CloudWorkstation Launcher
+# Prism Launcher
 # Main entry point for the macOS application bundle
 
 set -euo pipefail
@@ -222,7 +223,7 @@ readonly RESOURCES_DIR="$(cd "$SCRIPT_DIR/../Resources" && pwd)"
 show_error() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation Error" buttons {"OK"} default button "OK" with icon stop
+        display dialog "$message" with title "Prism Error" buttons {"OK"} default button "OK" with icon stop
 EOD
 }
 
@@ -230,7 +231,7 @@ EOD
 show_info() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation" buttons {"OK"} default button "OK" with icon note
+        display dialog "$message" with title "Prism" buttons {"OK"} default button "OK" with icon note
 EOD
 }
 
@@ -242,14 +243,14 @@ is_daemon_running() {
 # Function to start daemon
 start_daemon() {
     if ! is_daemon_running; then
-        echo "Starting CloudWorkstation daemon..."
+        echo "Starting Prism daemon..."
         "$SCRIPT_DIR/prismd" > /tmp/prismd.log 2>&1 &
         sleep 2
         
         if is_daemon_running; then
             echo "Daemon started successfully"
         else
-            show_error "Failed to start CloudWorkstation daemon. Check /tmp/prismd.log for details."
+            show_error "Failed to start Prism daemon. Check /tmp/prismd.log for details."
             exit 1
         fi
     fi
@@ -283,11 +284,11 @@ EOD
 show_welcome() {
     local response
     response=$(osascript << 'EOD'
-        display dialog "Welcome to CloudWorkstation!
+        display dialog "Welcome to Prism!
 
-CloudWorkstation helps academic researchers launch pre-configured cloud workstations in seconds.
+Prism helps academic researchers launch pre-configured cloud workstations in seconds.
 
-What would you like to do?" with title "CloudWorkstation v0.4.2" buttons {"Open GUI", "Command Line Setup", "Quit"} default button "Open GUI" with icon note
+What would you like to do?" with title "Prism v0.4.2" buttons {"Open GUI", "Command Line Setup", "Quit"} default button "Open GUI" with icon note
 EOD
     )
     
@@ -360,10 +361,10 @@ create_info_plist() {
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>CloudWorkstation</string>
+    <string>Prism</string>
     
     <key>CFBundleDisplayName</key>
-    <string>CloudWorkstation</string>
+    <string>Prism</string>
     
     <key>CFBundleIdentifier</key>
     <string>com.prism.app</string>
@@ -375,10 +376,10 @@ create_info_plist() {
     <string>$VERSION</string>
     
     <key>CFBundleExecutable</key>
-    <string>CloudWorkstation</string>
+    <string>Prism</string>
     
     <key>CFBundleIconFile</key>
-    <string>CloudWorkstation.icns</string>
+    <string>Prism.icns</string>
     
     <key>CFBundlePackageType</key>
     <string>APPL</string>
@@ -396,7 +397,7 @@ create_info_plist() {
     <string>public.app-category.developer-tools</string>
     
     <key>NSHumanReadableCopyright</key>
-    <string>© 2024 CloudWorkstation. All rights reserved.</string>
+    <string>© 2024 Prism. All rights reserved.</string>
     
     <key>LSArchitecturePriority</key>
     <array>
@@ -405,10 +406,10 @@ create_info_plist() {
     </array>
     
     <key>NSAppleEventsUsageDescription</key>
-    <string>CloudWorkstation uses AppleScript to provide a better user experience by opening Terminal windows and displaying dialogs.</string>
+    <string>Prism uses AppleScript to provide a better user experience by opening Terminal windows and displaying dialogs.</string>
     
     <key>NSSystemAdministrationUsageDescription</key>
-    <string>CloudWorkstation may require administrator privileges to install command-line tools and configure system services.</string>
+    <string>Prism may require administrator privileges to install command-line tools and configure system services.</string>
 </dict>
 </plist>
 EOF
@@ -423,7 +424,7 @@ copy_resources() {
     log_info "Copying resources..."
     
     # Create icon file
-    create_app_icon "$resources_path/CloudWorkstation.icns"
+    create_app_icon "$resources_path/Prism.icns"
     
     # Copy templates
     cp -r "$PROJECT_ROOT/templates" "$resources_path/"
@@ -450,7 +451,7 @@ create_app_icon() {
     log_info "Creating application icon..."
     
     # Create iconset directory
-    local iconset_dir="$BUILD_DIR/CloudWorkstation.iconset"
+    local iconset_dir="$BUILD_DIR/Prism.iconset"
     mkdir -p "$iconset_dir"
     
     # Create icon sizes (we'll generate from a base image or use a simple programmatic approach)
@@ -564,8 +565,8 @@ create_cli_install_script() {
     cat > "$script_path" << 'EOF'
 #!/bin/bash
 
-# CloudWorkstation CLI Tools Installer
-# Installs cws and prismd command-line tools to /usr/local/bin
+# Prism CLI Tools Installer
+# Installs prism and prismd command-line tools to /usr/local/bin
 
 set -euo pipefail
 
@@ -577,7 +578,7 @@ readonly INSTALL_DIR="/usr/local/bin"
 show_error() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation CLI Install Error" buttons {"OK"} default button "OK" with icon stop
+        display dialog "$message" with title "Prism CLI Install Error" buttons {"OK"} default button "OK" with icon stop
 EOD
 }
 
@@ -585,13 +586,13 @@ EOD
 show_success() {
     local message="$1"
     osascript << EOD
-        display dialog "$message" with title "CloudWorkstation CLI Install" buttons {"OK"} default button "OK" with icon note
+        display dialog "$message" with title "Prism CLI Install" buttons {"OK"} default button "OK" with icon note
 EOD
 }
 
 # Main installation function
 main() {
-    echo "Installing CloudWorkstation CLI tools..."
+    echo "Installing Prism CLI tools..."
     
     # Check if installation directory exists
     if [[ ! -d "$INSTALL_DIR" ]]; then
@@ -607,7 +608,7 @@ main() {
             # Request password
             local password
             password=$(osascript << 'EOD'
-                display dialog "Administrator password required to install CloudWorkstation CLI tools to /usr/local/bin:" with title "CloudWorkstation CLI Install" default answer "" with hidden answer buttons {"Cancel", "OK"} default button "OK"
+                display dialog "Administrator password required to install Prism CLI tools to /usr/local/bin:" with title "Prism CLI Install" default answer "" with hidden answer buttons {"Cancel", "OK"} default button "OK"
 EOD
             )
             
@@ -639,7 +640,7 @@ Commands available:
 • prism --help    (CLI client)
 • prismd            (daemon service)
 
-You can now use CloudWorkstation from any terminal window."
+You can now use Prism from any terminal window."
         echo "✅ Installation complete"
     else
         show_error "Installation failed. Please check permissions and try again."
@@ -662,31 +663,31 @@ create_readme() {
     log_info "Creating README.txt..."
     
     cat > "$readme_path" << EOF
-CloudWorkstation v$VERSION - macOS Installation
+Prism v$VERSION - macOS Installation
 ============================================
 
-Thank you for downloading CloudWorkstation!
+Thank you for downloading Prism!
 
 INSTALLATION INSTRUCTIONS:
-1. Drag CloudWorkstation.app to your Applications folder
-2. Launch CloudWorkstation from Applications or Spotlight
+1. Drag Prism.app to your Applications folder
+2. Launch Prism from Applications or Spotlight
 3. Follow the setup wizard to configure AWS credentials
 4. Start launching cloud workstations!
 
 WHAT'S INCLUDED:
-• CloudWorkstation GUI - Visual interface for managing workstations
+• Prism GUI - Visual interface for managing workstations
 • Command-line tools (prism, prismd) - Terminal interface and daemon
 • Pre-configured templates for research environments
 • Automatic service management
 
 FIRST TIME SETUP:
-1. Open CloudWorkstation
+1. Open Prism
 2. Choose "Command Line Setup" to install CLI tools (optional)
 3. Create an AWS profile: File → AWS Setup or 'prism profiles create'
 4. Browse templates and launch your first workstation
 
 GETTING STARTED:
-• GUI: Launch CloudWorkstation from Applications
+• GUI: Launch Prism from Applications
 • CLI: Open Terminal and run 'prism --help'
 • Templates: 'prism templates' to see available environments
 • Launch: 'prism launch python-ml my-project'
@@ -699,21 +700,21 @@ SYSTEM REQUIREMENTS:
 SUPPORT:
 • Documentation: https://github.com/scttfrdmn/prism
 • Issues: https://github.com/scttfrdmn/prism/issues
-• User Guide: Open CloudWorkstation → Help → User Guide
+• User Guide: Open Prism → Help → User Guide
 
 UNINSTALLATION:
-• Remove CloudWorkstation.app from Applications
+• Remove Prism.app from Applications
 • Remove CLI tools: sudo rm /usr/local/bin/prism /usr/local/bin/prismd
 • Remove preferences: ~/Library/Preferences/com.prism.*
 
-CloudWorkstation helps academic researchers launch pre-configured
+Prism helps academic researchers launch pre-configured
 cloud workstations in seconds rather than spending hours setting
 up research environments.
 
 Version: $VERSION
 Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
-© 2024 CloudWorkstation. All rights reserved.
+© 2024 Prism. All rights reserved.
 EOF
     
     log_success "README.txt created"
@@ -756,8 +757,8 @@ for y in range(height):
     if y % 2 == 0:  # Every other line for subtle texture
         draw.line([(0, y), (width, y)], fill='#f1f5f9')
 
-# Add CloudWorkstation branding
-title = "CloudWorkstation"
+# Add Prism branding
+title = "Prism"
 subtitle = "Academic Research Cloud Platform"
 
 # Title area (center-left, where app icon will be)
@@ -775,7 +776,7 @@ except:
     draw.text((title_x, title_y + 40), subtitle, fill='#64748b')
 
 # Add installation instruction
-instruction = "Drag CloudWorkstation to Applications to install"
+instruction = "Drag Prism to Applications to install"
 try:
     inst_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 14)
     draw.text((50, height - 60), instruction, font=inst_font, fill='#475569')
@@ -857,8 +858,8 @@ create_dmg() {
     cp "$BUILD_DIR/$APP_NAME/Contents/Resources/README.txt" "$mount_point/"
     
     # Set custom icon for DMG volume (if we have one)
-    if [[ -f "$BUILD_DIR/$APP_NAME/Contents/Resources/CloudWorkstation.icns" ]]; then
-        cp "$BUILD_DIR/$APP_NAME/Contents/Resources/CloudWorkstation.icns" "$mount_point/.VolumeIcon.icns"
+    if [[ -f "$BUILD_DIR/$APP_NAME/Contents/Resources/Prism.icns" ]]; then
+        cp "$BUILD_DIR/$APP_NAME/Contents/Resources/Prism.icns" "$mount_point/.VolumeIcon.icns"
         SetFile -c icnC "$mount_point/.VolumeIcon.icns"
         SetFile -a C "$mount_point"
     fi
@@ -937,7 +938,7 @@ EOF
 
 # Main execution function
 main() {
-    log_info "Starting CloudWorkstation DMG build process..."
+    log_info "Starting Prism DMG build process..."
     log_info "Version: $VERSION"
     log_info "Build directory: $BUILD_DIR"
     log_info "Universal build: $UNIVERSAL_BUILD"

@@ -89,8 +89,8 @@ func TestRegistryCredentials(t *testing.T) {
 // TestMarketplaceTemplateRegistry tests registry structure
 func TestMarketplaceTemplateRegistry(t *testing.T) {
 	registry := &MarketplaceTemplateRegistry{
-		Name: "Official CloudWorkstation Registry",
-		URL:  "https://registry.cloudworkstation.com",
+		Name: "Official Prism Registry",
+		URL:  "https://registry.prism.com",
 		Type: RegistryTypeOfficial,
 		Credentials: &RegistryCredentials{
 			Type:  "token",
@@ -101,8 +101,8 @@ func TestMarketplaceTemplateRegistry(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "Official CloudWorkstation Registry", registry.Name)
-	assert.Equal(t, "https://registry.cloudworkstation.com", registry.URL)
+	assert.Equal(t, "Official Prism Registry", registry.Name)
+	assert.Equal(t, "https://registry.prism.com", registry.URL)
 	assert.Equal(t, RegistryTypeOfficial, registry.Type)
 	assert.NotNil(t, registry.Credentials)
 	assert.Equal(t, "token", registry.Credentials.Type)
@@ -261,12 +261,12 @@ func TestRegistryConfig(t *testing.T) {
 		Registries: map[string]*MarketplaceTemplateRegistry{
 			"official": {
 				Name: "Official Registry",
-				URL:  "https://registry.cloudworkstation.com",
+				URL:  "https://registry.prism.com",
 				Type: RegistryTypeOfficial,
 			},
 			"community": {
 				Name: "Community Registry",
-				URL:  "https://community.cloudworkstation.com",
+				URL:  "https://community.prism.com",
 				Type: RegistryTypeCommunity,
 			},
 		},
@@ -558,7 +558,7 @@ func TestRegistryConfigJSON(t *testing.T) {
 		Registries: map[string]*MarketplaceTemplateRegistry{
 			"official": {
 				Name: "Official Registry",
-				URL:  "https://registry.cloudworkstation.com",
+				URL:  "https://registry.prism.com",
 				Type: RegistryTypeOfficial,
 				Credentials: &RegistryCredentials{
 					Type:  "token",
@@ -601,12 +601,12 @@ func TestRegistryMultipleRegistries(t *testing.T) {
 		Registries: map[string]*MarketplaceTemplateRegistry{
 			"official": {
 				Name: "Official Registry",
-				URL:  "https://registry.cloudworkstation.com",
+				URL:  "https://registry.prism.com",
 				Type: RegistryTypeOfficial,
 			},
 			"community": {
 				Name: "Community Registry",
-				URL:  "https://community.cloudworkstation.com",
+				URL:  "https://community.prism.com",
 				Type: RegistryTypeCommunity,
 			},
 			"institutional": {

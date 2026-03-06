@@ -7,7 +7,7 @@ using Microsoft.Win32;
 namespace SetupCustomActions
 {
     /// <summary>
-    /// Performs system requirement checks for CloudWorkstation installation
+    /// Performs system requirement checks for Prism installation
     /// </summary>
     public class SystemChecker
     {
@@ -80,7 +80,7 @@ namespace SetupCustomActions
                 string installDir = _session["INSTALLFOLDER"];
                 if (string.IsNullOrEmpty(installDir))
                 {
-                    installDir = @"C:\Program Files\CloudWorkstation";
+                    installDir = @"C:\Program Files\Prism";
                 }
                 
                 // Get drive info for installation directory
@@ -171,7 +171,7 @@ namespace SetupCustomActions
                     
                     if (!isAdmin)
                     {
-                        _session.Log("Administrator privileges required for CloudWorkstation installation");
+                        _session.Log("Administrator privileges required for Prism installation");
                         return false;
                     }
                     
@@ -186,7 +186,7 @@ namespace SetupCustomActions
         }
 
         /// <summary>
-        /// Checks for conflicting software that might interfere with CloudWorkstation
+        /// Checks for conflicting software that might interfere with Prism
         /// </summary>
         public bool CheckConflictingSoftware()
         {
@@ -197,7 +197,7 @@ namespace SetupCustomActions
                 var conflicts = new[]
                 {
                     // Other services using port 8947
-                    new { Name = "Other CloudWorkstation", Process = "prismd", Port = 8947 },
+                    new { Name = "Other Prism", Process = "prismd", Port = 8947 },
                     
                     // AWS CLI conflicts (informational)
                     new { Name = "AWS CLI v1", Process = "aws", Port = 0 }

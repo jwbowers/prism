@@ -24,7 +24,7 @@ func NewSecureInvitationManager(profileManager *ManagerEnhanced) (*SecureInvitat
 
 	// Create registry client with default config
 	registryConfig := security.S3RegistryConfig{
-		BucketName: "cloudworkstation-invitations",
+		BucketName: "prism-invitations",
 		Region:     "us-west-2", // Default region for registry
 		Enabled:    true,        // Enable by default, will fall back to local if unavailable
 	}

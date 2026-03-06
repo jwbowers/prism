@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# CloudWorkstation Debian Build Rules
+# Prism Debian Build Rules
 # See debhelper(7) (uncomment to enable)
 # output every command that modifies files on the build system.
 
@@ -55,36 +55,36 @@ override_dh_auto_test:
 
 override_dh_auto_install:
 	# Install binaries
-	install -D -m 755 build/cws debian/cloudworkstation/usr/bin/cws
-	install -D -m 755 build/prismd debian/cloudworkstation/usr/bin/prismd
+	install -D -m 755 build/cws debian/prism/usr/bin/cws
+	install -D -m 755 build/prismd debian/prism/usr/bin/prismd
 	
 	# Install systemd service file
-	install -D -m 644 systemd/prismd.service debian/cloudworkstation/lib/systemd/system/cloudworkstation.service
+	install -D -m 644 systemd/prismd.service debian/prism/lib/systemd/system/prism.service
 	
 	# Install configuration directory structure
-	install -d -m 750 debian/cloudworkstation/etc/cloudworkstation
-	install -d -m 750 debian/cloudworkstation/etc/cloudworkstation/aws
-	install -d -m 755 debian/cloudworkstation/var/lib/cloudworkstation
-	install -d -m 750 debian/cloudworkstation/var/log/cloudworkstation
+	install -d -m 750 debian/prism/etc/prism
+	install -d -m 750 debian/prism/etc/prism/aws
+	install -d -m 755 debian/prism/var/lib/prism
+	install -d -m 750 debian/prism/var/log/prism
 	
 	# Install default configuration files
-	install -D -m 640 debian/daemon.conf debian/cloudworkstation/etc/cloudworkstation/daemon.conf
-	install -D -m 640 debian/aws-config.template debian/cloudworkstation/etc/cloudworkstation/aws/config.template
-	install -D -m 640 debian/aws-credentials.template debian/cloudworkstation/etc/cloudworkstation/aws/credentials.template
+	install -D -m 640 debian/daemon.conf debian/prism/etc/prism/daemon.conf
+	install -D -m 640 debian/aws-config.template debian/prism/etc/prism/aws/config.template
+	install -D -m 640 debian/aws-credentials.template debian/prism/etc/prism/aws/credentials.template
 	
 	# Install documentation
-	install -D -m 644 README.md debian/cloudworkstation/usr/share/doc/cloudworkstation/README.md
-	install -D -m 644 CHANGELOG.md debian/cloudworkstation/usr/share/doc/cloudworkstation/CHANGELOG.md
+	install -D -m 644 README.md debian/prism/usr/share/doc/prism/README.md
+	install -D -m 644 CHANGELOG.md debian/prism/usr/share/doc/prism/CHANGELOG.md
 	
 	# Install man pages
-	install -D -m 644 debian/cws.1 debian/cloudworkstation/usr/share/man/man1/cws.1
-	install -D -m 644 debian/prismd.1 debian/cloudworkstation/usr/share/man/man1/prismd.1
+	install -D -m 644 debian/cws.1 debian/prism/usr/share/man/man1/cws.1
+	install -D -m 644 debian/prismd.1 debian/prism/usr/share/man/man1/prismd.1
 
 override_dh_systemd_enable:
-	dh_systemd_enable --name=cloudworkstation
+	dh_systemd_enable --name=prism
 
 override_dh_systemd_start:
-	dh_systemd_start --name=cloudworkstation --no-start
+	dh_systemd_start --name=prism --no-start
 
 override_dh_installdeb:
 	dh_installdeb
@@ -107,8 +107,8 @@ binary: binary-indep binary-arch
 override_dh_fixperms:
 	dh_fixperms
 	# Fix ownership and permissions for security-sensitive directories
-	chmod 750 debian/cloudworkstation/etc/cloudworkstation || true
-	chmod 750 debian/cloudworkstation/etc/cloudworkstation/aws || true
-	chmod 750 debian/cloudworkstation/var/log/cloudworkstation || true
+	chmod 750 debian/prism/etc/prism || true
+	chmod 750 debian/prism/etc/prism/aws || true
+	chmod 750 debian/prism/var/log/prism || true
 
 .PHONY: build binary binary-arch binary-indep clean

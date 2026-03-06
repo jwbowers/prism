@@ -1,9 +1,9 @@
 #!/bin/bash
-# Post-installation script for CloudWorkstation Linux packages
+# Post-installation script for Prism Linux packages
 
 set -e
 
-echo "CloudWorkstation has been installed!"
+echo "Prism has been installed!"
 echo ""
 echo "Quick start:"
 echo "  cws templates                           # List available templates"

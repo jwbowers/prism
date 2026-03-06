@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# CloudWorkstation systemd service installer
-# This script sets up the CloudWorkstation daemon as a system service
+# Prism systemd service installer
+# This script sets up the Prism daemon as a system service
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -38,23 +38,23 @@ fi
 
 log_info "Detected init system: $INIT_SYSTEM"
 
-# Create cloudworkstation user and group
+# Create prism user and group
 create_user() {
-    log_info "Creating cloudworkstation user and group..."
+    log_info "Creating prism user and group..."
     
-    if ! getent group cloudworkstation >/dev/null 2>&1; then
-        groupadd --system cloudworkstation
-        log_success "Created group: cloudworkstation"
+    if ! getent group prism >/dev/null 2>&1; then
+        groupadd --system prism
+        log_success "Created group: prism"
     else
-        log_info "Group cloudworkstation already exists"
+        log_info "Group prism already exists"
     fi
     
-    if ! getent passwd cloudworkstation >/dev/null 2>&1; then
-        useradd --system --gid cloudworkstation --home-dir /var/lib/cloudworkstation \
-                --shell /usr/sbin/nologin --comment "CloudWorkstation Daemon" cloudworkstation
-        log_success "Created user: cloudworkstation"
+    if ! getent passwd prism >/dev/null 2>&1; then
+        useradd --system --gid prism --home-dir /var/lib/prism \
+                --shell /usr/sbin/nologin --comment "Prism Daemon" prism
+        log_success "Created user: prism"
     else
-        log_info "User cloudworkstation already exists"
+        log_info "User prism already exists"
     fi
 }
 
@@ -63,35 +63,35 @@ create_directories() {
     log_info "Creating directories..."
     
     # Configuration directory
-    mkdir -p /etc/cloudworkstation/aws
-    chown root:cloudworkstation /etc/cloudworkstation
-    chmod 750 /etc/cloudworkstation
-    chown root:cloudworkstation /etc/cloudworkstation/aws
-    chmod 750 /etc/cloudworkstation/aws
+    mkdir -p /etc/prism/aws
+    chown root:prism /etc/prism
+    chmod 750 /etc/prism
+    chown root:prism /etc/prism/aws
+    chmod 750 /etc/prism/aws
     
     # State and data directory
-    mkdir -p /var/lib/cloudworkstation/.config
-    mkdir -p /var/lib/cloudworkstation/.cloudworkstation
-    mkdir -p /var/lib/cloudworkstation/.ssh
-    chown -R cloudworkstation:cloudworkstation /var/lib/cloudworkstation
-    chmod 700 /var/lib/cloudworkstation
-    chmod 700 /var/lib/cloudworkstation/.ssh
+    mkdir -p /var/lib/prism/.config
+    mkdir -p /var/lib/prism/.prism
+    mkdir -p /var/lib/prism/.ssh
+    chown -R prism:prism /var/lib/prism
+    chmod 700 /var/lib/prism
+    chmod 700 /var/lib/prism/.ssh
     
     # Log directory
-    mkdir -p /var/log/cloudworkstation
-    chown cloudworkstation:cloudworkstation /var/log/cloudworkstation
-    chmod 755 /var/log/cloudworkstation
+    mkdir -p /var/log/prism
+    chown prism:prism /var/log/prism
+    chmod 755 /var/log/prism
     
     log_success "Created directory structure"
 }
 
 # Install binaries
 install_binaries() {
-    log_info "Installing CloudWorkstation binaries..."
+    log_info "Installing Prism binaries..."
     
     # Build binaries if they don't exist
     if [[ ! -f "$PROJECT_ROOT/bin/prismd" ]]; then
-        log_info "Building CloudWorkstation daemon..."
+        log_info "Building Prism daemon..."
         cd "$PROJECT_ROOT"
         make build
     fi
@@ -130,37 +130,37 @@ configure_aws() {
     log_info "Setting up AWS configuration..."
     
     # Create default config files if they don't exist
-    if [[ ! -f /etc/cloudworkstation/aws/config ]]; then
-        cat > /etc/cloudworkstation/aws/config << 'EOF'
+    if [[ ! -f /etc/prism/aws/config ]]; then
+        cat > /etc/prism/aws/config << 'EOF'
 [default]
 region = us-west-2
 output = json
 
-[profile cloudworkstation]
+[profile prism]
 region = us-west-2
 output = json
 EOF
-        chown root:cloudworkstation /etc/cloudworkstation/aws/config
-        chmod 640 /etc/cloudworkstation/aws/config
+        chown root:prism /etc/prism/aws/config
+        chmod 640 /etc/prism/aws/config
         log_info "Created default AWS config"
     fi
     
-    if [[ ! -f /etc/cloudworkstation/aws/credentials ]]; then
-        cat > /etc/cloudworkstation/aws/credentials << 'EOF'
-# AWS credentials for CloudWorkstation
+    if [[ ! -f /etc/prism/aws/credentials ]]; then
+        cat > /etc/prism/aws/credentials << 'EOF'
+# AWS credentials for Prism
 # Replace with your actual AWS credentials
 [default]
 aws_access_key_id = YOUR_ACCESS_KEY_HERE
 aws_secret_access_key = YOUR_SECRET_KEY_HERE
 
-[cloudworkstation]
+[prism]
 aws_access_key_id = YOUR_ACCESS_KEY_HERE
 aws_secret_access_key = YOUR_SECRET_KEY_HERE
 EOF
-        chown root:cloudworkstation /etc/cloudworkstation/aws/credentials
-        chmod 640 /etc/cloudworkstation/aws/credentials
+        chown root:prism /etc/prism/aws/credentials
+        chmod 640 /etc/prism/aws/credentials
         log_warning "Created template AWS credentials file - YOU MUST EDIT THIS"
-        log_warning "Edit /etc/cloudworkstation/aws/credentials with your AWS keys"
+        log_warning "Edit /etc/prism/aws/credentials with your AWS keys"
     fi
 }
 
@@ -168,10 +168,10 @@ EOF
 setup_ssh_keys() {
     log_info "Setting up SSH keys for instance monitoring..."
     
-    SSH_KEY_PATH="/var/lib/cloudworkstation/.ssh/cloudworkstation"
+    SSH_KEY_PATH="/var/lib/prism/.ssh/prism"
     
     if [[ ! -f "$SSH_KEY_PATH" ]]; then
-        sudo -u cloudworkstation ssh-keygen -t ed25519 -f "$SSH_KEY_PATH" -N "" -C "cloudworkstation-daemon"
+        sudo -u prism ssh-keygen -t ed25519 -f "$SSH_KEY_PATH" -N "" -C "prism-daemon"
         log_success "Generated SSH key: $SSH_KEY_PATH"
         log_info "Public key:"
         cat "$SSH_KEY_PATH.pub"
@@ -185,14 +185,14 @@ setup_ssh_keys() {
 create_config() {
     log_info "Creating default configuration..."
     
-    if [[ ! -f /etc/cloudworkstation/config.json ]]; then
-        cat > /etc/cloudworkstation/config.json << 'EOF'
+    if [[ ! -f /etc/prism/config.json ]]; then
+        cat > /etc/prism/config.json << 'EOF'
 {
   "autonomous": {
     "auto_execute": false,
     "monitor_interval": "2m",
     "ssh_username": "ubuntu",
-    "ssh_key_path": "/var/lib/cloudworkstation/.ssh/cloudworkstation",
+    "ssh_key_path": "/var/lib/prism/.ssh/prism",
     "require_tag_confirmation": true,
     "max_actions_per_hour": 10,
     "dry_run": true
@@ -207,8 +207,8 @@ create_config() {
   }
 }
 EOF
-        chown root:cloudworkstation /etc/cloudworkstation/config.json
-        chmod 640 /etc/cloudworkstation/config.json
+        chown root:prism /etc/prism/config.json
+        chmod 640 /etc/prism/config.json
         log_success "Created default configuration"
         log_warning "Autonomous execution is DISABLED by default for safety"
         log_warning "Set auto_execute=true and dry_run=false to enable automatic actions"
@@ -217,7 +217,7 @@ EOF
 
 # Main installation
 main() {
-    log_info "Installing CloudWorkstation as a system service..."
+    log_info "Installing Prism as a system service..."
     
     # Detect distribution
     if [[ -f /etc/os-release ]]; then
@@ -236,12 +236,12 @@ main() {
             setup_ssh_keys
             create_config
             
-            log_success "CloudWorkstation service installed successfully!"
+            log_success "Prism service installed successfully!"
             echo
             log_info "Next steps:"
-            echo "  1. Edit /etc/cloudworkstation/aws/credentials with your AWS keys"
+            echo "  1. Edit /etc/prism/aws/credentials with your AWS keys"
             echo "  2. Add the SSH public key to your AWS EC2 key pairs"
-            echo "  3. Configure /etc/cloudworkstation/config.json as needed"
+            echo "  3. Configure /etc/prism/config.json as needed"
             echo "  4. Enable and start the service:"
             echo "     sudo systemctl enable prismd"
             echo "     sudo systemctl start prismd"

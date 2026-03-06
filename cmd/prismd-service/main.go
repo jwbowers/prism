@@ -33,7 +33,7 @@ type PrismService struct {
 }
 
 // Execute implements the main service execution loop
-func (cws *PrismService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (ps *PrismService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 	changes <- svc.Status{State: svc.StartPending}
 
@@ -44,15 +44,15 @@ func (cws *PrismService) Execute(args []string, r <-chan svc.ChangeRequest, chan
 		return
 	}
 	defer elog.Close()
-	cws.elog = elog
+	ps.elog = elog
 
 	elog.Info(1, fmt.Sprintf("%s service starting", displayName))
 
 	// Set up context for graceful shutdown
-	cws.ctx, cws.cancel = context.WithCancel(context.Background())
+	ps.ctx, ps.cancel = context.WithCancel(context.Background())
 
 	// Find and start the daemon process
-	daemonCmd, err := cws.startDaemon()
+	daemonCmd, err := ps.startDaemon()
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("Failed to start daemon: %v", err))
 		return
@@ -74,7 +74,7 @@ func (cws *PrismService) Execute(args []string, r <-chan svc.ChangeRequest, chan
 				changes <- svc.Status{State: svc.StopPending}
 
 				// Cancel context to signal graceful shutdown
-				cws.cancel()
+				ps.cancel()
 
 				// Give daemon time to shutdown gracefully
 				shutdownComplete := make(chan error, 1)
@@ -106,7 +106,7 @@ func (cws *PrismService) Execute(args []string, r <-chan svc.ChangeRequest, chan
 				elog.Error(1, fmt.Sprintf("Unexpected service command: %d", c.Cmd))
 			}
 
-		case <-cws.ctx.Done():
+		case <-ps.ctx.Done():
 			// Context cancelled, shutting down
 			return
 
@@ -124,7 +124,7 @@ func (cws *PrismService) Execute(args []string, r <-chan svc.ChangeRequest, chan
 }
 
 // startDaemon locates and starts the prismd daemon process
-func (cws *PrismService) startDaemon() (*exec.Cmd, error) {
+func (ps *PrismService) startDaemon() (*exec.Cmd, error) {
 	// Get current executable directory
 	execPath, err := os.Executable()
 	if err != nil {
@@ -140,15 +140,15 @@ func (cws *PrismService) startDaemon() (*exec.Cmd, error) {
 	}
 
 	// Create daemon command
-	cmd := exec.CommandContext(cws.ctx, daemonPath, "--service")
+	cmd := exec.CommandContext(ps.ctx, daemonPath, "--service")
 	cmd.Dir = binDir
 
 	// Set up service environment variables
 	cmd.Env = append(os.Environ(),
-		"CWS_SERVICE_MODE=true",
-		fmt.Sprintf("CWS_LOG_PATH=%s", getLogPath()),
-		fmt.Sprintf("CWS_CONFIG_PATH=%s", getConfigPath()),
-		"CWS_DAEMON_PORT=8947",
+		"PRISM_SERVICE_MODE=true",
+		fmt.Sprintf("PRISM_LOG_PATH=%s", getLogPath()),
+		fmt.Sprintf("PRISM_CONFIG_PATH=%s", getConfigPath()),
+		"PRISM_DAEMON_PORT=8947",
 	)
 
 	// Start daemon process

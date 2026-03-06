@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$packageName = 'cloudworkstation'
+$packageName = 'prism'
 $toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 # Test channel configuration - uncomment for test releases
@@ -24,8 +24,8 @@ Install-ChocolateyZipPackage @packageArgs
 
 # Create shortcut
 $startMenuPath = [Environment]::GetFolderPath('CommonStartMenu')
-$shortcutPath = Join-Path $startMenuPath 'Programs\CloudWorkstation\CloudWorkstation.lnk'
-$targetPath = Join-Path $toolsDir 'cws-gui.exe'
+$shortcutPath = Join-Path $startMenuPath 'Programs\Prism\Prism.lnk'
+$targetPath = Join-Path $toolsDir 'prism-gui.exe'
 
 # Create directory if it doesn't exist
 if (!(Test-Path (Split-Path $shortcutPath))) {
@@ -34,7 +34,7 @@ if (!(Test-Path (Split-Path $shortcutPath))) {
 
 # Create shortcut if GUI executable exists
 if (Test-Path $targetPath) {
-  Install-ChocolateyShortcut -ShortcutFilePath $shortcutPath -TargetPath $targetPath -Description 'CloudWorkstation - Research environments in the cloud'
+  Install-ChocolateyShortcut -ShortcutFilePath $shortcutPath -TargetPath $targetPath -Description 'Prism - Research environments in the cloud'
 }
 
 # Add to PATH
@@ -44,12 +44,12 @@ Install-BinFile -Name 'cws' -Path $binPath
 Install-BinFile -Name 'prismd' -Path $daemonPath
 
 # Install Windows service for auto-startup
-$serviceWrapperPath = Join-Path $toolsDir 'cloudworkstation-service.exe'
+$serviceWrapperPath = Join-Path $toolsDir 'prism-service.exe'
 if (Test-Path $serviceWrapperPath) {
-    Write-Host "Installing CloudWorkstation Windows service..."
+    Write-Host "Installing Prism Windows service..."
     try {
         Start-Process -FilePath $serviceWrapperPath -ArgumentList 'install' -Wait -Verb RunAs
-        Write-Host "✅ CloudWorkstation service installed successfully"
+        Write-Host "✅ Prism service installed successfully"
         Write-Host "   Service will start automatically on system boot"
     }
     catch {
@@ -62,7 +62,7 @@ if (Test-Path $serviceWrapperPath) {
 }
 
 Write-Host ""
-Write-Host "🎉 CloudWorkstation v$version has been installed!"
+Write-Host "🎉 Prism v$version has been installed!"
 Write-Host ""
 Write-Host "📦 Installed Components:"
 Write-Host "  • CLI (cws) - Available in PATH"
@@ -79,6 +79,6 @@ Write-Host "  cws --help                    # Show CLI help"
 Write-Host "  cws daemon status             # Check daemon status"
 Write-Host ""
 Write-Host "🔧 Service Management:"
-Write-Host "  sc query CloudWorkstationDaemon        # Check service status"
-Write-Host "  sc start CloudWorkstationDaemon        # Start service manually"
-Write-Host "  sc stop CloudWorkstationDaemon         # Stop service"
+Write-Host "  sc query PrismDaemon        # Check service status"
+Write-Host "  sc start PrismDaemon        # Start service manually"
+Write-Host "  sc stop PrismDaemon         # Stop service"

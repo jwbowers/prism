@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CloudWorkstation validation pipeline
+# Prism validation pipeline
 # Runs comprehensive validation of the entire project
 
 set -e
 
-echo "🔧 CloudWorkstation Validation Pipeline"
+echo "🔧 Prism Validation Pipeline"
 echo "======================================="
 
 # Color functions
@@ -98,7 +98,7 @@ else
 fi
 
 echo ""
-green "🎉 CloudWorkstation validation completed successfully!"
+green "🎉 Prism validation completed successfully!"
 echo ""
 echo "Summary:"
 echo "  ✅ Version sync: Consistent"

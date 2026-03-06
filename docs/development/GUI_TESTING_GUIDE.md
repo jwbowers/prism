@@ -62,7 +62,7 @@ go version      # Should be 1.24+
 
 ### **Install Testing Dependencies**
 ```bash
-cd cmd/cws-gui/frontend
+cd cmd/prism-gui/frontend
 
 # Install all testing dependencies
 npm install
@@ -307,7 +307,7 @@ npx playwright test performance.spec.js
 ### **Local Development Testing**
 ```bash
 # Terminal 1: Start Wails GUI in dev mode
-cd cmd/cws-gui
+cd cmd/prism-gui
 wails3 dev
 
 # Terminal 2: Run tests against live application

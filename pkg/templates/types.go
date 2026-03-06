@@ -149,7 +149,7 @@ const (
 // AMISearchConfig defines dynamic AMI discovery parameters
 type AMISearchConfig struct {
 	Owner           string            `yaml:"owner,omitempty" json:"owner,omitempty"`                         // AWS account ID or alias
-	NamePattern     string            `yaml:"name_pattern,omitempty" json:"name_pattern,omitempty"`           // AMI name pattern (e.g. "cws-python-ml-*")
+	NamePattern     string            `yaml:"name_pattern,omitempty" json:"name_pattern,omitempty"`           // AMI name pattern (e.g. "prism-python-ml-*")
 	VersionTag      string            `yaml:"version_tag,omitempty" json:"version_tag,omitempty"`             // Specific version tag
 	Architecture    []string          `yaml:"architecture,omitempty" json:"architecture,omitempty"`           // ["x86_64", "arm64"]
 	MinCreationDate string            `yaml:"min_creation_date,omitempty" json:"min_creation_date,omitempty"` // ISO date string

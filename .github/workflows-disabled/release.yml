@@ -81,11 +81,11 @@ jobs:
           mkdir -p dist/{homebrew,chocolatey,conda}
           
           # Prepare Homebrew
-          cp packaging/homebrew/cloudworkstation.rb dist/homebrew/
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_AMD64/$(sha256sum bin/cws-macos-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/cloudworkstation.rb
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_ARM64/$(sha256sum bin/cws-macos-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/cloudworkstation.rb
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_AMD64/$(sha256sum bin/cws-linux-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/cloudworkstation.rb
-          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_ARM64/$(sha256sum bin/cws-linux-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/cloudworkstation.rb
+          cp packaging/homebrew/prism.rb dist/homebrew/
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_AMD64/$(sha256sum bin/cws-macos-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_ARM64/$(sha256sum bin/cws-macos-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_AMD64/$(sha256sum bin/cws-linux-amd64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
+          sed -i "s/REPLACE_WITH_ACTUAL_CHECKSUM_LINUX_ARM64/$(sha256sum bin/cws-linux-arm64.tar.gz | cut -d' ' -f1)/g" dist/homebrew/prism.rb
           
           # Prepare Chocolatey
           cp -r packaging/chocolatey/* dist/chocolatey/
@@ -106,11 +106,11 @@ jobs:
         run: |
           if [[ "$PRERELEASE" == "true" ]]; then
             echo "IS_PRERELEASE=true" >> $GITHUB_ENV
-            echo "RELEASE_NAME=CloudWorkstation v${VERSION} (Beta)" >> $GITHUB_ENV
+            echo "RELEASE_NAME=Prism v${VERSION} (Beta)" >> $GITHUB_ENV
             echo "CHANNEL=beta" >> $GITHUB_ENV
           else
             echo "IS_PRERELEASE=false" >> $GITHUB_ENV
-            echo "RELEASE_NAME=CloudWorkstation v${VERSION}" >> $GITHUB_ENV
+            echo "RELEASE_NAME=Prism v${VERSION}" >> $GITHUB_ENV
             echo "CHANNEL=stable" >> $GITHUB_ENV
           fi
 
@@ -125,7 +125,7 @@ jobs:
           draft: true
           prerelease: ${{ env.IS_PRERELEASE }}
           body: |
-            # CloudWorkstation v${{ env.VERSION }} (${{ env.CHANNEL }})
+            # Prism v${{ env.VERSION }} (${{ env.CHANNEL }})
             
             Release notes: [CHANGELOG.md](https://github.com/scttfrdmn/prism/blob/main/CHANGELOG.md)
             
@@ -134,28 +134,28 @@ jobs:
             ### Homebrew (macOS and Linux)
             ```bash
             # Stable channel
-            brew install scttfrdmn/cloudworkstation/cloudworkstation
+            brew install scttfrdmn/prism/prism
             
             # Test channel (if applicable)
-            brew install --head scttfrdmn/cloudworkstation/cloudworkstation
+            brew install --head scttfrdmn/prism/prism
             ```
             
             ### Chocolatey (Windows)
             ```powershell
             # Stable channel
-            choco install cloudworkstation
+            choco install prism
             
             # Test channel (if applicable)
-            choco install cloudworkstation --pre
+            choco install prism --pre
             ```
             
             ### Conda (All platforms)
             ```bash
             # Stable channel
-            conda install cloudworkstation -c scttfrdmn
+            conda install prism -c scttfrdmn
             
             # Test channel (if applicable)
-            conda install cloudworkstation -c scttfrdmn/label/dev
+            conda install prism -c scttfrdmn/label/dev
             ```
             
             ### Direct download
@@ -228,8 +228,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/homebrew/cloudworkstation.rb
-          asset_name: cloudworkstation.rb
+          asset_path: ./dist/homebrew/prism.rb
+          asset_name: prism.rb
           asset_content_type: text/plain
           
       - name: Upload Chocolatey package
@@ -238,8 +238,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/chocolatey/cloudworkstation.nuspec
-          asset_name: cloudworkstation.nuspec
+          asset_path: ./dist/chocolatey/prism.nuspec
+          asset_name: prism.nuspec
           asset_content_type: text/plain
           
       - name: Upload Conda package

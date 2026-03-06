@@ -358,7 +358,7 @@ launchForm struct {
 
 ### Code Organization
 ```
-cmd/cws-gui/main.go
+cmd/prism-gui/main.go
 ├── Application setup and initialization
 ├── Navigation and layout management
 ├── View creation functions (Dashboard, Instances, etc.)

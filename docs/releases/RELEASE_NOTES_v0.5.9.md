@@ -119,13 +119,13 @@ TUI: Storage page (key 4) → TAB to switch between Shared/Private
 
 ### Documentation Site Rebranding
 
-**Fixed**: Completed CloudWorkstation → Prism rebranding in documentation site
+**Fixed**: Completed Prism → Prism rebranding in documentation site
 
 **Changes**:
-- Updated `docs/CNAME`: cloudworkstation.io → prism.io
+- Updated `docs/CNAME`: prism.io → prism.io
 - Updated `docs/_config.yml`: Title, baseurl, logo → Prism
-- Fixed 16 documentation files with CloudWorkstation references
-- Renamed `cloudworkstation-iam-policy.json` → `prism-iam-policy.json`
+- Fixed 16 documentation files with Prism references
+- Renamed `prism-iam-policy.json` → `prism-iam-policy.json`
 - Updated environment variables: `CLOUDWORKSTATION_DEV` → `PRISM_DEV`
 - Updated Homebrew formula class: `class Cloudworkstation` → `class Prism`
 
@@ -170,7 +170,7 @@ TUI: Storage page (key 4) → TAB to switch between Shared/Private
 - `docs/CNAME` - Domain update
 - `docs/_config.yml` - Site configuration
 - `docs/ROADMAP.md` - v0.5.9 marked complete
-- 14 files with CloudWorkstation → Prism rebranding
+- 14 files with Prism → Prism rebranding
 
 **Version Files** (2 files):
 - `pkg/version/version.go` - v0.5.8 → v0.5.9

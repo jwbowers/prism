@@ -401,7 +401,7 @@ func (m StorageModel) renderEFSVolumes() string {
 	if len(m.volumes) == 0 {
 		return lipgloss.NewStyle().
 			Padding(2).
-			Render("No EFS volumes found\n\nUse CLI to create volumes:\n  cws volumes create <name>")
+			Render("No EFS volumes found\n\nUse CLI to create volumes:\n  prism volumes create <name>")
 	}
 
 	var lines []string
@@ -436,7 +436,7 @@ func (m StorageModel) renderEBSVolumes() string {
 	if len(m.storage) == 0 {
 		return lipgloss.NewStyle().
 			Padding(2).
-			Render("No EBS volumes found\n\nUse CLI to create volumes:\n  cws ebs-volumes create <name>")
+			Render("No EBS volumes found\n\nUse CLI to create volumes:\n  prism ebs-volumes create <name>")
 	}
 
 	var lines []string
@@ -463,7 +463,7 @@ func (m StorageModel) renderEBSVolumes() string {
 	}
 
 	content := strings.Join(lines, "\n")
-	content += "\n\nEBS volumes are managed via CLI:\n  cws ebs-volumes attach/detach <name> <instance>"
+	content += "\n\nEBS volumes are managed via CLI:\n  prism ebs-volumes attach/detach <name> <instance>"
 
 	return lipgloss.NewStyle().Padding(1, 2).Render(content)
 }

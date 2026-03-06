@@ -78,7 +78,7 @@ Transform Prism GUI into a unified research platform with tabbed embedded connec
 
 **1.1 Enhanced Connection Types**
 ```go
-// cmd/cws-gui/service.go - Enhanced connection types
+// cmd/prism-gui/service.go - Enhanced connection types
 type ConnectionType string
 const (
     ConnectionTypeSSH       ConnectionType = "ssh"
@@ -103,7 +103,7 @@ type ConnectionConfig struct {
 
 **1.2 AWS Service Integration**
 ```go
-// cmd/cws-gui/aws_service_handlers.go - New file
+// cmd/prism-gui/aws_service_handlers.go - New file
 package main
 
 import (
@@ -156,7 +156,7 @@ func (s *PrismService) OpenCloudShell(ctx context.Context, region string) (*Conn
 
 **1.3 Enhanced Instance Connection Handlers**
 ```go
-// cmd/cws-gui/service.go - Update existing methods
+// cmd/prism-gui/service.go - Update existing methods
 func (s *PrismService) OpenEmbeddedTerminal(ctx context.Context, instanceName string) (*ConnectionConfig, error) {
     access, err := s.GetInstanceAccess(ctx, instanceName)
     if err != nil {
@@ -251,7 +251,7 @@ func (s *Server) handleAWSServiceProxy(w http.ResponseWriter, r *http.Request) {
 
 **1.6 Enhanced Wails API Interface**
 ```tsx
-// cmd/cws-gui/frontend/src/App.tsx - Enhanced type definitions
+// cmd/prism-gui/frontend/src/App.tsx - Enhanced type definitions
 interface ConnectionConfig {
   id: string;
   type: 'ssh' | 'desktop' | 'web' | 'aws-service';
@@ -290,7 +290,7 @@ declare global {
 
 **1.7 Replace Mock Implementation**
 ```tsx
-// cmd/cws-gui/frontend/src/App.tsx - Real implementation
+// cmd/prism-gui/frontend/src/App.tsx - Real implementation
 const handleInstanceAction = async (action: string, instance: Instance) => {
   if (action === 'Connect') {
     try {
@@ -334,7 +334,7 @@ const handleInstanceAction = async (action: string, instance: Instance) => {
 
 **2.1 Enhanced App State**
 ```tsx
-// cmd/cws-gui/frontend/src/App.tsx - Enhanced state
+// cmd/prism-gui/frontend/src/App.tsx - Enhanced state
 interface ConnectionTab {
   id: string;
   title: string;
@@ -495,7 +495,7 @@ const AWSServiceLauncher = () => {
 
 **3.1 Embedded Terminal**
 ```tsx
-// cmd/cws-gui/frontend/src/components/EmbeddedTerminal.tsx
+// cmd/prism-gui/frontend/src/components/EmbeddedTerminal.tsx
 import React, { useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -581,7 +581,7 @@ export const EmbeddedTerminal: React.FC<EmbeddedTerminalProps> = ({
 
 **3.2 Embedded AWS Service**
 ```tsx
-// cmd/cws-gui/frontend/src/components/EmbeddedAWSService.tsx
+// cmd/prism-gui/frontend/src/components/EmbeddedAWSService.tsx
 import React, { useState, useRef } from 'react';
 import { Container, Header, Button, Spinner } from '@cloudscape-design/components';
 

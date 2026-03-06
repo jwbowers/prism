@@ -66,7 +66,7 @@ func (m *SSHKeyManagerV2) GetOrCreateKeyForProfile(profileName, region string) (
 	safeName := m.normalizeProfileName(profileName)
 
 	// Generate AWS key name with region for compliance/isolation
-	awsKeyName = fmt.Sprintf("cws-%s-%s", safeName, region)
+	awsKeyName = fmt.Sprintf("prism-%s-%s", safeName, region)
 	localPath = filepath.Join(m.keysDir, safeName)
 	publicPath := localPath + ".pub"
 
@@ -106,13 +106,17 @@ func (m *SSHKeyManagerV2) GetKeyPath(profileName string) (string, error) {
 
 // GetKeyPathFromAWSKeyName converts AWS KeyName to local key path
 func (m *SSHKeyManagerV2) GetKeyPathFromAWSKeyName(awsKeyName string) (string, error) {
-	// Parse AWS key name: cws-<profile>-<region>
-	if !strings.HasPrefix(awsKeyName, "cws-") {
+	// Parse AWS key name: prism-<profile>-<region> (or legacy cws-<profile>-<region>)
+	if !strings.HasPrefix(awsKeyName, "prism-") && !strings.HasPrefix(awsKeyName, "cws-") {
 		return "", fmt.Errorf("not a Prism key: %s", awsKeyName)
 	}
 
-	// Extract profile name (everything between "cws-" and last "-<region>")
-	parts := strings.SplitN(strings.TrimPrefix(awsKeyName, "cws-"), "-", 2)
+	// Extract profile name (everything between the prefix and last "-<region>")
+	trimmed := strings.TrimPrefix(awsKeyName, "prism-")
+	if trimmed == awsKeyName {
+		trimmed = strings.TrimPrefix(awsKeyName, "cws-")
+	}
+	parts := strings.SplitN(trimmed, "-", 2)
 	if len(parts) < 2 {
 		return "", fmt.Errorf("invalid Prism key name format: %s", awsKeyName)
 	}
@@ -264,7 +268,7 @@ func (m *SSHKeyManagerV2) ImportKey(profileName, region, keyFilePath string) err
 	}
 
 	publicPath := destPath + ".pub"
-	publicKeyLine := fmt.Sprintf("%s cloudworkstation-imported\n",
+	publicKeyLine := fmt.Sprintf("%s prism-imported\n",
 		strings.TrimSpace(string(ssh.MarshalAuthorizedKey(publicKey))))
 
 	if err := os.WriteFile(publicPath, []byte(publicKeyLine), 0644); err != nil {
@@ -274,7 +278,7 @@ func (m *SSHKeyManagerV2) ImportKey(profileName, region, keyFilePath string) err
 	}
 
 	// Create metadata entry
-	awsKeyName := fmt.Sprintf("cws-%s-%s", safeName, region)
+	awsKeyName := fmt.Sprintf("prism-%s-%s", safeName, region)
 	if err := m.updateMetadata(safeName, profileName, region, awsKeyName, []string{}); err != nil {
 		// Clean up on failure
 		os.Remove(destPath)
@@ -446,7 +450,7 @@ func (m *SSHKeyManagerV2) generateKeyPair(privateKeyPath, publicKeyPath string) 
 	}
 	defer publicFile.Close()
 
-	publicKeyLine := fmt.Sprintf("%s cloudworkstation-managed\n",
+	publicKeyLine := fmt.Sprintf("%s prism-managed\n",
 		strings.TrimSpace(string(ssh.MarshalAuthorizedKey(publicKey))))
 
 	if _, err := publicFile.WriteString(publicKeyLine); err != nil {

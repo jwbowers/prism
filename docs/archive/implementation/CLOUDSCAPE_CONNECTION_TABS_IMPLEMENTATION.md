@@ -176,7 +176,7 @@ config = await window.wails.PrismService.OpenSageMakerStudio(region);
 ## Usage Examples
 
 ### **Researcher Workflow**
-1. Launch Prism GUI: `./bin/cws-gui`
+1. Launch Prism GUI: `./bin/prism-gui`
 2. Navigate to **Instances** tab
 3. Click **Connect** on running instance
 4. SSH terminal opens in embedded tab
