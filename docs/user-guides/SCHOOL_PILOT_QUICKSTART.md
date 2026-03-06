@@ -1,6 +1,6 @@
 # Prism School Pilot Quick Start Guide
 
-*Last Updated: October 2025 • Version 0.5.8*
+*Last Updated: March 2026*
 
 ## 🎯 For Educational Institutions & School Pilots
 
@@ -63,7 +63,7 @@ aws configure
 **For Students/Educators** (Web Interface):
 ```bash
 # Start the GUI application
-cws-gui
+prism gui
 ```
 
 **For Command Line Users**:
@@ -72,30 +72,30 @@ cws-gui
 prism templates
 
 # Launch a Python environment for data science
-prism launch "Python Machine Learning" my-first-project
+prism workspace launch python-ml my-first-project
 
 # Launch an R environment for statistics
-prism launch "R Research Environment" statistics-project
+prism workspace launch r-rstudio-server statistics-project
 
 # Launch basic Ubuntu for general computing
-prism launch "Basic Ubuntu (APT)" cs-assignment
+prism workspace launch basic-ubuntu cs-assignment
 ```
 
 ## 🎓 Educational Templates
 
 Prism includes pre-configured environments designed for educational use:
 
-### **Python Machine Learning**
+### **Python Machine Learning** (`python-ml`)
 - **Best for**: Data science courses, AI/ML projects, research
 - **Includes**: TensorFlow, PyTorch, Jupyter notebooks, pandas, scikit-learn
-- **Launch time**: ~2 minutes
-- **Cost**: ~$0.48/hour (AWS t3.medium)
+- **Launch time**: ~5 minutes
+- **Cost**: ~$0.042/hour (AWS t3.medium)
 
-### **R Research Environment**
+### **R + RStudio Server** (`r-rstudio-server`)
 - **Best for**: Statistics courses, data analysis, research projects
-- **Includes**: RStudio, tidyverse, statistical packages
-- **Launch time**: ~3 minutes
-- **Cost**: ~$0.24/hour (AWS t3.small)
+- **Includes**: RStudio, tidyverse, R 4.4+, statistical packages
+- **Launch time**: ~8 minutes
+- **Cost**: ~$0.042/hour (AWS t3.medium)
 
 ### **Basic Ubuntu (APT)**
 - **Best for**: Computer science fundamentals, programming courses
@@ -125,11 +125,11 @@ Prism includes pre-configured environments designed for educational use:
 ### Cost Optimization Tips:
 ```bash
 # Enable hibernation for classes (preserves student work)
-prism hibernate my-project  # Pause when not in use
-prism resume my-project     # Resume with all work intact
+prism workspace hibernate my-project  # Pause when not in use
+prism workspace resume my-project     # Resume with all work intact
 
 # Use spot instances for assignments
-prism launch "Python Machine Learning" assignment --spot
+prism workspace launch python-ml assignment --spot
 
 # Set up automatic hibernation policies
 prism idle profile create classroom --idle-minutes 30 --action hibernate
@@ -140,14 +140,14 @@ prism idle profile create classroom --idle-minutes 30 --action hibernate
 ### Multi-Student Support
 ```bash
 # Launch environments for entire class
-prism launch "Python Machine Learning" alice-ml-project
-prism launch "Python Machine Learning" bob-ml-project
-prism launch "Python Machine Learning" carol-ml-project
+prism workspace launch python-ml alice-ml-project
+prism workspace launch python-ml bob-ml-project
+prism workspace launch python-ml carol-ml-project
 
 # Share files between students using EFS volumes
 prism volume create class-shared-data
-prism volume mount class-shared-data alice-ml-project
-prism volume mount class-shared-data bob-ml-project
+prism volume attach class-shared-data alice-ml-project
+prism volume attach class-shared-data bob-ml-project
 ```
 
 ### Student Collaboration
@@ -160,7 +160,7 @@ prism volume mount class-shared-data bob-ml-project
 ### **Computer Science Course**
 ```bash
 # Launch basic Ubuntu environment for each student
-prism launch "Basic Ubuntu (APT)" student-cs101
+prism workspace launch basic-ubuntu student-cs101
 
 # Students get full Linux environment with:
 # - GCC compiler, Python, Node.js, Git
@@ -172,7 +172,7 @@ prism launch "Basic Ubuntu (APT)" student-cs101
 ### **Data Science Class**
 ```bash
 # Launch Python ML environment with Jupyter
-prism launch "Python Machine Learning" student-datascience
+prism workspace launch python-ml student-datascience
 
 # Students access via web browser:
 # - Jupyter notebooks at http://[instance-ip]:8888
@@ -185,12 +185,12 @@ prism launch "Python Machine Learning" student-datascience
 ```bash
 # Create shared research environment
 prism volume create research-project-data
-prism launch "R Research Environment" professor-research
-prism launch "Python Machine Learning" student-researcher
+prism workspace launch r-rstudio-server professor-research
+prism workspace launch python-ml student-researcher
 
-# Mount shared storage for collaboration
-prism volume mount research-project-data professor-research
-prism volume mount research-project-data student-researcher
+# Attach shared storage for collaboration
+prism volume attach research-project-data professor-research
+prism volume attach research-project-data student-researcher
 
 # Both can access shared data and collaborate in real-time
 ```
@@ -218,14 +218,12 @@ prism volume mount research-project-data student-researcher
 - **Template Marketplace**: Access community-contributed educational templates
 
 ### **Automated Management**
+
+Templates include built-in idle detection that automatically hibernates instances after a configurable period of inactivity (default: 60 minutes). This preserves student work while reducing costs — no manual setup required.
+
+To hibernate all student environments manually:
 ```bash
-# Set up class-wide hibernation policies
-prism idle profile create night-shutdown --idle-minutes 60 --action hibernate
-
-# Apply to all student environments
-prism idle bulk-apply night-shutdown cs101-*
-
-# Automatic cost optimization without losing student work
+prism workspace hibernate student-name-project
 ```
 
 ### **Integration with LMS**
@@ -270,29 +268,25 @@ prism idle bulk-apply night-shutdown cs101-*
 **"Cannot connect to environment"**
 ```bash
 # Check if environment is running
-prism list
-prism status my-project
+prism workspace list
 
-# Restart if needed
-prism start my-project
+# Resume if stopped
+prism workspace resume my-project
 ```
 
 **"High costs"**
 ```bash
 # Check running instances
-prism list
+prism workspace list
 
 # Hibernate unused environments
-prism hibernate unused-project
-
-# Set up automatic hibernation
-prism idle profile create cost-saver --idle-minutes 15 --action hibernate
+prism workspace hibernate unused-project
 ```
 
 **"Student cannot access Jupyter/RStudio"**
 ```bash
 # Get connection info
-prism connect my-ml-project
+prism workspace connect my-ml-project
 # Follow the provided URL and SSH instructions
 ```
 

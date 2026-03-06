@@ -39,7 +39,7 @@ web-based IDE without the weight of a complete publishing stack.
 ### Launch
 
 ```bash
-prism launch r-rstudio-server my-analysis
+prism workspace launch r-rstudio-server my-analysis
 ```
 
 Prism provisions the instance, installs R 4.4+, RStudio Server, and all base packages. Watch the
@@ -57,12 +57,12 @@ output — it takes about 8 minutes. When it completes you'll see:
 Open your browser to `http://<public-ip>:8787`. Log in with:
 
 - **Username**: `researcher`
-- **Password**: the system password shown in `prism connect my-analysis` output (or set during init)
+- **Password**: the system password shown in `prism workspace connect my-analysis` output (or set during init)
 
 You can also SSH directly:
 
 ```bash
-prism connect my-analysis          # opens SSH terminal
+prism workspace connect my-analysis          # opens SSH terminal
 ```
 
 ### Verify your environment
@@ -169,7 +169,7 @@ stops billing (you pay only for EBS storage, ~$0.10/GB/month).
 ### Check your instance cost
 
 ```bash
-prism instances                # shows instance type and estimated hourly cost
+prism workspace list                 # shows instance type and estimated hourly cost
 ```
 
 A t3.medium (default for RStudio) costs ~$0.042/hour. Left running for a week = ~$7.
@@ -179,7 +179,7 @@ A t3.medium (default for RStudio) costs ~$0.042/hour. Left running for a week = 
 From your local terminal:
 
 ```bash
-prism hibernate my-analysis
+prism workspace hibernate my-analysis
 ```
 
 RStudio Server saves its state. The instance stops. Your files, installed packages, and running R
@@ -188,7 +188,7 @@ sessions (if you save `.RData`) are preserved on the EBS volume.
 ### Resume the next day
 
 ```bash
-prism resume my-analysis
+prism workspace resume my-analysis
 ```
 
 In ~2 minutes, your instance is back at the same IP with all files intact.
@@ -233,7 +233,7 @@ When your analysis outgrows the base RStudio environment, move to one of the ful
 A standalone environment with everything pre-installed:
 
 ```bash
-prism launch r-research-full-stack my-big-study
+prism workspace launch r-research-full-stack my-big-study
 ```
 
 Launches on **m7i.xlarge** (4 vCPU, 16 GB RAM) by default — a non-burstable instance suitable
@@ -254,7 +254,7 @@ Includes 80 GB disk — enough for medium-sized datasets and LaTeX.
 Builds on top of R + RStudio Server, adding Quarto, full TeX Live, Python, and Jupyter:
 
 ```bash
-prism launch r-publishing-stack my-paper
+prism workspace launch r-publishing-stack my-paper
 ```
 
 Also launches on m7i.xlarge with 80 GB disk. This is the recommended template for
@@ -305,7 +305,7 @@ interactive web app with colleagues or students.
 ### Launch a Shiny server
 
 ```bash
-prism launch r-shiny my-shiny-dashboard
+prism workspace launch r-shiny my-shiny-dashboard
 ```
 
 Installs R, Shiny Server, and a sample demo app. Accessible at port 3838.
@@ -315,7 +315,7 @@ Installs R, Shiny Server, and a sample demo app. Accessible at port 3838.
 SSH in and copy your app directory:
 
 ```bash
-prism connect my-shiny-dashboard
+prism workspace connect my-shiny-dashboard
 
 # On the instance:
 sudo mkdir -p /srv/shiny-server/my-app
@@ -329,7 +329,7 @@ Access at: `http://<ip>:3838/my-app/`
 ### Install additional R packages for your app
 
 ```bash
-prism connect my-shiny-dashboard
+prism workspace connect my-shiny-dashboard
 ```
 
 ```r
@@ -341,14 +341,16 @@ sudo systemctl restart shiny-server
 
 ### Transfer an app from your analysis instance
 
-If you developed the app on `my-analysis` (RStudio), transfer it:
+If you developed the app on `my-analysis` (RStudio), get both IPs then transfer:
 
 ```bash
-# On your local machine
-ANALYSIS_IP=$(prism instances --json | jq -r '.[] | select(.name=="my-analysis") | .public_ip')
-SHINY_IP=$(prism instances --json | jq -r '.[] | select(.name=="my-shiny-dashboard") | .public_ip')
+# Get IP addresses
+prism workspace list
 
 # Copy app from analysis instance to shiny instance
+ANALYSIS_IP=<analysis-instance-ip>
+SHINY_IP=<shiny-instance-ip>
+
 ssh researcher@${ANALYSIS_IP} "tar czf /tmp/my-app.tar.gz ~/projects/my-app"
 scp researcher@${ANALYSIS_IP}:/tmp/my-app.tar.gz /tmp/
 scp /tmp/my-app.tar.gz researcher@${SHINY_IP}:/tmp/
@@ -377,7 +379,7 @@ Future launches from that AMI take **under 2 minutes** instead of 15-90 minutes.
 ### Create an AMI
 
 ```bash
-prism ami create my-analysis --name "R 4.4 Genomics - March 2026"
+prism ami save my-analysis "R 4.4 Genomics - March 2026"
 ```
 
 This takes ~5 minutes. The instance keeps running while the snapshot is taken.
@@ -385,7 +387,7 @@ This takes ~5 minutes. The instance keeps running while the snapshot is taken.
 ### Launch from your AMI
 
 ```bash
-prism launch --ami "R 4.4 Genomics - March 2026" my-new-instance
+prism workspace launch --ami "R 4.4 Genomics - March 2026" my-new-instance
 ```
 
 Or in the GUI/TUI, select your saved AMI from the launch dialog.
@@ -400,9 +402,9 @@ Include the date and key packages in the name:
 ### List and manage AMIs
 
 ```bash
-prism ami list                          # all saved AMIs
-prism ami info "R 4.4 Genomics"         # details and launch history
-prism ami delete "old-ami-name"         # remove when no longer needed
+prism ami list                                  # all saved AMIs
+prism ami status <ami-id>                       # details for a specific AMI
+prism ami delete <ami-id>                       # remove when no longer needed
 ```
 
 ---
@@ -413,23 +415,24 @@ prism ami delete "old-ami-name"         # remove when no longer needed
 
 ```bash
 # Launch templates
-prism launch r-base-ubuntu24 my-scripts          # minimal, SSH only
-prism launch r-rstudio-server my-analysis        # RStudio web IDE
-prism launch r-research-full-stack my-lab        # full stack, m7i.xlarge
-prism launch r-publishing-stack my-paper         # + Quarto + LaTeX
-prism launch r-shiny my-dashboard                # Shiny Server
+prism workspace launch r-base-ubuntu24 my-scripts          # minimal, SSH only
+prism workspace launch r-rstudio-server my-analysis        # RStudio web IDE
+prism workspace launch r-research-full-stack my-lab        # full stack, m7i.xlarge
+prism workspace launch r-publishing-stack my-paper         # + Quarto + LaTeX
+prism workspace launch r-shiny my-dashboard                # Shiny Server
 
 # Instance management
-prism list                                       # all instances + IPs
-prism connect my-analysis                        # SSH into instance
-prism hibernate my-analysis                      # stop + preserve
-prism resume my-analysis                         # restart from hibernate
-prism terminate my-analysis                      # destroy (irreversible)
+prism workspace list                                       # all instances + IPs
+prism workspace connect my-analysis                        # SSH into instance
+prism workspace hibernate my-analysis                      # stop + preserve
+prism workspace resume my-analysis                         # restart from hibernate
+prism workspace delete my-analysis                         # destroy (irreversible)
 
 # AMI management
-prism ami create my-analysis --name "name"       # save environment
-prism ami list                                   # list saved AMIs
-prism launch --ami "name" new-instance           # launch from AMI
+prism ami save my-analysis "name"                          # save environment
+prism ami list                                             # list saved AMIs
+prism workspace launch --ami "name" new-instance           # launch from AMI
+prism ami delete <ami-id>                                  # remove AMI
 ```
 
 ### Access URLs
@@ -461,4 +464,4 @@ Add to `~/.Rprofile` on your instance to make it permanent.
   data between your analysis and Shiny instances
 - **Collaboration**: Add colleagues as users with `sudo adduser colleague` on the instance; they
   log in at `http://<ip>:8787` with their own credentials
-- **Cost visibility**: `prism costs` — see what your R instances are spending per day
+- **Cost visibility**: `prism budget` — see what your R instances are spending per day

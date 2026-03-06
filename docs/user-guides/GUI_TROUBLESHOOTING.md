@@ -1,7 +1,6 @@
 # Prism GUI Troubleshooting Guide
 
-**Version**: 0.5.1
-**Last Updated**: October 15, 2025
+**Last Updated**: March 2026
 
 ---
 
@@ -45,7 +44,9 @@ The GUI will:
 
 2. **Manually start daemon**:
    ```bash
-   ./bin/cws daemon start
+   ./bin/prism admin daemon start
+   # or just run any prism command to trigger auto-start:
+   ./bin/prism templates
    ```
 
 3. **Check for errors in GUI console output**:
@@ -57,9 +58,7 @@ The GUI will:
    - Click "Refresh" button
    - Or press Cmd/Ctrl+R
 
-**Legacy Behavior (pre-v0.5.2)**:
-- Daemon had to be started manually before launching GUI
-- Use: `./bin/cws daemon start && ./bin/cws-gui`
+**Legacy note**: In older versions, the daemon had to be started manually. Now it auto-starts.
 
 ---
 
@@ -77,7 +76,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 
 1. **Check if daemon is running**:
    ```bash
-   ./bin/cws daemon status
+   ./bin/prism admin daemon status
    ```
 
 2. **Check if port 8947 is available**:
@@ -96,8 +95,8 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 
 4. **Restart daemon if needed**:
    ```bash
-   ./bin/cws daemon stop
-   ./bin/cws daemon start
+   ./bin/prism admin daemon stop
+   ./bin/prism admin daemon start
    ```
 
 5. **Click "Test Connection" in GUI** or refresh browser.
@@ -125,14 +124,14 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 1. **Compare CLI vs API counts**:
    ```bash
    # CLI count
-   ./bin/cws templates | grep "Available Templates"
+   ./bin/prism templates | grep "Available Templates"
 
    # API count
    curl -s http://localhost:8947/api/v1/templates | jq 'keys | length'
    ```
 
 2. **If counts differ**:
-   - Restart daemon: `./bin/cws daemon restart`
+   - Restart daemon: `./bin/prism admin daemon restart`
    - Clear browser cache (if GUI is web-based)
    - Reload GUI application
 
@@ -200,7 +199,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 
 1. **Verify build is clean**:
    ```bash
-   cd cmd/cws-gui/frontend
+   cd cmd/prism-gui/frontend
    npm run build
    ```
 
@@ -251,7 +250,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 
 4. **Rebuild frontend**:
    ```bash
-   cd cmd/cws-gui/frontend
+   cd cmd/prism-gui/frontend
    npm install
    npm run build
    cd ../../..
@@ -396,7 +395,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 
 2. **Verify build optimization**:
    ```bash
-   cd cmd/cws-gui/frontend
+   cd cmd/prism-gui/frontend
    npm run build
    ```
 
@@ -509,7 +508,7 @@ curl http://localhost:8947/api/v1/health
 
 ### Before Reporting Issues
 
-1. **Check daemon status**: `./bin/cws daemon status`
+1. **Check daemon status**: `./bin/prism admin daemon status`
 2. **Check browser console**: Look for JavaScript errors
 3. **Check API directly**: Test endpoints with curl
 4. **Try different browser**: Rule out browser-specific issues
@@ -518,7 +517,7 @@ curl http://localhost:8947/api/v1/health
 ### Reporting Issues
 
 **Include in bug reports**:
-- Prism version: `./bin/cws version`
+- Prism version: `./bin/prism version`
 - Operating system and version
 - Browser and version
 - Daemon status output
@@ -536,10 +535,10 @@ Run these commands and include output in bug reports:
 
 ```bash
 # Version info
-./bin/cws version
+./bin/prism version
 
 # Daemon status
-./bin/cws daemon status
+./bin/prism admin daemon status
 
 # API health check
 curl http://localhost:8947/api/v1/health
@@ -548,7 +547,7 @@ curl http://localhost:8947/api/v1/health
 lsof -i :8947
 
 # Template count verification
-./bin/cws templates | wc -l
+./bin/prism templates | wc -l
 curl -s http://localhost:8947/api/v1/templates | jq 'keys | length'
 
 # System info
@@ -562,17 +561,15 @@ uname -a
 ### Essential Commands
 
 ```bash
-# Start daemon
-./bin/cws daemon start
+# Check daemon status (daemon auto-starts as needed)
+./bin/prism admin daemon status
 
-# Stop daemon
-./bin/cws daemon stop
-
-# Check daemon status
-./bin/cws daemon status
+# Stop daemon (auto-restarts on next command)
+./bin/prism admin daemon stop
 
 # Launch GUI
-./bin/cws-gui
+./bin/prism-gui
+# or: ./bin/prism gui
 
 # Test API
 curl http://localhost:8947/api/v1/health
@@ -600,6 +597,4 @@ curl http://localhost:8947/api/v1/health
 
 ---
 
-**Last Updated**: October 15, 2025
-**Version**: 0.5.1
-**For More Help**: See PRODUCTION_READINESS_CHECKLIST.md and SPRINT_0-2_COMPLETION_SUMMARY.md
+**For More Help**: See [Troubleshooting](TROUBLESHOOTING.md) and [Getting Started](GETTING_STARTED.md)

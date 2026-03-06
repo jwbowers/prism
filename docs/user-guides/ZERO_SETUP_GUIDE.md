@@ -15,7 +15,7 @@ brew install scttfrdmn/prism   # macOS/Linux
 # or: conda install prism       # Any platform via Conda
 
 # Launch a workstation - that's it!
-prism launch "Python Machine Learning (Simplified)" my-research
+prism workspace launch "Python Machine Learning (Simplified)" my-research
 ```
 
 For detailed installation instructions, see the main [Installation Guide](../index.md#installation).
@@ -29,7 +29,7 @@ For detailed installation instructions, see the main [Installation Guide](../ind
 The Prism daemon (`prismd`) starts automatically when needed:
 
 ```bash
-prism launch template my-instance
+prism workspace launch template my-instance
 # ✅ Daemon starts automatically if not running
 # ✅ No need for: prism daemon start
 # ✅ No systemd/launchd configuration needed
@@ -50,7 +50,7 @@ Prism automatically finds your AWS credentials:
 aws configure  # Your existing setup
 
 # Prism finds credentials automatically:
-prism launch template my-instance
+prism workspace launch template my-instance
 # ✅ Checks AWS_PROFILE environment variable
 # ✅ Checks ~/.aws/credentials
 # ✅ Checks ~/.aws/config for region
@@ -68,7 +68,7 @@ prism launch template my-instance
 No need to specify regions - Prism figures it out:
 
 ```bash
-prism launch template my-instance
+prism workspace launch template my-instance
 # ✅ Uses region from AWS config
 # ✅ Falls back to us-west-2 if not set
 # ✅ Validates template works in selected region
@@ -87,7 +87,7 @@ prism launch template my-instance
 Templates automatically adapt to your environment:
 
 ```bash
-prism launch "Python Machine Learning (Simplified)" my-ml
+prism workspace launch "Python Machine Learning (Simplified)" my-ml
 # ✅ Checks if GPU instances available in region
 # ✅ Falls back to CPU instance if needed
 # ✅ Validates AMIs exist in region
@@ -123,7 +123,7 @@ prism connect my-instance
 VPC and security groups configured automatically:
 
 ```bash
-prism launch template my-instance
+prism workspace launch template my-instance
 # ✅ Uses default VPC if available
 # ✅ Creates security group with proper rules
 # ✅ Opens only required ports (22, 443, template-specific)
@@ -141,7 +141,7 @@ prism launch template my-instance
 Storage optimized automatically:
 
 ```bash
-prism launch template my-instance --size L
+prism workspace launch template my-instance --size L
 # ✅ SSD (gp3) storage by default
 # ✅ Size adjusted based on template needs
 # ✅ Encryption enabled for security
@@ -161,19 +161,19 @@ Start simple, add complexity only when needed:
 ### Level 1: Absolute Beginner
 ```bash
 # Just launch with defaults
-prism launch "R Research Environment (Simplified)" my-analysis
+prism workspace launch "R Research Environment (Simplified)" my-analysis
 ```
 
 ### Level 2: Basic Customization
 ```bash
 # Specify size
-prism launch "R Research Environment (Simplified)" my-analysis --size L
+prism workspace launch "R Research Environment (Simplified)" my-analysis --size L
 ```
 
 ### Level 3: Advanced Options
 ```bash
 # Full control
-prism launch "R Research Environment (Simplified)" my-analysis \
+prism workspace launch "R Research Environment (Simplified)" my-analysis \
   --size XL \
   --region eu-west-1 \
   --spot \
@@ -183,7 +183,7 @@ prism launch "R Research Environment (Simplified)" my-analysis \
 ### Level 4: Expert Mode
 ```bash
 # Complete customization
-prism launch template my-instance \
+prism workspace launch template my-instance \
   --instance-type r6i.2xlarge \
   --subnet subnet-abc123 \
   --security-group sg-def456 \
@@ -208,7 +208,7 @@ aws configure
 
 **Solution:** Prism will prompt to create one:
 ```bash
-prism launch template my-instance
+prism workspace launch template my-instance
 # ⚠️  No default VPC found in us-west-2
 # Would you like to create one? [Y/n]: Y
 # ✅ Default VPC created
@@ -218,7 +218,7 @@ prism launch template my-instance
 
 **Solution:** Automatic fallback with notification:
 ```bash
-prism launch gpu-template my-training
+prism workspace launch gpu-template my-training
 # ⚠️  GPU instance g4dn.xlarge not available in us-west-2
 # ✅ Using g4dn.xlarge in us-east-1 instead
 # Proceed? [Y/n]: Y
@@ -277,7 +277,7 @@ export PRISM_AUTO_START=false
 ### Data Science Workstation
 ```bash
 # One command to productivity
-prism launch "Python Machine Learning (Simplified)" notebook
+prism workspace launch "Python Machine Learning (Simplified)" notebook
 
 # What happens automatically:
 # ✅ Starts daemon
@@ -291,7 +291,7 @@ prism launch "Python Machine Learning (Simplified)" notebook
 ### R Statistical Analysis
 ```bash
 # Launch RStudio environment
-prism launch "R Research Environment (Simplified)" stats
+prism workspace launch "R Research Environment (Simplified)" stats
 
 # Automatic setup:
 # ✅ Memory-optimized instance selection
@@ -303,7 +303,7 @@ prism launch "R Research Environment (Simplified)" stats
 ### Development Environment
 ```bash
 # Web development setup
-prism launch "Web Development (APT)" webapp
+prism workspace launch "Web Development (APT)" webapp
 
 # Zero-config features:
 # ✅ Docker pre-installed
@@ -318,7 +318,7 @@ prism launch "Web Development (APT)" webapp
 2. **Use templates** - Pre-configured for specific workflows
 3. **Enable idle policies** - Automatic cost optimization
 4. **Trust the fallbacks** - Prism makes smart choices
-5. **Check status regularly** - `prism list` shows all instances
+5. **Check status regularly** - `prism workspace list` shows all instances
 
 ## 🎯 The Zero-Setup Promise
 
@@ -337,4 +337,4 @@ You should be doing research, not configuring infrastructure. Prism makes that p
 - [Quick Start Guide](../README.md#-quick-start---zero-setup-experience)
 - [Administrator Guide](../admin-guides/ADMINISTRATOR_GUIDE.md) (for manual AWS configuration)
 - [Template Format](TEMPLATE_FORMAT.md) (creating custom templates)
-- [User Guide](USER_GUIDE_v0.5.x.md) (complete CLI reference)
+- [Getting Started Guide](GETTING_STARTED.md) (complete CLI reference)

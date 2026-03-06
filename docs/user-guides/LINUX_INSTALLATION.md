@@ -7,27 +7,21 @@ Professional installation guide for Prism on enterprise Linux distributions usin
 ### Ubuntu/Debian (DEB Package)
 
 ```bash
-# Download and install DEB package
-wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_0.4.2-1_amd64.deb
-sudo dpkg -i prism_0.4.2-1_amd64.deb
+# Download and install DEB package (latest version)
+wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_linux_amd64.deb
+sudo dpkg -i prism_linux_amd64.deb
 sudo apt-get install -f  # Fix any dependency issues
-
-# Configure and start
-sudo systemctl enable --now prism
 ```
 
 ### RHEL/CentOS/Fedora (RPM Package)
 
 ```bash
-# Download and install RPM package
-wget https://github.com/scttfrdmn/prism/releases/latest/download/prism-0.4.2-1.x86_64.rpm
-sudo dnf install prism-0.4.2-1.x86_64.rpm
+# Download and install RPM package (latest version)
+wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_linux_amd64.rpm
+sudo dnf install prism_linux_amd64.rpm
 
 # Or for older systems
-sudo yum install prism-0.4.2-1.x86_64.rpm
-
-# Configure and start
-sudo systemctl enable --now prism
+sudo yum install prism_linux_amd64.rpm
 ```
 
 ## Supported Distributions
@@ -47,7 +41,7 @@ sudo systemctl enable --now prism
 
 | Distribution | Version | Package Manager | Status |
 |--------------|---------|-----------------|---------|
-| Ubuntu | 20.04, 22.04, 23.04 | `apt` | ✅ Fully Supported |
+| Ubuntu | 20.04, 22.04, 24.04 | `apt` | ✅ Fully Supported |
 | Debian | 11, 12 | `apt` | ✅ Fully Supported |
 | Linux Mint | 20, 21 | `apt` | ✅ Fully Supported |
 
@@ -80,19 +74,19 @@ All required dependencies are automatically installed by the package manager:
 **For DEB systems (Ubuntu/Debian):**
 ```bash
 # Download latest DEB package
-wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_0.4.2-1_amd64.deb
+wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_linux_amd64.deb
 
 # Or for ARM64
-wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_0.4.2-1_arm64.deb
+wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_linux_arm64.deb
 ```
 
 **For RPM systems (RHEL/CentOS/Fedora):**
 ```bash
 # Download latest RPM package
-wget https://github.com/scttfrdmn/prism/releases/latest/download/prism-0.4.2-1.x86_64.rpm
+wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_linux_amd64.rpm
 
 # Or for ARM64
-wget https://github.com/scttfrdmn/prism/releases/latest/download/prism-0.4.2-1.aarch64.rpm
+wget https://github.com/scttfrdmn/prism/releases/latest/download/prism_linux_arm64.rpm
 ```
 
 #### 2. Verify Package Integrity
@@ -110,23 +104,23 @@ sha256sum -c SHA256SUMS --ignore-missing
 **Ubuntu/Debian:**
 ```bash
 # Install with dependency resolution
-sudo apt install ./prism_0.4.2-1_amd64.deb
+sudo apt install ./prism_linux_amd64.deb
 
 # Or manual installation
-sudo dpkg -i prism_0.4.2-1_amd64.deb
+sudo dpkg -i prism_linux_amd64.deb
 sudo apt-get install -f  # Fix dependencies if needed
 ```
 
 **RHEL/CentOS/Fedora:**
 ```bash
 # Fedora/RHEL 8+/CentOS Stream
-sudo dnf install prism-0.4.2-1.x86_64.rpm
+sudo dnf install prism_linux_amd64.rpm
 
 # Older RHEL/CentOS
-sudo yum install prism-0.4.2-1.x86_64.rpm
+sudo yum install prism_linux_amd64.rpm
 
 # openSUSE
-sudo zypper install prism-0.4.2-1.x86_64.rpm
+sudo zypper install prism_linux_amd64.rpm
 ```
 
 #### 4. Post-Installation Configuration
@@ -237,8 +231,8 @@ sudo systemctl stop prism
 prism --version
 prism --help
 
-# Test daemon connectivity  
-prism daemon status
+# Test daemon connectivity (daemon auto-starts as needed)
+prism admin daemon status
 
 # List available templates
 prism templates
@@ -250,16 +244,16 @@ prism profiles current
 #### Advanced Testing
 ```bash
 # Launch a test instance (will create real AWS resources)
-prism launch "Python Machine Learning" test-instance
+prism workspace launch "Python Machine Learning" test-instance
 
 # Check instance status
-prism list
+prism workspace list
 
 # Connect to instance
-prism connect test-instance
+prism workspace connect test-instance
 
 # Clean up
-prism terminate test-instance
+prism workspace delete test-instance
 ```
 
 ## Troubleshooting

@@ -38,10 +38,10 @@ For detailed AWS setup including IAM permissions, see the [Administrator Guide](
 prism templates
 
 # Launch a Python ML environment
-prism launch python-ml my-first-project
+prism workspace launch python-ml my-first-project
 
 # Get connection info
-prism connect my-first-project
+prism workspace connect my-first-project
 ```
 
 That's it! Your research environment is ready.
@@ -55,10 +55,10 @@ Prism offers three ways to interact:
 ### 🖥️ **GUI (Desktop App)**
 Perfect for visual management and one-click operations.
 ```bash
-cws-gui
+prism gui
 ```
 
-### 📱 **TUI (Terminal Interface)**  
+### 📱 **TUI (Terminal Interface)**
 Keyboard-driven interface for remote work and SSH sessions.
 ```bash
 prism tui
@@ -67,7 +67,7 @@ prism tui
 ### 💻 **CLI (Command Line)**
 Scriptable interface for automation and power users.
 ```bash
-prism launch python-ml my-project --size L
+prism workspace launch python-ml my-project --size L
 ```
 
 ---
@@ -76,26 +76,27 @@ prism launch python-ml my-project --size L
 
 ### Template Management
 ```bash
-prism templates                    # List available environments
-prism templates info python-ml    # Get template details
-prism launch python-ml my-project # Launch environment
+prism templates                                    # List available environments
+prism templates info python-ml                     # Get template details
+prism workspace launch python-ml my-project        # Launch environment
 ```
 
 ### Instance Management
 ```bash
-prism list                        # Show running instances
-prism connect my-project          # Get connection info
-prism stop my-project             # Stop when not in use
-prism start my-project            # Resume later
-prism delete my-project           # Remove completely
+prism workspace list                               # Show running instances
+prism workspace connect my-project                 # Get connection info
+prism workspace stop my-project                    # Stop when not in use
+prism workspace resume my-project                  # Resume later
+prism workspace delete my-project                  # Remove completely
 ```
 
 ### Cost Optimization
 ```bash
-prism hibernate my-project        # Preserve RAM, reduce costs
-prism resume my-project           # Resume hibernated instance
-prism idle enable                 # Auto-hibernate idle instances
+prism workspace hibernate my-project               # Preserve work, reduce costs
+prism workspace resume my-project                  # Resume hibernated instance
 ```
+
+Auto-hibernation is configured per template (see each template's idle detection settings).
 
 ---
 
@@ -104,13 +105,13 @@ prism idle enable                 # Auto-hibernate idle instances
 ### Data Science Project
 ```bash
 # Launch Jupyter environment
-prism launch python-ml data-analysis --size L
+prism workspace launch python-ml data-analysis --size L
 
 # Create shared storage
 prism volume create shared-datasets
 
 # Connect and start working
-prism connect data-analysis
+prism workspace connect data-analysis
 # Opens: ssh user@ip-address -L 8888:localhost:8888
 # Jupyter: http://localhost:8888
 ```
@@ -118,24 +119,24 @@ prism connect data-analysis
 ### R Statistical Analysis
 ```bash
 # Launch R + RStudio environment
-prism launch r-research stats-project
+prism workspace launch r-rstudio-server stats-project
 
 # Get RStudio connection
-prism connect stats-project
+prism workspace connect stats-project
 # Opens: http://ip-address:8787 (RStudio Server)
 ```
 
 ### Custom Environment
 ```bash
 # Start with base template
-prism launch basic-ubuntu my-custom
+prism workspace launch basic-ubuntu my-custom
 
 # Customize your setup
-prism connect my-custom
+prism workspace connect my-custom
 # Install packages, configure tools
 
-# Save for reuse
-prism save my-custom custom-template
+# Save for reuse as an AMI
+prism ami save my-custom "my-custom-template"
 ```
 
 ---
@@ -144,12 +145,12 @@ prism save my-custom custom-template
 
 ### "Daemon not running"
 ```bash
-# Check daemon status
-prism daemon status
+# Check daemon status (daemon usually auto-starts)
+prism admin daemon status
 
-# Restart daemon if troubleshooting (rarely needed - daemon auto-starts)
-prism daemon stop
-# Next command will auto-start fresh daemon
+# Restart daemon if needed
+prism admin daemon stop
+# Next command will auto-start a fresh daemon
 prism templates
 ```
 
@@ -175,7 +176,7 @@ Make sure your AWS user has the required permissions. See our [AWS IAM Permissio
 aws ec2 describe-availability-zones
 
 # Try different region
-prism launch python-ml my-project --region us-east-1
+prism workspace launch python-ml my-project --region us-east-1
 ```
 
 ---
@@ -194,29 +195,25 @@ prism launch python-ml my-project --region us-east-1
 
 ## Advanced Features
 
-### Template Stacking
-```bash
-# Build on existing templates
-prism apply gpu-drivers my-project    # Add GPU support
-prism apply docker-tools my-project   # Add Docker
-```
-
 ### Project Management
 ```bash
 # Create research project
 prism project create brain-study --budget 500
 
 # Launch in project context
-prism launch neuroimaging analysis --project brain-study
+prism workspace launch neuroimaging analysis --project brain-study
 ```
 
 ### Custom AMIs
 ```bash
-# Build optimized AMI from template
-prism ami build python-ml --region us-west-2
+# Build an AMI from a template (pre-baked, fast launch)
+prism ami create python-ml
 
-# Save running instance as template
-prism ami save my-project custom-env
+# Save a running instance as an AMI
+prism ami save my-project "My Custom Environment"
+
+# Launch from your saved AMI
+prism workspace launch --ami "My Custom Environment" fast-start
 ```
 
 **🎯 Key Principle**: Prism defaults to success. Most commands work without options, with smart defaults for research computing.

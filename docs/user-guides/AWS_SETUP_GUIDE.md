@@ -156,7 +156,7 @@ You can specify the AWS profile for individual commands:
 
 ```bash
 # Set environment variable for single session
-AWS_PROFILE=aws prism templates list
+AWS_PROFILE=aws prism templates
 
 # Or use Prism's profile system
 prism --aws-profile aws templates list
@@ -167,15 +167,14 @@ prism --aws-profile aws templates list
 ### Quick Health Check
 
 ```bash
-# Check daemon can access AWS
-prism daemon start
-prism doctor
+# Check daemon status (daemon auto-starts as needed)
+prism admin daemon status
 
 # List available templates (requires AWS access)
-prism templates list
+prism templates
 
 # Check your current configuration
-prism profile current
+prism profiles current
 aws configure list --profile aws
 ```
 
@@ -183,13 +182,13 @@ aws configure list --profile aws
 
 ```bash
 # Launch a simple test instance
-prism launch "Basic Ubuntu (APT)" test-instance
+prism workspace launch "Basic Ubuntu (APT)" test-instance
 
 # Check it's running
-prism list
+prism workspace list
 
 # Clean up
-prism terminate test-instance
+prism workspace delete test-instance
 ```
 
 ## 5. Regional Configuration
@@ -256,12 +255,12 @@ aws ec2 describe-instances --profile aws --region us-west-2
 
 **Prism can't find your profile:**
 ```bash
-# Check Prism sees your AWS profile
-prism doctor --verbose
-
 # Create explicit Prism profile
-prism profile create research --aws-profile aws --region us-west-2
-prism profile use research
+prism profiles add research --aws-profile aws --region us-west-2
+prism profiles switch research
+
+# Verify it's active
+prism profiles current
 ```
 
 ### Debug Mode
@@ -274,7 +273,7 @@ export AWS_PROFILE=aws
 export PRISM_DEBUG=true
 
 # Run commands with detailed output
-prism templates list
+prism templates
 ```
 
 ## 7. Production Recommendations
@@ -292,19 +291,19 @@ prism templates list
 # Set up billing alerts in AWS Console
 # Enable Cost Explorer
 # Use spot instances for non-critical workloads
-prism launch "Python ML" my-project --spot
+prism workspace launch "Python Machine Learning (Simplified)" my-project --spot
 
 # Use hibernation for cost savings
-prism hibernate my-project
+prism workspace hibernate my-project
 ```
 
 ### Profile Organization
 
 ```bash
 # Organize profiles by project/purpose
-prism profile create personal-research --aws-profile aws --region us-west-2
-prism profile create team-project --aws-profile work --region us-east-1
-prism profile create gpu-experiments --aws-profile aws --region us-west-2
+prism profiles add personal-research --aws-profile aws --region us-west-2
+prism profiles add team-project --aws-profile work --region us-east-1
+prism profiles add gpu-experiments --aws-profile aws --region us-west-2
 ```
 
 ## 8. Example Complete Setup
@@ -317,19 +316,17 @@ aws configure --profile aws
 # Enter your credentials when prompted
 
 # 2. Create Prism profile (RECOMMENDED METHOD)
-prism daemon start
 prism profiles add personal my-research --aws-profile aws --region us-west-2
 prism profiles switch aws  # Switch to use your 'aws' profile
 
 # 3. Verify configuration
 prism profiles current
-prism doctor
 
 # 4. Launch your first workstation
-prism launch "Python Machine Learning (Simplified)" my-research
+prism workspace launch "Python Machine Learning (Simplified)" my-research
 
 # 5. Connect and start working
-prism connect my-research
+prism workspace connect my-research
 ```
 
 ### Alternative Setup (Environment Variables)
@@ -349,17 +346,15 @@ export PRISM_DEV=true
 echo 'export AWS_PROFILE=aws' >> ~/.zshrc
 echo 'export AWS_REGION=us-west-2' >> ~/.zshrc
 
-# 4. Test and launch
-prism daemon start
-prism templates list
-prism launch "Python ML" my-research
+# 4. Test and launch (daemon auto-starts)
+prism templates
+prism workspace launch "Python Machine Learning (Simplified)" my-research
 ```
 
 ## Need Help?
 
-- **Prism Issues**: `prism doctor --verbose`
 - **AWS Issues**: `aws sts get-caller-identity --profile aws`
 - **Documentation**: Run `prism --help` for command reference
-- **Demo**: Run `./demo.sh` to see Prism in action
+- **GitHub Issues**: https://github.com/scttfrdmn/prism/issues
 
 Your AWS profile 'aws' should now work seamlessly with Prism!

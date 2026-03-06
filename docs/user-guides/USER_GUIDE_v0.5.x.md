@@ -1,6 +1,14 @@
 # Prism User Guide - v0.5.x Series
 
-**Version**: 0.5.x Series (Universal AMI System Era)
+> **⚠️ ARCHIVED — Historical Reference Only**
+>
+> This guide documents Prism v0.5.x (December 2025). The CLI interface has changed significantly since then. For current documentation, see:
+> - [Getting Started Guide](GETTING_STARTED.md) — current CLI reference
+> - [Custom AMI Workflow](CUSTOM_AMI_WORKFLOW.md) — current AMI commands
+>
+> Key changes: workspace commands moved under `prism workspace` prefix, daemon under `prism admin daemon`, AMI save via `prism ami save`.
+
+**Version**: 0.5.x Series (Historical)
 **Last Updated**: December 2025
 **Target Audience**: Researchers, Students, Data Scientists
 

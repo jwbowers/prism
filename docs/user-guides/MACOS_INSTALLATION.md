@@ -32,7 +32,7 @@ prismd version
 ```
 
 **Includes:**
-- `cws` CLI tool
+- `prism` CLI tool
 - `prismd` daemon
 - `prism-gui` desktop application (if GUI support is available)
 - Automatic PATH configuration
@@ -80,8 +80,8 @@ prism version
 # List available templates
 prism templates
 
-# Check daemon status
-prism daemon status
+# Check daemon status (auto-starts as needed)
+prism admin daemon status
 ```
 
 ## Using Prism on macOS
@@ -90,7 +90,7 @@ prism daemon status
 
 ```bash
 # Start the desktop application
-cws-gui
+prism gui
 ```
 
 ### Launch Terminal Interface
@@ -107,7 +107,7 @@ prism tui
 prism --help
 
 # Launch your first environment
-prism launch python-ml my-first-project
+prism workspace launch python-ml my-first-project
 ```
 
 ## Updating Prism
@@ -123,7 +123,7 @@ prism version
 
 ## Troubleshooting
 
-### "Command not found: cws"
+### "Command not found: prism"
 
 ```bash
 # Check if Prism is installed
@@ -140,7 +140,7 @@ echo $PATH | grep homebrew
 
 ```bash
 # Ensure proper permissions on binaries
-ls -la $(which cws)
+ls -la $(which prism)
 ls -la $(which prismd)
 
 # Fix permissions if needed
@@ -150,12 +150,11 @@ brew reinstall prism
 ### Daemon Connection Issues
 
 ```bash
-# Check daemon status
-prism daemon status
+# Check daemon status (daemon auto-starts as needed)
+prism admin daemon status
 
-# Restart daemon if needed
-prism daemon stop
-# Next command will auto-start daemon
+# Stop daemon and let it auto-restart on next command
+prism admin daemon stop
 prism templates
 ```
 
@@ -173,6 +172,5 @@ rm -rf ~/.prism
 ## Next Steps
 
 - See [Getting Started Guide](GETTING_STARTED.md) for first-time usage
-- Read [User Guide v0.5.x](USER_GUIDE_v0.5.x.md) for complete CLI reference
 - Explore [Template Format](TEMPLATE_FORMAT.md) to create custom environments
 - Check [Troubleshooting](TROUBLESHOOTING.md) for common issues

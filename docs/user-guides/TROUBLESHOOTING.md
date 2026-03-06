@@ -6,16 +6,18 @@
 
 **What you see:**
 ```
-Error: daemon not running. Start with: prism daemon start
+Error: daemon not running
 ```
 
 **Quick fix:**
 ```bash
-# Start the daemon
-prism daemon start
+# Daemon usually auto-starts — try your command again
+# If it's failing, check status:
+prism admin daemon status
 
-# Verify it's running
-prism daemon status
+# Stop and let it auto-restart on next command
+prism admin daemon stop
+prism templates
 ```
 
 **If daemon won't start:**
@@ -26,8 +28,8 @@ lsof -i :8947
 # Kill conflicting process if found
 kill -9 <PID>
 
-# Try starting again
-prism daemon start
+# Try running a prism command to trigger auto-start
+prism templates
 ```
 
 ---
@@ -58,7 +60,7 @@ echo $AWS_PROFILE
 export AWS_PROFILE=your-profile-name
 
 # Or specify directly
-prism launch python-ml my-project --profile your-profile-name
+prism workspace launch python-ml my-project --profile your-profile-name
 ```
 
 ---
@@ -74,8 +76,8 @@ Error: subnet not available
 
 **Quick fix:**
 ```bash
-# Prism auto-discovers VPC/subnet (new feature!)
-prism launch python-ml my-project
+# Prism auto-discovers VPC/subnet
+prism workspace launch python-ml my-project
 
 # If auto-discovery fails, check your VPC setup
 aws ec2 describe-vpcs --query 'Vpcs[?IsDefault==`true`]'
@@ -85,9 +87,6 @@ aws ec2 describe-vpcs --query 'Vpcs[?IsDefault==`true`]'
 ```bash
 # Create a default VPC
 aws ec2 create-default-vpc
-
-# Or specify manually (advanced)
-prism ami build python-ml --vpc vpc-12345 --subnet subnet-67890
 ```
 
 ---
@@ -103,28 +102,22 @@ Unexpected AWS charges
 **Quick fix:**
 ```bash
 # Check current instances and costs
-prism list
+prism workspace list
 
 # Stop unused instances
-prism stop instance-name
+prism workspace stop instance-name
 
 # Use hibernation to preserve work and reduce costs
-prism hibernate instance-name
-
-# Enable auto-hibernation for idle instances
-prism idle enable
+prism workspace hibernate instance-name
 ```
 
 **Cost optimization commands:**
 ```bash
 # Use smaller instance sizes
-prism launch python-ml my-project --size S
+prism workspace launch python-ml my-project --size S
 
 # Use spot instances (up to 90% savings)
-prism launch python-ml my-project --spot
-
-# Check institutional pricing discounts
-prism pricing show
+prism workspace launch python-ml my-project --spot
 ```
 
 ---
@@ -141,19 +134,19 @@ Can't access Jupyter/RStudio
 **Quick fix:**
 ```bash
 # Check instance status
-prism list
+prism workspace list
 
 # Ensure instance is running
-prism start instance-name
+prism workspace resume instance-name
 
 # Get fresh connection info
-prism connect instance-name
+prism workspace connect instance-name
 ```
 
 **If SSH still fails:**
 ```bash
-# Check security group settings
-prism list --verbose
+# Check instance status details
+prism workspace list
 
 # Wait for instance to fully boot (can take 2-3 minutes)
 # Then try connecting again
@@ -172,13 +165,13 @@ Jupyter kernel crashes
 
 **Quick fix:**
 ```bash
-# Use larger instance size
-prism stop instance-name
-prism launch python-ml instance-name --size L
+# Delete and relaunch with larger instance size
+prism workspace delete instance-name
+prism workspace launch python-ml instance-name --size L
 
-# Or add more storage
-prism storage create extra-space XL
-prism storage attach extra-space instance-name
+# Or add more EFS storage for data
+prism volume create extra-space
+prism volume attach extra-space instance-name
 ```
 
 ---
@@ -199,9 +192,6 @@ prism templates validate python-ml
 
 # Check template contents
 prism templates info python-ml
-
-# Apply additional packages to running instance
-prism apply docker-tools instance-name
 ```
 
 **If template seems broken:**
@@ -209,9 +199,6 @@ prism apply docker-tools instance-name
 # Force refresh template cache
 rm -rf ~/.prism/templates
 prism templates
-
-# Use AMI-based templates for reliability
-prism templates | grep "(AMI)"
 ```
 
 ---
@@ -228,10 +215,10 @@ AMI not found in region
 **Quick fix:**
 ```bash
 # Try different region
-prism launch python-ml my-project --region us-east-1
+prism workspace launch python-ml my-project --region us-east-1
 
 # Use different instance size
-prism launch python-ml my-project --size M
+prism workspace launch python-ml my-project --size M
 
 # Check region availability
 aws ec2 describe-availability-zones --region us-west-2
@@ -250,16 +237,13 @@ Interface unresponsive
 
 **Quick fix:**
 ```bash
-# For GUI issues on macOS
-# Allow keychain access when prompted (now shows "Prism")
-
 # For TUI display issues
 export TERM=xterm-256color
 prism tui
 
 # For interface problems, use CLI as backup
-prism list
-prism connect instance-name
+prism workspace list
+prism workspace connect instance-name
 ```
 
 ---
@@ -271,11 +255,11 @@ prism connect instance-name
 # Set debug mode
 export PRISM_DEBUG=1
 
-# Check daemon logs
-prism daemon logs
+# Check daemon status
+prism admin daemon status
 
 # Or run commands with verbose output
-prism launch python-ml my-project --verbose
+prism workspace launch python-ml my-project --verbose
 ```
 
 ### Check System Requirements
@@ -293,13 +277,13 @@ curl -I https://ec2.amazonaws.com
 ### Reset Prism
 ```bash
 # Stop daemon
-prism daemon stop
+prism admin daemon stop
 
 # Clear cache and state
 rm -rf ~/.prism/
 
-# Restart fresh
-prism daemon start
+# Restart fresh (daemon auto-starts on next command)
+prism templates
 ```
 
 ---
@@ -308,8 +292,8 @@ prism daemon start
 
 ### Before Opening an Issue
 
-1. **Check daemon status**: `prism daemon status`
-2. **Verify AWS credentials**: `aws sts get-caller-identity`  
+1. **Check daemon status**: `prism admin daemon status`
+2. **Verify AWS credentials**: `aws sts get-caller-identity`
 3. **Try CLI interface**: Sometimes GUI/TUI have display issues
 4. **Check recent changes**: Did you update AWS credentials or change regions?
 
@@ -322,7 +306,7 @@ When asking for help, please include:
 prism version
 
 # Daemon status
-prism daemon status
+prism admin daemon status
 
 # AWS account info (no credentials)
 aws sts get-caller-identity --query 'Account'
@@ -345,22 +329,18 @@ uname -a
 
 ### Instance Stuck in Bad State
 ```bash
-# Force stop and restart
-prism stop instance-name --force
-prism start instance-name
+# Force stop
+prism workspace stop instance-name
 
-# Or delete and recreate
-prism save instance-name backup-template  # Save work first
-prism delete instance-name
-prism launch backup-template instance-name-new
+# Delete and recreate
+prism ami save instance-name "backup-before-delete"   # Save work first if possible
+prism workspace delete instance-name
+prism workspace launch --ami "backup-before-delete" instance-name-new
 ```
 
 ### Accidentally Deleted Important Instance
 ```bash
-# Check if hibernated (data may be preserved)
-prism list --all
-
-# Look for recent AMI snapshots
+# Check for saved AMIs
 prism ami list
 
 # Contact AWS support for EBS snapshot recovery if critical
@@ -369,13 +349,13 @@ prism ami list
 ### Unexpected High AWS Bills
 ```bash
 # Immediately stop all instances
-prism list | grep running | awk '{print $1}' | xargs -I {} prism stop {}
-
-# Check what's still running
-prism list
+prism workspace list
+# Stop each running instance:
+prism workspace stop instance-name-1
+prism workspace stop instance-name-2
 
 # Review hibernation options for the future
-prism idle profile list
+# Templates include idle detection - check template settings
 ```
 
 **Remember**: Prism is designed to "default to success." Most issues have simple solutions, and the error messages are designed to guide you to the fix.

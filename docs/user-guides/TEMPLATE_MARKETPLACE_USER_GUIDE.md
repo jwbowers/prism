@@ -37,9 +37,9 @@ Search for machine learning templates:
 prism marketplace search "machine learning"
 ```
 
-Browse templates by category:
+Browse/list all templates:
 ```bash
-prism marketplace browse --category "Data Science"
+prism marketplace list
 ```
 
 Filter by specific features:
@@ -51,7 +51,7 @@ prism marketplace search --research-user --verified --min-rating 4.0
 
 Get comprehensive information about a template:
 ```bash
-prism marketplace show pytorch-research
+prism marketplace info pytorch-research
 ```
 
 This shows:
@@ -82,7 +82,7 @@ prism marketplace install pytorch-research --registry community
 
 Once installed, use templates like built-in ones:
 ```bash
-prism launch pytorch-research my-ml-project
+prism workspace launch pytorch-research my-ml-project
 ```
 
 ## Command Reference
@@ -133,50 +133,46 @@ prism marketplace search "python" --complexity simple --sort rating --order desc
 - `--offset`: Results offset for pagination
 - `--format`: Output format (table, json)
 
-### `prism marketplace browse`
+### `prism marketplace list`
 
-Browse templates by categories and discover popular templates.
+List templates from configured registries.
 
 **Usage:**
 ```bash
-prism marketplace browse [flags]
+prism marketplace list [flags]
 ```
 
 **Examples:**
 ```bash
-# Browse all categories overview
-prism marketplace browse
+# List all available templates
+prism marketplace list
 
-# Browse specific category
-prism marketplace browse --category "Bioinformatics"
-
-# Browse with different format
-prism marketplace browse --category "Web Development" --format json
+# List with different format
+prism marketplace list --format json
 ```
 
 **Flags:**
-- `--category`: Browse specific category
 - `--format`: Output format (table, json)
 
-### `prism marketplace show <template-name>`
+### `prism marketplace info <template-name>`
 
 Display comprehensive information about a specific template.
 
 **Usage:**
 ```bash
-prism marketplace show <template-name> [flags]
+prism marketplace info <template-name> [flags]
 ```
 
 **Examples:**
 ```bash
 # Show template details
-prism marketplace show pytorch-research
+prism marketplace info pytorch-research
 
 # Show specific version
-prism marketplace show pytorch-research --version 2.1.0
+prism marketplace info pytorch-research --version 2.1.0
 
 # Show from specific registry
-prism marketplace show pytorch-research --registry community
+prism marketplace info pytorch-research --registry community
 ```
 
 **Information Displayed:**
@@ -400,7 +396,7 @@ The marketplace organizes templates into research-focused categories:
 
 ### Template Installation
 
-1. **Review Before Installing**: Always use `prism marketplace show` before installation
+1. **Review Before Installing**: Always use `prism marketplace info` before installation
 2. **Start with Verified Templates**: Begin with verified templates for reliability
 3. **Test in Development**: Test templates with non-critical data first
 4. **Keep Templates Updated**: Regularly check for template updates
@@ -422,7 +418,7 @@ Many marketplace templates support automatic research user provisioning:
 
 ```bash
 # Launch template with research user support
-prism launch pytorch-research my-project --research-user johndoe
+prism workspace launch pytorch-research my-project --research-user johndoe
 ```
 
 Templates with research user support provide:
@@ -490,7 +486,7 @@ Error: registry returned error status: 401
 Error: failed to install template: validation failed
 ```
 **Solutions:**
-- Check security scan results: `prism marketplace show template-name`
+- Check security scan results: `prism marketplace info template-name`
 - Review template dependencies
 - Use `--force` flag to override validation (not recommended)
 
@@ -508,7 +504,7 @@ Error: template validation failed during launch
 1. **Check Documentation**: Review template-specific documentation
 2. **Community Support**: Engage with template authors and community
 3. **Registry Support**: Contact registry administrators for institutional registries
-4. **Prism Support**: Report issues at https://github.com/anthropics/claude-code/issues
+4. **Prism Support**: Report issues at https://github.com/scttfrdmn/prism/issues
 
 ## Examples and Use Cases
 
@@ -521,13 +517,13 @@ A machine learning researcher needs a PyTorch environment with GPU support:
 prism marketplace search "pytorch" --category "Machine Learning" --verified
 
 # Review template details
-prism marketplace show pytorch-gpu-research
+prism marketplace info pytorch-gpu-research
 
 # Install the template
 prism marketplace install pytorch-gpu-research
 
 # Launch with research user support
-prism launch pytorch-gpu-research ml-project --research-user researcher
+prism workspace launch pytorch-gpu-research ml-project --research-user researcher
 ```
 
 ### Scenario 2: Bioinformatics Team
@@ -539,13 +535,13 @@ A bioinformatics team needs a collaborative environment for genomics analysis:
 prism marketplace search --category "Bioinformatics" --research-user
 
 # Browse bioinformatics category
-prism marketplace browse --category "Bioinformatics"
+prism marketplace search --category "Bioinformatics"
 
 # Install collaborative genomics template
 prism marketplace install collaborative-genomics
 
 # Launch shared workspace
-prism launch collaborative-genomics genomics-project --research-user team-lead
+prism workspace launch collaborative-genomics genomics-project --research-user team-lead
 ```
 
 ### Scenario 3: Institutional Deployment
@@ -563,7 +559,7 @@ prism marketplace search --registry institutional --verified
 prism marketplace install institutional-python --registry institutional
 
 # Launch with institutional policies
-prism launch institutional-python student-project
+prism workspace launch institutional-python student-project
 ```
 
 ## Future Enhancements
