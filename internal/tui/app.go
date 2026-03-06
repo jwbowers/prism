@@ -358,7 +358,9 @@ func handleSettingsSubmenuNav(m AppModel, key string) (AppModel, []tea.Cmd) {
 	case "5":
 		m.currentPage = MarketplacePage
 		m.inSubmenu = false
-		cmds = append(cmds, m.marketplaceModel.Init())
+		if !m.marketplaceModel.HasData() {
+			cmds = append(cmds, m.marketplaceModel.Init())
+		}
 	case "6":
 		m.currentPage = LogsPage
 		m.inSubmenu = false
@@ -378,7 +380,9 @@ func handleMainPageNav(m AppModel, key string) (AppModel, []tea.Cmd) {
 		cmds = append(cmds, m.instancesModel.Init())
 	case "3":
 		m.currentPage = TemplatesPage
-		cmds = append(cmds, m.templatesModel.Init())
+		if !m.templatesModel.HasData() {
+			cmds = append(cmds, m.templatesModel.Init())
+		}
 	case "4":
 		m.currentPage = StoragePage
 		cmds = append(cmds, m.storageModel.Init())

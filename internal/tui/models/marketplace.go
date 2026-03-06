@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
@@ -96,6 +97,12 @@ func NewMarketplaceModel(apiClient apiClient) MarketplaceModel {
 	}
 }
 
+// HasData reports whether marketplace data has been loaded at least once.
+// Used by the app to skip re-fetching on tab re-entry.
+func (m MarketplaceModel) HasData() bool {
+	return len(m.templates) > 0
+}
+
 // Init initializes the model
 func (m MarketplaceModel) Init() tea.Cmd {
 	return tea.Batch(
@@ -104,31 +111,40 @@ func (m MarketplaceModel) Init() tea.Cmd {
 	)
 }
 
-// fetchMarketplaceData retrieves marketplace data from the API
+// fetchMarketplaceData retrieves marketplace data from the API — all three calls run in parallel.
 func (m MarketplaceModel) fetchMarketplaceData() tea.Msg {
-	// Fetch marketplace templates
-	templates, err := m.apiClient.ListMarketplaceTemplates(context.Background(), nil)
-	if err != nil {
-		return MarketplaceDataMsg{Error: fmt.Errorf("failed to list marketplace templates: %w", err)}
-	}
+	ctx := context.Background()
 
-	// Fetch categories
-	categories, err := m.apiClient.ListMarketplaceCategories(context.Background())
-	if err != nil {
-		return MarketplaceDataMsg{Error: fmt.Errorf("failed to list categories: %w", err)}
-	}
+	var (
+		templates  *api.ListMarketplaceTemplatesResponse
+		categories *api.ListCategoriesResponse
+		registries *api.ListRegistriesResponse
+		templErr   error
+		catErr     error
+		regErr     error
+	)
 
-	// Fetch registries
-	registries, err := m.apiClient.ListMarketplaceRegistries(context.Background())
-	if err != nil {
-		return MarketplaceDataMsg{Error: fmt.Errorf("failed to list registries: %w", err)}
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() { defer wg.Done(); templates, templErr = m.apiClient.ListMarketplaceTemplates(ctx, nil) }()
+	go func() { defer wg.Done(); categories, catErr = m.apiClient.ListMarketplaceCategories(ctx) }()
+	go func() { defer wg.Done(); registries, regErr = m.apiClient.ListMarketplaceRegistries(ctx) }()
+	wg.Wait()
+
+	if templErr != nil {
+		return MarketplaceDataMsg{Error: fmt.Errorf("failed to list marketplace templates: %w", templErr)}
+	}
+	if catErr != nil {
+		return MarketplaceDataMsg{Error: fmt.Errorf("failed to list categories: %w", catErr)}
+	}
+	if regErr != nil {
+		return MarketplaceDataMsg{Error: fmt.Errorf("failed to list registries: %w", regErr)}
 	}
 
 	return MarketplaceDataMsg{
 		Templates:  templates.Templates,
 		Categories: categories.Categories,
 		Registries: registries.Registries,
-		Error:      nil,
 	}
 }
 

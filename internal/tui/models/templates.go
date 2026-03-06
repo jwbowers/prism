@@ -79,6 +79,12 @@ func NewTemplatesModel(apiClient apiClient) TemplatesModel {
 	}
 }
 
+// HasData reports whether templates have been loaded at least once.
+// Used by the app to skip re-fetching on tab re-entry.
+func (m TemplatesModel) HasData() bool {
+	return len(m.templates) > 0
+}
+
 // Init initializes the model
 func (m TemplatesModel) Init() tea.Cmd {
 	return tea.Batch(

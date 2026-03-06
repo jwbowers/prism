@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -62,22 +63,34 @@ func (m StorageModel) Init() tea.Cmd {
 	)
 }
 
-// fetchStorage retrieves storage data from the API
+// fetchStorage retrieves storage data from the API — all three calls run in parallel.
 func (m StorageModel) fetchStorage() tea.Msg {
-	// Fetch EFS volumes, EBS storage, and instances
-	volumesResp, err := m.apiClient.ListVolumes(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to list EFS volumes: %w", err)
-	}
+	ctx := context.Background()
 
-	storageResp, err := m.apiClient.ListStorage(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to list EBS storage: %w", err)
-	}
+	var (
+		volumesResp   *api.ListVolumesResponse
+		storageResp   *api.ListStorageResponse
+		instancesResp *api.ListInstancesResponse
+		volumesErr    error
+		storageErr    error
+		instancesErr  error
+	)
 
-	instancesResp, err := m.apiClient.ListInstances(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to list instances: %w", err)
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() { defer wg.Done(); volumesResp, volumesErr = m.apiClient.ListVolumes(ctx) }()
+	go func() { defer wg.Done(); storageResp, storageErr = m.apiClient.ListStorage(ctx) }()
+	go func() { defer wg.Done(); instancesResp, instancesErr = m.apiClient.ListInstances(ctx) }()
+	wg.Wait()
+
+	if volumesErr != nil {
+		return fmt.Errorf("failed to list EFS volumes: %w", volumesErr)
+	}
+	if storageErr != nil {
+		return fmt.Errorf("failed to list EBS storage: %w", storageErr)
+	}
+	if instancesErr != nil {
+		return fmt.Errorf("failed to list instances: %w", instancesErr)
 	}
 
 	return StorageDataMsg{

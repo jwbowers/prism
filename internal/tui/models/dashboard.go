@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/bubbles/table"
@@ -103,24 +104,30 @@ func (m DashboardModel) Init() tea.Cmd {
 	)
 }
 
-// fetchDashboardData retrieves instance and system status data from the API
+// fetchDashboardData retrieves instance and system status data from the API — both calls run in parallel.
 func (m DashboardModel) fetchDashboardData() tea.Msg {
 	ctx := context.Background()
 
-	// Fetch instances
-	instancesResp, instancesErr := m.apiClient.ListInstances(ctx)
+	var (
+		instancesResp *api.ListInstancesResponse
+		statusResp    *api.SystemStatusResponse
+		instancesErr  error
+		statusErr     error
+	)
 
-	// Fetch system status
-	statusResp, statusErr := m.apiClient.GetStatus(ctx)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); instancesResp, instancesErr = m.apiClient.ListInstances(ctx) }()
+	go func() { defer wg.Done(); statusResp, statusErr = m.apiClient.GetStatus(ctx) }()
+	wg.Wait()
 
-	// Return combined data
 	if instancesErr != nil {
 		return DashboardDataMsg{
 			Error: fmt.Errorf("failed to list workspaces: %w", instancesErr),
 		}
 	}
-
 	if statusErr != nil {
+		// Return instances even if status failed (partial data)
 		return DashboardDataMsg{
 			Instances: instancesResp,
 			Error:     fmt.Errorf("failed to get system status: %w", statusErr),

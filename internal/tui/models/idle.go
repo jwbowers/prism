@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
@@ -97,24 +98,33 @@ func (m IdleModel) Init() tea.Cmd {
 	)
 }
 
-// fetchIdleData retrieves idle detection data from the API
+// fetchIdleData retrieves idle detection data from the API — both calls run in parallel.
 func (m IdleModel) fetchIdleData() tea.Msg {
-	// Fetch idle policies
-	policiesResp, err := m.apiClient.ListIdlePolicies(context.Background())
-	if err != nil {
-		return IdleDataMsg{Error: fmt.Errorf("failed to list idle policies: %w", err)}
-	}
+	ctx := context.Background()
 
-	// Fetch instances to show idle detection status
-	instancesResp, err := m.apiClient.ListInstances(context.Background())
-	if err != nil {
-		return IdleDataMsg{Error: fmt.Errorf("failed to list instances: %w", err)}
+	var (
+		policiesResp  *api.ListIdlePoliciesResponse
+		instancesResp *api.ListInstancesResponse
+		policiesErr   error
+		instancesErr  error
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); policiesResp, policiesErr = m.apiClient.ListIdlePolicies(ctx) }()
+	go func() { defer wg.Done(); instancesResp, instancesErr = m.apiClient.ListInstances(ctx) }()
+	wg.Wait()
+
+	if policiesErr != nil {
+		return IdleDataMsg{Error: fmt.Errorf("failed to list idle policies: %w", policiesErr)}
+	}
+	if instancesErr != nil {
+		return IdleDataMsg{Error: fmt.Errorf("failed to list instances: %w", instancesErr)}
 	}
 
 	return IdleDataMsg{
 		Policies:  policiesResp.Policies,
 		Instances: instancesResp.Instances,
-		Error:     nil,
 	}
 }
 
