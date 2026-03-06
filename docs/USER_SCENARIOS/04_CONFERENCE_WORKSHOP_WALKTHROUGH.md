@@ -13,7 +13,7 @@
 
 **Background**:
 - Assistant Professor, Machine Learning researcher
-- Accepted to teach 3-hour workshop at NeurIPS 2025
+- Accepted to teach 3-hour workshop at NeurIPS 2026
 - Workshop: "Hands-on Deep Learning with PyTorch"
 - Expected attendance: 40-60 participants (international)
 - Budget: $200 from conference organizers (one-time allocation)
@@ -62,7 +62,7 @@ prism profiles add neurips-workshop --aws-profile alex-research --region us-west
 # Create template-restricted project for workshop
 prism project create neurips-dl-workshop \
   --budget 200 \
-  --description "NeurIPS 2025: Deep Learning Workshop" \
+  --description "NeurIPS 2026: Deep Learning Workshop" \
   --alert-threshold 80
 ```
 
@@ -97,14 +97,14 @@ prism project invitations shared create neurips-dl-workshop \
 # Output:
 # 🎫 Shared Invitation Token Generated
 #
-#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    Token: WORKSHOP-NEURIPS-2026-A4F2
 #    Project: neurips-dl-workshop
 #    Role: member
 #    Redemptions: 0 / 60
 #
 #    Share this token with all participants:
-#    📧 Email: Include WORKSHOP-NEURIPS-2025-A4F2 in registration emails
-#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2025-A4F2
+#    📧 Email: Include WORKSHOP-NEURIPS-2026-A4F2 in registration emails
+#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2026-A4F2
 #    💡 This single token works for all 60 participants (first-come-first-served)
 #
 #    When participants accept (v0.5.11):
@@ -129,28 +129,28 @@ prism project invitations shared create neurips-dl-workshop \
 💡 **Monitor Token Usage**:
 ```bash
 # Check redemption status
-prism project invitations shared show WORKSHOP-NEURIPS-2025-A4F2
+prism project invitations shared show WORKSHOP-NEURIPS-2026-A4F2
 
 # Output:
 # 🎫 Shared Token Information
-#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    Token: WORKSHOP-NEURIPS-2026-A4F2
 #    Name: NeurIPS Workshop Access
 #    Redemptions:
 #    • Used: 42 / 60 (70%)
 #    • Remaining: 18
 #    Status: active
-#    Expires: Dec 9, 2025
+#    Expires: Dec 9, 2026
 ```
 
 💡 **Workshop Extension**: After 3-hour workshop ends, extend token expiration:
 ```bash
-prism project invitations shared extend WORKSHOP-NEURIPS-2025-A4F2 --add-days 1
+prism project invitations shared extend WORKSHOP-NEURIPS-2026-A4F2 --add-days 1
 # All 42 redeemed participants get automatic 24-hour extension
 # Great for: Homework completion, extended tutorials, follow-up work
 
 # Output:
 # ✅ Token expiration extended
-#    Token: WORKSHOP-NEURIPS-2025-A4F2
+#    Token: WORKSHOP-NEURIPS-2026-A4F2
 #    New expiration: Dec 10, 2025
 #    💡 All 42 redeemed participants automatically get the extension
 ```
@@ -418,7 +418,7 @@ prism project create neurips-dl-workshop \
   --budget 200 \
   --hard-cap \
   --alert-threshold 50,75,90 \
-  --description "NeurIPS 2025 Workshop: Deep Learning with PyTorch"
+  --description "NeurIPS 2026 Workshop: Deep Learning with PyTorch"
 
 # Generate shared token with policy restrictions (v0.5.13+)
 prism project invitations shared neurips-dl-workshop \
@@ -434,11 +434,11 @@ prism project invitations shared neurips-dl-workshop \
 # Prism output:
 # 🎫 Shared Invitation Token Generated
 #
-#    Token: WORKSHOP-NEURIPS-2025
+#    Token: WORKSHOP-NEURIPS-2026
 #    Project: neurips-dl-workshop
 #    Role: member
 #    Redemptions: 0 / 60 (first-come-first-served)
-#    Expires: 7 days (Dec 9, 2025)
+#    Expires: 7 days (Dec 9, 2026)
 #
 #    Policy restrictions:
 #    - Template whitelist: "PyTorch Machine Learning" only
@@ -453,8 +453,8 @@ prism project invitations shared neurips-dl-workshop \
 #    💡 This single token works for all 60 participants!
 #
 #    Share via:
-#    📧 Email: Include WORKSHOP-NEURIPS-2025 in registration emails
-#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2025
+#    📧 Email: Include WORKSHOP-NEURIPS-2026 in registration emails
+#    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2026
 #    📱 QR Code: Display at workshop registration desk
 #
 # Next steps:
@@ -473,10 +473,10 @@ prism workshop early-access neurips-dl-workshop \
   --test-mode
 
 # Participants who test early (optional for them):
-participant$ prism invitation accept WORKSHOP-NEURIPS-2025
+participant$ prism invitation accept WORKSHOP-NEURIPS-2026
 # ✅ Invitation accepted! You've joined: neurips-dl-workshop
 # 🎓 Role: member
-# ⏰ Access expires: Dec 9, 2025 (7 days)
+# ⏰ Access expires: Dec 9, 2026 (7 days)
 
 participant$ prism workspace launch "PyTorch Machine Learning" test-env --hours 2
 # (Automatically terminates after 2 hours)
@@ -487,7 +487,7 @@ prism project invitations stats neurips-dl-workshop
 # Output:
 # 📊 Invitation Stats: neurips-dl-workshop
 #
-# Shared Token: WORKSHOP-NEURIPS-2025
+# Shared Token: WORKSHOP-NEURIPS-2026
 # Redemptions: 15 / 60 (25%)
 # Time remaining: 6 days (expires Dec 9)
 #
@@ -500,8 +500,8 @@ prism project invitations stats neurips-dl-workshop
 #
 # 💡 Tip: Send reminder email with token to increase early testing:
 #    "Remember to test your workshop environment!
-#     Access code: WORKSHOP-NEURIPS-2025
-#     Instructions: https://prism.dev/join/WORKSHOP-NEURIPS-2025"
+#     Access code: WORKSHOP-NEURIPS-2026
+#     Instructions: https://prism.dev/join/WORKSHOP-NEURIPS-2026"
 ```
 
 ### Workshop Day: Smooth Execution
@@ -592,7 +592,7 @@ participant$ prism snapshot create workshop-instance my-workshop
 prism workshop report neurips-dl-workshop --export-pdf
 
 # Output:
-# 📊 NeurIPS 2025 Deep Learning Workshop - Final Report
+# 📊 NeurIPS 2026 Deep Learning Workshop - Final Report
 #
 # Participants:     58 / 60 registered (97%)
 # Active workspaces: 58 workspaces for 3 hours

@@ -496,17 +496,17 @@ prism project member add "NIH-R01-2023" \
   --email dr.kim@external.edu \
   --role member \
   --budget-allocation 200 \
-  --start-date 2024-06-01 \
-  --end-date 2024-08-31 \
+  --start-date 2026-06-01 \
+  --end-date 2026-08-31 \
   --auto-revoke \
   --notify-before-expiry 7days
 
 # Result:
 # ✅ Temporary member added: dr.kim@external.edu
-#    Access: June 1 - August 31, 2024 (90 days)
+#    Access: June 1 - August 31, 2026 (90 days)
 #    Budget: $200/month
-#    Auto-revoke: September 1, 2024 at 00:00 UTC
-#    Reminder: August 25, 2024 (7 days before)
+#    Auto-revoke: September 1, 2026 at 00:00 UTC
+#    Reminder: August 25, 2026 (7 days before)
 
 # On August 25, both Dr. Kim and Dr. Smith receive email:
 # Subject: Collaborator Access Expiring Soon
@@ -593,11 +593,11 @@ prism workspace launch gpu-ml-workstation experiment-gpu --project "NIH-R01-2023
 ```bash
 # Dr. Smith configures grant end date
 prism project configure "NIH-R01-2023" \
-  --end-date 2024-06-30 \
+  --end-date 2026-06-30 \
   --freeze-after-end \
   --final-report-email patricia.smith@university.edu
 
-# June 30, 2024 at 23:59 (automatic actions):
+# June 30, 2026 at 23:59 (automatic actions):
 # 1. All running workspaces stopped
 # 2. No new launches allowed
 # 3. Project marked as "Archived"
@@ -606,7 +606,7 @@ prism project configure "NIH-R01-2023" \
 # Email sent to Dr. Smith:
 # Subject: Project Archived: NIH-R01-2023 Final Report
 #
-# The NIH-R01-2023 project has been automatically archived as of June 30, 2024.
+# The NIH-R01-2023 project has been automatically archived as of June 30, 2026.
 #
 # Final Statistics:
 # - Total spend (12 months): $23,450 / $24,000 budget (97.7%)
@@ -631,7 +631,7 @@ prism project configure "NIH-R01-2023" \
 # Generate grant office report
 prism project report "NIH-R01-2023" \
   --start 2023-07-01 \
-  --end 2024-06-30 \
+  --end 2026-06-30 \
   --format pdf \
   --template nih-final-report \
   --output ~/Desktop/NIH-R01-2023-final.pdf
@@ -681,7 +681,7 @@ prism project create "NIH-R01-2023" \
   --budget 2000 \
   --period monthly \
   --start-date 2023-07-01 \
-  --end-date 2024-06-30 \
+  --end-date 2026-06-30 \
   --grant-code "1R01GM123456-01" \
   --auto-freeze-at-end \
   --alert-thresholds 50,75,90,95 \
@@ -743,14 +743,14 @@ prism workspace launch gpu-ml-workstation protein-hw --project "NSF-2024-ML"
 #    Requested: p3.2xlarge ($24.80/day, 1 GPU)
 #    Your role: Member (max $5/day without approval)
 #
-#    Approval request created: req-202406-015
+#    Approval request created: req-202606-015
 #    Notified: lisa.park@university.edu (Project lead)
 #              michael.torres@university.edu (Lab manager)
 #
 #    Include justification: (optional but recommended)
 
 # Maria adds context
-prism approval comment req-202406-015 \
+prism approval comment req-202606-015 \
   "Need GPU for deep learning homework (Biophysics 601). Estimated 4 hours. Will use time limit."
 
 # Dr. Park receives Slack notification (integration):
@@ -758,23 +758,23 @@ prism approval comment req-202406-015 \
 #    Instance: p3.2xlarge ($24.80/day)
 #    Justification: "Deep learning homework..."
 #    Budget impact: $10 (4hr time limit)
-#    Approve: /cws approve req-202406-015
-#    Deny: /cws deny req-202406-015
+#    Approve: /cws approve req-202606-015
+#    Deny: /cws deny req-202606-015
 
 # Dr. Park approves with modifications
-prism approval approve req-202406-015 \
+prism approval approve req-202606-015 \
   --max-hours 6 \
   --note "Approved for homework. Auto-terminate after 6h. Come to my office if you need more time."
 
 # Maria receives notification
-# ✅ Approval granted: req-202406-015
+# ✅ Approval granted: req-202606-015
 #    Instance: p3.2xlarge
 #    Time limit: 6 hours (auto-terminate at 4:30 PM today)
 #    Notes from Dr. Park: "Approved for homework..."
 #
-#    Launch with: prism workspace launch --approval req-202406-015
+#    Launch with: prism workspace launch --approval req-202606-015
 
-prism workspace launch --approval req-202406-015
+prism workspace launch --approval req-202606-015
 
 # Workspace launches with enforced limits:
 # ✅ Launching: protein-hw (p3.2xlarge)
@@ -789,7 +789,7 @@ prism project dashboard "Smith Lab"
 
 # Output (TUI dashboard):
 # ╔══════════════════════════════════════════════════════════════╗
-# ║ Smith Lab Dashboard - June 2024                              ║
+# ║ Smith Lab Dashboard - June 2026                              ║
 # ╟──────────────────────────────────────────────────────────────╢
 # ║ Total Budget: $4,500/month | Spent: $2,340 (52%) ✅         ║
 # ║ Active Instances: 7 | Hibernated: 3                          ║
@@ -804,19 +804,19 @@ prism project dashboard "Smith Lab"
 # ║ └─ Discretionary: $200 / $1,000 (20%) ✅                    ║
 # ║                                                              ║
 # ║ Pending Approvals:                                           ║
-# ║ 1. req-202406-018: James Wilson - GPU (p3.2xlarge)          ║
+# ║ 1. req-202606-018: James Wilson - GPU (p3.2xlarge)          ║
 # ║    Justification: "Benchmarking new pipeline"                ║
 # ║    [A]pprove  [D]eny  [M]ore info                           ║
-# ║ 2. req-202406-019: External: dr.kim@external.edu            ║
+# ║ 2. req-202606-019: External: dr.kim@external.edu            ║
 # ║    Temporary access request (3 months)                       ║
 # ║    [R]eview  [S]kip                                         ║
 # ╚══════════════════════════════════════════════════════════════╝
 
 # Dr. Torres reviews James' GPU request
-prism approval show req-202406-018
+prism approval show req-202606-018
 
 # Details:
-# Approval Request: req-202406-018
+# Approval Request: req-202606-018
 # Requested by: James Wilson (james.wilson@university.edu)
 # Instance: p3.2xlarge ($24.80/day)
 # Project: NIH-R01-2023
@@ -836,14 +836,14 @@ prism approval show req-202406-018
 # Recommendation: ✅ Low risk, reasonable justification
 
 # Approve with time limit
-prism approval approve req-202406-018 \
+prism approval approve req-202606-018 \
   --max-hours 12 \
   --note "Approved for benchmarking. Please document results for lab meeting."
 
 # Dr. Torres handles temporary collaborator
-prism approval review req-202406-019
+prism approval review req-202606-019
 
-# Temporary Access Request: req-202406-019
+# Temporary Access Request: req-202606-019
 # Requested by: Dr. Patricia Smith (PI)
 # New member: Dr. Kim (dr.kim@external.edu)
 # Project: NIH-R01-2023
@@ -855,7 +855,7 @@ prism approval review req-202406-019
 # Status: Pending patricia.smith@university.edu
 
 # Dr. Torres adds recommendation
-prism approval comment req-202406-019 \
+prism approval comment req-202606-019 \
   "Dr. Kim has good track record from previous collaboration. Recommend approval with standard member permissions."
 ```
 
@@ -867,7 +867,7 @@ prism approval comment req-202406-019 \
 #
 # Subject: Project Ending Soon: NIH-R01-2023 (60 days)
 #
-# Your project "NIH-R01-2023" will end on June 30, 2024 (60 days).
+# Your project "NIH-R01-2023" will end on June 30, 2026 (60 days).
 #
 # Current status:
 # - Budget: $22,340 / $24,000 (93%)
@@ -887,7 +887,7 @@ prism approval comment req-202406-019 \
 prism project archive-plan "NIH-R01-2023"
 
 # Archive Plan: NIH-R01-2023
-# End date: June 30, 2024 (60 days)
+# End date: June 30, 2026 (60 days)
 #
 # Current resources:
 # - 6 active workspaces → Will auto-stop June 30 23:59
@@ -928,7 +928,7 @@ prism project archive-plan "NIH-R01-2023"
 prism project report "NIH-R01-2023" --final
 
 # NIH R01-2023 Final Report
-# Grant Period: July 1, 2023 - June 30, 2024
+# Grant Period: July 1, 2023 - June 30, 2026
 #
 # Budget Performance:
 # - Total budget: $24,000.00

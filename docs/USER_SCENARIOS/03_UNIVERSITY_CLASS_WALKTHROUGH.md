@@ -10,7 +10,7 @@
 >
 > Many sections in this scenario describe planned features. Use `prism project invitations` and bulk invitation workflows for current student enrollment.
 
-## Personas: CS 229 - Machine Learning (Fall 2024)
+## Personas: CS 229 - Machine Learning (Fall 2026)
 
 ### Professor Dr. Jennifer Martinez (Instructor)
 - **Role**: Course instructor, AWS account owner
@@ -54,7 +54,7 @@
 
 ### Course Details
 - **Course**: CS 229 - Machine Learning
-- **Term**: Fall 2024 (August 26 - December 13, 15 weeks)
+- **Term**: Fall 2026 (August 26 - December 13, 15 weeks)
 - **Enrollment**: 50 students
 - **Format**: Weekly assignments (10), 2 projects, final exam
 - **Budget**: $1,200 from IT department ($24/student for semester)
@@ -92,7 +92,7 @@
 ```bash
 # Create course project
 prism project create "CS229-Fall2024" \
-  --description "Machine Learning - Fall 2024" \
+  --description "Machine Learning - Fall 2026" \
   --budget 1200 \
   --budget-period semester \
   --owner jennifer.martinez@university.edu
@@ -316,7 +316,7 @@ prism ta annotate ml-hw3 --student sophie.martinez@university.edu \
 *Screenshot shows project and budget management interface. For CS 473 with 120 students, the CS Department allocates $2,000/semester to Prof. Johnson's course - the Projects dashboard tracks real-time spending across all 120 student workspaces with automated alerts at 75% budget threshold to prevent department overruns.*
 
 **What CS Department administrators see**:
-- **Course Budget**: CS 473 Fall 2024 - $1,487 spent / $2,000 allocated (74% - warning threshold)
+- **Course Budget**: CS 473 Fall 2026 - $1,487 spent / $2,000 allocated (74% - warning threshold)
 - **Per-Student Tracking**: 120 students, average $12.39/student (target $16.67), 8 students over-budget
 - **Section Breakdown**: Section A ($512), Section B ($489), Section C ($486) - balanced distribution
 - **Automated Alerts**: Email to Prof. Johnson at 75%, 85%, 95% thresholds with "Stop all workspaces" recommendation
@@ -380,7 +380,7 @@ prism project cost show "CS229-Fall2024"
 
 **What should happen** (MISSING):
 ```bash
-# December 13, 2024 23:59:59 (last day of semester)
+# December 13, 2026 23:59:59 (last day of semester)
 # Automatic actions:
 # 1. Stop all 50 student workspaces
 # 2. Revoke student SSH keys
@@ -389,7 +389,7 @@ prism project cost show "CS229-Fall2024"
 # 5. Send final cost report to Dr. Martinez
 
 # Email to Dr. Martinez:
-# Subject: CS 229 Fall 2024 - Automatic Semester Closure
+# Subject: CS 229 Fall 2026 - Automatic Semester Closure
 #
 # Your course project "CS229-Fall2024" has been automatically closed.
 #
@@ -409,9 +409,9 @@ prism project cost show "CS229-Fall2024"
 # - Already stopped: 20
 #
 # Data archived:
-# - Student workspaces: s3://university-courses/cs229-fall2024/students/
+# - Student workspaces: s3://university-courses/cs229-fall2026/students/
 # - Shared materials: Preserved in EFS (read-only)
-# - Grading data: s3://university-courses/cs229-fall2024/grades/
+# - Grading data: s3://university-courses/cs229-fall2026/grades/
 #
 # Next steps:
 # - Student access revoked automatically
@@ -565,9 +565,9 @@ prism course create "CS229-Fall2024" \
 # Course Information:
 #   Course code: CS 229
 #   Title: Machine Learning
-#   Term: Fall 2024
-#   Start date: August 26, 2024
-#   End date: December 13, 2024 (15 weeks)
+#   Term: Fall 2026
+#   Start date: August 26, 2026
+#   End date: December 13, 2026 (15 weeks)
 #   Auto-close on end: [x] Yes
 #
 # Enrollment:
@@ -684,7 +684,7 @@ prism course import-students "CS229-Fall2024" \
 # - Course materials: Available in /mnt/cs229-materials/
 #
 # Important Dates:
-# - Semester ends: December 13, 2024
+# - Semester ends: December 13, 2026
 # - Your workspace will automatically stop at semester end
 #
 # Need help? Contact TAs during office hours.
@@ -700,7 +700,7 @@ emily@laptop:~$ prism student join CS229-Fall2024
 # 🎓 Joining Course: CS 229 - Machine Learning
 #
 #    Instructor: Dr. Jennifer Martinez
-#    Term: Fall 2024 (15 weeks remaining)
+#    Term: Fall 2026 (15 weeks remaining)
 #    Your budget: $24.00
 #
 #    Setting up your environment...
@@ -903,25 +903,25 @@ david@laptop:~$ prism workspace launch ml-final-project final-project
 
 # 11:59:59 PM - Automated shutdown sequence
 # System log:
-# 2024-12-13 23:59:59 [CS229-Fall2024] Semester end triggered
-# 2024-12-13 23:59:59 Stopping 12 active instances...
-# 2024-12-13 23:59:59 ✅ Stopped: emily.chen - final-project
-# 2024-12-13 23:59:59 ✅ Stopped: david.kim - final-project
+# 2026-12-13 23:59:59 [CS229-Fall2024] Semester end triggered
+# 2026-12-13 23:59:59 Stopping 12 active instances...
+# 2026-12-13 23:59:59 ✅ Stopped: emily.chen - final-project
+# 2026-12-13 23:59:59 ✅ Stopped: david.kim - final-project
 # ... (10 more)
-# 2024-12-14 00:00:15 Archiving student workspaces...
-# 2024-12-14 00:00:15 ✅ Archived: 50 student workspaces to S3
-# 2024-12-14 00:00:30 Revoking student SSH keys...
-# 2024-12-14 00:00:30 ✅ Revoked: 50 student keys
-# 2024-12-14 00:00:45 Generating reports...
-# 2024-12-14 00:01:00 ✅ Semester closure complete
+# 2026-12-14 00:00:15 Archiving student workspaces...
+# 2026-12-14 00:00:15 ✅ Archived: 50 student workspaces to S3
+# 2026-12-14 00:00:30 Revoking student SSH keys...
+# 2026-12-14 00:00:30 ✅ Revoked: 50 student keys
+# 2026-12-14 00:00:45 Generating reports...
+# 2026-12-14 00:01:00 ✅ Semester closure complete
 
 # December 14, 8:00 AM - Dr. Martinez receives final report
 # Email:
-# Subject: 📊 CS 229 Fall 2024 - Final Course Report
+# Subject: 📊 CS 229 Fall 2026 - Final Course Report
 #
 # Your course "CS 229 - Machine Learning" has completed.
 #
-# Semester: Fall 2024 (August 26 - December 13, 15 weeks)
+# Semester: Fall 2026 (August 26 - December 13, 15 weeks)
 # Enrollment: 50 students
 #
 # Budget Performance:
@@ -955,16 +955,16 @@ david@laptop:~$ prism workspace launch ml-final-project final-project
 # Academic Integrity:
 # - Audit logs: Available for 1 year
 # - Flagged submissions: 2 (high similarity detected)
-# - See: s3://cs229-fall2024/integrity-reports/
+# - See: s3://cs229-fall2026/integrity-reports/
 #
 # Data Archive:
-# - Student workspaces: s3://cs229-fall2024/students/ (1 year retention)
+# - Student workspaces: s3://cs229-fall2026/students/ (1 year retention)
 # - Course materials: Preserved in EFS
-# - Logs: s3://cs229-fall2024/logs/
+# - Logs: s3://cs229-fall2026/logs/
 #
 # Cost Comparison:
-# - CS 229 Fall 2024: $1,140.80 (50 students)
-# - CS 229 Fall 2023: $1,580.00 (48 students) - 28% savings! ✅
+# - CS 229 Fall 2026: $1,140.80 (50 students)
+# - CS 229 Fall 2025: $1,580.00 (48 students) - 28% savings! ✅
 # - Improvement: Better hibernation policies, student education
 #
 # Student Feedback (from exit survey):

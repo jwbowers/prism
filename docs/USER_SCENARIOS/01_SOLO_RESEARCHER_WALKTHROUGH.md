@@ -361,7 +361,7 @@ prism budget forecast
 prism budget report --month september
 
 # Output (markdown + PDF):
-# 📊 Prism Monthly Report - September 2024
+# 📊 Prism Monthly Report - April 2026
 #
 # Budget: $100.00
 # Actual Spend: $87.50 ✅
@@ -509,7 +509,7 @@ prism workspace launch bioinformatics-suite rnaseq-analysis --size M
 prism budget status
 
 # Output:
-# 📊 Budget Status - September 2024
+# 📊 Budget Status - April 2026
 #
 # Spent: $80.00 / $100.00 (80%) ⚠️
 # Remaining: $20.00 (8 days left)
@@ -574,7 +574,7 @@ prism workspace launch gpu-ml-workstation protein-folding --size L
 ```bash
 # First day of new month: Sarah receives email
 #
-# Subject: 📊 Prism Monthly Report - September 2024
+# Subject: 📊 Prism Monthly Report - April 2026
 #
 # Hi Sarah,
 #
