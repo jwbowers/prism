@@ -2,7 +2,7 @@
 # Builds a professional Windows installer using WiX Toolset
 
 param(
-    [string]$Version = "0.5.1",
+    [string]$Version = "",
     [switch]$SkipBuild,
     [switch]$SkipCustomActions,
     [switch]$Verbose,
@@ -16,7 +16,20 @@ $BuildDir = Join-Path $ProjectRoot "build\windows"
 $DistDir = Join-Path $ProjectRoot "dist\windows" 
 $WixDir = Join-Path $ProjectRoot "packaging\windows"
 $ReleaseDir = Join-Path $BuildDir "release"
-$MsiName = "CloudWorkstation-v$Version-x64.msi"
+if ([string]::IsNullOrEmpty($Version)) {
+    # Auto-detect version from pkg/version/version.go
+    $versionFile = Join-Path $ProjectRoot "pkg\version\version.go"
+    if (Test-Path $versionFile) {
+        $match = Select-String -Path $versionFile -Pattern 'Version\s*=\s*"([^"]+)"' | Select-Object -First 1
+        if ($match) {
+            $Version = $match.Matches[0].Groups[1].Value
+        }
+    }
+    if ([string]::IsNullOrEmpty($Version)) {
+        $Version = "0.0.0-dev"
+    }
+}
+$MsiName = "Prism-v$Version-x64.msi"
 $LogFile = Join-Path $BuildDir "build-msi.log"
 
 # Color output functions
@@ -208,9 +221,9 @@ function Build-GoBinaries {
         $ldflags = "-X github.com/scttfrdmn/prism/pkg/version.Version=$Version -X github.com/scttfrdmn/prism/pkg/version.BuildDate=$buildDate -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build"
         
         # Build CLI binary
-        Write-Task "Building CLI binary (cws.exe)..."
-        $cliPath = Join-Path $ReleaseDir "windows-amd64\cws.exe"
-        & go build -ldflags $ldflags -o $cliPath ./cmd/cws
+        Write-Task "Building CLI binary (prism.exe)..."
+        $cliPath = Join-Path $ReleaseDir "windows-amd64\prism.exe"
+        & go build -ldflags $ldflags -o $cliPath ./cmd/prism
         if ($LASTEXITCODE -ne 0) { throw "Failed to build CLI binary" }
         Write-Success "CLI binary built successfully"
         
@@ -229,11 +242,11 @@ function Build-GoBinaries {
         Write-Success "Service wrapper built successfully"
         
         # Build GUI binary (best effort)
-        Write-Task "Building GUI binary (cws-gui.exe)..."
-        $guiPath = Join-Path $ReleaseDir "windows-amd64\cws-gui.exe"
+        Write-Task "Building GUI binary (prism-gui.exe)..."
+        $guiPath = Join-Path $ReleaseDir "windows-amd64\prism-gui.exe"
         $env:CGO_ENABLED = "1"
-        
-        & go build -ldflags $ldflags -o $guiPath ./cmd/cws-gui 2>$null
+
+        & go build -ldflags $ldflags -o $guiPath ./cmd/prism-gui 2>$null
         if ($LASTEXITCODE -eq 0) {
             Write-Success "GUI binary built successfully"
         } else {
@@ -241,8 +254,8 @@ function Build-GoBinaries {
             # Create a simple placeholder
             @"
 @echo off
-echo CloudWorkstation GUI not available in this build
-echo Use 'cws tui' for terminal interface  
+echo Prism GUI not available in this build
+echo Use 'prism tui' for terminal interface
 pause
 "@ | Out-File -FilePath ($guiPath + ".bat") -Encoding ASCII
             Copy-Item "$env:SystemRoot\System32\cmd.exe" $guiPath
@@ -301,8 +314,8 @@ function Prepare-SupportingFiles {
         Write-Warning "PowerShell module not found, creating basic one"
         @"
 # CloudWorkstation PowerShell Module
-function Get-CloudWorkstation { cws --help }
-Export-ModuleMember -Function Get-CloudWorkstation
+function Get-Prism { prism --help }
+Export-ModuleMember -Function Get-Prism
 "@ | Out-File $psModuleTarget -Encoding UTF8
     }
     Write-Success "PowerShell module prepared"

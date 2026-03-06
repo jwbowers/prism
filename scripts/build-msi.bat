@@ -10,7 +10,7 @@ set BUILD_DIR=%~dp0..\build\windows
 set DIST_DIR=%~dp0..\dist\windows
 set WIX_DIR=%~dp0..\packaging\windows
 set SOURCE_DIR=%~dp0..
-set MSI_NAME=CloudWorkstation-v%VERSION%-x64.msi
+set MSI_NAME=Prism-v%VERSION%-x64.msi
 set LOG_FILE=%BUILD_DIR%\build-msi.log
 
 REM Color output functions
@@ -74,11 +74,11 @@ echo.
 echo %CYAN%Step 1: Building Go binaries...%RESET%
 cd /d "%SOURCE_DIR%"
 
-echo %BLUE%Building CLI binary (cws.exe)...%RESET%
+echo %BLUE%Building CLI binary (prism.exe)...%RESET%
 set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=0
-go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\cws.exe" ./cmd/cws
+go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\prism.exe" ./cmd/prism
 if !errorlevel! neq 0 (
     echo %RED%Error: Failed to build CLI binary%RESET%
     exit /b 1
@@ -102,19 +102,19 @@ if !errorlevel! neq 0 (
 echo %GREEN%✓ Service wrapper built successfully%RESET%
 
 REM Build GUI if available (best effort)
-echo %BLUE%Building GUI binary (cws-gui.exe)...%RESET%
+echo %BLUE%Building GUI binary (prism-gui.exe)...%RESET%
 set CGO_ENABLED=1
-go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\cws-gui.exe" ./cmd/cws-gui 2>nul
+go build -ldflags "-X github.com/scttfrdmn/prism/pkg/version.Version=%VERSION% -X github.com/scttfrdmn/prism/pkg/version.BuildDate=%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%:%time:~3,2%:%time:~6,2% -X github.com/scttfrdmn/prism/pkg/version.GitCommit=msi-build" -o "%BUILD_DIR%\release\windows-amd64\prism-gui.exe" ./cmd/prism-gui 2>nul
 if !errorlevel! equ 0 (
     echo %GREEN%✓ GUI binary built successfully%RESET%
 ) else (
     echo %YELLOW%⚠ GUI binary build failed (creating placeholder)%RESET%
     REM Create a placeholder GUI executable that shows a message
-    echo @echo off > "%BUILD_DIR%\release\windows-amd64\cws-gui.exe.bat"
-    echo echo CloudWorkstation GUI not available in this build >> "%BUILD_DIR%\release\windows-amd64\cws-gui.exe.bat"
-    echo echo Use 'cws tui' for terminal interface >> "%BUILD_DIR%\release\windows-amd64\cws-gui.exe.bat"
+    echo @echo off > "%BUILD_DIR%\release\windows-amd64\prism-gui.exe.bat"
+    echo echo Prism GUI not available in this build >> "%BUILD_DIR%\release\windows-amd64\prism-gui.exe.bat"
+    echo echo Use 'prism tui' for terminal interface >> "%BUILD_DIR%\release\windows-amd64\prism-gui.exe.bat"
     REM Convert batch to executable using a simple copy (for MSI compatibility)
-    copy /b "%SystemRoot%\System32\cmd.exe" "%BUILD_DIR%\release\windows-amd64\cws-gui.exe" >nul
+    copy /b "%SystemRoot%\System32\cmd.exe" "%BUILD_DIR%\release\windows-amd64\prism-gui.exe" >nul
 )
 
 REM Step 2: Prepare supporting files
@@ -142,8 +142,8 @@ copy "%SOURCE_DIR%\scripts\CloudWorkstation.psm1" "%BUILD_DIR%\release\scripts\"
 if !errorlevel! neq 0 (
     echo %YELLOW%⚠ PowerShell module not found, creating basic one%RESET%
     echo # CloudWorkstation PowerShell Module > "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
-    echo function Get-CloudWorkstation { cws --help } >> "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
-    echo Export-ModuleMember -Function Get-CloudWorkstation >> "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
+    echo function Get-Prism { prism --help } >> "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
+    echo Export-ModuleMember -Function Get-Prism >> "%BUILD_DIR%\release\scripts\CloudWorkstation.psm1"
 )
 echo %GREEN%✓ PowerShell module prepared%RESET%
 

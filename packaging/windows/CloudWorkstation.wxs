@@ -58,19 +58,19 @@
     
     <!-- Core Binaries Component -->
     <Component Id="BinariesComponent" Guid="{11111111-2222-3333-4444-555555555555}" Directory="BinFolder">
-      <File Id="CWSCLIExecutable" 
-            Source="$(var.SourceDir)\windows-amd64\cws.exe" 
+      <File Id="CWSCLIExecutable"
+            Source="$(var.SourceDir)\windows-amd64\prism.exe"
             KeyPath="yes"
-            Name="cws.exe" />
+            Name="prism.exe" />
       <File Id="CWSDDaemonExecutable" 
             Source="$(var.SourceDir)\windows-amd64\prismd.exe"
             Name="prismd.exe" />
       <File Id="CWSServiceWrapper" 
             Source="$(var.SourceDir)\windows-amd64\prismd-service.exe"
             Name="prismd-service.exe" />
-      <File Id="CWSGUIExecutable" 
-            Source="$(var.SourceDir)\windows-amd64\cws-gui.exe"
-            Name="cws-gui.exe" />
+      <File Id="CWSGUIExecutable"
+            Source="$(var.SourceDir)\windows-amd64\prism-gui.exe"
+            Name="prism-gui.exe" />
       
       <!-- Environment Variable (PATH) -->
       <Environment Id="PATH" Name="PATH" Value="[BinFolder]" Permanent="no" Part="last" Action="set" System="yes" />
@@ -170,15 +170,15 @@
     <Component Id="StartMenuComponent" Guid="{77777777-8888-9999-AAAA-BBBBBBBBBBBB}" Directory="StartMenuFolder">
       <Shortcut Id="StartMenuCLI"
                 Name="CloudWorkstation CLI"
-                Target="[BinFolder]cws.exe"
+                Target="[BinFolder]prism.exe"
                 Arguments=""
                 Description="Launch CloudWorkstation command line interface"
                 Icon="CloudWorkstationIcon"
                 WorkingDirectory="BinFolder" />
       
-      <Shortcut Id="StartMenuGUI" 
+      <Shortcut Id="StartMenuGUI"
                 Name="CloudWorkstation GUI"
-                Target="[BinFolder]cws-gui.exe"
+                Target="[BinFolder]prism-gui.exe"
                 Description="Launch CloudWorkstation graphical interface"
                 Icon="CloudWorkstationIcon"
                 WorkingDirectory="BinFolder" />
@@ -202,7 +202,7 @@
     <Component Id="DesktopShortcutComponent" Guid="{88888888-9999-AAAA-BBBB-CCCCCCCCCCCC}" Directory="DesktopFolder">
       <Shortcut Id="DesktopGUI"
                 Name="CloudWorkstation"
-                Target="[BinFolder]cws-gui.exe"
+                Target="[BinFolder]prism-gui.exe"
                 Description="CloudWorkstation: Launch cloud research environments"
                 Icon="CloudWorkstationIcon"
                 WorkingDirectory="BinFolder" />

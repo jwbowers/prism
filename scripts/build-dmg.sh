@@ -106,34 +106,34 @@ build_binaries() {
         # Build for Intel
         log_info "Building for Intel (amd64)..."
         GOOS=darwin GOARCH=amd64 make build-cli build-daemon
-        mv bin/cws "$temp_dir/cws-amd64"
+        mv bin/prism "$temp_dir/prism-amd64"
         mv bin/prismd "$temp_dir/prismd-amd64"
-        
+
         # Build GUI for Intel (if not dev build)
         if [[ "$DEV_BUILD" == false ]]; then
             GOOS=darwin GOARCH=amd64 make build-gui
-            mv bin/prism-gui "$temp_dir/cws-gui-amd64"
+            mv bin/prism-gui "$temp_dir/prism-gui-amd64"
         fi
-        
+
         # Build for Apple Silicon
         log_info "Building for Apple Silicon (arm64)..."
         GOOS=darwin GOARCH=arm64 make build-cli build-daemon
-        mv bin/cws "$temp_dir/cws-arm64"
+        mv bin/prism "$temp_dir/prism-arm64"
         mv bin/prismd "$temp_dir/prismd-arm64"
-        
+
         # Build GUI for Apple Silicon (if not dev build)
         if [[ "$DEV_BUILD" == false ]]; then
             GOOS=darwin GOARCH=arm64 make build-gui
-            mv bin/prism-gui "$temp_dir/cws-gui-arm64"
+            mv bin/prism-gui "$temp_dir/prism-gui-arm64"
         fi
-        
+
         # Create universal binaries
         mkdir -p bin
-        lipo -create "$temp_dir/cws-amd64" "$temp_dir/cws-arm64" -output "bin/cws"
+        lipo -create "$temp_dir/prism-amd64" "$temp_dir/prism-arm64" -output "bin/prism"
         lipo -create "$temp_dir/prismd-amd64" "$temp_dir/prismd-arm64" -output "bin/prismd"
-        
+
         if [[ "$DEV_BUILD" == false ]]; then
-            lipo -create "$temp_dir/cws-gui-amd64" "$temp_dir/cws-gui-arm64" -output "bin/prism-gui"
+            lipo -create "$temp_dir/prism-gui-amd64" "$temp_dir/prism-gui-arm64" -output "bin/prism-gui"
         fi
         
         # Clean up temp directory
@@ -151,7 +151,7 @@ build_binaries() {
     fi
     
     # Verify binaries
-    if [[ ! -f "bin/cws" ]] || [[ ! -f "bin/prismd" ]]; then
+    if [[ ! -f "bin/prism" ]] || [[ ! -f "bin/prismd" ]]; then
         log_error "Failed to build required binaries"
         exit 1
     fi
@@ -179,7 +179,7 @@ create_app_bundle() {
     mkdir -p "$macos_path" "$resources_path" "$frameworks_path"
     
     # Copy binaries
-    cp "$PROJECT_ROOT/bin/cws" "$macos_path/"
+    cp "$PROJECT_ROOT/bin/prism" "$macos_path/"
     cp "$PROJECT_ROOT/bin/prismd" "$macos_path/"
     if [[ "$DEV_BUILD" == false ]]; then
         cp "$PROJECT_ROOT/bin/prism-gui" "$macos_path/"
@@ -260,15 +260,15 @@ install_cli_tools() {
     local install_needed=false
     
     # Check if CLI tools are in PATH
-    if ! command -v cws &> /dev/null; then
+    if ! command -v prism &> /dev/null; then
         install_needed=true
     fi
-    
+
     if [[ "$install_needed" == true ]]; then
         # Ask user if they want to install CLI tools
         local response
         response=$(osascript << 'EOD'
-            display dialog "Would you like to install CloudWorkstation command-line tools? This will add 'cws' and 'prismd' commands to your PATH." with title "CloudWorkstation Setup" buttons {"Skip", "Install"} default button "Install" with icon question
+            display dialog "Would you like to install Prism command-line tools? This will add 'prism' and 'prismd' commands to your PATH." with title "Prism Setup" buttons {"Skip", "Install"} default button "Install" with icon question
 EOD
         )
         
@@ -306,9 +306,9 @@ EOD
 
 # Function to launch GUI
 launch_gui() {
-    if [[ -f "$SCRIPT_DIR/cws-gui" ]]; then
+    if [[ -f "$SCRIPT_DIR/prism-gui" ]]; then
         start_daemon
-        exec "$SCRIPT_DIR/cws-gui"
+        exec "$SCRIPT_DIR/prism-gui"
     else
         show_error "GUI component not available in this build."
         exit 1
@@ -323,7 +323,7 @@ launch_cli_setup() {
     osascript << EOD
         tell application "Terminal"
             activate
-            do script "echo 'CloudWorkstation CLI Setup'; echo ''; echo 'Available commands:'; echo '  cws --help        # Show help'; echo '  cws templates     # List templates'; echo '  cws profiles      # Manage AWS profiles'; echo ''; echo 'Getting started:'; echo '  cws profiles create my-profile  # Create AWS profile'; echo '  cws launch python-ml my-project  # Launch workstation'; echo ''"
+            do script "echo 'Prism CLI Setup'; echo ''; echo 'Available commands:'; echo '  prism --help        # Show help'; echo '  prism templates     # List templates'; echo '  prism profiles      # Manage AWS profiles'; echo ''; echo 'Getting started:'; echo '  prism profiles create my-profile  # Create AWS profile'; echo '  prism launch python-ml my-project  # Launch workstation'; echo ''"
         end tell
 EOD
 }
@@ -621,23 +621,23 @@ EOD
         fi
         
         # Install with sudo
-        sudo cp "$MACOS_DIR/cws" "$INSTALL_DIR/"
+        sudo cp "$MACOS_DIR/prism" "$INSTALL_DIR/"
         sudo cp "$MACOS_DIR/prismd" "$INSTALL_DIR/"
-        sudo chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd"
+        sudo chmod +x "$INSTALL_DIR/prism" "$INSTALL_DIR/prismd"
     else
         # Install without sudo
-        cp "$MACOS_DIR/cws" "$INSTALL_DIR/"
+        cp "$MACOS_DIR/prism" "$INSTALL_DIR/"
         cp "$MACOS_DIR/prismd" "$INSTALL_DIR/"
-        chmod +x "$INSTALL_DIR/cws" "$INSTALL_DIR/prismd"
+        chmod +x "$INSTALL_DIR/prism" "$INSTALL_DIR/prismd"
     fi
-    
+
     # Verify installation
-    if [[ -x "$INSTALL_DIR/cws" ]] && [[ -x "$INSTALL_DIR/prismd" ]]; then
-        show_success "CloudWorkstation CLI tools installed successfully!
+    if [[ -x "$INSTALL_DIR/prism" ]] && [[ -x "$INSTALL_DIR/prismd" ]]; then
+        show_success "Prism CLI tools installed successfully!
 
 Commands available:
-• cws --help    (CLI client)
-• prismd          (daemon service)
+• prism --help    (CLI client)
+• prismd            (daemon service)
 
 You can now use CloudWorkstation from any terminal window."
         echo "✅ Installation complete"
@@ -675,21 +675,21 @@ INSTALLATION INSTRUCTIONS:
 
 WHAT'S INCLUDED:
 • CloudWorkstation GUI - Visual interface for managing workstations
-• Command-line tools (cws, prismd) - Terminal interface and daemon
+• Command-line tools (prism, prismd) - Terminal interface and daemon
 • Pre-configured templates for research environments
 • Automatic service management
 
 FIRST TIME SETUP:
 1. Open CloudWorkstation
 2. Choose "Command Line Setup" to install CLI tools (optional)
-3. Create an AWS profile: File → AWS Setup or 'cws profiles create'
+3. Create an AWS profile: File → AWS Setup or 'prism profiles create'
 4. Browse templates and launch your first workstation
 
 GETTING STARTED:
 • GUI: Launch CloudWorkstation from Applications
-• CLI: Open Terminal and run 'cws --help'
-• Templates: 'cws templates' to see available environments
-• Launch: 'cws launch python-ml my-project'
+• CLI: Open Terminal and run 'prism --help'
+• Templates: 'prism templates' to see available environments
+• Launch: 'prism launch python-ml my-project'
 
 SYSTEM REQUIREMENTS:
 • macOS 10.15 (Catalina) or later
@@ -703,7 +703,7 @@ SUPPORT:
 
 UNINSTALLATION:
 • Remove CloudWorkstation.app from Applications
-• Remove CLI tools: sudo rm /usr/local/bin/cws /usr/local/bin/prismd
+• Remove CLI tools: sudo rm /usr/local/bin/prism /usr/local/bin/prismd
 • Remove preferences: ~/Library/Preferences/com.prism.*
 
 CloudWorkstation helps academic researchers launch pre-configured

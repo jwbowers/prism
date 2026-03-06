@@ -465,6 +465,10 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	marketplaceCobra := NewMarketplaceCobraCommands(r.app)
 	rootCmd.AddCommand(marketplaceCobra.CreateMarketplaceCommand())
 
+	// Schools registry (institutional AWS portal lookup)
+	schoolsCobra := NewSchoolsCobraCommands(r.app)
+	rootCmd.AddCommand(schoolsCobra.CreateSchoolsCommand())
+
 	// Repository commands (using new Cobra structure)
 	repoCobra := NewRepoCobraCommands(r.app)
 	rootCmd.AddCommand(repoCobra.CreateRepoCommand())
