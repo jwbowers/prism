@@ -35,8 +35,6 @@
       <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="Prism">
           <Directory Id="BinFolder" Name="bin" />
-          <Directory Id="TemplatesFolder" Name="templates" />
-          <Directory Id="DocsFolder" Name="docs" />
         </Directory>
       </Directory>
       
@@ -76,37 +74,8 @@
       <Environment Id="PATH" Name="PATH" Value="[BinFolder]" Permanent="no" Part="last" Action="set" System="yes" />
     </Component>
     
-    <!-- Templates Component -->
-    <Component Id="TemplatesComponent" Guid="{22222222-3333-4444-5555-666666666666}" Directory="TemplatesFolder">
-      <File Id="BaseRocky9Template"
-            Source="$(var.SourceDir)\templates\base-rocky9.yml" />
-      <File Id="Rocky9CondaStackTemplate"
-            Source="$(var.SourceDir)\templates\rocky9-conda-stack.yml" />
-      <File Id="PythonMLTemplate"
-            Source="$(var.SourceDir)\templates\simple-python-ml.yml" />
-      <File Id="RResearchTemplate"
-            Source="$(var.SourceDir)\templates\simple-r-research.yml" />
-      <File Id="BasicUbuntuTemplate"
-            Source="$(var.SourceDir)\templates\basic-ubuntu-apt.yml" />
-      <File Id="WebDevTemplate"
-            Source="$(var.SourceDir)\templates\web-dev-apt.yml" />
-      <File Id="TemplateSchema"
-            Source="$(var.SourceDir)\templates\template.schema.json" />
-    </Component>
-    
-    <!-- Documentation Component -->
-    <Component Id="DocsComponent" Guid="{33333333-4444-5555-6666-777777777777}" Directory="DocsFolder">
-      <File Id="GettingStartedDoc"
-            Source="$(var.SourceDir)\docs\GETTING_STARTED.md" />
-      <File Id="UserGuideDoc"
-            Source="$(var.SourceDir)\docs\GUI_USER_GUIDE.md" />
-      <File Id="TUIGuideDoc"
-            Source="$(var.SourceDir)\docs\TUI_USER_GUIDE.md" />
-      <File Id="TroubleshootingDoc"
-            Source="$(var.SourceDir)\docs\TROUBLESHOOTING.md" />
-      <File Id="LicenseFile"
-            Source="$(var.SourceDir)\LICENSE" />
-    </Component>
+    <!-- NOTE: Templates and docs are fetched/accessed via CLI at runtime.
+         Add template bundling via WiX heat.exe harvesting in a future release. -->
     
     <!-- Windows Service Component -->
     <Component Id="ServiceComponent" Guid="{44444444-5555-6666-7777-888888888888}" Directory="BinFolder">
@@ -184,12 +153,6 @@
                 Icon="PrismIcon"
                 WorkingDirectory="BinFolder" />
       
-      <Shortcut Id="StartMenuDocumentation"
-                Name="Prism Documentation"
-                Target="[DocsFolder]GETTING_STARTED.md"
-                Description="Prism documentation and help"
-                Icon="PrismIcon" />
-      
       <RemoveFolder Id="RemoveStartMenuFolder" Directory="StartMenuFolder" On="uninstall" />
       <RegistryValue Root="HKCU" 
                      Key="Software\Prism\StartMenu" 
@@ -224,8 +187,6 @@
         <RegistryValue Name="Version" Type="string" Value="0.5.1" />
         <RegistryValue Name="ServiceEnabled" Type="integer" Value="1" />
         <RegistryValue Name="BinPath" Type="string" Value="[BinFolder]" />
-        <RegistryValue Name="TemplatesPath" Type="string" Value="[TemplatesFolder]" />
-        <RegistryValue Name="DocsPath" Type="string" Value="[DocsFolder]" />
       </RegistryKey>
       
       <!-- Uninstall Information -->
@@ -287,20 +248,6 @@
              Level="1"
              Description="Install Prism daemon as a Windows service (auto-start on boot)">
       <ComponentRef Id="ServiceComponent" />
-    </Feature>
-    
-    <Feature Id="TemplatesFeature" 
-             Title="Research Templates" 
-             Level="1"
-             Description="Built-in research environment templates">
-      <ComponentRef Id="TemplatesComponent" />
-    </Feature>
-    
-    <Feature Id="DocumentationFeature" 
-             Title="Documentation" 
-             Level="1"
-             Description="User guides and documentation">
-      <ComponentRef Id="DocsComponent" />
     </Feature>
     
     <Feature Id="StartMenuFeature" 
