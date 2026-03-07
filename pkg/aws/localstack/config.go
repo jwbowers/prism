@@ -96,25 +96,17 @@ func NewAWSConfig(ctx context.Context) (aws.Config, error) {
 		}, nil
 	})
 
-	// Load AWS configuration with LocalStack settings.
-	// Explicitly skip shared config/credentials files so AWS_PROFILE in the
-	// environment doesn't cause the SDK to try loading a non-existent profile.
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(LocalStackRegion),
-		config.WithEndpointResolverWithOptions(customResolver),
-		config.WithSharedConfigFiles([]string{}),
-		config.WithSharedCredentialsFiles([]string{}),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+	// Build aws.Config directly to avoid config.LoadDefaultConfig reading
+	// AWS_PROFILE from the environment and failing on a missing profile.
+	return aws.Config{
+		Region:                      LocalStackRegion,
+		EndpointResolverWithOptions: customResolver,
+		Credentials: credentials.NewStaticCredentialsProvider(
 			LocalStackAccessKey,
 			LocalStackSecretKey,
 			"", // session token not needed
-		)),
-	)
-	if err != nil {
-		return aws.Config{}, fmt.Errorf("failed to load LocalStack AWS config: %w", err)
-	}
-
-	return cfg, nil
+		),
+	}, nil
 }
 
 // NewAWSConfigWithProfile creates an AWS configuration with custom profile/region support
@@ -135,7 +127,10 @@ func NewAWSConfigWithProfile(ctx context.Context, profile, region string) (aws.C
 		return config.LoadDefaultConfig(ctx, cfgOpts...)
 	}
 
-	// LocalStack mode - ignore profile, use LocalStack config
+	// LocalStack mode - ignore profile, use LocalStack config.
+	// Build aws.Config directly instead of using config.LoadDefaultConfig so the
+	// SDK never reads AWS_PROFILE from the environment and tries to validate the
+	// profile (e.g. "localstack") against ~/.aws/config (which doesn't exist in CI).
 	endpoint := GetEndpoint()
 
 	// Use provided region or fall back to default LocalStack region
@@ -144,7 +139,7 @@ func NewAWSConfigWithProfile(ctx context.Context, profile, region string) (aws.C
 		targetRegion = LocalStackRegion
 	}
 
-	// Custom endpoint resolver
+	// Custom endpoint resolver pointing all services at the LocalStack gateway
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, awsRegion string, options ...interface{}) (aws.Endpoint, error) {
 		return aws.Endpoint{
 			URL:               endpoint,
@@ -153,26 +148,15 @@ func NewAWSConfigWithProfile(ctx context.Context, profile, region string) (aws.C
 		}, nil
 	})
 
-	// Load AWS configuration with LocalStack settings.
-	// Explicitly skip shared config/credentials files so that environment
-	// variables like AWS_PROFILE (e.g. "localstack") don't cause the SDK to
-	// try loading a non-existent profile from ~/.aws/config.
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(targetRegion),
-		config.WithEndpointResolverWithOptions(customResolver),
-		config.WithSharedConfigFiles([]string{}),
-		config.WithSharedCredentialsFiles([]string{}),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+	return aws.Config{
+		Region:                      targetRegion,
+		EndpointResolverWithOptions: customResolver,
+		Credentials: credentials.NewStaticCredentialsProvider(
 			LocalStackAccessKey,
 			LocalStackSecretKey,
 			"",
-		)),
-	)
-	if err != nil {
-		return aws.Config{}, fmt.Errorf("failed to load LocalStack AWS config: %w", err)
-	}
-
-	return cfg, nil
+		),
+	}, nil
 }
 
 // GetAMI returns the LocalStack AMI ID for a given OS distribution and architecture
