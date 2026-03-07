@@ -329,6 +329,17 @@ post_install: |
   # Restart RStudio Server with new configuration
   systemctl restart rstudio-server
 
+  # Set password for researcher user (required for RStudio Server PAM authentication)
+  RESEARCHER_PASSWORD=$(openssl rand -base64 12)
+  echo "researcher:${RESEARCHER_PASSWORD}" | chpasswd
+  echo ""
+  echo "============================================="
+  echo "  RStudio Server Login Credentials"
+  echo "  Username: researcher"
+  echo "  Password: ${RESEARCHER_PASSWORD}"
+  echo "============================================="
+  echo ""
+
   # Create researcher user home directory structure
   mkdir -p /home/researcher/{projects,data,notebooks,documents,scripts}
   chown -R researcher:researcher /home/researcher

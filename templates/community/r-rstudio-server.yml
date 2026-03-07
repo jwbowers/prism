@@ -132,6 +132,18 @@ post_install: |
     systemctl status rstudio-server
   fi
 
+  # Set password for researcher user (required for RStudio Server PAM authentication)
+  # SSH key auth handles terminal access, but RStudio Server needs a system password
+  RESEARCHER_PASSWORD=$(openssl rand -base64 12)
+  echo "researcher:${RESEARCHER_PASSWORD}" | chpasswd
+  echo ""
+  echo "============================================="
+  echo "  RStudio Server Login Credentials"
+  echo "  Username: researcher"
+  echo "  Password: ${RESEARCHER_PASSWORD}"
+  echo "============================================="
+  echo ""
+
   # Update welcome message
   echo "Updating welcome message..."
   cat > /home/researcher/WELCOME.txt <<'WELCOME_END'
@@ -140,7 +152,7 @@ post_install: |
   RStudio Server (Web IDE):
     URL: http://YOUR_IP:8787
     Username: researcher
-    Password: Your system password
+    Password: from provisioning log (reset via: sudo passwd researcher)
 
   R Version: Inherited from R Base layer
   Packages: tidyverse, rmarkdown, knitr, devtools
@@ -168,7 +180,8 @@ post_install: |
   echo ""
   INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || hostname -I | awk '{print $1}')
   echo "🖥️  RStudio Server: http://${INSTANCE_IP}:8787"
-  echo "👤 Login with username and password"
+  echo "👤 Login: username 'researcher', password above"
+  echo "   To reset: sudo passwd researcher (via SSH)"
   echo ""
 
 # Idle detection - check both R and RStudio processes
