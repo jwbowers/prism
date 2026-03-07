@@ -59,6 +59,8 @@ func (tc *TemplateCommands) Templates(args []string) error {
 			return tc.templatesUsage(args[1:])
 		case "test":
 			return tc.templatesTest(args[1:])
+		case "sync":
+			return tc.templatesSync(args[1:])
 		}
 	}
 
@@ -1980,5 +1982,26 @@ func (tc *TemplateCommands) templatesPackages(args []string) error {
 		printCondaAndPipPackages(tmpl.Packages.Conda, tmpl.Packages.Pip)
 	}
 
+	return nil
+}
+
+// templatesSync force-refreshes community templates from all enabled remote sources.
+func (tc *TemplateCommands) templatesSync(args []string) error {
+	fmt.Println("🔄 Syncing community templates from remote sources...")
+
+	synced, err := templates.FetchCommunityTemplates(true)
+	if err != nil {
+		return fmt.Errorf("template sync failed: %w", err)
+	}
+
+	if len(synced) == 0 {
+		fmt.Println("ℹ️  No community templates found in configured sources.")
+		return nil
+	}
+
+	fmt.Printf("✅ Synced %d community templates:\n", len(synced))
+	for _, t := range synced {
+		fmt.Printf("   • %s\n", t.Name)
+	}
 	return nil
 }

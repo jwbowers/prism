@@ -298,14 +298,14 @@ func extractRepoName(url string) (string, error) {
 // AddDefaultSources adds the official Prism community repository as a default source
 func (sm *SourceManager) AddDefaultSources() error {
 	// Check if official community repo is already added
-	officialName := "scttfrdmn/prism-community-templates"
+	officialName := "scttfrdmn/prism-template-registry"
 	if _, exists := sm.sources[officialName]; exists {
 		return nil // Already exists
 	}
 
 	source := &CommunitySource{
 		Name:       officialName,
-		URL:        "https://github.com/scttfrdmn/prism-community-templates",
+		URL:        "https://github.com/scttfrdmn/prism-template-registry",
 		Branch:     "main",
 		Enabled:    true,
 		TrustLevel: "verified", // Official repo is verified

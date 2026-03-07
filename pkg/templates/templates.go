@@ -108,6 +108,7 @@ func GetTemplatesForRegion(region, architecture string) (map[string]types.Runtim
 	if err := registry.ScanTemplates(); err != nil {
 		return nil, fmt.Errorf("failed to scan templates: %w", err)
 	}
+	LoadCommunityTemplatesIntoRegistry(registry)
 
 	// Convert to runtime format
 	templates := make(map[string]types.RuntimeTemplate)
@@ -192,6 +193,7 @@ func GetTemplateWithDiscovery(name, region, architecture, packageManager, size s
 	if err := registry.ScanTemplates(); err != nil {
 		return nil, fmt.Errorf("failed to scan templates: %w", err)
 	}
+	LoadCommunityTemplatesIntoRegistry(registry)
 
 	template, err := registry.GetTemplate(name)
 	if err != nil {
@@ -261,6 +263,7 @@ func GetTemplateWithParametersAndDiscovery(name, region, architecture, packageMa
 	if err := registry.ScanTemplates(); err != nil {
 		return nil, fmt.Errorf("failed to scan templates: %w", err)
 	}
+	LoadCommunityTemplatesIntoRegistry(registry)
 
 	template, err := registry.GetTemplate(name)
 	if err != nil {
@@ -407,6 +410,7 @@ func ListAvailableTemplates() ([]string, error) {
 	if err := registry.ScanTemplates(); err != nil {
 		return nil, err
 	}
+	LoadCommunityTemplatesIntoRegistry(registry)
 
 	names := make([]string, 0, len(registry.Templates))
 	for name := range registry.Templates {
@@ -422,6 +426,7 @@ func GetTemplateInfo(name string) (*Template, error) {
 	if err := registry.ScanTemplates(); err != nil {
 		return nil, err
 	}
+	LoadCommunityTemplatesIntoRegistry(registry)
 
 	return registry.GetTemplate(name)
 }
@@ -432,6 +437,7 @@ func GenerateScript(templateName, packageManager string) (string, error) {
 	if err := registry.ScanTemplates(); err != nil {
 		return "", err
 	}
+	LoadCommunityTemplatesIntoRegistry(registry)
 
 	template, err := registry.GetTemplate(templateName)
 	if err != nil {
@@ -588,6 +594,7 @@ func GetTemplatesForRegionWithDiscovery(region, architecture string, amiDiscover
 	if err := registry.ScanTemplates(); err != nil {
 		return nil, fmt.Errorf("failed to scan templates: %w", err)
 	}
+	LoadCommunityTemplatesIntoRegistry(registry)
 
 	// Convert to runtime format
 	templates := make(map[string]types.RuntimeTemplate)

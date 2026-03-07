@@ -58,6 +58,7 @@ and testing templates. Use subcommands for specific operations.`,
 		tc.createVersionCommand(),
 		tc.createSnapshotCommand(),
 		tc.createPackagesCommand(),
+		tc.createSyncCommand(),
 	)
 
 	return cmd
@@ -305,6 +306,18 @@ func (tc *TemplateCobraCommands) createVersionCommand() *cobra.Command {
 	)
 
 	return cmd
+}
+
+// createSyncCommand creates the sync subcommand
+func (tc *TemplateCobraCommands) createSyncCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "sync",
+		Short: "Sync community templates from remote sources",
+		Long:  "Force-refresh community templates from all enabled remote template registries.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return tc.templateCommands.templatesSync(args)
+		},
+	}
 }
 
 // createSnapshotCommand creates the snapshot subcommand
