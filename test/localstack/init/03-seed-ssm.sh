@@ -8,6 +8,12 @@ set -e
 
 echo "=== Seeding LocalStack SSM parameters ==="
 
+# Install jq if not available (LocalStack container may not have it)
+if ! command -v jq &>/dev/null; then
+    echo "Installing jq..."
+    apt-get install -y -q jq 2>/dev/null || true
+fi
+
 # Configure AWS CLI to use LocalStack
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
