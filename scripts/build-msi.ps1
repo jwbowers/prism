@@ -327,9 +327,28 @@ Export-ModuleMember -Function Get-Prism
         Copy-Item $iconSource $iconTarget
         Write-Success "Application icon copied"
     } else {
-        Write-Warning "Application icon not found, using placeholder"
-        # Create a minimal placeholder icon file
-        New-Item -ItemType File -Path $iconTarget -Force | Out-Null
+        Write-Warning "Application icon not found, generating minimal placeholder"
+        # Create a minimal valid 16x16 ICO using System.Drawing
+        try {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap(32, 32)
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::FromArgb(37, 99, 235))
+            $g.Dispose()
+            $iconHandle = $bmp.GetHicon()
+            $icon = [System.Drawing.Icon]::FromHandle($iconHandle)
+            $iconStream = [System.IO.File]::Create($iconTarget)
+            $icon.Save($iconStream)
+            $iconStream.Close()
+            $icon.Dispose()
+            $bmp.Dispose()
+            Write-Success "Placeholder icon generated"
+        } catch {
+            Write-Warning "Could not generate icon: $_"
+            # Write a known-good minimal 1x1 ICO file (16-byte header + 40-byte BITMAPINFOHEADER + 4 bytes pixel data)
+            $icoBytes = [byte[]](0,0,1,0,1,0,1,1,0,0,1,0,32,0,40,0,0,0,22,0,0,0,40,0,0,0,1,0,0,0,2,0,0,0,1,0,32,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,37,99,235,255,0,0,0,0)
+            [System.IO.File]::WriteAllBytes($iconTarget, $icoBytes)
+        }
     }
     
     Write-Host
@@ -380,11 +399,11 @@ function Compile-WixSource {
         )
         
         $objFile = Join-Path $BuildDir "obj\Prism.wixobj"
-        
-        & candle -arch x64 $wixVariables -out $objFile Prism.wxs -ext WixUtilExtension 2>$LogFile
+
+        $candleOutput = & candle -arch x64 $wixVariables -out $objFile Prism.wxs -ext WixUtilExtension 2>&1
+        $candleOutput | Out-File $LogFile -Encoding utf8
         if ($LASTEXITCODE -ne 0) {
-            $errorContent = Get-Content $LogFile -Raw
-            throw "WiX Candle compilation failed: $errorContent"
+            throw "WiX Candle compilation failed:`n$($candleOutput -join "`n")"
         }
         
         Write-Success "WiX source compiled successfully"
@@ -415,10 +434,10 @@ function Link-MsiPackage {
 '@ | Out-File $stringsFile -Encoding UTF8
     }
     
-    & light -out $msiFile $objFile -ext WixUIExtension -ext WixUtilExtension -cultures:en-US 2>>$LogFile
+    $lightOutput = & light -out $msiFile $objFile -ext WixUIExtension -ext WixUtilExtension -cultures:en-US 2>&1
+    $lightOutput | Out-File $LogFile -Encoding utf8 -Append
     if ($LASTEXITCODE -ne 0) {
-        $errorContent = Get-Content $LogFile -Raw
-        throw "WiX Light linking failed: $errorContent"
+        throw "WiX Light linking failed:`n$($lightOutput -join "`n")"
     }
     
     Write-Success "MSI package linked successfully"
