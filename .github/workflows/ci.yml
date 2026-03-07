@@ -198,7 +198,7 @@ jobs:
 
       - name: Run CLI integration tests
         run: |
-          PRISM_DEV=true GO_ENV=test AWS_PROFILE=localstack go test -v -tags integration \
+          PRISM_DEV=true GO_ENV=test PRISM_USE_LOCALSTACK=true AWS_PROFILE=localstack go test -v -tags integration \
             ./test/integration/cli/... \
             -coverprofile=cli-coverage.out \
             -covermode=atomic \
