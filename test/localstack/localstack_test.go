@@ -89,7 +89,9 @@ func TestLocalStackServices(t *testing.T) {
 	t.Log("✓ LocalStack services verified:")
 	for _, service := range localstack.RequiredServices {
 		status := services[service]
-		require.Equal(t, "available", status, "Service %s should be available", service)
+		// LocalStack Community reports services as "running" or "available"
+		require.Truef(t, status == "available" || status == "running",
+			"Service %s should be available or running, got: %s", service, status)
 		t.Logf("  - %s: %s", service, status)
 	}
 }
