@@ -202,10 +202,26 @@ jobs:
           # full LocalStack mode. CLI tests will find it already running and skip
           # auto-start, avoiding the env-var propagation issue through the
           # prism→prismd subprocess chain.
-          PRISM_USE_LOCALSTACK=true AWS_PROFILE=localstack AWS_REGION=us-west-2 PRISM_DEV=true nohup ./bin/prismd > /tmp/prismd-cli-test.log 2>&1 &
-          echo "⏳ Waiting for daemon to be ready..."
+          export PRISM_USE_LOCALSTACK=true
+          export AWS_PROFILE=localstack
+          export AWS_REGION=us-west-2
+          export PRISM_DEV=true
+          nohup ./bin/prismd > /tmp/prismd-cli-test.log 2>&1 &
+          DAEMON_PID=$!
+          echo "⏳ Waiting for daemon to be ready (PID: $DAEMON_PID)..."
           timeout 30 bash -c 'until curl -sf http://localhost:8947/api/v1/ping >/dev/null 2>&1; do sleep 1; done' || (echo "❌ Daemon failed to start"; cat /tmp/prismd-cli-test.log; exit 1)
-          echo "✅ Daemon started in LocalStack mode"
+          echo "✅ Daemon ping OK"
+          echo "📋 Daemon startup log:"
+          cat /tmp/prismd-cli-test.log
+          echo "🔍 Daemon status:"
+          curl -s http://localhost:8947/api/v1/status | python3 -m json.tool || echo "(status check failed)"
+          # Verify daemon is not in reduced mode
+          REDUCED=$(curl -s http://localhost:8947/api/v1/status | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('reduced_mode', False))" 2>/dev/null || echo "unknown")
+          if [ "$REDUCED" = "True" ]; then
+            echo "❌ Daemon started in reduced mode - LocalStack credentials not working"
+            exit 1
+          fi
+          echo "✅ Daemon started in LocalStack mode (not reduced)"
 
       - name: Run CLI integration tests
         run: |

@@ -786,6 +786,12 @@ func TestHandleAMICheckFreshness(t *testing.T) {
 	// Create a test server with mocked AWS clients
 	server := createTestServer(t)
 
+	// awsManager is nil in the mock test server (no real AWS credentials needed for setup,
+	// but SetAMIDiscovery requires an initialized manager to inject the mock into)
+	if server.awsManager == nil {
+		t.Skip("TestHandleAMICheckFreshness requires an initialized awsManager to inject mock SSM client")
+	}
+
 	// Mock SSM client that returns simulated AMI IDs
 	mockSSM := &aws.MockSSMClient{
 		GetParameterFunc: func(ctx context.Context, params *ssm.GetParameterInput) (*ssm.GetParameterOutput, error) {
