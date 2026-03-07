@@ -262,7 +262,7 @@ func installService() error {
 		{Type: mgr.ServiceRestart, Delay: 5 * time.Second},
 	}
 
-	if err := s.SetRecoveryActions(recoveryActions, 24*time.Hour); err != nil {
+	if err := s.SetRecoveryActions(recoveryActions, uint32((24 * time.Hour).Seconds())); err != nil {
 		// Log warning but don't fail installation
 		log.Printf("Warning: Failed to set service recovery options: %v", err)
 	}

@@ -478,7 +478,8 @@ create_app_icon() {
         
         local temp_icon="/tmp/prism_temp_icon.png"
         
-        # Create a simple icon using built-in tools
+        # Create a simple icon using built-in tools (PIL optional)
+        if python3 -c "import PIL" 2>/dev/null; then
         python3 << 'PYTHON_EOF'
 import os
 from PIL import Image, ImageDraw, ImageFont
@@ -519,7 +520,8 @@ except:
 # Save
 img.save('/tmp/prism_temp_icon.png')
 PYTHON_EOF
-        
+        fi  # end PIL check
+
         if [[ ! -f "$temp_icon" ]]; then
             # Fallback: create with sips
             log_warning "Creating minimal fallback icon"
