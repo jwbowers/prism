@@ -145,7 +145,7 @@ func VerifyRequiredServices(ctx context.Context) error {
 	var unavailable []string
 	for _, required := range RequiredServices {
 		status, exists := services[required]
-		if !exists || status != "available" {
+		if !exists || (status != "available" && status != "running") {
 			unavailable = append(unavailable, fmt.Sprintf("%s (%s)", required, status))
 		}
 	}

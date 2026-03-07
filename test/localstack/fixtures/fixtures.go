@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -33,7 +34,7 @@ func NewTestFixtures(t *testing.T) *TestFixtures {
 
 	// Wait for LocalStack to be ready
 	ctx := context.Background()
-	if err := localstack.WaitForReady(ctx, 60); err != nil {
+	if err := localstack.WaitForReady(ctx, 60*time.Second); err != nil {
 		t.Fatalf("LocalStack not ready: %v", err)
 	}
 
