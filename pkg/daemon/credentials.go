@@ -24,8 +24,9 @@ func isCredentialError(err error) bool {
 		"no credentials",
 		"operation error ec2imds",
 		"credential",
-		"i/o timeout",              // Often indicates IMDS timeout
-		"dial tcp 169.254.169.254", // EC2 IMDS endpoint timeout
+		"i/o timeout",                         // Often indicates IMDS timeout
+		"dial tcp 169.254.169.254",            // EC2 IMDS endpoint timeout
+		"failed to get shared config profile", // Profile does not exist in ~/.aws/config
 	}
 
 	for _, pattern := range credentialPatterns {
