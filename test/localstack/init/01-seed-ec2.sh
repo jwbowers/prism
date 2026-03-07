@@ -119,10 +119,10 @@ echo "  - Security Group: $SG_ID"
 echo "  - AMIs: ${#AMI_IDS[@]} images"
 echo "  - Key Pair: prism-test-key"
 echo ""
-echo "Configuration stored in: /tmp/prism-localstack-config.json"
+echo "Configuration stored in: /var/lib/localstack/prism-localstack-config.json"
 
 # Store configuration for tests to use
-cat > /tmp/prism-localstack-config.json <<EOF
+cat > /var/lib/localstack/prism-localstack-config.json <<EOF
 {
   "vpc_id": "$VPC_ID",
   "internet_gateway_id": "$IGW_ID",

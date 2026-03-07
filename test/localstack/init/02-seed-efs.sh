@@ -20,10 +20,10 @@ aws_local() {
 }
 
 # Load VPC configuration from EC2 seed script
-if [ -f /tmp/prism-localstack-config.json ]; then
-    VPC_ID=$(jq -r '.vpc_id' /tmp/prism-localstack-config.json)
-    SUBNET_IDS=($(jq -r '.subnet_ids[]' /tmp/prism-localstack-config.json))
-    SG_ID=$(jq -r '.security_group_id' /tmp/prism-localstack-config.json)
+if [ -f /var/lib/localstack/prism-localstack-config.json ]; then
+    VPC_ID=$(jq -r '.vpc_id' /var/lib/localstack/prism-localstack-config.json)
+    SUBNET_IDS=($(jq -r '.subnet_ids[]' /var/lib/localstack/prism-localstack-config.json))
+    SG_ID=$(jq -r '.security_group_id' /var/lib/localstack/prism-localstack-config.json)
     echo "  Using VPC: $VPC_ID"
 else
     echo "ERROR: VPC configuration not found. Run 01-seed-ec2.sh first."
@@ -74,7 +74,7 @@ TMP_FILE=$(mktemp)
 jq --arg fs_id "$FS_ID" \
    --argjson mount_targets "$(printf '%s\n' "${MOUNT_TARGET_IDS[@]}" | jq -R . | jq -s .)" \
    '. + {efs_file_system_id: $fs_id, efs_mount_target_ids: $mount_targets}' \
-   /tmp/prism-localstack-config.json > "$TMP_FILE"
-mv "$TMP_FILE" /tmp/prism-localstack-config.json
+   /var/lib/localstack/prism-localstack-config.json > "$TMP_FILE"
+mv "$TMP_FILE" /var/lib/localstack/prism-localstack-config.json
 
-echo "Updated configuration: /tmp/prism-localstack-config.json"
+echo "Updated configuration: /var/lib/localstack/prism-localstack-config.json"
