@@ -196,6 +196,17 @@ jobs:
           echo "⏳ Waiting for init scripts to complete..."
           timeout 90 bash -c 'until [ -f /tmp/localstack/prism-init-complete ]; do sleep 3; done' || (echo "❌ LocalStack init scripts did not complete" && exit 1)
 
+      - name: Pre-start daemon in LocalStack mode for CLI tests
+        run: |
+          # Start daemon directly with PRISM_USE_LOCALSTACK so it initialises in
+          # full LocalStack mode. CLI tests will find it already running and skip
+          # auto-start, avoiding the env-var propagation issue through the
+          # prism→prismd subprocess chain.
+          PRISM_USE_LOCALSTACK=true AWS_PROFILE=localstack AWS_REGION=us-west-2 PRISM_DEV=true nohup ./bin/prismd > /tmp/prismd-cli-test.log 2>&1 &
+          echo "⏳ Waiting for daemon to be ready..."
+          timeout 30 bash -c 'until curl -sf http://localhost:8947/api/v1/ping >/dev/null 2>&1; do sleep 1; done' || (echo "❌ Daemon failed to start"; cat /tmp/prismd-cli-test.log; exit 1)
+          echo "✅ Daemon started in LocalStack mode"
+
       - name: Run CLI integration tests
         run: |
           PRISM_DEV=true GO_ENV=test PRISM_USE_LOCALSTACK=true AWS_PROFILE=localstack go test -v -tags integration \

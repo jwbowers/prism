@@ -271,7 +271,7 @@ func TestUpdateResearchUser(t *testing.T) {
 			// Verify core properties are preserved
 			assert.Equal(t, "testuser", updatedUser.Username)
 			assert.Equal(t, originalUID, updatedUser.UID, "UID should not change")
-			assert.Equal(t, originalCreatedAt, updatedUser.CreatedAt.Truncate(0), "CreatedAt should not change")
+			assert.True(t, originalCreatedAt.Equal(updatedUser.CreatedAt.Truncate(0)), "CreatedAt should not change")
 			assert.Equal(t, "test-profile", updatedUser.ProfileOwner)
 
 			// Run specific validation for this test
@@ -402,7 +402,7 @@ func TestResearchUserPersistence(t *testing.T) {
 	// Verify data persistence
 	assert.Equal(t, "persistentuser", retrievedUser.Username)
 	assert.Equal(t, originalUID, retrievedUser.UID, "UID should persist")
-	assert.Equal(t, originalCreatedAt, retrievedUser.CreatedAt.Truncate(0), "CreatedAt should persist")
+	assert.True(t, originalCreatedAt.Equal(retrievedUser.CreatedAt.Truncate(0)), "CreatedAt should persist")
 	assert.Equal(t, "Persistent User", retrievedUser.FullName, "FullName should persist")
 	assert.Equal(t, "persistent@example.com", retrievedUser.Email, "Email should persist")
 	assert.True(t, retrievedUser.SudoAccess, "SudoAccess should persist")
