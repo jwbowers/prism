@@ -9,8 +9,8 @@ set -euo pipefail
 # Configuration
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# Auto-detect version from pkg/version/version.go
-readonly VERSION="$(grep -oP '(?<=Version = ")[^"]+' "$PROJECT_ROOT/pkg/version/version.go" 2>/dev/null || echo "0.0.0")"
+# Auto-detect version from pkg/version/version.go (sed for macOS compat; grep -oP needs GNU grep)
+readonly VERSION="$(sed -n 's/.*Version = "\([^"]*\)".*/\1/p' "$PROJECT_ROOT/pkg/version/version.go" 2>/dev/null || echo "0.0.0")"
 readonly BUILD_DIR="$PROJECT_ROOT/dist/dmg"
 readonly VOLUME_NAME="Prism-v$VERSION"
 readonly DMG_NAME="Prism-v$VERSION.dmg"
@@ -835,12 +835,12 @@ create_dmg() {
     
     # Mount the DMG
     log_info "Mounting DMG for customization..."
-    local mount_output
-    mount_output=$(hdiutil attach -readwrite -noverify -noautoopen "$temp_dmg" | grep '/dev/disk')
+    local attach_output
+    attach_output=$(hdiutil attach -readwrite -noverify -noautoopen "$temp_dmg")
     local device
-    device=$(echo "$mount_output" | awk '{print $1}')
+    device=$(echo "$attach_output" | grep '/dev/disk' | head -1 | awk '{print $1}')
     local mount_point
-    mount_point=$(echo "$mount_output" | sed 's/.*\(\/Volumes\/.*\)/\1/')
+    mount_point=$(echo "$attach_output" | grep '/Volumes/' | awk '{print $NF}')
     
     if [[ -z "$mount_point" ]]; then
         log_error "Failed to mount DMG"

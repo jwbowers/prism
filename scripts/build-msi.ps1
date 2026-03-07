@@ -103,10 +103,8 @@ function Build-MSI {
         # Step 3: Prepare supporting files
         Prepare-SupportingFiles
         
-        # Step 4: Build custom actions DLL
-        if (-not $SkipCustomActions) {
-            Build-CustomActions
-        }
+        # Step 4: Build custom actions DLL (always run — creates placeholder when MSBuild absent)
+        Build-CustomActions
         
         # Step 5: Compile WiX source
         Compile-WixSource
@@ -339,18 +337,23 @@ Export-ModuleMember -Function Get-Prism
 
 function Build-CustomActions {
     Write-Step "Building Custom Actions DLL"
-    
+
     $customActionsProject = Join-Path $WixDir "SetupCustomActions\SetupCustomActions.csproj"
     $customActionsDll = Join-Path $ReleaseDir "SetupCustomActions.dll"
-    
-    if (Test-Path $customActionsProject) {
+
+    if (-not (Get-Command "msbuild" -ErrorAction SilentlyContinue)) {
+        Write-Warning "MSBuild not found - creating placeholder DLL for WiX compilation"
+        New-Item -ItemType File -Path $customActionsDll -Force | Out-Null
+        $script:SkipCustomActions = $true
+    } elseif (Test-Path $customActionsProject) {
         Write-Task "Building SetupCustomActions.dll..."
-        
+
         & msbuild $customActionsProject /p:Configuration=Release /p:Platform=x64 /p:OutputPath=$ReleaseDir /nologo /verbosity:minimal
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Custom Actions DLL built successfully"
         } else {
             Write-Warning "Custom Actions DLL build failed, continuing without custom actions"
+            New-Item -ItemType File -Path $customActionsDll -Force | Out-Null
             $script:SkipCustomActions = $true
         }
     } else {
