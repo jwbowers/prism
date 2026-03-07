@@ -95,7 +95,7 @@ func TestBudgetEnforcement_PreventsLaunch(t *testing.T) {
 		Template:  "Ubuntu 24.04 Server",
 		Name:      instance1Name,
 		Size:      "XS", // t3.micro: $0.0104/hour (~$7.50/month)
-		ProjectID: project.ID,
+		ProjectID: &project.ID,
 	})
 	integration.AssertNoError(t, err, "First instance launch should succeed")
 	t.Log("✓ First instance launched successfully")
@@ -122,8 +122,8 @@ func TestBudgetEnforcement_PreventsLaunch(t *testing.T) {
 	_, err = fixtures.CreateTestInstance(t, registry, fixtures.CreateTestInstanceOptions{
 		Template:  "Ubuntu 24.04 Server",
 		Name:      instance2Name,
-		Size:      "S",        // t3.small: $0.0208/hour (~$14.98/month) - would exceed $10 limit
-		ProjectID: project.ID, // Associate with budgeted project
+		Size:      "S",         // t3.small: $0.0208/hour (~$14.98/month) - would exceed $10 limit
+		ProjectID: &project.ID, // Associate with budgeted project
 	})
 
 	// Verify launch was blocked
