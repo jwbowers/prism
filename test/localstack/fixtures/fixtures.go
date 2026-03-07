@@ -170,6 +170,17 @@ func (f *TestFixtures) VerifyEFSSetup(t *testing.T) {
 	}
 }
 
+// HasSSMParameters returns true if the canonical Ubuntu SSM parameter was successfully seeded.
+// LocalStack Community may restrict writes to the /aws/service/ namespace.
+func (f *TestFixtures) HasSSMParameters(t *testing.T) bool {
+	t.Helper()
+	ctx := context.Background()
+	_, err := f.SSMClient.GetParameter(ctx, &ssm.GetParameterInput{
+		Name: aws.String("/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id"),
+	})
+	return err == nil
+}
+
 // VerifySSMParameters verifies that SSM parameters for AMI discovery exist
 func (f *TestFixtures) VerifySSMParameters(t *testing.T) {
 	t.Helper()
