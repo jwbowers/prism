@@ -49,9 +49,10 @@ func runCLI(t *testing.T, args ...string) string {
 	binary := findCLIBinary(t)
 	cmd := exec.Command(binary, args...)
 
-	// Set environment
+	// Inherit environment (includes PRISM_USE_LOCALSTACK, AWS_PROFILE=localstack, etc.)
+	// Do not override AWS_PROFILE here: appending would cause the last value to win
+	// (shell/execve behavior), overwriting the localstack profile set by the test runner.
 	cmd.Env = append(os.Environ(),
-		"AWS_PROFILE=aws",
 		"AWS_REGION=us-west-2",
 	)
 
@@ -71,7 +72,6 @@ func runCLIExpectError(t *testing.T, args ...string) string {
 	cmd := exec.Command(binary, args...)
 
 	cmd.Env = append(os.Environ(),
-		"AWS_PROFILE=aws",
 		"AWS_REGION=us-west-2",
 	)
 

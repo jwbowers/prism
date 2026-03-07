@@ -313,6 +313,12 @@ func (s *Server) handleAMIStatus(w http.ResponseWriter, r *http.Request) {
 
 	creationID := pathParts[4]
 
+	// Check AWS manager availability
+	if s.awsManager == nil {
+		s.writeError(w, http.StatusInternalServerError, "AWS manager not initialized")
+		return
+	}
+
 	// Get AMI creation status using the AWS manager
 	result, err := s.awsManager.GetAMICreationStatus(creationID)
 	if err != nil {
