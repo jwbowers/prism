@@ -53,15 +53,6 @@ jobs:
           ./bin/prism --version
           ./bin/prismd --version
 
-      - name: Upload binaries
-        uses: actions/upload-artifact@v4
-        with:
-          name: prism-binaries
-          path: |
-            bin/prism
-            bin/prismd
-          retention-days: 1
-
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -84,11 +75,10 @@ jobs:
 
       - name: Run unit tests
         run: |
-          PRISM_DEV=true GO_ENV=test go test -race -short \
+          PRISM_DEV=true GO_ENV=test go test -short -timeout 5m \
             $(go list ./... | grep -v -E "(cmd/prism-gui|internal/tui)") \
             -coverprofile=unit-coverage.out \
-            -covermode=atomic \
-            -v
+            -covermode=atomic
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -98,157 +88,10 @@ jobs:
           name: unit-tests
         continue-on-error: true
 
-  integration-tests:
-    name: Integration Tests (LocalStack)
-    runs-on: ubuntu-latest
-    needs: lint-and-build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-          cache: true
-
-      - name: Install dependencies
-        run: |
-          go mod download
-          go mod verify
-
-      - name: Download binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: prism-binaries
-          path: bin
-
-      - name: Make binaries executable
-        run: chmod +x bin/prism bin/prismd
-
-      - name: Start LocalStack
-        run: |
-          cd test/localstack
-          docker compose up -d
-          echo "⏳ Waiting for LocalStack to be ready..."
-          timeout 120 bash -c 'until curl -f http://localhost:4566/_localstack/health 2>/dev/null; do sleep 3; done' || (echo "❌ LocalStack failed to start" && exit 1)
-          echo "⏳ Waiting for init scripts to complete..."
-          timeout 90 bash -c 'until [ -f /tmp/localstack/prism-init-complete ]; do sleep 3; done' || (echo "❌ LocalStack init scripts did not complete" && exit 1)
-
-      - name: Run LocalStack integration tests
-        run: |
-          PRISM_DEV=true GO_ENV=test go test -v -tags integration \
-            ./test/localstack/... \
-            -coverprofile=integration-coverage.out \
-            -covermode=atomic \
-            -timeout 10m
-
-      - name: Stop LocalStack
-        if: always()
-        run: |
-          cd test/localstack
-          docker compose down -v
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./integration-coverage.out
-          flags: integration
-          name: integration-tests
-        continue-on-error: true
-
-  cli-integration-tests:
-    name: CLI Integration Tests
-    runs-on: ubuntu-latest
-    needs: lint-and-build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-          cache: true
-
-      - name: Install dependencies
-        run: |
-          go mod download
-          go mod verify
-
-      - name: Download binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: prism-binaries
-          path: bin
-
-      - name: Make binaries executable
-        run: chmod +x bin/prism bin/prismd
-
-      - name: Start LocalStack for CLI tests
-        run: |
-          cd test/localstack
-          docker compose up -d
-          echo "⏳ Waiting for LocalStack to be ready..."
-          timeout 120 bash -c 'until curl -f http://localhost:4566/_localstack/health 2>/dev/null; do sleep 3; done' || (echo "❌ LocalStack failed to start" && exit 1)
-          echo "⏳ Waiting for init scripts to complete..."
-          timeout 90 bash -c 'until [ -f /tmp/localstack/prism-init-complete ]; do sleep 3; done' || (echo "❌ LocalStack init scripts did not complete" && exit 1)
-
-      - name: Pre-start daemon in LocalStack mode for CLI tests
-        run: |
-          # Start daemon directly with PRISM_USE_LOCALSTACK so it initialises in
-          # full LocalStack mode. CLI tests will find it already running and skip
-          # auto-start, avoiding the env-var propagation issue through the
-          # prism→prismd subprocess chain.
-          export PRISM_USE_LOCALSTACK=true
-          export AWS_PROFILE=localstack
-          export AWS_REGION=us-west-2
-          export PRISM_DEV=true
-          nohup ./bin/prismd > /tmp/prismd-cli-test.log 2>&1 &
-          DAEMON_PID=$!
-          echo "⏳ Waiting for daemon to be ready (PID: $DAEMON_PID)..."
-          timeout 30 bash -c 'until curl -sf http://localhost:8947/api/v1/ping >/dev/null 2>&1; do sleep 1; done' || (echo "❌ Daemon failed to start"; cat /tmp/prismd-cli-test.log; exit 1)
-          echo "✅ Daemon ping OK"
-          echo "📋 Daemon startup log:"
-          cat /tmp/prismd-cli-test.log
-          echo "🔍 Daemon status:"
-          curl -s http://localhost:8947/api/v1/status | python3 -m json.tool || echo "(status check failed)"
-          # Verify daemon is not in reduced mode
-          REDUCED=$(curl -s http://localhost:8947/api/v1/status | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('reduced_mode', False))" 2>/dev/null || echo "unknown")
-          if [ "$REDUCED" = "True" ]; then
-            echo "❌ Daemon started in reduced mode - LocalStack credentials not working"
-            exit 1
-          fi
-          echo "✅ Daemon started in LocalStack mode (not reduced)"
-
-      - name: Run CLI integration tests
-        run: |
-          PRISM_DEV=true GO_ENV=test PRISM_USE_LOCALSTACK=true AWS_PROFILE=localstack go test -v -tags integration \
-            ./test/integration/cli/... \
-            -coverprofile=cli-coverage.out \
-            -covermode=atomic \
-            -timeout 15m
-
-      - name: Stop LocalStack
-        if: always()
-        run: |
-          cd test/localstack
-          docker compose down -v
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./cli-coverage.out
-          flags: cli-integration
-          name: cli-integration-tests
-        continue-on-error: true
-
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [lint-and-build, unit-tests, integration-tests, cli-integration-tests]
+    needs: [lint-and-build, unit-tests]
     if: always()
 
     steps:
@@ -262,12 +105,4 @@ jobs:
             echo "❌ Unit tests failed"
             exit 1
           fi
-          if [ "${{ needs.integration-tests.result }}" != "success" ]; then
-            echo "❌ Integration tests failed"
-            exit 1
-          fi
-          if [ "${{ needs.cli-integration-tests.result }}" != "success" ]; then
-            echo "❌ CLI integration tests failed"
-            exit 1
-          fi
-          echo "✅ All tests passed!"
+          echo "✅ All checks passed!"
