@@ -31,7 +31,7 @@ jobs:
       - name: Start LocalStack
         run: |
           cd test/localstack
-          docker-compose up -d
+          docker compose up -d
           echo "LocalStack started"
 
       - name: Wait for LocalStack to be ready
@@ -82,7 +82,7 @@ jobs:
         run: |
           cd test/localstack
           echo "=== LocalStack Logs ==="
-          docker-compose logs localstack
+          docker compose logs localstack
           echo ""
           echo "=== LocalStack Config ==="
           cat /tmp/prism-localstack-config.json 2>/dev/null || echo "Config file not found"
@@ -91,7 +91,7 @@ jobs:
         if: always()
         run: |
           cd test/localstack
-          docker-compose down -v
+          docker compose down -v
 
   localstack-performance:
     name: LocalStack Performance Comparison
@@ -117,7 +117,7 @@ jobs:
       - name: Start LocalStack
         run: |
           cd test/localstack
-          docker-compose up -d
+          docker compose up -d
 
       - name: Wait for LocalStack
         run: |
@@ -159,7 +159,7 @@ jobs:
         if: always()
         run: |
           cd test/localstack
-          docker-compose down -v
+          docker compose down -v
 
   summary:
     name: Test Summary
