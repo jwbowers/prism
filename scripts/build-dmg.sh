@@ -480,7 +480,7 @@ create_app_icon() {
         
         # Create a simple icon using built-in tools (PIL optional)
         if python3 -c "import PIL" 2>/dev/null; then
-        python3 << 'PYTHON_EOF'
+        python3 << 'PYTHON_EOF' || true
 import os
 from PIL import Image, ImageDraw, ImageFont
 import sys
@@ -741,8 +741,8 @@ create_dmg_background() {
     
     log_info "Creating DMG background image..."
     
-    # Create background using Python/PIL or sips
-    python3 << PYTHON_EOF
+    # Create background using Python/PIL or sips (PIL optional; || true lets fallback handle failure)
+    python3 << PYTHON_EOF || true
 import os
 from PIL import Image, ImageDraw, ImageFont
 

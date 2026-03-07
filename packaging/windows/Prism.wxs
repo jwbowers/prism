@@ -143,11 +143,12 @@
     
     <!-- Configuration Directories Component -->
     <Component Id="ConfigDirectoriesComponent" Guid="{55555555-6666-7777-8888-999999999999}" Directory="CONFIGFOLDER">
-      <CreateFolder />
-      <!-- Set proper permissions for configuration directory -->
-      <util:PermissionEx User="Everyone" GenericRead="yes" GenericExecute="yes" />
-      <util:PermissionEx User="Administrators" GenericAll="yes" />
-      <util:PermissionEx User="SYSTEM" GenericAll="yes" />
+      <CreateFolder>
+        <!-- Set proper permissions for configuration directory -->
+        <util:PermissionEx User="Everyone" GenericRead="yes" GenericExecute="yes" />
+        <util:PermissionEx User="Administrators" GenericAll="yes" />
+        <util:PermissionEx User="SYSTEM" GenericAll="yes" />
+      </CreateFolder>
       
       <RegistryValue Root="HKLM" 
                      Key="SOFTWARE\Prism" 
@@ -159,11 +160,12 @@
     
     <!-- Log Directory Component -->
     <Component Id="LogDirectoryComponent" Guid="{66666666-7777-8888-9999-AAAAAAAAAAAA}" Directory="LogsFolder">
-      <CreateFolder />
-      <!-- Set proper permissions for log directory -->
-      <util:PermissionEx User="Everyone" GenericRead="yes" GenericWrite="yes" GenericExecute="yes" />
-      <util:PermissionEx User="Administrators" GenericAll="yes" />
-      <util:PermissionEx User="SYSTEM" GenericAll="yes" />
+      <CreateFolder>
+        <!-- Set proper permissions for log directory -->
+        <util:PermissionEx User="Everyone" GenericRead="yes" GenericWrite="yes" GenericExecute="yes" />
+        <util:PermissionEx User="Administrators" GenericAll="yes" />
+        <util:PermissionEx User="SYSTEM" GenericAll="yes" />
+      </CreateFolder>
     </Component>
     
     <!-- Start Menu Shortcuts Component -->
@@ -171,7 +173,6 @@
       <Shortcut Id="StartMenuCLI"
                 Name="Prism CLI"
                 Target="[BinFolder]prism.exe"
-                Arguments=""
                 Description="Launch Prism command line interface"
                 Icon="PrismIcon"
                 WorkingDirectory="BinFolder" />
@@ -339,11 +340,11 @@
                   Impersonate="no" 
                   Return="check" />
     
-    <CustomAction Id="FirstRunSetup" 
-                  BinaryKey="SetupCustomActions" 
-                  DllEntry="LaunchFirstRunWizard" 
-                  Execute="immediate" 
-                  Return="asyncNoWait" />
+    <CustomAction Id="FirstRunSetup"
+                  BinaryKey="SetupCustomActions"
+                  DllEntry="LaunchFirstRunWizard"
+                  Execute="immediate"
+                  Return="ignore" />
     
     <CustomAction Id="CheckDaemonHealth"
                   BinaryKey="SetupCustomActions"
