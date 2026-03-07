@@ -681,11 +681,13 @@ func TestHandleMarketplaceTemplateTracking(t *testing.T) {
 
 			handler.ServeHTTP(w, req)
 
-			// Empty template ID produces double-slash path which Go mux redirects with 307
+			// Empty template ID produces double-slash path which Go mux redirects (301/307/308)
 			assert.True(t, w.Code == tt.expectedStatus ||
 				w.Code == http.StatusInternalServerError ||
 				w.Code == http.StatusNotFound ||
-				w.Code == http.StatusTemporaryRedirect)
+				w.Code == http.StatusMovedPermanently ||
+				w.Code == http.StatusTemporaryRedirect ||
+				w.Code == http.StatusPermanentRedirect)
 		})
 	}
 }

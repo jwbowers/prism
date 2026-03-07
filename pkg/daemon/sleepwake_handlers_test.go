@@ -325,6 +325,9 @@ func TestSleepWakeConfigureResponseStructure(t *testing.T) {
 // TestSleepWakeErrorScenarios tests error handling
 func TestSleepWakeErrorScenarios(t *testing.T) {
 	server := createTestServer(t)
+	if server.sleepWakeMonitor == nil {
+		t.Skip("Sleep/wake monitoring not supported on this platform")
+	}
 	handler := server.createHTTPHandler()
 
 	tests := []struct {
