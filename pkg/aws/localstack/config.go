@@ -96,10 +96,14 @@ func NewAWSConfig(ctx context.Context) (aws.Config, error) {
 		}, nil
 	})
 
-	// Load AWS configuration with LocalStack settings
+	// Load AWS configuration with LocalStack settings.
+	// Explicitly skip shared config/credentials files so AWS_PROFILE in the
+	// environment doesn't cause the SDK to try loading a non-existent profile.
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(LocalStackRegion),
 		config.WithEndpointResolverWithOptions(customResolver),
+		config.WithSharedConfigFiles([]string{}),
+		config.WithSharedCredentialsFiles([]string{}),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			LocalStackAccessKey,
 			LocalStackSecretKey,
@@ -149,10 +153,15 @@ func NewAWSConfigWithProfile(ctx context.Context, profile, region string) (aws.C
 		}, nil
 	})
 
-	// Load AWS configuration with LocalStack settings
+	// Load AWS configuration with LocalStack settings.
+	// Explicitly skip shared config/credentials files so that environment
+	// variables like AWS_PROFILE (e.g. "localstack") don't cause the SDK to
+	// try loading a non-existent profile from ~/.aws/config.
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(targetRegion),
 		config.WithEndpointResolverWithOptions(customResolver),
+		config.WithSharedConfigFiles([]string{}),
+		config.WithSharedCredentialsFiles([]string{}),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			LocalStackAccessKey,
 			LocalStackSecretKey,
