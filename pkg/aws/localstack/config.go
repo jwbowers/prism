@@ -32,8 +32,10 @@ const (
 	// EnvVarEndpoint allows overriding the LocalStack endpoint
 	EnvVarEndpoint = "LOCALSTACK_ENDPOINT"
 
-	// ConfigFilePath is the path to LocalStack resource configuration
-	ConfigFilePath = "/tmp/prism-localstack-config.json"
+	// ConfigFilePath is the path to LocalStack resource configuration.
+	// The init scripts write this to /var/lib/localstack/ inside the container,
+	// which is volume-mounted to /tmp/localstack/ on the host.
+	ConfigFilePath = "/tmp/localstack/prism-localstack-config.json"
 )
 
 // Config holds LocalStack-specific resource configuration
