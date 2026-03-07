@@ -307,7 +307,7 @@ func TestCLI_Project_Instances(t *testing.T) {
 	registry.Register("project", projectName)
 
 	// Launch instance in project
-	output := runProjectCLI(t, "launch", "Ubuntu Basic", instanceName,
+	output := runProjectCLI(t, "launch", "ubuntu-22-04-x86", instanceName,
 		"--project", projectName,
 		"--size", "S")
 	assert.Contains(t, output, "launched successfully")

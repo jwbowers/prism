@@ -98,7 +98,7 @@ func TestCLI_Launch_FullWorkflow(t *testing.T) {
 
 	// Step 1: Launch instance
 	t.Run("Launch", func(t *testing.T) {
-		output := runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "-y")
+		output := runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "-y")
 		assert.Contains(t, output, "launched successfully", "Launch should succeed")
 		assert.Contains(t, output, instanceName, "Output should contain instance name")
 
@@ -172,10 +172,10 @@ func TestCLI_List_MultipleInstances(t *testing.T) {
 	instance2Name := fmt.Sprintf("cli-list-test2-%d", time.Now().Unix())
 
 	// Launch two instances
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instance1Name, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instance1Name, "--size", "S", "-y")
 	registry.Register("instance", instance1Name)
 
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instance2Name, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instance2Name, "--size", "S", "-y")
 	registry.Register("instance", instance2Name)
 
 	time.Sleep(3 * time.Second) // Wait for instances to appear
@@ -203,7 +203,7 @@ func TestCLI_WorkspaceStatus(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-status-test-%d", time.Now().Unix())
 
 	// Launch instance
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "-y")
 	registry.Register("instance", instanceName)
 
 	// Test: List shows running instance
@@ -240,7 +240,7 @@ func TestCLI_Delete_Workspace(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-delete-test-%d", time.Now().Unix())
 
 	// Launch instance
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "-y")
 	registry.Register("instance", instanceName)
 
 	// Test: Delete workspace
@@ -259,7 +259,7 @@ func TestCLI_Launch_DryRun(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-dryrun-test-%d", time.Now().Unix())
 
 	// Test: Dry run should validate without creating instance
-	output := runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "--dry-run")
+	output := runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "--dry-run")
 
 	assert.Contains(t, output, "Dry run", "Should indicate dry run mode")
 	assert.Contains(t, output, instanceName, "Should show instance name")
@@ -314,7 +314,7 @@ func TestCLI_Start_AlreadyRunning(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-start-test-%d", time.Now().Unix())
 
 	// Launch instance (already running)
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "-y")
 	registry.Register("instance", instanceName)
 
 	// Test: Start already running instance (should handle gracefully)
@@ -339,7 +339,7 @@ func TestCLI_Delete_AlreadyDeleted(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-delete-twice-%d", time.Now().Unix())
 
 	// Launch and delete instance
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "-y")
 	registry.Register("instance", instanceName)
 	runCLI(t, "workspace", "delete", instanceName)
 
@@ -374,7 +374,7 @@ func TestCLI_Launch_InvalidSize(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-invalid-size-%d", time.Now().Unix())
 
 	// Test: Launch with invalid size
-	output := runCLIExpectError(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "INVALID")
+	output := runCLIExpectError(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "INVALID")
 
 	assert.Contains(t, output, "invalid", "Should indicate invalid size")
 	assert.NotContains(t, output, "panic", "Should not panic")
@@ -395,7 +395,7 @@ func TestCLI_Connect_StoppedInstance(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-connect-stopped-%d", time.Now().Unix())
 
 	// Launch and stop instance
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "-y")
 	registry.Register("instance", instanceName)
 	runCLI(t, "workspace", "stop", instanceName)
 	time.Sleep(5 * time.Second)
@@ -433,7 +433,7 @@ func TestCLI_Launch_WithProject(t *testing.T) {
 	defer apiClient.DeleteProject(ctx, projectName)
 
 	// Test: Launch with project flag
-	output := runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "--project", projectName, "-y")
+	output := runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "--project", projectName, "-y")
 	registry.Register("instance", instanceName)
 
 	assert.Contains(t, output, "launched successfully")
@@ -460,7 +460,7 @@ func TestCLI_OutputFormat(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-format-test-%d", time.Now().Unix())
 
 	// Launch instance
-	runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceName, "--size", "S", "-y")
+	runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceName, "--size", "S", "-y")
 	registry.Register("instance", instanceName)
 
 	// Test: Default output format (table)
@@ -487,7 +487,7 @@ func TestCLI_MultipleInstances(t *testing.T) {
 	instanceNames := make([]string, 3)
 	for i := 0; i < 3; i++ {
 		instanceNames[i] = fmt.Sprintf("cli-multi-%d-%d", i, time.Now().Unix())
-		runCLI(t, "workspace", "launch", "Ubuntu Basic", instanceNames[i], "--size", "S", "-y")
+		runCLI(t, "workspace", "launch", "ubuntu-22-04-x86", instanceNames[i], "--size", "S", "-y")
 		registry.Register("instance", instanceNames[i])
 		time.Sleep(2 * time.Second) // Stagger launches
 	}

@@ -104,7 +104,7 @@ func TestCLI_Templates_Info(t *testing.T) {
 	}
 
 	// Get info for Ubuntu Basic template
-	output := runTemplateCLI(t, "templates", "info", "Ubuntu Basic")
+	output := runTemplateCLI(t, "templates", "info", "ubuntu-22-04-x86")
 	assert.Contains(t, output, "Ubuntu", "Info should contain template name")
 	assert.Contains(t, output, "description", "Info should contain description field")
 	assert.Contains(t, output, "packages", "Info should contain packages information")
@@ -250,7 +250,7 @@ func TestCLI_Templates_Version(t *testing.T) {
 	}
 
 	// List template versions
-	output := runTemplateCLI(t, "templates", "version", "list", "Ubuntu Basic")
+	output := runTemplateCLI(t, "templates", "version", "list", "ubuntu-22-04-x86")
 	// This command may not be fully implemented, so check for output
 	assert.NotEmpty(t, output, "Version command should return output")
 }
@@ -266,7 +266,7 @@ func TestCLI_Templates_Usage(t *testing.T) {
 	assert.NotEmpty(t, output, "Usage command should return output")
 
 	// Get usage for specific template
-	output = runTemplateCLI(t, "templates", "usage", "Ubuntu Basic")
+	output = runTemplateCLI(t, "templates", "usage", "ubuntu-22-04-x86")
 	if !strings.Contains(output, "not found") && !strings.Contains(output, "No usage") {
 		assert.NotEmpty(t, output, "Template usage should return statistics")
 	}
@@ -287,7 +287,7 @@ func TestCLI_Templates_Snapshot(t *testing.T) {
 	instanceName := fmt.Sprintf("cli-test-snapshot-%d", time.Now().Unix())
 
 	// Launch instance for snapshotting
-	output := runTemplateCLI(t, "launch", "Ubuntu Basic", instanceName, "--size", "S")
+	output := runTemplateCLI(t, "launch", "ubuntu-22-04-x86", instanceName, "--size", "S")
 	assert.Contains(t, output, "launched successfully")
 	registry.Register("instance", instanceName)
 
@@ -330,7 +330,7 @@ func TestCLI_Templates_Test(t *testing.T) {
 	}
 
 	// Run template tests
-	output := runTemplateCLI(t, "templates", "test", "Ubuntu Basic")
+	output := runTemplateCLI(t, "templates", "test", "ubuntu-22-04-x86")
 	assert.NotEmpty(t, output, "Template test should return output")
 
 	// May show test results or indicate tests are not configured
@@ -346,13 +346,13 @@ func TestCLI_Templates_DetailedInfo(t *testing.T) {
 	}
 
 	// Get detailed info
-	output := runTemplateCLI(t, "templates", "info", "Ubuntu Basic", "--verbose")
+	output := runTemplateCLI(t, "templates", "info", "ubuntu-22-04-x86", "--verbose")
 	if !strings.Contains(output, "unknown flag") {
 		assert.NotEmpty(t, output, "Detailed info should return output")
 	}
 
 	// Check for key information fields
-	output = runTemplateCLI(t, "templates", "info", "Ubuntu Basic")
+	output = runTemplateCLI(t, "templates", "info", "ubuntu-22-04-x86")
 	assert.Contains(t, output, "Ubuntu", "Should contain template name")
 
 	// Should show various template properties
@@ -407,7 +407,7 @@ func TestCLI_Templates_InfoFields(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	output := runTemplateCLI(t, "templates", "info", "Ubuntu Basic")
+	output := runTemplateCLI(t, "templates", "info", "ubuntu-22-04-x86")
 
 	// Check for essential fields
 	essentialFields := []string{"name", "description", "ubuntu"}
@@ -424,7 +424,7 @@ func TestCLI_Templates_ValidateSpecific(t *testing.T) {
 	}
 
 	// Validate specific template
-	output := runTemplateCLI(t, "templates", "validate", "Ubuntu Basic")
+	output := runTemplateCLI(t, "templates", "validate", "ubuntu-22-04-x86")
 	assert.NotEmpty(t, output, "Validate specific template should return output")
 	assert.Contains(t, output, "valid", "Should report validation status")
 }
@@ -469,12 +469,12 @@ func TestCLI_Templates_Integration(t *testing.T) {
 	registry := fixtures.NewFixtureRegistry(t, apiClient)
 
 	// Get template info
-	output := runTemplateCLI(t, "templates", "info", "Ubuntu Basic")
+	output := runTemplateCLI(t, "templates", "info", "ubuntu-22-04-x86")
 	assert.Contains(t, output, "Ubuntu")
 
 	// Launch instance using template
 	instanceName := fmt.Sprintf("cli-template-test-%d", time.Now().Unix())
-	output = runTemplateCLI(t, "launch", "Ubuntu Basic", instanceName, "--size", "S")
+	output = runTemplateCLI(t, "launch", "ubuntu-22-04-x86", instanceName, "--size", "S")
 	assert.Contains(t, output, "launched successfully")
 	registry.Register("instance", instanceName)
 
