@@ -2,12 +2,26 @@
 package security
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/profile/security"
 )
+
+// OperationalEvent represents an audit event for a Prism operation (instance launch, stop, etc.).
+type OperationalEvent struct {
+	Timestamp time.Time              `json:"timestamp"`
+	Action    string                 `json:"action"`   // e.g., "instance.launch", "storage.create"
+	Resource  string                 `json:"resource"` // e.g., instance name, volume name
+	UserID    string                 `json:"user_id"`  // profile name
+	Success   bool                   `json:"success"`
+	Error     string                 `json:"error,omitempty"`
+	Details   map[string]interface{} `json:"details,omitempty"`
+}
 
 // SecurityManager coordinates all security components for Prism
 type SecurityManager struct {
@@ -28,6 +42,10 @@ type SecurityManager struct {
 	// Background monitoring
 	stopChan    chan struct{}
 	monitorDone chan struct{}
+
+	// Operational audit log (instance launch, stop, storage ops, etc.)
+	opsMutex   sync.Mutex
+	opsLogPath string
 }
 
 // SecurityConfig provides configuration for the security manager
@@ -73,11 +91,15 @@ func NewSecurityManager(config SecurityConfig) (*SecurityManager, error) {
 		return nil, fmt.Errorf("invalid security configuration: %w", err)
 	}
 
+	homeDir, _ := os.UserHomeDir()
+	opsLogPath := filepath.Join(homeDir, ".prism", "audit", "operations.jsonl")
+
 	manager := &SecurityManager{
 		config:      config,
 		isEnabled:   config.MonitoringEnabled || config.AuditLogEnabled || config.CorrelationEnabled,
 		stopChan:    make(chan struct{}),
 		monitorDone: make(chan struct{}),
+		opsLogPath:  opsLogPath,
 	}
 
 	// Initialize components based on configuration
@@ -443,6 +465,96 @@ func (m *SecurityManager) getEnabledComponents() []string {
 	}
 
 	return components
+}
+
+// LogOperationalEvent appends an operational audit event to ~/.prism/audit/operations.jsonl.
+// This is the main audit hook for instance launch/stop/terminate, storage create/delete, etc.
+// It is a no-op if the log directory cannot be created (non-fatal).
+func (m *SecurityManager) LogOperationalEvent(action, resource, userID string, success bool, errMsg string, details map[string]interface{}) {
+	event := OperationalEvent{
+		Timestamp: time.Now(),
+		Action:    action,
+		Resource:  resource,
+		UserID:    userID,
+		Success:   success,
+		Error:     errMsg,
+		Details:   details,
+	}
+
+	m.opsMutex.Lock()
+	defer m.opsMutex.Unlock()
+
+	if err := os.MkdirAll(filepath.Dir(m.opsLogPath), 0700); err != nil {
+		return
+	}
+	f, err := os.OpenFile(m.opsLogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	data, _ := json.Marshal(event)
+	f.Write(data)
+	f.Write([]byte("\n"))
+}
+
+// QueryOperationalEvents reads the last n operational audit events from the log file.
+// If action is non-empty, only events with that action are returned.
+// If since is non-zero, only events after that time are returned.
+func (m *SecurityManager) QueryOperationalEvents(limit int, action string, since time.Time) ([]OperationalEvent, error) {
+	data, err := os.ReadFile(m.opsLogPath)
+	if os.IsNotExist(err) {
+		return []OperationalEvent{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to read audit log: %w", err)
+	}
+
+	var events []OperationalEvent
+	for _, line := range splitLines(data) {
+		if len(line) == 0 {
+			continue
+		}
+		var ev OperationalEvent
+		if err := json.Unmarshal(line, &ev); err != nil {
+			continue
+		}
+		if action != "" && ev.Action != action {
+			continue
+		}
+		if !since.IsZero() && ev.Timestamp.Before(since) {
+			continue
+		}
+		events = append(events, ev)
+	}
+
+	// Return most recent events first, up to limit.
+	if limit > 0 && len(events) > limit {
+		events = events[len(events)-limit:]
+	}
+	// Reverse so newest first.
+	for i, j := 0, len(events)-1; i < j; i, j = i+1, j-1 {
+		events[i], events[j] = events[j], events[i]
+	}
+	if len(events) == 0 {
+		return []OperationalEvent{}, nil
+	}
+	return events, nil
+}
+
+func splitLines(data []byte) [][]byte {
+	var lines [][]byte
+	start := 0
+	for i, b := range data {
+		if b == '\n' {
+			lines = append(lines, data[start:i])
+			start = i + 1
+		}
+	}
+	if start < len(data) {
+		lines = append(lines, data[start:])
+	}
+	return lines
 }
 
 // Helper functions

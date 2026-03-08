@@ -23,6 +23,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/policy"
 	"github.com/scttfrdmn/prism/pkg/profile"
 	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/rbac"
 	"github.com/scttfrdmn/prism/pkg/security"
 	"github.com/scttfrdmn/prism/pkg/sleepwake"
 	"github.com/scttfrdmn/prism/pkg/state"
@@ -45,6 +46,7 @@ type Server struct {
 	sharedTokenManager *invitation.SharedTokenManager
 	securityManager    *security.SecurityManager
 	policyService      *policy.Service
+	rbacManager        *rbac.Manager
 	processManager     ProcessManager
 
 	// Connection reliability components
@@ -340,6 +342,14 @@ func NewServer(port string) (*Server, error) {
 	policyService := policy.NewService()
 	logger.Info("Policy service initialized")
 
+	// Initialize RBAC manager
+	rbacManager, err := rbac.NewManager()
+	if err != nil {
+		logger.Warn("Failed to initialize RBAC manager, using defaults", "error", err)
+		rbacManager, _ = rbac.NewManager() // retry with defaults
+	}
+	logger.Info("RBAC manager initialized")
+
 	// Initialize process manager
 	processManager := NewProcessManager()
 
@@ -376,6 +386,7 @@ func NewServer(port string) (*Server, error) {
 		sharedTokenManager:  sharedTokenManager,
 		securityManager:     securityManager,
 		policyService:       policyService,
+		rbacManager:         rbacManager,
 		processManager:      processManager,
 		performanceMonitor:  performanceMonitor,
 		connManager:         connManager,
@@ -898,6 +909,16 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// Security management endpoints (Phase 4: Security integration)
 	mux.HandleFunc("/api/v1/security/status", applyMiddleware(s.handleSecurityStatus))
 	mux.HandleFunc("/api/v1/security/health", applyMiddleware(s.handleSecurityHealth))
+
+	// IAM validation (Issue #35)
+	mux.HandleFunc("/api/v1/iam/validate", applyAWSMiddleware(s.handleIAMValidate))
+	mux.HandleFunc("/api/v1/iam/permissions", applyMiddleware(s.handleIAMPermissions))
+
+	// RBAC (Issue #36)
+	mux.HandleFunc("/api/v1/rbac/", applyMiddleware(s.handleRBACOperations))
+
+	// Audit log (Issue #26)
+	mux.HandleFunc("/api/v1/audit/events", applyMiddleware(s.handleAuditEvents))
 	mux.HandleFunc("/api/v1/security/dashboard", applyMiddleware(s.handleSecurityDashboard))
 	mux.HandleFunc("/api/v1/security/correlations", applyMiddleware(s.handleSecurityCorrelations))
 

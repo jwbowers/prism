@@ -177,6 +177,35 @@ func (s *Service) CreateCustomPolicy(policy *Policy) error {
 	return s.manager.AddPolicy(policy)
 }
 
+// CheckLaunchConstraints checks resource-limit and template-access policies before a launch.
+// instanceCount is the number of instances currently running for the user.
+func (s *Service) CheckLaunchConstraints(templateName, instanceType, region string, hourlyCost float64, instanceCount int) *PolicyResponse {
+	if !s.enabled {
+		return &PolicyResponse{Allowed: true, Reason: "Policy enforcement disabled"}
+	}
+
+	userID := s.manager.GetProfileUserID()
+
+	// Check template access first.
+	if resp := s.manager.CheckTemplateAccess(userID, templateName, ""); !resp.Allowed {
+		return resp
+	}
+
+	// Check resource limits.
+	request := &PolicyRequest{
+		UserID:   userID,
+		Action:   "launch",
+		Resource: instanceType,
+		Context: map[string]interface{}{
+			"instance_type":  instanceType,
+			"region":         region,
+			"hourly_cost":    hourlyCost,
+			"instance_count": instanceCount,
+		},
+	}
+	return s.manager.EvaluatePolicy(request)
+}
+
 // GetManager returns the underlying policy manager for advanced operations
 func (s *Service) GetManager() *Manager {
 	return s.manager

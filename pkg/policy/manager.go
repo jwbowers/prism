@@ -235,10 +235,75 @@ func (m *Manager) evaluateTemplateAccessPolicy(policy *Policy, request *PolicyRe
 	return false, "Template access allowed"
 }
 
-// evaluateResourceLimitsPolicy evaluates resource limit policies
+// evaluateResourceLimitsPolicy evaluates resource limit policies against the launch context.
+// The request.Context must contain: "instance_type", "region", "hourly_cost" (float64),
+// "instance_count" (int).
 func (m *Manager) evaluateResourceLimitsPolicy(policy *Policy, request *PolicyRequest) (bool, string) {
-	// Basic resource limit evaluation - can be extended
-	return false, "Resource limits evaluation not implemented"
+	if len(policy.Conditions) == 0 {
+		return false, "No resource limit conditions"
+	}
+
+	conditionsJSON, _ := json.Marshal(policy.Conditions)
+	var limits ResourceLimitsPolicy
+	json.Unmarshal(conditionsJSON, &limits)
+
+	ctx := request.Context
+
+	// Check max concurrent instances
+	if limits.MaxInstances > 0 {
+		if count, ok := ctx["instance_count"].(int); ok && count >= limits.MaxInstances {
+			return true, fmt.Sprintf("Instance limit reached: %d/%d instances running", count, limits.MaxInstances)
+		}
+	}
+
+	// Check allowed instance types (whitelist)
+	if len(limits.MaxInstanceTypes) > 0 {
+		if instanceType, ok := ctx["instance_type"].(string); ok && instanceType != "" {
+			allowed := false
+			for _, t := range limits.MaxInstanceTypes {
+				if t == instanceType || t == "*" {
+					allowed = true
+					break
+				}
+				// Prefix match: "t3.*" allows "t3.micro", "t3.small", etc.
+				if strings.HasSuffix(t, "*") {
+					prefix := strings.TrimSuffix(t, "*")
+					if strings.HasPrefix(instanceType, prefix) {
+						allowed = true
+						break
+					}
+				}
+			}
+			if !allowed {
+				return true, fmt.Sprintf("Instance type %q not in allowed list for this policy", instanceType)
+			}
+		}
+	}
+
+	// Check allowed regions
+	if len(limits.AllowedRegions) > 0 {
+		if region, ok := ctx["region"].(string); ok && region != "" {
+			regionAllowed := false
+			for _, r := range limits.AllowedRegions {
+				if r == region || r == "*" {
+					regionAllowed = true
+					break
+				}
+			}
+			if !regionAllowed {
+				return true, fmt.Sprintf("Region %q not in allowed list for this policy", region)
+			}
+		}
+	}
+
+	// Check max hourly cost
+	if limits.MaxCostPerHour > 0 {
+		if cost, ok := ctx["hourly_cost"].(float64); ok && cost > limits.MaxCostPerHour {
+			return true, fmt.Sprintf("Hourly cost $%.3f exceeds policy limit $%.3f/hr", cost, limits.MaxCostPerHour)
+		}
+	}
+
+	return false, "Resource limits satisfied"
 }
 
 // evaluateResearchUserPolicy evaluates research user policies

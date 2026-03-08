@@ -13,6 +13,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/profile"
 	"github.com/scttfrdmn/prism/pkg/project"
+	"github.com/scttfrdmn/prism/pkg/rbac"
 	"github.com/scttfrdmn/prism/pkg/templates"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
@@ -179,6 +180,66 @@ func formatRetryTime(seconds int) string {
 	return fmt.Sprintf("%d minutes", retryMin)
 }
 
+// checkLaunchPolicies enforces RBAC, policy-set constraints, and invitation policy restrictions
+// before allowing a launch. Returns false and writes an error response if blocked.
+func (s *Server) checkLaunchPolicies(req *types.LaunchRequest, w http.ResponseWriter) bool {
+	// Determine the current user identity (profile name).
+	userID := "default_user"
+	if pm, err := profile.NewManagerEnhanced(); err == nil {
+		if cp, err := pm.GetCurrentProfile(); err == nil {
+			userID = cp.Name
+
+			// Enforce invitation policy restrictions embedded in the profile.
+			if cp.PolicyRestrictions != nil {
+				violations := cp.PolicyRestrictions.GetPolicyViolations(
+					req.Template, "", req.Region, 0,
+				)
+				if len(violations) > 0 {
+					s.securityManager.LogOperationalEvent("instance.launch.policy_violation",
+						req.Name, userID, false, strings.Join(violations, "; "),
+						map[string]interface{}{"template": req.Template, "region": req.Region})
+					s.writeError(w, http.StatusForbidden,
+						fmt.Sprintf("Launch blocked by invitation policy:\n• %s",
+							strings.Join(violations, "\n• ")))
+					return false
+				}
+			}
+		}
+	}
+
+	// RBAC check: does this user have permission to launch instances?
+	if ok, reason := s.rbacManager.CanPerformAction(userID, rbac.ActionInstancesLaunch); !ok {
+		s.securityManager.LogOperationalEvent("instance.launch.rbac_denied",
+			req.Name, userID, false, reason,
+			map[string]interface{}{"template": req.Template})
+		s.writeError(w, http.StatusForbidden, fmt.Sprintf("Access denied: %s", reason))
+		return false
+	}
+
+	// Policy-set constraints (template access + resource limits).
+	if s.policyService != nil && s.policyService.IsEnabled() {
+		// Count running instances for resource limit check.
+		instanceCount := 0
+		if st, err := s.stateManager.LoadState(); err == nil {
+			instanceCount = len(st.Instances)
+		}
+		resp := s.policyService.CheckLaunchConstraints(req.Template, "", req.Region, 0, instanceCount)
+		if !resp.Allowed {
+			s.securityManager.LogOperationalEvent("instance.launch.policy_denied",
+				req.Name, userID, false, resp.Reason,
+				map[string]interface{}{"template": req.Template})
+			msg := fmt.Sprintf("Launch blocked by policy: %s", resp.Reason)
+			if len(resp.Suggestions) > 0 {
+				msg += "\n\nSuggestions:\n• " + strings.Join(resp.Suggestions, "\n• ")
+			}
+			s.writeError(w, http.StatusForbidden, msg)
+			return false
+		}
+	}
+
+	return true
+}
+
 // preLaunchChecks enforces rate limits, throttling, funding, and budget constraints.
 // Returns false and writes an error response if the launch should be blocked.
 func (s *Server) preLaunchChecks(req *types.LaunchRequest, w http.ResponseWriter, r *http.Request) bool {
@@ -261,6 +322,11 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 	// Validate the launch request
 	if err := s.validateLaunchRequest(&req, w); err != nil {
 		return // Error response already written by validateLaunchRequest
+	}
+
+	// Security/policy checks: RBAC, policy-set constraints, and invitation restrictions.
+	if !s.checkLaunchPolicies(&req, w) {
+		return
 	}
 
 	// Apply pre-launch checks: rate limits, throttling, funding, and budget constraints
@@ -354,6 +420,15 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("[DEBUG] handleLaunchInstance: Instance state saved for %s", instance.Name)
+
+	// Audit the successful launch.
+	s.securityManager.LogOperationalEvent("instance.launch", instance.Name, "", true, "",
+		map[string]interface{}{
+			"template":      instance.Template,
+			"instance_type": instance.InstanceType,
+			"instance_id":   instance.ID,
+			"hourly_rate":   instance.HourlyRate,
+		})
 
 	response := types.LaunchResponse{
 		Instance:       *instance,
