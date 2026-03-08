@@ -62,6 +62,16 @@ func (sg *ScriptGenerator) GenerateScript(tmpl *Template, packageManager Package
 		PluginScript:       pluginScript,
 	}
 
+	// Populate desktop config if this is a desktop template
+	if tmpl.Desktop != nil {
+		desktop := *tmpl.Desktop
+		if desktop.Environment == "" {
+			desktop.Environment = "mate" // Default to MATE (#127)
+		}
+		scriptData.Desktop = &desktop
+		scriptData.DCVPassword = "PRISM_DCV_PASSWORD_PLACEHOLDER"
+	}
+
 	// Select appropriate template
 	var scriptTemplate string
 	switch packageManager {
@@ -103,8 +113,10 @@ type ScriptData struct {
 	Packages           []string
 	Users              []UserData
 	Services           []ServiceConfig
-	WebInterfaceBindIP string // Dynamic IP binding for web interfaces (0.0.0.0 or 127.0.0.1)
-	PluginScript       string // Plugin installation script (optional, Phase 2A+)
+	WebInterfaceBindIP string         // Dynamic IP binding for web interfaces (0.0.0.0 or 127.0.0.1)
+	PluginScript       string         // Plugin installation script (optional, Phase 2A+)
+	Desktop            *DesktopConfig // Desktop configuration (DCV block generation)
+	DCVPassword        string         // DCV password placeholder — replaced at launch time with actual password
 }
 
 // UserData contains processed user data for script generation
@@ -356,6 +368,50 @@ systemctl start {{.Name}} || true
 # Post-install script
 echo "Running post-install script..."
 {{.Template.PostInstall}}
+{{end}}
+
+{{if .Desktop}}
+# ── DCV Desktop Setup ─────────────────────────────────────────────────────────
+echo "=== Setting up DCV Desktop Environment ==="
+DESKTOP_ENV="{{.Desktop.Environment}}"
+[ -z "$DESKTOP_ENV" ] && DESKTOP_ENV="mate"
+
+# Install minimal desktop base
+echo "Installing ubuntu-desktop-minimal..."
+apt-get install -y --no-install-recommends ubuntu-desktop-minimal
+
+# Install MATE desktop if requested
+[ "$DESKTOP_ENV" = "mate" ] && apt-get install -y --no-install-recommends ubuntu-mate-desktop
+
+# Download and install Nice DCV
+UBUNTU_VER=$(lsb_release -rs | tr -d '.')
+DCV_TGZ="nice-dcv-ubuntu${UBUNTU_VER}-x86_64.tgz"
+echo "Downloading Nice DCV: ${DCV_TGZ}"
+wget -q "https://d1uj6qtbmh3dt5.cloudfront.net/${DCV_TGZ}" -O /tmp/dcv.tgz
+mkdir -p /tmp/dcv-install
+tar -xzf /tmp/dcv.tgz -C /tmp/dcv-install --strip-components=1
+apt-get install -y /tmp/dcv-install/nice-dcv-server_*.deb \
+                   /tmp/dcv-install/nice-dcv-web-viewer_*.deb \
+                   /tmp/dcv-install/nice-xdcv_*.deb 2>/dev/null || true
+rm -rf /tmp/dcv.tgz /tmp/dcv-install
+
+# Set DCV session user and password
+DCV_SESSION_USER="{{if .Desktop.SessionUser}}{{.Desktop.SessionUser}}{{else}}ubuntu{{end}}"
+echo "${DCV_SESSION_USER}:{{.DCVPassword}}" | chpasswd
+
+# Configure DCV server
+DCV_PORT={{if .Desktop.DCVPort}}{{.Desktop.DCVPort}}{{else}}8443{{end}}
+mkdir -p /etc/dcv
+printf "[connectivity]\nweb-port=%d\n" "$DCV_PORT" > /etc/dcv/dcv.conf
+
+# Start DCV and create virtual session
+systemctl enable dcvserver && systemctl start dcvserver || true
+sleep 5
+sudo -u "${DCV_SESSION_USER}" dcv create-session \
+  --type=virtual --user="${DCV_SESSION_USER}" prism-session 2>/dev/null || true
+
+echo "=== DCV Desktop Setup Complete (port ${DCV_PORT}) ==="
+# ── End DCV Setup ─────────────────────────────────────────────────────────────
 {{end}}
 
 # Cleanup

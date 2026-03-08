@@ -2,9 +2,11 @@ package aws
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 	"os"
 	"os/user"
@@ -39,7 +41,25 @@ const (
 	instanceStateStopped  = "stopped"
 	instanceStateStopping = "stopping"
 	volumeTypeIO2         = "io2"
+
+	dcvPasswordChars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"
 )
+
+// generateDCVPassword returns a 20-character cryptographically random alphanumeric password
+// suitable for use as a DCV session password. Ambiguous characters (0, O, I, 1, l) are excluded.
+func generateDCVPassword() string {
+	b := make([]byte, 20)
+	for i := range b {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(dcvPasswordChars))))
+		if err != nil {
+			// Fallback: use index as a deterministic but non-cryptographic value
+			b[i] = dcvPasswordChars[i%len(dcvPasswordChars)]
+			continue
+		}
+		b[i] = dcvPasswordChars[n.Int64()]
+	}
+	return string(b)
+}
 
 // Manager handles all AWS operations
 type Manager struct {
@@ -811,6 +831,11 @@ func (l *InstanceLauncher) LaunchInstance(req ctypes.LaunchRequest, runInput *ec
 	// Build Prism instance from EC2 instance
 	cwsInstance := l.buildInstanceFromEC2(instance, req, hourlyRate, services, primaryUsername, rootVolumeGB)
 
+	// Propagate connection type from template so CLI connect routing works correctly
+	if template.ConnectionType != "" {
+		cwsInstance.ConnectionType = template.ConnectionType
+	}
+
 	// Don't wait for readiness synchronously - return immediately so client gets response
 	// The progress monitoring system will track readiness asynchronously
 	// This prevents HTTP timeouts when status checks take longer than expected
@@ -849,6 +874,13 @@ func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *c
 		return nil, err
 	}
 
+	// Generate DCV password for desktop templates and inject into cloud-init user data
+	var dcvPassword string
+	if template.ConnectionType == ctypes.ConnectionTypeDesktop {
+		dcvPassword = generateDCVPassword()
+		template.UserData = strings.ReplaceAll(template.UserData, "PRISM_DCV_PASSWORD_PLACEHOLDER", dcvPassword)
+	}
+
 	// Process user data
 	userDataEncoded := o.userDataProcessor.ProcessUserData(template, req)
 
@@ -874,7 +906,17 @@ func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *c
 	}
 
 	// Execute launch with AZ failover (v0.7.0)
-	return o.instanceLauncher.LaunchInstance(req, runInput, dailyCost, template, primaryUsername, instanceType)
+	instance, err := o.instanceLauncher.LaunchInstance(req, runInput, dailyCost, template, primaryUsername, instanceType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store DCV password on instance for user display (password is also embedded in cloud-init)
+	if dcvPassword != "" {
+		instance.DCVPassword = dcvPassword
+	}
+
+	return instance, nil
 }
 
 // launchWithUnifiedTemplateSystem launches instance using unified template system with SOLID orchestration (SOLID: Single Responsibility)

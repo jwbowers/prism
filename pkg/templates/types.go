@@ -279,11 +279,12 @@ type ConnectionType = types.ConnectionType
 
 // Alias constants for backward compatibility
 const (
-	ConnectionTypeAuto ConnectionType = "auto" // Keep local (not in types package)
-	ConnectionTypeDCV  ConnectionType = "dcv"  // Keep local (not in types package)
-	ConnectionTypeSSH                 = types.ConnectionTypeSSH
-	ConnectionTypeWeb                 = types.ConnectionTypeWeb
-	ConnectionTypeAll  ConnectionType = "all" // Keep local (not in types package)
+	ConnectionTypeAuto    ConnectionType = "auto" // Keep local (not in types package)
+	ConnectionTypeDCV     ConnectionType = "dcv"  // Keep local (not in types package); normalized to "desktop" at resolution time
+	ConnectionTypeSSH                    = types.ConnectionTypeSSH
+	ConnectionTypeWeb                    = types.ConnectionTypeWeb
+	ConnectionTypeDesktop                = types.ConnectionTypeDesktop
+	ConnectionTypeAll     ConnectionType = "all" // Keep local (not in types package)
 )
 
 // PackageManagerStrategy handles package manager selection logic

@@ -999,9 +999,24 @@ func (s *Server) handleConnectInstance(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 
-	response := map[string]string{
+	response := map[string]interface{}{
 		"connection_info": connectionInfo,
 	}
+
+	// Augment response with DCV-specific fields for desktop instances
+	if st, err := s.stateManager.LoadState(); err == nil {
+		if inst, ok := st.Instances[instanceName]; ok && inst.ConnectionType == "desktop" {
+			dcvPort := inst.WebPort
+			if dcvPort == 0 {
+				dcvPort = 8443
+			}
+			response["connection_type"] = "desktop"
+			response["dcv_port"] = dcvPort
+			response["dcv_username"] = inst.Username
+			// Note: dcv_password is intentionally omitted from API — read from local state
+		}
+	}
+
 	_ = json.NewEncoder(w).Encode(response)
 }
 

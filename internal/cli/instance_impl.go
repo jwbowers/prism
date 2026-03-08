@@ -241,7 +241,11 @@ func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, nam
 	// Display credentials
 	fmt.Printf("\n🔑 DCV Connection Credentials:\n")
 	fmt.Printf("   Username: %s\n", instance.Username)
-	fmt.Printf("   Password: (check instance console output or user-data for initial password)\n")
+	if instance.DCVPassword != "" {
+		fmt.Printf("   Password: %s\n", instance.DCVPassword)
+	} else {
+		fmt.Printf("   Password: (check ~/.prism/state.json — dcv_password field for this instance)\n")
+	}
 
 	// Open browser to DCV
 	dcvURL := fmt.Sprintf("https://localhost:%d", localPort)
@@ -258,8 +262,8 @@ func (ic *InstanceCommands) connectDesktopInstance(instance *types.Instance, nam
 
 	// Display usage instructions
 	fmt.Printf("\n💡 Connection Instructions:\n")
-	fmt.Printf("   1. Your browser will warn about self-signed certificate - click 'Advanced' and proceed\n")
-	fmt.Printf("   2. Login with username: %s\n", instance.Username)
+	fmt.Printf("   1. Your browser will warn about self-signed certificate — click 'Advanced' and proceed\n")
+	fmt.Printf("   2. Login with username: %s and the password shown above\n", instance.Username)
 	fmt.Printf("   3. Your desktop environment will appear in the browser window\n")
 	fmt.Printf("   4. The tunnel will stay open until you close it with Ctrl+C\n")
 

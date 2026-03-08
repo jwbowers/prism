@@ -207,6 +207,7 @@ type Instance struct {
 	KeyName               string                  `json:"key_name"`           // EC2 key pair name
 	Username              string                  `json:"username"`
 	ConnectionType        ConnectionType          `json:"connection_type,omitempty"` // How users connect (ssh, web, desktop)
+	DCVPassword           string                  `json:"dcv_password,omitempty"`    // DCV session password (desktop templates only)
 	WebPort               int                     `json:"web_port"`                  // Deprecated: Use Services instead
 	HasWebInterface       bool                    `json:"has_web_interface"`         // Deprecated: Use Services instead
 	Services              []Service               `json:"services,omitempty"`        // Web services available on this instance

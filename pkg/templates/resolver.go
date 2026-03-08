@@ -133,8 +133,8 @@ func (r *TemplateResolver) ResolveTemplateWithOptions(template *Template, region
 		Tags:             template.Tags,
 		Maintainer:       template.Maintainer,
 
-		// Copy connection configuration
-		ConnectionType: template.ConnectionType,
+		// Copy connection configuration — normalize legacy "dcv" alias to canonical "desktop"
+		ConnectionType: normalizeConnectionType(template.ConnectionType),
 
 		Source:    template,
 		Generated: time.Now(),
@@ -157,6 +157,15 @@ func (r *TemplateResolver) ResolveAllTemplates(registry *TemplateRegistry, regio
 	}
 
 	return runtimeTemplates, nil
+}
+
+// normalizeConnectionType maps legacy "dcv" to the canonical "desktop" value.
+// This allows existing templates that use connection_type: "dcv" to continue working.
+func normalizeConnectionType(ct ConnectionType) ConnectionType {
+	if ct == ConnectionTypeDCV {
+		return ConnectionTypeDesktop
+	}
+	return ct
 }
 
 // parseBaseOS parses a base OS string into distro and version components

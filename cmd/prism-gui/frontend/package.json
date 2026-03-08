@@ -1,6 +1,6 @@
 {
   "name": "prism-gui",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Prism Professional GUI Frontend",
   "type": "module",
   "scripts": {
