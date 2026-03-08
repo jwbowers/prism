@@ -90,6 +90,7 @@ Features:
 	budgetCmd.AddCommand(bc.createForecastCommand())
 	budgetCmd.AddCommand(bc.createSavingsCommand())
 	budgetCmd.AddCommand(bc.createBreakdownCommand())
+	budgetCmd.AddCommand(bc.createCushionCommand())
 
 	return budgetCmd
 }
@@ -1127,6 +1128,8 @@ func (bc *BudgetCommands) displayBudgetStatus(budgetID string, budgetStatus *pro
 
 	usagePercent := budgetStatus.SpentPercentage * 100
 	bc.displayCurrentStatus(budgetStatus, usagePercent)
+	bc.displayBurnRate(budgetStatus)
+	bc.displaySurplus(budgetStatus)
 	bc.displayStatusProjections(budgetStatus)
 	bc.displayStatusAlerts(budgetStatus)
 	bc.displayStatusActions(budgetStatus)
@@ -1141,6 +1144,48 @@ func (bc *BudgetCommands) displayCurrentStatus(budgetStatus *project.BudgetStatu
 	fmt.Printf("   Remaining: $%.2f\n", budgetStatus.RemainingBudget)
 	fmt.Printf("   Usage: %.1f%%\n", usagePercent)
 	fmt.Printf("   Status: %s\n", bc.getStatusIndicator(usagePercent))
+}
+
+// displayBurnRate shows period-aware spending pace information.
+func (bc *BudgetCommands) displayBurnRate(budgetStatus *project.BudgetStatus) {
+	br := budgetStatus.BurnRate
+	if br == nil {
+		return
+	}
+
+	paceIcon := "🟢"
+	switch br.PaceStatus {
+	case project.PaceStatusAhead:
+		paceIcon = "🟡"
+	case project.PaceStatusBehind:
+		paceIcon = "🔵"
+	case project.PaceStatusOverBudget:
+		paceIcon = "🔴"
+	}
+
+	fmt.Printf("\n⚡ Burn Rate:\n")
+	fmt.Printf("   Daily:   $%.2f/day\n", br.DailyRate)
+	fmt.Printf("   Weekly:  $%.2f/week\n", br.WeeklyRate)
+	fmt.Printf("   Monthly: $%.2f/month\n", br.MonthlyRate)
+	fmt.Printf("   Pace:    %s %s (%.0f%% of allocation)\n",
+		paceIcon, br.PaceStatus, br.BurnRateRatio*100)
+}
+
+// displaySurplus shows banked surplus / carry-over for periodic budgets.
+func (bc *BudgetCommands) displaySurplus(budgetStatus *project.BudgetStatus) {
+	s := budgetStatus.Surplus
+	if s == nil || s.EffectiveBalance == 0 {
+		return
+	}
+
+	fmt.Printf("\n🏦 Budget Surplus:\n")
+	fmt.Printf("   This Period:    $%.2f\n", s.CurrentPeriodSurplus)
+	fmt.Printf("   Banked:         $%.2f\n", s.BankedSurplus)
+	fmt.Printf("   Effective Bal:  $%.2f", s.EffectiveBalance)
+	if s.SurplusCapped {
+		fmt.Printf(" (capped at %.0f%%)", s.SurplusCapPercent*100)
+	}
+	fmt.Printf("\n")
 }
 
 // getStatusIndicator returns color-coded status based on usage percentage
@@ -2007,5 +2052,112 @@ func (bc *BudgetCommands) testAlert(cmd *cobra.Command, budgetID string) error {
 	fmt.Printf("   ✅ Test alert would be delivered to configured recipients\n")
 	fmt.Printf("   💡 Actual alerts are sent automatically when thresholds are reached\n")
 
+	return nil
+}
+
+// createCushionCommand creates the budget cushion command group.
+func (bc *BudgetCommands) createCushionCommand() *cobra.Command {
+	cushionCmd := &cobra.Command{
+		Use:   "cushion <project-id>",
+		Short: "Manage budget safety cushion (auto-action when near limit)",
+		Long: `Configure a budget safety cushion that automatically takes action
+before the full budget is exhausted.
+
+Cushion modes:
+  hibernate      — hibernate all running instances
+  stop           — stop all running instances (no resume)
+  prevent_launch — block new launches without stopping running instances
+  notify_only    — send an alert but take no automated action
+
+Examples:
+  prism budget cushion my-project                      # show current config
+  prism budget cushion my-project --enable --headroom 0.10 --mode hibernate
+  prism budget cushion my-project --disable`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return bc.manageCushion(cmd, args)
+		},
+	}
+
+	cushionCmd.Flags().Bool("enable", false, "Enable the cushion")
+	cushionCmd.Flags().Bool("disable", false, "Disable the cushion")
+	cushionCmd.Flags().Float64("headroom", 0.10, "Headroom as a fraction of total budget (0.0–1.0)")
+	cushionCmd.Flags().Float64("headroom-fixed", 0, "Fixed-dollar headroom (overrides --headroom when > 0)")
+	cushionCmd.Flags().String("mode", "hibernate", "Action mode: hibernate|stop|prevent_launch|notify_only")
+	cushionCmd.Flags().Bool("notify-before", false, "Send warning alert before executing the action")
+	cushionCmd.Flags().Int("warn-hours", 6, "Hours before projected action to send the warning")
+
+	return cushionCmd
+}
+
+func (bc *BudgetCommands) manageCushion(cmd *cobra.Command, args []string) error {
+	projectID := args[0]
+	ctx := context.Background()
+
+	disable, _ := cmd.Flags().GetBool("disable")
+	if disable {
+		if err := bc.app.apiClient.DeleteProjectCushion(ctx, projectID); err != nil {
+			return fmt.Errorf("failed to remove cushion: %w", err)
+		}
+		fmt.Printf("✅ Budget cushion disabled for project '%s'\n", projectID)
+		return nil
+	}
+
+	enable, _ := cmd.Flags().GetBool("enable")
+	if enable {
+		headroom, _ := cmd.Flags().GetFloat64("headroom")
+		headroomFixed, _ := cmd.Flags().GetFloat64("headroom-fixed")
+		mode, _ := cmd.Flags().GetString("mode")
+		notifyBefore, _ := cmd.Flags().GetBool("notify-before")
+		warnHours, _ := cmd.Flags().GetInt("warn-hours")
+
+		var fixedPtr *float64
+		if headroomFixed > 0 {
+			fixedPtr = &headroomFixed
+		}
+
+		cfg := map[string]interface{}{
+			"enabled":              true,
+			"headroom_percent":     headroom,
+			"headroom_fixed_usd":   fixedPtr,
+			"mode":                 mode,
+			"notify_before_action": notifyBefore,
+			"warn_lead_hours":      warnHours,
+		}
+		result, err := bc.app.apiClient.SetProjectCushion(ctx, projectID, cfg)
+		if err != nil {
+			return fmt.Errorf("failed to set cushion: %w", err)
+		}
+		fmt.Printf("✅ Budget cushion enabled for project '%s'\n", projectID)
+		fmt.Printf("   Headroom: %.0f%%  Mode: %s\n",
+			result["headroom_percent"].(float64)*100, result["mode"])
+		return nil
+	}
+
+	// Default: show current cushion config
+	cushion, err := bc.app.apiClient.GetProjectCushion(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get cushion config: %w", err)
+	}
+
+	fmt.Printf("🛡️  Budget Cushion for '%s'\n\n", projectID)
+	if enabled, ok := cushion["enabled"].(bool); !ok || !enabled {
+		fmt.Printf("   Status: Disabled\n")
+		fmt.Printf("💡 Enable with: prism budget cushion %s --enable --headroom 0.10 --mode hibernate\n", projectID)
+		return nil
+	}
+
+	fmt.Printf("   Status:       Enabled\n")
+	if pct, ok := cushion["headroom_percent"].(float64); ok {
+		fmt.Printf("   Headroom:     %.0f%%\n", pct*100)
+	}
+	if mode, ok := cushion["mode"].(string); ok {
+		fmt.Printf("   Mode:         %s\n", mode)
+	}
+	if nb, ok := cushion["notify_before_action"].(bool); ok && nb {
+		if wh, ok := cushion["warn_lead_hours"].(float64); ok {
+			fmt.Printf("   Warn Before:  %.0f hours\n", wh)
+		}
+	}
 	return nil
 }

@@ -2008,6 +2008,30 @@ func (m *MockAPIClient) AllowProjectLaunches(ctx context.Context, projectID stri
 	}, nil
 }
 
+// GetProjectCushion returns mock cushion config.
+func (m *MockAPIClient) GetProjectCushion(_ context.Context, _ string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"enabled": false, "headroom_percent": 0.10, "mode": "hibernate"}, nil
+}
+
+// SetProjectCushion saves mock cushion config.
+func (m *MockAPIClient) SetProjectCushion(_ context.Context, _ string, cfg map[string]interface{}) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return cfg, nil
+}
+
+// DeleteProjectCushion removes mock cushion config.
+func (m *MockAPIClient) DeleteProjectCushion(_ context.Context, _ string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
 // Invitation operations
 func (m *MockAPIClient) GetInvitationByToken(ctx context.Context, token string) (*client.GetInvitationResponse, error) {
 	if m.ShouldReturnError {

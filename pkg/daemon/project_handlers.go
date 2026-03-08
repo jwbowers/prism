@@ -88,6 +88,8 @@ func (s *Server) handleProjectSubOp(w http.ResponseWriter, r *http.Request, proj
 		s.handleProjectTransfer(w, r, projectID)
 	case "forecast":
 		s.handleProjectForecast(w, r, projectID)
+	case "cushion":
+		s.handleProjectCushion(w, r, projectID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
 	}
@@ -987,4 +989,72 @@ func (s *Server) handleProjectAllocations(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handleProjectCushion manages the budget cushion config for a project.
+//
+//	GET    /api/v1/projects/{id}/cushion  — retrieve current cushion config
+//	PUT    /api/v1/projects/{id}/cushion  — set/update cushion config
+//	DELETE /api/v1/projects/{id}/cushion  — disable and remove cushion config
+func (s *Server) handleProjectCushion(w http.ResponseWriter, r *http.Request, projectID string) {
+	ctx := context.Background()
+	w.Header().Set("Content-Type", "application/json")
+
+	switch r.Method {
+	case http.MethodGet:
+		proj, err := s.projectManager.GetProject(ctx, projectID)
+		if err != nil {
+			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Project not found: %v", err))
+			return
+		}
+		var cushion types.CushionBudgetConfig
+		if proj.Budget != nil && proj.Budget.Cushion != nil {
+			cushion = *proj.Budget.Cushion
+		}
+		_ = json.NewEncoder(w).Encode(cushion)
+
+	case http.MethodPut:
+		var cfg types.CushionBudgetConfig
+		if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid cushion config: %v", err))
+			return
+		}
+		if cfg.HeadroomPercent < 0 || cfg.HeadroomPercent > 1 {
+			s.writeError(w, http.StatusBadRequest, "headroom_percent must be between 0.0 and 1.0")
+			return
+		}
+		proj, err := s.projectManager.GetProject(ctx, projectID)
+		if err != nil {
+			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Project not found: %v", err))
+			return
+		}
+		if proj.Budget == nil {
+			s.writeError(w, http.StatusBadRequest, "Project has no budget configured")
+			return
+		}
+		proj.Budget.Cushion = &cfg
+		if err := s.projectManager.UpdateProjectBudget(ctx, projectID, proj.Budget); err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save cushion config: %v", err))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(cfg)
+
+	case http.MethodDelete:
+		proj, err := s.projectManager.GetProject(ctx, projectID)
+		if err != nil {
+			s.writeError(w, http.StatusNotFound, fmt.Sprintf("Project not found: %v", err))
+			return
+		}
+		if proj.Budget != nil {
+			proj.Budget.Cushion = nil
+			if err := s.projectManager.UpdateProjectBudget(ctx, projectID, proj.Budget); err != nil {
+				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to remove cushion config: %v", err))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
+
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
 }

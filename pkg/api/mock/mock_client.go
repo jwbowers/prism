@@ -1822,6 +1822,27 @@ func (m *MockClient) AllowProjectLaunches(ctx context.Context, projectID string)
 	}, nil
 }
 
+// GetProjectCushion returns mock cushion config.
+func (m *MockClient) GetProjectCushion(_ context.Context, projectID string) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"enabled":              false,
+		"headroom_percent":     0.10,
+		"mode":                 "hibernate",
+		"notify_before_action": false,
+		"warn_lead_hours":      6,
+	}, nil
+}
+
+// SetProjectCushion saves mock cushion config.
+func (m *MockClient) SetProjectCushion(_ context.Context, _ string, cfg map[string]interface{}) (map[string]interface{}, error) {
+	return cfg, nil
+}
+
+// DeleteProjectCushion removes mock cushion config.
+func (m *MockClient) DeleteProjectCushion(_ context.Context, _ string) error {
+	return nil
+}
+
 // Invitation operations
 func (m *MockClient) GetInvitationByToken(ctx context.Context, token string) (*client.GetInvitationResponse, error) {
 	return &client.GetInvitationResponse{

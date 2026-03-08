@@ -131,6 +131,22 @@ type ProjectBudget struct {
 
 	// LastUpdated is when spending was last calculated
 	LastUpdated time.Time `json:"last_updated"`
+
+	// Cushion defines the automatic safety headroom configuration.
+	// When enabled, Prism takes action (hibernate/stop/etc.) before the full
+	// budget is exhausted, protecting against cost overruns.
+	Cushion *CushionBudgetConfig `json:"cushion,omitempty"`
+}
+
+// CushionBudgetConfig is the budget-level cushion configuration stored in ProjectBudget.
+// It mirrors project.CushionConfig but lives in types to avoid circular imports.
+type CushionBudgetConfig struct {
+	Enabled            bool     `json:"enabled"`
+	HeadroomPercent    float64  `json:"headroom_percent"`
+	HeadroomFixed      *float64 `json:"headroom_fixed_usd,omitempty"`
+	Mode               string   `json:"mode"`
+	NotifyBeforeAction bool     `json:"notify_before_action"`
+	WarnLeadHours      int      `json:"warn_lead_hours"`
 }
 
 // BudgetAlert defines a spending threshold that triggers notifications

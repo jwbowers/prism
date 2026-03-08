@@ -108,6 +108,9 @@ type PrismAPI interface {
 	GetCostTrends(context.Context, string, string) (map[string]interface{}, error)
 	PreventProjectLaunches(context.Context, string) (map[string]interface{}, error)
 	AllowProjectLaunches(context.Context, string) (map[string]interface{}, error)
+	GetProjectCushion(context.Context, string) (map[string]interface{}, error)
+	SetProjectCushion(context.Context, string, map[string]interface{}) (map[string]interface{}, error)
+	DeleteProjectCushion(context.Context, string) error
 
 	// Budget management operations (v0.6.2)
 	CreateBudget(context.Context, project.CreateBudgetRequest) (*types.Budget, error)

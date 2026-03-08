@@ -1546,6 +1546,44 @@ func (c *HTTPClient) AllowProjectLaunches(ctx context.Context, projectID string)
 	return result, nil
 }
 
+// GetProjectCushion retrieves the budget cushion configuration for a project.
+func (c *HTTPClient) GetProjectCushion(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/projects/%s/cushion", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// SetProjectCushion sets the budget cushion configuration for a project.
+func (c *HTTPClient) SetProjectCushion(ctx context.Context, projectID string, cfg map[string]interface{}) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "PUT", fmt.Sprintf("/api/v1/projects/%s/cushion", projectID), cfg)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// DeleteProjectCushion removes the budget cushion configuration for a project.
+func (c *HTTPClient) DeleteProjectCushion(ctx context.Context, projectID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", fmt.Sprintf("/api/v1/projects/%s/cushion", projectID), nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return c.handleResponse(resp, nil)
+}
+
 // GetProjectBudgetHistory returns daily cost history for a project (Issue #482)
 func (c *HTTPClient) GetProjectBudgetHistory(ctx context.Context, projectID string, days int) ([]float64, error) {
 	path := fmt.Sprintf("/api/v1/projects/%s/budget/history?days=%d", projectID, days)

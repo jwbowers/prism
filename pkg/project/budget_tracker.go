@@ -507,7 +507,70 @@ func (bt *BudgetTracker) checkBudgetAlerts(projectID string, budgetData *Project
 	bt.processAlertThresholds(projectID, budgetData, spentPercentage)
 	bt.processAutoActions(projectID, budgetData, spentPercentage)
 
+	// Evaluate budget cushion if configured.
+	if budgetData.Budget.Cushion != nil && budgetData.Budget.Cushion.Enabled {
+		bt.processCushion(projectID, budgetData)
+	}
+
 	return nil
+}
+
+// processCushion evaluates and executes the cushion action when triggered.
+func (bt *BudgetTracker) processCushion(projectID string, budgetData *ProjectBudgetData) {
+	cfg := toCushionConfig(budgetData.Budget.Cushion)
+	evaluator := NewCushionEvaluator(bt.actionExecutor, nil)
+
+	// Build a minimal BudgetStatus for the evaluator.
+	remaining := budgetData.Budget.TotalBudget - budgetData.Budget.SpentAmount
+	if remaining < 0 {
+		remaining = 0
+	}
+	status := &BudgetStatus{
+		ProjectID:       projectID,
+		BudgetEnabled:   true,
+		TotalBudget:     budgetData.Budget.TotalBudget,
+		SpentAmount:     budgetData.Budget.SpentAmount,
+		RemainingBudget: remaining,
+	}
+
+	cushionStatus := evaluator.Evaluate(status, cfg)
+	if !cushionStatus.Triggered {
+		return
+	}
+
+	const cushionAlertType types.BudgetAlertType = "cushion_triggered"
+
+	// Guard: only trigger once per budget period.
+	if bt.isAlertAlreadyTriggered(budgetData, 0, cushionAlertType) {
+		return
+	}
+
+	// Record the cushion trigger in alert history.
+	budgetData.AlertHistory = append(budgetData.AlertHistory, AlertEvent{
+		Timestamp:   time.Now(),
+		AlertType:   cushionAlertType,
+		Threshold:   0,
+		SpentAmount: budgetData.Budget.SpentAmount,
+		Message:     cushionStatus.Message,
+		Resolved:    false,
+	})
+
+	// Execute the cushion action (best-effort; errors are logged, not fatal).
+	if err := evaluator.Execute(context.Background(), projectID, projectID, cfg, *status); err != nil {
+		fmt.Printf("⚠️  Cushion action failed for project %s: %v\n", projectID, err)
+	}
+}
+
+// toCushionConfig converts the types.CushionBudgetConfig into the project-package CushionConfig.
+func toCushionConfig(c *types.CushionBudgetConfig) CushionConfig {
+	return CushionConfig{
+		Enabled:            c.Enabled,
+		HeadroomPercent:    c.HeadroomPercent,
+		HeadroomFixed:      c.HeadroomFixed,
+		Mode:               CushionMode(c.Mode),
+		NotifyBeforeAction: c.NotifyBeforeAction,
+		WarnLeadHours:      c.WarnLeadHours,
+	}
 }
 
 // calculateSpentPercentage computes the percentage of budget spent
