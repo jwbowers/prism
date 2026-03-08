@@ -334,6 +334,11 @@ func (a *App) Launch(args []string) error {
 
 	// Skip all monitoring if --no-progress is specified
 	if req.NoProgress {
+		if !req.Quiet {
+			fmt.Printf("\n💡 Setup is running in the background. To check progress:\n")
+			fmt.Printf("   prism workspace connect %s\n", req.Name)
+			fmt.Printf("   Then run: cloud-init status\n")
+		}
 		return nil
 	}
 
@@ -346,6 +351,14 @@ func (a *App) Launch(args []string) error {
 		return a.monitorLaunchProgress(req.Name, req.Template, req.Wait)
 	}
 
+	// Instance launched but monitoring was skipped (e.g. AMI-based template).
+	// Packages are pre-installed on AMI templates, but a quick cloud-init pass still
+	// runs to configure SSH keys and users — let the user know how to verify readiness.
+	if !req.Quiet {
+		fmt.Printf("\n💡 If services seem unavailable after connecting, setup may still be\n")
+		fmt.Printf("   finishing. Check with: prism workspace connect %s\n", req.Name)
+		fmt.Printf("   Then run: cloud-init status\n")
+	}
 	return nil
 }
 
@@ -2103,7 +2116,7 @@ func (a *App) monitorSetupProgress(instance *types.Instance, wait bool) error {
 			if progress.IsComplete || progress.OverallProgress >= 100 {
 				fmt.Printf("✅ Setup complete! Workspace ready.\n")
 				fmt.Printf("⏱️  Total setup time: %s\n", elapsed.Round(time.Second))
-				fmt.Printf("🔗 Connect: prism connect %s\n", instance.Name)
+				fmt.Printf("🔗 Connect: prism workspace connect %s\n", instance.Name)
 				return nil
 			}
 
@@ -2113,6 +2126,8 @@ func (a *App) monitorSetupProgress(instance *types.Instance, wait bool) error {
 				fmt.Printf("\n⚠️  Setup taking longer than expected\n")
 				fmt.Printf("💡 Progress: %.1f%% - Workspace may still be configuring\n", progress.OverallProgress)
 				fmt.Printf("💡 Check status with: prism list\n")
+				fmt.Printf("💡 To verify setup progress after connecting:\n")
+				fmt.Printf("   prism workspace connect %s  # then run: cloud-init status\n", instance.Name)
 				return nil
 			}
 		}
