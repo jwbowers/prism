@@ -62,7 +62,7 @@ check_binary_version() {
 
     if [ -f "$binary" ]; then
         # Run binary with --version and extract version (supports suffixes like -dev, -alpha, -beta, and 4-part versions like 0.6.2.1)
-        BIN_VERSION=$($binary --version 2>&1 | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?' | sed 's/v//')
+        BIN_VERSION=$($binary --version 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?' | head -1 | sed 's/v//')
 
         if [ -z "$BIN_VERSION" ]; then
             echo -e "  ${RED}✗${NC} $name: Could not extract version"
