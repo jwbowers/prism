@@ -64,16 +64,52 @@ var instancePricing = map[string]float64{
 
 // Storage pricing (USD per GB per month)
 var storagePricing = map[string]float64{
-	"gp3":          0.08,   // General Purpose SSD (gp3)
-	"gp2":          0.10,   // General Purpose SSD (gp2)
-	"io1":          0.125,  // Provisioned IOPS SSD (io1)
-	"io2":          0.125,  // Provisioned IOPS SSD (io2)
-	"st1":          0.045,  // Throughput Optimized HDD
-	"sc1":          0.025,  // Cold HDD
-	"standard":     0.05,   // Magnetic
-	"efs-standard": 0.30,   // EFS Standard
-	"efs-ia":       0.0125, // EFS Infrequent Access
+	"gp3":          0.08,  // General Purpose SSD (gp3)
+	"gp2":          0.10,  // General Purpose SSD (gp2)
+	"io1":          0.125, // Provisioned IOPS SSD (io1)
+	"io2":          0.125, // Provisioned IOPS SSD (io2)
+	"st1":          0.045, // Throughput Optimized HDD
+	"sc1":          0.025, // Cold HDD
+	"standard":     0.05,  // Magnetic
+	"efs-standard": 0.30,  // EFS Standard (us-east-1)
+	"efs-ia":       0.016, // EFS Infrequent Access (updated from 0.0125)
 }
+
+// EBS provisioned-IOPS pricing (USD per IOPS per month) — io1/io2 only
+const (
+	ebsIO1IOPSRate       = 0.065 // $/provisioned IOPS/month
+	ebsIO2IOPSRate       = 0.065 // $/provisioned IOPS/month
+	ebsGP3ThroughputRate = 0.04  // $/MB/s above 125 MB/s baseline
+	ebsGP3BaseIOPS       = 3000  // included IOPS for gp3
+	ebsGP3BaseThroughput = 125   // included MB/s for gp3
+)
+
+// EFS additional pricing
+const (
+	efsProvisionedThroughputRate = 6.00 // $/MB/s/month (provisioned mode)
+	efsElasticReadRate           = 0.03 // $/GB transferred (elastic mode reads)
+	efsElasticWriteRate          = 0.06 // $/GB transferred (elastic mode writes)
+)
+
+// S3 storage pricing (USD per GB per month)
+var s3StoragePricing = map[string]float64{
+	"STANDARD":            0.023,   // S3 Standard
+	"STANDARD_IA":         0.0125,  // S3 Standard-IA
+	"ONEZONE_IA":          0.01,    // S3 One Zone-IA
+	"INTELLIGENT_TIERING": 0.023,   // S3 Intelligent-Tiering (frequent access)
+	"GLACIER":             0.004,   // S3 Glacier Instant Retrieval
+	"GLACIER_IR":          0.004,   // S3 Glacier Instant Retrieval (alias)
+	"DEEP_ARCHIVE":        0.00099, // S3 Glacier Deep Archive
+}
+
+// S3 request pricing (USD per 1000 requests)
+const (
+	s3PUTRate      = 0.005  // PUT, COPY, POST, LIST per 1000
+	s3GETRate      = 0.0004 // GET, SELECT per 1000
+	s3EgressFirst  = 0.09   // $/GB — first 10 TB/month
+	s3EgressNext   = 0.085  // $/GB — next 40 TB/month
+	s3EgressCutoff = 10240  // GB — boundary between tiers
+)
 
 // CalculateInstanceCosts calculates costs for a list of instances
 func (c *CostCalculator) CalculateInstanceCosts(instances []types.Instance) ([]types.InstanceCost, float64) {
@@ -324,6 +360,249 @@ func (c *CostCalculator) EstimateMonthlyCost(instanceType string, storageGB int)
 	monthlyStorageCost := float64(storageGB) * storageRate
 
 	return monthlyComputeCost + monthlyStorageCost
+}
+
+// ─── EBS granular cost calculation ───────────────────────────────────────────
+
+// EBSVolumeSpec contains configuration needed for accurate EBS pricing.
+type EBSVolumeSpec struct {
+	VolumeID   string
+	Name       string
+	SizeGB     int32
+	VolumeType string // gp3, gp2, io1, io2, st1, sc1
+	IOPS       int32  // provisioned IOPS (io1/io2 only)
+	Throughput int32  // provisioned MB/s above baseline (gp3 only)
+	Region     string
+	AgeSeconds float64 // seconds since creation, for pro-rating
+}
+
+// EBSCostDetail is the output struct for a single EBS volume cost breakdown.
+type EBSCostDetail struct {
+	VolumeName       string  `json:"volume_name"`
+	VolumeID         string  `json:"volume_id"`
+	VolumeType       string  `json:"volume_type"`
+	SizeGB           float64 `json:"size_gb"`
+	StorageCost      float64 `json:"storage_cost"`       // base GB × monthly rate
+	IOPSCost         float64 `json:"iops_cost"`          // io1/io2 provisioned IOPS
+	ThroughputCost   float64 `json:"throughput_cost"`    // gp3 throughput above baseline
+	TotalMonthlyCost float64 `json:"total_monthly_cost"` // pro-rated to this month
+	AgeHours         float64 `json:"age_hours"`
+	Region           string  `json:"region"`
+}
+
+// CalculateEBSCost returns a detailed cost breakdown for a single EBS volume.
+func (c *CostCalculator) CalculateEBSCost(spec EBSVolumeSpec) EBSCostDetail {
+	gbRate := storagePricing[spec.VolumeType]
+	if gbRate == 0 {
+		gbRate = storagePricing["gp3"]
+	}
+	storageCost := float64(spec.SizeGB) * gbRate
+
+	var iopsCost float64
+	switch spec.VolumeType {
+	case "io1":
+		iopsCost = float64(spec.IOPS) * ebsIO1IOPSRate
+	case "io2":
+		iopsCost = float64(spec.IOPS) * ebsIO2IOPSRate
+	}
+
+	var throughputCost float64
+	if spec.VolumeType == "gp3" && spec.Throughput > ebsGP3BaseThroughput {
+		overBaseline := float64(spec.Throughput - ebsGP3BaseThroughput)
+		throughputCost = overBaseline * ebsGP3ThroughputRate
+	}
+
+	total := storageCost + iopsCost + throughputCost
+
+	// Pro-rate to current month if age is less than a full month.
+	if spec.AgeSeconds > 0 {
+		ageFraction := spec.AgeSeconds / (30 * 24 * 3600)
+		if ageFraction < 1.0 {
+			total *= ageFraction
+		}
+	}
+
+	return EBSCostDetail{
+		VolumeName:       spec.Name,
+		VolumeID:         spec.VolumeID,
+		VolumeType:       spec.VolumeType,
+		SizeGB:           float64(spec.SizeGB),
+		StorageCost:      storageCost,
+		IOPSCost:         iopsCost,
+		ThroughputCost:   throughputCost,
+		TotalMonthlyCost: total,
+		AgeHours:         spec.AgeSeconds / 3600,
+		Region:           spec.Region,
+	}
+}
+
+// ─── EFS granular cost calculation ───────────────────────────────────────────
+
+// EFSVolumeSpec contains configuration needed for accurate EFS pricing.
+type EFSVolumeSpec struct {
+	FilesystemID      string
+	Name              string
+	SizeBytesStandard int64   // bytes in Standard storage class
+	SizeBytesIA       int64   // bytes in Infrequent Access storage class
+	ThroughputMode    string  // "bursting" | "provisioned" | "elastic"
+	ProvisionedMBps   float64 // only for provisioned mode
+	ElasticReadGB     float64 // GB transferred (elastic mode reads this month)
+	ElasticWriteGB    float64 // GB transferred (elastic mode writes this month)
+	Region            string
+	AgeSeconds        float64
+}
+
+// EFSCostDetail is the output struct for a single EFS filesystem cost breakdown.
+type EFSCostDetail struct {
+	FilesystemName        string  `json:"filesystem_name"`
+	FilesystemID          string  `json:"filesystem_id"`
+	StandardStorageGB     float64 `json:"standard_storage_gb"`
+	IAStorageGB           float64 `json:"ia_storage_gb"`
+	StandardStorageCost   float64 `json:"standard_storage_cost"`
+	IAStorageCost         float64 `json:"ia_storage_cost"`
+	ThroughputMode        string  `json:"throughput_mode"`
+	ProvisionedThroughput float64 `json:"provisioned_throughput_mbps"`
+	ThroughputCost        float64 `json:"throughput_cost"`
+	TotalMonthlyCost      float64 `json:"total_monthly_cost"`
+	Region                string  `json:"region"`
+}
+
+const bytesPerGB = 1024 * 1024 * 1024
+
+// CalculateEFSCost returns a detailed cost breakdown for a single EFS filesystem.
+func (c *CostCalculator) CalculateEFSCost(spec EFSVolumeSpec) EFSCostDetail {
+	standardGB := float64(spec.SizeBytesStandard) / bytesPerGB
+	iaGB := float64(spec.SizeBytesIA) / bytesPerGB
+
+	standardCost := standardGB * storagePricing["efs-standard"]
+	iaCost := iaGB * storagePricing["efs-ia"]
+
+	var throughputCost float64
+	switch spec.ThroughputMode {
+	case "provisioned":
+		throughputCost = spec.ProvisionedMBps * efsProvisionedThroughputRate
+	case "elastic":
+		throughputCost = spec.ElasticReadGB*efsElasticReadRate + spec.ElasticWriteGB*efsElasticWriteRate
+		// bursting: no additional charge
+	}
+
+	total := standardCost + iaCost + throughputCost
+
+	return EFSCostDetail{
+		FilesystemName:        spec.Name,
+		FilesystemID:          spec.FilesystemID,
+		StandardStorageGB:     standardGB,
+		IAStorageGB:           iaGB,
+		StandardStorageCost:   standardCost,
+		IAStorageCost:         iaCost,
+		ThroughputMode:        spec.ThroughputMode,
+		ProvisionedThroughput: spec.ProvisionedMBps,
+		ThroughputCost:        throughputCost,
+		TotalMonthlyCost:      total,
+		Region:                spec.Region,
+	}
+}
+
+// ─── S3 cost calculation ──────────────────────────────────────────────────────
+
+// S3CostSpec contains S3 bucket usage data for cost calculation.
+type S3CostSpec struct {
+	BucketName            string
+	Region                string
+	StorageClassBreakdown map[string]int64 // storage_class -> bytes
+	RequestCounts         map[string]int64 // "GET","PUT","LIST","DELETE" -> count
+	DataTransferGB        float64          // data transferred OUT (egress)
+	ReplicationGB         float64          // cross-region replication GB
+}
+
+// S3CostDetail is the output struct for a single S3 bucket cost breakdown.
+type S3CostDetail struct {
+	BucketName       string             `json:"bucket_name"`
+	Region           string             `json:"region"`
+	StorageCost      float64            `json:"storage_cost"`
+	RequestCost      float64            `json:"request_cost"`
+	EgressCost       float64            `json:"egress_cost"`
+	ReplicationCost  float64            `json:"replication_cost"`
+	TotalMonthlyCost float64            `json:"total_monthly_cost"`
+	StorageBreakdown map[string]float64 `json:"storage_breakdown"` // class -> $
+}
+
+// CalculateS3Cost returns a detailed cost breakdown for a single S3 bucket.
+func (c *CostCalculator) CalculateS3Cost(spec S3CostSpec) S3CostDetail {
+	storageBreakdown := make(map[string]float64)
+	var totalStorage float64
+
+	for class, bytes := range spec.StorageClassBreakdown {
+		gb := float64(bytes) / bytesPerGB
+		rate, ok := s3StoragePricing[class]
+		if !ok {
+			rate = s3StoragePricing["STANDARD"]
+		}
+		cost := gb * rate
+		storageBreakdown[class] = cost
+		totalStorage += cost
+	}
+
+	// Request costs
+	var requestCost float64
+	for reqType, count := range spec.RequestCounts {
+		thousands := float64(count) / 1000
+		switch reqType {
+		case "PUT", "COPY", "POST", "LIST":
+			requestCost += thousands * s3PUTRate
+		default: // GET, HEAD, SELECT, etc.
+			requestCost += thousands * s3GETRate
+		}
+	}
+
+	// Tiered egress pricing
+	var egressCost float64
+	if spec.DataTransferGB <= s3EgressCutoff {
+		egressCost = spec.DataTransferGB * s3EgressFirst
+	} else {
+		egressCost = s3EgressCutoff*s3EgressFirst + (spec.DataTransferGB-s3EgressCutoff)*s3EgressNext
+	}
+
+	// Replication is charged as egress
+	replicationCost := spec.ReplicationGB * s3EgressFirst
+
+	total := totalStorage + requestCost + egressCost + replicationCost
+
+	return S3CostDetail{
+		BucketName:       spec.BucketName,
+		Region:           spec.Region,
+		StorageCost:      totalStorage,
+		RequestCost:      requestCost,
+		EgressCost:       egressCost,
+		ReplicationCost:  replicationCost,
+		TotalMonthlyCost: total,
+		StorageBreakdown: storageBreakdown,
+	}
+}
+
+// ─── Discount application ─────────────────────────────────────────────────────
+
+// ApplyDiscount applies a DiscountConfig to a base cost for a given service type.
+// serviceType should be one of: "ec2", "ebs", "efs", "s3".
+func (c *CostCalculator) ApplyDiscount(baseCost float64, config *types.DiscountConfig, serviceType string) float64 {
+	if config == nil {
+		return baseCost
+	}
+	var discount float64
+	switch serviceType {
+	case "ec2":
+		discount = config.EC2Discount
+	case "ebs":
+		discount = config.EBSDiscount
+	case "efs":
+		discount = config.EFSDiscount
+	default:
+		discount = config.EducationalDiscount
+	}
+	if discount <= 0 || discount >= 1.0 {
+		return baseCost
+	}
+	return baseCost * (1.0 - discount)
 }
 
 // EstimateHibernationSavings estimates the cost savings from hibernating vs running

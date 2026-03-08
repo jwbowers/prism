@@ -31,6 +31,8 @@ type BudgetTracker struct {
 	budgetData     map[string]*ProjectBudgetData
 	costCalculator *CostCalculator
 	actionExecutor ActionExecutor
+	burnRateCalc   *BurnRateCalculator
+	surplusCalc    *SurplusCalculator
 }
 
 // ProjectBudgetData stores budget tracking data for a project
@@ -78,6 +80,8 @@ func NewBudgetTracker() (*BudgetTracker, error) {
 		budgetData:     make(map[string]*ProjectBudgetData),
 		costCalculator: costCalculator,
 		actionExecutor: nil, // Will be set later by daemon
+		burnRateCalc:   &BurnRateCalculator{},
+		surplusCalc:    &SurplusCalculator{},
 	}
 
 	// Load existing budget data
@@ -371,6 +375,30 @@ func (bt *BudgetTracker) CheckBudgetStatus(projectID string) (*BudgetStatus, err
 	activeAlerts := bt.getActiveAlerts(budgetData)
 	triggeredActions := bt.getTriggeredActions(budgetData)
 
+	// Compute burn rate (requires at least 2 data points)
+	var burnRate *BurnRateInfo
+	if len(budgetData.CostHistory) >= 2 {
+		burnRate = bt.burnRateCalc.ComputeBurnRate(
+			budgetData.CostHistory,
+			budget.BudgetPeriod,
+			budgetData.LastUpdated,
+			budget.TotalBudget,
+		)
+	}
+
+	// Compute surplus/banking for periodic budgets
+	var surplusInfo *SurplusInfo
+	if budget.BudgetPeriod != "" && budget.BudgetPeriod != "project" {
+		surplusInfo = bt.surplusCalc.ComputeSurplus(
+			budgetData.CostHistory,
+			budget.BudgetPeriod,
+			budgetData.LastUpdated,
+			budget.TotalBudget,
+			budget.TotalBudget, // period allocation = total budget for single-period budgets
+			0.20,               // default 20% surplus cap
+		)
+	}
+
 	return &BudgetStatus{
 		ProjectID:                projectID,
 		BudgetEnabled:            true,
@@ -380,6 +408,8 @@ func (bt *BudgetTracker) CheckBudgetStatus(projectID string) (*BudgetStatus, err
 		SpentPercentage:          spentPercentage,
 		ProjectedMonthlySpend:    projectedMonthlySpend,
 		DaysUntilBudgetExhausted: daysUntilExhausted,
+		BurnRate:                 burnRate,
+		Surplus:                  surplusInfo,
 		ActiveAlerts:             activeAlerts,
 		TriggeredActions:         triggeredActions,
 		LastUpdated:              time.Now(),
@@ -1043,6 +1073,22 @@ func (bt *BudgetTracker) logAlert(projectID string, alertEvent AlertEvent) error
 		alertEvent.SpentAmount,
 		alertEvent.Threshold*100)
 	return nil
+}
+
+// GetCostHistory returns the full cost history for a project.
+// Used by BudgetPredictor for forecasting.
+func (bt *BudgetTracker) GetCostHistory(projectID string) ([]CostDataPoint, error) {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+
+	data, exists := bt.budgetData[projectID]
+	if !exists {
+		return nil, fmt.Errorf("budget data not found for project %q", projectID)
+	}
+
+	result := make([]CostDataPoint, len(data.CostHistory))
+	copy(result, data.CostHistory)
+	return result, nil
 }
 
 // GetCurrentMonthlyRate calculates the current monthly spending rate for a project

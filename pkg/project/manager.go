@@ -766,77 +766,81 @@ func (m *Manager) TransferProject(ctx context.Context, projectID string, req *Tr
 	return &projectCopy, nil
 }
 
-// GetProjectForecast generates cost forecast data for a project
+// GetProjectForecast generates cost forecast data for a project using linear regression.
 func (m *Manager) GetProjectForecast(ctx context.Context, projectID string, req *ProjectForecastRequest) (*ProjectForecastResponse, error) {
 	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-
-	// Get project
 	project, exists := m.projects[projectID]
+	m.mutex.RUnlock()
 	if !exists {
 		return nil, fmt.Errorf("project %q not found", projectID)
 	}
 
-	// Default to 6 months forecast
 	months := req.Months
 	if months <= 0 {
 		months = 6
 	}
 
-	// Get current spending data from budget tracker
-	currentRate := m.budgetTracker.GetCurrentMonthlyRate(projectID)
-
-	// Generate forecast data points
-	now := time.Now()
-	forecastData := make([]ForecastDataPoint, 0, months)
-	cumulativeCost := 0.0
-
-	for i := 1; i <= months; i++ {
-		futureMonth := now.AddDate(0, i, 0)
-		monthStr := futureMonth.Format("2006-01")
-
-		// Simple linear projection (could be enhanced with trending)
-		projectedCost := currentRate
-
-		cumulativeCost += projectedCost
-
-		forecastData = append(forecastData, ForecastDataPoint{
-			Month:          monthStr,
-			ProjectedCost:  projectedCost,
-			CumulativeCost: cumulativeCost,
-		})
+	// Retrieve cost history for regression.
+	history, err := m.budgetTracker.GetCostHistory(projectID)
+	if err != nil {
+		history = nil // fall back to rate-only projection
 	}
 
-	// Calculate projected exhaustion if budget exists
-	var projectedExhaustion *time.Time
-	if project.Budget != nil && currentRate > 0 {
-		remainingBudget := project.Budget.TotalBudget - project.Budget.SpentAmount
-		if remainingBudget > 0 {
-			monthsUntilExhaustion := remainingBudget / currentRate
-			exhaustionTime := now.AddDate(0, 0, int(monthsUntilExhaustion*30))
-			projectedExhaustion = &exhaustionTime
+	budget := project.Budget
+	if budget == nil {
+		budget = &types.ProjectBudget{}
+	}
+
+	predictor := NewBudgetPredictor()
+	prediction, err := predictor.Predict(projectID, history, budget, months, nil)
+	if err != nil {
+		return nil, fmt.Errorf("forecast failed: %w", err)
+	}
+
+	// Map ShortfallPrediction → legacy ProjectForecastResponse shape.
+	forecastData := make([]ForecastDataPoint, 0, len(prediction.MonthlyForecasts))
+	for _, fm := range prediction.MonthlyForecasts {
+		if fm.IsProjected {
+			forecastData = append(forecastData, ForecastDataPoint{
+				Month:          fm.Month,
+				ProjectedCost:  fm.ProjectedSpend,
+				CumulativeCost: fm.CumulativeSpend,
+			})
 		}
 	}
 
-	// Historical data if requested
 	var historicalData []ForecastDataPoint
 	if req.IncludeHistorical {
-		historicalData = m.buildHistoricalData(projectID, 6)
+		for _, fm := range prediction.MonthlyForecasts {
+			if !fm.IsProjected {
+				cost := fm.ProjectedSpend
+				if fm.ActualSpend != nil {
+					cost = *fm.ActualSpend
+				}
+				historicalData = append(historicalData, ForecastDataPoint{
+					Month:          fm.Month,
+					ProjectedCost:  cost,
+					CumulativeCost: fm.CumulativeSpend,
+				})
+			}
+		}
 	}
 
-	// Confidence based on data availability (simplified)
-	confidence := 0.7
-	if currentRate > 0 {
-		confidence = 0.85
+	confidence := 0.5
+	switch prediction.ConfidenceLevel {
+	case "high":
+		confidence = 0.90
+	case "medium":
+		confidence = 0.75
 	}
 
 	return &ProjectForecastResponse{
 		ProjectID:           projectID,
 		GeneratedAt:         time.Now(),
-		CurrentMonthlyRate:  currentRate,
+		CurrentMonthlyRate:  prediction.CurrentDailyRate * 30,
 		ForecastData:        forecastData,
 		HistoricalData:      historicalData,
-		ProjectedExhaustion: projectedExhaustion,
+		ProjectedExhaustion: prediction.PredictedExhaustionAt,
 		Confidence:          confidence,
 	}, nil
 }

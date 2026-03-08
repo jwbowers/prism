@@ -269,6 +269,12 @@ type BudgetStatus struct {
 	// DaysUntilBudgetExhausted estimates when budget will be exhausted at current rate
 	DaysUntilBudgetExhausted *int `json:"days_until_exhausted,omitempty"`
 
+	// BurnRate contains period-aware burn rate analysis (nil when history is insufficient).
+	BurnRate *BurnRateInfo `json:"burn_rate,omitempty"`
+
+	// Surplus contains banking and carry-over information (nil for project-lifetime budgets).
+	Surplus *SurplusInfo `json:"surplus,omitempty"`
+
 	// ActiveAlerts are currently active budget alerts
 	ActiveAlerts []string `json:"active_alerts"`
 
