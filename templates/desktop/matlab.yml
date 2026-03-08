@@ -1,0 +1,102 @@
+name: "MATLAB Workstation"
+slug: "matlab-desktop"
+description: "Ubuntu MATE desktop pre-configured with MATLAB runtime dependencies"
+long_description: |
+  Full Ubuntu 22.04 desktop with MATE environment and all MATLAB system dependencies
+  pre-installed. Download and install MATLAB directly inside the desktop session.
+  Access via AWS Nice DCV browser-based remote desktop.
+
+  MATLAB must be downloaded separately from https://www.mathworks.com/downloads/
+  A MathWorks account with a valid license is required.
+base: "ubuntu-22.04"
+
+# Inherits the base desktop environment
+inherits: ["Ubuntu MATE Desktop"]
+
+# Connection via DCV browser-based desktop
+connection_type: "desktop"
+
+# Complexity and categorization
+complexity: "moderate"
+category: "Desktop"
+domain: "research"
+
+# Visual presentation
+icon: "📐"
+color: "#e87722"
+
+# Desktop configuration (inherited from Ubuntu MATE Desktop, override port if needed)
+desktop:
+  environment: "mate"
+  dcv_port: 8443
+  session_type: "virtual"
+
+# Package management
+package_manager: "apt"
+packages:
+  system:
+    # MATLAB system dependencies
+    - libxt6
+    - libxmu6
+    - libglu1-mesa
+    - libosmesa6
+    - libxss1
+    - libxi6
+    - libxcursor1
+    - libxrandr2
+    - libxfixes3
+    - libxrender1
+    - libxext6
+    # Additional tools
+    - curl
+    - wget
+    - unzip
+
+# Post-install: place MATLAB install instructions on the desktop
+post_install: |
+  mkdir -p /home/ubuntu/Desktop
+  cat > /home/ubuntu/Desktop/MATLAB-Install-Instructions.txt <<'INSTRUCTIONS'
+  To install MATLAB on this workstation:
+
+  1. Open Firefox from the desktop
+  2. Go to https://www.mathworks.com/downloads/
+  3. Sign in with your MathWorks account
+  4. Download the Linux installer for your licensed MATLAB version
+  5. Open a terminal and run:
+       chmod +x matlab_R20xxb_glnxa64.bin
+       sudo ./matlab_R20xxb_glnxa64.bin
+  6. Follow the installer prompts and enter your license key
+
+  For network license server usage, contact your institution's IT department
+  for the license server hostname and port.
+
+  MATLAB will be available from the desktop Applications menu after installation.
+  INSTRUCTIONS
+  chown ubuntu:ubuntu /home/ubuntu/Desktop/MATLAB-Install-Instructions.txt
+
+# Instance configuration — larger disk for MATLAB installation (~15 GB)
+instance_defaults:
+  type: "t3.xlarge"
+  root_volume_gb: 60
+  ports: [8443]
+
+# Idle detection
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 30
+  hibernate_threshold_minutes: 120
+  check_interval_minutes: 5
+
+# Template metadata
+version: "1.0.0"
+validation_status: "stable"
+maintainer: "Prism Team"
+tags:
+  category: "desktop"
+  technology: "dcv"
+  application: "matlab"
+  domain: "research"
+estimated_launch_time: 20
+prerequisites:
+  - "MathWorks account with valid MATLAB license"
+  - "AWS SSM Session Manager Plugin installed locally (for secure tunnel)"

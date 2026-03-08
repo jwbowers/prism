@@ -1,0 +1,67 @@
+name: "Ubuntu MATE Desktop"
+slug: "ubuntu-mate-desktop"
+description: "Full Ubuntu 22.04 desktop with MATE environment via AWS Nice DCV"
+long_description: |
+  Browser-based remote desktop running Ubuntu 22.04 with the MATE desktop environment.
+  Access via AWS Nice DCV — no client software required. Connect with prism connect <name>
+  to open your desktop in a web browser through a secure SSM tunnel.
+base: "ubuntu-22.04"
+
+# Connection via DCV browser-based desktop
+connection_type: "desktop"
+
+# Complexity and categorization
+complexity: "moderate"
+category: "Desktop"
+domain: "desktop"
+
+# Visual presentation
+icon: "🖥️"
+color: "#4f46e5"
+
+# Desktop configuration
+desktop:
+  environment: "mate"
+  dcv_port: 8443
+  session_type: "virtual"
+
+# Package management
+package_manager: "apt"
+packages:
+  system:
+    - firefox
+    - gedit
+    - gnome-terminal
+    - nautilus
+    - file-manager-actions
+
+# Users
+users:
+  - name: ubuntu
+    groups: ["sudo", "adm"]
+    shell: "/bin/bash"
+
+# Instance configuration
+instance_defaults:
+  type: "t3.xlarge"
+  root_volume_gb: 30
+  ports: [8443]
+
+# Idle detection — desktop sessions are expensive, hibernate aggressively
+idle_detection:
+  enabled: true
+  idle_threshold_minutes: 30
+  hibernate_threshold_minutes: 120
+  check_interval_minutes: 5
+
+# Template metadata
+version: "1.0.0"
+validation_status: "stable"
+maintainer: "Prism Team"
+tags:
+  category: "desktop"
+  technology: "dcv"
+  desktop: "mate"
+estimated_launch_time: 15
+prerequisites:
+  - "AWS SSM Session Manager Plugin installed locally (for secure tunnel)"
