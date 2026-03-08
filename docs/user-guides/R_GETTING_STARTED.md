@@ -54,16 +54,32 @@ output — it takes about 8 minutes. When it completes you'll see:
 
 ### Connect
 
-Open your browser to `http://<public-ip>:8787`. Log in with:
-
-- **Username**: `researcher`
-- **Password**: the system password shown in `prism workspace connect my-analysis` output (or set during init)
-
-You can also SSH directly:
+**SSH** (works immediately — uses your SSH key):
 
 ```bash
 prism workspace connect my-analysis          # opens SSH terminal
 ```
+
+**RStudio Server** requires a system password for the `researcher` user. Templates that
+include RStudio generate a random password during provisioning and print it in the launch
+log. Look for lines like:
+
+```
+=============================================
+  RStudio Server Login Credentials
+  Username: researcher
+  Password: <random-password>
+=============================================
+```
+
+If you missed the password or need to reset it, SSH in and run:
+
+```bash
+sudo passwd researcher
+```
+
+Then open `http://<public-ip>:8787` and log in with username `researcher` and the password
+you set.
 
 ### Verify your environment
 
@@ -444,7 +460,7 @@ prism ami delete <ami-id>                                  # remove AMI
 | R Research Publishing Stack | `http://<ip>:8787` (RStudio) / `http://<ip>:8888` (Jupyter) |
 | R Shiny Server | `http://<ip>:3838` |
 
-**RStudio login**: Username `researcher`, system password
+**RStudio login**: Username `researcher`, password from provisioning log (or reset via `sudo passwd researcher` over SSH)
 
 ### Posit Package Manager URL
 
