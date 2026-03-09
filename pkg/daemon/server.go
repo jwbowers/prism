@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	"github.com/scttfrdmn/prism/pkg/alerting"
 	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/connection"
 	"github.com/scttfrdmn/prism/pkg/cost"
@@ -96,6 +97,9 @@ type Server struct {
 
 	// Progress tracking for instance launches (v0.7.2 - Issue #453)
 	progressTracker *ProgressTracker
+
+	// GDEW tracker for egress waiver credit calculations (v0.11.0 - Issue #206)
+	gdewTracker *project.GDEWTracker
 }
 
 // awsInitResult bundles the outputs of initAWSManager.
@@ -407,6 +411,7 @@ func NewServer(port string) (*Server, error) {
 		progressTracker:     NewProgressTracker(),                   // Launch progress monitoring (v0.7.2 - Issue #453)
 		reducedMode:         reducedMode,                            // Reduced functionality mode when AWS credentials unavailable (Issue #356)
 		testMode:            os.Getenv("PRISM_TEST_MODE") == "true", // E2E test mode - skip AWS operations
+		gdewTracker:         project.NewGDEWTracker(),               // GDEW credit tracker (v0.11.0 - Issue #206)
 	}
 
 	// Load persisted idle schedules into scheduler (Issue #288)
@@ -423,6 +428,16 @@ func NewServer(port string) (*Server, error) {
 
 	// Configure budget tracker with action executor
 	budgetTracker.SetActionExecutor(server)
+
+	// Wire AlertDispatcher into budget tracker (Issue #138).
+	// If PRISM_SLACK_WEBHOOK is set, use a WebhookDispatcher; otherwise keep the default LogDispatcher.
+	if slackURL := os.Getenv("PRISM_SLACK_WEBHOOK"); slackURL != "" {
+		webhookDisp := alerting.NewWebhookDispatcher(alerting.WebhookConfig{
+			Channels: []alerting.Channel{{Type: alerting.ChannelSlack, Target: slackURL}},
+		})
+		server.SetAlerterOnBudgetTracker(webhookDisp)
+		logger.Info("Budget alert dispatcher configured", "channel", "slack")
+	}
 
 	// Initialize recovery and health monitoring (need server reference)
 	server.recoveryManager = NewRecoveryManager(stabilityManager, nil) // Will be set after server creation
@@ -1149,4 +1164,15 @@ func (s *Server) ExecutePreventLaunch(projectID string) error {
 
 	logger.Info("Budget auto action prevented new launches", "project", projectID)
 	return nil
+}
+
+// SetAlerterOnBudgetTracker configures an AlertDispatcher on the budget tracker.
+// Called at startup when PRISM_SLACK_WEBHOOK or another notifier is configured.
+func (s *Server) SetAlerterOnBudgetTracker(d alerting.AlertDispatcher) {
+	if s.budgetTracker != nil {
+		s.budgetTracker.SetAlerter(d)
+	}
+	if s.projectManager != nil {
+		s.projectManager.SetAlerter(d)
+	}
 }

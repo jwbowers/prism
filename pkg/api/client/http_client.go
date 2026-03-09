@@ -1603,6 +1603,66 @@ func (c *HTTPClient) GetProjectBudgetHistory(ctx context.Context, projectID stri
 	return result.History, nil
 }
 
+// GetProjectGDEW retrieves the GDEW credit status for a project (Issue #206).
+func (c *HTTPClient) GetProjectGDEW(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/projects/%s/gdew", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// UpdateProjectGDEW posts spend/egress figures and returns updated GDEW status (Issue #206).
+func (c *HTTPClient) UpdateProjectGDEW(ctx context.Context, projectID string, totalSpend, egressCharges float64) (map[string]interface{}, error) {
+	body := map[string]float64{
+		"total_spend_mtd":    totalSpend,
+		"egress_charges_mtd": egressCharges,
+	}
+	resp, err := c.makeRequest(ctx, "POST", fmt.Sprintf("/api/v1/projects/%s/gdew", projectID), body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetProjectDiscounts retrieves discount/credit discovery results for a project (Issue #207).
+func (c *HTTPClient) GetProjectDiscounts(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/projects/%s/discounts", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetProjectCredits retrieves AWS credit balances for a project (Issue #207).
+func (c *HTTPClient) GetProjectCredits(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", fmt.Sprintf("/api/v1/projects/%s/credits", projectID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if err := c.handleResponse(resp, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 // Budget management operations (v0.6.2)
 
 // CreateBudget creates a new budget pool

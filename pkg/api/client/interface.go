@@ -111,6 +111,10 @@ type PrismAPI interface {
 	GetProjectCushion(context.Context, string) (map[string]interface{}, error)
 	SetProjectCushion(context.Context, string, map[string]interface{}) (map[string]interface{}, error)
 	DeleteProjectCushion(context.Context, string) error
+	GetProjectGDEW(context.Context, string) (map[string]interface{}, error)
+	UpdateProjectGDEW(context.Context, string, float64, float64) (map[string]interface{}, error)
+	GetProjectDiscounts(context.Context, string) (map[string]interface{}, error)
+	GetProjectCredits(context.Context, string) (map[string]interface{}, error)
 
 	// Budget management operations (v0.6.2)
 	CreateBudget(context.Context, project.CreateBudgetRequest) (*types.Budget, error)

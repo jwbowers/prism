@@ -2643,3 +2643,74 @@ func (m *MockAPIClient) ListProjectInvitations(ctx context.Context, projectID st
 		Total:       0,
 	}, nil
 }
+
+// GetProjectGDEW returns mock GDEW status (Issue #206).
+func (m *MockAPIClient) GetProjectGDEW(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{
+		"project_id":         projectID,
+		"total_spend_mtd":    0.0,
+		"egress_charges_mtd": 0.0,
+		"available_credit":   0.0,
+		"used_credit":        0.0,
+		"remaining_credit":   0.0,
+		"net_egress_cost":    0.0,
+		"coverage_percent":   0.0,
+		"fully_covered":      false,
+		"nearing_limit":      false,
+		"status_message":     "No data tracked yet.",
+	}, nil
+}
+
+// UpdateProjectGDEW updates GDEW spend/egress figures (mock, Issue #206).
+func (m *MockAPIClient) UpdateProjectGDEW(ctx context.Context, projectID string, totalSpend, egressCharges float64) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	available := totalSpend * 0.15
+	used := egressCharges
+	if used > available {
+		used = available
+	}
+	return map[string]interface{}{
+		"project_id":         projectID,
+		"total_spend_mtd":    totalSpend,
+		"egress_charges_mtd": egressCharges,
+		"available_credit":   available,
+		"used_credit":        used,
+		"remaining_credit":   available - used,
+		"net_egress_cost":    egressCharges - used,
+	}, nil
+}
+
+// GetProjectDiscounts returns mock discount discovery results (Issue #207).
+func (m *MockAPIClient) GetProjectDiscounts(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{
+		"project_id":            projectID,
+		"discounts":             []interface{}{},
+		"credits":               []interface{}{},
+		"total_monthly_savings": 0.0,
+		"total_credit_balance":  0.0,
+		"effective_cost_rate":   1.0,
+	}, nil
+}
+
+// GetProjectCredits returns mock AWS credit balances (Issue #207).
+func (m *MockAPIClient) GetProjectCredits(ctx context.Context, projectID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{
+		"project_id":            projectID,
+		"discounts":             []interface{}{},
+		"credits":               []interface{}{},
+		"total_monthly_savings": 0.0,
+		"total_credit_balance":  0.0,
+		"effective_cost_rate":   1.0,
+	}, nil
+}

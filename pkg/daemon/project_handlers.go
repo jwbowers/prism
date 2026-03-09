@@ -90,6 +90,12 @@ func (s *Server) handleProjectSubOp(w http.ResponseWriter, r *http.Request, proj
 		s.handleProjectForecast(w, r, projectID)
 	case "cushion":
 		s.handleProjectCushion(w, r, projectID)
+	case "gdew":
+		s.handleProjectGDEW(w, r, projectID)
+	case "discounts":
+		s.handleProjectDiscounts(w, r, projectID)
+	case "credits":
+		s.handleProjectCredits(w, r, projectID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
 	}
@@ -1057,4 +1063,56 @@ func (s *Server) handleProjectCushion(w http.ResponseWriter, r *http.Request, pr
 	default:
 		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
+}
+
+// handleProjectGDEW handles GET/POST /api/v1/projects/{id}/gdew
+func (s *Server) handleProjectGDEW(w http.ResponseWriter, r *http.Request, projectID string) {
+	switch r.Method {
+	case http.MethodPost:
+		var req struct {
+			TotalSpendMTD    float64 `json:"total_spend_mtd"`
+			EgressChargesMTD float64 `json:"egress_charges_mtd"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Invalid request body: %v", err))
+			return
+		}
+		status := s.gdewTracker.Update(projectID, req.TotalSpendMTD, req.EgressChargesMTD)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(status)
+
+	case http.MethodGet:
+		status := s.gdewTracker.Get(projectID)
+		if status == nil {
+			// Return an empty/zero status rather than 404 so clients can display defaults.
+			status = &project.GDEWStatus{ProjectID: projectID}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(status)
+
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleProjectDiscounts handles GET /api/v1/projects/{id}/discounts
+func (s *Server) handleProjectDiscounts(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	adj := project.MockDiscovery(projectID)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(adj)
+}
+
+// handleProjectCredits handles GET /api/v1/projects/{id}/credits
+func (s *Server) handleProjectCredits(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	adj := project.MockDiscovery(projectID)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(adj)
 }

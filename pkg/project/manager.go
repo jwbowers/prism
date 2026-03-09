@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/scttfrdmn/prism/pkg/alerting"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -867,4 +868,13 @@ func (m *Manager) buildHistoricalData(projectID string, months int) []ForecastDa
 	}
 
 	return historicalData
+}
+
+// SetAlerter passes an AlertDispatcher through to the underlying BudgetTracker.
+// This allows operators to configure notification backends (Slack, webhook, etc.)
+// at daemon startup without re-creating the budget tracker.
+func (m *Manager) SetAlerter(d alerting.AlertDispatcher) {
+	if m.budgetTracker != nil {
+		m.budgetTracker.SetAlerter(d)
+	}
 }

@@ -91,6 +91,9 @@ Features:
 	budgetCmd.AddCommand(bc.createSavingsCommand())
 	budgetCmd.AddCommand(bc.createBreakdownCommand())
 	budgetCmd.AddCommand(bc.createCushionCommand())
+	budgetCmd.AddCommand(bc.createGDEWCommand())
+	budgetCmd.AddCommand(bc.createDiscountsCommand())
+	budgetCmd.AddCommand(bc.createCreditsCommand())
 
 	return budgetCmd
 }
@@ -2158,6 +2161,166 @@ func (bc *BudgetCommands) manageCushion(cmd *cobra.Command, args []string) error
 		if wh, ok := cushion["warn_lead_hours"].(float64); ok {
 			fmt.Printf("   Warn Before:  %.0f hours\n", wh)
 		}
+	}
+	return nil
+}
+
+// createGDEWCommand creates the `prism budget gdew <project>` command (Issue #206).
+func (bc *BudgetCommands) createGDEWCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "gdew <project-id>",
+		Short: "Show AWS Global Data Egress Waiver (GDEW) credit status",
+		Long: `Display GDEW credit status for a project.
+
+GDEW provides credits up to 15% of total monthly AWS spend that can be applied
+against data egress charges. This command shows the current coverage percentage,
+available credit, and any warnings about nearing the credit limit.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return bc.showGDEWStatus(cmd, args)
+		},
+	}
+}
+
+func (bc *BudgetCommands) showGDEWStatus(cmd *cobra.Command, args []string) error {
+	if err := bc.app.ensureDaemonRunning(); err != nil {
+		return err
+	}
+	ctx := bc.app.ctx
+	projectID := args[0]
+
+	status, err := bc.app.apiClient.GetProjectGDEW(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get GDEW status: %w", err)
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(w, "🌐 GDEW Credit Status — %s\n\n", projectID)
+	fmt.Fprintf(w, "  Total Spend MTD:\t$%.2f\n", floatFromMap(status, "total_spend_mtd"))
+	fmt.Fprintf(w, "  Egress Charges MTD:\t$%.2f\n", floatFromMap(status, "egress_charges_mtd"))
+	fmt.Fprintf(w, "  Available Credit (15%%):\t$%.2f\n", floatFromMap(status, "available_credit"))
+	fmt.Fprintf(w, "  Used Credit:\t$%.2f\n", floatFromMap(status, "used_credit"))
+	fmt.Fprintf(w, "  Remaining Credit:\t$%.2f\n", floatFromMap(status, "remaining_credit"))
+	fmt.Fprintf(w, "  Net Egress Cost:\t$%.2f\n", floatFromMap(status, "net_egress_cost"))
+	fmt.Fprintf(w, "  Coverage:\t%.0f%%\n", floatFromMap(status, "coverage_percent"))
+	_ = w.Flush()
+
+	if msg, ok := status["status_message"].(string); ok && msg != "" {
+		fmt.Printf("\n  %s\n", msg)
+	}
+	return nil
+}
+
+// floatFromMap is a helper to safely extract a float64 from a map[string]interface{}.
+func floatFromMap(m map[string]interface{}, key string) float64 {
+	if v, ok := m[key].(float64); ok {
+		return v
+	}
+	return 0
+}
+
+// createDiscountsCommand creates `prism budget discounts <project>` (Issue #207).
+func (bc *BudgetCommands) createDiscountsCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "discounts <project-id>",
+		Short: "Show AWS discount discovery results for a project",
+		Long: `Display active EDP/PPA discounts discovered for a project's AWS account.
+
+Discount discovery queries the AWS Cost Explorer API. If Cost Explorer is not
+enabled on the account, a graceful empty result is returned.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return bc.showDiscounts(cmd, args)
+		},
+	}
+}
+
+func (bc *BudgetCommands) showDiscounts(cmd *cobra.Command, args []string) error {
+	if err := bc.app.ensureDaemonRunning(); err != nil {
+		return err
+	}
+	ctx := bc.app.ctx
+	projectID := args[0]
+
+	adj, err := bc.app.apiClient.GetProjectDiscounts(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get discounts: %w", err)
+	}
+
+	fmt.Printf("💸 Discount Discovery — %s\n\n", projectID)
+	discounts, _ := adj["discounts"].([]interface{})
+	if len(discounts) == 0 {
+		fmt.Printf("  No active discounts discovered.\n")
+		fmt.Printf("  Enable AWS Cost Explorer to discover EDP/PPA discounts.\n")
+	} else {
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintf(w, "  TYPE\tDISCOUNT\tSTATUS\n")
+		for _, d := range discounts {
+			if dm, ok := d.(map[string]interface{}); ok {
+				fmt.Fprintf(w, "  %s\t%.0f%%\t%v\n", dm["type"], floatFromMap(dm, "percentage"), dm["active"])
+			}
+		}
+		_ = w.Flush()
+	}
+
+	if rate, ok := adj["effective_cost_rate"].(float64); ok && rate < 1.0 {
+		fmt.Printf("\n  Effective cost rate: %.0f%% (%.0f%% discount applied)\n", rate*100, (1-rate)*100)
+	}
+	return nil
+}
+
+// createCreditsCommand creates `prism budget credits <project>` (Issue #207).
+func (bc *BudgetCommands) createCreditsCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "credits <project-id>",
+		Short: "Show AWS credit balances and expiry warnings for a project",
+		Long: `Display time-limited AWS credits for a project.
+
+Shows remaining credit balances and warns about credits expiring within 30 days.
+Requires AWS Cost Explorer access for real data; returns empty result otherwise.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return bc.showCredits(cmd, args)
+		},
+	}
+}
+
+func (bc *BudgetCommands) showCredits(cmd *cobra.Command, args []string) error {
+	if err := bc.app.ensureDaemonRunning(); err != nil {
+		return err
+	}
+	ctx := bc.app.ctx
+	projectID := args[0]
+
+	adj, err := bc.app.apiClient.GetProjectCredits(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get credits: %w", err)
+	}
+
+	fmt.Printf("🎟️  AWS Credit Balances — %s\n\n", projectID)
+	credits, _ := adj["credits"].([]interface{})
+	if len(credits) == 0 {
+		fmt.Printf("  No active credits discovered.\n")
+		fmt.Printf("  Enable AWS Cost Explorer to discover time-limited credits.\n")
+	} else {
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintf(w, "  NAME\tREMAINING\tEXPIRES (DAYS)\tWARNING\n")
+		for _, c := range credits {
+			if cm, ok := c.(map[string]interface{}); ok {
+				warn := ""
+				if expWarn, _ := cm["expires_in_warning"].(bool); expWarn {
+					warn = "⚠️  EXPIRING SOON"
+				}
+				fmt.Fprintf(w, "  %s\t$%.2f\t%v\t%s\n",
+					cm["name"], floatFromMap(cm, "remaining_amount"),
+					cm["days_until_expiry"], warn)
+			}
+		}
+		_ = w.Flush()
+	}
+
+	if bal := floatFromMap(adj, "total_credit_balance"); bal > 0 {
+		fmt.Printf("\n  Total credit balance: $%.2f\n", bal)
 	}
 	return nil
 }

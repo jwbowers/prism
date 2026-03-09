@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/scttfrdmn/prism/pkg/alerting"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
 
@@ -33,6 +34,7 @@ type BudgetTracker struct {
 	actionExecutor ActionExecutor
 	burnRateCalc   *BurnRateCalculator
 	surplusCalc    *SurplusCalculator
+	alerter        alerting.AlertDispatcher
 }
 
 // ProjectBudgetData stores budget tracking data for a project
@@ -82,6 +84,7 @@ func NewBudgetTracker() (*BudgetTracker, error) {
 		actionExecutor: nil, // Will be set later by daemon
 		burnRateCalc:   &BurnRateCalculator{},
 		surplusCalc:    &SurplusCalculator{},
+		alerter:        alerting.NewLogDispatcher(),
 	}
 
 	// Load existing budget data
@@ -97,6 +100,14 @@ func (bt *BudgetTracker) SetActionExecutor(executor ActionExecutor) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	bt.actionExecutor = executor
+}
+
+// SetAlerter configures the AlertDispatcher used for budget threshold notifications.
+// Defaults to LogDispatcher if not called.
+func (bt *BudgetTracker) SetAlerter(d alerting.AlertDispatcher) {
+	bt.mutex.Lock()
+	defer bt.mutex.Unlock()
+	bt.alerter = d
 }
 
 // InitializeProject initializes budget tracking for a new project
@@ -627,6 +638,20 @@ func (bt *BudgetTracker) triggerAlert(projectID string, budgetData *ProjectBudge
 
 	budgetData.AlertHistory = append(budgetData.AlertHistory, alertEvent)
 
+	// Use AlertDispatcher for threshold alerts (email/slack/webhook types).
+	if bt.alerter != nil {
+		a := alerting.FormatBudgetThresholdAlert(
+			projectID,
+			projectID, // name fallback
+			alert.Threshold,
+			budgetData.Budget.SpentAmount,
+			budgetData.Budget.TotalBudget,
+		)
+		_ = bt.alerter.Send(context.Background(), a)
+		return
+	}
+
+	// Fallback: legacy per-type delivery for any alertType not handled above.
 	if err := bt.deliverAlert(projectID, alertEvent, alert.Recipients); err != nil {
 		fmt.Printf("Failed to deliver budget alert: %v\n", err)
 		if logErr := bt.logAlert(projectID, alertEvent); logErr != nil {
