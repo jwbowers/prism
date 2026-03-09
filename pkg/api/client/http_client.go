@@ -1464,6 +1464,9 @@ type UpdateProjectBudgetRequest struct {
 	AlertThresholds []types.BudgetAlert      `json:"alert_thresholds,omitempty"`
 	AutoActions     []types.BudgetAutoAction `json:"auto_actions,omitempty"`
 	EndDate         *time.Time               `json:"end_date,omitempty"`
+	// v0.12.0 rollover fields (#143)
+	RolloverEnabled *bool    `json:"rollover_enabled,omitempty"`
+	RolloverCap     *float64 `json:"rollover_cap,omitempty"`
 }
 
 // SetProjectBudget sets or enables budget tracking for a project
@@ -2373,6 +2376,232 @@ func (c *HTTPClient) CheckVersionCompatibility(ctx context.Context, clientVersio
 
 	// Versions are compatible
 	return nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// v0.12.0 — Budget Enterprise & Governance
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GetProjectQuotas returns the role quotas for a project (#151).
+func (c *HTTPClient) GetProjectQuotas(ctx context.Context, projectID string) ([]types.RoleQuota, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/projects/"+projectID+"/quotas", nil)
+	if err != nil {
+		return nil, err
+	}
+	var quotas []types.RoleQuota
+	if err := c.handleResponse(resp, &quotas); err != nil {
+		return nil, err
+	}
+	return quotas, nil
+}
+
+// SetProjectQuota upserts a role quota for a project (#151).
+func (c *HTTPClient) SetProjectQuota(ctx context.Context, projectID string, quota types.RoleQuota) error {
+	resp, err := c.makeRequest(ctx, "PUT", "/api/v1/projects/"+projectID+"/quotas", quota)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// GetGrantPeriod returns the grant period for a project (#152).
+func (c *HTTPClient) GetGrantPeriod(ctx context.Context, projectID string) (*types.GrantPeriod, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/projects/"+projectID+"/grant-period", nil)
+	if err != nil {
+		return nil, err
+	}
+	var gp types.GrantPeriod
+	if err := c.handleResponse(resp, &gp); err != nil {
+		return nil, err
+	}
+	return &gp, nil
+}
+
+// SetGrantPeriod sets the grant period for a project (#152).
+func (c *HTTPClient) SetGrantPeriod(ctx context.Context, projectID string, gp types.GrantPeriod) error {
+	resp, err := c.makeRequest(ctx, "PUT", "/api/v1/projects/"+projectID+"/grant-period", gp)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// DeleteGrantPeriod removes the grant period configuration from a project (#152).
+func (c *HTTPClient) DeleteGrantPeriod(ctx context.Context, projectID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/projects/"+projectID+"/grant-period", nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// ShareProjectBudget transfers budget between projects or to a member (#145, #155, #156).
+func (c *HTTPClient) ShareProjectBudget(ctx context.Context, req types.BudgetShareRequest) (*types.BudgetShareRecord, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/projects/"+req.FromProjectID+"/budget/share", req)
+	if err != nil {
+		return nil, err
+	}
+	var record types.BudgetShareRecord
+	if err := c.handleResponse(resp, &record); err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
+// ListProjectBudgetShares returns all budget share records for a project.
+func (c *HTTPClient) ListProjectBudgetShares(ctx context.Context, projectID string) ([]*types.BudgetShareRecord, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/projects/"+projectID+"/budget/shares", nil)
+	if err != nil {
+		return nil, err
+	}
+	var records []*types.BudgetShareRecord
+	if err := c.handleResponse(resp, &records); err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+// DeleteProjectBudgetShare reverses a budget share (#156 cross-project borrow).
+func (c *HTTPClient) DeleteProjectBudgetShare(ctx context.Context, projectID, shareID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/projects/"+projectID+"/budget/shares/"+shareID, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// SubmitApproval creates a new approval request (#149).
+func (c *HTTPClient) SubmitApproval(ctx context.Context, projectID string, approvalType project.ApprovalType, details map[string]interface{}, reason string) (*project.ApprovalRequest, error) {
+	reqBody := map[string]interface{}{
+		"type":    approvalType,
+		"details": details,
+		"reason":  reason,
+	}
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/projects/"+projectID+"/approvals", reqBody)
+	if err != nil {
+		return nil, err
+	}
+	var ar project.ApprovalRequest
+	if err := c.handleResponse(resp, &ar); err != nil {
+		return nil, err
+	}
+	return &ar, nil
+}
+
+// ListApprovals lists approval requests for a project (#153).
+func (c *HTTPClient) ListApprovals(ctx context.Context, projectID string, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
+	path := "/api/v1/projects/" + projectID + "/approvals"
+	if status != "" {
+		path += "?status=" + string(status)
+	}
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	var reqs []*project.ApprovalRequest
+	if err := c.handleResponse(resp, &reqs); err != nil {
+		return nil, err
+	}
+	return reqs, nil
+}
+
+// ListAllApprovals lists approval requests across all owned projects (#153 dashboard).
+func (c *HTTPClient) ListAllApprovals(ctx context.Context, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
+	path := "/api/v1/admin/approvals"
+	if status != "" {
+		path += "?status=" + string(status)
+	}
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	var reqs []*project.ApprovalRequest
+	if err := c.handleResponse(resp, &reqs); err != nil {
+		return nil, err
+	}
+	return reqs, nil
+}
+
+// ApproveRequest approves a pending approval request (#153).
+func (c *HTTPClient) ApproveRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
+	body := map[string]string{"note": note}
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/projects/"+projectID+"/approvals/"+requestID+"/approve", body)
+	if err != nil {
+		return nil, err
+	}
+	var ar project.ApprovalRequest
+	if err := c.handleResponse(resp, &ar); err != nil {
+		return nil, err
+	}
+	return &ar, nil
+}
+
+// DenyRequest denies a pending approval request.
+func (c *HTTPClient) DenyRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
+	body := map[string]string{"note": note}
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/projects/"+projectID+"/approvals/"+requestID+"/deny", body)
+	if err != nil {
+		return nil, err
+	}
+	var ar project.ApprovalRequest
+	if err := c.handleResponse(resp, &ar); err != nil {
+		return nil, err
+	}
+	return &ar, nil
+}
+
+// GetMonthlyReport retrieves a monthly budget report (#141).
+func (c *HTTPClient) GetMonthlyReport(ctx context.Context, projectID, month, format string) (string, error) {
+	path := "/api/v1/projects/" + projectID + "/reports/monthly?month=" + month
+	if format != "" {
+		path += "&format=" + format
+	}
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode >= 400 {
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+// ListOnboardingTemplates returns the onboarding templates for a project (#154).
+func (c *HTTPClient) ListOnboardingTemplates(ctx context.Context, projectID string) ([]types.OnboardingTemplate, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/projects/"+projectID+"/onboarding-templates", nil)
+	if err != nil {
+		return nil, err
+	}
+	var tmpls []types.OnboardingTemplate
+	if err := c.handleResponse(resp, &tmpls); err != nil {
+		return nil, err
+	}
+	return tmpls, nil
+}
+
+// AddOnboardingTemplate adds or updates an onboarding template for a project (#154).
+func (c *HTTPClient) AddOnboardingTemplate(ctx context.Context, projectID string, tmpl types.OnboardingTemplate) error {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/projects/"+projectID+"/onboarding-templates", tmpl)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// DeleteOnboardingTemplate removes an onboarding template from a project (#154).
+func (c *HTTPClient) DeleteOnboardingTemplate(ctx context.Context, projectID, nameOrID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/projects/"+projectID+"/onboarding-templates/"+nameOrID, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
 }
 
 // parseVersion parses a version string like "v0.5.1" or "0.5.1" into major, minor, patch

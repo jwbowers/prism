@@ -115,3 +115,30 @@ func (s *SurplusCalculator) ComputeSurplus(
 		SurplusCapped:        capped,
 	}
 }
+
+// ComputeSurplusWithRollover builds a SurplusInfo respecting the v0.12.0 rollover
+// configuration fields on ProjectBudget (#143).
+//
+// When RolloverEnabled=false the behaviour is identical to ComputeSurplus with
+// surplusCapPercent=0.  When RolloverEnabled=true the cap is derived from
+// RolloverCap (absolute dollar amount) unless it is 0, in which case there is
+// no cap (surplusCapPercent=1.0 acts as 100%).
+func (s *SurplusCalculator) ComputeSurplusWithRollover(
+	history []CostDataPoint,
+	budget *types.ProjectBudget,
+	periodAllocation float64,
+) *SurplusInfo {
+	if budget == nil || !budget.RolloverEnabled {
+		return s.ComputeSurplus(history, budget.BudgetPeriod, budget.StartDate,
+			budget.TotalBudget, periodAllocation, 0)
+	}
+
+	// Determine effective cap percentage
+	capPercent := 1.0 // unlimited by default when rollover enabled
+	if budget.RolloverCap > 0 && budget.TotalBudget > 0 {
+		capPercent = budget.RolloverCap / budget.TotalBudget
+	}
+
+	return s.ComputeSurplus(history, budget.BudgetPeriod, budget.StartDate,
+		budget.TotalBudget, periodAllocation, capPercent)
+}

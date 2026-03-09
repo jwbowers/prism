@@ -480,6 +480,13 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	// NEW: Unified admin command group (Phase 5.0.3 - CLI Consistency)
 	adminFactory := &AdminCommandFactory{app: r.app}
 	rootCmd.AddCommand(adminFactory.CreateCommand())
+
+	// v0.12.0: Approval workflow top-level commands
+	approvalCobra := NewApprovalCobraCommands(r.app)
+	rootCmd.AddCommand(approvalCobra.CreateRequestCommand())
+	rootCmd.AddCommand(approvalCobra.CreateApproveCommand())
+	rootCmd.AddCommand(approvalCobra.CreateDenyCommand())
+	rootCmd.AddCommand(approvalCobra.CreateApprovalsCommand())
 }
 
 func (r *CommandFactoryRegistry) createSnapshotCommand() *cobra.Command {

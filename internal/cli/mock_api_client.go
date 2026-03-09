@@ -2714,3 +2714,138 @@ func (m *MockAPIClient) GetProjectCredits(ctx context.Context, projectID string)
 		"effective_cost_rate":   1.0,
 	}, nil
 }
+
+// v0.12.0 — Budget Enterprise & Governance mocks
+
+func (m *MockAPIClient) GetProjectQuotas(ctx context.Context, projectID string) ([]types.RoleQuota, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []types.RoleQuota{}, nil
+}
+
+func (m *MockAPIClient) SetProjectQuota(ctx context.Context, projectID string, quota types.RoleQuota) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) GetGrantPeriod(ctx context.Context, projectID string) (*types.GrantPeriod, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil, nil
+}
+
+func (m *MockAPIClient) SetGrantPeriod(ctx context.Context, projectID string, gp types.GrantPeriod) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) DeleteGrantPeriod(ctx context.Context, projectID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) ShareProjectBudget(ctx context.Context, req types.BudgetShareRequest) (*types.BudgetShareRecord, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &types.BudgetShareRecord{ID: "mock-share-id"}, nil
+}
+
+func (m *MockAPIClient) ListProjectBudgetShares(ctx context.Context, projectID string) ([]*types.BudgetShareRecord, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []*types.BudgetShareRecord{}, nil
+}
+
+func (m *MockAPIClient) DeleteProjectBudgetShare(ctx context.Context, projectID, shareID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) SubmitApproval(ctx context.Context, projectID string, approvalType project.ApprovalType, details map[string]interface{}, reason string) (*project.ApprovalRequest, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &project.ApprovalRequest{
+		ID:        "mock-approval-id",
+		ProjectID: projectID,
+		Type:      approvalType,
+		Status:    project.ApprovalStatusPending,
+		Reason:    reason,
+	}, nil
+}
+
+func (m *MockAPIClient) ListApprovals(ctx context.Context, projectID string, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []*project.ApprovalRequest{}, nil
+}
+
+func (m *MockAPIClient) ListAllApprovals(ctx context.Context, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []*project.ApprovalRequest{}, nil
+}
+
+func (m *MockAPIClient) ApproveRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &project.ApprovalRequest{
+		ID:        requestID,
+		ProjectID: projectID,
+		Status:    project.ApprovalStatusApproved,
+	}, nil
+}
+
+func (m *MockAPIClient) DenyRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &project.ApprovalRequest{
+		ID:        requestID,
+		ProjectID: projectID,
+		Status:    project.ApprovalStatusDenied,
+	}, nil
+}
+
+func (m *MockAPIClient) GetMonthlyReport(ctx context.Context, projectID, month, format string) (string, error) {
+	if m.ShouldReturnError {
+		return "", fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return "Monthly Report: " + projectID + " " + month, nil
+}
+
+func (m *MockAPIClient) ListOnboardingTemplates(ctx context.Context, projectID string) ([]types.OnboardingTemplate, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []types.OnboardingTemplate{}, nil
+}
+
+func (m *MockAPIClient) AddOnboardingTemplate(ctx context.Context, projectID string, tmpl types.OnboardingTemplate) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) DeleteOnboardingTemplate(ctx context.Context, projectID, nameOrID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}

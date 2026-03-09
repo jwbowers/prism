@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 // LaunchRequest represents a request to launch an instance
 type LaunchRequest struct {
 	Template            string                 `json:"template"`
@@ -33,6 +35,10 @@ type LaunchRequest struct {
 	ShowAMIResolution   bool                 `json:"show_ami_resolution,omitempty"`   // Show AMI resolution details
 	AMIResolutionResult *AMIResolutionResult `json:"ami_resolution_result,omitempty"` // Internal: resolved AMI info
 	CustomAMI           string               `json:"custom_ami,omitempty"`            // Override AMI ID (e.g., for restore from snapshot)
+
+	// Time-boxing (#146): set ExpiresAt directly or derive from Hours
+	Hours     int        `json:"hours,omitempty"`      // Auto-stop after N hours (convenience)
+	ExpiresAt *time.Time `json:"expires_at,omitempty"` // Explicit expiry timestamp
 }
 
 // LaunchResponse represents a successful launch response

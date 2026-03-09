@@ -329,9 +329,39 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Resolve ExpiresAt from Hours if not set directly (#146)
+	if req.ExpiresAt == nil && req.Hours > 0 {
+		t := time.Now().Add(time.Duration(req.Hours) * time.Hour)
+		req.ExpiresAt = &t
+	}
+
 	// Apply pre-launch checks: rate limits, throttling, funding, and budget constraints
 	if !s.preLaunchChecks(&req, w, r) {
 		return
+	}
+
+	// Project quota check (#151)
+	if req.ProjectID != "" && s.projectManager != nil {
+		userID := "default_user"
+		if pm, err := profile.NewManagerEnhanced(); err == nil {
+			if cp, err := pm.GetCurrentProfile(); err == nil {
+				userID = cp.Name
+			}
+		}
+		// Count existing instances for this user in the project
+		instanceCount := 0
+		if st, err := s.stateManager.LoadState(); err == nil {
+			for _, inst := range st.Instances {
+				if inst.ProjectID == req.ProjectID {
+					instanceCount++
+				}
+			}
+		}
+		instanceType := req.Size // best effort — actual type determined at launch time
+		if err := s.projectManager.CheckQuota(req.ProjectID, userID, instanceType, instanceCount); err != nil {
+			s.writeError(w, http.StatusForbidden, fmt.Sprintf("Launch blocked by project quota: %v", err))
+			return
+		}
 	}
 
 	// Check instance name uniqueness (skip in test mode)
@@ -404,6 +434,11 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 	if instance == nil {
 		log.Printf("[DEBUG] handleLaunchInstance: instance is nil, returning")
 		return
+	}
+
+	// Apply ExpiresAt from request (#146)
+	if req.ExpiresAt != nil {
+		instance.ExpiresAt = req.ExpiresAt
 	}
 
 	log.Printf("[DEBUG] handleLaunchInstance: Instance created: %s (ID: %s, State: %s)", instance.Name, instance.ID, instance.State)

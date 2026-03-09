@@ -237,6 +237,9 @@ type Instance struct {
 
 	// State transition history for accurate cost tracking
 	StateHistory []StateTransition `json:"state_history,omitempty"` // History of all state changes
+
+	// ExpiresAt is when this instance should be auto-stopped/hibernated (#146)
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 }
 
 // StateTransition records when an instance changes state for cost tracking

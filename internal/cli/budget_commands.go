@@ -94,6 +94,13 @@ Features:
 	budgetCmd.AddCommand(bc.createGDEWCommand())
 	budgetCmd.AddCommand(bc.createDiscountsCommand())
 	budgetCmd.AddCommand(bc.createCreditsCommand())
+	// v0.12.0 governance subcommands
+	budgetCmd.AddCommand(bc.createRolloverCommand())
+	budgetCmd.AddCommand(bc.createShareCommand())
+	budgetCmd.AddCommand(bc.createReallocateCommand())
+	budgetCmd.AddCommand(bc.createBorrowCommand())
+	budgetCmd.AddCommand(bc.createEmergencyCommand())
+	budgetCmd.AddCommand(bc.createReportCommand())
 
 	return budgetCmd
 }
@@ -2324,3 +2331,357 @@ func (bc *BudgetCommands) showCredits(cmd *cobra.Command, args []string) error {
 	}
 	return nil
 }
+
+// ============================================================================
+// v0.12.0: Rollover, Share, Reallocate, Borrow, Emergency, Report commands
+// ============================================================================
+
+// createRolloverCommand creates the `prism budget rollover` command (#143)
+func (bc *BudgetCommands) createRolloverCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "rollover <project>",
+		Short: "Configure budget rollover for a project",
+		Long: `Enable or disable budget rollover so unspent funds carry into the next period.
+
+Examples:
+  prism budget rollover my-project --enable
+  prism budget rollover my-project --enable --cap 500
+  prism budget rollover my-project --disable`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
+			enable, _ := cmd.Flags().GetBool("enable")
+			disable, _ := cmd.Flags().GetBool("disable")
+			cap, _ := cmd.Flags().GetFloat64("cap")
+
+			proj, err := bc.app.apiClient.GetProject(bc.app.ctx, projectName)
+			if err != nil {
+				return fmt.Errorf("project %q not found: %w", projectName, err)
+			}
+
+			budget := proj.Budget
+			if budget == nil {
+				budget = &types.ProjectBudget{}
+			}
+
+			if enable {
+				budget.RolloverEnabled = true
+				budget.RolloverCap = cap
+			} else if disable {
+				budget.RolloverEnabled = false
+				budget.RolloverCap = 0
+			}
+
+			req := client.UpdateProjectBudgetRequest{
+				TotalBudget:     &budget.TotalBudget,
+				RolloverEnabled: &budget.RolloverEnabled,
+				RolloverCap:     &budget.RolloverCap,
+			}
+			if _, err := bc.app.apiClient.UpdateProjectBudget(bc.app.ctx, proj.ID, req); err != nil {
+				return fmt.Errorf("failed to update rollover settings: %w", err)
+			}
+
+			if budget.RolloverEnabled {
+				if budget.RolloverCap > 0 {
+					fmt.Printf("✅ Rollover enabled for %s (cap: $%.2f)\n", projectName, budget.RolloverCap)
+				} else {
+					fmt.Printf("✅ Rollover enabled for %s (no cap)\n", projectName)
+				}
+			} else {
+				fmt.Printf("✅ Rollover disabled for %s\n", projectName)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().Bool("enable", false, "Enable budget rollover")
+	cmd.Flags().Bool("disable", false, "Disable budget rollover")
+	cmd.Flags().Float64("cap", 0, "Maximum USD amount that can roll over (0 = unlimited)")
+	return cmd
+}
+
+// createShareCommand creates the `prism budget share` command (#145)
+func (bc *BudgetCommands) createShareCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "share",
+		Short: "Share budget between projects",
+		Long: `Transfer a portion of one project's budget to another project.
+
+Examples:
+  prism budget share --from project-a --to project-b --amount 200
+  prism budget share --from grant-pool --to summer-intern --amount 150 --expires 30d`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			from, _ := cmd.Flags().GetString("from")
+			to, _ := cmd.Flags().GetString("to")
+			amount, _ := cmd.Flags().GetFloat64("amount")
+			expires, _ := cmd.Flags().GetString("expires")
+			reason, _ := cmd.Flags().GetString("reason")
+
+			if from == "" || to == "" || amount <= 0 {
+				return fmt.Errorf("--from, --to, and --amount are required")
+			}
+
+			shareReq := types.BudgetShareRequest{
+				FromProjectID: from,
+				ToProjectID:   to,
+				Amount:        amount,
+				Reason:        reason,
+			}
+
+			if expires != "" {
+				d, err := parseBudgetDuration(expires)
+				if err != nil {
+					return fmt.Errorf("invalid --expires value: %w", err)
+				}
+				t := time.Now().Add(d)
+				shareReq.ExpiresAt = &t
+			}
+
+			// Resolve project name → UUID before submitting
+			srcProj, err := bc.app.apiClient.GetProject(bc.app.ctx, from)
+			if err != nil {
+				return fmt.Errorf("source project %q not found: %w", from, err)
+			}
+			shareReq.FromProjectID = srcProj.ID
+
+			result, err := bc.app.apiClient.ShareProjectBudget(bc.app.ctx, shareReq)
+			if err != nil {
+				return fmt.Errorf("budget share failed: %w", err)
+			}
+
+			fmt.Printf("✅ Budget share created (ID: %s)\n", result.ID)
+			fmt.Printf("   $%.2f transferred from %s → %s\n", amount, from, to)
+			if result.ExpiresAt != nil {
+				fmt.Printf("   Expires: %s\n", result.ExpiresAt.Format("2006-01-02"))
+			}
+			return nil
+		},
+	}
+	cmd.Flags().String("from", "", "Source project name or ID")
+	cmd.Flags().String("to", "", "Destination project name or ID")
+	cmd.Flags().Float64("amount", 0, "Amount in USD to share")
+	cmd.Flags().String("expires", "", "Auto-reverse after duration (e.g. 30d, 2w)")
+	cmd.Flags().String("reason", "", "Optional note for audit log")
+	return cmd
+}
+
+// createReallocateCommand creates the `prism budget reallocate` command (#155)
+func (bc *BudgetCommands) createReallocateCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "reallocate",
+		Short: "Reallocate budget between project members",
+		Long: `Move a portion of budget from one member's allocation to another.
+
+Example:
+  prism budget reallocate --from postdoc1 --to postdoc2 --amount 100 --project my-lab`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			from, _ := cmd.Flags().GetString("from")
+			to, _ := cmd.Flags().GetString("to")
+			amount, _ := cmd.Flags().GetFloat64("amount")
+			projName, _ := cmd.Flags().GetString("project")
+
+			if from == "" || to == "" || amount <= 0 {
+				return fmt.Errorf("--from, --to, and --amount are required")
+			}
+
+			proj, err := bc.app.apiClient.GetProject(bc.app.ctx, projName)
+			if err != nil {
+				return fmt.Errorf("project %q not found: %w", projName, err)
+			}
+
+			shareReq := types.BudgetShareRequest{
+				FromProjectID: proj.ID,
+				ToMemberID:    to,
+				Amount:        amount,
+				Reason:        fmt.Sprintf("reallocated from %s", from),
+			}
+
+			_, err = bc.app.apiClient.ShareProjectBudget(bc.app.ctx, shareReq)
+			if err != nil {
+				return fmt.Errorf("reallocation failed: %w", err)
+			}
+
+			fmt.Printf("✅ $%.2f reallocated from %s → %s in project %s\n", amount, from, to, projName)
+			return nil
+		},
+	}
+	cmd.Flags().String("from", "", "Source member user ID")
+	cmd.Flags().String("to", "", "Destination member user ID")
+	cmd.Flags().Float64("amount", 0, "Amount in USD to reallocate")
+	cmd.Flags().String("project", "", "Project name or ID")
+	return cmd
+}
+
+// createBorrowCommand creates the `prism budget borrow` command (#156)
+func (bc *BudgetCommands) createBorrowCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "borrow",
+		Short: "Temporarily borrow budget from another project",
+		Long: `Borrow a temporary budget allocation from a source project.
+The borrowed amount is automatically reversed when the expiry passes.
+
+Example:
+  prism budget borrow --from discretionary --amount 500 --expires 14d`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			from, _ := cmd.Flags().GetString("from")
+			amount, _ := cmd.Flags().GetFloat64("amount")
+			expires, _ := cmd.Flags().GetString("expires")
+			reason, _ := cmd.Flags().GetString("reason")
+
+			if from == "" || amount <= 0 || expires == "" {
+				return fmt.Errorf("--from, --amount, and --expires are required")
+			}
+
+			d, err := parseBudgetDuration(expires)
+			if err != nil {
+				return fmt.Errorf("invalid --expires: %w", err)
+			}
+			t := time.Now().Add(d)
+
+			srcProj, err := bc.app.apiClient.GetProject(bc.app.ctx, from)
+			if err != nil {
+				return fmt.Errorf("source project %q not found: %w", from, err)
+			}
+
+			shareReq := types.BudgetShareRequest{
+				FromProjectID: srcProj.ID,
+				Amount:        amount,
+				Reason:        reason,
+				ExpiresAt:     &t,
+			}
+
+			result, err := bc.app.apiClient.ShareProjectBudget(bc.app.ctx, shareReq)
+			if err != nil {
+				return fmt.Errorf("borrow request failed: %w", err)
+			}
+
+			fmt.Printf("✅ Borrowed $%.2f from %s (expires %s, ID: %s)\n",
+				amount, from, t.Format("2006-01-02"), result.ID)
+			return nil
+		},
+	}
+	cmd.Flags().String("from", "", "Source project to borrow from")
+	cmd.Flags().Float64("amount", 0, "Amount in USD to borrow")
+	cmd.Flags().String("expires", "", "Auto-reverse after duration (e.g. 14d, 1w)")
+	cmd.Flags().String("reason", "", "Optional reason for audit log")
+	return cmd
+}
+
+// createEmergencyCommand creates the `prism budget emergency` command (#157)
+func (bc *BudgetCommands) createEmergencyCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "emergency <project>",
+		Short: "Request emergency budget increase",
+		Long: `Submit an emergency budget increase request for a project.
+The request requires approval from the project owner or admin.
+
+Example:
+  prism budget emergency my-project --amount 500 --reason "critical paper deadline"`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
+			amount, _ := cmd.Flags().GetFloat64("amount")
+			reason, _ := cmd.Flags().GetString("reason")
+
+			if amount <= 0 || reason == "" {
+				return fmt.Errorf("--amount and --reason are required")
+			}
+
+			proj, err := bc.app.apiClient.GetProject(bc.app.ctx, projectName)
+			if err != nil {
+				return fmt.Errorf("project %q not found: %w", projectName, err)
+			}
+
+			req, err := bc.app.apiClient.SubmitApproval(bc.app.ctx, proj.ID, project.ApprovalTypeEmergency,
+				map[string]interface{}{"amount": amount}, reason)
+			if err != nil {
+				return fmt.Errorf("failed to submit emergency request: %w", err)
+			}
+
+			fmt.Printf("✅ Emergency budget request submitted\n")
+			fmt.Printf("   Request ID: %s\n", req.ID)
+			fmt.Printf("   Amount:     $%.2f\n", amount)
+			fmt.Printf("   Status:     %s (pending approval)\n", req.Status)
+			fmt.Printf("\nTo approve: prism approve %s\n", req.ID)
+			return nil
+		},
+	}
+	cmd.Flags().Float64("amount", 0, "USD amount to request")
+	cmd.Flags().String("reason", "", "Justification for the emergency increase")
+	return cmd
+}
+
+// createReportCommand creates the `prism budget report` command (#141)
+func (bc *BudgetCommands) createReportCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "report <project>",
+		Short: "Generate monthly budget report",
+		Long: `Generate a monthly budget report for a project.
+
+Supported formats: json (default), text, csv
+
+Examples:
+  prism budget report my-project --month 2026-02
+  prism budget report my-project --month 2026-02 --format text
+  prism budget report my-project --month 2026-02 --format csv > report.csv`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
+			month, _ := cmd.Flags().GetString("month")
+			format, _ := cmd.Flags().GetString("format")
+
+			if month == "" {
+				month = time.Now().Format("2006-01")
+			}
+
+			proj, err := bc.app.apiClient.GetProject(bc.app.ctx, projectName)
+			if err != nil {
+				return fmt.Errorf("project %q not found: %w", projectName, err)
+			}
+
+			output, err := bc.app.apiClient.GetMonthlyReport(bc.app.ctx, proj.ID, month, format)
+			if err != nil {
+				return fmt.Errorf("failed to get report: %w", err)
+			}
+
+			fmt.Print(output)
+			return nil
+		},
+	}
+	cmd.Flags().String("month", "", "Month in YYYY-MM format (default: current month)")
+	cmd.Flags().String("format", "text", "Output format: json, text, csv")
+	return cmd
+}
+
+// parseBudgetDuration parses human-readable durations like "30d", "2w", "4h"
+func parseBudgetDuration(s string) (time.Duration, error) {
+	if len(s) < 2 {
+		return 0, fmt.Errorf("invalid duration: %q", s)
+	}
+
+	unit := s[len(s)-1]
+	valueStr := s[:len(s)-1]
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid duration value %q: %w", valueStr, err)
+	}
+
+	switch unit {
+	case 'h':
+		return time.Duration(value * float64(time.Hour)), nil
+	case 'd':
+		return time.Duration(value * float64(24*time.Hour)), nil
+	case 'w':
+		return time.Duration(value * float64(7*24*time.Hour)), nil
+	case 'm':
+		return time.Duration(value * float64(30*24*time.Hour)), nil
+	default:
+		return 0, fmt.Errorf("unknown duration unit %q (use h, d, w, or m)", string(unit))
+	}
+}
+
+// Ensure unused imports are referenced
+var _ = csv.NewWriter
+var _ = json.NewEncoder
+var _ = strconv.ParseFloat
+var _ = strings.Contains
+var _ = context.Background

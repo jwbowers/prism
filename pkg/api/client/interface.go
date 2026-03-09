@@ -261,6 +261,37 @@ type PrismAPI interface {
 
 	// Version compatibility checking
 	CheckVersionCompatibility(context.Context, string) error
+
+	// v0.12.0 — Budget Enterprise & Governance
+
+	// Resource quota management (#151)
+	GetProjectQuotas(ctx context.Context, projectID string) ([]types.RoleQuota, error)
+	SetProjectQuota(ctx context.Context, projectID string, quota types.RoleQuota) error
+
+	// Grant period management (#152, #144)
+	GetGrantPeriod(ctx context.Context, projectID string) (*types.GrantPeriod, error)
+	SetGrantPeriod(ctx context.Context, projectID string, gp types.GrantPeriod) error
+	DeleteGrantPeriod(ctx context.Context, projectID string) error
+
+	// Budget sharing / reallocation (#143, #145, #155, #156)
+	ShareProjectBudget(ctx context.Context, req types.BudgetShareRequest) (*types.BudgetShareRecord, error)
+	ListProjectBudgetShares(ctx context.Context, projectID string) ([]*types.BudgetShareRecord, error)
+	DeleteProjectBudgetShare(ctx context.Context, projectID, shareID string) error
+
+	// Approval workflow (#148, #149, #153, #157)
+	SubmitApproval(ctx context.Context, projectID string, approvalType project.ApprovalType, details map[string]interface{}, reason string) (*project.ApprovalRequest, error)
+	ListApprovals(ctx context.Context, projectID string, status project.ApprovalStatus) ([]*project.ApprovalRequest, error)
+	ListAllApprovals(ctx context.Context, status project.ApprovalStatus) ([]*project.ApprovalRequest, error)
+	ApproveRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error)
+	DenyRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error)
+
+	// Monthly budget reports (#141)
+	GetMonthlyReport(ctx context.Context, projectID, month, format string) (string, error)
+
+	// Onboarding templates (#154)
+	ListOnboardingTemplates(ctx context.Context, projectID string) ([]types.OnboardingTemplate, error)
+	AddOnboardingTemplate(ctx context.Context, projectID string, tmpl types.OnboardingTemplate) error
+	DeleteOnboardingTemplate(ctx context.Context, projectID, nameOrID string) error
 }
 
 // Registry-specific response types for API operations

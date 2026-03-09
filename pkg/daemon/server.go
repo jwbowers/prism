@@ -100,6 +100,9 @@ type Server struct {
 
 	// GDEW tracker for egress waiver credit calculations (v0.11.0 - Issue #206)
 	gdewTracker *project.GDEWTracker
+
+	// Approval workflow manager (v0.12.0 - Issue #148/#149/#153/#157)
+	approvalManager *project.ApprovalManager
 }
 
 // awsInitResult bundles the outputs of initAWSManager.
@@ -414,6 +417,13 @@ func NewServer(port string) (*Server, error) {
 		gdewTracker:         project.NewGDEWTracker(),               // GDEW credit tracker (v0.11.0 - Issue #206)
 	}
 
+	// Initialize approval manager (v0.12.0 - Issue #148/#149/#153/#157)
+	if am, err := project.NewApprovalManager(); err == nil {
+		server.approvalManager = am
+	} else {
+		logger.Info(fmt.Sprintf("Warning: approval manager unavailable: %v", err))
+	}
+
 	// Load persisted idle schedules into scheduler (Issue #288)
 	if server.idleScheduler != nil {
 		server.loadIdleSchedules()
@@ -615,6 +625,9 @@ func (s *Server) Start() error {
 		}
 	}
 
+	// Start v0.12.0 background governance tickers
+	s.startGovernanceTickers(ctx)
+
 	// Handle graceful shutdown with recovery manager
 	s.startShutdownHandler(cancel)
 
@@ -692,6 +705,95 @@ func (s *Server) Cleanup() error {
 
 	logger.Info("Daemon cleanup completed successfully")
 	return nil
+}
+
+// startGovernanceTickers starts the v0.12.0 background governance maintenance routines:
+//   - Hourly: prune expired project members (#150), prune expired approval requests (#149)
+//   - Daily:  auto-freeze projects whose grant period has ended (#152)
+func (s *Server) startGovernanceTickers(ctx context.Context) {
+	// Hourly member/approval expiry pruning
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if s.projectManager != nil {
+					if removed, err := s.projectManager.PruneExpiredMembers(ctx); err != nil {
+						logger.Warn("PruneExpiredMembers failed", "error", err)
+					} else if len(removed) > 0 {
+						logger.Info("Pruned expired project members", "count", len(removed))
+					}
+				}
+				if s.approvalManager != nil {
+					if count, err := s.approvalManager.PruneExpired(); err != nil {
+						logger.Warn("PruneExpiredApprovals failed", "error", err)
+					} else if count > 0 {
+						logger.Info("Expired approval requests pruned", "count", count)
+					}
+				}
+			}
+		}
+	}()
+
+	// Every 5 minutes: stop/hibernate instances that have passed their ExpiresAt (#146)
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.checkExpiredInstances(ctx)
+			}
+		}
+	}()
+
+	// Daily grant period auto-freeze check
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if s.projectManager != nil {
+					if frozen, err := s.projectManager.CheckGrantPeriods(ctx); err != nil {
+						logger.Warn("CheckGrantPeriods failed", "error", err)
+					} else if len(frozen) > 0 {
+						logger.Info("Auto-froze projects at grant period end", "projects", frozen)
+					}
+				}
+			}
+		}
+	}()
+}
+
+// checkExpiredInstances stops/hibernates any instances whose ExpiresAt has passed (#146)
+func (s *Server) checkExpiredInstances(ctx context.Context) {
+	st, err := s.stateManager.LoadState()
+	if err != nil {
+		return
+	}
+
+	now := time.Now()
+	for _, inst := range st.Instances {
+		if inst.ExpiresAt == nil || !now.After(*inst.ExpiresAt) {
+			continue
+		}
+		if inst.State != "running" {
+			continue
+		}
+		logger.Info("Time-boxed instance expired, stopping", "instance", inst.Name, "expires_at", inst.ExpiresAt)
+		// Use hibernate if the instance supports it, otherwise stop
+		if s.awsManager != nil {
+			_ = s.awsManager.StopInstance(inst.Name)
+		}
+	}
 }
 
 // Legacy idle management removed
@@ -901,6 +1003,9 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// Project management operations
 	mux.HandleFunc("/api/v1/projects", applyMiddleware(s.handleProjectOperations))
 	mux.HandleFunc("/api/v1/projects/", applyMiddleware(s.handleProjectByID))
+
+	// Admin dashboard endpoints (v0.12.0)
+	mux.HandleFunc("/api/v1/admin/approvals", applyMiddleware(s.handleAdminApprovals))
 
 	// Budget management operations (v0.5.10 multi-budget system)
 	mux.HandleFunc("/api/v1/budgets", applyMiddleware(s.handleBudgetOperations))

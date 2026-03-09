@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -877,4 +878,381 @@ func (m *Manager) SetAlerter(d alerting.AlertDispatcher) {
 	if m.budgetTracker != nil {
 		m.budgetTracker.SetAlerter(d)
 	}
+}
+
+// ===========================================================================
+// v0.12.0: Time-Boxed Collaborator Access (#150)
+// ===========================================================================
+
+// PruneExpiredMembers removes members whose ExpiresAt has passed.
+// Intended to be called by a daemon background ticker (hourly).
+// Returns the list of removed member UserIDs.
+func (m *Manager) PruneExpiredMembers(ctx context.Context) ([]string, error) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	now := time.Now()
+	var removed []string
+
+	for _, project := range m.projects {
+		var remaining []types.ProjectMember
+		for _, member := range project.Members {
+			if member.ExpiresAt != nil && now.After(*member.ExpiresAt) {
+				removed = append(removed, fmt.Sprintf("%s/%s", project.ID, member.UserID))
+			} else {
+				remaining = append(remaining, member)
+			}
+		}
+		if len(remaining) != len(project.Members) {
+			project.Members = remaining
+			project.UpdatedAt = now
+		}
+	}
+
+	if len(removed) == 0 {
+		return nil, nil
+	}
+
+	return removed, m.saveProjects()
+}
+
+// ===========================================================================
+// v0.12.0: Resource Quotas by Role (#151)
+// ===========================================================================
+
+// CheckQuota verifies whether a launch by the given user satisfies the project's
+// role quotas. instanceCount is the number of instances already owned by this user.
+// Returns a non-nil error if the launch would violate a quota.
+func (m *Manager) CheckQuota(projectID, userID, instanceType string, instanceCount int) error {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return nil // no project = no quota constraint
+	}
+
+	if project.Budget == nil || len(project.Budget.RoleQuotas) == 0 {
+		return nil // no quotas configured
+	}
+
+	// Find the user's role
+	var userRole types.ProjectRole
+	for _, member := range project.Members {
+		if member.UserID == userID {
+			userRole = member.Role
+			break
+		}
+	}
+
+	if userRole == "" {
+		return nil // not a member, no quota
+	}
+
+	// Find the matching quota for this role
+	for _, quota := range project.Budget.RoleQuotas {
+		if quota.Role != userRole {
+			continue
+		}
+
+		// Check instance count
+		if quota.MaxInstances > 0 && instanceCount >= quota.MaxInstances {
+			return fmt.Errorf("quota exceeded: role %q is limited to %d instance(s) (currently have %d)",
+				userRole, quota.MaxInstances, instanceCount)
+		}
+
+		// Check instance type prefix
+		if quota.MaxInstanceType != "" && !strings.HasPrefix(instanceType, quota.MaxInstanceType) {
+			return fmt.Errorf("quota exceeded: role %q is limited to %s* instance types (requested %q)",
+				userRole, quota.MaxInstanceType, instanceType)
+		}
+
+		return nil // quota satisfied
+	}
+
+	return nil
+}
+
+// GetRoleQuotas returns the role quotas for a project's budget.
+func (m *Manager) GetRoleQuotas(projectID string) ([]types.RoleQuota, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return nil, fmt.Errorf("project %q not found", projectID)
+	}
+
+	if project.Budget == nil {
+		return nil, nil
+	}
+
+	return append([]types.RoleQuota(nil), project.Budget.RoleQuotas...), nil
+}
+
+// SetRoleQuota upserts a role quota for a project.
+func (m *Manager) SetRoleQuota(ctx context.Context, projectID string, quota types.RoleQuota) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project %q not found", projectID)
+	}
+
+	if project.Budget == nil {
+		project.Budget = &types.ProjectBudget{}
+	}
+
+	// Upsert
+	updated := false
+	for i, q := range project.Budget.RoleQuotas {
+		if q.Role == quota.Role {
+			project.Budget.RoleQuotas[i] = quota
+			updated = true
+			break
+		}
+	}
+	if !updated {
+		project.Budget.RoleQuotas = append(project.Budget.RoleQuotas, quota)
+	}
+
+	project.UpdatedAt = time.Now()
+	return m.saveProjects()
+}
+
+// ===========================================================================
+// v0.12.0: Grant Period Management (#152)
+// ===========================================================================
+
+// SetGrantPeriod sets the grant period for a project budget.
+func (m *Manager) SetGrantPeriod(ctx context.Context, projectID string, gp *types.GrantPeriod) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project %q not found", projectID)
+	}
+
+	if project.Budget == nil {
+		project.Budget = &types.ProjectBudget{}
+	}
+
+	project.Budget.GrantPeriod = gp
+	project.UpdatedAt = time.Now()
+	return m.saveProjects()
+}
+
+// GetGrantPeriod returns the current grant period for a project.
+func (m *Manager) GetGrantPeriod(projectID string) (*types.GrantPeriod, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return nil, fmt.Errorf("project %q not found", projectID)
+	}
+
+	if project.Budget == nil {
+		return nil, nil
+	}
+
+	return project.Budget.GrantPeriod, nil
+}
+
+// DeleteGrantPeriod removes the grant period from a project.
+func (m *Manager) DeleteGrantPeriod(ctx context.Context, projectID string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project %q not found", projectID)
+	}
+
+	if project.Budget != nil {
+		project.Budget.GrantPeriod = nil
+	}
+
+	project.UpdatedAt = time.Now()
+	return m.saveProjects()
+}
+
+// CheckGrantPeriods reviews all projects and auto-freezes any where the grant period
+// has ended and AutoFreeze=true. Intended to be called by a daemon ticker (daily).
+// Returns the list of auto-frozen project IDs.
+func (m *Manager) CheckGrantPeriods(ctx context.Context) ([]string, error) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	now := time.Now()
+	var frozen []string
+
+	for _, project := range m.projects {
+		if project.Budget == nil || project.Budget.GrantPeriod == nil {
+			continue
+		}
+		gp := project.Budget.GrantPeriod
+		if !gp.AutoFreeze || gp.FrozenAt != nil {
+			continue
+		}
+		if now.After(gp.EndDate) {
+			project.LaunchPrevented = true
+			project.Status = types.ProjectStatusPaused
+			project.UpdatedAt = now
+			gp.FrozenAt = &now
+			frozen = append(frozen, project.ID)
+		}
+	}
+
+	if len(frozen) == 0 {
+		return nil, nil
+	}
+
+	return frozen, m.saveProjects()
+}
+
+// CurrentMonthAllocation returns the per-month allocation for a multi-month budget (#144).
+// Returns TotalBudget if AllocationMonths <= 1.
+func (m *Manager) CurrentMonthAllocation(projectID string) (float64, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return 0, fmt.Errorf("project %q not found", projectID)
+	}
+
+	if project.Budget == nil {
+		return 0, nil
+	}
+
+	if project.Budget.MonthlyAmount > 0 {
+		return project.Budget.MonthlyAmount, nil
+	}
+
+	if project.Budget.AllocationMonths > 1 {
+		return project.Budget.TotalBudget / float64(project.Budget.AllocationMonths), nil
+	}
+
+	return project.Budget.TotalBudget, nil
+}
+
+// ===========================================================================
+// v0.12.0: Budget Sharing / Reallocation / Cross-Project Borrowing (#143,#145,#155,#156)
+// ===========================================================================
+
+// ShareBudget executes a budget share between projects or members.
+// The amount is subtracted from the source project's TotalBudget and added to
+// the destination, with a BudgetShareRecord created for audit purposes.
+func (m *Manager) ShareBudget(ctx context.Context, req *types.BudgetShareRequest, approvedBy string) (*types.BudgetShareRecord, error) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	// Validate source project
+	srcProject, exists := m.projects[req.FromProjectID]
+	if !exists {
+		return nil, fmt.Errorf("source project %q not found", req.FromProjectID)
+	}
+
+	if req.Amount <= 0 {
+		return nil, fmt.Errorf("share amount must be positive")
+	}
+
+	// Verify sufficient budget
+	if srcProject.Budget != nil {
+		available := srcProject.Budget.TotalBudget - srcProject.Budget.SpentAmount
+		if req.Amount > available {
+			return nil, fmt.Errorf("insufficient budget: requested $%.2f but only $%.2f available", req.Amount, available)
+		}
+
+		// Deduct from source
+		srcProject.Budget.TotalBudget -= req.Amount
+		srcProject.UpdatedAt = time.Now()
+	}
+
+	// Credit destination project if specified
+	if req.ToProjectID != "" {
+		dstProject, ok := m.projects[req.ToProjectID]
+		if !ok {
+			// Rollback source
+			if srcProject.Budget != nil {
+				srcProject.Budget.TotalBudget += req.Amount
+			}
+			return nil, fmt.Errorf("destination project %q not found", req.ToProjectID)
+		}
+		if dstProject.Budget == nil {
+			dstProject.Budget = &types.ProjectBudget{}
+		}
+		dstProject.Budget.TotalBudget += req.Amount
+		dstProject.UpdatedAt = time.Now()
+	}
+
+	record := &types.BudgetShareRecord{
+		ID:         uuid.New().String(),
+		Request:    *req,
+		ApprovedBy: approvedBy,
+		CreatedAt:  time.Now(),
+		ExpiresAt:  req.ExpiresAt,
+	}
+
+	if err := m.saveProjects(); err != nil {
+		return nil, fmt.Errorf("failed to save share: %w", err)
+	}
+
+	return record, nil
+}
+
+// ===========================================================================
+// v0.12.0: Onboarding Templates (#154)
+// ===========================================================================
+
+// SetOnboardingTemplate upserts an onboarding template for a project.
+func (m *Manager) SetOnboardingTemplate(ctx context.Context, projectID string, tmpl types.OnboardingTemplate) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project %q not found", projectID)
+	}
+
+	if tmpl.ID == "" {
+		tmpl.ID = uuid.New().String()
+	}
+
+	for i, t := range project.OnboardingTemplates {
+		if t.ID == tmpl.ID || t.Name == tmpl.Name {
+			project.OnboardingTemplates[i] = tmpl
+			project.UpdatedAt = time.Now()
+			return m.saveProjects()
+		}
+	}
+
+	project.OnboardingTemplates = append(project.OnboardingTemplates, tmpl)
+	project.UpdatedAt = time.Now()
+	return m.saveProjects()
+}
+
+// DeleteOnboardingTemplate removes an onboarding template by name or ID.
+func (m *Manager) DeleteOnboardingTemplate(ctx context.Context, projectID, nameOrID string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	project, exists := m.projects[projectID]
+	if !exists {
+		return fmt.Errorf("project %q not found", projectID)
+	}
+
+	var remaining []types.OnboardingTemplate
+	for _, t := range project.OnboardingTemplates {
+		if t.ID != nameOrID && t.Name != nameOrID {
+			remaining = append(remaining, t)
+		}
+	}
+
+	project.OnboardingTemplates = remaining
+	project.UpdatedAt = time.Now()
+	return m.saveProjects()
 }

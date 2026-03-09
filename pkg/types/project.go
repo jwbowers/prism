@@ -9,6 +9,24 @@ import (
 	"time"
 )
 
+// OnboardingTemplate defines a template applied to new project members on joining (#154)
+type OnboardingTemplate struct {
+	// ID is the unique onboarding template identifier
+	ID string `json:"id"`
+
+	// Name is the onboarding template name
+	Name string `json:"name"`
+
+	// Templates lists the Prism workspace templates to provision for new members
+	Templates []string `json:"templates"`
+
+	// BudgetLimit is the per-member budget allocation created automatically on join
+	BudgetLimit float64 `json:"budget_limit"`
+
+	// Tags are optional metadata for organization
+	Tags map[string]string `json:"tags,omitempty"`
+}
+
 // Project represents a research project with associated resources and budget
 type Project struct {
 	// ID is the unique project identifier
@@ -49,6 +67,9 @@ type Project struct {
 
 	// LaunchPrevented prevents new instance launches when true (set by budget actions)
 	LaunchPrevented bool `json:"launch_prevented"`
+
+	// OnboardingTemplates defines templates applied to new members on joining (#154)
+	OnboardingTemplates []OnboardingTemplate `json:"onboarding_templates,omitempty"`
 }
 
 // ProjectMember represents a project member with specific permissions
@@ -64,6 +85,12 @@ type ProjectMember struct {
 
 	// AddedBy is who added the member to the project
 	AddedBy string `json:"added_by"`
+
+	// ExpiresAt is when the member's access expires (nil = no expiry, #150)
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// WarnedExpiry tracks whether an expiry warning has been sent (#150)
+	WarnedExpiry bool `json:"warned_expiry,omitempty"`
 }
 
 // ProjectRole defines member permissions within a project
@@ -99,6 +126,39 @@ const (
 	// ProjectStatusArchived indicates an archived project
 	ProjectStatusArchived ProjectStatus = "archived"
 )
+
+// RoleQuota defines resource quotas for a specific project role (#151)
+type RoleQuota struct {
+	// Role is the project role this quota applies to
+	Role ProjectRole `json:"role"`
+
+	// MaxInstances is the maximum number of concurrent instances (-1 = unlimited)
+	MaxInstances int `json:"max_instances"`
+
+	// MaxInstanceType limits the instance type prefix (e.g. "t3" allows t3.* only; empty = unlimited)
+	MaxInstanceType string `json:"max_instance_type,omitempty"`
+
+	// MaxSpendDaily is the daily spend limit in USD (0 = unlimited)
+	MaxSpendDaily float64 `json:"max_spend_daily"`
+}
+
+// GrantPeriod tracks a grant funding period with optional auto-freeze (#152)
+type GrantPeriod struct {
+	// Name is the grant period name (e.g. "NSF Year 1")
+	Name string `json:"name"`
+
+	// StartDate is when the grant period begins
+	StartDate time.Time `json:"start_date"`
+
+	// EndDate is when the grant period ends
+	EndDate time.Time `json:"end_date"`
+
+	// AutoFreeze automatically pauses the project when EndDate passes
+	AutoFreeze bool `json:"auto_freeze"`
+
+	// FrozenAt records when the project was auto-frozen (nil = not frozen)
+	FrozenAt *time.Time `json:"frozen_at,omitempty"`
+}
 
 // ProjectBudget represents project budget configuration and tracking
 type ProjectBudget struct {
@@ -136,6 +196,25 @@ type ProjectBudget struct {
 	// When enabled, Prism takes action (hibernate/stop/etc.) before the full
 	// budget is exhausted, protecting against cost overruns.
 	Cushion *CushionBudgetConfig `json:"cushion,omitempty"`
+
+	// RoleQuotas defines per-role resource quotas (#151)
+	RoleQuotas []RoleQuota `json:"role_quotas,omitempty"`
+
+	// GrantPeriod tracks a funding grant period with auto-freeze (#152)
+	GrantPeriod *GrantPeriod `json:"grant_period,omitempty"`
+
+	// AllocationMonths is the number of months for multi-month budget allocation (#144)
+	// 0 = single period (legacy)
+	AllocationMonths int `json:"allocation_months,omitempty"`
+
+	// MonthlyAmount is the per-month allocation for multi-month grants (#144)
+	MonthlyAmount float64 `json:"monthly_amount,omitempty"`
+
+	// RolloverEnabled allows unspent budget to carry over to the next period (#143)
+	RolloverEnabled bool `json:"rollover_enabled,omitempty"`
+
+	// RolloverCap is the maximum dollar amount that can roll over (0 = unlimited) (#143)
+	RolloverCap float64 `json:"rollover_cap,omitempty"`
 }
 
 // CushionBudgetConfig is the budget-level cushion configuration stored in ProjectBudget.
@@ -473,4 +552,50 @@ type ProjectFundingSummary struct {
 
 	// DefaultAllocationID is the project's default funding source
 	DefaultAllocationID *string `json:"default_allocation_id,omitempty"`
+}
+
+// ============================================================================
+// v0.12.0: Budget Sharing, Reallocation, Cross-Project Borrowing (#143,#145,#155,#156)
+// ============================================================================
+
+// BudgetShareRequest represents a request to share or lend budget between projects or members
+type BudgetShareRequest struct {
+	// FromProjectID is the source project
+	FromProjectID string `json:"from_project_id"`
+
+	// ToProjectID is the destination project (nil for member reallocation)
+	ToProjectID string `json:"to_project_id,omitempty"`
+
+	// ToMemberID is the destination member (nil for cross-project share)
+	ToMemberID string `json:"to_member_id,omitempty"`
+
+	// Amount is the USD amount to share
+	Amount float64 `json:"amount"`
+
+	// Reason is an optional note for audit purposes
+	Reason string `json:"reason,omitempty"`
+
+	// ExpiresAt is when the share expires and should be auto-reversed (nil = permanent)
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+}
+
+// BudgetShareRecord records a completed budget share operation
+type BudgetShareRecord struct {
+	// ID is the unique share identifier
+	ID string `json:"id"`
+
+	// Request is the original share request
+	Request BudgetShareRequest `json:"request"`
+
+	// ApprovedBy is the user who approved the share
+	ApprovedBy string `json:"approved_by"`
+
+	// CreatedAt is when the share was created
+	CreatedAt time.Time `json:"created_at"`
+
+	// ExpiresAt is when the share expires (nil = permanent)
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Reversed indicates whether this share has been reversed
+	Reversed bool `json:"reversed"`
 }

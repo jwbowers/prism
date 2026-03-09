@@ -778,3 +778,87 @@ func (m *MockClient) CancelTransfer(ctx context.Context, transferID string) erro
 func (m *MockClient) MakeRequest(method, path string, body interface{}) ([]byte, error) {
 	return []byte(`{"success": true}`), nil
 }
+
+// v0.12.0 — Budget Enterprise & Governance mocks
+
+func (m *MockClient) GetProjectQuotas(ctx context.Context, projectID string) ([]types.RoleQuota, error) {
+	return []types.RoleQuota{}, nil
+}
+
+func (m *MockClient) SetProjectQuota(ctx context.Context, projectID string, quota types.RoleQuota) error {
+	return nil
+}
+
+func (m *MockClient) GetGrantPeriod(ctx context.Context, projectID string) (*types.GrantPeriod, error) {
+	return nil, nil
+}
+
+func (m *MockClient) SetGrantPeriod(ctx context.Context, projectID string, gp types.GrantPeriod) error {
+	return nil
+}
+
+func (m *MockClient) DeleteGrantPeriod(ctx context.Context, projectID string) error {
+	return nil
+}
+
+func (m *MockClient) ShareProjectBudget(ctx context.Context, req types.BudgetShareRequest) (*types.BudgetShareRecord, error) {
+	return &types.BudgetShareRecord{ID: "mock-share-id"}, nil
+}
+
+func (m *MockClient) ListProjectBudgetShares(ctx context.Context, projectID string) ([]*types.BudgetShareRecord, error) {
+	return []*types.BudgetShareRecord{}, nil
+}
+
+func (m *MockClient) DeleteProjectBudgetShare(ctx context.Context, projectID, shareID string) error {
+	return nil
+}
+
+func (m *MockClient) SubmitApproval(ctx context.Context, projectID string, approvalType project.ApprovalType, details map[string]interface{}, reason string) (*project.ApprovalRequest, error) {
+	return &project.ApprovalRequest{
+		ID:        "mock-approval-id",
+		ProjectID: projectID,
+		Type:      approvalType,
+		Status:    project.ApprovalStatusPending,
+		Reason:    reason,
+	}, nil
+}
+
+func (m *MockClient) ListApprovals(ctx context.Context, projectID string, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
+	return []*project.ApprovalRequest{}, nil
+}
+
+func (m *MockClient) ListAllApprovals(ctx context.Context, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
+	return []*project.ApprovalRequest{}, nil
+}
+
+func (m *MockClient) ApproveRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
+	return &project.ApprovalRequest{
+		ID:        requestID,
+		ProjectID: projectID,
+		Status:    project.ApprovalStatusApproved,
+	}, nil
+}
+
+func (m *MockClient) DenyRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
+	return &project.ApprovalRequest{
+		ID:        requestID,
+		ProjectID: projectID,
+		Status:    project.ApprovalStatusDenied,
+	}, nil
+}
+
+func (m *MockClient) GetMonthlyReport(ctx context.Context, projectID, month, format string) (string, error) {
+	return "Monthly Report: " + projectID + " " + month, nil
+}
+
+func (m *MockClient) ListOnboardingTemplates(ctx context.Context, projectID string) ([]types.OnboardingTemplate, error) {
+	return []types.OnboardingTemplate{}, nil
+}
+
+func (m *MockClient) AddOnboardingTemplate(ctx context.Context, projectID string, tmpl types.OnboardingTemplate) error {
+	return nil
+}
+
+func (m *MockClient) DeleteOnboardingTemplate(ctx context.Context, projectID, nameOrID string) error {
+	return nil
+}
