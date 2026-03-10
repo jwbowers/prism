@@ -118,10 +118,11 @@ test.describe('Form Validation', () => {
       await createButton.click();
 
       // Wait for dialog
-      await page.getByRole('dialog', { name: /create.*project/i }).waitFor({ state: 'visible', timeout: 5000 });
+      const createDialog = page.getByRole('dialog', { name: /create.*project/i });
+      await createDialog.waitFor({ state: 'visible', timeout: 5000 });
 
-      // Fill form with valid data
-      const nameInput = page.getByLabel(/project name/i);
+      // Fill form with valid data — scope to dialog to avoid matching hidden Edit Project modal
+      const nameInput = createDialog.getByLabel(/project name/i);
       const descriptionInput = page.getByTestId('project-description-input').locator('textarea');
 
       await nameInput.fill('test-project');
@@ -239,8 +240,8 @@ test.describe('Form Validation', () => {
       const dialog = page.getByRole('dialog', { name: /create.*project/i });
       await expect(dialog).toBeVisible();
 
-      // Verify inputs are within the dialog
-      const nameInput = page.getByLabel(/project name/i);
+      // Verify inputs are within the dialog — scope to dialog to avoid hidden Edit Project modal
+      const nameInput = dialog.getByLabel(/project name/i);
       await expect(nameInput).toBeVisible();
     } else {
       test.skip();

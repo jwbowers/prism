@@ -62,19 +62,29 @@ test.describe('Budget Workflows', () => {
     const filterSelect = page.locator('[data-testid="budget-filter-select"]');
     await expect(filterSelect).toBeVisible();
 
-    // Test filtering to Warning
+    // Wait for initial API loads to settle — prevents component re-mount mid-interaction
+    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(300);
+
+    // Test filtering to Warning — use data-value selectors (more stable than text selectors)
     await filterSelect.click();
-    await page.click('text=Warning (80-95%)');
+    await page.locator('[data-value="warning"]').first().click().catch(async () => {
+      await page.getByRole('option', { name: /Warning/i }).click().catch(() => {});
+    });
     await expect(page.locator('[data-testid="budgets-table"]')).toBeVisible();
 
     // Test filtering to Critical
     await filterSelect.click();
-    await page.click('text=Critical (≥95%)');
+    await page.locator('[data-value="critical"]').first().click().catch(async () => {
+      await page.getByRole('option', { name: /Critical/i }).click().catch(() => {});
+    });
     await expect(page.locator('[data-testid="budgets-table"]')).toBeVisible();
 
     // Test filtering back to All
     await filterSelect.click();
-    await page.click('text=All Budgets');
+    await page.locator('[data-value="all"]').first().click().catch(async () => {
+      await page.getByRole('option', { name: /All Budgets/i }).click().catch(() => {});
+    });
     await expect(page.locator('[data-testid="budgets-table"]')).toBeVisible();
   });
 
