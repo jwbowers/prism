@@ -2125,3 +2125,646 @@ func TestManager_CheckBudgetStatus(t *testing.T) {
 	// This may return an error if budget tracker isn't fully initialized, but it exercises the code path
 	_, _ = manager.CheckBudgetStatus(ctx, projectWithBudget.ID)
 }
+
+// ============ v0.12.0 Tests ============
+
+// ---------------------------------------------------------------------------
+// CheckQuota / SetRoleQuota / GetRoleQuotas (#151)
+// ---------------------------------------------------------------------------
+
+func TestManager_CheckQuota_UnderLimit(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Quota Under Limit",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// Give the project a budget with a quota for members: max 2 instances.
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{
+		TotalBudget: 1000.0,
+		RoleQuotas: []types.RoleQuota{
+			{Role: types.ProjectRoleMember, MaxInstances: 2},
+		},
+	})
+	require.NoError(t, err)
+
+	// Add a member with the "member" role.
+	err = manager.AddProjectMember(ctx, project.ID, &types.ProjectMember{
+		UserID: "user-1",
+		Role:   types.ProjectRoleMember,
+	})
+	require.NoError(t, err)
+
+	// Currently holding 1 instance (< 2) — should be allowed.
+	err = manager.CheckQuota(project.ID, "user-1", "t3.medium", 1)
+	assert.NoError(t, err)
+}
+
+func TestManager_CheckQuota_AtLimit(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Quota At Limit",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{
+		TotalBudget: 1000.0,
+		RoleQuotas: []types.RoleQuota{
+			{Role: types.ProjectRoleMember, MaxInstances: 2},
+		},
+	})
+	require.NoError(t, err)
+
+	err = manager.AddProjectMember(ctx, project.ID, &types.ProjectMember{
+		UserID: "user-1",
+		Role:   types.ProjectRoleMember,
+	})
+	require.NoError(t, err)
+
+	// Already has 2 instances (== MaxInstances) — should be rejected.
+	err = manager.CheckQuota(project.ID, "user-1", "t3.medium", 2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "quota exceeded")
+}
+
+func TestManager_CheckQuota_NoQuota(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "No Quota Project",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.AddProjectMember(ctx, project.ID, &types.ProjectMember{
+		UserID: "user-1",
+		Role:   types.ProjectRoleMember,
+	})
+	require.NoError(t, err)
+
+	// No budget / no quotas → always allowed.
+	err = manager.CheckQuota(project.ID, "user-1", "c5.2xlarge", 99)
+	assert.NoError(t, err)
+}
+
+func TestManager_CheckQuota_InstanceType(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Quota InstanceType",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{
+		TotalBudget: 1000.0,
+		RoleQuotas: []types.RoleQuota{
+			{Role: types.ProjectRoleMember, MaxInstanceType: "t3"},
+		},
+	})
+	require.NoError(t, err)
+
+	err = manager.AddProjectMember(ctx, project.ID, &types.ProjectMember{
+		UserID: "user-1",
+		Role:   types.ProjectRoleMember,
+	})
+	require.NoError(t, err)
+
+	// t3.medium matches "t3" prefix — allowed.
+	err = manager.CheckQuota(project.ID, "user-1", "t3.medium", 0)
+	assert.NoError(t, err)
+
+	// c5.2xlarge does NOT match "t3" prefix — rejected.
+	err = manager.CheckQuota(project.ID, "user-1", "c5.2xlarge", 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "quota exceeded")
+}
+
+func TestManager_SetGetRoleQuotas(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "SetGet Quotas",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// Ensure the project has a budget before setting quotas.
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{TotalBudget: 500.0})
+	require.NoError(t, err)
+
+	quota := types.RoleQuota{Role: types.ProjectRoleMember, MaxInstances: 3}
+	err = manager.SetRoleQuota(ctx, project.ID, quota)
+	require.NoError(t, err)
+
+	quotas, err := manager.GetRoleQuotas(project.ID)
+	require.NoError(t, err)
+	require.Len(t, quotas, 1)
+	assert.Equal(t, types.ProjectRoleMember, quotas[0].Role)
+	assert.Equal(t, 3, quotas[0].MaxInstances)
+}
+
+// ---------------------------------------------------------------------------
+// Grant period (#152)
+// ---------------------------------------------------------------------------
+
+func TestManager_SetGetGrantPeriod(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Grant Period Test",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{TotalBudget: 1000.0})
+	require.NoError(t, err)
+
+	gp := &types.GrantPeriod{
+		Name:       "NSF Year 1",
+		StartDate:  time.Now().Add(-30 * 24 * time.Hour),
+		EndDate:    time.Now().Add(335 * 24 * time.Hour),
+		AutoFreeze: true,
+	}
+	err = manager.SetGrantPeriod(ctx, project.ID, gp)
+	require.NoError(t, err)
+
+	got, err := manager.GetGrantPeriod(project.ID)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, "NSF Year 1", got.Name)
+	assert.True(t, got.AutoFreeze)
+}
+
+func TestManager_DeleteGrantPeriod(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Delete Grant Period",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{TotalBudget: 1000.0})
+	require.NoError(t, err)
+
+	gp := &types.GrantPeriod{Name: "Temp Grant", StartDate: time.Now(), EndDate: time.Now().Add(24 * time.Hour)}
+	err = manager.SetGrantPeriod(ctx, project.ID, gp)
+	require.NoError(t, err)
+
+	err = manager.DeleteGrantPeriod(ctx, project.ID)
+	require.NoError(t, err)
+
+	got, err := manager.GetGrantPeriod(project.ID)
+	require.NoError(t, err)
+	assert.Nil(t, got, "grant period should be nil after deletion")
+}
+
+func TestManager_CheckGrantPeriods_NotExpired(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Grant Not Expired",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{TotalBudget: 1000.0})
+	require.NoError(t, err)
+
+	// EndDate is in the future.
+	gp := &types.GrantPeriod{
+		Name:       "Future Grant",
+		StartDate:  time.Now().Add(-24 * time.Hour),
+		EndDate:    time.Now().Add(365 * 24 * time.Hour),
+		AutoFreeze: true,
+	}
+	err = manager.SetGrantPeriod(ctx, project.ID, gp)
+	require.NoError(t, err)
+
+	frozen, err := manager.CheckGrantPeriods(ctx)
+	require.NoError(t, err)
+	assert.NotContains(t, frozen, project.ID, "project should not be frozen when grant has not expired")
+}
+
+func TestManager_CheckGrantPeriods_AutoFreeze(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Auto Freeze Grant",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{TotalBudget: 1000.0})
+	require.NoError(t, err)
+
+	// EndDate is in the past and AutoFreeze=true.
+	gp := &types.GrantPeriod{
+		Name:       "Expired Grant",
+		StartDate:  time.Now().Add(-60 * 24 * time.Hour),
+		EndDate:    time.Now().Add(-1 * time.Second),
+		AutoFreeze: true,
+	}
+	err = manager.SetGrantPeriod(ctx, project.ID, gp)
+	require.NoError(t, err)
+
+	frozen, err := manager.CheckGrantPeriods(ctx)
+	require.NoError(t, err)
+	assert.Contains(t, frozen, project.ID, "project should be auto-frozen when grant has expired with AutoFreeze=true")
+
+	// Verify the project was actually paused.
+	got, err := manager.GetProject(ctx, project.ID)
+	require.NoError(t, err)
+	assert.Equal(t, types.ProjectStatusPaused, got.Status)
+	assert.True(t, got.LaunchPrevented)
+}
+
+func TestManager_CheckGrantPeriods_NoAutoFreeze(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "No Auto Freeze",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{TotalBudget: 1000.0})
+	require.NoError(t, err)
+
+	// EndDate is in the past but AutoFreeze=false.
+	gp := &types.GrantPeriod{
+		Name:       "Expired No Freeze",
+		StartDate:  time.Now().Add(-60 * 24 * time.Hour),
+		EndDate:    time.Now().Add(-1 * time.Second),
+		AutoFreeze: false,
+	}
+	err = manager.SetGrantPeriod(ctx, project.ID, gp)
+	require.NoError(t, err)
+
+	frozen, err := manager.CheckGrantPeriods(ctx)
+	require.NoError(t, err)
+	assert.NotContains(t, frozen, project.ID, "project should NOT be frozen when AutoFreeze=false")
+}
+
+// ---------------------------------------------------------------------------
+// Multi-month allocation (#144)
+// ---------------------------------------------------------------------------
+
+func TestManager_CurrentMonthAllocation_MonthlyAmount(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Monthly Amount Project",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{
+		TotalBudget:   1200.0,
+		MonthlyAmount: 150.0,
+	})
+	require.NoError(t, err)
+
+	alloc, err := manager.CurrentMonthAllocation(project.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 150.0, alloc, "should return MonthlyAmount when set")
+}
+
+func TestManager_CurrentMonthAllocation_MultiMonth(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Multi Month Project",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// TotalBudget=1200 over 4 months → 300/month.
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{
+		TotalBudget:      1200.0,
+		AllocationMonths: 4,
+	})
+	require.NoError(t, err)
+
+	alloc, err := manager.CurrentMonthAllocation(project.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 300.0, alloc, "should return TotalBudget/AllocationMonths")
+}
+
+func TestManager_CurrentMonthAllocation_Default(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Default Allocation Project",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, project.ID, &types.ProjectBudget{
+		TotalBudget: 500.0,
+		// No MonthlyAmount, no AllocationMonths.
+	})
+	require.NoError(t, err)
+
+	alloc, err := manager.CurrentMonthAllocation(project.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 500.0, alloc, "should return TotalBudget when no monthly breakdown set")
+}
+
+// ---------------------------------------------------------------------------
+// Member expiry (#150)
+// ---------------------------------------------------------------------------
+
+func TestManager_PruneExpiredMembers_None(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Prune None",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// Member with no expiry.
+	err = manager.AddProjectMember(ctx, project.ID, &types.ProjectMember{
+		UserID: "permanent-user",
+		Role:   types.ProjectRoleMember,
+	})
+	require.NoError(t, err)
+
+	removed, err := manager.PruneExpiredMembers(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, removed, "no members should be pruned when none have expired")
+}
+
+func TestManager_PruneExpiredMembers_Expired(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Prune Expired",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// Add a member whose expiry is in the past.
+	past := time.Now().Add(-time.Hour)
+	err = manager.AddProjectMember(ctx, project.ID, &types.ProjectMember{
+		UserID:    "expired-user",
+		Role:      types.ProjectRoleMember,
+		ExpiresAt: &past,
+	})
+	require.NoError(t, err)
+
+	removed, err := manager.PruneExpiredMembers(ctx)
+	require.NoError(t, err)
+	assert.NotEmpty(t, removed, "expired member should be pruned")
+
+	// Verify the member is no longer in the project.
+	got, err := manager.GetProject(ctx, project.ID)
+	require.NoError(t, err)
+	for _, m := range got.Members {
+		assert.NotEqual(t, "expired-user", m.UserID, "expired user should have been removed")
+	}
+}
+
+func TestManager_PruneExpiredMembers_Active(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Prune Active Only",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// Member whose expiry is in the future — should NOT be pruned.
+	future := time.Now().Add(24 * time.Hour)
+	err = manager.AddProjectMember(ctx, project.ID, &types.ProjectMember{
+		UserID:    "future-user",
+		Role:      types.ProjectRoleMember,
+		ExpiresAt: &future,
+	})
+	require.NoError(t, err)
+
+	removed, err := manager.PruneExpiredMembers(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, removed, "non-expired member should not be pruned")
+}
+
+// ---------------------------------------------------------------------------
+// Budget sharing (#143,#155,#156)
+// ---------------------------------------------------------------------------
+
+func TestManager_ShareBudget_Basic(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	src, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Share Source",
+		Owner: "admin",
+	})
+	require.NoError(t, err)
+
+	dst, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Share Destination",
+		Owner: "admin",
+	})
+	require.NoError(t, err)
+
+	// Give source project a budget of $1000 (SpentAmount=0 → $1000 available).
+	err = manager.SetProjectBudget(ctx, src.ID, &types.ProjectBudget{
+		TotalBudget: 1000.0,
+		SpentAmount: 0.0,
+	})
+	require.NoError(t, err)
+
+	req := &types.BudgetShareRequest{
+		FromProjectID: src.ID,
+		ToProjectID:   dst.ID,
+		Amount:        200.0,
+	}
+	record, err := manager.ShareBudget(ctx, req, "admin")
+	require.NoError(t, err)
+	require.NotNil(t, record)
+
+	// Source budget should be reduced by 200.
+	srcProject, err := manager.GetProject(ctx, src.ID)
+	require.NoError(t, err)
+	require.NotNil(t, srcProject.Budget)
+	assert.Equal(t, 800.0, srcProject.Budget.TotalBudget, "source TotalBudget should be reduced")
+
+	// Destination budget should be increased by 200.
+	dstProject, err := manager.GetProject(ctx, dst.ID)
+	require.NoError(t, err)
+	require.NotNil(t, dstProject.Budget)
+	assert.Equal(t, 200.0, dstProject.Budget.TotalBudget, "destination TotalBudget should be increased")
+}
+
+func TestManager_ShareBudget_InsufficientFunds(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	src, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Insufficient Source",
+		Owner: "admin",
+	})
+	require.NoError(t, err)
+
+	dst, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Insufficient Dest",
+		Owner: "admin",
+	})
+	require.NoError(t, err)
+
+	err = manager.SetProjectBudget(ctx, src.ID, &types.ProjectBudget{
+		TotalBudget: 1000.0,
+		SpentAmount: 0.0,
+	})
+	require.NoError(t, err)
+
+	// Attempt to share more than available.
+	req := &types.BudgetShareRequest{
+		FromProjectID: src.ID,
+		ToProjectID:   dst.ID,
+		Amount:        1001.0,
+	}
+	_, err = manager.ShareBudget(ctx, req, "admin")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "insufficient budget")
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding templates (#154)
+// ---------------------------------------------------------------------------
+
+func TestManager_SetOnboardingTemplate_New(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Onboarding New",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	tmpl := types.OnboardingTemplate{
+		Name:        "Welcome",
+		Templates:   []string{"python-ml"},
+		BudgetLimit: 100.0,
+	}
+	err = manager.SetOnboardingTemplate(ctx, project.ID, tmpl)
+	require.NoError(t, err)
+
+	got, err := manager.GetProject(ctx, project.ID)
+	require.NoError(t, err)
+	require.Len(t, got.OnboardingTemplates, 1)
+	assert.Equal(t, "Welcome", got.OnboardingTemplates[0].Name)
+	assert.NotEmpty(t, got.OnboardingTemplates[0].ID, "ID should be auto-generated")
+}
+
+func TestManager_SetOnboardingTemplate_Update(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Onboarding Update",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// Create initial template.
+	tmpl := types.OnboardingTemplate{
+		Name:        "Welcome",
+		BudgetLimit: 100.0,
+	}
+	err = manager.SetOnboardingTemplate(ctx, project.ID, tmpl)
+	require.NoError(t, err)
+
+	// Update template with same Name — should upsert, not duplicate.
+	tmpl.BudgetLimit = 200.0
+	err = manager.SetOnboardingTemplate(ctx, project.ID, tmpl)
+	require.NoError(t, err)
+
+	got, err := manager.GetProject(ctx, project.ID)
+	require.NoError(t, err)
+	require.Len(t, got.OnboardingTemplates, 1, "should have exactly 1 template after upsert")
+	assert.Equal(t, 200.0, got.OnboardingTemplates[0].BudgetLimit)
+}
+
+func TestManager_DeleteOnboardingTemplate(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Onboarding Delete",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	tmpl := types.OnboardingTemplate{Name: "Bye"}
+	err = manager.SetOnboardingTemplate(ctx, project.ID, tmpl)
+	require.NoError(t, err)
+
+	err = manager.DeleteOnboardingTemplate(ctx, project.ID, "Bye")
+	require.NoError(t, err)
+
+	got, err := manager.GetProject(ctx, project.ID)
+	require.NoError(t, err)
+	assert.Empty(t, got.OnboardingTemplates, "template should have been removed")
+}
+
+func TestManager_DeleteOnboardingTemplate_NotFound(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+	ctx := context.Background()
+
+	project, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Onboarding Delete NotFound",
+		Owner: "owner",
+	})
+	require.NoError(t, err)
+
+	// Deleting a non-existent template by name should return nil (silently a no-op).
+	err = manager.DeleteOnboardingTemplate(ctx, project.ID, "does-not-exist")
+	assert.NoError(t, err, "deleting a non-existent onboarding template should not error")
+}

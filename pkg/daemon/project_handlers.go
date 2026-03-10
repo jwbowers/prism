@@ -265,10 +265,14 @@ func (s *Server) calculateProjectCost(projectID string) float64 {
 }
 
 func (s *Server) buildBudgetStatusSummary(budget *types.ProjectBudget) *project.BudgetStatusSummary {
+	var spentPercentage float64
+	if budget.TotalBudget > 0 {
+		spentPercentage = budget.SpentAmount / budget.TotalBudget
+	}
 	return &project.BudgetStatusSummary{
 		TotalBudget:     budget.TotalBudget,
 		SpentAmount:     budget.SpentAmount,
-		SpentPercentage: budget.SpentAmount / budget.TotalBudget,
+		SpentPercentage: spentPercentage,
 		AlertCount:      len(budget.AlertThresholds),
 	}
 }

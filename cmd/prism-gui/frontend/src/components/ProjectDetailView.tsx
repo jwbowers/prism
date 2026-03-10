@@ -13,8 +13,10 @@ import {
   Select,
   Modal,
   Form,
-  FormField
+  FormField,
+  Tabs
 } from '@cloudscape-design/components';
+import { GovernancePanel } from './GovernancePanel';
 
 interface ProjectMember {
   user_id: string;
@@ -57,6 +59,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
   const [editMemberModalVisible, setEditMemberModalVisible] = React.useState(false);
   const [memberToEdit, setMemberToEdit] = React.useState<ProjectMember | null>(null);
   const [editMemberRole, setEditMemberRole] = React.useState('');
+  const [activeDetailTab, setActiveDetailTab] = React.useState('info');
 
   React.useEffect(() => {
     loadProjectDetails();
@@ -134,6 +137,17 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
       >
         {project.name}
       </Header>
+
+      <Tabs
+        data-testid="project-detail-tabs"
+        activeTabId={activeDetailTab}
+        onChange={({ detail }) => setActiveDetailTab(detail.activeTabId)}
+        tabs={[
+          {
+            id: 'info',
+            label: 'Overview',
+            content: (
+              <SpaceBetween size="l">
 
       {/* Project Information */}
       <Container header={<Header variant="h2">Project Information</Header>}>
@@ -371,6 +385,17 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
           </Form>
         </Modal>
       </Container>
+
+              </SpaceBetween>
+            )
+          },
+          {
+            id: 'governance',
+            label: 'Governance',
+            content: <GovernancePanel projectId={projectId} />
+          }
+        ]}
+      />
     </SpaceBetween>
   );
 };

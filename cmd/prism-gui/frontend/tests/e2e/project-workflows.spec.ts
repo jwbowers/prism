@@ -43,7 +43,8 @@ test.describe('Project Management Workflows', () => {
           /^spend-test-/,             // Spending test projects
           /^alert-test-/,             // Alert test projects
           /^exceeded-test-/,          // Budget exceeded test projects
-          /^active-delete-test-/      // Active delete test projects
+          /^active-delete-test-/,     // Active delete test projects
+          /^gov-test-/                // Governance E2E test projects
         ];
 
         let deletedCount = 0;

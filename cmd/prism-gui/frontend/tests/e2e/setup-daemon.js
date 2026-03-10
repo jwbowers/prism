@@ -154,6 +154,77 @@ async function cleanupTestUsers() {
   }
 }
 
+// Delete test projects that accumulated from previous test runs.
+// Runs after daemon starts to keep the project table clean so pagination doesn't hide
+// newly-created test projects (Cloudscape Table only renders the current page).
+async function cleanupTestProjects() {
+  const testProjectPatterns = [
+    /^list-test-/,
+    /^active-project-/,
+    /^suspended-project-/,
+    /^cancel-delete-test-/,
+    /^delete-test-/,
+    /^test-project-/,
+    /^view-test-/,
+    /^budget-view-test-/,
+    /^budget-test-/,
+    /^duplicate-test-/,
+    /^spend-test-/,
+    /^alert-test-/,
+    /^exceeded-test-/,
+    /^active-delete-test-/,
+    /^gov-test-/,           // includes gov-test-e2e-shared
+    // Invitation workflow test projects (created with timestamps appended)
+    /^Membership Test /,
+    /^Dialog Test /,
+    /^Stats Test /,
+    /^Expiration Test /,
+    /^Email Validation Test /,
+    /^Welcome Message Test /,
+    /^Decline Test /,
+    /^Decline Dialog Test /,
+    /^Results Summary Test /,
+    /^Decline Reason Test /,
+    /^test-collab-project/,
+    /^test-invitation-project/,
+  ]
+
+  try {
+    const res = await fetch('http://localhost:8947/api/v1/projects')
+    if (!res.ok) return
+
+    // Guard against empty/invalid JSON during daemon startup
+    const text = await res.text()
+    if (!text || !text.trim()) return
+    const data = JSON.parse(text)
+    const projects = data.projects || []
+
+    const testProjects = projects.filter(p =>
+      p.name && testProjectPatterns.some(pat => pat.test(p.name))
+    )
+
+    if (testProjects.length === 0) {
+      console.log('[setup-daemon] No leftover test projects found')
+      return
+    }
+
+    console.log(`[setup-daemon] Cleaning up ${testProjects.length} leftover test projects...`)
+    let deleted = 0
+    for (const project of testProjects) {
+      const delRes = await fetch(`http://localhost:8947/api/v1/projects/${project.id}`, {
+        method: 'DELETE'
+      }).catch(() => null)
+      if (delRes && (delRes.status === 204 || delRes.status === 200 || delRes.status === 404)) {
+        deleted++
+      }
+    }
+    console.log(`[setup-daemon] Project cleanup: removed ${deleted}/${testProjects.length} test projects`)
+  } catch (e) {
+    // Non-critical — tests can still run if cleanup fails
+    console.log(`[setup-daemon] Project cleanup skipped: ${e.message}`)
+  }
+}
+
 // Delete test storage volumes (EFS + EBS) that accumulated from previous test runs.
 // Runs after daemon starts to ensure a clean slate before storage tests begin.
 // Prevents failures caused by stale volumes in transitional states (creating, deleting, etc.)
@@ -310,4 +381,67 @@ async function stopDaemon(pid) {
   }
 }
 
-export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestStorage, checkZombieInstances }
+// Create the shared governance E2E test project.
+// Called from global-setup.js after cleanupTestProjects() so the project
+// exists for the ENTIRE test run without per-describe beforeAll/afterAll lifecycle issues.
+async function createGovernanceTestProject() {
+  const projectName = 'gov-test-e2e-shared'
+
+  // Helper: parse JSON response safely, returns null on empty/invalid
+  const safeJson = async (res) => {
+    const text = await res.text()
+    if (!text || !text.trim()) return null
+    try { return JSON.parse(text) } catch { return null }
+  }
+
+  // Helper: list projects with retry (daemon may return empty briefly at startup)
+  const listProjects = async (retries = 5, delayMs = 400) => {
+    for (let i = 0; i < retries; i++) {
+      const res = await fetch('http://localhost:8947/api/v1/projects')
+      if (res.ok) {
+        const data = await safeJson(res)
+        if (data) return data.projects || []
+      }
+      if (i < retries - 1) await new Promise(r => setTimeout(r, delayMs))
+    }
+    return null
+  }
+
+  try {
+    // Check if it already exists (persisted from previous run)
+    const projects = await listProjects()
+    if (projects) {
+      const existing = projects.find(p => p.name === projectName)
+      if (existing) {
+        console.log(`[setup-daemon] Governance test project already exists: ${existing.id}`)
+        return
+      }
+    }
+
+    // Create new project
+    const resp = await fetch('http://localhost:8947/api/v1/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: projectName, description: 'Governance E2E test project', owner: 'test-user' })
+    })
+    if (resp.ok) {
+      const project = await safeJson(resp)
+      console.log(`[setup-daemon] Created governance test project: ${project?.id || '?'}`)
+    } else if (resp.status === 409) {
+      // Race condition: project was created between our list and create calls — look it up
+      const projects2 = await listProjects()
+      const existing = (projects2 || []).find(p => p.name === projectName)
+      if (existing) {
+        console.log(`[setup-daemon] Governance test project found after 409: ${existing.id}`)
+      } else {
+        console.log(`[setup-daemon] Governance test project conflict (409) but not found in list`)
+      }
+    } else {
+      console.log(`[setup-daemon] Failed to create governance test project: ${resp.status}`)
+    }
+  } catch (e) {
+    console.log(`[setup-daemon] Governance test project creation skipped: ${e.message}`)
+  }
+}
+
+export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestProjects, cleanupTestStorage, createGovernanceTestProject, checkZombieInstances }

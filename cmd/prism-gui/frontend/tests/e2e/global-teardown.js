@@ -11,18 +11,23 @@
 // doing so would terminate a co-running tier (e.g., killing serial's daemon when
 // fast tier finishes after ~10 minutes).
 
-import { isDaemonRunning, cleanupTestStorage, checkZombieInstances } from './setup-daemon.js'
+import { isDaemonRunning, cleanupTestProjects, cleanupTestStorage, checkZombieInstances } from './setup-daemon.js'
 
 async function globalTeardown() {
   console.log('[teardown] Running post-test cleanup...')
 
-  // Clean up any remaining test storage volumes.
-  // This catches the shared volumes (test-setup-efs, test-setup-ebs) which are never
-  // deleted by individual tests, plus any volumes from tests that timed out.
   if (await isDaemonRunning()) {
+    // Clean up test projects that accumulated across test runs.
+    // Prevents Cloudscape Table pagination from hiding newly-created projects
+    // (table only renders the current page, so 600+ projects means new ones aren't visible).
+    await cleanupTestProjects()
+
+    // Clean up any remaining test storage volumes.
+    // This catches the shared volumes (test-setup-efs, test-setup-ebs) which are never
+    // deleted by individual tests, plus any volumes from tests that timed out.
     await cleanupTestStorage()
   } else {
-    console.log('[teardown] Daemon not running - skipping storage cleanup (already cleaned up)')
+    console.log('[teardown] Daemon not running - skipping cleanup (already cleaned up)')
   }
 
   // Check for zombie Prism-managed EC2 instances left running in AWS.

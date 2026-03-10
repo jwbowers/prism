@@ -1,5 +1,5 @@
 // Global setup for Playwright tests
-import { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestStorage } from './setup-daemon.js'
+import { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestProjects, cleanupTestStorage, createGovernanceTestProject } from './setup-daemon.js'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
@@ -59,9 +59,24 @@ async function globalSetup() {
   console.log('Starting daemon for tests with PRISM_TEST_MODE...')
   daemonPid = await startDaemon()
 
+  // Brief pause to allow the daemon's HTTP handler registration to fully complete.
+  // The ping endpoint responds quickly, but project/storage handlers may need
+  // a moment to finish initializing in-memory data structures.
+  await new Promise(resolve => setTimeout(resolve, 500))
+
   // Remove test users left over from previous runs before tests start.
   // Prevents cleanupTestUsers() helpers from overflowing when 100+ users accumulate.
   await cleanupTestUsers()
+
+  // Remove test projects left over from previous runs before tests start.
+  // Cloudscape Table only renders the current page (~20 items), so accumulated test projects
+  // (e.g., 600+) push newly-created projects off page 1, making row lookups fail.
+  await cleanupTestProjects()
+
+  // Create the shared governance E2E test project so it exists for the entire run.
+  // governance-workflows.spec.ts tests look up this project by name; having it pre-created
+  // avoids beforeAll/afterAll lifecycle issues when Playwright re-evaluates the spec per describe group.
+  await createGovernanceTestProject()
 
   // Remove test storage volumes (EFS + EBS) left over from previous runs.
   // Stale volumes in transitional states (creating, deleting) cause storage test failures:
