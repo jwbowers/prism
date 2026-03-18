@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -322,7 +324,10 @@ type UserDataProcessor struct {
 	region  string
 }
 
-// ProcessUserData configures and encodes user data for instance launch
+// ProcessUserData configures and encodes user data for instance launch.
+// The script is gzip-compressed before base64-encoding so that large
+// cloud-init scripts stay within EC2's 16 KB (25 600 bytes encoded) limit.
+// cloud-init transparently detects and decompresses gzipped user data.
 func (p *UserDataProcessor) ProcessUserData(template *ctypes.RuntimeTemplate, req ctypes.LaunchRequest) string {
 	userData := template.UserData
 	userData = p.manager.processIdleDetectionConfig(userData, template)
@@ -334,7 +339,31 @@ func (p *UserDataProcessor) ProcessUserData(template *ctypes.RuntimeTemplate, re
 		}
 	}
 
-	return base64.StdEncoding.EncodeToString([]byte(userData))
+	// Gzip-compress the script. cloud-init detects the gzip magic bytes
+	// and decompresses automatically, so this is transparent to templates.
+	// Compression typically achieves 3-5x reduction on shell scripts,
+	// raising the effective user data limit from ~19 KB to ~60 KB.
+	compressed, err := gzipBytes([]byte(userData))
+	if err != nil {
+		// Fall back to uncompressed if gzip fails (should not happen)
+		log.Printf("Warning: gzip compression of user data failed, using uncompressed: %v", err)
+		return base64.StdEncoding.EncodeToString([]byte(userData))
+	}
+
+	return base64.StdEncoding.EncodeToString(compressed)
+}
+
+// gzipBytes compresses data using gzip and returns the compressed bytes.
+func gzipBytes(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	if _, err := w.Write(data); err != nil {
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // NetworkingResolver resolves VPC, subnet, and security group (Single Responsibility - SOLID)
