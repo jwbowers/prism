@@ -80,8 +80,22 @@ func (s *Server) handleListInstances(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Update local state with fresh AWS data
+		// Update local state with fresh AWS data.
+		// When multiple instances share the same name (e.g. one running, one
+		// terminated), prefer the non-terminated instance so that connect and
+		// other operations resolve to the live instance.
+		bestByName := make(map[string]types.Instance)
 		for _, instance := range instances {
+			if existing, ok := bestByName[instance.Name]; ok {
+				// Keep the non-terminated instance
+				if existing.State == "terminated" || existing.State == "terminating" {
+					bestByName[instance.Name] = instance
+				}
+			} else {
+				bestByName[instance.Name] = instance
+			}
+		}
+		for _, instance := range bestByName {
 			_ = s.stateManager.SaveInstance(instance)
 		}
 	} else {
