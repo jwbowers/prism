@@ -621,3 +621,74 @@ func TestHandlerResponseFormat(t *testing.T) {
 		})
 	}
 }
+
+// TestCheckInstanceNameUniqueness verifies that duplicate-name detection works via
+// local state (fast path) without requiring a live AWS call.
+func TestCheckInstanceNameUniqueness(t *testing.T) {
+	server := createTestServer(t)
+
+	saveInstance := func(name, id, state string) {
+		err := server.stateManager.SaveInstance(types.Instance{
+			Name:  name,
+			ID:    id,
+			State: state,
+		})
+		require.NoError(t, err)
+	}
+
+	callCheck := func(name string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("POST", "/api/v1/instances", nil)
+		w := httptest.NewRecorder()
+		server.checkInstanceNameUniqueness(
+			&types.LaunchRequest{Name: name, Template: "test-template"},
+			w, req,
+		)
+		return w
+	}
+
+	t.Run("available name returns false (no conflict)", func(t *testing.T) {
+		conflict := server.checkInstanceNameUniqueness(
+			&types.LaunchRequest{Name: "brand-new", Template: "test-template"},
+			httptest.NewRecorder(),
+			httptest.NewRequest("POST", "/", nil),
+		)
+		assert.False(t, conflict)
+	})
+
+	t.Run("running instance blocks reuse", func(t *testing.T) {
+		saveInstance("my-project", "i-aaa111", "running")
+		w := callCheck("my-project")
+		assert.Equal(t, http.StatusConflict, w.Code)
+		assert.Contains(t, w.Body.String(), "my-project")
+		assert.Contains(t, w.Body.String(), "i-aaa111")
+		assert.Contains(t, w.Body.String(), "running")
+	})
+
+	t.Run("stopped instance blocks reuse", func(t *testing.T) {
+		saveInstance("stopped-proj", "i-bbb222", "stopped")
+		w := callCheck("stopped-proj")
+		assert.Equal(t, http.StatusConflict, w.Code)
+		assert.Contains(t, w.Body.String(), "stopped-proj")
+	})
+
+	t.Run("terminated instance allows name reuse", func(t *testing.T) {
+		saveInstance("old-proj", "i-ccc333", "terminated")
+		conflict := server.checkInstanceNameUniqueness(
+			&types.LaunchRequest{Name: "old-proj", Template: "test-template"},
+			httptest.NewRecorder(),
+			httptest.NewRequest("POST", "/", nil),
+		)
+		assert.False(t, conflict)
+	})
+
+	t.Run("terminating instance allows name reuse", func(t *testing.T) {
+		// "terminating" is treated the same as "terminated" — instance is going away
+		saveInstance("dying-proj", "i-ddd444", "terminating")
+		conflict := server.checkInstanceNameUniqueness(
+			&types.LaunchRequest{Name: "dying-proj", Template: "test-template"},
+			httptest.NewRecorder(),
+			httptest.NewRequest("POST", "/", nil),
+		)
+		assert.False(t, conflict)
+	})
+}

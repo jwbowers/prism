@@ -1288,31 +1288,51 @@ func (s *Server) validatePackageManager(packageManager string, w http.ResponseWr
 	return fmt.Errorf("invalid package manager")
 }
 
-// checkInstanceNameUniqueness checks if the instance name is already taken
-// Returns true if name exists (not available), false if available
+// checkInstanceNameUniqueness checks if the instance name is already taken.
+// Returns true if name is in use (response already written), false if available.
+// Checks local state first (fast path), then falls back to live AWS (safety net
+// for cases where local state was wiped while instances are still running).
 func (s *Server) checkInstanceNameUniqueness(req *types.LaunchRequest, w http.ResponseWriter, r *http.Request) bool {
-	var nameExists bool
-	s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
-		instances, err := awsManager.ListInstances()
-		if err != nil {
-			return fmt.Errorf("failed to check existing instances: %w", err)
-		}
+	isActive := func(state string) bool {
+		return state != "terminated" && state != "terminating"
+	}
+	conflictMsg := func(id, state string) string {
+		return fmt.Sprintf(
+			"Instance named %q already exists (state: %s, id: %s). "+
+				"Use a different name, or terminate the existing instance first.",
+			req.Name, state, id)
+	}
 
-		for _, existingInstance := range instances {
-			if existingInstance.Name == req.Name {
-				// Check if instance is in a terminal state (terminated/terminating)
-				if existingInstance.State != "terminated" && existingInstance.State != "terminating" {
-					nameExists = true
+	// Fast path: local state (no AWS call needed)
+	if st, err := s.stateManager.LoadState(); err == nil {
+		if existing, ok := st.Instances[req.Name]; ok && isActive(existing.State) {
+			s.writeError(w, http.StatusConflict, conflictMsg(existing.ID, existing.State))
+			return true
+		}
+	}
+
+	// Slow path: live AWS check — handles stale/missing local state.
+	// Skipped in test mode to avoid real AWS calls.
+	if !s.testMode {
+		var conflictID, conflictState string
+		s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
+			instances, err := awsManager.ListInstances()
+			if err != nil {
+				return fmt.Errorf("failed to check existing instances: %w", err)
+			}
+			for _, inst := range instances {
+				if inst.Name == req.Name && isActive(inst.State) {
+					conflictID = inst.ID
+					conflictState = inst.State
 					break
 				}
 			}
+			return nil
+		})
+		if conflictID != "" {
+			s.writeError(w, http.StatusConflict, conflictMsg(conflictID, conflictState))
+			return true
 		}
-		return nil
-	})
-
-	if nameExists {
-		s.writeError(w, http.StatusConflict, fmt.Sprintf("Instance with name '%s' already exists. Please choose a different name.", req.Name))
-		return true
 	}
 	return false
 }
