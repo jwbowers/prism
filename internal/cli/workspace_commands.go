@@ -112,14 +112,29 @@ func (f *WorkspaceCommandFactory) addLaunchFlags(cmd *cobra.Command) {
 }
 
 func (f *WorkspaceCommandFactory) createListCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all workspaces",
 		Long:  `List all cloud workspaces with their status, costs, and metadata.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return f.app.List(args)
+			// Collect flags into args for parseListFlags
+			var flagArgs []string
+			if refresh, _ := cmd.Flags().GetBool("refresh"); refresh {
+				flagArgs = append(flagArgs, "--refresh")
+			}
+			if detailed, _ := cmd.Flags().GetBool("detailed"); detailed {
+				flagArgs = append(flagArgs, "--detailed")
+			}
+			if project, _ := cmd.Flags().GetString("project"); project != "" {
+				flagArgs = append(flagArgs, "--project", project)
+			}
+			return f.app.List(flagArgs)
 		},
 	}
+	cmd.Flags().BoolP("refresh", "r", false, "Refresh instance data from AWS (slower but accurate)")
+	cmd.Flags().BoolP("detailed", "d", false, "Show detailed instance information")
+	cmd.Flags().String("project", "", "Filter by project ID")
+	return cmd
 }
 
 func (f *WorkspaceCommandFactory) createStartCommand() *cobra.Command {
