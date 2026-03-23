@@ -48,7 +48,12 @@ Thumbs.db
 dist/
 build/
 /node_modules/
+**/node_modules/
 /package-lock.json
+
+# Windows build artifacts
+*.exe
+prismd-service.exe
 
 # Debug files
 debug-*.yml
