@@ -238,8 +238,6 @@ nfpms:
         dst: /usr/share/doc/prism/README.md
       - src: CHANGELOG.md
         dst: /usr/share/doc/prism/CHANGELOG.md
-      - src: templates/community/*.yml
-        dst: /usr/share/prism/templates/community/
       - src: templates/foundations/*.yml
         dst: /usr/share/prism/templates/foundations/
       - src: templates/base/*.yml
