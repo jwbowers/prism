@@ -378,6 +378,16 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Course template whitelist enforcement (#46)
+	if req.CourseID != "" && s.courseManager != nil {
+		if !s.courseManager.IsTemplateApproved(req.CourseID, req.Template) {
+			s.writeError(w, http.StatusForbidden, fmt.Sprintf(
+				"template %q is not approved for course %s. Contact your instructor to request access.",
+				req.Template, req.CourseID))
+			return
+		}
+	}
+
 	// Check instance name uniqueness (skip in test mode)
 	if !s.instanceNameCheckPassed(&req, w, r) {
 		return

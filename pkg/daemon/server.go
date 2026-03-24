@@ -16,6 +16,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/aws"
 	"github.com/scttfrdmn/prism/pkg/connection"
 	"github.com/scttfrdmn/prism/pkg/cost"
+	"github.com/scttfrdmn/prism/pkg/course"
 	"github.com/scttfrdmn/prism/pkg/daemon/logger"
 	"github.com/scttfrdmn/prism/pkg/idle"
 	"github.com/scttfrdmn/prism/pkg/invitation"
@@ -103,6 +104,9 @@ type Server struct {
 
 	// Approval workflow manager (v0.12.0 - Issue #148/#149/#153/#157)
 	approvalManager *project.ApprovalManager
+
+	// Course / Education manager (v0.14.0 - Issue #45)
+	courseManager *course.Manager
 }
 
 // awsInitResult bundles the outputs of initAWSManager.
@@ -422,6 +426,13 @@ func NewServer(port string) (*Server, error) {
 		server.approvalManager = am
 	} else {
 		logger.Info(fmt.Sprintf("Warning: approval manager unavailable: %v", err))
+	}
+
+	// Initialize course manager (v0.14.0 - Issue #45)
+	if cm, err := course.NewManager(); err == nil {
+		server.courseManager = cm
+	} else {
+		logger.Info(fmt.Sprintf("Warning: course manager unavailable: %v", err))
 	}
 
 	// Load persisted idle schedules into scheduler (Issue #288)
@@ -1025,6 +1036,10 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// Invitation management operations (v0.5.11 user invitation system)
 	// Note: Project invitation routes handled by handleProjectByID
 	mux.HandleFunc("/api/v1/invitations/", applyMiddleware(s.handleInvitationOperations))
+
+	// Course / Education management (v0.14.0 - Issue #45)
+	mux.HandleFunc("/api/v1/courses", applyMiddleware(s.handleCourseOperations))
+	mux.HandleFunc("/api/v1/courses/", applyMiddleware(s.handleCourseByID))
 
 	// Security management endpoints (Phase 4: Security integration)
 	mux.HandleFunc("/api/v1/security/status", applyMiddleware(s.handleSecurityStatus))

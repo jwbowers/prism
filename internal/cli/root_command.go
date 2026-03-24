@@ -487,6 +487,12 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(approvalCobra.CreateApproveCommand())
 	rootCmd.AddCommand(approvalCobra.CreateDenyCommand())
 	rootCmd.AddCommand(approvalCobra.CreateApprovalsCommand())
+
+	// v0.14.0: University Education System
+	courseCobra := NewCourseCobraCommands(r.app)
+	rootCmd.AddCommand(courseCobra.CreateCourseCommand())
+	taCobra := NewTACobraCommands(r.app)
+	rootCmd.AddCommand(taCobra.CreateTACommand())
 }
 
 func (r *CommandFactoryRegistry) createSnapshotCommand() *cobra.Command {

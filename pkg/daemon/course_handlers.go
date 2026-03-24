@@ -1,0 +1,633 @@
+package daemon
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"strings"
+
+	"github.com/scttfrdmn/prism/pkg/course"
+	"github.com/scttfrdmn/prism/pkg/types"
+)
+
+// handleCourseOperations routes /api/v1/courses (no trailing path segment)
+func (s *Server) handleCourseOperations(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		s.handleListCourses(w, r)
+	case http.MethodPost:
+		s.handleCreateCourse(w, r)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleCourseByID dispatches /api/v1/courses/{id}[/{sub-resource}...]
+func (s *Server) handleCourseByID(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path[len("/api/v1/courses/"):]
+	parts := splitPath(path)
+	if len(parts) == 0 {
+		s.writeError(w, http.StatusBadRequest, "Missing course ID")
+		return
+	}
+	courseID := parts[0]
+	if len(parts) == 1 {
+		s.handleCourseDirectOp(w, r, courseID)
+		return
+	}
+
+	switch parts[1] {
+	case "close":
+		if r.Method != http.MethodPost {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		s.handleCloseCourse(w, r, courseID)
+	case "members":
+		s.handleCourseMembers(w, r, courseID, parts)
+	case "templates":
+		s.handleCourseTemplates(w, r, courseID, parts)
+	case "budget":
+		s.handleCourseBudget(w, r, courseID, parts)
+	case "ta":
+		s.handleCourseTA(w, r, courseID, parts)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+// handleCourseDirectOp handles GET/PUT/DELETE on /api/v1/courses/{id}
+func (s *Server) handleCourseDirectOp(w http.ResponseWriter, r *http.Request, courseID string) {
+	switch r.Method {
+	case http.MethodGet:
+		s.handleGetCourse(w, r, courseID)
+	case http.MethodPut:
+		s.handleUpdateCourse(w, r, courseID)
+	case http.MethodDelete:
+		s.handleDeleteCourse(w, r, courseID)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// --- CRUD ---
+
+func (s *Server) handleListCourses(w http.ResponseWriter, r *http.Request) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	q := r.URL.Query()
+	filter := &course.CourseFilter{
+		Owner:      q.Get("owner"),
+		Semester:   q.Get("semester"),
+		Department: q.Get("department"),
+	}
+	if statusStr := q.Get("status"); statusStr != "" {
+		st := types.CourseStatus(statusStr)
+		filter.Status = &st
+	}
+
+	courses, err := s.courseManager.ListCourses(r.Context(), filter)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if courses == nil {
+		courses = []*types.Course{}
+	}
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{"courses": courses})
+}
+
+func (s *Server) handleCreateCourse(w http.ResponseWriter, r *http.Request) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	var req course.CreateCourseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+		return
+	}
+
+	c, err := s.courseManager.CreateCourse(r.Context(), &req)
+	if err != nil {
+		if err == course.ErrDuplicateCourse {
+			s.writeError(w, http.StatusConflict, err.Error())
+			return
+		}
+		s.writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	s.writeJSON(w, http.StatusCreated, c)
+}
+
+func (s *Server) handleGetCourse(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	c, err := s.courseManager.GetCourse(r.Context(), courseID)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, c)
+}
+
+func (s *Server) handleUpdateCourse(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	var req course.UpdateCourseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+		return
+	}
+
+	c, err := s.courseManager.UpdateCourse(r.Context(), courseID, &req)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, c)
+}
+
+func (s *Server) handleDeleteCourse(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	if err := s.courseManager.DeleteCourse(r.Context(), courseID); err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleCloseCourse(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	if err := s.courseManager.CloseCourse(r.Context(), courseID); err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]string{"status": "closed"})
+}
+
+// --- Member Management ---
+
+func (s *Server) handleCourseMembers(w http.ResponseWriter, r *http.Request, courseID string, parts []string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	// /courses/{id}/members/bulk  or  /courses/{id}/members/import
+	if len(parts) >= 3 {
+		switch parts[2] {
+		case "bulk":
+			if r.Method != http.MethodPost {
+				s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			s.handleCourseBulkEnroll(w, r, courseID)
+			return
+		case "import":
+			if r.Method != http.MethodPost {
+				s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			s.handleCourseRosterImport(w, r, courseID)
+			return
+		default:
+			// /courses/{id}/members/{userID} — DELETE only
+			if r.Method == http.MethodDelete {
+				s.handleUnenrollMember(w, r, courseID, parts[2])
+				return
+			}
+			http.NotFound(w, r)
+			return
+		}
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		s.handleListCourseMembers(w, r, courseID)
+	case http.MethodPost:
+		s.handleEnrollMember(w, r, courseID)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+func (s *Server) handleListCourseMembers(w http.ResponseWriter, r *http.Request, courseID string) {
+	var rolePtr *types.ClassRole
+	if roleStr := r.URL.Query().Get("role"); roleStr != "" {
+		role := types.ClassRole(roleStr)
+		rolePtr = &role
+	}
+
+	members, err := s.courseManager.ListMembers(r.Context(), courseID, rolePtr)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if members == nil {
+		members = []types.ClassMember{}
+	}
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{"members": members})
+}
+
+func (s *Server) handleEnrollMember(w http.ResponseWriter, r *http.Request, courseID string) {
+	var req course.EnrollRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+		return
+	}
+
+	mb, err := s.courseManager.EnrollMember(r.Context(), courseID, &req)
+	if err != nil {
+		switch err {
+		case course.ErrCourseNotFound:
+			s.writeError(w, http.StatusNotFound, "Course not found")
+		case course.ErrAlreadyEnrolled:
+			s.writeError(w, http.StatusConflict, err.Error())
+		case course.ErrCourseClosed:
+			s.writeError(w, http.StatusForbidden, err.Error())
+		default:
+			s.writeError(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+
+	s.writeJSON(w, http.StatusCreated, mb)
+}
+
+func (s *Server) handleCourseBulkEnroll(w http.ResponseWriter, r *http.Request, courseID string) {
+	var req course.BulkEnrollRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+		return
+	}
+
+	enrolled, rowErrors, err := s.courseManager.BulkEnroll(r.Context(), courseID, &req)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	errMsgs := make([]string, 0, len(rowErrors))
+	for _, e := range rowErrors {
+		errMsgs = append(errMsgs, e.Error())
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"enrolled": enrolled,
+		"errors":   errMsgs,
+	})
+}
+
+func (s *Server) handleCourseRosterImport(w http.ResponseWriter, r *http.Request, courseID string) {
+	// Accept either JSON rows or raw CSV body
+	var rows []course.RosterRow
+
+	contentType := r.Header.Get("Content-Type")
+	if strings.Contains(contentType, "text/csv") || strings.Contains(contentType, "text/plain") {
+		// Parse CSV from body
+		var buf []byte
+		buf = make([]byte, 0, 1024*1024)
+		tmp := make([]byte, 4096)
+		for {
+			n, err := r.Body.Read(tmp)
+			if n > 0 {
+				buf = append(buf, tmp[:n]...)
+			}
+			if err != nil {
+				break
+			}
+		}
+		parsed, err := course.ParseRosterCSV(buf)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, "CSV parse error: "+err.Error())
+			return
+		}
+		rows = parsed
+	} else {
+		// Expect JSON array of RosterRow
+		if err := json.NewDecoder(r.Body).Decode(&rows); err != nil {
+			s.writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+			return
+		}
+	}
+
+	sendInvites := r.URL.Query().Get("send_invites") == "true"
+	enrolled, rowErrors, err := s.courseManager.ImportRosterCSV(r.Context(), courseID, rows, sendInvites)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	errMsgs := make([]string, 0, len(rowErrors))
+	for _, e := range rowErrors {
+		errMsgs = append(errMsgs, e.Error())
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"enrolled": enrolled,
+		"errors":   errMsgs,
+	})
+}
+
+func (s *Server) handleUnenrollMember(w http.ResponseWriter, r *http.Request, courseID, userID string) {
+	if err := s.courseManager.UnenrollMember(r.Context(), courseID, userID); err != nil {
+		switch err {
+		case course.ErrCourseNotFound:
+			s.writeError(w, http.StatusNotFound, "Course not found")
+		case course.ErrMemberNotFound:
+			s.writeError(w, http.StatusNotFound, "Member not found")
+		default:
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// --- Template Whitelist (#46) ---
+
+func (s *Server) handleCourseTemplates(w http.ResponseWriter, r *http.Request, courseID string, parts []string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	// /courses/{id}/templates/{slug}
+	if len(parts) >= 3 {
+		slug := parts[2]
+		if r.Method == http.MethodDelete {
+			if err := s.courseManager.RemoveApprovedTemplate(r.Context(), courseID, slug); err != nil {
+				if err == course.ErrCourseNotFound {
+					s.writeError(w, http.StatusNotFound, "Course not found")
+					return
+				}
+				s.writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		http.NotFound(w, r)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		c, err := s.courseManager.GetCourse(r.Context(), courseID)
+		if err != nil {
+			if err == course.ErrCourseNotFound {
+				s.writeError(w, http.StatusNotFound, "Course not found")
+				return
+			}
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		templates := c.ApprovedTemplates
+		if templates == nil {
+			templates = []string{}
+		}
+		s.writeJSON(w, http.StatusOK, map[string]interface{}{"approved_templates": templates})
+
+	case http.MethodPost:
+		var body struct {
+			Template string `json:"template"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Template == "" {
+			s.writeError(w, http.StatusBadRequest, "Request body must include {\"template\": \"slug\"}")
+			return
+		}
+		if err := s.courseManager.AddApprovedTemplate(r.Context(), courseID, body.Template); err != nil {
+			if err == course.ErrCourseNotFound {
+				s.writeError(w, http.StatusNotFound, "Course not found")
+				return
+			}
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		s.writeJSON(w, http.StatusCreated, map[string]string{"template": body.Template})
+
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// --- Budget (#47) ---
+
+func (s *Server) handleCourseBudget(w http.ResponseWriter, r *http.Request, courseID string, parts []string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	// /courses/{id}/budget/distribute
+	if len(parts) >= 3 && parts[2] == "distribute" {
+		if r.Method != http.MethodPost {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		var body struct {
+			AmountPerStudent float64 `json:"amount_per_student"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			s.writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+			return
+		}
+		if err := s.courseManager.DistributeBudget(r.Context(), courseID, body.AmountPerStudent); err != nil {
+			if err == course.ErrCourseNotFound {
+				s.writeError(w, http.StatusNotFound, "Course not found")
+				return
+			}
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		s.writeJSON(w, http.StatusOK, map[string]string{"status": "distributed"})
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	summary, err := s.courseManager.GetBudgetSummary(r.Context(), courseID)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, summary)
+}
+
+// --- TA Operations (#48, #49) ---
+
+func (s *Server) handleCourseTA(w http.ResponseWriter, r *http.Request, courseID string, parts []string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	// Expect /courses/{id}/ta/{action}/{studentID}
+	if len(parts) < 4 {
+		s.writeError(w, http.StatusBadRequest, "Expected /ta/{debug|reset}/{studentID}")
+		return
+	}
+
+	action := parts[2]
+	studentID := parts[3]
+
+	// The caller's identity comes from the request context (set by auth middleware)
+	taID, _ := r.Context().Value(userIDKey).(string)
+
+	switch action {
+	case "debug":
+		if r.Method != http.MethodGet {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		s.handleTADebug(w, r, courseID, taID, studentID)
+
+	case "reset":
+		if r.Method != http.MethodPost {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		s.handleTAReset(w, r, courseID, taID, studentID)
+
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func (s *Server) handleTADebug(w http.ResponseWriter, r *http.Request, courseID, taID, studentID string) {
+	// Build a context carrying the caller ID for authorization
+	ctx := context.WithValue(r.Context(), "caller_id", taID) //nolint:staticcheck
+
+	info, err := s.courseManager.GetStudentDebugInfo(ctx, courseID, taID, studentID)
+	if err != nil {
+		switch err {
+		case course.ErrCourseNotFound:
+			s.writeError(w, http.StatusNotFound, "Course not found")
+		case course.ErrMemberNotFound:
+			s.writeError(w, http.StatusNotFound, "Student not found in course")
+		case course.ErrNotAuthorized:
+			s.writeError(w, http.StatusForbidden, "Not authorized: must be a TA or instructor")
+		default:
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	// Populate live instance data from state (no AWS call needed for basic debug info)
+	if s.stateManager != nil {
+		if state, loadErr := s.stateManager.LoadState(); loadErr == nil {
+			var instances []types.Instance
+			for _, inst := range state.Instances {
+				if inst.ProjectID == courseID || inst.Name == studentID {
+					instances = append(instances, inst)
+				}
+			}
+			info.Instances = instances
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, info)
+}
+
+func (s *Server) handleTAReset(w http.ResponseWriter, r *http.Request, courseID, taID, studentID string) {
+	var req course.TAResetRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+		return
+	}
+	req.StudentID = studentID
+
+	if req.Reason == "" {
+		s.writeError(w, http.StatusBadRequest, "reason is required for TA reset")
+		return
+	}
+	if req.BackupRetentionDays <= 0 {
+		req.BackupRetentionDays = 7
+	}
+
+	ctx := context.WithValue(r.Context(), "caller_id", taID) //nolint:staticcheck
+
+	if err := s.courseManager.ResetStudentInstance(ctx, courseID, taID, &req); err != nil {
+		switch err {
+		case course.ErrCourseNotFound:
+			s.writeError(w, http.StatusNotFound, "Course not found")
+		case course.ErrMemberNotFound:
+			s.writeError(w, http.StatusNotFound, "Student not found in course")
+		case course.ErrNotAuthorized:
+			s.writeError(w, http.StatusForbidden, "Not authorized: must be a TA or instructor")
+		default:
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	// Return 202 Accepted — the actual snapshot + re-provision is async
+	s.writeJSON(w, http.StatusAccepted, map[string]interface{}{
+		"status":                "reset_scheduled",
+		"student_id":            studentID,
+		"backup_retention_days": req.BackupRetentionDays,
+		"reason":                req.Reason,
+	})
+}

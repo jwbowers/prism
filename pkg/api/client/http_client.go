@@ -2604,6 +2604,174 @@ func (c *HTTPClient) DeleteOnboardingTemplate(ctx context.Context, projectID, na
 	return c.handleResponse(resp, nil)
 }
 
+// ─── Course / Education API (v0.14.0) ────────────────────────────────────────
+
+// CreateCourse creates a new course.
+func (c *HTTPClient) CreateCourse(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses", req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// ListCourses lists courses with optional query params.
+func (c *HTTPClient) ListCourses(ctx context.Context, params string) (map[string]interface{}, error) {
+	path := "/api/v1/courses"
+	if params != "" {
+		path += "?" + params
+	}
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// GetCourse fetches a single course by ID.
+func (c *HTTPClient) GetCourse(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/courses/"+courseID, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// CloseCourse closes a course (POST /api/v1/courses/{id}/close).
+func (c *HTTPClient) CloseCourse(ctx context.Context, courseID string) error {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses/"+courseID+"/close", nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// DeleteCourse deletes a course.
+func (c *HTTPClient) DeleteCourse(ctx context.Context, courseID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/courses/"+courseID, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// EnrollCourseMember enrolls a member in a course.
+func (c *HTTPClient) EnrollCourseMember(ctx context.Context, courseID string, req map[string]interface{}) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses/"+courseID+"/members", req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// ListCourseMembers lists members of a course.
+func (c *HTTPClient) ListCourseMembers(ctx context.Context, courseID string, role string) (map[string]interface{}, error) {
+	path := "/api/v1/courses/" + courseID + "/members"
+	if role != "" {
+		path += "?role=" + role
+	}
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// UnenrollCourseMember removes a member from a course.
+func (c *HTTPClient) UnenrollCourseMember(ctx context.Context, courseID, userID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/courses/"+courseID+"/members/"+userID, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// ListCourseTemplates lists approved templates for a course.
+func (c *HTTPClient) ListCourseTemplates(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/courses/"+courseID+"/templates", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// AddCourseTemplate adds an approved template to a course.
+func (c *HTTPClient) AddCourseTemplate(ctx context.Context, courseID, templateSlug string) error {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses/"+courseID+"/templates",
+		map[string]string{"template": templateSlug})
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// RemoveCourseTemplate removes an approved template from a course.
+func (c *HTTPClient) RemoveCourseTemplate(ctx context.Context, courseID, templateSlug string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/courses/"+courseID+"/templates/"+templateSlug, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// GetCourseBudget returns the budget summary for a course.
+func (c *HTTPClient) GetCourseBudget(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/courses/"+courseID+"/budget", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// DistributeCourseBudget sets per-student budget for a course.
+func (c *HTTPClient) DistributeCourseBudget(ctx context.Context, courseID string, amountPerStudent float64) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses/"+courseID+"/budget/distribute",
+		map[string]float64{"amount_per_student": amountPerStudent})
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// TADebugStudent returns debug info for a student (TA/instructor only).
+func (c *HTTPClient) TADebugStudent(ctx context.Context, courseID, studentID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/courses/"+courseID+"/ta/debug/"+studentID, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// TAResetStudent resets a student's instance (TA/instructor only).
+func (c *HTTPClient) TAResetStudent(ctx context.Context, courseID string, req map[string]interface{}) (map[string]interface{}, error) {
+	studentID, _ := req["student_id"].(string)
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses/"+courseID+"/ta/reset/"+studentID, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
 // parseVersion parses a version string like "v0.5.1" or "0.5.1" into major, minor, patch
 func parseVersion(version string) (major, minor, patch int) {
 	// Remove 'v' prefix if present

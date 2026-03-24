@@ -14,6 +14,7 @@ type LaunchRequest struct {
 	SubnetID            string                 `json:"subnet_id,omitempty"`
 	VpcID               string                 `json:"vpc_id,omitempty"`
 	ProjectID           string                 `json:"project_id,omitempty"`            // Project to associate instance with
+	CourseID            string                 `json:"course_id,omitempty"`             // Course to enforce template policy (v0.14.0)
 	FundingAllocationID string                 `json:"funding_allocation_id,omitempty"` // Budget allocation to charge (v0.5.10+)
 	SSHKeyName          string                 `json:"ssh_key_name,omitempty"`          // AWS key pair name to use
 	Spot                bool                   `json:"spot,omitempty"`
