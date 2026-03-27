@@ -698,6 +698,20 @@ type CreateProjectRequest struct {
 - Frontend API: `cmd/prism-gui/frontend/src/App.tsx` (SafePrismAPI class)
 - Test helpers: `cmd/prism-gui/frontend/tests/e2e/pages/*.ts`
 
+## Release Quality Gates ⚠️ MANDATORY
+
+**No release commit may be made until ALL of the following pass with zero failures:**
+
+1. **Compilation** — `go build ./...` and `cd cmd/prism-gui/frontend && npm run build` produce zero errors
+2. **Go unit tests** — `go test ./...` passes with zero failures (excluding `//go:build integration` tests)
+3. **Frontend unit tests** — `cd cmd/prism-gui/frontend && npm run test:unit` passes with zero failures
+4. **Go lint** — `make lint` (or `golangci-lint run`) reports zero issues
+5. **TypeScript typecheck** — `npm run typecheck` reports zero errors
+
+This applies to every version bump commit (`chore: bump version to vX.Y.Z`) and every feature PR. If any gate fails, the failures must be fixed before the release proceeds — not deferred to the next release.
+
+**Vitest unit tests specifically**: All tests in `src/*.test.tsx` and `tests/unit/*.test.js` must pass. Tests that use stale API patterns (e.g., mocking `window.wails.PrismService` against a codebase that no longer uses it) are broken tests and must be rewritten, not skipped.
+
 ## Development Best Practices
 
 1. **Multi-modal first**: Every feature must work across CLI, TUI, and GUI

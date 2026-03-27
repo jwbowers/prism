@@ -12,5 +12,8 @@ export default defineConfig({
     hookTimeout: 30000, // 30 seconds for hooks
     teardownTimeout: 10000, // 10 seconds for teardown
     silent: false, // Show test names but not all console output
+    // Only run Vitest unit tests — exclude Playwright E2E and visual tests
+    include: ['src/**/*.test.{ts,tsx}', 'tests/unit/**/*.test.{ts,tsx,js}'],
+    exclude: ['tests/e2e/**', 'tests/visual/**', 'node_modules/**'],
   },
 });
