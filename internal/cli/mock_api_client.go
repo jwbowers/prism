@@ -2857,3 +2857,103 @@ func (m *MockAPIClient) DeleteCourse(ctx context.Context, courseID string) error
 	}
 	return nil
 }
+
+// v0.18.0 — Workshop & Event Management stubs
+
+func (m *MockAPIClient) ListWorkshops(ctx context.Context, params string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"workshops": []interface{}{}}, nil
+}
+
+func (m *MockAPIClient) CreateWorkshop(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"id": "mock-ws-id", "title": req["title"], "status": "draft", "join_token": "WS-MOCKTOKEN"}, nil
+}
+
+func (m *MockAPIClient) GetWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"id": workshopID, "title": "Mock Workshop", "status": "draft"}, nil
+}
+
+func (m *MockAPIClient) UpdateWorkshop(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"id": workshopID}, nil
+}
+
+func (m *MockAPIClient) DeleteWorkshop(ctx context.Context, workshopID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}
+
+func (m *MockAPIClient) ProvisionWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"provisioned": 0, "skipped": 0, "errors": []interface{}{}}, nil
+}
+
+func (m *MockAPIClient) GetWorkshopDashboard(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"workshop_id": workshopID, "title": "Mock Workshop", "status": "draft", "total_participants": 0, "active_instances": 0, "stopped_instances": 0, "pending_instances": 0, "time_remaining": "N/A", "total_spent": 0.0, "participants": []interface{}{}}, nil
+}
+
+func (m *MockAPIClient) EndWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"stopped": 0, "errors": []interface{}{}}, nil
+}
+
+func (m *MockAPIClient) GetWorkshopDownload(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"workshop_id": workshopID, "participants": []interface{}{}}, nil
+}
+
+func (m *MockAPIClient) ListWorkshopConfigs(ctx context.Context) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"configs": []interface{}{}}, nil
+}
+
+func (m *MockAPIClient) SaveWorkshopConfig(ctx context.Context, workshopID, name string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"name": name, "template": "mock-template", "duration_hours": 6, "max_participants": 0}, nil
+}
+
+func (m *MockAPIClient) CreateWorkshopFromConfig(ctx context.Context, configName string, req map[string]interface{}) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"id": "mock-ws-from-config", "title": req["title"], "join_token": "WS-MOCKTOKEN"}, nil
+}
+
+func (m *MockAPIClient) AddWorkshopParticipant(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"user_id": req["user_id"], "status": "pending"}, nil
+}
+
+func (m *MockAPIClient) RemoveWorkshopParticipant(ctx context.Context, workshopID, userID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}

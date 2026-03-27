@@ -2879,6 +2879,103 @@ func (c *HTTPClient) ProvisionStudent(ctx context.Context, courseID, studentID s
 	return result, c.handleResponse(resp, &result)
 }
 
+// ─── Workshop / Event API (v0.18.0) ──────────────────────────────────────────
+
+// ListWorkshops lists workshops with optional query params.
+func (c *HTTPClient) ListWorkshops(ctx context.Context, params string) (map[string]interface{}, error) {
+	path := "/api/v1/workshops"
+	if params != "" {
+		path += "?" + params
+	}
+	return c.makeRequestJSON(ctx, "GET", path, nil)
+}
+
+// CreateWorkshop creates a new workshop.
+func (c *HTTPClient) CreateWorkshop(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/workshops", req)
+}
+
+// GetWorkshop fetches a single workshop by ID.
+func (c *HTTPClient) GetWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "GET", "/api/v1/workshops/"+workshopID, nil)
+}
+
+// UpdateWorkshop updates a workshop.
+func (c *HTTPClient) UpdateWorkshop(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "PUT", "/api/v1/workshops/"+workshopID, req)
+}
+
+// DeleteWorkshop deletes a workshop.
+func (c *HTTPClient) DeleteWorkshop(ctx context.Context, workshopID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/workshops/"+workshopID, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// ProvisionWorkshop bulk-provisions participant workspaces (#178).
+func (c *HTTPClient) ProvisionWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/workshops/"+workshopID+"/provision", nil)
+}
+
+// GetWorkshopDashboard returns the live dashboard for a workshop (#179).
+func (c *HTTPClient) GetWorkshopDashboard(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "GET", "/api/v1/workshops/"+workshopID+"/dashboard", nil)
+}
+
+// EndWorkshop ends a workshop and stops all participant instances (#135).
+func (c *HTTPClient) EndWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/workshops/"+workshopID+"/end", nil)
+}
+
+// GetWorkshopDownload returns the download manifest for participant work (#180).
+func (c *HTTPClient) GetWorkshopDownload(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "GET", "/api/v1/workshops/"+workshopID+"/download", nil)
+}
+
+// ListWorkshopConfigs lists saved workshop config templates (#183).
+func (c *HTTPClient) ListWorkshopConfigs(ctx context.Context) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "GET", "/api/v1/workshops/configs", nil)
+}
+
+// SaveWorkshopConfig saves a workshop's settings as a reusable config (#183).
+func (c *HTTPClient) SaveWorkshopConfig(ctx context.Context, workshopID, configName string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/workshops/"+workshopID+"/config",
+		map[string]string{"name": configName})
+}
+
+// CreateWorkshopFromConfig creates a workshop from a saved config (#183).
+func (c *HTTPClient) CreateWorkshopFromConfig(ctx context.Context, configName string, req map[string]interface{}) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/workshops/from-config/"+configName, req)
+}
+
+// AddWorkshopParticipant adds a participant to a workshop.
+func (c *HTTPClient) AddWorkshopParticipant(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/workshops/"+workshopID+"/participants", req)
+}
+
+// RemoveWorkshopParticipant removes a participant from a workshop.
+func (c *HTTPClient) RemoveWorkshopParticipant(ctx context.Context, workshopID, userID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/workshops/"+workshopID+"/participants/"+userID, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// ─── Internal helper ──────────────────────────────────────────────────────────
+
+// makeRequestJSON is a convenience wrapper that calls makeRequest and decodes the body as JSON.
+func (c *HTTPClient) makeRequestJSON(ctx context.Context, method, path string, body interface{}) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, method, path, body)
+	if err != nil {
+		return nil, err
+	}
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
 // parseVersion parses a version string like "v0.5.1" or "0.5.1" into major, minor, patch
 func parseVersion(version string) (major, minor, patch int) {
 	// Remove 'v' prefix if present

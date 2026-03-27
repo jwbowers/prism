@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.9
 	github.com/gorilla/websocket v1.5.3
 	github.com/scttfrdmn/prism v0.5.4
-	github.com/wailsapp/wails/v3 v3.0.0-alpha.72
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
 	golang.org/x/crypto v0.47.0
 )
 

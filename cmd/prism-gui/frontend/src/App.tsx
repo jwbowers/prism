@@ -11,6 +11,7 @@ import { ValidationError } from './components/ValidationError';
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { InvitationManagementView } from './components/InvitationManagementView';
 import { CoursesPanel } from './components/CoursesPanel';
+import { WorkshopsPanel } from './components/WorkshopsPanel';
 import { SSHKeyModal } from './components/SSHKeyModal';
 
 import {
@@ -681,8 +682,63 @@ interface CourseAuditEntry {
   detail?: Record<string, unknown>;
 }
 
+// v0.18.0 Workshop & Event Management interfaces
+interface WorkshopParticipant {
+  user_id: string;
+  email?: string;
+  display_name?: string;
+  joined_at: string;
+  instance_id?: string;
+  instance_name?: string;
+  status: string; // "pending"|"provisioned"|"running"|"stopped"
+  progress?: number; // 0-100
+}
+
+interface WorkshopEvent {
+  id: string;
+  title: string;
+  description?: string;
+  owner: string;
+  template: string;
+  approved_templates?: string[];
+  max_participants: number;
+  budget_per_participant?: number;
+  start_time: string;
+  end_time: string;
+  early_access_hours?: number;
+  status: string; // "draft"|"active"|"ended"|"archived"
+  join_token?: string;
+  participants?: WorkshopParticipant[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface WorkshopDashboard {
+  workshop_id: string;
+  title: string;
+  total_participants: number;
+  active_instances: number;
+  stopped_instances: number;
+  pending_instances: number;
+  total_spent: number;
+  time_remaining: string;
+  status: string;
+  participants: WorkshopParticipant[];
+}
+
+interface WorkshopConfig {
+  name: string;
+  template: string;
+  max_participants: number;
+  budget_per_participant?: number;
+  duration_hours: number;
+  early_access_hours?: number;
+  description?: string;
+  created_at: string;
+}
+
 interface AppState {
-  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview' | 'budgets' | 'approvals' | 'courses';
+  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview' | 'budgets' | 'approvals' | 'courses' | 'workshops';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
   templates: Record<string, Template>;
   instances: Instance[];
@@ -707,6 +763,7 @@ interface AppState {
   idleSchedules: IdleSchedule[];
   invitations: CachedInvitation[];
   courses: Course[];
+  workshops: WorkshopEvent[];
   selectedTemplate: Template | null;
   selectedProject: Project | null;
   selectedTerminalInstance: string;
@@ -2150,12 +2207,79 @@ class SafePrismAPI {
     const data = await resp.json();
     return { enrolled: data?.enrolled || 0, errors: data?.errors || [] };
   }
+
+  // ── v0.18.0 Workshop & Event Management ────────────────────────────────────
+
+  async getWorkshops(params?: { owner?: string; status?: string }): Promise<WorkshopEvent[]> {
+    const qs = params ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString() : '';
+    const data = await this.safeRequest<any>(`/api/v1/workshops${qs}`);
+    return (data?.workshops || []) as WorkshopEvent[];
+  }
+
+  async createWorkshop(workshopData: Partial<WorkshopEvent>): Promise<WorkshopEvent> {
+    const data = await this.safeRequest<WorkshopEvent>('/api/v1/workshops', 'POST', workshopData);
+    return data as WorkshopEvent;
+  }
+
+  async getWorkshop(id: string): Promise<WorkshopEvent> {
+    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/${encodeURIComponent(id)}`);
+    return data as WorkshopEvent;
+  }
+
+  async updateWorkshop(id: string, updates: Partial<WorkshopEvent>): Promise<WorkshopEvent> {
+    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/${encodeURIComponent(id)}`, 'PUT', updates);
+    return data as WorkshopEvent;
+  }
+
+  async deleteWorkshop(id: string): Promise<void> {
+    await this.safeRequest(`/api/v1/workshops/${encodeURIComponent(id)}`, 'DELETE');
+  }
+
+  async provisionWorkshop(id: string): Promise<{ provisioned: number; skipped: number; errors: string[] }> {
+    const data = await this.safeRequest<any>(`/api/v1/workshops/${encodeURIComponent(id)}/provision`, 'POST');
+    return { provisioned: data?.provisioned || 0, skipped: data?.skipped || 0, errors: data?.errors || [] };
+  }
+
+  async getWorkshopDashboard(id: string): Promise<WorkshopDashboard> {
+    const data = await this.safeRequest<WorkshopDashboard>(`/api/v1/workshops/${encodeURIComponent(id)}/dashboard`);
+    return data as WorkshopDashboard;
+  }
+
+  async endWorkshop(id: string): Promise<{ stopped: number; errors: string[] }> {
+    const data = await this.safeRequest<any>(`/api/v1/workshops/${encodeURIComponent(id)}/end`, 'POST');
+    return { stopped: data?.stopped || 0, errors: data?.errors || [] };
+  }
+
+  async getWorkshopDownload(id: string): Promise<{ workshop_id: string; participants: any[] }> {
+    const data = await this.safeRequest<any>(`/api/v1/workshops/${encodeURIComponent(id)}/download`);
+    return { workshop_id: data?.workshop_id || id, participants: data?.participants || [] };
+  }
+
+  async getWorkshopConfigs(): Promise<WorkshopConfig[]> {
+    const data = await this.safeRequest<any>('/api/v1/workshops/configs');
+    return (data?.configs || []) as WorkshopConfig[];
+  }
+
+  async saveWorkshopConfig(workshopId: string, configName: string): Promise<WorkshopConfig> {
+    const data = await this.safeRequest<WorkshopConfig>(`/api/v1/workshops/${encodeURIComponent(workshopId)}/config`, 'POST', { name: configName });
+    return data as WorkshopConfig;
+  }
+
+  async createWorkshopFromConfig(configName: string, workshopData: Partial<WorkshopEvent>): Promise<WorkshopEvent> {
+    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/from-config/${encodeURIComponent(configName)}`, 'POST', workshopData);
+    return data as WorkshopEvent;
+  }
 }
 
 // CoursesManagementView — top-level component (not inside App) to prevent re-mount on state change.
 // Pattern matches InvitationManagementView and ApprovalsView.
 function CoursesManagementView() {
   return <CoursesPanel />;
+}
+
+// WorkshopsManagementView — top-level component to prevent re-mount on state change (#13).
+function WorkshopsManagementView() {
+  return <WorkshopsPanel />;
 }
 
 export default function PrismApp() {
@@ -2190,6 +2314,7 @@ export default function PrismApp() {
     idleSchedules: [],
     invitations: [],
     courses: [],
+    workshops: [],
     selectedTemplate: null,
     selectedProject: null,
     selectedTerminalInstance: '',
@@ -2466,11 +2591,12 @@ export default function PrismApp() {
         api.getIdleSchedules(),
         api.getMyInvitations(),
         api.getAutoStartStatus(),
-        api.getCourses()
+        api.getCourses(),
+        api.getWorkshops()
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData, autoStartStatusData, coursesData] = results.map((result, index) => {
+      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData, autoStartStatusData, coursesData, workshopsData] = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
@@ -2526,6 +2652,7 @@ export default function PrismApp() {
         idleSchedules: idleSchedulesData,
         invitations: cachedInvitations,
         courses: coursesData || [],
+        workshops: workshopsData || [],
         autoStartEnabled: autoStartStatusData?.enabled || false,
         loading: false,
         connected: true,
@@ -12691,6 +12818,15 @@ export default function PrismApp() {
                   : undefined
               },
               {
+                id: "workshops",
+                type: "link",
+                text: "Workshops",
+                href: "/workshops",
+                info: state.workshops.filter(w => w.status === 'active').length > 0
+                  ? <Badge color="green">{state.workshops.filter(w => w.status === 'active').length}</Badge>
+                  : undefined
+              },
+              {
                 id: "budgets",
                 type: "link",
                 text: "Budgets",
@@ -12811,6 +12947,7 @@ export default function PrismApp() {
             {state.activeView === 'budgets' && <BudgetPoolManagementView />}
             {state.activeView === 'approvals' && <ApprovalsView />}
             {state.activeView === 'courses' && <CoursesManagementView />}
+            {state.activeView === 'workshops' && <WorkshopsManagementView />}
             {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
             {state.activeView === 'users' && <UserManagementView />}
             {state.activeView === 'ami' && <AMIManagementView />}

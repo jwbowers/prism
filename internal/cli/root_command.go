@@ -493,6 +493,10 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(courseCobra.CreateCourseCommand())
 	taCobra := NewTACobraCommands(r.app)
 	rootCmd.AddCommand(taCobra.CreateTACommand())
+
+	// v0.18.0: Workshop & Event Management
+	workshopCobra := NewWorkshopCobraCommands(r.app)
+	rootCmd.AddCommand(workshopCobra.CreateWorkshopCommand())
 }
 
 func (r *CommandFactoryRegistry) createSnapshotCommand() *cobra.Command {

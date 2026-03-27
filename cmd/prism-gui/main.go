@@ -19,6 +19,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed assets/icon.png
+var appIcon []byte
+
 // checkDaemonHealth checks if the daemon is responding to health checks
 func checkDaemonHealth() bool {
 	client := &http.Client{
@@ -229,6 +232,7 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "Prism",
 		Description: "Academic Research Computing Platform - Professional GUI",
+		Icon:        appIcon,
 		Services: []application.Service{
 			application.NewService(cwsService),
 		},

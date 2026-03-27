@@ -948,3 +948,61 @@ func (m *MockClient) ImportCourseRoster(ctx context.Context, courseID string, cs
 func (m *MockClient) ProvisionStudent(ctx context.Context, courseID, studentID string, req map[string]interface{}) (map[string]interface{}, error) {
 	return nil, nil
 }
+
+// ─── v0.18.0 Workshop & Event Management stubs ────────────────────────────────
+
+func (m *MockClient) ListWorkshops(ctx context.Context, params string) (map[string]interface{}, error) {
+	return map[string]interface{}{"workshops": []interface{}{}}, nil
+}
+
+func (m *MockClient) CreateWorkshop(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	return map[string]interface{}{"id": "mock-workshop-id", "title": req["title"], "status": "draft", "join_token": "WS-MOCKTOKEN"}, nil
+}
+
+func (m *MockClient) GetWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return map[string]interface{}{"id": workshopID, "title": "Mock Workshop", "status": "draft"}, nil
+}
+
+func (m *MockClient) UpdateWorkshop(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error) {
+	return map[string]interface{}{"id": workshopID}, nil
+}
+
+func (m *MockClient) DeleteWorkshop(ctx context.Context, workshopID string) error {
+	return nil
+}
+
+func (m *MockClient) ProvisionWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return map[string]interface{}{"provisioned": 0, "skipped": 0, "errors": []interface{}{}}, nil
+}
+
+func (m *MockClient) GetWorkshopDashboard(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return map[string]interface{}{"workshop_id": workshopID, "total_participants": 0, "active_instances": 0, "stopped_instances": 0, "total_spent": 0.0, "time_remaining": "N/A", "participants": []interface{}{}}, nil
+}
+
+func (m *MockClient) EndWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return map[string]interface{}{"stopped": 0, "errors": []interface{}{}}, nil
+}
+
+func (m *MockClient) GetWorkshopDownload(ctx context.Context, workshopID string) (map[string]interface{}, error) {
+	return map[string]interface{}{"workshop_id": workshopID, "participants": []interface{}{}}, nil
+}
+
+func (m *MockClient) ListWorkshopConfigs(ctx context.Context) (map[string]interface{}, error) {
+	return map[string]interface{}{"configs": []interface{}{}}, nil
+}
+
+func (m *MockClient) SaveWorkshopConfig(ctx context.Context, workshopID, name string) (map[string]interface{}, error) {
+	return map[string]interface{}{"name": name, "template": "mock-template", "duration_hours": 6, "max_participants": 0}, nil
+}
+
+func (m *MockClient) CreateWorkshopFromConfig(ctx context.Context, configName string, req map[string]interface{}) (map[string]interface{}, error) {
+	return map[string]interface{}{"id": "mock-workshop-from-config", "title": req["title"], "join_token": "WS-MOCKTOKEN"}, nil
+}
+
+func (m *MockClient) AddWorkshopParticipant(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error) {
+	return map[string]interface{}{"user_id": req["user_id"], "status": "pending"}, nil
+}
+
+func (m *MockClient) RemoveWorkshopParticipant(ctx context.Context, workshopID, userID string) error {
+	return nil
+}

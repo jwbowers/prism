@@ -295,6 +295,22 @@ type PrismAPI interface {
 
 	// v0.14.0 — University Education System (core CRUD, in interface for fixture cleanup)
 	DeleteCourse(ctx context.Context, courseID string) error
+
+	// v0.18.0 — Workshop & Event Management (#135, #176-#184)
+	ListWorkshops(ctx context.Context, params string) (map[string]interface{}, error)
+	CreateWorkshop(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error)
+	GetWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error)
+	UpdateWorkshop(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error)
+	DeleteWorkshop(ctx context.Context, workshopID string) error
+	ProvisionWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error)
+	GetWorkshopDashboard(ctx context.Context, workshopID string) (map[string]interface{}, error)
+	EndWorkshop(ctx context.Context, workshopID string) (map[string]interface{}, error)
+	GetWorkshopDownload(ctx context.Context, workshopID string) (map[string]interface{}, error)
+	ListWorkshopConfigs(ctx context.Context) (map[string]interface{}, error)
+	SaveWorkshopConfig(ctx context.Context, workshopID, name string) (map[string]interface{}, error)
+	CreateWorkshopFromConfig(ctx context.Context, configName string, req map[string]interface{}) (map[string]interface{}, error)
+	AddWorkshopParticipant(ctx context.Context, workshopID string, req map[string]interface{}) (map[string]interface{}, error)
+	RemoveWorkshopParticipant(ctx context.Context, workshopID, userID string) error
 }
 
 // Registry-specific response types for API operations

@@ -30,6 +30,7 @@ import (
 	"github.com/scttfrdmn/prism/pkg/sleepwake"
 	"github.com/scttfrdmn/prism/pkg/state"
 	"github.com/scttfrdmn/prism/pkg/throttle"
+	"github.com/scttfrdmn/prism/pkg/workshop"
 )
 
 // Server represents the Prism daemon server
@@ -107,6 +108,9 @@ type Server struct {
 
 	// Course / Education manager (v0.14.0 - Issue #45)
 	courseManager *course.Manager
+
+	// Workshop / Event manager (v0.18.0 - Issue #135/#178-#184)
+	workshopManager *workshop.Manager
 }
 
 // awsInitResult bundles the outputs of initAWSManager.
@@ -433,6 +437,13 @@ func NewServer(port string) (*Server, error) {
 		server.courseManager = cm
 	} else {
 		logger.Info(fmt.Sprintf("Warning: course manager unavailable: %v", err))
+	}
+
+	// Initialize workshop manager (v0.18.0 - Issue #135/#178-#184)
+	if wm, err := workshop.NewManager(); err == nil {
+		server.workshopManager = wm
+	} else {
+		logger.Info(fmt.Sprintf("Warning: workshop manager unavailable: %v", err))
 	}
 
 	// Load persisted idle schedules into scheduler (Issue #288)
@@ -1074,6 +1085,10 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	// Course / Education management (v0.14.0 - Issue #45)
 	mux.HandleFunc("/api/v1/courses", applyMiddleware(s.handleCourseOperations))
 	mux.HandleFunc("/api/v1/courses/", applyMiddleware(s.handleCourseByID))
+
+	// Workshop / Event management (v0.18.0 - Issue #135/#178-#184)
+	mux.HandleFunc("/api/v1/workshops", applyMiddleware(s.handleWorkshopOperations))
+	mux.HandleFunc("/api/v1/workshops/", applyMiddleware(s.handleWorkshopByID))
 
 	// Security management endpoints (Phase 4: Security integration)
 	mux.HandleFunc("/api/v1/security/status", applyMiddleware(s.handleSecurityStatus))

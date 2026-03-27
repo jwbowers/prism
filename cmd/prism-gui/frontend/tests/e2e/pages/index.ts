@@ -16,6 +16,7 @@ export { SettingsPage } from './SettingsPage';
 export { ProjectsPage } from './ProjectsPage';
 export { GovernancePage } from './GovernancePage';
 export { CoursePage } from './CoursePage';
+export { WorkshopPage } from './WorkshopPage';
 
 // Dialog exports
 export { LaunchDialog } from './dialogs/LaunchDialog';
