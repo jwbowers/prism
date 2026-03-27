@@ -23,6 +23,7 @@ type FixtureRegistry struct {
 	budgets       []string // v0.6.2: Budget IDs for cleanup
 	allocations   []string // v0.6.2: Allocation IDs for cleanup
 	invitations   []string // v0.6.2: Invitation IDs for cleanup (Issue #383)
+	courses       []string // v0.14.0: Course IDs for cleanup
 	cleanupCalled bool
 }
 
@@ -69,6 +70,8 @@ func (r *FixtureRegistry) Register(resourceType, id string) {
 		r.allocations = append(r.allocations, id)
 	case "invitation": // v0.6.2 (Issue #383)
 		r.invitations = append(r.invitations, id)
+	case "course": // v0.14.0
+		r.courses = append(r.courses, id)
 	default:
 		r.t.Logf("Warning: Unknown resource type %q", resourceType)
 	}
@@ -85,8 +88,14 @@ func (r *FixtureRegistry) cleanupResourceItems(label string, ids []string, del f
 	}
 }
 
+// RegisterCourse adds a course ID to the registry for automatic cleanup.
+func (r *FixtureRegistry) RegisterCourse(courseID string) {
+	r.t.Helper()
+	r.courses = append(r.courses, courseID)
+}
+
 // cleanup removes all registered test resources in the correct order
-// Order: allocations → budgets → invitations → backups → instances → EBS volumes → EFS volumes → projects → profiles
+// Order: allocations → budgets → invitations → backups → instances → EBS volumes → EFS volumes → projects → courses → profiles
 func (r *FixtureRegistry) cleanup() {
 	r.t.Helper()
 	r.cleanupCalled = true
@@ -134,6 +143,7 @@ func (r *FixtureRegistry) cleanup() {
 	r.cleanupResourceItems("EBS volume", r.ebsStorages, func(id string) error { return r.client.DeleteStorage(ctx, id) })
 	r.cleanupResourceItems("EFS volume", r.volumes, func(id string) error { return r.client.DeleteVolume(ctx, id) })
 	r.cleanupResourceItems("project", r.projects, func(id string) error { return r.client.DeleteProject(ctx, id) })
+	r.cleanupResourceItems("course", r.courses, func(id string) error { return r.client.DeleteCourse(ctx, id) })
 
 	// Note: Profiles are managed locally via pkg/profile package, not through daemon API
 	if len(r.profiles) > 0 {

@@ -2772,6 +2772,113 @@ func (c *HTTPClient) TAResetStudent(ctx context.Context, courseID string, req ma
 	return result, c.handleResponse(resp, &result)
 }
 
+// ─── Course v0.16.0 API ───────────────────────────────────────────────────────
+
+// GetCourseOverview returns the TA dashboard overview for a course (#168).
+func (c *HTTPClient) GetCourseOverview(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/courses/"+courseID+"/overview", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// GetCourseReport returns the usage report for a course (#173).
+// format may be "" (JSON) or "csv".
+func (c *HTTPClient) GetCourseReport(ctx context.Context, courseID, format string) (map[string]interface{}, error) {
+	path := "/api/v1/courses/" + courseID + "/report"
+	if format != "" {
+		path += "?format=" + format
+	}
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// GetCourseAuditLog returns audit log entries for a course (#165).
+func (c *HTTPClient) GetCourseAuditLog(ctx context.Context, courseID, studentID, since string, limit int) (map[string]interface{}, error) {
+	path := "/api/v1/courses/" + courseID + "/audit"
+	params := []string{}
+	if studentID != "" {
+		params = append(params, "student_id="+studentID)
+	}
+	if since != "" {
+		params = append(params, "since="+since)
+	}
+	if limit > 0 {
+		params = append(params, fmt.Sprintf("limit=%d", limit))
+	}
+	if len(params) > 0 {
+		path += "?" + strings.Join(params, "&")
+	}
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// ArchiveCourse archives a course and stops its instances (#162).
+func (c *HTTPClient) ArchiveCourse(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses/"+courseID+"/archive", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// ImportCourseRoster imports a CSV roster with optional LMS format (#166).
+func (c *HTTPClient) ImportCourseRoster(ctx context.Context, courseID string, csvBytes []byte, format string) (map[string]interface{}, error) {
+	path := c.baseURL + "/api/v1/courses/" + courseID + "/members/import"
+	if format != "" {
+		path += "?format=" + format
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", path, bytes.NewBuffer(csvBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "text/csv")
+	c.mu.RLock()
+	if c.awsProfile != "" {
+		req.Header.Set("X-AWS-Profile", c.awsProfile)
+	}
+	if c.awsRegion != "" {
+		req.Header.Set("X-AWS-Region", c.awsRegion)
+	}
+	if c.apiKey != "" {
+		req.Header.Set("X-API-Key", c.apiKey)
+	}
+	c.mu.RUnlock()
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+// ProvisionStudent provisions a workspace for a student (#172).
+func (c *HTTPClient) ProvisionStudent(ctx context.Context, courseID, studentID string, req map[string]interface{}) (map[string]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/api/v1/courses/"+courseID+"/members/"+studentID+"/provision", req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
 // parseVersion parses a version string like "v0.5.1" or "0.5.1" into major, minor, patch
 func parseVersion(version string) (major, minor, patch int) {
 	// Remove 'v' prefix if present

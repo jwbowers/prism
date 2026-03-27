@@ -97,6 +97,14 @@ type Course struct {
 
 	// LaunchPrevented prevents new instance launches when true (set by budget enforcement)
 	LaunchPrevented bool `json:"launch_prevented,omitempty"`
+
+	// DefaultTemplate is the template slug auto-assigned to students on workspace provision.
+	// When empty, provisioning must be requested with an explicit template override.
+	DefaultTemplate string `json:"default_template,omitempty"`
+
+	// AutoProvisionOnEnroll creates a workspace for the student automatically upon
+	// enrollment when true (requires DefaultTemplate to be set).
+	AutoProvisionOnEnroll bool `json:"auto_provision_on_enroll,omitempty"`
 }
 
 // ClassMember represents an enrolled course participant

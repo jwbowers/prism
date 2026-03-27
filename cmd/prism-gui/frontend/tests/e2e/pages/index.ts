@@ -15,6 +15,7 @@ export { StoragePage } from './StoragePage';
 export { SettingsPage } from './SettingsPage';
 export { ProjectsPage } from './ProjectsPage';
 export { GovernancePage } from './GovernancePage';
+export { CoursePage } from './CoursePage';
 
 // Dialog exports
 export { LaunchDialog } from './dialogs/LaunchDialog';

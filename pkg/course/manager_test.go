@@ -338,3 +338,207 @@ func TestPersistence(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, c.Code, loaded.Code)
 }
+
+// --- v0.16.0 tests ---
+
+// TestCheckStudentBudget verifies per-student budget enforcement.
+func TestCheckStudentBudget(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	req := testCreateReq()
+	req.PerStudentBudget = 10.0
+	c, err := m.CreateCourse(ctx, req)
+	require.NoError(t, err)
+
+	_, err = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "alice", Email: "alice@uni.edu", Role: types.ClassRoleStudent})
+	require.NoError(t, err)
+
+	// Under budget — should allow
+	err = m.CheckStudentBudget(c.ID, "alice", 5.0)
+	assert.NoError(t, err)
+
+	// Record some spend
+	_ = m.RecordSpend(ctx, c.ID, "alice", 8.0)
+
+	// Over budget — should block
+	err = m.CheckStudentBudget(c.ID, "alice", 5.0)
+	require.Error(t, err)
+	var budgetErr *BudgetExceededError
+	require.ErrorAs(t, err, &budgetErr)
+	assert.Equal(t, 8.0, budgetErr.Spent)
+	assert.Equal(t, 10.0, budgetErr.Limit)
+
+	// Unknown student — should not block
+	err = m.CheckStudentBudget(c.ID, "unknown", 100.0)
+	assert.NoError(t, err)
+
+	// Unknown course — should not block
+	err = m.CheckStudentBudget("bad-course-id", "alice", 5.0)
+	assert.NoError(t, err)
+}
+
+// TestCheckStudentBudget_Unlimited verifies unlimited budgets are never blocked.
+func TestCheckStudentBudget_Unlimited(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	req := testCreateReq()
+	req.PerStudentBudget = 0 // unlimited
+	c, _ := m.CreateCourse(ctx, req)
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "alice", Role: types.ClassRoleStudent})
+	_ = m.RecordSpend(ctx, c.ID, "alice", 9999.0)
+
+	err := m.CheckStudentBudget(c.ID, "alice", 9999.0)
+	assert.NoError(t, err)
+}
+
+// TestParseCanvasCSV verifies Canvas LMS roster parsing.
+func TestParseCanvasCSV(t *testing.T) {
+	csv := `Student,ID,SIS Login ID,Section,SIS User ID,Email Address,Points Possible
+Alice Liddell,1,alice,CS101-A,101,alice@uni.edu,N/A
+Bob Baker,2,bob,CS101-A,102,bob@uni.edu,N/A
+Points Possible,,,,,,100`
+
+	rows, err := ParseCanvasCSV([]byte(csv))
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "alice@uni.edu", rows[0].Email)
+	assert.Equal(t, "Alice Liddell", rows[0].DisplayName)
+	assert.Equal(t, "bob@uni.edu", rows[1].Email)
+}
+
+// TestParseBlackboardCSV verifies Blackboard LMS roster parsing.
+func TestParseBlackboardCSV(t *testing.T) {
+	csv := `Last Name,First Name,Username,Student ID,Last Access,Email
+Liddell,Alice,alice101,S001,2026-01-01,alice@uni.edu
+Baker,Bob,bob202,S002,2026-01-02,bob@uni.edu`
+
+	rows, err := ParseBlackboardCSV([]byte(csv))
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "alice@uni.edu", rows[0].Email)
+	assert.Equal(t, "Liddell, Alice", rows[0].DisplayName) // Blackboard "Last, First" format
+	assert.Equal(t, "alice101", rows[0].Role)              // username stored in Role field
+}
+
+// TestGetProvisioningContext verifies provisioning context resolution.
+func TestGetProvisioningContext(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	req := testCreateReq()
+	req.DefaultTemplate = "python-ml"
+	c, _ := m.CreateCourse(ctx, req)
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "alice", Email: "alice@uni.edu", Role: types.ClassRoleStudent, BudgetLimit: 20.0})
+
+	// No override — should use DefaultTemplate
+	pctx, err := m.GetProvisioningContext(ctx, c.ID, "alice", "")
+	require.NoError(t, err)
+	assert.Equal(t, "python-ml", pctx.Template)
+	assert.Equal(t, "alice", pctx.StudentID)
+	assert.Equal(t, 20.0, pctx.BudgetLimit)
+
+	// With override
+	pctx, err = m.GetProvisioningContext(ctx, c.ID, "alice", "r-research")
+	require.NoError(t, err)
+	assert.Equal(t, "r-research", pctx.Template)
+}
+
+// TestGetCourseOverview verifies the TA dashboard overview.
+func TestGetCourseOverview(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	req := testCreateReq()
+	c, _ := m.CreateCourse(ctx, req)
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "alice", Role: types.ClassRoleStudent})
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "bob", Role: types.ClassRoleStudent})
+
+	overview, err := m.GetCourseOverview(ctx, c.ID, nil)
+	require.NoError(t, err)
+	assert.Equal(t, c.ID, overview.CourseID)
+	assert.Equal(t, 2, overview.TotalStudents)
+}
+
+// TestGetUsageReport verifies the semester usage report.
+func TestGetUsageReport(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	req := testCreateReq()
+	req.TotalBudget = 100.0
+	c, _ := m.CreateCourse(ctx, req)
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "alice", Email: "alice@uni.edu", Role: types.ClassRoleStudent, BudgetLimit: 50.0})
+	_ = m.RecordSpend(ctx, c.ID, "alice", 12.5)
+
+	report, err := m.GetUsageReport(ctx, c.ID,
+		map[string]float64{"alice": 4.0},
+		map[string]int{"alice": 1},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, c.ID, report.CourseID)
+	assert.InDelta(t, 12.5, report.TotalSpent, 0.001)
+	require.Len(t, report.Students, 1)
+	assert.Equal(t, 4.0, report.Students[0].InstanceHours)
+	assert.Equal(t, 1, report.Students[0].InstanceCount)
+}
+
+// TestListArchiveEligibleCourses verifies courses eligible for archiving.
+func TestListArchiveEligibleCourses(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	// Course that ended long ago (past grace period)
+	past := &CreateCourseRequest{
+		Code:            "OLD101",
+		Title:           "Old Course",
+		Semester:        "Fall 2020",
+		SemesterStart:   time.Now().Add(-200 * 24 * time.Hour),
+		SemesterEnd:     time.Now().Add(-100 * 24 * time.Hour),
+		Owner:           "prof1",
+		GracePeriodDays: 7,
+	}
+	old, _ := m.CreateCourse(ctx, past)
+	// Manually set to closed so it's eligible
+	m.mutex.Lock()
+	m.courses[old.ID].Status = types.CourseStatusClosed
+	m.mutex.Unlock()
+
+	// Active course — not eligible
+	active, _ := m.CreateCourse(ctx, testCreateReq())
+	_ = active
+
+	eligible, err := m.ListArchiveEligibleCourses(ctx)
+	require.NoError(t, err)
+	require.Len(t, eligible, 1)
+	assert.Equal(t, old.ID, eligible[0].ID)
+}
+
+// TestMarkCourseArchived verifies the archive transition.
+func TestMarkCourseArchived(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	// Must be closed first
+	_ = m.CloseCourse(ctx, c.ID)
+
+	err := m.MarkCourseArchived(ctx, c.ID)
+	require.NoError(t, err)
+
+	updated, _ := m.GetCourse(ctx, c.ID)
+	assert.Equal(t, types.CourseStatusArchived, updated.Status)
+}
+
+// TestMarkCourseArchived_MustBeClosed verifies active courses cannot be archived directly.
+func TestMarkCourseArchived_MustBeClosed(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+	// Still active — archive should fail
+	err := m.MarkCourseArchived(ctx, c.ID)
+	require.Error(t, err)
+}

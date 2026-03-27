@@ -41,6 +41,9 @@ Examples:
 		cc.createTemplatesCommand(),
 		cc.createStudentsCommand(),
 		cc.createBudgetCommand(),
+		cc.createArchiveCommand(),
+		cc.createReportCommand(),
+		cc.createAuditCommand(),
 	)
 	return cmd
 }
@@ -258,7 +261,42 @@ func (cc *CourseCobraCommands) createStudentsCommand() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(listCmd, enrollCmd, unenrollCmd)
+	importCmd := &cobra.Command{
+		Use:   "import <course-id> <file>",
+		Short: "Import a student roster from CSV (Prism/Canvas/Blackboard)",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			format, _ := cmd.Flags().GetString("format")
+			cliArgs := []string{"students", "import", args[0], args[1]}
+			if format != "" {
+				cliArgs = append(cliArgs, "--format", format)
+			}
+			return cc.app.Course(cliArgs)
+		},
+	}
+	importCmd.Flags().String("format", "prism", "Roster format: prism, canvas, blackboard")
+
+	provisionCmd := &cobra.Command{
+		Use:   "provision <course-id> <user-id>",
+		Short: "Provision a workspace for a student",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			template, _ := cmd.Flags().GetString("template")
+			name, _ := cmd.Flags().GetString("name")
+			cliArgs := []string{"students", "provision", args[0], args[1]}
+			if template != "" {
+				cliArgs = append(cliArgs, "--template", template)
+			}
+			if name != "" {
+				cliArgs = append(cliArgs, "--name", name)
+			}
+			return cc.app.Course(cliArgs)
+		},
+	}
+	provisionCmd.Flags().String("template", "", "Template slug override")
+	provisionCmd.Flags().String("name", "", "Instance name override")
+
+	cmd.AddCommand(listCmd, enrollCmd, unenrollCmd, importCmd, provisionCmd)
 	return cmd
 }
 
@@ -314,7 +352,7 @@ Examples:
   prism ta debug <course-id> <student-id>
   prism ta reset <course-id> <student-id> --reason "broken environment"`,
 	}
-	cmd.AddCommand(tc.createDebugCommand(), tc.createResetCommand())
+	cmd.AddCommand(tc.createDebugCommand(), tc.createResetCommand(), tc.createOverviewCommand())
 	return cmd
 }
 
@@ -351,5 +389,80 @@ func (tc *TACobraCommands) createResetCommand() *cobra.Command {
 	cmd.Flags().String("reason", "", "Reason for reset (required for audit trail)")
 	cmd.Flags().String("retention", "7", "Backup retention in days")
 	_ = cmd.MarkFlagRequired("reason")
+	return cmd
+}
+
+func (tc *TACobraCommands) createOverviewCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "overview <course-id>",
+		Short: "Show TA dashboard overview for a course",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return tc.app.TA([]string{"overview", args[0]})
+		},
+	}
+}
+
+// v0.16.0 course commands
+
+func (cc *CourseCobraCommands) createArchiveCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "archive <course-id>",
+		Short: "Archive a course and stop its instances",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cc.app.Course([]string{"archive", args[0]})
+		},
+	}
+}
+
+func (cc *CourseCobraCommands) createReportCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "report <course-id>",
+		Short: "Generate a student usage report",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			format, _ := cmd.Flags().GetString("format")
+			output, _ := cmd.Flags().GetString("output")
+			cliArgs := []string{"report", args[0]}
+			if format != "" {
+				cliArgs = append(cliArgs, "--format", format)
+			}
+			if output != "" {
+				cliArgs = append(cliArgs, "--output", output)
+			}
+			return cc.app.Course(cliArgs)
+		},
+	}
+	cmd.Flags().String("format", "", "Output format: json or csv")
+	cmd.Flags().String("output", "", "Write output to file")
+	return cmd
+}
+
+func (cc *CourseCobraCommands) createAuditCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "audit <course-id>",
+		Short: "Query the academic integrity audit log",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			student, _ := cmd.Flags().GetString("student")
+			since, _ := cmd.Flags().GetString("since")
+			limitStr, _ := cmd.Flags().GetString("limit")
+			cliArgs := []string{"audit", args[0]}
+			if student != "" {
+				cliArgs = append(cliArgs, "--student", student)
+			}
+			if since != "" {
+				cliArgs = append(cliArgs, "--since", since)
+			}
+			if limitStr != "" {
+				cliArgs = append(cliArgs, "--limit", limitStr)
+			}
+			return cc.app.Course(cliArgs)
+		},
+	}
+	cmd.Flags().String("student", "", "Filter by student user ID or email")
+	cmd.Flags().String("since", "", "Filter entries since this date (RFC3339 or YYYY-MM-DD)")
+	cmd.Flags().String("limit", "100", "Maximum number of entries to return")
 	return cmd
 }

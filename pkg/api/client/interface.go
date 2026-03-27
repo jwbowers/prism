@@ -292,6 +292,9 @@ type PrismAPI interface {
 	ListOnboardingTemplates(ctx context.Context, projectID string) ([]types.OnboardingTemplate, error)
 	AddOnboardingTemplate(ctx context.Context, projectID string, tmpl types.OnboardingTemplate) error
 	DeleteOnboardingTemplate(ctx context.Context, projectID, nameOrID string) error
+
+	// v0.14.0 — University Education System (core CRUD, in interface for fixture cleanup)
+	DeleteCourse(ctx context.Context, courseID string) error
 }
 
 // Registry-specific response types for API operations

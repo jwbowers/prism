@@ -782,6 +782,40 @@ func (s *Server) startGovernanceTickers(ctx context.Context) {
 			}
 		}
 	}()
+
+	// Daily course archiving sweep (#162)
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		s.runCourseArchivingSweep(ctx) // run once at startup
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.runCourseArchivingSweep(ctx)
+			}
+		}
+	}()
+}
+
+// runCourseArchivingSweep archives courses that have passed their grace period (#162).
+func (s *Server) runCourseArchivingSweep(ctx context.Context) {
+	if s.courseManager == nil {
+		return
+	}
+	eligible, err := s.courseManager.ListArchiveEligibleCourses(ctx)
+	if err != nil {
+		logger.Warn("ListArchiveEligibleCourses failed", "error", err)
+		return
+	}
+	for _, c := range eligible {
+		if _, err := s.archiveCourse(ctx, c.ID); err != nil {
+			logger.Warn("archiveCourse sweep failed", "course_id", c.ID, "error", err)
+		} else {
+			logger.Info("Auto-archived course at semester end", "course_id", c.ID, "code", c.Code)
+		}
+	}
 }
 
 // checkExpiredInstances stops/hibernates any instances whose ExpiresAt has passed (#146)

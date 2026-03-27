@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/scttfrdmn/prism/pkg/aws"
+	"github.com/scttfrdmn/prism/pkg/course"
 	"github.com/scttfrdmn/prism/pkg/profile"
 	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/rbac"
@@ -388,6 +389,27 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Course per-student budget enforcement (#163)
+	if req.CourseID != "" && s.courseManager != nil {
+		userID := "default_user"
+		if pm, err := profile.NewManagerEnhanced(); err == nil {
+			if cp, err := pm.GetCurrentProfile(); err == nil {
+				userID = cp.Name
+			}
+		}
+		estimated := estimateHourlyCostFromSize(req.Size)
+		if err := s.courseManager.CheckStudentBudget(req.CourseID, userID, estimated); err != nil {
+			if budgetErr, ok := err.(*course.BudgetExceededError); ok {
+				s.writeError(w, http.StatusForbidden, fmt.Sprintf(
+					"Launch blocked: student budget exceeded (spent $%.2f of $%.2f limit). Contact your instructor.",
+					budgetErr.Spent, budgetErr.Limit))
+			} else {
+				s.writeError(w, http.StatusForbidden, err.Error())
+			}
+			return
+		}
+	}
+
 	// Check instance name uniqueness (skip in test mode)
 	if !s.instanceNameCheckPassed(&req, w, r) {
 		return
@@ -480,6 +502,11 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("[DEBUG] handleLaunchInstance: Instance state saved for %s", instance.Name)
 
+	// Set ProjectID from CourseID when not already set (#172)
+	if req.CourseID != "" && instance.ProjectID == "" {
+		instance.ProjectID = req.CourseID
+	}
+
 	// Audit the successful launch.
 	s.securityManager.LogOperationalEvent("instance.launch", instance.Name, "", true, "",
 		map[string]interface{}{
@@ -488,6 +515,27 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 			"instance_id":   instance.ID,
 			"hourly_rate":   instance.HourlyRate,
 		})
+
+	// Course audit log entry (#165)
+	if req.CourseID != "" && s.courseManager != nil {
+		userID := "default_user"
+		if pm, err := profile.NewManagerEnhanced(); err == nil {
+			if cp, err := pm.GetCurrentProfile(); err == nil {
+				userID = cp.Name
+			}
+		}
+		_ = s.courseManager.AppendCourseAudit(req.CourseID, course.AuditEntry{
+			CourseID: req.CourseID,
+			Actor:    userID,
+			Action:   course.AuditActionInstanceLaunch,
+			Target:   instance.Name,
+			Detail: map[string]interface{}{
+				"instance_id":   instance.ID,
+				"template":      instance.Template,
+				"instance_type": instance.InstanceType,
+			},
+		})
+	}
 
 	response := types.LaunchResponse{
 		Instance:       *instance,
@@ -1575,4 +1623,27 @@ func (s *Server) resolveFundingAllocation(req *types.LaunchRequest, w http.Respo
 	req.FundingAllocationID = defaultAllocationID
 
 	return nil
+}
+
+// estimateHourlyCostFromSize returns a conservative hourly cost estimate for a given
+// instance size label. Used for per-student budget enforcement at launch time (#163).
+func estimateHourlyCostFromSize(size string) float64 {
+	switch strings.ToUpper(size) {
+	case "XS":
+		return 0.02
+	case "S":
+		return 0.05
+	case "M":
+		return 0.10
+	case "L":
+		return 0.20
+	case "XL":
+		return 0.40
+	case "GPU-S", "GPUS":
+		return 0.50
+	case "GPU-L", "GPUL":
+		return 1.20
+	default:
+		return 0.10
+	}
 }

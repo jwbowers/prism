@@ -24,6 +24,7 @@ import (
 // Manager handles course lifecycle, member enrollment, template policies, and budgets
 type Manager struct {
 	coursesPath string
+	auditDir    string // directory for per-course JSONL audit logs
 	mutex       sync.RWMutex
 	courses     map[string]*types.Course
 }
@@ -40,8 +41,14 @@ func NewManager() (*Manager, error) {
 		return nil, fmt.Errorf("failed to create state directory: %w", err)
 	}
 
+	auditDir := filepath.Join(stateDir, "course-audits")
+	if err := os.MkdirAll(auditDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create audit directory: %w", err)
+	}
+
 	manager := &Manager{
 		coursesPath: filepath.Join(stateDir, "courses.json"),
+		auditDir:    auditDir,
 		courses:     make(map[string]*types.Course),
 	}
 
@@ -83,23 +90,25 @@ func (m *Manager) CreateCourse(ctx context.Context, req *CreateCourseRequest) (*
 	}
 
 	course := &types.Course{
-		ID:                uuid.New().String(),
-		Code:              req.Code,
-		Title:             req.Title,
-		Department:        req.Department,
-		Semester:          req.Semester,
-		SemesterStart:     req.SemesterStart,
-		SemesterEnd:       req.SemesterEnd,
-		GracePeriodDays:   graceDays,
-		Owner:             req.Owner,
-		Members:           []types.ClassMember{},
-		ApprovedTemplates: req.ApprovedTemplates,
-		PerStudentBudget:  req.PerStudentBudget,
-		TotalBudget:       req.TotalBudget,
-		Tags:              req.Tags,
-		CreatedAt:         now,
-		UpdatedAt:         now,
-		Status:            status,
+		ID:                    uuid.New().String(),
+		Code:                  req.Code,
+		Title:                 req.Title,
+		Department:            req.Department,
+		Semester:              req.Semester,
+		SemesterStart:         req.SemesterStart,
+		SemesterEnd:           req.SemesterEnd,
+		GracePeriodDays:       graceDays,
+		Owner:                 req.Owner,
+		Members:               []types.ClassMember{},
+		ApprovedTemplates:     req.ApprovedTemplates,
+		PerStudentBudget:      req.PerStudentBudget,
+		TotalBudget:           req.TotalBudget,
+		Tags:                  req.Tags,
+		DefaultTemplate:       req.DefaultTemplate,
+		AutoProvisionOnEnroll: req.AutoProvisionOnEnroll,
+		CreatedAt:             now,
+		UpdatedAt:             now,
+		Status:                status,
 	}
 
 	// Enroll the owner as instructor
@@ -204,6 +213,12 @@ func (m *Manager) UpdateCourse(ctx context.Context, courseID string, req *Update
 	if req.Status != nil {
 		c.Status = *req.Status
 	}
+	if req.DefaultTemplate != nil {
+		c.DefaultTemplate = *req.DefaultTemplate
+	}
+	if req.AutoProvisionOnEnroll != nil {
+		c.AutoProvisionOnEnroll = *req.AutoProvisionOnEnroll
+	}
 	c.UpdatedAt = time.Now()
 
 	if err := m.saveCourses(); err != nil {
@@ -227,7 +242,16 @@ func (m *Manager) CloseCourse(ctx context.Context, courseID string) error {
 	c.Status = types.CourseStatusClosed
 	c.UpdatedAt = time.Now()
 
-	return m.saveCourses()
+	if err := m.saveCourses(); err != nil {
+		return err
+	}
+	caller, _ := ctx.Value("caller_id").(string)
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    caller,
+		Action:   AuditActionCourseClose,
+	})
+	return nil
 }
 
 // DeleteCourse permanently removes a course record
@@ -310,6 +334,13 @@ func (m *Manager) EnrollMember(ctx context.Context, courseID string, req *Enroll
 	}
 
 	memberCopy := member
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    addedBy,
+		Action:   AuditActionEnroll,
+		Target:   userID,
+		Detail:   map[string]interface{}{"role": string(role), "email": req.Email},
+	})
 	return &memberCopy, nil
 }
 
@@ -436,7 +467,17 @@ func (m *Manager) UnenrollMember(ctx context.Context, courseID, userID string) e
 		if mb.UserID == userID || mb.Email == userID {
 			c.Members = append(c.Members[:i], c.Members[i+1:]...)
 			c.UpdatedAt = time.Now()
-			return m.saveCourses()
+			if err := m.saveCourses(); err != nil {
+				return err
+			}
+			caller, _ := ctx.Value("caller_id").(string)
+			m.appendAudit(courseID, AuditEntry{
+				CourseID: courseID,
+				Actor:    caller,
+				Action:   AuditActionUnenroll,
+				Target:   mb.UserID,
+			})
+			return nil
 		}
 	}
 	return ErrMemberNotFound
@@ -571,7 +612,17 @@ func (m *Manager) DistributeBudget(ctx context.Context, courseID string, amountP
 		}
 	}
 	c.UpdatedAt = time.Now()
-	return m.saveCourses()
+	if err := m.saveCourses(); err != nil {
+		return err
+	}
+	caller, _ := ctx.Value("caller_id").(string)
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    caller,
+		Action:   AuditActionBudgetDistribute,
+		Detail:   map[string]interface{}{"amount_per_student": amountPerStudent},
+	})
+	return nil
 }
 
 // RecordSpend increments the spend counter for a member
@@ -588,7 +639,17 @@ func (m *Manager) RecordSpend(ctx context.Context, courseID, userID string, amou
 		if mb.UserID == userID || mb.Email == userID {
 			c.Members[i].BudgetSpent += amount
 			c.UpdatedAt = time.Now()
-			return m.saveCourses()
+			if err := m.saveCourses(); err != nil {
+				return err
+			}
+			m.appendAudit(courseID, AuditEntry{
+				CourseID: courseID,
+				Actor:    userID,
+				Action:   AuditActionBudgetSpend,
+				Target:   userID,
+				Detail:   map[string]interface{}{"amount": amount, "total_spent": c.Members[i].BudgetSpent},
+			})
+			return nil
 		}
 	}
 	return ErrMemberNotFound
@@ -750,14 +811,21 @@ func (m *Manager) GetStudentDebugInfo(ctx context.Context, courseID, taID, stude
 		limit = c.PerStudentBudget
 	}
 
-	return &TADebugInfo{
+	info := &TADebugInfo{
 		CourseID:     courseID,
 		StudentID:    studentMember.UserID,
 		StudentEmail: studentMember.Email,
 		Instances:    nil, // populated by the handler using the AWS manager
 		BudgetSpent:  studentMember.BudgetSpent,
 		BudgetLimit:  limit,
-	}, nil
+	}
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    taID,
+		Action:   AuditActionTADebug,
+		Target:   studentMember.UserID,
+	})
+	return info, nil
 }
 
 // ResetStudentInstance records a TA reset request in the course audit trail.
@@ -778,6 +846,13 @@ func (m *Manager) ResetStudentInstance(ctx context.Context, courseID, taID strin
 	// Verify student is enrolled
 	for _, mb := range c.Members {
 		if mb.UserID == req.StudentID || mb.Email == req.StudentID {
+			m.appendAudit(courseID, AuditEntry{
+				CourseID: courseID,
+				Actor:    taID,
+				Action:   AuditActionTAReset,
+				Target:   mb.UserID,
+				Detail:   map[string]interface{}{"reason": req.Reason},
+			})
 			return nil // authorized; actual reset done by daemon handler
 		}
 	}
@@ -813,6 +888,408 @@ func (m *Manager) CheckAndCloseExpiredCourses(ctx context.Context) ([]string, er
 	}
 
 	return closed, nil
+}
+
+// --- v0.16.0: Budget enforcement (#163) ---
+
+// CheckStudentBudget returns a *BudgetExceededError if the student's accumulated spend
+// plus estimatedCost would exceed their effective budget limit.
+// Returns nil when the course has no budget configured, or when the member is not found
+// (unknown users are not blocked — they will fail enrollment checks elsewhere).
+func (m *Manager) CheckStudentBudget(courseID, userID string, estimatedCost float64) error {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	c, ok := m.courses[courseID]
+	if !ok {
+		return nil // unknown course: don't block
+	}
+
+	for _, mb := range c.Members {
+		if mb.UserID != userID && mb.Email != userID {
+			continue
+		}
+		// Resolve effective limit: member override → course default → 0 (unlimited)
+		limit := mb.BudgetLimit
+		if limit == 0 {
+			limit = c.PerStudentBudget
+		}
+		if limit == 0 {
+			return nil // unlimited
+		}
+		if mb.BudgetSpent+estimatedCost > limit {
+			return &BudgetExceededError{
+				UserID:    mb.UserID,
+				Spent:     mb.BudgetSpent,
+				Limit:     limit,
+				Requested: estimatedCost,
+			}
+		}
+		return nil
+	}
+	return nil // member not enrolled: don't block
+}
+
+// --- v0.16.0: Audit log (#165) ---
+
+// appendAudit writes a single audit entry for courseID.
+// Errors are logged to stderr but never propagated — audit write failure must not block operations.
+func (m *Manager) appendAudit(courseID string, entry AuditEntry) {
+	log := NewAuditLog(courseID, m.auditDir)
+	if err := log.Append(entry); err != nil {
+		fmt.Fprintf(os.Stderr, "audit write warning [%s]: %v\n", courseID, err)
+	}
+}
+
+// AppendCourseAudit is the daemon-layer entry point for writing audit events that occur
+// outside of manager methods (e.g. instance launch/stop events).
+func (m *Manager) AppendCourseAudit(courseID string, entry AuditEntry) error {
+	log := NewAuditLog(courseID, m.auditDir)
+	return log.Append(entry)
+}
+
+// QueryAuditLog returns audit entries for a course, filtered by optional studentID,
+// since timestamp, and entry limit. Returns nil (no error) when no log file exists yet.
+func (m *Manager) QueryAuditLog(courseID, studentID string, since time.Time, limit int) ([]AuditEntry, error) {
+	log := NewAuditLog(courseID, m.auditDir)
+	return log.Query(studentID, since, limit)
+}
+
+// --- v0.16.0: LMS CSV parsers (#166) ---
+
+// ParseCanvasCSV parses a Canvas LMS student roster CSV export into RosterRows.
+// Expected header columns (case-insensitive): Student (display name), SIS Login ID (user ID),
+// Email Address (email). Rows where the Student column equals "Points Possible" are skipped.
+func ParseCanvasCSV(data []byte) ([]RosterRow, error) {
+	r := csvReaderFromBytes(data)
+	records, err := r.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("canvas csv parse: %w", err)
+	}
+	if len(records) < 2 {
+		return nil, nil
+	}
+
+	// Build column index map from header row
+	colIdx := make(map[string]int)
+	for i, h := range records[0] {
+		colIdx[strings.ToLower(strings.TrimSpace(h))] = i
+	}
+
+	nameCol := colIdx["student"]
+	emailCol, hasEmail := colIdx["email address"]
+	userCol, hasUser := colIdx["sis login id"]
+
+	var rows []RosterRow
+	for _, rec := range records[1:] {
+		name := safeCol(rec, nameCol)
+		if strings.EqualFold(strings.TrimSpace(name), "points possible") {
+			continue // Canvas summary row sentinel
+		}
+		email := ""
+		if hasEmail {
+			email = safeCol(rec, emailCol)
+		}
+		userID := ""
+		if hasUser {
+			userID = safeCol(rec, userCol)
+		}
+		if email == "" && userID == "" {
+			continue // skip rows with no identity
+		}
+		rows = append(rows, RosterRow{
+			Email:       email,
+			DisplayName: name,
+			Role:        userID, // temporarily store SIS ID; handler maps to UserID
+		})
+		// Note: RosterRow.Role is overloaded here to carry the Canvas UserID string.
+		// The import handler will normalise this before calling EnrollMember.
+	}
+	return rows, nil
+}
+
+// ParseBlackboardCSV parses a Blackboard Learn user list CSV export into RosterRows.
+// Expected header columns: Last Name, First Name, Username (user ID), Email.
+func ParseBlackboardCSV(data []byte) ([]RosterRow, error) {
+	r := csvReaderFromBytes(data)
+	records, err := r.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("blackboard csv parse: %w", err)
+	}
+	if len(records) < 2 {
+		return nil, nil
+	}
+
+	colIdx := make(map[string]int)
+	for i, h := range records[0] {
+		colIdx[strings.ToLower(strings.TrimSpace(h))] = i
+	}
+
+	lastCol, hasLast := colIdx["last name"]
+	firstCol, hasFirst := colIdx["first name"]
+	userCol, hasUser := colIdx["username"]
+	emailCol, hasEmail := colIdx["email"]
+
+	var rows []RosterRow
+	for _, rec := range records[1:] {
+		email := ""
+		if hasEmail {
+			email = safeCol(rec, emailCol)
+		}
+		userID := ""
+		if hasUser {
+			userID = safeCol(rec, userCol)
+		}
+		if email == "" && userID == "" {
+			continue
+		}
+		last := ""
+		if hasLast {
+			last = safeCol(rec, lastCol)
+		}
+		first := ""
+		if hasFirst {
+			first = safeCol(rec, firstCol)
+		}
+		displayName := strings.TrimSpace(last + ", " + first)
+		if displayName == ", " || displayName == "," {
+			displayName = ""
+		}
+		rows = append(rows, RosterRow{
+			Email:       email,
+			DisplayName: displayName,
+			Role:        userID, // SIS/username stored in Role field; normalised by handler
+		})
+	}
+	return rows, nil
+}
+
+// csvReaderFromBytes returns a csv.Reader configured for RFC 4180 CSV.
+func csvReaderFromBytes(data []byte) *csv.Reader {
+	r := csv.NewReader(strings.NewReader(string(data)))
+	r.TrimLeadingSpace = true
+	r.LazyQuotes = true
+	return r
+}
+
+// safeCol returns rec[idx] if idx is within bounds, otherwise "".
+func safeCol(rec []string, idx int) string {
+	if idx < 0 || idx >= len(rec) {
+		return ""
+	}
+	return strings.TrimSpace(rec[idx])
+}
+
+// --- v0.16.0: Workspace provisioning (#172) ---
+
+// GetProvisioningContext returns the template and budget context needed to
+// launch a workspace for a student on behalf of an instructor/TA.
+// overrideTemplate takes precedence over the course's DefaultTemplate.
+// Returns ErrCourseNotFound, ErrMemberNotFound, or a descriptive error if
+// no template is available.
+func (m *Manager) GetProvisioningContext(ctx context.Context, courseID, studentID, overrideTemplate string) (*ProvisioningContext, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	c, ok := m.courses[courseID]
+	if !ok {
+		return nil, ErrCourseNotFound
+	}
+
+	template := overrideTemplate
+	if template == "" {
+		template = c.DefaultTemplate
+	}
+	if template == "" {
+		return nil, fmt.Errorf("no template specified and course has no DefaultTemplate set")
+	}
+
+	for _, mb := range c.Members {
+		if mb.UserID != studentID && mb.Email != studentID {
+			continue
+		}
+		limit := mb.BudgetLimit
+		if limit == 0 {
+			limit = c.PerStudentBudget
+		}
+		return &ProvisioningContext{
+			CourseID:     courseID,
+			StudentID:    mb.UserID,
+			StudentEmail: mb.Email,
+			Template:     template,
+			BudgetLimit:  limit,
+			BudgetSpent:  mb.BudgetSpent,
+		}, nil
+	}
+	return nil, ErrMemberNotFound
+}
+
+// --- v0.16.0: Course overview / TA dashboard (#168) ---
+
+// GetCourseOverview returns a TA-facing summary of all students.
+// instancesByStudent maps studentUserID → list of their instances (populated by the daemon
+// handler from state, keyed by instance.ProjectID == courseID).
+func (m *Manager) GetCourseOverview(ctx context.Context, courseID string, instancesByStudent map[string][]types.Instance) (*CourseOverview, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	c, ok := m.courses[courseID]
+	if !ok {
+		return nil, ErrCourseNotFound
+	}
+
+	overview := &CourseOverview{
+		CourseID:    courseID,
+		CourseCode:  c.Code,
+		GeneratedAt: time.Now().UTC(),
+	}
+
+	for _, mb := range c.Members {
+		if mb.Role != types.ClassRoleStudent {
+			continue
+		}
+		overview.TotalStudents++
+
+		instances := instancesByStudent[mb.UserID]
+		activeCount := 0
+		for _, inst := range instances {
+			if inst.State == "running" {
+				activeCount++
+				overview.ActiveInstances++
+			}
+		}
+
+		limit := mb.BudgetLimit
+		if limit == 0 {
+			limit = c.PerStudentBudget
+		}
+
+		status := "ok"
+		if limit > 0 {
+			pct := mb.BudgetSpent / limit
+			switch {
+			case pct > 1.0:
+				status = "exceeded"
+			case pct > 0.80:
+				status = "warning"
+			}
+		}
+
+		overview.TotalBudgetSpent += mb.BudgetSpent
+		overview.Students = append(overview.Students, StudentStatus{
+			UserID:       mb.UserID,
+			Email:        mb.Email,
+			DisplayName:  mb.DisplayName,
+			Instances:    instances,
+			BudgetSpent:  mb.BudgetSpent,
+			BudgetLimit:  limit,
+			BudgetStatus: status,
+		})
+	}
+
+	return overview, nil
+}
+
+// --- v0.16.0: Usage reports (#173) ---
+
+// GetUsageReport aggregates semester-end usage for all students.
+// instanceHoursByStudent and instanceCountByStudent are keyed by student UserID and
+// are populated by the daemon handler from instance state history.
+func (m *Manager) GetUsageReport(ctx context.Context, courseID string,
+	instanceHoursByStudent map[string]float64,
+	instanceCountByStudent map[string]int,
+) (*UsageReport, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	c, ok := m.courses[courseID]
+	if !ok {
+		return nil, ErrCourseNotFound
+	}
+
+	report := &UsageReport{
+		CourseID:    courseID,
+		CourseCode:  c.Code,
+		Semester:    c.Semester,
+		TotalBudget: c.TotalBudget,
+		GeneratedAt: time.Now().UTC(),
+	}
+
+	for _, mb := range c.Members {
+		if mb.Role != types.ClassRoleStudent {
+			continue
+		}
+		limit := mb.BudgetLimit
+		if limit == 0 {
+			limit = c.PerStudentBudget
+		}
+		report.TotalSpent += mb.BudgetSpent
+		report.Students = append(report.Students, StudentUsageRecord{
+			UserID:        mb.UserID,
+			Email:         mb.Email,
+			DisplayName:   mb.DisplayName,
+			TotalSpent:    mb.BudgetSpent,
+			BudgetLimit:   limit,
+			InstanceHours: instanceHoursByStudent[mb.UserID],
+			InstanceCount: instanceCountByStudent[mb.UserID],
+		})
+	}
+
+	return report, nil
+}
+
+// --- v0.16.0: Archive eligible courses (#162) ---
+
+// ListArchiveEligibleCourses returns courses in "closed" state whose
+// SemesterEnd + GracePeriodDays has passed and that have not yet been archived.
+func (m *Manager) ListArchiveEligibleCourses(ctx context.Context) ([]*types.Course, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	now := time.Now()
+	var eligible []*types.Course
+	for _, c := range m.courses {
+		if c.Status != types.CourseStatusClosed {
+			continue
+		}
+		archiveAfter := c.SemesterEnd.AddDate(0, 0, c.GracePeriodDays)
+		if now.After(archiveAfter) {
+			// Return a shallow copy to avoid holding a reference into the map
+			cp := *c
+			eligible = append(eligible, &cp)
+		}
+	}
+	return eligible, nil
+}
+
+// MarkCourseArchived transitions a course from "closed" to "archived" and saves.
+func (m *Manager) MarkCourseArchived(ctx context.Context, courseID string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	c, ok := m.courses[courseID]
+	if !ok {
+		return ErrCourseNotFound
+	}
+	if c.Status != types.CourseStatusClosed {
+		return fmt.Errorf("course %s is not in closed state (current: %s)", courseID, c.Status)
+	}
+
+	c.Status = types.CourseStatusArchived
+	c.UpdatedAt = time.Now().UTC()
+
+	if err := m.saveCourses(); err != nil {
+		return fmt.Errorf("failed to save archived course: %w", err)
+	}
+
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    "system",
+		Action:   AuditActionCourseArchive,
+		Detail:   map[string]interface{}{"auto": true},
+	})
+
+	return nil
 }
 
 // --- Internal Helpers ---

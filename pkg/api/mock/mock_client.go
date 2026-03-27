@@ -2485,3 +2485,89 @@ func (m *MockClient) AddOnboardingTemplate(ctx context.Context, projectID string
 func (m *MockClient) DeleteOnboardingTemplate(ctx context.Context, projectID, nameOrID string) error {
 	return nil
 }
+
+// ─── v0.14.0/v0.16.0 University Education System stubs ───────────────────────
+
+func (m *MockClient) CreateCourse(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) ListCourses(ctx context.Context, params string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) GetCourse(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) CloseCourse(ctx context.Context, courseID string) error {
+	return nil
+}
+
+func (m *MockClient) DeleteCourse(ctx context.Context, courseID string) error {
+	return nil
+}
+
+func (m *MockClient) EnrollCourseMember(ctx context.Context, courseID string, req map[string]interface{}) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) ListCourseMembers(ctx context.Context, courseID string, role string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) UnenrollCourseMember(ctx context.Context, courseID, userID string) error {
+	return nil
+}
+
+func (m *MockClient) ListCourseTemplates(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) AddCourseTemplate(ctx context.Context, courseID, templateSlug string) error {
+	return nil
+}
+
+func (m *MockClient) RemoveCourseTemplate(ctx context.Context, courseID, templateSlug string) error {
+	return nil
+}
+
+func (m *MockClient) GetCourseBudget(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) DistributeCourseBudget(ctx context.Context, courseID string, amountPerStudent float64) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) TADebugStudent(ctx context.Context, courseID, studentID string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) TAResetStudent(ctx context.Context, courseID string, req map[string]interface{}) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) GetCourseOverview(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) GetCourseReport(ctx context.Context, courseID, format string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) GetCourseAuditLog(ctx context.Context, courseID, studentID, since string, limit int) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) ArchiveCourse(ctx context.Context, courseID string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) ImportCourseRoster(ctx context.Context, courseID string, csvBytes []byte, format string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (m *MockClient) ProvisionStudent(ctx context.Context, courseID, studentID string, req map[string]interface{}) (map[string]interface{}, error) {
+	return nil, nil
+}

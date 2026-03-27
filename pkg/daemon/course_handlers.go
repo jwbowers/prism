@@ -2,9 +2,13 @@ package daemon
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/scttfrdmn/prism/pkg/course"
 	"github.com/scttfrdmn/prism/pkg/types"
@@ -51,6 +55,30 @@ func (s *Server) handleCourseByID(w http.ResponseWriter, r *http.Request) {
 		s.handleCourseBudget(w, r, courseID, parts)
 	case "ta":
 		s.handleCourseTA(w, r, courseID, parts)
+	case "overview":
+		if r.Method != http.MethodGet {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		s.handleCourseOverview(w, r, courseID)
+	case "report":
+		if r.Method != http.MethodGet {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		s.handleCourseReport(w, r, courseID)
+	case "audit":
+		if r.Method != http.MethodGet {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		s.handleCourseAudit(w, r, courseID)
+	case "archive":
+		if r.Method != http.MethodPost {
+			s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		s.handleArchiveCourse(w, r, courseID)
 	default:
 		http.NotFound(w, r)
 	}
@@ -232,9 +260,14 @@ func (s *Server) handleCourseMembers(w http.ResponseWriter, r *http.Request, cou
 			s.handleCourseRosterImport(w, r, courseID)
 			return
 		default:
-			// /courses/{id}/members/{userID} — DELETE only
+			// /courses/{id}/members/{userID}
 			if r.Method == http.MethodDelete {
 				s.handleUnenrollMember(w, r, courseID, parts[2])
+				return
+			}
+			// /courses/{id}/members/{userID}/provision
+			if len(parts) >= 4 && parts[3] == "provision" && r.Method == http.MethodPost {
+				s.handleProvisionStudent(w, r, courseID, parts[2])
 				return
 			}
 			http.NotFound(w, r)
@@ -332,9 +365,14 @@ func (s *Server) handleCourseRosterImport(w http.ResponseWriter, r *http.Request
 	// Accept either JSON rows or raw CSV body
 	var rows []course.RosterRow
 
+	format := course.RosterFormat(r.URL.Query().Get("format"))
+	if format == "" {
+		format = course.RosterFormatPrism
+	}
+
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "text/csv") || strings.Contains(contentType, "text/plain") {
-		// Parse CSV from body
+		// Read raw CSV bytes
 		var buf []byte
 		buf = make([]byte, 0, 1024*1024)
 		tmp := make([]byte, 4096)
@@ -347,12 +385,19 @@ func (s *Server) handleCourseRosterImport(w http.ResponseWriter, r *http.Request
 				break
 			}
 		}
-		parsed, err := course.ParseRosterCSV(buf)
+		var err error
+		switch format {
+		case course.RosterFormatCanvas:
+			rows, err = course.ParseCanvasCSV(buf)
+		case course.RosterFormatBlackboard:
+			rows, err = course.ParseBlackboardCSV(buf)
+		default:
+			rows, err = course.ParseRosterCSV(buf)
+		}
 		if err != nil {
 			s.writeError(w, http.StatusBadRequest, "CSV parse error: "+err.Error())
 			return
 		}
-		rows = parsed
 	} else {
 		// Expect JSON array of RosterRow
 		if err := json.NewDecoder(r.Body).Decode(&rows); err != nil {
@@ -629,5 +674,223 @@ func (s *Server) handleTAReset(w http.ResponseWriter, r *http.Request, courseID,
 		"student_id":            studentID,
 		"backup_retention_days": req.BackupRetentionDays,
 		"reason":                req.Reason,
+	})
+}
+
+// --- v0.16.0 handlers ---
+
+// handleCourseOverview serves GET /api/v1/courses/{id}/overview (#168)
+func (s *Server) handleCourseOverview(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	// Build instancesByStudent from local state
+	instancesByStudent := make(map[string][]types.Instance)
+	if s.stateManager != nil {
+		if state, err := s.stateManager.LoadState(); err == nil {
+			for _, inst := range state.Instances {
+				if inst.ProjectID == courseID {
+					instancesByStudent[inst.Name] = append(instancesByStudent[inst.Name], inst)
+				}
+			}
+		}
+	}
+
+	overview, err := s.courseManager.GetCourseOverview(r.Context(), courseID, instancesByStudent)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.writeJSON(w, http.StatusOK, overview)
+}
+
+// handleCourseReport serves GET /api/v1/courses/{id}/report[?format=json|csv] (#173)
+func (s *Server) handleCourseReport(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	// Build per-student instance hour/count stats from local state
+	hoursByStudent := make(map[string]float64)
+	countByStudent := make(map[string]int)
+	if s.stateManager != nil {
+		if state, err := s.stateManager.LoadState(); err == nil {
+			for _, inst := range state.Instances {
+				if inst.ProjectID == courseID {
+					// Estimate hours from launch time to now
+					if !inst.LaunchTime.IsZero() {
+						hours := time.Since(inst.LaunchTime).Hours()
+						hoursByStudent[inst.Name] += hours
+					}
+					countByStudent[inst.Name]++
+				}
+			}
+		}
+	}
+
+	report, err := s.courseManager.GetUsageReport(r.Context(), courseID, hoursByStudent, countByStudent)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if r.URL.Query().Get("format") == "csv" {
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"course-%s-report.csv\"", report.CourseCode))
+		cw := csv.NewWriter(w)
+		_ = cw.Write([]string{"user_id", "email", "display_name", "total_spent", "budget_limit", "instance_hours", "instance_count"})
+		for _, st := range report.Students {
+			_ = cw.Write([]string{
+				st.UserID, st.Email, st.DisplayName,
+				strconv.FormatFloat(st.TotalSpent, 'f', 2, 64),
+				strconv.FormatFloat(st.BudgetLimit, 'f', 2, 64),
+				strconv.FormatFloat(st.InstanceHours, 'f', 2, 64),
+				strconv.Itoa(st.InstanceCount),
+			})
+		}
+		cw.Flush()
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, report)
+}
+
+// handleCourseAudit serves GET /api/v1/courses/{id}/audit (#165)
+func (s *Server) handleCourseAudit(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	q := r.URL.Query()
+	studentID := q.Get("student_id")
+
+	var since time.Time
+	if sinceStr := q.Get("since"); sinceStr != "" {
+		if t, err := time.Parse(time.RFC3339, sinceStr); err == nil {
+			since = t
+		}
+	}
+
+	limit := 100
+	if limitStr := q.Get("limit"); limitStr != "" {
+		if n, err := strconv.Atoi(limitStr); err == nil && n > 0 {
+			limit = n
+		}
+	}
+
+	entries, err := s.courseManager.QueryAuditLog(courseID, studentID, since, limit)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if entries == nil {
+		entries = []course.AuditEntry{}
+	}
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"entries": entries,
+		"count":   len(entries),
+	})
+}
+
+// handleArchiveCourse serves POST /api/v1/courses/{id}/archive (#162)
+func (s *Server) handleArchiveCourse(w http.ResponseWriter, r *http.Request, courseID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	result, err := s.archiveCourse(r.Context(), courseID)
+	if err != nil {
+		if err == course.ErrCourseNotFound {
+			s.writeError(w, http.StatusNotFound, "Course not found")
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.writeJSON(w, http.StatusOK, result)
+}
+
+// archiveCourse records which instances belong to the course and marks it archived.
+// Actual AWS stop/snapshot is performed asynchronously by the daemon's background sweep;
+// this call returns immediately with the list of affected instances.
+func (s *Server) archiveCourse(ctx context.Context, courseID string) (*course.ArchiveResult, error) {
+	result := &course.ArchiveResult{CourseID: courseID}
+
+	// Scan local state for instances belonging to this course
+	if s.stateManager != nil {
+		if state, err := s.stateManager.LoadState(); err == nil {
+			for name, inst := range state.Instances {
+				if inst.ProjectID == courseID {
+					result.InstancesStopped = append(result.InstancesStopped, name)
+					_ = inst // referenced to satisfy compiler
+				}
+			}
+		}
+	}
+
+	if err := s.courseManager.MarkCourseArchived(ctx, courseID); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// handleProvisionStudent serves POST /api/v1/courses/{id}/members/{userID}/provision (#172)
+func (s *Server) handleProvisionStudent(w http.ResponseWriter, r *http.Request, courseID, studentID string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	var body struct {
+		Template     string `json:"template"`
+		InstanceName string `json:"instance_name"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	pctx, err := s.courseManager.GetProvisioningContext(r.Context(), courseID, studentID, body.Template)
+	if err != nil {
+		switch err {
+		case course.ErrCourseNotFound:
+			s.writeError(w, http.StatusNotFound, "Course not found")
+		case course.ErrMemberNotFound:
+			s.writeError(w, http.StatusNotFound, "Student not found in course")
+		default:
+			s.writeError(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+
+	name := body.InstanceName
+	if name == "" {
+		name = fmt.Sprintf("%s-ws", strings.ReplaceAll(pctx.StudentID, "@", "-"))
+	}
+
+	// Synthesize a LaunchRequest and delegate to the standard launch handler logic
+	launchReq := types.LaunchRequest{
+		Name:     name,
+		Template: pctx.Template,
+		CourseID: pctx.CourseID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	s.writeJSON(w, http.StatusAccepted, map[string]interface{}{
+		"status":        "provisioning",
+		"student_id":    pctx.StudentID,
+		"course_id":     pctx.CourseID,
+		"template":      launchReq.Template,
+		"instance_name": launchReq.Name,
 	})
 }

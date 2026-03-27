@@ -2849,3 +2849,11 @@ func (m *MockAPIClient) DeleteOnboardingTemplate(ctx context.Context, projectID,
 	}
 	return nil
 }
+
+// v0.14.0 — University Education System (interface methods for fixture cleanup)
+func (m *MockAPIClient) DeleteCourse(ctx context.Context, courseID string) error {
+	if m.ShouldReturnError {
+		return fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return nil
+}

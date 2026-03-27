@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"text/tabwriter"
+	"time"
 
 	apiclient "github.com/scttfrdmn/prism/pkg/api/client"
 )
@@ -49,6 +51,12 @@ func (a *App) Course(args []string) error {
 		return a.courseStudents(hc, rest)
 	case "budget":
 		return a.courseBudget(hc, rest)
+	case "archive":
+		return a.courseArchive(hc, rest)
+	case "report":
+		return a.courseReport(hc, rest)
+	case "audit":
+		return a.courseAudit(hc, rest)
 	default:
 		return fmt.Errorf("unknown course action: %s", action)
 	}
@@ -73,6 +81,8 @@ func (a *App) TA(args []string) error {
 		return a.taDebug(hc, rest)
 	case "reset":
 		return a.taReset(hc, rest)
+	case "overview":
+		return a.taOverview(hc, rest)
 	default:
 		return fmt.Errorf("unknown ta action: %s", action)
 	}
@@ -385,6 +395,55 @@ func (a *App) courseStudents(hc *apiclient.HTTPClient, args []string) error {
 			return fmt.Errorf("failed to unenroll member: %w", err)
 		}
 		fmt.Printf("Member %s unenrolled from course %s.\n", rest[0], courseID)
+	case "import":
+		// prism course students import <course-id> <file> [--format canvas|blackboard|prism]
+		if len(rest) < 1 {
+			return fmt.Errorf("usage: prism course students import <course-id> <file> [--format canvas|blackboard|prism]")
+		}
+		filePath := rest[0]
+		format := ""
+		for i := 1; i < len(rest); i++ {
+			if rest[i] == "--format" && i+1 < len(rest) {
+				format = rest[i+1]
+				i++
+			}
+		}
+		csvBytes, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", filePath, err)
+		}
+		result, err := hc.ImportCourseRoster(a.ctx, courseID, csvBytes, format)
+		if err != nil {
+			return fmt.Errorf("roster import failed: %w", err)
+		}
+		enrolled := 0.0
+		if v, ok := result["enrolled"].(float64); ok {
+			enrolled = v
+		}
+		fmt.Printf("Imported %d students into course %s.\n", int(enrolled), courseID)
+	case "provision":
+		// prism course students provision <course-id> <user-id> [--template <slug>] [--name <name>]
+		if len(rest) < 1 {
+			return fmt.Errorf("usage: prism course students provision <course-id> <user-id> [--template <slug>] [--name <name>]")
+		}
+		studentID := rest[0]
+		req := map[string]interface{}{}
+		for i := 1; i < len(rest); i++ {
+			switch {
+			case rest[i] == "--template" && i+1 < len(rest):
+				req["template"] = rest[i+1]
+				i++
+			case rest[i] == "--name" && i+1 < len(rest):
+				req["instance_name"] = rest[i+1]
+				i++
+			}
+		}
+		result, err := hc.ProvisionStudent(a.ctx, courseID, studentID, req)
+		if err != nil {
+			return fmt.Errorf("provisioning failed: %w", err)
+		}
+		fmt.Printf("Provisioning workspace for student %s in course %s (template: %s, name: %s).\n",
+			studentID, courseID, strVal(result["template"]), strVal(result["instance_name"]))
 	default:
 		return fmt.Errorf("unknown students action: %s", action)
 	}
@@ -550,6 +609,197 @@ func (a *App) taReset(hc *apiclient.HTTPClient, args []string) error {
 	}
 	fmt.Printf("Reset initiated for student %s: %s\n", studentID, strVal(result["message"]))
 	return nil
+}
+
+// --- course archive ---
+
+func (a *App) courseArchive(hc *apiclient.HTTPClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: prism course archive <course-id>")
+	}
+	courseID := args[0]
+	result, err := hc.ArchiveCourse(a.ctx, courseID)
+	if err != nil {
+		return fmt.Errorf("archive failed: %w", err)
+	}
+	stopped, _ := result["instances_stopped"].([]interface{})
+	errs, _ := result["errors"].([]interface{})
+	fmt.Printf("Course %s archived. Instances stopped: %d", courseID, len(stopped))
+	if len(errs) > 0 {
+		fmt.Printf(", errors: %d", len(errs))
+	}
+	fmt.Println()
+	return nil
+}
+
+// --- course report ---
+
+func (a *App) courseReport(hc *apiclient.HTTPClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: prism course report <course-id> [--format json|csv] [--output <file>]")
+	}
+	courseID := args[0]
+	format := ""
+	outputFile := ""
+	for i := 1; i < len(args); i++ {
+		switch {
+		case args[i] == "--format" && i+1 < len(args):
+			format = args[i+1]
+			i++
+		case args[i] == "--output" && i+1 < len(args):
+			outputFile = args[i+1]
+			i++
+		}
+	}
+
+	result, err := hc.GetCourseReport(a.ctx, courseID, format)
+	if err != nil {
+		return fmt.Errorf("report failed: %w", err)
+	}
+
+	if outputFile != "" {
+		data, _ := json.MarshalIndent(result, "", "  ")
+		if err := os.WriteFile(outputFile, data, 0644); err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+		fmt.Printf("Report written to %s.\n", outputFile)
+		return nil
+	}
+
+	// Print table
+	students, _ := result["students"].([]interface{})
+	if len(students) == 0 {
+		fmt.Println("No student usage data.")
+		return nil
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "USER\tEMAIL\tSPENT\tBUDGET\tHOURS\tINSTANCES")
+	fmt.Fprintln(w, "----\t-----\t-----\t------\t-----\t---------")
+	for _, raw := range students {
+		s, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		fmt.Fprintf(w, "%s\t%s\t$%.2f\t$%.2f\t%.1f\t%d\n",
+			strTrunc(s["user_id"], 16),
+			strTrunc(s["email"], 24),
+			floatVal(s["total_spent"]),
+			floatVal(s["budget_limit"]),
+			floatVal(s["instance_hours"]),
+			int(floatVal(s["instance_count"])),
+		)
+	}
+	return w.Flush()
+}
+
+// --- course audit ---
+
+func (a *App) courseAudit(hc *apiclient.HTTPClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: prism course audit <course-id> [--student <id>] [--since 2026-01-01] [--limit 100]")
+	}
+	courseID := args[0]
+	studentID := ""
+	since := ""
+	limit := 0
+	for i := 1; i < len(args); i++ {
+		switch {
+		case args[i] == "--student" && i+1 < len(args):
+			studentID = args[i+1]
+			i++
+		case args[i] == "--since" && i+1 < len(args):
+			since = args[i+1]
+			// normalize date-only to RFC3339
+			if len(since) == 10 {
+				since = since + "T00:00:00Z"
+			}
+			i++
+		case args[i] == "--limit" && i+1 < len(args):
+			if n, err := strconv.Atoi(args[i+1]); err == nil {
+				limit = n
+			}
+			i++
+		}
+	}
+
+	result, err := hc.GetCourseAuditLog(a.ctx, courseID, studentID, since, limit)
+	if err != nil {
+		return fmt.Errorf("audit query failed: %w", err)
+	}
+
+	entries, _ := result["entries"].([]interface{})
+	if len(entries) == 0 {
+		fmt.Println("No audit entries found.")
+		return nil
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "TIMESTAMP\tACTOR\tACTION\tTARGET")
+	fmt.Fprintln(w, "---------\t-----\t------\t------")
+	for _, raw := range entries {
+		e, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		ts := strVal(e["timestamp"])
+		if t, err := time.Parse(time.RFC3339Nano, ts); err == nil {
+			ts = t.Local().Format("2006-01-02 15:04:05")
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+			ts,
+			strTrunc(e["actor"], 16),
+			strVal(e["action"]),
+			strVal(e["target"]),
+		)
+	}
+	return w.Flush()
+}
+
+// --- ta overview ---
+
+func (a *App) taOverview(hc *apiclient.HTTPClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: prism ta overview <course-id>")
+	}
+	courseID := args[0]
+	result, err := hc.GetCourseOverview(a.ctx, courseID)
+	if err != nil {
+		return fmt.Errorf("overview failed: %w", err)
+	}
+
+	fmt.Printf("Course: %s  Students: %d  Active Instances: %d  Total Spent: $%.2f\n\n",
+		strVal(result["course_code"]),
+		int(floatVal(result["total_students"])),
+		int(floatVal(result["active_instances"])),
+		floatVal(result["total_budget_spent"]),
+	)
+
+	students, _ := result["students"].([]interface{})
+	if len(students) == 0 {
+		fmt.Println("No students enrolled.")
+		return nil
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "USER\tEMAIL\tSTATUS\tSPENT\tLIMIT\tINSTANCES")
+	fmt.Fprintln(w, "----\t-----\t------\t-----\t-----\t---------")
+	for _, raw := range students {
+		s, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		instCount := 0
+		if insts, ok := s["instances"].([]interface{}); ok {
+			instCount = len(insts)
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t$%.2f\t$%.2f\t%d\n",
+			strTrunc(s["user_id"], 16),
+			strTrunc(s["email"], 24),
+			strVal(s["budget_status"]),
+			floatVal(s["budget_spent"]),
+			floatVal(s["budget_limit"]),
+			instCount,
+		)
+	}
+	return w.Flush()
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

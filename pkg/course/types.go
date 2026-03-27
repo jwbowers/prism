@@ -66,6 +66,13 @@ type CreateCourseRequest struct {
 
 	// Tags are optional metadata
 	Tags map[string]string `json:"tags,omitempty"`
+
+	// DefaultTemplate is the template slug auto-assigned to students on workspace provision.
+	DefaultTemplate string `json:"default_template,omitempty"`
+
+	// AutoProvisionOnEnroll creates a workspace for the student automatically upon
+	// enrollment when true (requires DefaultTemplate to be set).
+	AutoProvisionOnEnroll bool `json:"auto_provision_on_enroll,omitempty"`
 }
 
 // Validate validates the create course request
@@ -135,6 +142,12 @@ type UpdateCourseRequest struct {
 
 	// Status manually sets the course status
 	Status *types.CourseStatus `json:"status,omitempty"`
+
+	// DefaultTemplate updates the default workspace template
+	DefaultTemplate *string `json:"default_template,omitempty"`
+
+	// AutoProvisionOnEnroll updates the auto-provision setting
+	AutoProvisionOnEnroll *bool `json:"auto_provision_on_enroll,omitempty"`
 }
 
 // EnrollRequest represents a request to enroll a single member
@@ -283,6 +296,99 @@ type TAResetRequest struct {
 
 	// BackupRetentionDays is how long to keep the pre-reset snapshot (default 7)
 	BackupRetentionDays int `json:"backup_retention_days,omitempty"`
+}
+
+// --- v0.16.0 types ---
+
+// BudgetExceededError is returned when a launch would exceed the student's allocation.
+type BudgetExceededError struct {
+	UserID    string
+	Spent     float64
+	Limit     float64
+	Requested float64
+}
+
+func (e *BudgetExceededError) Error() string {
+	return fmt.Sprintf("budget exceeded: $%.2f spent of $%.2f limit (requesting ~$%.2f more)",
+		e.Spent, e.Limit, e.Requested)
+}
+
+// ErrBudgetExceeded is the sentinel error for student budget enforcement.
+var ErrBudgetExceeded = errors.New("student budget exceeded")
+
+// RosterFormat identifies the source LMS format of an uploaded CSV file.
+type RosterFormat string
+
+const (
+	// RosterFormatPrism is the native Prism CSV format (email,display_name,role,budget).
+	RosterFormatPrism RosterFormat = "prism"
+	// RosterFormatCanvas is the Canvas LMS student roster export format.
+	RosterFormatCanvas RosterFormat = "canvas"
+	// RosterFormatBlackboard is the Blackboard Learn user list export format.
+	RosterFormatBlackboard RosterFormat = "blackboard"
+)
+
+// ProvisioningContext carries what the daemon needs to launch a workspace on behalf of a student.
+type ProvisioningContext struct {
+	CourseID     string
+	StudentID    string
+	StudentEmail string
+	Template     string
+	BudgetLimit  float64
+	BudgetSpent  float64
+}
+
+// ArchiveResult is returned by the course archive operation.
+type ArchiveResult struct {
+	CourseID         string   `json:"course_id"`
+	InstancesStopped []string `json:"instances_stopped"`
+	SnapshotsCreated []string `json:"snapshots_created"`
+	Errors           []string `json:"errors,omitempty"`
+}
+
+// StudentStatus summarises a single student's current state for the TA dashboard.
+type StudentStatus struct {
+	UserID       string           `json:"user_id"`
+	Email        string           `json:"email"`
+	DisplayName  string           `json:"display_name,omitempty"`
+	Instances    []types.Instance `json:"instances"`
+	BudgetSpent  float64          `json:"budget_spent"`
+	BudgetLimit  float64          `json:"budget_limit"`
+	BudgetStatus string           `json:"budget_status"` // "ok" | "warning" (>80%) | "exceeded"
+	LastActive   *time.Time       `json:"last_active,omitempty"`
+}
+
+// CourseOverview is the payload for GET /api/v1/courses/{id}/overview.
+type CourseOverview struct {
+	CourseID         string          `json:"course_id"`
+	CourseCode       string          `json:"course_code"`
+	TotalStudents    int             `json:"total_students"`
+	ActiveInstances  int             `json:"active_instances"`
+	TotalBudgetSpent float64         `json:"total_budget_spent"`
+	Students         []StudentStatus `json:"students"`
+	GeneratedAt      time.Time       `json:"generated_at"`
+}
+
+// StudentUsageRecord is one row in the semester usage report.
+type StudentUsageRecord struct {
+	UserID        string  `json:"user_id"`
+	Email         string  `json:"email"`
+	DisplayName   string  `json:"display_name,omitempty"`
+	TotalSpent    float64 `json:"total_spent"`
+	BudgetLimit   float64 `json:"budget_limit"`
+	InstanceHours float64 `json:"instance_hours"`
+	InstanceCount int     `json:"instance_count"`
+}
+
+// UsageReport is the payload for GET /api/v1/courses/{id}/report.
+type UsageReport struct {
+	CourseID    string               `json:"course_id"`
+	CourseCode  string               `json:"course_code"`
+	Semester    string               `json:"semester"`
+	TotalSpent  float64              `json:"total_spent"`
+	TotalBudget float64              `json:"total_budget"`
+	Students    []StudentUsageRecord `json:"students"`
+	GeneratedAt time.Time            `json:"generated_at"`
 }
 
 // TADebugInfo is the read-only view a TA gets of a student's environment

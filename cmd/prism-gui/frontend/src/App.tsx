@@ -10,6 +10,7 @@ import WebView from './WebView';
 import { ValidationError } from './components/ValidationError';
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { InvitationManagementView } from './components/InvitationManagementView';
+import { CoursesPanel } from './components/CoursesPanel';
 import { SSHKeyModal } from './components/SSHKeyModal';
 
 import {
@@ -593,8 +594,95 @@ interface OnboardingTemplate {
   budget_limit?: number;
 }
 
+// v0.14.0/v0.16.0 University Education System Interfaces
+interface ClassMember {
+  user_id: string;
+  email: string;
+  display_name: string;
+  role: string;
+  budget_spent: number;
+  budget_limit: number;
+  added_at: string;
+  expires_at?: string;
+}
+interface Course {
+  id: string;
+  code: string;
+  title: string;
+  department: string;
+  semester: string;
+  semester_start: string;
+  semester_end: string;
+  owner: string;
+  status: string; // "pending"|"active"|"closed"|"archived"
+  members: ClassMember[];
+  approved_templates: string[];
+  per_student_budget: number;
+  total_budget: number;
+  default_template: string;
+  auto_provision_on_enroll: boolean;
+  created_at: string;
+  updated_at: string;
+}
+interface CourseBudgetSummary {
+  total_budget: number;
+  per_student_default: number;
+  total_spent: number;
+  students: StudentBudgetInfo[];
+}
+interface StudentBudgetInfo {
+  user_id: string;
+  email: string;
+  display_name: string;
+  budget_limit: number;
+  budget_spent: number;
+  remaining: number;
+}
+interface CourseOverview {
+  course_id: string;
+  course_code: string;
+  total_students: number;
+  active_instances: number;
+  total_budget_spent: number;
+  students: StudentOverviewStatus[];
+}
+interface StudentOverviewStatus {
+  user_id: string;
+  email: string;
+  display_name: string;
+  instances: Instance[];
+  budget_spent: number;
+  budget_limit: number;
+  budget_status: string; // "ok"|"warning"|"exceeded"
+}
+interface UsageReport {
+  course_id: string;
+  course_code: string;
+  semester: string;
+  total_spent: number;
+  total_budget: number;
+  students: StudentUsageRecord[];
+  generated_at: string;
+}
+interface StudentUsageRecord {
+  user_id: string;
+  email: string;
+  display_name: string;
+  total_hours: number;
+  total_cost: number;
+  instance_count: number;
+}
+interface CourseAuditEntry {
+  timestamp: string;
+  course_id: string;
+  actor: string;
+  target: string;
+  action: string;
+  detail?: Record<string, unknown>;
+}
+
 interface AppState {
-  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview' | 'budgets' | 'approvals';
+  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview' | 'budgets' | 'approvals' | 'courses';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
   templates: Record<string, Template>;
   instances: Instance[];
@@ -618,6 +706,7 @@ interface AppState {
   idlePolicies: IdlePolicy[];
   idleSchedules: IdleSchedule[];
   invitations: CachedInvitation[];
+  courses: Course[];
   selectedTemplate: Template | null;
   selectedProject: Project | null;
   selectedTerminalInstance: string;
@@ -1945,6 +2034,128 @@ class SafePrismAPI {
     const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/reports/monthly${qs}`);
     return typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   }
+
+  // ── v0.14.0/v0.16.0 University Education System ──────────────────────────
+
+  async getCourses(): Promise<Course[]> {
+    const data = await this.safeRequest<any>('/api/v1/courses');
+    return (data?.courses || []) as Course[];
+  }
+
+  async createCourse(courseData: Partial<Course>): Promise<Course> {
+    const data = await this.safeRequest<Course>('/api/v1/courses', 'POST', courseData);
+    return data as Course;
+  }
+
+  async getCourse(id: string): Promise<Course> {
+    const data = await this.safeRequest<Course>(`/api/v1/courses/${encodeURIComponent(id)}`);
+    return data as Course;
+  }
+
+  async closeCourse(id: string): Promise<void> {
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/close`, 'POST');
+  }
+
+  async deleteCourse(id: string): Promise<void> {
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}`, 'DELETE');
+  }
+
+  async archiveCourse(id: string): Promise<{ instances_stopped: string[] }> {
+    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/archive`, 'POST');
+    return data || { instances_stopped: [] };
+  }
+
+  async getCourseMembers(id: string, role?: string): Promise<ClassMember[]> {
+    const qs = role ? `?role=${encodeURIComponent(role)}` : '';
+    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/members${qs}`);
+    return (data?.members || []) as ClassMember[];
+  }
+
+  async enrollCourseMember(id: string, memberData: Partial<ClassMember>): Promise<ClassMember> {
+    const data = await this.safeRequest<ClassMember>(`/api/v1/courses/${encodeURIComponent(id)}/members`, 'POST', memberData);
+    return data as ClassMember;
+  }
+
+  async unenrollCourseMember(id: string, userId: string): Promise<void> {
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`, 'DELETE');
+  }
+
+  async getCourseTemplates(id: string): Promise<{ templates: string[] }> {
+    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/templates`);
+    return { templates: data?.templates || [] };
+  }
+
+  async addCourseTemplate(id: string, slug: string): Promise<void> {
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/templates/${encodeURIComponent(slug)}`, 'PUT');
+  }
+
+  async removeCourseTemplate(id: string, slug: string): Promise<void> {
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/templates/${encodeURIComponent(slug)}`, 'DELETE');
+  }
+
+  async getCourseBudget(id: string): Promise<CourseBudgetSummary> {
+    const data = await this.safeRequest<CourseBudgetSummary>(`/api/v1/courses/${encodeURIComponent(id)}/budget`);
+    return data as CourseBudgetSummary;
+  }
+
+  async distributeCourseBudget(id: string, amount: number): Promise<void> {
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/budget/distribute`, 'POST', { amount_per_student: amount });
+  }
+
+  async debugStudent(courseId: string, studentId: string): Promise<Record<string, unknown>> {
+    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(courseId)}/members/${encodeURIComponent(studentId)}/debug`);
+    return data || {};
+  }
+
+  async resetStudent(courseId: string, studentId: string, reason: string): Promise<void> {
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(courseId)}/members/${encodeURIComponent(studentId)}/reset`, 'POST', { reason });
+  }
+
+  async provisionStudent(courseId: string, studentId: string, data?: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const result = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(courseId)}/members/${encodeURIComponent(studentId)}/provision`, 'POST', data || {});
+    return result || {};
+  }
+
+  async getCourseOverview(id: string): Promise<CourseOverview> {
+    const data = await this.safeRequest<CourseOverview>(`/api/v1/courses/${encodeURIComponent(id)}/overview`);
+    return data as CourseOverview;
+  }
+
+  async getCourseReport(id: string, format?: string): Promise<UsageReport> {
+    const qs = format ? `?format=${encodeURIComponent(format)}` : '';
+    const data = await this.safeRequest<UsageReport>(`/api/v1/courses/${encodeURIComponent(id)}/report${qs}`);
+    return data as UsageReport;
+  }
+
+  async getCourseAuditLog(id: string, params?: { student_id?: string; since?: string; limit?: number }): Promise<{ entries: CourseAuditEntry[] }> {
+    const qs = new URLSearchParams();
+    if (params?.student_id) qs.set('student_id', params.student_id);
+    if (params?.since) qs.set('since', params.since);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const qstr = qs.toString() ? `?${qs.toString()}` : '';
+    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/audit${qstr}`);
+    return { entries: (data?.entries || []) as CourseAuditEntry[] };
+  }
+
+  async importCourseRoster(id: string, file: File, format?: string): Promise<{ enrolled: number; errors: string[] }> {
+    const qs = format ? `?format=${encodeURIComponent(format)}` : '';
+    const url = `/api/v1/courses/${encodeURIComponent(id)}/members/import${qs}`;
+    const baseURL = (window as any).__daemonURL || 'http://localhost:8947';
+    const resp = await fetch(`${baseURL}${url}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/csv' },
+      body: file,
+    });
+    if (!resp.ok) throw new Error(`Import failed: ${resp.statusText}`);
+    const data = await resp.json();
+    return { enrolled: data?.enrolled || 0, errors: data?.errors || [] };
+  }
+}
+
+// CoursesManagementView — top-level component (not inside App) to prevent re-mount on state change.
+// Pattern matches InvitationManagementView and ApprovalsView.
+function CoursesManagementView() {
+  return <CoursesPanel />;
 }
 
 export default function PrismApp() {
@@ -1978,6 +2189,7 @@ export default function PrismApp() {
     idlePolicies: [],
     idleSchedules: [],
     invitations: [],
+    courses: [],
     selectedTemplate: null,
     selectedProject: null,
     selectedTerminalInstance: '',
@@ -2253,11 +2465,12 @@ export default function PrismApp() {
         api.getIdlePolicies(),
         api.getIdleSchedules(),
         api.getMyInvitations(),
-        api.getAutoStartStatus()
+        api.getAutoStartStatus(),
+        api.getCourses()
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData, autoStartStatusData] = results.map((result, index) => {
+      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData, autoStartStatusData, coursesData] = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
@@ -2312,6 +2525,7 @@ export default function PrismApp() {
         idlePolicies: idlePoliciesData,
         idleSchedules: idleSchedulesData,
         invitations: cachedInvitations,
+        courses: coursesData || [],
         autoStartEnabled: autoStartStatusData?.enabled || false,
         loading: false,
         connected: true,
@@ -12468,6 +12682,15 @@ export default function PrismApp() {
                       <Badge color="blue">{state.invitations.filter(i => i.status === 'pending').length}</Badge> : undefined
               },
               {
+                id: "courses",
+                type: "link",
+                text: "Courses",
+                href: "/courses",
+                info: state.courses.filter(c => c.status === 'active').length > 0
+                  ? <Badge color="blue">{state.courses.filter(c => c.status === 'active').length}</Badge>
+                  : undefined
+              },
+              {
                 id: "budgets",
                 type: "link",
                 text: "Budgets",
@@ -12587,6 +12810,7 @@ export default function PrismApp() {
             {state.activeView === 'invitations' && <InvitationManagementView />}
             {state.activeView === 'budgets' && <BudgetPoolManagementView />}
             {state.activeView === 'approvals' && <ApprovalsView />}
+            {state.activeView === 'courses' && <CoursesManagementView />}
             {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
             {state.activeView === 'users' && <UserManagementView />}
             {state.activeView === 'ami' && <AMIManagementView />}
