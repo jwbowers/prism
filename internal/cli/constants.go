@@ -100,10 +100,10 @@ const (
 	DaemonAutoStartFailedMessage = "❌ Failed to auto-start daemon. Please start manually with: prism admin daemon start"
 
 	// NoInstancesFoundMessage is displayed when no instances are found
-	NoInstancesFoundMessage = "No workstations found. Launch one with: prism launch <template> <name>"
+	NoInstancesFoundMessage = "No workstations found. Launch one with: prism workspace launch <template> <name>"
 
 	// NoInstancesFoundProjectMessage is displayed when no instances are found in a project
-	NoInstancesFoundProjectMessage = "No workstations found in project '%s'. Launch one with: prism launch <template> <name> --project %s"
+	NoInstancesFoundProjectMessage = "No workstations found in project '%s'. Launch one with: prism workspace launch <template> <name> --project %s"
 
 	// NoEFSVolumesFoundMessage is displayed when no EFS volumes are found
 	NoEFSVolumesFoundMessage = "No EFS volumes found. Create one with: prism volume create <name>"
@@ -193,13 +193,13 @@ const (
 	SetupTimeoutMessage = "⚠️  Setup monitoring timeout (20 min). Instance may still be setting up."
 
 	// SetupTimeoutHelpMessage provides help when setup times out
-	SetupTimeoutHelpMessage = "💡 Check status with: prism list"
+	SetupTimeoutHelpMessage = "💡 Check status with: prism workspace list"
 
 	// SetupTimeoutConnectMessage suggests connecting when setup times out
-	SetupTimeoutConnectMessage = "💡 Try connecting: prism connect %s"
+	SetupTimeoutConnectMessage = "💡 Try connecting: prism workspace connect %s"
 
 	// AMITimeoutMessage is displayed when AMI launch monitoring times out
-	AMITimeoutMessage = "⚠️  Timeout waiting for instance to start (5 min). Check status with: prism list"
+	AMITimeoutMessage = "⚠️  Timeout waiting for instance to start (5 min). Check status with: prism workspace list"
 )
 
 // =============================================================================
@@ -217,7 +217,7 @@ const (
 	StateMessageRunningReady = "✅ Instance running! Ready to connect."
 
 	// StateMessageConnectCommand provides the connect command template
-	StateMessageConnectCommand = "🔗 Connect: prism connect %s"
+	StateMessageConnectCommand = "🔗 Connect: prism workspace connect %s"
 
 	// StateMessageDryRunSuccess is displayed for successful dry runs
 	StateMessageDryRunSuccess = "✅ Dry-run validation successful! No actual instance launched."

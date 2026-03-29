@@ -270,7 +270,7 @@ func (a *App) TUI(_ []string) error {
 // Launch handles the launch command
 func (a *App) Launch(args []string) error {
 	if len(args) < 2 {
-		return NewUsageError("prism launch <template> <name>", "prism launch python-ml my-workstation")
+		return NewUsageError("prism workspace launch <template> <name>", "prism workspace launch python-ml my-workstation")
 	}
 
 	template := args[0]
@@ -594,8 +594,8 @@ func (a *App) monitorLaunchWithEnhancedProgress(reporter *ProgressReporter, temp
 		if !wait && elapsed > maxDuration {
 			fmt.Printf("⚠️  Launch monitoring timeout (%s). Workspace may still be setting up.\n",
 				reporter.FormatDuration(maxDuration))
-			fmt.Printf("💡 Check status with: prism list\n")
-			fmt.Printf("💡 Try connecting: prism connect %s\n", reporter.instanceName)
+			fmt.Printf("💡 Check status with: prism workspace list\n")
+			fmt.Printf("💡 Try connecting: prism workspace connect %s\n", reporter.instanceName)
 			return nil
 		}
 
@@ -608,7 +608,7 @@ func (a *App) monitorLaunchWithEnhancedProgress(reporter *ProgressReporter, temp
 			} else {
 				// After 30 seconds, show as potential issue
 				fmt.Printf("⚠️  Unable to get instance status after %s\n", reporter.FormatDuration(elapsed))
-				fmt.Printf("💡 Workspace may still be launching. Check with: prism list\n")
+				fmt.Printf("💡 Workspace may still be launching. Check with: prism workspace list\n")
 			}
 			time.Sleep(5 * time.Second)
 			continue
@@ -696,7 +696,7 @@ func (h *RunningStateHandler) Handle(state string, elapsed int, instanceName str
 		_, connErr := h.apiClient.ConnectInstance(h.ctx, instanceName)
 		if connErr == nil {
 			fmt.Printf("✅ Setup complete! Workspace ready.\n")
-			fmt.Printf("🔗 Connect: prism connect %s\n", instanceName)
+			fmt.Printf("🔗 Connect: prism workspace connect %s\n", instanceName)
 			return false, nil
 		}
 	}
@@ -897,7 +897,7 @@ func printRunningCostSummary(instances []types.Instance) {
 		fmt.Printf("   Total accumulated:  $%.4f (since launch)\n", totalCurrent)
 		fmt.Printf("   Effective rate:     $%.4f/hr (actual usage)\n", totalEffective)
 		fmt.Printf("   Estimated daily:    $%.2f (at current rate)\n", totalEffective*24)
-		fmt.Printf("\n💡 Tip: Use 'prism list cost' for detailed cost breakdown with savings analysis\n")
+		fmt.Printf("\n💡 Tip: Use 'prism workspace list cost' for detailed cost breakdown with savings analysis\n")
 	}
 }
 
@@ -1020,7 +1020,7 @@ func (a *App) ListCost(args []string) error {
 	// Display cost summary
 	a.displayCostSummary(summary, hasDiscounts, pricingConfig)
 
-	fmt.Printf("\n💡 Tip: Use 'prism list' for a clean workspace overview without cost data\n")
+	fmt.Printf("\n💡 Tip: Use 'prism workspace list' for a clean workspace overview without cost data\n")
 
 	return nil
 }
@@ -1829,7 +1829,7 @@ func (a *App) projectInstances(args []string) error {
 
 	if len(projectInstances) == 0 {
 		fmt.Printf("No instances found in project '%s'\n", projectName)
-		fmt.Printf("Launch one with: prism launch <template> <workspace-name> --project %s\n", projectName)
+		fmt.Printf("Launch one with: prism workspace launch <template> <workspace-name> --project %s\n", projectName)
 		return nil
 	}
 
@@ -2139,7 +2139,7 @@ func (a *App) monitorSetupProgress(instance *types.Instance, wait bool) error {
 			if !wait && elapsed > 30*time.Minute {
 				fmt.Printf("\n⚠️  Setup taking longer than expected\n")
 				fmt.Printf("💡 Progress: %.1f%% - Workspace may still be configuring\n", progress.OverallProgress)
-				fmt.Printf("💡 Check status with: prism list\n")
+				fmt.Printf("💡 Check status with: prism workspace list\n")
 				fmt.Printf("💡 To verify setup progress after connecting:\n")
 				fmt.Printf("   prism workspace connect %s  # then run: cloud-init status\n", instance.Name)
 				return nil

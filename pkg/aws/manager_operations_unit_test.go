@@ -187,17 +187,17 @@ func TestManagerIntegrationPoints(t *testing.T) {
 			description string
 		}{
 			{
-				workflow:    "prism launch python-ml my-project",
+				workflow:    "prism workspace launch python-ml my-project",
 				testFocus:   "Template resolution + EC2 RunInstances + State update",
 				description: "Users launch instances from templates",
 			},
 			{
-				workflow:    "prism stop my-project",
+				workflow:    "prism workspace stop my-project",
 				testFocus:   "Instance lookup by name + EC2 StopInstances",
 				description: "Users stop running instances",
 			},
 			{
-				workflow:    "prism hibernate my-project",
+				workflow:    "prism workspace hibernate my-project",
 				testFocus:   "Hibernation capability check + fallback to stop",
 				description: "Users hibernate instances for cost savings",
 			},
@@ -207,7 +207,7 @@ func TestManagerIntegrationPoints(t *testing.T) {
 				description: "Users create shared storage volumes",
 			},
 			{
-				workflow:    "prism delete my-project",
+				workflow:    "prism workspace delete my-project",
 				testFocus:   "Instance termination + State cleanup",
 				description: "Users clean up instances",
 			},

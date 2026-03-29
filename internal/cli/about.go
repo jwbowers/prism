@@ -101,7 +101,7 @@ func runAbout() {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println("   prism --help             Show all available commands")
 	fmt.Println("   prism templates          List available templates")
-	fmt.Println("   prism launch <template> <name>  Launch a new workstation")
+	fmt.Println("   prism workspace launch <template> <name>  Launch a new workstation")
 	fmt.Println("   prism tui                Launch terminal interface")
 	fmt.Println("   prism gui                Launch graphical interface")
 	fmt.Println()

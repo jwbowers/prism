@@ -756,7 +756,7 @@ func (bc *BudgetCommands) displayCreateBudgetSuccess(projectName string, amount 
 
 	fmt.Printf("\n💡 Next Steps:\n")
 	fmt.Printf("   prism budget status %s     # Check budget status\n", projectName)
-	fmt.Printf("   prism launch <template> <instance> --project %s  # Launch with budget tracking\n", projectName)
+	fmt.Printf("   prism workspace launch <template> <instance> --project %s  # Launch with budget tracking\n", projectName)
 }
 
 // updateBudget updates an existing budget
@@ -1268,8 +1268,8 @@ func (bc *BudgetCommands) displayStatusQuickActions(budgetID string, usagePercen
 	fmt.Printf("   prism budget breakdown %s    # See where money is spent\n", budgetID)
 	fmt.Printf("   prism budget savings %s      # Find cost optimization opportunities\n", budgetID)
 	if usagePercent >= 80 {
-		fmt.Printf("   prism list --project %s      # Review running instances\n", budgetID)
-		fmt.Printf("   prism hibernate <instance>   # Hibernate idle instances\n")
+		fmt.Printf("   prism workspace list --project %s      # Review running instances\n", budgetID)
+		fmt.Printf("   prism workspace hibernate <instance>   # Hibernate idle instances\n")
 	}
 }
 
@@ -1666,7 +1666,7 @@ func (bc *BudgetCommands) displaySavingsRecommendations(totalPotentialSavings fl
 
 	fmt.Printf("\n💡 Quick Actions:\n")
 	fmt.Printf("   prism idle profile create aggressive --idle-minutes 15\n")
-	fmt.Printf("   prism list | grep STOPPED  # Find stopped instances to terminate\n")
+	fmt.Printf("   prism workspace list | grep STOPPED  # Find stopped instances to terminate\n")
 	fmt.Printf("   prism rightsizing analyze  # Get right-sizing recommendations\n")
 }
 

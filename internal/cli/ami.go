@@ -894,7 +894,7 @@ func (s *AMISaveBuilderService) displaySaveResults(result *ami.BuildResult, temp
 	}
 
 	fmt.Printf("\n✨ Template '%s' is now available for launching new workspaces:\n", templateName)
-	fmt.Printf("   prism launch %s my-new-instance\n", templateName)
+	fmt.Printf("   prism workspace launch %s my-new-instance\n", templateName)
 
 	return nil
 }

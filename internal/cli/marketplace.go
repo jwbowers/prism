@@ -255,7 +255,7 @@ func (a *App) handleMarketplaceInstall(args []string) error {
 
 	// Show usage examples
 	fmt.Printf("\n💻 Usage:\n")
-	fmt.Printf("   Launch: prism launch %s my-project\n", localName)
+	fmt.Printf("   Launch: prism workspace launch %s my-project\n", localName)
 	fmt.Printf("   Info: prism templates info %s\n", localName)
 	fmt.Printf("   List: prism templates list\n")
 
@@ -350,7 +350,7 @@ func (a *App) handleMarketplacePublish(args []string) error {
 	}
 
 	fmt.Printf("\n💡 View your template: prism marketplace info %s\n", getString(response, "template_id"))
-	fmt.Printf("💡 Launch your template: prism launch marketplace:%s my-project\n", getString(response, "template_id"))
+	fmt.Printf("💡 Launch your template: prism workspace launch marketplace:%s my-project\n", getString(response, "template_id"))
 
 	return nil
 }
@@ -456,7 +456,7 @@ func (a *App) handleMarketplaceFork(args []string) error {
 	fmt.Printf("🆔 Forked: %s\n", getString(response, "forked_template_id"))
 	fmt.Printf("📝 Name: %s\n", getString(response, "forked_template_name"))
 
-	fmt.Printf("\n💡 Launch your fork: prism launch marketplace:%s my-project\n",
+	fmt.Printf("\n💡 Launch your fork: prism workspace launch marketplace:%s my-project\n",
 		getString(response, "forked_template_id"))
 
 	return nil
@@ -611,7 +611,7 @@ func (a *App) displayTemplateList(templates []interface{}) error {
 			fmt.Printf("   %s\n", strings.Join(badges, " "))
 		}
 
-		fmt.Printf("   💻 Launch: prism launch marketplace:%s my-project\n",
+		fmt.Printf("   💻 Launch: prism workspace launch marketplace:%s my-project\n",
 			getString(template, "template_id"))
 		fmt.Printf("\n")
 	}
@@ -693,7 +693,7 @@ func (a *App) displayTemplateInfo(template map[string]interface{}) {
 
 	// Usage examples
 	fmt.Printf("\n💻 Usage:\n")
-	fmt.Printf("   Launch: prism launch marketplace:%s my-project\n", getString(template, "template_id"))
+	fmt.Printf("   Launch: prism workspace launch marketplace:%s my-project\n", getString(template, "template_id"))
 	fmt.Printf("   Info: prism marketplace info %s\n", getString(template, "template_id"))
 	fmt.Printf("   Review: prism marketplace review %s --rating 5 --title \"Great!\" --comment \"Works perfectly\"\n",
 		getString(template, "template_id"))

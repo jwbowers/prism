@@ -261,7 +261,7 @@ func (m *Monitor) handleWake(event Event) {
 
 	if !m.config.ResumeOnWake {
 		log.Println("Resume on wake is disabled, instances remain hibernated")
-		log.Println("Use 'prism start <instance>' to manually resume instances")
+		log.Println("Use 'prism workspace start <instance>' to manually resume instances")
 		return
 	}
 

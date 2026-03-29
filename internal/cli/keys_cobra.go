@@ -320,7 +320,7 @@ func (k *KeysCobraCommands) handleImportKey(profileName, region, keyFilePath str
 	fmt.Printf("   Source File: %s\n", keyFilePath)
 	fmt.Printf("\n💡 The key is now ready to use with Prism\n")
 	fmt.Printf("💡 View details: prism keys show %s\n", profileName)
-	fmt.Printf("💡 Launch an instance: prism launch <template> <name>\n")
+	fmt.Printf("💡 Launch an instance: prism workspace launch <template> <name>\n")
 
 	return nil
 }
@@ -368,7 +368,7 @@ func (k *KeysCobraCommands) handleDeleteKey(profileName string, force bool) erro
 		}
 		fmt.Printf("\n❌ Cannot delete key while instances are using it\n")
 		fmt.Printf("💡 Options:\n")
-		fmt.Printf("   1. Delete the instances first: prism delete <workspace-name>\n")
+		fmt.Printf("   1. Delete the instances first: prism workspace delete <workspace-name>\n")
 		fmt.Printf("   2. Force deletion (DANGEROUS): prism keys delete %s --force\n", profileName)
 		return fmt.Errorf("key is in use")
 	}

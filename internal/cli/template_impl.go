@@ -97,8 +97,8 @@ func (tc *TemplateCommands) templatesList(args []string) error {
 	}
 
 	fmt.Println("🚀 How to Launch:")
-	fmt.Println("   Using slug:        prism launch python-ml my-project")
-	fmt.Println("   Using full name:   prism launch \"Python Machine Learning (Simplified)\" my-project")
+	fmt.Println("   Using slug:        prism workspace launch python-ml my-project")
+	fmt.Println("   Using full name:   prism workspace launch \"Python Machine Learning (Simplified)\" my-project")
 	fmt.Println()
 
 	fmt.Println("📦 Package Manager Types:")
@@ -268,7 +268,7 @@ func (tc *TemplateCommands) displaySingleResult(result templates.SearchResult, q
 
 	// Display metadata
 	if tmpl.Slug != "" {
-		fmt.Printf("   Quick launch: prism launch %s <name>\n", tmpl.Slug)
+		fmt.Printf("   Quick launch: prism workspace launch %s <name>\n", tmpl.Slug)
 	}
 	fmt.Printf("   %s\n", tmpl.Description)
 
@@ -364,7 +364,7 @@ func (tc *TemplateCommands) displayTemplateHeader() {
 func (tc *TemplateCommands) displayBasicInfo(template *templates.Template) {
 	fmt.Printf("🏗️  **Name**: %s\n", template.Name)
 	if template.Slug != "" {
-		fmt.Printf("🔗 **Slug**: %s (for CLI: `prism launch %s <name>`)\n", template.Slug, template.Slug)
+		fmt.Printf("🔗 **Slug**: %s (for CLI: `prism workspace launch %s <name>`)\n", template.Slug, template.Slug)
 	}
 	fmt.Printf("📝 **Description**: %s\n", template.Description)
 	fmt.Printf("🖥️  **Base OS**: %s\n", template.Base)
@@ -533,7 +533,7 @@ func (tc *TemplateCommands) displayResearchUserInfo(template *templates.Template
 	if launchName == "" {
 		launchName = fmt.Sprintf("\"%s\"", template.Name)
 	}
-	fmt.Printf("   • 🚀 **Usage**: `prism launch %s my-project --research-user alice`\n", launchName)
+	fmt.Printf("   • 🚀 **Usage**: `prism workspace launch %s my-project --research-user alice`\n", launchName)
 
 	fmt.Println()
 }
@@ -592,10 +592,10 @@ func (tc *TemplateCommands) displayUsageExamples(template *templates.Template) {
 	if launchName == "" {
 		launchName = fmt.Sprintf("\"%s\"", template.Name)
 	}
-	fmt.Printf("   • Basic launch:        `prism launch %s my-workspace`\n", launchName)
-	fmt.Printf("   • Large instance:      `prism launch %s my-workspace --size L`\n", launchName)
-	fmt.Printf("   • With project:        `prism launch %s my-workspace --project my-research`\n", launchName)
-	fmt.Printf("   • Spot instance:       `prism launch %s my-workspace --spot`\n", launchName)
+	fmt.Printf("   • Basic launch:        `prism workspace launch %s my-workspace`\n", launchName)
+	fmt.Printf("   • Large instance:      `prism workspace launch %s my-workspace --size L`\n", launchName)
+	fmt.Printf("   • With project:        `prism workspace launch %s my-workspace --project my-research`\n", launchName)
+	fmt.Printf("   • Spot instance:       `prism workspace launch %s my-workspace --spot`\n", launchName)
 }
 
 // templatesFeatured shows featured templates from repositories
@@ -621,7 +621,7 @@ func (tc *TemplateCommands) templatesFeatured(args []string) error {
 		fmt.Printf("🏆 %s:%s (%s)\n", tmpl.repo, tmpl.name, tmpl.featured)
 		fmt.Printf("   %s\n", tmpl.description)
 		fmt.Printf("   Category: %s\n", tmpl.category)
-		fmt.Printf("   Launch: prism launch %s:%s <workspace-name>\n", tmpl.repo, tmpl.name)
+		fmt.Printf("   Launch: prism workspace launch %s:%s <workspace-name>\n", tmpl.repo, tmpl.name)
 		fmt.Println()
 	}
 
@@ -826,7 +826,7 @@ func (tc *TemplateCommands) templatesInstall(args []string) error {
 	fmt.Printf("📥 Installing template dependencies...\n")
 	fmt.Printf("✅ Template '%s' installed successfully\n", templateName)
 
-	fmt.Printf("\n🚀 Launch with: prism launch %s <workspace-name>\n", templateName)
+	fmt.Printf("\n🚀 Launch with: prism workspace launch %s <workspace-name>\n", templateName)
 	fmt.Printf("📋 Get details: prism templates info %s\n", templateName)
 
 	return nil

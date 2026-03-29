@@ -6,10 +6,10 @@
 //
 // Core Commands:
 //
-//	prism launch template-name instance-name  # Launch new research environment
-//	prism list                                # Show running instances and costs
-//	prism connect instance-name               # Get connection information
-//	prism stop/start instance-name            # Manage instance lifecycle
+//	prism workspace launch template-name instance-name  # Launch new research environment
+//	prism workspace list                                # Show running instances and costs
+//	prism workspace connect instance-name               # Get connection information
+//	prism workspace stop/start instance-name            # Manage instance lifecycle
 //
 // Storage Commands:
 //
@@ -18,10 +18,10 @@
 //
 // Examples:
 //
-//	prism launch r-research my-analysis       # Launch R environment
-//	prism launch python-ml gpu-training --size GPU-L  # Launch ML environment
-//	prism list                                # Show all instances
-//	prism connect my-analysis                 # Get SSH/web URLs
+//	prism workspace launch r-research my-analysis       # Launch R environment
+//	prism workspace launch python-ml gpu-training --size GPU-L  # Launch ML environment
+//	prism workspace list                                # Show all instances
+//	prism workspace connect my-analysis                 # Get SSH/web URLs
 //
 // The CLI implements Prism's "Default to Success" principle -
 // every command works out of the box with smart defaults while providing

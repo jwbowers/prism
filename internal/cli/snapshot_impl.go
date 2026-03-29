@@ -310,8 +310,8 @@ func (s *SnapshotCommands) restoreSnapshot(args []string) error {
 		return s.app.monitorLaunchProgress(result.NewInstanceName, result.SourceTemplate, req.Wait)
 	}
 
-	fmt.Printf("\n💡 Check progress with: prism list\n")
-	fmt.Printf("💡 Connect when ready: prism connect %s\n", result.NewInstanceName)
+	fmt.Printf("\n💡 Check progress with: prism workspace list\n")
+	fmt.Printf("💡 Connect when ready: prism workspace connect %s\n", result.NewInstanceName)
 
 	return nil
 }

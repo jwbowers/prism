@@ -1044,7 +1044,7 @@ func (s *TemplateSnapshotSaveService) saveTemplateAndDisplayResults(config *Temp
 	fmt.Printf("   Location: %s\n\n", templateFile)
 
 	fmt.Printf("🚀 **Usage**:\n")
-	fmt.Printf("   Launch new instance: prism launch \"%s\" new-instance\n", config.TemplateName)
+	fmt.Printf("   Launch new instance: prism workspace launch \"%s\" new-instance\n", config.TemplateName)
 	fmt.Printf("   View template info: prism templates info \"%s\"\n", config.TemplateName)
 	fmt.Printf("   Validate template: prism templates validate \"%s\"\n", config.TemplateName)
 
