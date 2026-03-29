@@ -16,7 +16,7 @@ import (
 var (
 	// Version is the current version of Prism.
 	// Should be in the format MAJOR.MINOR.PATCH.
-	Version = "0.21.0"
+	Version = "0.22.5"
 
 	// GitCommit is the git commit hash of the build.
 	GitCommit = ""

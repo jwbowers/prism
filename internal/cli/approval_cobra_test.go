@@ -6,6 +6,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -159,4 +160,57 @@ func TestApprovalIDCommand_Execute_MissingArg(t *testing.T) {
 	_, err := c.Execute(nil, []string{"--approval"}, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "--approval requires")
+}
+
+// ── Populated mock list tests (#546) ─────────────────────────────────────
+
+func TestApprovalCobraCommandsV2_List_WithApprovals(t *testing.T) {
+	app, mock := approvalV2TestApp(t)
+
+	// Populate the mock with a sample approval
+	mock.Approvals = []*project.ApprovalRequest{
+		{
+			ID:          "req-abc123-full-uuid",
+			ProjectID:   "test-project",
+			Type:        project.ApprovalTypeGPUInstance,
+			Status:      project.ApprovalStatusPending,
+			RequestedBy: "alice",
+		},
+	}
+
+	ac := NewApprovalCobraCommandsV2(app)
+	cmd := ac.CreateApprovalCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+
+	listCmd, _, err := cmd.Find([]string{"list"})
+	require.NoError(t, err)
+
+	assert.NoError(t, listCmd.RunE(listCmd, []string{}))
+}
+
+func TestApprovalCobraCommandsV2_Show_Found(t *testing.T) {
+	app, mock := approvalV2TestApp(t)
+
+	fullID := "req-abc123-full-uuid"
+	mock.Approvals = []*project.ApprovalRequest{
+		{
+			ID:          fullID,
+			ProjectID:   "test-project",
+			Type:        project.ApprovalTypeExpensiveInstance,
+			Status:      project.ApprovalStatusPending,
+			RequestedBy: "bob",
+		},
+	}
+
+	ac := NewApprovalCobraCommandsV2(app)
+	cmd := ac.CreateApprovalCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+
+	showCmd, _, err := cmd.Find([]string{"show"})
+	require.NoError(t, err)
+
+	// Pass full ID — should succeed now that ListAllApprovals returns the mock
+	assert.NoError(t, showCmd.RunE(showCmd, []string{fullID}))
 }

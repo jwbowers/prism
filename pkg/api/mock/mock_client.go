@@ -30,6 +30,7 @@ type MockClient struct {
 	Templates      map[string]types.Template
 	Instances      map[string]types.Instance
 	StorageVolumes map[string]types.StorageVolume // Unified storage (all types)
+	Approvals      []*project.ApprovalRequest     // Configurable list for ListApprovals/ListAllApprovals
 }
 
 // Ensure MockClient implements PrismAPI
@@ -2447,11 +2448,34 @@ func (m *MockClient) SubmitApproval(ctx context.Context, projectID string, appro
 }
 
 func (m *MockClient) ListApprovals(ctx context.Context, projectID string, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
-	return []*project.ApprovalRequest{}, nil
+	var result []*project.ApprovalRequest
+	for _, r := range m.Approvals {
+		if r.ProjectID != projectID {
+			continue
+		}
+		if status != "" && r.Status != status {
+			continue
+		}
+		result = append(result, r)
+	}
+	if result == nil {
+		return []*project.ApprovalRequest{}, nil
+	}
+	return result, nil
 }
 
 func (m *MockClient) ListAllApprovals(ctx context.Context, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
-	return []*project.ApprovalRequest{}, nil
+	var result []*project.ApprovalRequest
+	for _, r := range m.Approvals {
+		if status != "" && r.Status != status {
+			continue
+		}
+		result = append(result, r)
+	}
+	if result == nil {
+		return []*project.ApprovalRequest{}, nil
+	}
+	return result, nil
 }
 
 func (m *MockClient) ApproveRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {

@@ -393,6 +393,238 @@ func TestCheckStudentBudget_Unlimited(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// ── v0.22.5 gap tests (#545) ──────────────────────────────────────────────
+
+// --- GetCourse ---
+
+func TestGetCourse(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	created, _ := m.CreateCourse(ctx, testCreateReq())
+
+	got, err := m.GetCourse(ctx, created.ID)
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, got.ID)
+	assert.Equal(t, "CS101", got.Code)
+}
+
+func TestGetCourse_NotFound(t *testing.T) {
+	m := testManager(t)
+	_, err := m.GetCourse(context.Background(), "no-such-id")
+	assert.ErrorIs(t, err, ErrCourseNotFound)
+}
+
+// --- ListCourses ---
+
+func TestListCourses_Empty(t *testing.T) {
+	m := testManager(t)
+	courses, err := m.ListCourses(context.Background(), nil)
+	require.NoError(t, err)
+	assert.Empty(t, courses)
+}
+
+func TestListCourses_WithOwnerFilter(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	req1 := testCreateReq()
+	req1.Owner = "owner-a"
+	_, _ = m.CreateCourse(ctx, req1)
+
+	req2 := testCreateReq()
+	req2.Semester = "Fall 2025" // different semester to avoid duplicate
+	req2.Owner = "owner-b"
+	_, _ = m.CreateCourse(ctx, req2)
+
+	courses, err := m.ListCourses(ctx, &CourseFilter{Owner: "owner-a"})
+	require.NoError(t, err)
+	require.Len(t, courses, 1)
+	assert.Equal(t, "owner-a", courses[0].Owner)
+}
+
+// --- UpdateCourse ---
+
+func TestUpdateCourse(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	newTitle := "Advanced Computing"
+	newDept := "Engineering"
+	updated, err := m.UpdateCourse(ctx, c.ID, &UpdateCourseRequest{
+		Title:      &newTitle,
+		Department: &newDept,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, newTitle, updated.Title)
+	assert.Equal(t, newDept, updated.Department)
+
+	// Verify persisted
+	reloaded, _ := m.GetCourse(ctx, c.ID)
+	assert.Equal(t, newTitle, reloaded.Title)
+}
+
+// --- DeleteCourse ---
+
+func TestDeleteCourse(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	require.NoError(t, m.DeleteCourse(ctx, c.ID))
+
+	_, err := m.GetCourse(ctx, c.ID)
+	assert.ErrorIs(t, err, ErrCourseNotFound)
+}
+
+// --- GetMember ---
+
+func TestGetMember(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, err := m.EnrollMember(ctx, c.ID, &EnrollRequest{
+		UserID: "student-x",
+		Email:  "sx@uni.edu",
+		Role:   types.ClassRoleStudent,
+	})
+	require.NoError(t, err)
+
+	mb, err := m.GetMember(ctx, c.ID, "student-x")
+	require.NoError(t, err)
+	assert.Equal(t, "student-x", mb.UserID)
+}
+
+func TestGetMember_NotFound(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, err := m.GetMember(ctx, c.ID, "ghost")
+	assert.ErrorIs(t, err, ErrMemberNotFound)
+}
+
+// --- UnenrollMember ---
+
+func TestUnenrollMember(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, err := m.EnrollMember(ctx, c.ID, &EnrollRequest{Email: "leave@uni.edu"})
+	require.NoError(t, err)
+
+	require.NoError(t, m.UnenrollMember(ctx, c.ID, "leave@uni.edu"))
+
+	_, err = m.GetMember(ctx, c.ID, "leave@uni.edu")
+	assert.ErrorIs(t, err, ErrMemberNotFound)
+}
+
+// --- UpdateMember ---
+
+func TestUpdateMember_Role(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, err := m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "upgrade-me", Email: "u@uni.edu"})
+	require.NoError(t, err)
+
+	require.NoError(t, m.UpdateMember(ctx, c.ID, "upgrade-me", types.ClassRoleTA, 0))
+
+	mb, _ := m.GetMember(ctx, c.ID, "upgrade-me")
+	assert.Equal(t, types.ClassRoleTA, mb.Role)
+}
+
+// --- RecordSpend ---
+
+func TestRecordSpend(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, err := m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "spender", Email: "sp@uni.edu"})
+	require.NoError(t, err)
+
+	require.NoError(t, m.RecordSpend(ctx, c.ID, "spender", 12.50))
+
+	mb, _ := m.GetMember(ctx, c.ID, "spender")
+	assert.Equal(t, 12.50, mb.BudgetSpent)
+}
+
+// --- GetBudgetSummary ---
+
+func TestGetBudgetSummary(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	req := testCreateReq()
+	req.PerStudentBudget = 100.0
+	c, _ := m.CreateCourse(ctx, req)
+
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "s1", Email: "s1@uni.edu", Role: types.ClassRoleStudent})
+	_ = m.RecordSpend(ctx, c.ID, "s1", 40.0)
+
+	summary, err := m.GetBudgetSummary(ctx, c.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 100.0, summary.PerStudentDefault)
+	assert.Equal(t, 40.0, summary.TotalSpent)
+	require.Len(t, summary.Students, 1)
+	assert.Equal(t, 40.0, summary.Students[0].BudgetSpent)
+	assert.Equal(t, 60.0, summary.Students[0].Remaining)
+}
+
+// --- ImportRosterCSV ---
+
+func TestImportRosterCSV(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	rows := []RosterRow{
+		{Email: "r1@uni.edu", DisplayName: "Row One"},
+		{Email: "r2@uni.edu", DisplayName: "Row Two"},
+		{Email: "r3@uni.edu", DisplayName: "Row Three"},
+	}
+
+	enrolled, rowErrors, err := m.ImportRosterCSV(ctx, c.ID, rows, false)
+	require.NoError(t, err)
+	assert.Equal(t, 3, enrolled)
+	assert.Empty(t, rowErrors)
+}
+
+// --- ResetStudentInstance ---
+
+func TestResetStudentInstance(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	// Enroll TA and student
+	_, err := m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "ta1", Email: "ta1@uni.edu", Role: types.ClassRoleTA})
+	require.NoError(t, err)
+	_, err = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "stu1", Email: "stu1@uni.edu", Role: types.ClassRoleStudent})
+	require.NoError(t, err)
+
+	err = m.ResetStudentInstance(ctx, c.ID, "ta1", &TAResetRequest{
+		StudentID: "stu1",
+		Reason:    "test reset",
+	})
+	assert.NoError(t, err)
+}
+
+func TestResetStudentInstance_Unauthorized(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{UserID: "regular", Email: "r@uni.edu", Role: types.ClassRoleStudent})
+
+	err := m.ResetStudentInstance(ctx, c.ID, "regular", &TAResetRequest{StudentID: "other", Reason: "x"})
+	assert.ErrorIs(t, err, ErrNotAuthorized)
+}
+
 // TestParseCanvasCSV verifies Canvas LMS roster parsing.
 func TestParseCanvasCSV(t *testing.T) {
 	csv := `Student,ID,SIS Login ID,Section,SIS User ID,Email Address,Points Possible

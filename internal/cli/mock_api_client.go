@@ -37,6 +37,7 @@ type MockAPIClient struct {
 	Templates      map[string]types.Template
 	StorageVolumes []types.StorageVolume // Unified storage (EFS, EBS, S3)
 	Projects       []types.Project
+	Approvals      []*project.ApprovalRequest // Configurable list for ListApprovals/ListAllApprovals
 	// Legacy idle fields removed - using new hibernation policy system
 	DaemonStatus      *types.DaemonStatus
 	HibernationStatus *types.HibernationStatus
@@ -2790,14 +2791,37 @@ func (m *MockAPIClient) ListApprovals(ctx context.Context, projectID string, sta
 	if m.ShouldReturnError {
 		return nil, fmt.Errorf("%s", m.ErrorMessage)
 	}
-	return []*project.ApprovalRequest{}, nil
+	var result []*project.ApprovalRequest
+	for _, r := range m.Approvals {
+		if r.ProjectID != projectID {
+			continue
+		}
+		if status != "" && r.Status != status {
+			continue
+		}
+		result = append(result, r)
+	}
+	if result == nil {
+		return []*project.ApprovalRequest{}, nil
+	}
+	return result, nil
 }
 
 func (m *MockAPIClient) ListAllApprovals(ctx context.Context, status project.ApprovalStatus) ([]*project.ApprovalRequest, error) {
 	if m.ShouldReturnError {
 		return nil, fmt.Errorf("%s", m.ErrorMessage)
 	}
-	return []*project.ApprovalRequest{}, nil
+	var result []*project.ApprovalRequest
+	for _, r := range m.Approvals {
+		if status != "" && r.Status != status {
+			continue
+		}
+		result = append(result, r)
+	}
+	if result == nil {
+		return []*project.ApprovalRequest{}, nil
+	}
+	return result, nil
 }
 
 func (m *MockAPIClient) ApproveRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
