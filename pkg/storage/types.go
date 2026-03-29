@@ -938,3 +938,21 @@ type StorageHealthIssue struct {
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
 }
+
+// MountResult describes the outcome of mounting an S3 bucket on an instance.
+type MountResult struct {
+	InstanceName string        `json:"instance_name"`
+	BucketName   string        `json:"bucket_name"`
+	MountPath    string        `json:"mount_path"`
+	Method       S3MountMethod `json:"method"`
+	Status       string        `json:"status"` // "ok" | "error"
+	Message      string        `json:"message,omitempty"`
+}
+
+// ActiveS3Mount describes an S3 bucket currently mounted on an instance.
+type ActiveS3Mount struct {
+	BucketName  string `json:"bucket_name"`
+	MountPath   string `json:"mount_path"`
+	MountMethod string `json:"mount_method"`
+	ReadOnly    bool   `json:"read_only"`
+}

@@ -391,6 +391,82 @@ type UsageReport struct {
 	GeneratedAt time.Time            `json:"generated_at"`
 }
 
+// TAAccessEntry records a single TA SSH access session for the audit trail.
+type TAAccessEntry struct {
+	// TAID is the user ID (or email) of the TA who connected
+	TAID string `json:"ta_id"`
+	// TAEmail is the TA's email for display purposes
+	TAEmail string `json:"ta_email,omitempty"`
+	// StudentID is the user ID (or email) of the student whose instance was accessed
+	StudentID string `json:"student_id"`
+	// StudentEmail is the student's email for display purposes
+	StudentEmail string `json:"student_email,omitempty"`
+	// Reason is a required explanation provided at access time
+	Reason string `json:"reason"`
+	// ConnectedAt is when the SSH session was initiated
+	ConnectedAt time.Time `json:"connected_at"`
+	// InstanceID is the AWS instance ID that was accessed
+	InstanceID string `json:"instance_id,omitempty"`
+	// PublicIP is the public IP address of the student's instance
+	PublicIP string `json:"public_ip,omitempty"`
+}
+
+// TASSHConnectRequest is the payload for POST /courses/{id}/ta-access/connect
+type TASSHConnectRequest struct {
+	// StudentID is the user ID or email of the student to connect to
+	StudentID string `json:"student_id"`
+	// Reason is a mandatory explanation for the audit log
+	Reason string `json:"reason"`
+}
+
+// SharedMaterialsVolume describes the EFS volume used for shared course materials.
+type SharedMaterialsVolume struct {
+	// CourseID links back to the owning course
+	CourseID string `json:"course_id"`
+	// EFSID is the AWS EFS filesystem ID
+	EFSID string `json:"efs_id"`
+	// SizeGB is the advisory provisioned size in GB (EFS is elastic)
+	SizeGB int `json:"size_gb"`
+	// MountPath is where the EFS is mounted inside student instances
+	MountPath string `json:"mount_path"`
+	// State is "creating" | "available" | "error"
+	State string `json:"state"`
+	// CreatedAt is when the volume was created
+	CreatedAt time.Time `json:"created_at"`
+	// MountedInstanceCount is how many student instances currently have it mounted
+	MountedInstanceCount int `json:"mounted_instance_count"`
+}
+
+// CourseMaterialsCreateRequest is the payload for POST /courses/{id}/materials
+type CourseMaterialsCreateRequest struct {
+	// SizeGB is the advisory size (EFS is elastic; default 50)
+	SizeGB int `json:"size_gb,omitempty"`
+	// MountPath is where to mount in student instances (default "/mnt/course-materials")
+	MountPath string `json:"mount_path,omitempty"`
+}
+
+// WorkspaceResetResult is returned by the reset endpoint.
+type WorkspaceResetResult struct {
+	// StudentID identifies whose workspace was reset
+	StudentID string `json:"student_id"`
+	// BackupSnapshotID is the snapshot ID created before reset (empty if --no-backup)
+	BackupSnapshotID string `json:"backup_snapshot_id,omitempty"`
+	// BackupDownloadURL is a pre-signed URL for the student to retrieve their backed-up work
+	BackupDownloadURL string `json:"backup_download_url,omitempty"`
+	// BackupExpiresAt is when the download URL expires (7 days by default)
+	BackupExpiresAt *time.Time `json:"backup_expires_at,omitempty"`
+	// Status is "reset_scheduled" | "reset_complete"
+	Status string `json:"status"`
+}
+
+// TAAccessGrantRequest is the payload for POST /courses/{id}/ta-access
+type TAAccessGrantRequest struct {
+	// Email is the TA's email address to grant access
+	Email string `json:"email"`
+	// DisplayName is the TA's display name (optional)
+	DisplayName string `json:"display_name,omitempty"`
+}
+
 // TADebugInfo is the read-only view a TA gets of a student's environment
 type TADebugInfo struct {
 	// CourseID is the course this debug info belongs to

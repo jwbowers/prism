@@ -497,6 +497,10 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	// v0.18.0: Workshop & Event Management
 	workshopCobra := NewWorkshopCobraCommands(r.app)
 	rootCmd.AddCommand(workshopCobra.CreateWorkshopCommand())
+
+	// v0.20.0: EC2 Capacity Blocks (#63)
+	capacityBlockCobra := NewCapacityBlockCobraCommands(r.app)
+	rootCmd.AddCommand(capacityBlockCobra.CreateCapacityBlockCommand())
 }
 
 func (r *CommandFactoryRegistry) createSnapshotCommand() *cobra.Command {

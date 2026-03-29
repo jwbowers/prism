@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -57,6 +58,12 @@ func (a *App) Course(args []string) error {
 		return a.courseReport(hc, rest)
 	case "audit":
 		return a.courseAudit(hc, rest)
+	case "ta-access":
+		return a.courseTAAccess(hc, rest)
+	case "materials":
+		return a.courseMaterials(hc, rest)
+	case "reset-workspace":
+		return a.courseResetWorkspace(hc, rest)
 	default:
 		return fmt.Errorf("unknown course action: %s", action)
 	}
@@ -800,6 +807,253 @@ func (a *App) taOverview(hc *apiclient.HTTPClient, args []string) error {
 		)
 	}
 	return w.Flush()
+}
+
+// --- v0.19.0: TA Access, Materials, Reset Workspace ---
+
+// courseTAAccess handles 'course ta-access <sub> ...'
+func (a *App) courseTAAccess(hc *apiclient.HTTPClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: course ta-access <list|grant|revoke|connect> <course-id> [flags]")
+	}
+	sub := args[0]
+	rest := args[1:]
+
+	flags := parseSimpleFlags(rest)
+	courseID := ""
+	if len(rest) > 0 && !strings.HasPrefix(rest[0], "--") {
+		courseID = rest[0]
+	}
+
+	switch sub {
+	case "list":
+		if courseID == "" {
+			return fmt.Errorf("course-id required")
+		}
+		data, err := hc.MakeRequest("GET", fmt.Sprintf("/api/v1/courses/%s/ta-access", courseID), nil)
+		if err != nil {
+			return err
+		}
+		var resp map[string]interface{}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return err
+		}
+		members, _ := resp["ta_members"].([]interface{})
+		if len(members) == 0 {
+			fmt.Println("No TAs configured for this course.")
+			return nil
+		}
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "EMAIL\tDISPLAY NAME\tADDED")
+		for _, m := range members {
+			mb, _ := m.(map[string]interface{})
+			fmt.Fprintf(w, "%s\t%s\t%s\n",
+				strVal(mb["email"]),
+				strVal(mb["display_name"]),
+				strVal(mb["added_at"]),
+			)
+		}
+		return w.Flush()
+
+	case "grant":
+		if courseID == "" {
+			return fmt.Errorf("course-id required")
+		}
+		email := flags["--email"]
+		if email == "" {
+			return fmt.Errorf("--email is required")
+		}
+		body := map[string]string{"email": email, "display_name": flags["--name"]}
+		if _, err := hc.MakeRequest("POST", fmt.Sprintf("/api/v1/courses/%s/ta-access", courseID), body); err != nil {
+			return err
+		}
+		fmt.Printf("TA access granted to %s\n", email)
+		return nil
+
+	case "revoke":
+		if courseID == "" {
+			return fmt.Errorf("course-id required")
+		}
+		email := flags["--email"]
+		if email == "" {
+			return fmt.Errorf("--email is required")
+		}
+		if _, err := hc.MakeRequest("DELETE", fmt.Sprintf("/api/v1/courses/%s/ta-access/%s", courseID, email), nil); err != nil {
+			return err
+		}
+		fmt.Printf("TA access revoked for %s\n", email)
+		return nil
+
+	case "connect":
+		if courseID == "" {
+			return fmt.Errorf("course-id required")
+		}
+		student := flags["--student"]
+		reason := flags["--reason"]
+		if student == "" || reason == "" {
+			return fmt.Errorf("--student and --reason are required")
+		}
+		body := map[string]string{"student_id": student, "reason": reason}
+		data, err := hc.MakeRequest("POST", fmt.Sprintf("/api/v1/courses/%s/ta-access/connect", courseID), body)
+		if err != nil {
+			return err
+		}
+		var resp map[string]interface{}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return err
+		}
+		fmt.Printf("SSH command: %s\n", strVal(resp["ssh_command"]))
+		if note := strVal(resp["note"]); note != "" {
+			fmt.Printf("Note: %s\n", note)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unknown ta-access sub-command: %s", sub)
+	}
+}
+
+// courseMaterials handles 'course materials <sub> ...'
+func (a *App) courseMaterials(hc *apiclient.HTTPClient, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: course materials <create|list|mount> <course-id> [flags]")
+	}
+	sub := args[0]
+	rest := args[1:]
+	flags := parseSimpleFlags(rest)
+	courseID := ""
+	if len(rest) > 0 && !strings.HasPrefix(rest[0], "--") {
+		courseID = rest[0]
+	}
+
+	switch sub {
+	case "list":
+		if courseID == "" {
+			return fmt.Errorf("course-id required")
+		}
+		data, err := hc.MakeRequest("GET", fmt.Sprintf("/api/v1/courses/%s/materials", courseID), nil)
+		if err != nil {
+			return err
+		}
+		var resp map[string]interface{}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return err
+		}
+		if resp["materials"] == nil {
+			fmt.Println("No shared materials volume configured for this course.")
+			return nil
+		}
+		vol, _ := resp["materials"].(map[string]interface{})
+		fmt.Printf("EFS ID:      %s\n", strVal(vol["efs_id"]))
+		fmt.Printf("Size:        %v GB\n", vol["size_gb"])
+		fmt.Printf("Mount Path:  %s\n", strVal(vol["mount_path"]))
+		fmt.Printf("State:       %s\n", strVal(vol["state"]))
+		return nil
+
+	case "create":
+		if courseID == "" {
+			return fmt.Errorf("course-id required")
+		}
+		sizeStr := flags["--size"]
+		if sizeStr == "" {
+			sizeStr = "50"
+		}
+		size := 50
+		fmt.Sscanf(sizeStr, "%d", &size)
+		mountPath := flags["--mount"]
+		if mountPath == "" {
+			mountPath = "/mnt/course-materials"
+		}
+		body := map[string]interface{}{"size_gb": size, "mount_path": mountPath}
+		data, err := hc.MakeRequest("POST", fmt.Sprintf("/api/v1/courses/%s/materials", courseID), body)
+		if err != nil {
+			return err
+		}
+		var resp map[string]interface{}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return err
+		}
+		if vol, ok := resp["materials"].(map[string]interface{}); ok {
+			fmt.Printf("Created EFS: %s (mount: %s, size: %v GB)\n",
+				strVal(vol["efs_id"]), strVal(vol["mount_path"]), vol["size_gb"])
+		}
+		return nil
+
+	case "mount":
+		if courseID == "" {
+			return fmt.Errorf("course-id required")
+		}
+		data, err := hc.MakeRequest("POST", fmt.Sprintf("/api/v1/courses/%s/materials/mount", courseID), nil)
+		if err != nil {
+			return err
+		}
+		var resp map[string]interface{}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", strVal(resp["status"]))
+		if note := strVal(resp["note"]); note != "" {
+			fmt.Printf("Note: %s\n", note)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unknown materials sub-command: %s", sub)
+	}
+}
+
+// courseResetWorkspace handles 'course reset-workspace <course-id> --student ... --reason ...'
+func (a *App) courseResetWorkspace(hc *apiclient.HTTPClient, args []string) error {
+	flags := parseSimpleFlags(args)
+	courseID := ""
+	if len(args) > 0 && !strings.HasPrefix(args[0], "--") {
+		courseID = args[0]
+	}
+	student := flags["--student"]
+	reason := flags["--reason"]
+	if courseID == "" || student == "" || reason == "" {
+		return fmt.Errorf("usage: course reset-workspace <course-id> --student <email> --reason <text> [--backup]")
+	}
+	_, backup := flags["--backup"]
+	body := map[string]interface{}{
+		"student_id":            student,
+		"reason":                reason,
+		"backup_retention_days": 7,
+	}
+
+	data, err := hc.MakeRequest("POST", fmt.Sprintf("/api/v1/courses/%s/ta/reset/%s", courseID, student), body)
+	if err != nil {
+		return err
+	}
+	var resp map[string]interface{}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return err
+	}
+	fmt.Printf("Reset scheduled for student %s\n", student)
+	if backup {
+		if url := strVal(resp["backup_download_url"]); url != "" {
+			fmt.Printf("Backup URL: %s\n", url)
+		}
+	}
+	return nil
+}
+
+// parseSimpleFlags parses "--key value" pairs from an args slice into a map.
+// Presence-only flags (no value) are stored with an empty string value.
+func parseSimpleFlags(args []string) map[string]string {
+	m := make(map[string]string)
+	for i := 0; i < len(args); i++ {
+		if strings.HasPrefix(args[i], "--") {
+			key := args[i]
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+				m[key] = args[i+1]
+				i++
+			} else {
+				m[key] = ""
+			}
+		}
+	}
+	return m
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

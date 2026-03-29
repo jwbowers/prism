@@ -859,6 +859,189 @@ func (m *Manager) ResetStudentInstance(ctx context.Context, courseID, taID strin
 	return ErrMemberNotFound
 }
 
+// --- TA Access Management (#48, #160) ---
+
+// GrantTAAccess enrolls taEmail as a TA in the course and records a dedicated audit event.
+// Idempotent: if the user is already enrolled as a TA, returns nil without error.
+func (m *Manager) GrantTAAccess(ctx context.Context, courseID, taEmail, displayName string) (*types.ClassMember, error) {
+	req := &EnrollRequest{
+		Email:       taEmail,
+		DisplayName: displayName,
+		Role:        types.ClassRoleTA,
+	}
+	member, err := m.EnrollMember(ctx, courseID, req)
+	if err == ErrAlreadyEnrolled {
+		// Already a TA: look up and return existing member
+		m.mutex.RLock()
+		c, ok := m.courses[courseID]
+		m.mutex.RUnlock()
+		if !ok {
+			return nil, ErrCourseNotFound
+		}
+		for i, mb := range c.Members {
+			if mb.Email == taEmail || mb.UserID == taEmail {
+				if mb.Role != types.ClassRoleTA {
+					break // enrolled but not as TA; fall through to return nil
+				}
+				return &c.Members[i], nil
+			}
+		}
+		return nil, ErrAlreadyEnrolled
+	}
+	if err != nil {
+		return nil, err
+	}
+	caller, _ := ctx.Value("caller_id").(string)
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    caller,
+		Action:   AuditActionTAAccessGrant,
+		Target:   taEmail,
+		Detail:   map[string]interface{}{"display_name": displayName},
+	})
+	return member, nil
+}
+
+// RevokeTAAccess removes a TA from the course and records the revocation in the audit log.
+// Returns ErrMemberNotFound if the user is not enrolled.
+func (m *Manager) RevokeTAAccess(ctx context.Context, courseID, taEmail string) error {
+	// Find the TA's user ID first
+	m.mutex.RLock()
+	c, ok := m.courses[courseID]
+	m.mutex.RUnlock()
+	if !ok {
+		return ErrCourseNotFound
+	}
+
+	var taUserID string
+	for _, mb := range c.Members {
+		if (mb.Email == taEmail || mb.UserID == taEmail) && mb.Role == types.ClassRoleTA {
+			taUserID = mb.UserID
+			if taUserID == "" {
+				taUserID = mb.Email
+			}
+			break
+		}
+	}
+	if taUserID == "" {
+		return ErrMemberNotFound
+	}
+
+	if err := m.UnenrollMember(ctx, courseID, taUserID); err != nil {
+		return err
+	}
+	caller, _ := ctx.Value("caller_id").(string)
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    caller,
+		Action:   AuditActionTAAccessRevoke,
+		Target:   taEmail,
+	})
+	return nil
+}
+
+// ListTAAccess returns all members enrolled with role=ta in the course.
+func (m *Manager) ListTAAccess(ctx context.Context, courseID string) ([]types.ClassMember, error) {
+	taRole := types.ClassRoleTA
+	return m.ListMembers(ctx, courseID, &taRole)
+}
+
+// LogTASSHConnect records a TA SSH access initiation in the course audit log.
+func (m *Manager) LogTASSHConnect(ctx context.Context, courseID string, entry TAAccessEntry) error {
+	m.mutex.RLock()
+	c, ok := m.courses[courseID]
+	m.mutex.RUnlock()
+	if !ok {
+		return ErrCourseNotFound
+	}
+
+	if !m.isTAOrInstructorLocked(c, entry.TAID) {
+		return ErrNotAuthorized
+	}
+
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    entry.TAID,
+		Action:   AuditActionTASSHConnect,
+		Target:   entry.StudentID,
+		Detail: map[string]interface{}{
+			"reason":      entry.Reason,
+			"instance_id": entry.InstanceID,
+			"public_ip":   entry.PublicIP,
+		},
+	})
+	return nil
+}
+
+// CheckTemplateAllowed returns ErrNotAuthorized if the template is not in this course's
+// whitelist. Returns nil when the course has no whitelist or the course is unknown.
+func (m *Manager) CheckTemplateAllowed(courseID, templateSlug string) error {
+	if !m.IsTemplateApproved(courseID, templateSlug) {
+		return fmt.Errorf("%w: template %q is not approved for course %s", ErrNotAuthorized, templateSlug, courseID)
+	}
+	return nil
+}
+
+// --- Shared Course Materials (#167) ---
+
+// SetCourseMaterials persists the shared EFS metadata on the course record.
+// Called by the daemon handler after the AWS EFS filesystem has been created.
+func (m *Manager) SetCourseMaterials(ctx context.Context, courseID, efsID, mountPath string, sizeGB int) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	c, ok := m.courses[courseID]
+	if !ok {
+		return ErrCourseNotFound
+	}
+
+	c.SharedMaterialsEFSID = efsID
+	c.SharedMaterialsMountPath = mountPath
+	c.SharedMaterialsSizeGB = sizeGB
+	c.UpdatedAt = time.Now()
+	if err := m.saveCourses(); err != nil {
+		return err
+	}
+
+	caller, _ := ctx.Value("caller_id").(string)
+	m.appendAudit(courseID, AuditEntry{
+		CourseID: courseID,
+		Actor:    caller,
+		Action:   AuditActionMaterialsCreate,
+		Detail: map[string]interface{}{
+			"efs_id":     efsID,
+			"mount_path": mountPath,
+			"size_gb":    sizeGB,
+		},
+	})
+	return nil
+}
+
+// GetCourseMaterials returns the SharedMaterialsVolume metadata for a course.
+// Returns (nil, nil) when no materials volume has been created yet.
+func (m *Manager) GetCourseMaterials(ctx context.Context, courseID string) (*SharedMaterialsVolume, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	c, ok := m.courses[courseID]
+	if !ok {
+		return nil, ErrCourseNotFound
+	}
+
+	if c.SharedMaterialsEFSID == "" {
+		return nil, nil
+	}
+
+	return &SharedMaterialsVolume{
+		CourseID:  courseID,
+		EFSID:     c.SharedMaterialsEFSID,
+		SizeGB:    c.SharedMaterialsSizeGB,
+		MountPath: c.SharedMaterialsMountPath,
+		State:     "available",
+		CreatedAt: c.UpdatedAt,
+	}, nil
+}
+
 // --- Maintenance ---
 
 // CheckAndCloseExpiredCourses transitions courses past their end date + grace period to "closed"

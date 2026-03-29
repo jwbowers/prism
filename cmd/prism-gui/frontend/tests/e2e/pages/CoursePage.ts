@@ -191,4 +191,65 @@ export class CoursePage extends BasePage {
     await this.page.getByRole('button', { name: /back to courses/i }).click();
     await this.waitForCourseList();
   }
+
+  // ── v0.19.0: TA Access ───────────────────────────────────────────────────
+
+  /** Switch to the TA Access tab in a course detail view. */
+  async openTAAccessTab() {
+    await this.switchToTab('TA Access');
+    await this.page.waitForSelector('[data-testid="ta-access-table"]', { state: 'visible', timeout: 10000 });
+  }
+
+  /** Grant TA access to a user. */
+  async grantTAAccess(email: string, displayName?: string) {
+    await this.page.getByTestId('ta-grant-button').click();
+    await this.page.waitForSelector('[data-testid="ta-grant-modal"]', { state: 'visible', timeout: 5000 });
+    await this.page.getByTestId('ta-email-input').fill(email);
+    if (displayName) {
+      await this.page.getByTestId('ta-name-input').fill(displayName);
+    }
+    await this.page.getByTestId('ta-grant-submit').click();
+    await this.page.waitForSelector('[data-testid="ta-grant-modal"]', { state: 'hidden', timeout: 5000 });
+  }
+
+  /** Click the connect button for a TA row (opens SSH command modal). */
+  async connectTA(email: string) {
+    const row = this.page.locator('[data-testid="ta-access-table"] tr').filter({ hasText: email });
+    await row.getByRole('button', { name: /connect/i }).click();
+    await this.page.waitForSelector('[data-testid="ta-connect-modal"]', { state: 'visible', timeout: 5000 });
+  }
+
+  // ── v0.19.0: Shared Materials ────────────────────────────────────────────
+
+  /** Switch to the Materials tab in a course detail view. */
+  async openMaterialsTab() {
+    await this.switchToTab('Materials');
+  }
+
+  /** Create a shared materials volume. */
+  async createMaterials(sizeGB: number, mountPath?: string) {
+    await this.page.getByTestId('create-materials-button').click();
+    await this.page.waitForSelector('[data-testid="create-materials-modal"]', { state: 'visible', timeout: 5000 });
+    await this.page.getByTestId('materials-size-input').fill(String(sizeGB));
+    if (mountPath) {
+      await this.page.getByTestId('materials-mount-input').fill(mountPath);
+    }
+    await this.page.getByTestId('create-materials-submit').click();
+    await this.page.waitForSelector('[data-testid="create-materials-modal"]', { state: 'hidden', timeout: 5000 });
+  }
+
+  /** Mount the shared materials volume on all student instances. */
+  async mountMaterials() {
+    await this.page.getByTestId('mount-materials-button').click();
+    await this.page.waitForTimeout(500);
+  }
+
+  // ── v0.19.0: Template enforcement ────────────────────────────────────────
+
+  /** Returns true if the "Enforcement Active" badge is visible on the Templates tab. */
+  async isTemplateEnforcementActive(): Promise<boolean> {
+    await this.switchToTab('Templates');
+    const badge = this.page.getByTestId('enforcement-active-badge');
+    return badge.isVisible();
+  }
 }

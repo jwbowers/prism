@@ -406,6 +406,114 @@ func TestTACobraCommands_Overview(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 }
 
+// ── v0.19.0 course ta-access ─────────────────────────────────────────────────
+
+func TestCourseCobraCommands_TAAccessList(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ta-access", "list", "cs101"})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestCourseCobraCommands_TAAccessGrant(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ta-access", "grant", "cs101", "--email", "ta@uni.edu"})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestCourseCobraCommands_TAAccessGrant_MissingEmail(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ta-access", "grant", "cs101"}) // --email required
+	err := cmd.Execute()
+	assert.Error(t, err)
+}
+
+func TestCourseCobraCommands_TAAccessRevoke(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ta-access", "revoke", "cs101", "--email", "ta@uni.edu"})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestCourseCobraCommands_TAAccessConnect(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ta-access", "connect", "cs101", "--student", "stu@uni.edu", "--reason", "office hours"})
+	require.NoError(t, cmd.Execute())
+}
+
+// ── v0.19.0 course materials ──────────────────────────────────────────────────
+
+func TestCourseCobraCommands_MaterialsCreate(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"materials", "create", "cs101", "--size", "50"})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestCourseCobraCommands_MaterialsList(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"materials", "list", "cs101"})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestCourseCobraCommands_MaterialsMount(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"materials", "mount", "cs101"})
+	require.NoError(t, cmd.Execute())
+}
+
+// ── v0.19.0 course reset-workspace ───────────────────────────────────────────
+
+func TestCourseCobraCommands_ResetWorkspace(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"reset-workspace", "cs101", "--student", "stu@uni.edu", "--reason", "broken"})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestCourseCobraCommands_ResetWorkspace_MissingStudent(t *testing.T) {
+	app, _ := courseTestApp(t)
+	cc := NewCourseCobraCommands(app)
+	cmd := cc.CreateCourseCommand()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"reset-workspace", "cs101", "--reason", "broken"}) // --student required
+	err := cmd.Execute()
+	assert.Error(t, err)
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 // mustCreate opens/creates a file for writing and returns it.

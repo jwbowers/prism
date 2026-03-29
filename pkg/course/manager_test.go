@@ -542,3 +542,246 @@ func TestMarkCourseArchived_MustBeClosed(t *testing.T) {
 	err := m.MarkCourseArchived(ctx, c.ID)
 	require.Error(t, err)
 }
+
+// --- v0.19.0: TA Access Management (#48, #160) ---
+
+func TestGrantTAAccess_Success(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	ta, err := m.GrantTAAccess(ctx, c.ID, "ta@uni.edu", "Alice TA")
+	require.NoError(t, err)
+	require.NotNil(t, ta)
+	assert.Equal(t, types.ClassRoleTA, ta.Role)
+	assert.Equal(t, "ta@uni.edu", ta.Email)
+}
+
+func TestGrantTAAccess_Idempotent(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, err := m.GrantTAAccess(ctx, c.ID, "ta@uni.edu", "Alice TA")
+	require.NoError(t, err)
+
+	// Granting again returns the existing TA, no error
+	ta2, err := m.GrantTAAccess(ctx, c.ID, "ta@uni.edu", "Alice TA")
+	require.NoError(t, err)
+	require.NotNil(t, ta2)
+	assert.Equal(t, types.ClassRoleTA, ta2.Role)
+}
+
+func TestGrantTAAccess_CourseNotFound(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	_, err := m.GrantTAAccess(ctx, "nonexistent", "ta@uni.edu", "")
+	require.Error(t, err)
+}
+
+func TestListTAAccess(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, _ = m.GrantTAAccess(ctx, c.ID, "ta1@uni.edu", "TA One")
+	_, _ = m.GrantTAAccess(ctx, c.ID, "ta2@uni.edu", "TA Two")
+
+	// Also enroll a regular student — should not appear in TA list
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{Email: "student@uni.edu", Role: types.ClassRoleStudent})
+
+	tas, err := m.ListTAAccess(ctx, c.ID)
+	require.NoError(t, err)
+	assert.Len(t, tas, 2)
+	for _, ta := range tas {
+		assert.Equal(t, types.ClassRoleTA, ta.Role)
+	}
+}
+
+func TestRevokeTAAccess_Success(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, _ = m.GrantTAAccess(ctx, c.ID, "ta@uni.edu", "Alice TA")
+
+	err := m.RevokeTAAccess(ctx, c.ID, "ta@uni.edu")
+	require.NoError(t, err)
+
+	tas, _ := m.ListTAAccess(ctx, c.ID)
+	assert.Len(t, tas, 0)
+}
+
+func TestRevokeTAAccess_NotFound(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	err := m.RevokeTAAccess(ctx, c.ID, "nobody@uni.edu")
+	require.Error(t, err)
+}
+
+func TestLogTASSHConnect_RequiresTARole(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	// Enroll as student — not TA → must be denied
+	_, _ = m.EnrollMember(ctx, c.ID, &EnrollRequest{Email: "stu@uni.edu", Role: types.ClassRoleStudent})
+
+	entry := TAAccessEntry{
+		TAID:      "stu@uni.edu",
+		StudentID: "other@uni.edu",
+		Reason:    "debug",
+	}
+	err := m.LogTASSHConnect(ctx, c.ID, entry)
+	require.Error(t, err) // ErrNotAuthorized
+}
+
+func TestLogTASSHConnect_Success(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, _ = m.GrantTAAccess(ctx, c.ID, "ta@uni.edu", "TA")
+
+	entry := TAAccessEntry{
+		TAID:      "ta@uni.edu",
+		StudentID: "stu@uni.edu",
+		Reason:    "office hours",
+	}
+	require.NoError(t, m.LogTASSHConnect(ctx, c.ID, entry))
+}
+
+// --- v0.19.0: Template Enforcement (#47) ---
+
+func TestCheckTemplateAllowed_EmptyList(t *testing.T) {
+	m := testManager(t)
+	ctx := context.Background()
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	// No approved templates set → all allowed
+	err := m.CheckTemplateAllowed(c.ID, "python-ml")
+	require.NoError(t, err)
+}
+
+func TestCheckTemplateAllowed_Approved(t *testing.T) {
+	m := testManager(t)
+	ctx := context.Background()
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_ = m.AddApprovedTemplate(ctx, c.ID, "python-ml")
+	_ = m.AddApprovedTemplate(ctx, c.ID, "r-research")
+
+	require.NoError(t, m.CheckTemplateAllowed(c.ID, "python-ml"))
+}
+
+func TestCheckTemplateAllowed_Rejected(t *testing.T) {
+	m := testManager(t)
+	ctx := context.Background()
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_ = m.AddApprovedTemplate(ctx, c.ID, "python-ml")
+
+	err := m.CheckTemplateAllowed(c.ID, "gpu-cluster")
+	require.Error(t, err)
+}
+
+func TestCheckTemplateAllowed_UnknownCourse(t *testing.T) {
+	m := testManager(t)
+	// Unknown course → IsTemplateApproved returns true (permissive) → no error
+	err := m.CheckTemplateAllowed("no-such-course", "anything")
+	require.NoError(t, err)
+}
+
+// --- v0.19.0: Shared Course Materials (#167) ---
+
+func TestSetAndGetCourseMaterials(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	err := m.SetCourseMaterials(ctx, c.ID, "fs-abc123", "/mnt/materials", 50)
+	require.NoError(t, err)
+
+	vol, err := m.GetCourseMaterials(ctx, c.ID)
+	require.NoError(t, err)
+	require.NotNil(t, vol)
+	assert.Equal(t, "fs-abc123", vol.EFSID)
+	assert.Equal(t, "/mnt/materials", vol.MountPath)
+	assert.Equal(t, 50, vol.SizeGB)
+	assert.Equal(t, "available", vol.State)
+}
+
+func TestGetCourseMaterials_None(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	vol, err := m.GetCourseMaterials(ctx, c.ID)
+	require.NoError(t, err)
+	assert.Nil(t, vol)
+}
+
+func TestGetCourseMaterials_CourseNotFound(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+
+	_, err := m.GetCourseMaterials(ctx, "nonexistent")
+	require.Error(t, err)
+}
+
+func TestSetCourseMaterials_Persisted(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_ = m.SetCourseMaterials(ctx, c.ID, "fs-persist", "/mnt/shared", 20)
+
+	// Re-read from same manager
+	updated, _ := m.GetCourse(ctx, c.ID)
+	assert.Equal(t, "fs-persist", updated.SharedMaterialsEFSID)
+	assert.Equal(t, "/mnt/shared", updated.SharedMaterialsMountPath)
+	assert.Equal(t, 20, updated.SharedMaterialsSizeGB)
+}
+
+func TestSetCourseMaterials_AuditLogged(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_ = m.SetCourseMaterials(ctx, c.ID, "fs-xyz", "/mnt/data", 30)
+
+	entries, err := m.QueryAuditLog(c.ID, "", time.Time{}, 100)
+	require.NoError(t, err)
+	found := false
+	for _, e := range entries {
+		if e.Action == AuditActionMaterialsCreate {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "materials.create audit entry expected")
+}
+
+// --- v0.19.0: TA Access Audit (#48) ---
+
+func TestGrantTAAccess_AuditLogged(t *testing.T) {
+	ctx := context.Background()
+	m := testManager(t)
+	c, _ := m.CreateCourse(ctx, testCreateReq())
+
+	_, _ = m.GrantTAAccess(ctx, c.ID, "ta@uni.edu", "Alice")
+
+	entries, err := m.QueryAuditLog(c.ID, "", time.Time{}, 100)
+	require.NoError(t, err)
+	found := false
+	for _, e := range entries {
+		if e.Action == AuditActionTAAccessGrant {
+			found = true
+			assert.Equal(t, "ta@uni.edu", e.Target)
+			break
+		}
+	}
+	assert.True(t, found, "ta.access.grant audit entry expected")
+}

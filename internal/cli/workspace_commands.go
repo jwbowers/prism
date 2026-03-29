@@ -37,6 +37,10 @@ Examples:
 	cmd.AddCommand(f.createExecCommand())
 	cmd.AddCommand(f.createWebCommand())
 
+	// v0.20.0: SSM file operations (#30)
+	fileOps := NewFileOpsCobraCommands(f.app)
+	cmd.AddCommand(fileOps.CreateFilesCommand())
+
 	return cmd
 }
 
@@ -90,6 +94,7 @@ func (f *WorkspaceCommandFactory) buildLaunchArgs(cmd *cobra.Command, args []str
 	args = appendBoolFlag(cmd, args, "quiet", "--quiet")
 	args = appendBoolFlag(cmd, args, "no-progress", "--no-progress")
 	args = appendBoolFlag(cmd, args, "yes", "--yes")
+	args = appendStringFlag(cmd, args, "capacity-block", "--capacity-block")
 	return f.app.Launch(args)
 }
 
@@ -109,6 +114,7 @@ func (f *WorkspaceCommandFactory) addLaunchFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("quiet", false, "Suppress progress output (for scripting)")
 	cmd.Flags().Bool("no-progress", false, "Disable progress monitoring")
 	cmd.Flags().BoolP("yes", "y", false, "Skip cost confirmation prompt")
+	cmd.Flags().String("capacity-block", "", "Pin launch to a pre-reserved EC2 Capacity Block ID (#63)")
 }
 
 func (f *WorkspaceCommandFactory) createListCommand() *cobra.Command {

@@ -2967,6 +2967,111 @@ func (c *HTTPClient) RemoveWorkshopParticipant(ctx context.Context, workshopID, 
 // ─── Internal helper ──────────────────────────────────────────────────────────
 
 // makeRequestJSON is a convenience wrapper that calls makeRequest and decodes the body as JSON.
+// ── SSM File Operations (#30) ─────────────────────────────────────────────────
+
+func (c *HTTPClient) ListInstanceFiles(ctx context.Context, instanceName, path string) ([]interface{}, error) {
+	url := "/api/v1/instances/" + instanceName + "/files"
+	if path != "" {
+		url += "?path=" + path
+	}
+	resp, err := c.makeRequest(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	var result []interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+func (c *HTTPClient) PushFileToInstance(ctx context.Context, instanceName, localPath, remotePath string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/instances/"+instanceName+"/files/push", map[string]string{
+		"local_path":  localPath,
+		"remote_path": remotePath,
+	})
+}
+
+func (c *HTTPClient) PullFileFromInstance(ctx context.Context, instanceName, remotePath, localPath string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/instances/"+instanceName+"/files/pull", map[string]string{
+		"remote_path": remotePath,
+		"local_path":  localPath,
+	})
+}
+
+// ── EC2 Capacity Blocks (#63) ─────────────────────────────────────────────────
+
+func (c *HTTPClient) ListCapacityBlocks(ctx context.Context) ([]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/capacity-blocks", nil)
+	if err != nil {
+		return nil, err
+	}
+	var result []interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+func (c *HTTPClient) ReserveCapacityBlock(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/capacity-blocks", req)
+}
+
+func (c *HTTPClient) DescribeCapacityBlock(ctx context.Context, id string) (map[string]interface{}, error) {
+	return c.makeRequestJSON(ctx, "GET", "/api/v1/capacity-blocks/"+id, nil)
+}
+
+func (c *HTTPClient) CancelCapacityBlock(ctx context.Context, id string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/capacity-blocks/"+id, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// S3 mount methods (#22b)
+
+func (c *HTTPClient) ListInstanceS3Mounts(ctx context.Context, instanceName string) ([]interface{}, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/instances/"+instanceName+"/s3-mounts", nil)
+	if err != nil {
+		return nil, err
+	}
+	var result []interface{}
+	return result, c.handleResponse(resp, &result)
+}
+
+func (c *HTTPClient) MountS3Bucket(ctx context.Context, instanceName, bucket, mountPath, method string, readOnly bool) (map[string]interface{}, error) {
+	body := map[string]interface{}{
+		"bucket_name": bucket,
+		"mount_path":  mountPath,
+		"method":      method,
+		"read_only":   readOnly,
+	}
+	return c.makeRequestJSON(ctx, "POST", "/api/v1/instances/"+instanceName+"/s3-mounts", body)
+}
+
+func (c *HTTPClient) UnmountS3Bucket(ctx context.Context, instanceName, mountPath string) error {
+	// mountPath may contain slashes; URL-encode to preserve them in the path segment
+	encoded := url.PathEscape(strings.TrimPrefix(mountPath, "/"))
+	resp, err := c.makeRequest(ctx, "DELETE", "/api/v1/instances/"+instanceName+"/s3-mounts/"+encoded, nil)
+	if err != nil {
+		return err
+	}
+	return c.handleResponse(resp, nil)
+}
+
+// Storage analytics methods (#23b)
+
+func (c *HTTPClient) GetAllStorageAnalytics(ctx context.Context, period string) (map[string]interface{}, error) {
+	path := "/api/v1/storage/analytics"
+	if period != "" {
+		path += "?period=" + url.QueryEscape(period)
+	}
+	return c.makeRequestJSON(ctx, "GET", path, nil)
+}
+
+func (c *HTTPClient) GetStorageAnalytics(ctx context.Context, name, period string) (map[string]interface{}, error) {
+	path := "/api/v1/storage/analytics/" + url.PathEscape(name)
+	if period != "" {
+		path += "?period=" + url.QueryEscape(period)
+	}
+	return c.makeRequestJSON(ctx, "GET", path, nil)
+}
+
 func (c *HTTPClient) makeRequestJSON(ctx context.Context, method, path string, body interface{}) (map[string]interface{}, error) {
 	resp, err := c.makeRequest(ctx, method, path, body)
 	if err != nil {

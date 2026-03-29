@@ -68,6 +68,15 @@ const mockApiClient = {
   resetStudent: vi.fn(),
   provisionStudent: vi.fn(),
   importCourseRoster: vi.fn(),
+  // v0.19.0 additions
+  listCourseTAAccess: vi.fn(),
+  grantCourseTAAccess: vi.fn(),
+  revokeCourseTAAccess: vi.fn(),
+  connectCourseTAAccess: vi.fn(),
+  resetCourseStudentWorkspace: vi.fn(),
+  getCourseMaterials: vi.fn(),
+  createCourseMaterials: vi.fn(),
+  mountCourseMaterials: vi.fn(),
 };
 
 // Inject mock before each test
@@ -88,6 +97,15 @@ beforeEach(() => {
   mockApiClient.removeCourseTemplate.mockResolvedValue(undefined);
   mockApiClient.distributeCourseBudget.mockResolvedValue({});
   mockApiClient.archiveCourse.mockResolvedValue({ instances_stopped: [] });
+  // v0.19.0 defaults
+  mockApiClient.listCourseTAAccess.mockResolvedValue([]);
+  mockApiClient.grantCourseTAAccess.mockResolvedValue({ user_id: 'ta1', email: 'ta@uni.edu', display_name: 'Alice TA', role: 'ta', budget_spent: 0, budget_limit: 0, added_at: '' });
+  mockApiClient.revokeCourseTAAccess.mockResolvedValue(undefined);
+  mockApiClient.connectCourseTAAccess.mockResolvedValue({ ssh_command: 'ssh user@host' });
+  mockApiClient.resetCourseStudentWorkspace.mockResolvedValue({ student_id: 'stu1', status: 'reset_scheduled' });
+  mockApiClient.getCourseMaterials.mockResolvedValue(null);
+  mockApiClient.createCourseMaterials.mockResolvedValue({ course_id: 'cs101', efs_id: 'fs-abc', mount_path: '/mnt/shared', state: 'available', size_gb: 50, created_at: '', mounted_instance_count: 0 });
+  mockApiClient.mountCourseMaterials.mockResolvedValue({ status: 'mount_scheduled', note: 'ok' });
   vi.clearAllMocks();
   // Re-apply defaults after clear
   mockApiClient.getCourses.mockResolvedValue(mockCourses);
@@ -103,6 +121,15 @@ beforeEach(() => {
   mockApiClient.removeCourseTemplate.mockResolvedValue(undefined);
   mockApiClient.distributeCourseBudget.mockResolvedValue({});
   mockApiClient.archiveCourse.mockResolvedValue({ instances_stopped: [] });
+  // v0.19.0 re-apply after clear
+  mockApiClient.listCourseTAAccess.mockResolvedValue([]);
+  mockApiClient.grantCourseTAAccess.mockResolvedValue({ user_id: 'ta1', email: 'ta@uni.edu', display_name: 'Alice TA', role: 'ta', budget_spent: 0, budget_limit: 0, added_at: '' });
+  mockApiClient.revokeCourseTAAccess.mockResolvedValue(undefined);
+  mockApiClient.connectCourseTAAccess.mockResolvedValue({ ssh_command: 'ssh user@host' });
+  mockApiClient.resetCourseStudentWorkspace.mockResolvedValue({ student_id: 'stu1', status: 'reset_scheduled' });
+  mockApiClient.getCourseMaterials.mockResolvedValue(null);
+  mockApiClient.createCourseMaterials.mockResolvedValue({ course_id: 'cs101', efs_id: 'fs-abc', mount_path: '/mnt/shared', state: 'available', size_gb: 50, created_at: '', mounted_instance_count: 0 });
+  mockApiClient.mountCourseMaterials.mockResolvedValue({ status: 'mount_scheduled', note: 'ok' });
 });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -317,5 +344,108 @@ describe('CourseDetailPanel', () => {
 
     await user.click(screen.getByRole('button', { name: /back to courses/i }));
     expect(onBack).toHaveBeenCalled();
+  });
+
+  // ── v0.19.0: TA Access tab ─────────────────────────────────────────────────
+
+  it('TA Access tab renders TA table', async () => {
+    renderDetail();
+    await clickTab('TA Access');
+    await waitFor(() => {
+      expect(screen.getByTestId('ta-access-table')).toBeTruthy();
+    });
+  });
+
+  it('TA Access tab shows empty state when no TAs', async () => {
+    mockApiClient.listCourseTAAccess.mockResolvedValue([]);
+    renderDetail();
+    await clickTab('TA Access');
+    await waitFor(() => {
+      expect(screen.getByText(/no tas/i)).toBeTruthy();
+    });
+  });
+
+  it('TA Access tab shows grant button', async () => {
+    renderDetail();
+    await clickTab('TA Access');
+    await waitFor(() => {
+      expect(screen.getByTestId('ta-grant-button')).toBeTruthy();
+    });
+  });
+
+  it('TA Access tab shows TAs from API', async () => {
+    mockApiClient.listCourseTAAccess.mockResolvedValue([
+      { user_id: 'ta1', email: 'ta@uni.edu', display_name: 'Alice TA', role: 'ta', budget_spent: 0, budget_limit: 0, added_at: '' },
+    ]);
+    renderDetail();
+    await clickTab('TA Access');
+    await waitFor(() => {
+      expect(screen.getByText('ta@uni.edu')).toBeTruthy();
+    });
+  });
+
+  // ── v0.19.0: Materials tab ─────────────────────────────────────────────────
+
+  it('Materials tab renders create button when no volume', async () => {
+    mockApiClient.getCourseMaterials.mockResolvedValue(null);
+    renderDetail();
+    await clickTab('Materials');
+    await waitFor(() => {
+      expect(screen.getByTestId('create-materials-button')).toBeTruthy();
+    });
+  });
+
+  it('Materials tab shows EFS ID when volume exists', async () => {
+    mockApiClient.getCourseMaterials.mockResolvedValue({
+      course_id: 'cs101',
+      efs_id: 'fs-abc123',
+      mount_path: '/mnt/shared',
+      state: 'available',
+      size_gb: 50,
+      created_at: '',
+      mounted_instance_count: 0,
+    });
+    renderDetail();
+    await clickTab('Materials');
+    await waitFor(() => {
+      expect(screen.getByTestId('materials-efs-id')).toBeTruthy();
+    });
+    expect(screen.getByText('fs-abc123')).toBeTruthy();
+  });
+
+  it('Materials tab shows mount button when volume exists', async () => {
+    mockApiClient.getCourseMaterials.mockResolvedValue({
+      course_id: 'cs101',
+      efs_id: 'fs-abc123',
+      mount_path: '/mnt/shared',
+      state: 'available',
+      size_gb: 50,
+      created_at: '',
+      mounted_instance_count: 0,
+    });
+    renderDetail();
+    await clickTab('Materials');
+    await waitFor(() => {
+      expect(screen.getByTestId('mount-materials-button')).toBeTruthy();
+    });
+  });
+
+  // ── v0.19.0: Template enforcement badge ───────────────────────────────────
+
+  it('Templates tab shows enforcement badge when templates are set', async () => {
+    mockApiClient.getCourseTemplates.mockResolvedValue({ templates: ['python-ml'] });
+    renderDetail();
+    await clickTab('Templates');
+    await waitFor(() => {
+      expect(screen.getByTestId('enforcement-active-badge')).toBeTruthy();
+    });
+  });
+
+  it('Templates tab hides enforcement badge when no templates', async () => {
+    mockApiClient.getCourseTemplates.mockResolvedValue({ templates: [] });
+    renderDetail();
+    await clickTab('Templates');
+    await waitFor(() => screen.getAllByRole('tab'));
+    expect(screen.queryByTestId('enforcement-active-badge')).toBeNull();
   });
 });

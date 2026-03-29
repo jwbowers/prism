@@ -25,6 +25,13 @@ const (
 	AuditActionInstanceStop     AuditAction = "instance.stop"
 	AuditActionCourseClose      AuditAction = "course.close"
 	AuditActionCourseArchive    AuditAction = "course.archive"
+	AuditActionTAAccessGrant    AuditAction = "ta.access.grant"
+	AuditActionTAAccessRevoke   AuditAction = "ta.access.revoke"
+	AuditActionTASSHConnect     AuditAction = "ta.ssh.connect"
+	AuditActionTASSHDisconnect  AuditAction = "ta.ssh.disconnect"
+	AuditActionMaterialsCreate  AuditAction = "materials.create"
+	AuditActionMaterialsMount   AuditAction = "materials.mount"
+	AuditActionMaterialsUpload  AuditAction = "materials.upload"
 )
 
 // AuditEntry is one line in the course audit JSONL log.

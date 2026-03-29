@@ -387,3 +387,16 @@ func (m *MockEC2Client) DescribeInstanceStatus(ctx context.Context, params *ec2.
 	}
 	return &ec2.DescribeInstanceStatusOutput{}, nil
 }
+
+// EC2 Capacity Reservation stubs (EC2ClientInterface, Issue #63)
+func (m *MockEC2Client) CreateCapacityReservation(ctx context.Context, params *ec2.CreateCapacityReservationInput, optFns ...func(*ec2.Options)) (*ec2.CreateCapacityReservationOutput, error) {
+	return &ec2.CreateCapacityReservationOutput{}, nil
+}
+
+func (m *MockEC2Client) DescribeCapacityReservations(ctx context.Context, params *ec2.DescribeCapacityReservationsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeCapacityReservationsOutput, error) {
+	return &ec2.DescribeCapacityReservationsOutput{}, nil
+}
+
+func (m *MockEC2Client) CancelCapacityReservation(ctx context.Context, params *ec2.CancelCapacityReservationInput, optFns ...func(*ec2.Options)) (*ec2.CancelCapacityReservationOutput, error) {
+	return &ec2.CancelCapacityReservationOutput{}, nil
+}

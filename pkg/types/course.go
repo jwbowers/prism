@@ -105,6 +105,17 @@ type Course struct {
 	// AutoProvisionOnEnroll creates a workspace for the student automatically upon
 	// enrollment when true (requires DefaultTemplate to be set).
 	AutoProvisionOnEnroll bool `json:"auto_provision_on_enroll,omitempty"`
+
+	// SharedMaterialsEFSID is the EFS filesystem ID for shared course materials.
+	// Empty means no shared materials volume has been created for this course.
+	SharedMaterialsEFSID string `json:"shared_materials_efs_id,omitempty"`
+
+	// SharedMaterialsMountPath is where the shared EFS is mounted in student instances.
+	// Defaults to "/mnt/course-materials" when creating via the API.
+	SharedMaterialsMountPath string `json:"shared_materials_mount_path,omitempty"`
+
+	// SharedMaterialsSizeGB is the advisory provisioned size of the shared EFS in GB.
+	SharedMaterialsSizeGB int `json:"shared_materials_size_gb,omitempty"`
 }
 
 // ClassMember represents an enrolled course participant

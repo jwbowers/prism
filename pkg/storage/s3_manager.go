@@ -329,3 +329,174 @@ func (m *S3Manager) OptimizeBucketForWorkload(bucketName string, workload string
 // Note: This is a simplified implementation for Phase 5C foundation.
 // Full S3 integration with advanced mounting options, security configurations,
 // and performance optimizations would be implemented in future iterations.
+
+// SSMExecutor runs shell scripts on a remote instance via SSM.
+type SSMExecutor interface {
+	ExecuteScript(ctx context.Context, instanceID, script string) (string, error)
+}
+
+// MountS3BucketOnInstance mounts an S3 bucket on a running instance via SSM.
+// Installs the chosen mount tool if not already present, then mounts at mountPath.
+func (m *S3Manager) MountS3BucketOnInstance(ctx context.Context, ssm SSMExecutor,
+	instanceID, instanceName, bucketName, mountPath string, method S3MountMethod, readOnly bool) (*MountResult, error) {
+
+	// GetMountCommand returns a full install+mount script; we run it directly.
+	script := m.GetMountCommand(bucketName, mountPath, method)
+	if script == "" {
+		return nil, fmt.Errorf("unsupported mount method: %s", method)
+	}
+
+	out, err := ssm.ExecuteScript(ctx, instanceID, script)
+	if err != nil {
+		return &MountResult{
+			InstanceName: instanceName,
+			BucketName:   bucketName,
+			MountPath:    mountPath,
+			Method:       method,
+			Status:       "error",
+			Message:      err.Error(),
+		}, err
+	}
+	return &MountResult{
+		InstanceName: instanceName,
+		BucketName:   bucketName,
+		MountPath:    mountPath,
+		Method:       method,
+		Status:       "ok",
+		Message:      out,
+	}, nil
+}
+
+// UnmountS3BucketFromInstance unmounts a mount path on an instance via SSM.
+func (m *S3Manager) UnmountS3BucketFromInstance(ctx context.Context, ssm SSMExecutor,
+	instanceID, mountPath string) error {
+
+	script := fmt.Sprintf(`#!/bin/bash
+set -e
+fusermount -u "%s" 2>/dev/null || umount "%s"
+echo "OK"
+`, mountPath, mountPath)
+
+	_, err := ssm.ExecuteScript(ctx, instanceID, script)
+	return err
+}
+
+// ListInstanceS3Mounts returns active S3 mounts on an instance by parsing /proc/mounts.
+func (m *S3Manager) ListInstanceS3Mounts(ctx context.Context, ssm SSMExecutor,
+	instanceID string) ([]ActiveS3Mount, error) {
+
+	script := `#!/bin/bash
+grep -E 's3fs:|goofys:|mountpoint-s3:|rclone:' /proc/mounts 2>/dev/null || true`
+
+	out, err := ssm.ExecuteScript(ctx, instanceID, script)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list S3 mounts: %w", err)
+	}
+
+	return parseS3Mounts(out), nil
+}
+
+// parseS3Mounts parses /proc/mounts lines for S3 mount entries.
+func parseS3Mounts(output string) []ActiveS3Mount {
+	var mounts []ActiveS3Mount
+	for _, line := range splitLines(output) {
+		// Format: <device> <mountpoint> <fstype> <options> 0 0
+		fields := splitFields(line)
+		if len(fields) < 4 {
+			continue
+		}
+		device, mountPath, opts := fields[0], fields[1], fields[3]
+		var method, bucket string
+		switch {
+		case hasPrefix(device, "s3fs:") || fields[2] == "fuse.s3fs":
+			method = "s3fs"
+			bucket = trimPrefix(device, "s3fs:")
+		case hasPrefix(device, "goofys:") || fields[2] == "fuse.goofys":
+			method = "goofys"
+			bucket = trimPrefix(device, "goofys:")
+		case fields[2] == "fuse.mountpoint-s3":
+			method = "mountpoint"
+			bucket = device
+		case hasPrefix(device, "rclone:"):
+			method = "rclone"
+			bucket = trimPrefix(device, "rclone:")
+		default:
+			continue
+		}
+		readOnly := containsOption(opts, "ro")
+		mounts = append(mounts, ActiveS3Mount{
+			BucketName:  bucket,
+			MountPath:   mountPath,
+			MountMethod: method,
+			ReadOnly:    readOnly,
+		})
+	}
+	return mounts
+}
+
+// small string helpers to avoid importing strings in this file's logic section
+func splitLines(s string) []string {
+	var lines []string
+	start := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\n' {
+			if i > start {
+				lines = append(lines, s[start:i])
+			}
+			start = i + 1
+		}
+	}
+	if start < len(s) {
+		lines = append(lines, s[start:])
+	}
+	return lines
+}
+
+func splitFields(s string) []string {
+	var fields []string
+	inField := false
+	start := 0
+	for i := 0; i <= len(s); i++ {
+		isSpace := i == len(s) || s[i] == ' ' || s[i] == '\t'
+		if !isSpace && !inField {
+			start = i
+			inField = true
+		} else if isSpace && inField {
+			fields = append(fields, s[start:i])
+			inField = false
+		}
+	}
+	return fields
+}
+
+func hasPrefix(s, prefix string) bool {
+	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
+}
+
+func trimPrefix(s, prefix string) string {
+	if hasPrefix(s, prefix) {
+		return s[len(prefix):]
+	}
+	return s
+}
+
+func containsOption(opts, opt string) bool {
+	for _, o := range splitComma(opts) {
+		if o == opt {
+			return true
+		}
+	}
+	return false
+}
+
+func splitComma(s string) []string {
+	var parts []string
+	start := 0
+	for i := 0; i <= len(s); i++ {
+		if i == len(s) || s[i] == ',' {
+			parts = append(parts, s[start:i])
+			start = i + 1
+		}
+	}
+	return parts
+}

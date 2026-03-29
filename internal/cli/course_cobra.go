@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +46,9 @@ Examples:
 		cc.createArchiveCommand(),
 		cc.createReportCommand(),
 		cc.createAuditCommand(),
+		cc.createTAAccessCommand(),
+		cc.createMaterialsCommand(),
+		cc.createResetWorkspaceCommand(),
 	)
 	return cmd
 }
@@ -464,5 +469,177 @@ func (cc *CourseCobraCommands) createAuditCommand() *cobra.Command {
 	cmd.Flags().String("student", "", "Filter by student user ID or email")
 	cmd.Flags().String("since", "", "Filter entries since this date (RFC3339 or YYYY-MM-DD)")
 	cmd.Flags().String("limit", "100", "Maximum number of entries to return")
+	return cmd
+}
+
+// --- v0.19.0: TA Access, Materials, Reset Workspace ---
+
+// createTAAccessCommand creates the 'course ta-access' command group.
+func (cc *CourseCobraCommands) createTAAccessCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ta-access",
+		Short: "Manage TA access to student instances",
+		Long: `Grant, revoke, and audit TA access to student workspaces.
+
+Examples:
+  prism course ta-access list <course-id>
+  prism course ta-access grant <course-id> --email ta@uni.edu
+  prism course ta-access revoke <course-id> --email ta@uni.edu
+  prism course ta-access connect <course-id> --student student@uni.edu --reason "office hours"`,
+	}
+
+	// ta-access list
+	listCmd := &cobra.Command{
+		Use:   "list <course-id>",
+		Short: "List TAs with access",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cc.app.Course([]string{"ta-access", "list", args[0]})
+		},
+	}
+
+	// ta-access grant
+	grantCmd := &cobra.Command{
+		Use:   "grant <course-id>",
+		Short: "Grant TA access to a user",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			email, _ := cmd.Flags().GetString("email")
+			displayName, _ := cmd.Flags().GetString("name")
+			if email == "" {
+				return cmd.Usage()
+			}
+			cliArgs := []string{"ta-access", "grant", args[0], "--email", email}
+			if displayName != "" {
+				cliArgs = append(cliArgs, "--name", displayName)
+			}
+			return cc.app.Course(cliArgs)
+		},
+	}
+	grantCmd.Flags().String("email", "", "TA email address (required)")
+	grantCmd.Flags().String("name", "", "TA display name")
+	_ = grantCmd.MarkFlagRequired("email")
+
+	// ta-access revoke
+	revokeCmd := &cobra.Command{
+		Use:   "revoke <course-id>",
+		Short: "Revoke TA access from a user",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			email, _ := cmd.Flags().GetString("email")
+			if email == "" {
+				return cmd.Usage()
+			}
+			return cc.app.Course([]string{"ta-access", "revoke", args[0], "--email", email})
+		},
+	}
+	revokeCmd.Flags().String("email", "", "TA email address (required)")
+
+	// ta-access connect
+	connectCmd := &cobra.Command{
+		Use:   "connect <course-id>",
+		Short: "Get SSH command to connect to a student's instance",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			student, _ := cmd.Flags().GetString("student")
+			reason, _ := cmd.Flags().GetString("reason")
+			if student == "" || reason == "" {
+				return cmd.Usage()
+			}
+			return cc.app.Course([]string{"ta-access", "connect", args[0], "--student", student, "--reason", reason})
+		},
+	}
+	connectCmd.Flags().String("student", "", "Student user ID or email (required)")
+	connectCmd.Flags().String("reason", "", "Reason for access — recorded in audit log (required)")
+
+	cmd.AddCommand(listCmd, grantCmd, revokeCmd, connectCmd)
+	return cmd
+}
+
+// createMaterialsCommand creates the 'course materials' command group.
+func (cc *CourseCobraCommands) createMaterialsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "materials",
+		Short: "Manage shared course materials (read-only EFS)",
+		Long: `Create and manage a shared EFS volume for course datasets and assignments.
+
+Examples:
+  prism course materials create <course-id> --size 50 --mount /mnt/course-materials
+  prism course materials list <course-id>
+  prism course materials mount <course-id>`,
+	}
+
+	// materials create
+	createCmd := &cobra.Command{
+		Use:   "create <course-id>",
+		Short: "Create shared EFS materials volume",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			size, _ := cmd.Flags().GetInt("size")
+			mount, _ := cmd.Flags().GetString("mount")
+			cliArgs := []string{"materials", "create", args[0], "--size", fmt.Sprintf("%d", size)}
+			if mount != "" {
+				cliArgs = append(cliArgs, "--mount", mount)
+			}
+			return cc.app.Course(cliArgs)
+		},
+	}
+	createCmd.Flags().Int("size", 50, "Advisory size in GB (EFS is elastic)")
+	createCmd.Flags().String("mount", "/mnt/course-materials", "Mount path in student instances")
+
+	// materials list
+	listCmd := &cobra.Command{
+		Use:   "list <course-id>",
+		Short: "Show materials volume info",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cc.app.Course([]string{"materials", "list", args[0]})
+		},
+	}
+
+	// materials mount
+	mountCmd := &cobra.Command{
+		Use:   "mount <course-id>",
+		Short: "Schedule EFS mount on all student instances",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cc.app.Course([]string{"materials", "mount", args[0]})
+		},
+	}
+
+	cmd.AddCommand(createCmd, listCmd, mountCmd)
+	return cmd
+}
+
+// createResetWorkspaceCommand creates 'course reset-workspace'.
+func (cc *CourseCobraCommands) createResetWorkspaceCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "reset-workspace <course-id>",
+		Short: "Reset a student's workspace (TA/instructor only)",
+		Long: `Resets a student's workspace to a clean state. Optionally creates a backup
+snapshot before resetting so the student can retrieve their work.
+
+Examples:
+  prism course reset-workspace CS229 --student student@uni.edu --reason "broken env" --backup
+  prism course reset-workspace CS229 --student student@uni.edu --reason "fresh start"`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			student, _ := cmd.Flags().GetString("student")
+			reason, _ := cmd.Flags().GetString("reason")
+			backup, _ := cmd.Flags().GetBool("backup")
+			if student == "" || reason == "" {
+				return cmd.Usage()
+			}
+			cliArgs := []string{"reset-workspace", args[0], "--student", student, "--reason", reason}
+			if backup {
+				cliArgs = append(cliArgs, "--backup")
+			}
+			return cc.app.Course(cliArgs)
+		},
+	}
+	cmd.Flags().String("student", "", "Student user ID or email (required)")
+	cmd.Flags().String("reason", "", "Reason for reset (required, recorded in audit log)")
+	cmd.Flags().Bool("backup", false, "Create a backup snapshot before resetting")
+	_ = cmd.MarkFlagRequired("student")
 	return cmd
 }

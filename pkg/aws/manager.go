@@ -512,6 +512,15 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 		runInput.KeyName = aws.String(req.SSHKeyName)
 	}
 
+	// Pin to a pre-reserved EC2 Capacity Block (#63)
+	if req.CapacityBlockID != "" {
+		runInput.CapacityReservationSpecification = &ec2types.CapacityReservationSpecification{
+			CapacityReservationTarget: &ec2types.CapacityReservationTarget{
+				CapacityReservationId: aws.String(req.CapacityBlockID),
+			},
+		}
+	}
+
 	// Optionally add IAM instance profile if it exists
 	// This enables SSM access for advanced features while not blocking new users
 	if b.manager.checkIAMInstanceProfileExists("Prism-Instance-Profile") {
@@ -1754,6 +1763,20 @@ echo "EFS volume unmounted successfully"
 
 	log.Printf("Successfully unmounted EFS volume '%s' from instance '%s'", volumeName, instanceName)
 	return nil
+}
+
+// ExecuteScript satisfies storage.SSMExecutor — runs a script and returns stdout.
+func (m *Manager) ExecuteScript(ctx context.Context, instanceID, script string) (string, error) {
+	out, err := m.ssm.SendCommand(ctx, &ssm.SendCommandInput{
+		InstanceIds:  []string{instanceID},
+		DocumentName: aws.String("AWS-RunShellScript"),
+		Parameters:   map[string][]string{"commands": {script}},
+		Comment:      aws.String("Prism ExecuteScript"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to send SSM command: %w", err)
+	}
+	return m.waitForSSMOutput(ctx, instanceID, *out.Command.CommandId)
 }
 
 // executeScriptOnInstance executes a shell script on an instance using SSM

@@ -49,6 +49,7 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&ResearchUserCommand{})
 	dispatcher.RegisterCommand(&VersionCommand{})
 	dispatcher.RegisterCommand(&SSHKeyCommand{})
+	dispatcher.RegisterCommand(&CapacityBlockCommand{}) // EC2 Capacity Blocks (#63)
 
 	// Universal AMI System commands (Phase 5.1 Week 2)
 	dispatcher.RegisterCommand(&AMIStrategyCommand{})
@@ -423,6 +424,21 @@ func (s *SSHKeyCommand) Execute(req *types.LaunchRequest, args []string, index i
 		return index, fmt.Errorf("--ssh-key requires a key name")
 	}
 	req.SSHKeyName = args[index+1]
+	return index + 1, nil
+}
+
+// CapacityBlockCommand handles --capacity-block flag for EC2 Capacity Blocks (#63)
+type CapacityBlockCommand struct{}
+
+func (c *CapacityBlockCommand) CanHandle(arg string) bool {
+	return arg == "--capacity-block"
+}
+
+func (c *CapacityBlockCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	if index+1 >= len(args) {
+		return index, fmt.Errorf("--capacity-block requires a reservation ID")
+	}
+	req.CapacityBlockID = args[index+1]
 	return index + 1, nil
 }
 

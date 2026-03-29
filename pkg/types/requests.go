@@ -40,6 +40,9 @@ type LaunchRequest struct {
 	// Time-boxing (#146): set ExpiresAt directly or derive from Hours
 	Hours     int        `json:"hours,omitempty"`      // Auto-stop after N hours (convenience)
 	ExpiresAt *time.Time `json:"expires_at,omitempty"` // Explicit expiry timestamp
+
+	// EC2 Capacity Blocks (#63): pin launch to a pre-reserved capacity reservation
+	CapacityBlockID string `json:"capacity_block_id,omitempty"`
 }
 
 // LaunchResponse represents a successful launch response

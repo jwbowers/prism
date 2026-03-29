@@ -60,6 +60,9 @@ interface Course {
   auto_provision_on_enroll: boolean;
   created_at: string;
   updated_at: string;
+  shared_materials_efs_id?: string;
+  shared_materials_mount_path?: string;
+  shared_materials_size_gb?: number;
 }
 
 interface CourseBudgetSummary {
@@ -102,6 +105,26 @@ interface CourseAuditEntry {
   actor: string;
   target: string;
   action: string;
+}
+
+// v0.19.0 types
+
+interface SharedMaterialsVolume {
+  course_id: string;
+  efs_id: string;
+  size_gb: number;
+  mount_path: string;
+  state: string;
+  created_at: string;
+  mounted_instance_count: number;
+}
+
+interface WorkspaceResetResult {
+  student_id: string;
+  backup_snapshot_id?: string;
+  backup_download_url?: string;
+  backup_expires_at?: string;
+  status: string;
 }
 
 // ── CourseDetailPanel ────────────────────────────────────────────────────────
@@ -321,6 +344,146 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
     }
   };
 
+  // ── TA Access tab (#48, #160) ─────────────────────────────────────────────
+
+  const [taList, setTAList] = React.useState<ClassMember[]>([]);
+  const [taLoading, setTALoading] = React.useState(false);
+  const [taError, setTAError] = React.useState<string | null>(null);
+  const [grantEmail, setGrantEmail] = React.useState('');
+  const [grantName, setGrantName] = React.useState('');
+  const [grantSaving, setGrantSaving] = React.useState(false);
+  const [connectStudentId, setConnectStudentId] = React.useState('');
+  const [connectReason, setConnectReason] = React.useState('');
+  const [connectSshCommand, setConnectSshCommand] = React.useState('');
+  const [connectLoading, setConnectLoading] = React.useState(false);
+  const [connectModalVisible, setConnectModalVisible] = React.useState(false);
+
+  const loadTAList = async () => {
+    setTALoading(true);
+    try {
+      const result = await api.listCourseTAAccess(course.id);
+      setTAList(result || []);
+    } catch (e: any) {
+      setTAError(e.message || 'Failed to load TAs');
+    } finally {
+      setTALoading(false);
+    }
+  };
+
+  const grantTAAccess = async () => {
+    if (!grantEmail) return;
+    setGrantSaving(true);
+    try {
+      await api.grantCourseTAAccess(course.id, grantEmail, grantName);
+      setGrantEmail(''); setGrantName('');
+      await loadTAList();
+    } catch (e: any) {
+      setTAError(e.message || 'Failed to grant TA access');
+    } finally {
+      setGrantSaving(false);
+    }
+  };
+
+  const revokeTAAccess = async (email: string) => {
+    try {
+      await api.revokeCourseTAAccess(course.id, email);
+      await loadTAList();
+    } catch (e: any) {
+      setTAError(e.message || 'Failed to revoke TA access');
+    }
+  };
+
+  const connectTA = async () => {
+    if (!connectStudentId || !connectReason) return;
+    setConnectLoading(true);
+    try {
+      const result = await api.connectCourseTAAccess(course.id, connectStudentId, connectReason);
+      setConnectSshCommand(result.ssh_command || '');
+    } catch (e: any) {
+      setTAError(e.message || 'Failed to get SSH command');
+    } finally {
+      setConnectLoading(false);
+    }
+  };
+
+  // ── Materials tab (#167) ─────────────────────────────────────────────────
+
+  const [materials, setMaterials] = React.useState<SharedMaterialsVolume | null>(null);
+  const [materialsLoading, setMaterialsLoading] = React.useState(false);
+  const [materialsError, setMaterialsError] = React.useState<string | null>(null);
+  const [createMaterialsSizeGB, setCreateMaterialsSizeGB] = React.useState('50');
+  const [createMaterialsMount, setCreateMaterialsMount] = React.useState('/mnt/course-materials');
+  const [createMaterialsSaving, setCreateMaterialsSaving] = React.useState(false);
+  const [mountingMaterials, setMountingMaterials] = React.useState(false);
+  const [mountResult, setMountResult] = React.useState<string | null>(null);
+
+  const loadMaterials = async () => {
+    setMaterialsLoading(true);
+    try {
+      const result = await api.getCourseMaterials(course.id);
+      setMaterials(result);
+    } catch (e: any) {
+      setMaterialsError(e.message || 'Failed to load materials');
+    } finally {
+      setMaterialsLoading(false);
+    }
+  };
+
+  const createMaterials = async () => {
+    setCreateMaterialsSaving(true);
+    try {
+      const result = await api.createCourseMaterials(course.id, parseInt(createMaterialsSizeGB, 10), createMaterialsMount);
+      setMaterials(result);
+    } catch (e: any) {
+      setMaterialsError(e.message || 'Failed to create materials volume');
+    } finally {
+      setCreateMaterialsSaving(false);
+    }
+  };
+
+  const mountMaterials = async () => {
+    setMountingMaterials(true);
+    try {
+      const result = await api.mountCourseMaterials(course.id);
+      setMountResult(result.status || 'mount_scheduled');
+    } catch (e: any) {
+      setMaterialsError(e.message || 'Failed to schedule mount');
+    } finally {
+      setMountingMaterials(false);
+    }
+  };
+
+  // ── Reset Workspace (#49, #164) ──────────────────────────────────────────
+
+  const [resetStudentId, setResetStudentId] = React.useState('');
+  const [resetReason, setResetReason] = React.useState('');
+  const [resetBackup, setResetBackup] = React.useState(true);
+  const [resetSaving, setResetSaving] = React.useState(false);
+  const [resetResult, setResetResult] = React.useState<WorkspaceResetResult | null>(null);
+  const [resetModalVisible, setResetModalVisible] = React.useState(false);
+
+  const openResetModal = (studentId: string) => {
+    setResetStudentId(studentId);
+    setResetReason('');
+    setResetBackup(true);
+    setResetResult(null);
+    setResetModalVisible(true);
+  };
+
+  const resetWorkspace = async () => {
+    if (!resetStudentId || !resetReason) return;
+    setResetSaving(true);
+    try {
+      const result = await api.resetCourseStudentWorkspace(course.id, resetStudentId, resetReason, resetBackup);
+      setResetResult(result);
+    } catch (e: any) {
+      setOverviewError(e.message || 'Reset failed');
+      setResetModalVisible(false);
+    } finally {
+      setResetSaving(false);
+    }
+  };
+
   // Load all tabs on mount
   React.useEffect(() => {
     loadOverview();
@@ -328,6 +491,8 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
     loadTemplates();
     loadBudget();
     loadAudit();
+    loadTAList();
+    loadMaterials();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course.id]);
 
@@ -397,6 +562,15 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
                         { id: 'spent', header: 'Spent', cell: (s: StudentOverviewStatus) => `$${s.budget_spent?.toFixed(2) || '0.00'}` },
                         { id: 'limit', header: 'Limit', cell: (s: StudentOverviewStatus) => `$${s.budget_limit?.toFixed(2) || '0.00'}` },
                         { id: 'status', header: 'Budget Status', cell: (s: StudentOverviewStatus) => <Badge color={budgetStatusColor(s.budget_status)}>{s.budget_status}</Badge> },
+                        { id: 'actions', header: 'Actions', cell: (s: StudentOverviewStatus) => (
+                          <Button
+                            variant="normal"
+                            onClick={() => openResetModal(s.user_id || s.email)}
+                            data-testid={`reset-workspace-${s.user_id}`}
+                          >
+                            Reset Workspace
+                          </Button>
+                        )},
                       ]}
                     />
                   </SpaceBetween>
@@ -493,7 +667,18 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
             id: 'templates',
             label: 'Templates',
             content: (
-              <Container header={<Header variant="h3">Approved Templates Whitelist</Header>}>
+              <Container header={
+                <Header
+                  variant="h3"
+                  actions={
+                    templates.length > 0
+                      ? <Badge color="blue" data-testid="enforcement-active-badge">Enforcement Active</Badge>
+                      : <Badge color="grey" data-testid="enforcement-unrestricted-badge">Unrestricted</Badge>
+                  }
+                >
+                  Approved Templates Whitelist
+                </Header>
+              }>
                 {templateError && <Alert type="error" dismissible onDismiss={() => setTemplateError(null)}>{templateError}</Alert>}
                 {templatesLoading ? <Spinner /> : (
                   <SpaceBetween size="m">
@@ -658,6 +843,173 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
                   }
                 >
                   <Box>Archive course <strong>{course.code}</strong>? All student instances will be stopped. This cannot be undone.</Box>
+                </Modal>
+              </Container>
+            )
+          },
+          {
+            id: 'ta-access',
+            label: 'TA Access',
+            content: (
+              <Container header={<Header variant="h3">TA Access Management</Header>}>
+                {taError && <Alert type="error" dismissible onDismiss={() => setTAError(null)}>{taError}</Alert>}
+                <SpaceBetween size="m">
+                  <SpaceBetween direction="horizontal" size="xs">
+                    <Input
+                      value={grantEmail}
+                      onChange={({ detail }) => setGrantEmail(detail.value)}
+                      placeholder="ta@uni.edu"
+                      data-testid="ta-grant-email-input"
+                    />
+                    <Input
+                      value={grantName}
+                      onChange={({ detail }) => setGrantName(detail.value)}
+                      placeholder="Display name (optional)"
+                    />
+                    <Button onClick={grantTAAccess} loading={grantSaving} data-testid="ta-grant-button">Grant TA Access</Button>
+                  </SpaceBetween>
+
+                  <Table
+                    data-testid="ta-access-table"
+                    loading={taLoading}
+                    loadingText="Loading TAs..."
+                    items={taList}
+                    empty={<Box textAlign="center" color="text-body-secondary">No TAs configured. Grant access above.</Box>}
+                    columnDefinitions={[
+                      { id: 'email', header: 'Email', cell: (m: ClassMember) => m.email },
+                      { id: 'name', header: 'Name', cell: (m: ClassMember) => m.display_name || '—' },
+                      { id: 'added', header: 'Added', cell: (m: ClassMember) => new Date(m.added_at).toLocaleDateString() },
+                      {
+                        id: 'actions', header: 'Actions',
+                        cell: (m: ClassMember) => (
+                          <SpaceBetween direction="horizontal" size="xs">
+                            <Button variant="link" onClick={() => { setConnectStudentId(''); setConnectReason(''); setConnectSshCommand(''); setConnectModalVisible(true); }}>Connect to Student</Button>
+                            <Button variant="link" onClick={() => revokeTAAccess(m.email)}>Revoke</Button>
+                          </SpaceBetween>
+                        )
+                      },
+                    ]}
+                  />
+
+                  <Modal
+                    visible={connectModalVisible}
+                    onDismiss={() => setConnectModalVisible(false)}
+                    header="TA Connect to Student Instance"
+                    data-testid="ta-connect-modal"
+                    footer={
+                      <Box float="right">
+                        <SpaceBetween direction="horizontal" size="xs">
+                          <Button variant="link" onClick={() => setConnectModalVisible(false)}>Close</Button>
+                          <Button variant="primary" loading={connectLoading} onClick={connectTA} data-testid="ta-connect-submit">Get SSH Command</Button>
+                        </SpaceBetween>
+                      </Box>
+                    }
+                  >
+                    <Form>
+                      <SpaceBetween size="m">
+                        <FormField label="Student Email or ID">
+                          <Input value={connectStudentId} onChange={({ detail }) => setConnectStudentId(detail.value)} placeholder="student@uni.edu" data-testid="ta-connect-student-input" />
+                        </FormField>
+                        <FormField label="Reason (required — recorded in audit log)">
+                          <Input value={connectReason} onChange={({ detail }) => setConnectReason(detail.value)} placeholder="e.g. office hours debugging" data-testid="ta-connect-reason-input" />
+                        </FormField>
+                        {connectSshCommand && (
+                          <Alert type="success" data-testid="ta-connect-result">
+                            <Box variant="code">{connectSshCommand}</Box>
+                          </Alert>
+                        )}
+                      </SpaceBetween>
+                    </Form>
+                  </Modal>
+                </SpaceBetween>
+              </Container>
+            )
+          },
+          {
+            id: 'materials',
+            label: 'Materials',
+            content: (
+              <Container header={<Header variant="h3">Shared Course Materials (EFS)</Header>}>
+                {materialsError && <Alert type="error" dismissible onDismiss={() => setMaterialsError(null)}>{materialsError}</Alert>}
+                {mountResult && <Alert type="success" dismissible onDismiss={() => setMountResult(null)}>Mount scheduled: {mountResult}</Alert>}
+                {materialsLoading ? <Spinner /> : materials ? (
+                  <SpaceBetween size="m">
+                    <ColumnLayout columns={4} variant="text-grid">
+                      <div><Box variant="awsui-key-label">EFS ID</Box><Box data-testid="materials-efs-id">{materials.efs_id}</Box></div>
+                      <div><Box variant="awsui-key-label">Size</Box><Box>{materials.size_gb} GB</Box></div>
+                      <div><Box variant="awsui-key-label">Mount Path</Box><Box>{materials.mount_path}</Box></div>
+                      <div><Box variant="awsui-key-label">State</Box><Badge color={materials.state === 'available' ? 'green' : materials.state === 'creating' ? 'blue' : 'red'} data-testid="materials-state-badge">{materials.state}</Badge></div>
+                    </ColumnLayout>
+                    <Button onClick={mountMaterials} loading={mountingMaterials} data-testid="mount-materials-button">
+                      Mount on All Student Instances
+                    </Button>
+                  </SpaceBetween>
+                ) : (
+                  <SpaceBetween size="m">
+                    <Box color="text-body-secondary">No shared materials volume. Create one below.</Box>
+                    <SpaceBetween direction="horizontal" size="xs">
+                      <FormField label="Size (GB)">
+                        <Input
+                          value={createMaterialsSizeGB}
+                          onChange={({ detail }) => setCreateMaterialsSizeGB(detail.value)}
+                          data-testid="materials-size-input"
+                          type="number"
+                        />
+                      </FormField>
+                      <FormField label="Mount Path">
+                        <Input
+                          value={createMaterialsMount}
+                          onChange={({ detail }) => setCreateMaterialsMount(detail.value)}
+                          data-testid="materials-mount-input"
+                        />
+                      </FormField>
+                      <FormField label=" ">
+                        <Button onClick={createMaterials} loading={createMaterialsSaving} data-testid="create-materials-button">
+                          Create Materials Volume
+                        </Button>
+                      </FormField>
+                    </SpaceBetween>
+                  </SpaceBetween>
+                )}
+
+                <Modal
+                  visible={resetModalVisible}
+                  onDismiss={() => setResetModalVisible(false)}
+                  header="Reset Student Workspace"
+                  data-testid="reset-workspace-modal"
+                  footer={
+                    <Box float="right">
+                      <SpaceBetween direction="horizontal" size="xs">
+                        <Button variant="link" onClick={() => setResetModalVisible(false)}>Cancel</Button>
+                        <Button variant="primary" onClick={resetWorkspace} loading={resetSaving} data-testid="reset-workspace-confirm">Reset</Button>
+                      </SpaceBetween>
+                    </Box>
+                  }
+                >
+                  <Form>
+                    <SpaceBetween size="m">
+                      <FormField label="Student">
+                        <Box>{resetStudentId}</Box>
+                      </FormField>
+                      <FormField label="Reason (required — recorded in audit log)">
+                        <Input value={resetReason} onChange={({ detail }) => setResetReason(detail.value)} placeholder="e.g. broken environment" data-testid="reset-reason-input" />
+                      </FormField>
+                      <FormField label="Create backup before reset">
+                        <Button
+                          variant={resetBackup ? 'primary' : 'normal'}
+                          onClick={() => setResetBackup(!resetBackup)}
+                          data-testid="reset-backup-toggle"
+                        >
+                          {resetBackup ? 'Backup: ON' : 'Backup: OFF'}
+                        </Button>
+                      </FormField>
+                      {resetResult && (
+                        <Alert type="success" data-testid="reset-result">
+                          Reset scheduled. {resetResult.backup_download_url ? `Backup URL: ${resetResult.backup_download_url}` : ''}
+                        </Alert>
+                      )}
+                    </SpaceBetween>
+                  </Form>
                 </Modal>
               </Container>
             )

@@ -12,6 +12,7 @@ import { ProjectDetailView } from './components/ProjectDetailView';
 import { InvitationManagementView } from './components/InvitationManagementView';
 import { CoursesPanel } from './components/CoursesPanel';
 import { WorkshopsPanel } from './components/WorkshopsPanel';
+import CapacityBlocksPanel from './components/CapacityBlocksPanel';
 import { SSHKeyModal } from './components/SSHKeyModal';
 
 import {
@@ -682,6 +683,24 @@ interface CourseAuditEntry {
   detail?: Record<string, unknown>;
 }
 
+// v0.19.0 Education Power Features interfaces
+interface SharedMaterialsVolume {
+  course_id: string;
+  efs_id: string;
+  mount_path: string;
+  state: string;
+  size_gb: number;
+  created_at: string;
+  mounted_instance_count: number;
+}
+interface WorkspaceResetResult {
+  student_id: string;
+  backup_snapshot_id?: string;
+  backup_download_url?: string;
+  status: string;
+  backup_expires_at?: string;
+}
+
 // v0.18.0 Workshop & Event Management interfaces
 interface WorkshopParticipant {
   user_id: string;
@@ -738,7 +757,7 @@ interface WorkshopConfig {
 }
 
 interface AppState {
-  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview' | 'budgets' | 'approvals' | 'courses' | 'workshops';
+  activeView: 'dashboard' | 'templates' | 'workspaces' | 'storage' | 'backups' | 'projects' | 'project-detail' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'invitations' | 'logs' | 'settings' | 'terminal' | 'webview' | 'budgets' | 'approvals' | 'courses' | 'workshops' | 'capacity-blocks';
   settingsSection: 'general' | 'profiles' | 'users' | 'ami' | 'rightsizing' | 'policy' | 'marketplace' | 'idle' | 'logs';
   templates: Record<string, Template>;
   instances: Instance[];
@@ -872,6 +891,55 @@ interface UserUpdateRequest {
   email?: string;
   display_name?: string;
   role?: string;
+}
+
+// ── v0.20.0 Storage Power types ──────────────────────────────────────────────
+
+interface FileEntry {
+  path: string;
+  size_bytes: number;
+  is_dir: boolean;
+  modified_at: string;
+  permissions: string;
+}
+
+interface CapacityBlock {
+  id: string;
+  instance_type: string;
+  instance_count: number;
+  availability_zone: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  state: string;
+  total_cost: number;
+}
+
+interface CapacityBlockRequest {
+  instance_type: string;
+  instance_count: number;
+  availability_zone?: string;
+  start_time: string;
+  duration_hours: number;
+}
+
+interface S3Mount {
+  instance_name: string;
+  bucket_name: string;
+  mount_path: string;
+  method: string;
+  read_only: boolean;
+  status: string;
+}
+
+interface StorageAnalyticsSummary {
+  storage_name: string;
+  type: string;
+  period: string;
+  usage_percent: number;
+  total_cost: number;
+  daily_cost: number;
+  recommendations: string[];
 }
 
 // Safe API Service with comprehensive error handling
@@ -2269,6 +2337,122 @@ class SafePrismAPI {
     const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/from-config/${encodeURIComponent(configName)}`, 'POST', workshopData);
     return data as WorkshopEvent;
   }
+
+  // ── v0.19.0 TA Access, Shared Materials, Workspace Reset ──
+  async listCourseTAAccess(courseId: string): Promise<ClassMember[]> {
+    const data = await this.safeRequest<{ tas: ClassMember[] }>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access`, 'GET');
+    return (data?.tas || []) as ClassMember[];
+  }
+
+  async grantCourseTAAccess(courseId: string, email: string, displayName?: string): Promise<ClassMember> {
+    const data = await this.safeRequest<ClassMember>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access`, 'POST', { email, display_name: displayName || '' });
+    return data as ClassMember;
+  }
+
+  async revokeCourseTAAccess(courseId: string, email: string): Promise<void> {
+    await this.safeRequest<void>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access/${encodeURIComponent(email)}`, 'DELETE');
+  }
+
+  async connectCourseTAAccess(courseId: string, studentId: string, reason: string): Promise<{ ssh_command: string }> {
+    const data = await this.safeRequest<{ ssh_command: string }>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access/connect`, 'POST', { student_id: studentId, reason });
+    return data as { ssh_command: string };
+  }
+
+  async resetCourseStudentWorkspace(courseId: string, studentId: string, reason: string, backup: boolean): Promise<WorkspaceResetResult> {
+    const data = await this.safeRequest<WorkspaceResetResult>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta/reset/${encodeURIComponent(studentId)}`, 'POST', { reason, backup });
+    return data as WorkspaceResetResult;
+  }
+
+  async getCourseMaterials(courseId: string): Promise<SharedMaterialsVolume | null> {
+    const data = await this.safeRequest<SharedMaterialsVolume>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'GET');
+    return data || null;
+  }
+
+  async createCourseMaterials(courseId: string, sizeGB: number, mountPath: string): Promise<SharedMaterialsVolume> {
+    const data = await this.safeRequest<SharedMaterialsVolume>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'POST', { size_gb: sizeGB, mount_path: mountPath });
+    return data as SharedMaterialsVolume;
+  }
+
+  async mountCourseMaterials(courseId: string): Promise<{ status: string; note: string }> {
+    const data = await this.safeRequest<{ status: string; note: string }>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials/mount`, 'POST', {});
+    return data as { status: string; note: string };
+  }
+
+  // ── v0.20.0 SSM File Operations (#30) ──────────────────────────────────────
+  async listInstanceFiles(instanceName: string, path?: string): Promise<FileEntry[]> {
+    const url = `/api/v1/instances/${encodeURIComponent(instanceName)}/files${path ? `?path=${encodeURIComponent(path)}` : ''}`;
+    const data = await this.safeRequest<FileEntry[]>(url, 'GET');
+    return (data || []) as FileEntry[];
+  }
+
+  async pushFileToInstance(instanceName: string, localPath: string, remotePath: string): Promise<{ status: string; message: string }> {
+    const data = await this.safeRequest<{ status: string; message: string }>(
+      `/api/v1/instances/${encodeURIComponent(instanceName)}/files/push`, 'POST',
+      { local_path: localPath, remote_path: remotePath });
+    return data as { status: string; message: string };
+  }
+
+  async pullFileFromInstance(instanceName: string, remotePath: string, localPath: string): Promise<{ status: string; message: string }> {
+    const data = await this.safeRequest<{ status: string; message: string }>(
+      `/api/v1/instances/${encodeURIComponent(instanceName)}/files/pull`, 'POST',
+      { remote_path: remotePath, local_path: localPath });
+    return data as { status: string; message: string };
+  }
+
+  // ── v0.20.0 EC2 Capacity Blocks (#63) ──────────────────────────────────────
+  async getCapacityBlocks(): Promise<CapacityBlock[]> {
+    const data = await this.safeRequest<CapacityBlock[]>('/api/v1/capacity-blocks', 'GET');
+    return (data || []) as CapacityBlock[];
+  }
+
+  async reserveCapacityBlock(req: CapacityBlockRequest): Promise<CapacityBlock> {
+    const data = await this.safeRequest<CapacityBlock>('/api/v1/capacity-blocks', 'POST', req);
+    return data as CapacityBlock;
+  }
+
+  async describeCapacityBlock(id: string): Promise<CapacityBlock> {
+    const data = await this.safeRequest<CapacityBlock>(`/api/v1/capacity-blocks/${encodeURIComponent(id)}`, 'GET');
+    return data as CapacityBlock;
+  }
+
+  async cancelCapacityBlock(id: string): Promise<void> {
+    await this.safeRequest<void>(`/api/v1/capacity-blocks/${encodeURIComponent(id)}`, 'DELETE');
+  }
+
+  // S3 mount methods (#22c)
+
+  async listInstanceS3Mounts(instanceName: string): Promise<S3Mount[]> {
+    const data = await this.safeRequest<S3Mount[]>(`/api/v1/instances/${encodeURIComponent(instanceName)}/s3-mounts`, 'GET');
+    return (data as S3Mount[]) || [];
+  }
+
+  async mountS3Bucket(instanceName: string, bucket: string, mountPath: string, method = 'mountpoint', readOnly = false): Promise<S3Mount> {
+    const data = await this.safeRequest<S3Mount>(`/api/v1/instances/${encodeURIComponent(instanceName)}/s3-mounts`, 'POST', {
+      bucket_name: bucket,
+      mount_path: mountPath,
+      method,
+      read_only: readOnly,
+    });
+    return data as S3Mount;
+  }
+
+  async unmountS3Bucket(instanceName: string, mountPath: string): Promise<void> {
+    const encoded = encodeURIComponent(mountPath.replace(/^\//, ''));
+    await this.safeRequest<void>(`/api/v1/instances/${encodeURIComponent(instanceName)}/s3-mounts/${encoded}`, 'DELETE');
+  }
+
+  // Storage analytics methods (#23c)
+
+  async getAllStorageAnalytics(period = 'daily'): Promise<StorageAnalyticsSummary[]> {
+    const data = await this.safeRequest<{ resources?: StorageAnalyticsSummary[] }>(`/api/v1/storage/analytics?period=${encodeURIComponent(period)}`, 'GET');
+    const result = data as { resources?: StorageAnalyticsSummary[] };
+    return result?.resources || [];
+  }
+
+  async getStorageAnalytics(name: string, period = 'daily'): Promise<StorageAnalyticsSummary> {
+    const data = await this.safeRequest<StorageAnalyticsSummary>(`/api/v1/storage/analytics/${encodeURIComponent(name)}?period=${encodeURIComponent(period)}`, 'GET');
+    return data as StorageAnalyticsSummary;
+  }
 }
 
 // CoursesManagementView — top-level component (not inside App) to prevent re-mount on state change.
@@ -2280,6 +2464,11 @@ function CoursesManagementView() {
 // WorkshopsManagementView — top-level component to prevent re-mount on state change (#13).
 function WorkshopsManagementView() {
   return <WorkshopsPanel />;
+}
+
+// CapacityBlocksManagementView — top-level component for EC2 Capacity Blocks (v0.20.0 #63).
+function CapacityBlocksManagementView() {
+  return <CapacityBlocksPanel />;
 }
 
 export default function PrismApp() {
@@ -2469,6 +2658,33 @@ export default function PrismApp() {
   // (StorageManagementView is defined inline in App body, so React remounts it on every App re-render,
   // resetting any local useState back to the default. Moving activeTabId here prevents that reset.)
   const [storageActiveTabId, setStorageActiveTabId] = useState('shared');
+
+  // S3 Mounts tab state (#22c)
+  const [s3MountsInstance, setS3MountsInstance] = useState('');
+  const [s3Mounts, setS3Mounts] = useState<S3Mount[]>([]);
+  const [s3MountLoading, setS3MountLoading] = useState(false);
+  const [mountS3ModalVisible, setMountS3ModalVisible] = useState(false);
+  const [mountS3Bucket, setMountS3Bucket] = useState('');
+  const [mountS3Path, setMountS3Path] = useState('');
+  const [mountS3Method, setMountS3Method] = useState('mountpoint');
+  const [mountS3ReadOnly, setMountS3ReadOnly] = useState(false);
+
+  // Instance Files tab state (#30b)
+  const [filesInstance, setFilesInstance] = useState('');
+  const [fileEntries, setFileEntries] = useState<FileEntry[]>([]);
+  const [filesPath, setFilesPath] = useState('/home');
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [pushFileModalVisible, setPushFileModalVisible] = useState(false);
+  const [pushFileLocal, setPushFileLocal] = useState('');
+  const [pushFileRemote, setPushFileRemote] = useState('');
+  const [pullFileModalVisible, setPullFileModalVisible] = useState(false);
+  const [pullFileRemote, setPullFileRemote] = useState('');
+  const [pullFileLocal, setPullFileLocal] = useState('');
+
+  // Storage Analytics tab state (#23c)
+  const [analyticsData, setAnalyticsData] = useState<StorageAnalyticsSummary[]>([]);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState('daily');
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // EBS attachment modal state
   const [attachModalVisible, setAttachModalVisible] = useState(false);
@@ -4888,9 +5104,416 @@ export default function PrismApp() {
                   />
                 </Container>
               )
+            },
+            {
+              id: 's3-mounts',
+              label: 'S3 Mounts',
+              content: (() => {
+                const instanceOptions = Object.keys(state.instances).map(n => ({ label: n, value: n }));
+                return (
+                  <Container
+                    header={
+                      <Header
+                        variant="h2"
+                        description="Mount S3 buckets on running instances via mountpoint-s3 or s3fs"
+                        actions={
+                          <SpaceBetween direction="horizontal" size="s">
+                            <Button
+                              variant="primary"
+                              disabled={!s3MountsInstance}
+                              data-testid="mount-s3-button"
+                              onClick={() => setMountS3ModalVisible(true)}
+                            >
+                              Mount S3 Bucket
+                            </Button>
+                            <Button
+                              disabled={!s3MountsInstance}
+                              data-testid="load-s3-mounts-button"
+                              loading={s3MountLoading}
+                              onClick={async () => {
+                                setS3MountLoading(true);
+                                try {
+                                  const mounts = await api.listInstanceS3Mounts(s3MountsInstance);
+                                  setS3Mounts(mounts);
+                                } finally {
+                                  setS3MountLoading(false);
+                                }
+                              }}
+                            >
+                              Load Mounts
+                            </Button>
+                          </SpaceBetween>
+                        }
+                      >
+                        S3 Bucket Mounts
+                      </Header>
+                    }
+                  >
+                    <SpaceBetween size="m">
+                      <Select
+                        data-testid="s3-instance-select"
+                        placeholder="Select a running instance"
+                        options={instanceOptions}
+                        selectedOption={s3MountsInstance ? { label: s3MountsInstance, value: s3MountsInstance } : null}
+                        onChange={({ detail }) => {
+                          setS3MountsInstance(detail.selectedOption?.value || '');
+                          setS3Mounts([]);
+                        }}
+                      />
+                      <Table
+                        data-testid="s3-mounts-table"
+                        items={s3Mounts}
+                        loading={s3MountLoading}
+                        loadingText="Loading S3 mounts..."
+                        empty={
+                          <Box textAlign="center" color="inherit">
+                            <b>No S3 mounts</b>
+                            <Box variant="p" color="inherit">Select an instance and click Load Mounts.</Box>
+                          </Box>
+                        }
+                        columnDefinitions={[
+                          { id: 'bucket', header: 'Bucket', cell: (m: S3Mount) => m.bucket_name },
+                          { id: 'path', header: 'Mount Path', cell: (m: S3Mount) => m.mount_path },
+                          { id: 'method', header: 'Method', cell: (m: S3Mount) => m.method },
+                          { id: 'readonly', header: 'Read-Only', cell: (m: S3Mount) => m.read_only ? 'Yes' : 'No' },
+                          {
+                            id: 'actions', header: 'Actions',
+                            cell: (m: S3Mount) => (
+                              <Button
+                                variant="link"
+                                onClick={async () => {
+                                  await api.unmountS3Bucket(s3MountsInstance, m.mount_path);
+                                  setS3Mounts(prev => prev.filter(x => x.mount_path !== m.mount_path));
+                                }}
+                              >
+                                Unmount
+                              </Button>
+                            )
+                          }
+                        ]}
+                      />
+                    </SpaceBetween>
+                  </Container>
+                );
+              })()
+            },
+            {
+              id: 'files',
+              label: 'Instance Files',
+              content: (() => {
+                const instanceOptions = Object.keys(state.instances).map(n => ({ label: n, value: n }));
+                return (
+                  <Container
+                    header={
+                      <Header
+                        variant="h2"
+                        description="Transfer files to and from running instances via SSM"
+                        actions={
+                          <Button
+                            variant="primary"
+                            disabled={!filesInstance}
+                            data-testid="push-file-button"
+                            onClick={() => setPushFileModalVisible(true)}
+                          >
+                            Push File
+                          </Button>
+                        }
+                      >
+                        Instance Files
+                      </Header>
+                    }
+                  >
+                    <SpaceBetween size="m">
+                      <SpaceBetween direction="horizontal" size="s">
+                        <Select
+                          data-testid="files-instance-select"
+                          placeholder="Select a running instance"
+                          options={instanceOptions}
+                          selectedOption={filesInstance ? { label: filesInstance, value: filesInstance } : null}
+                          onChange={({ detail }) => {
+                            setFilesInstance(detail.selectedOption?.value || '');
+                            setFileEntries([]);
+                          }}
+                        />
+                        <input
+                          data-testid="files-path-input"
+                          value={filesPath}
+                          onChange={e => setFilesPath(e.target.value)}
+                          placeholder="/home"
+                          style={{ padding: '6px 12px', border: '1px solid #aab', borderRadius: 4, minWidth: 200 }}
+                        />
+                        <Button
+                          disabled={!filesInstance}
+                          loading={filesLoading}
+                          onClick={async () => {
+                            setFilesLoading(true);
+                            try {
+                              const entries = await api.listInstanceFiles(filesInstance, filesPath);
+                              setFileEntries(entries);
+                            } finally {
+                              setFilesLoading(false);
+                            }
+                          }}
+                        >
+                          List Files
+                        </Button>
+                      </SpaceBetween>
+                      <Table
+                        data-testid="files-table"
+                        items={fileEntries}
+                        loading={filesLoading}
+                        loadingText="Listing files..."
+                        empty={
+                          <Box textAlign="center" color="inherit">
+                            <b>No files listed</b>
+                            <Box variant="p" color="inherit">Select an instance and click List Files.</Box>
+                          </Box>
+                        }
+                        columnDefinitions={[
+                          { id: 'path', header: 'Path', cell: (f: FileEntry) => f.path + (f.is_dir ? '/' : '') },
+                          { id: 'size', header: 'Size', cell: (f: FileEntry) => f.is_dir ? '-' : String(f.size_bytes) },
+                          { id: 'modified', header: 'Modified', cell: (f: FileEntry) => f.modified_at },
+                          { id: 'perms', header: 'Permissions', cell: (f: FileEntry) => f.permissions },
+                          { id: 'type', header: 'Type', cell: (f: FileEntry) => f.is_dir ? 'Dir' : 'File' },
+                          {
+                            id: 'actions', header: 'Actions',
+                            cell: (f: FileEntry) => (
+                              <Button
+                                variant="link"
+                                onClick={() => {
+                                  setPullFileRemote(f.path);
+                                  setPullFileLocal('');
+                                  setPullFileModalVisible(true);
+                                }}
+                              >
+                                Pull
+                              </Button>
+                            )
+                          }
+                        ]}
+                      />
+                    </SpaceBetween>
+                  </Container>
+                );
+              })()
+            },
+            {
+              id: 'analytics',
+              label: 'Analytics',
+              content: (() => {
+                return (
+                  <Container
+                    header={
+                      <Header
+                        variant="h2"
+                        description="Storage cost and usage analytics from CloudWatch and Cost Explorer"
+                        actions={
+                          <SpaceBetween direction="horizontal" size="s">
+                            <Select
+                              data-testid="analytics-period-select"
+                              options={[
+                                { label: 'Daily', value: 'daily' },
+                                { label: 'Weekly', value: 'weekly' },
+                                { label: 'Monthly', value: 'monthly' },
+                              ]}
+                              selectedOption={{ label: analyticsPeriod.charAt(0).toUpperCase() + analyticsPeriod.slice(1), value: analyticsPeriod }}
+                              onChange={({ detail }) => setAnalyticsPeriod(detail.selectedOption?.value || 'daily')}
+                            />
+                            <Button
+                              data-testid="refresh-analytics-button"
+                              loading={analyticsLoading}
+                              onClick={async () => {
+                                setAnalyticsLoading(true);
+                                try {
+                                  const data = await api.getAllStorageAnalytics(analyticsPeriod);
+                                  setAnalyticsData(data);
+                                } finally {
+                                  setAnalyticsLoading(false);
+                                }
+                              }}
+                            >
+                              Refresh
+                            </Button>
+                          </SpaceBetween>
+                        }
+                      >
+                        Storage Analytics
+                      </Header>
+                    }
+                  >
+                    <Table
+                      data-testid="analytics-table"
+                      items={analyticsData}
+                      loading={analyticsLoading}
+                      loadingText="Loading analytics..."
+                      empty={
+                        <Box textAlign="center" color="inherit">
+                          <b>No analytics data</b>
+                          <Box variant="p" color="inherit">Click Refresh to load storage cost and usage data.</Box>
+                        </Box>
+                      }
+                      columnDefinitions={[
+                        { id: 'name', header: 'Name', cell: (a: StorageAnalyticsSummary) => a.storage_name },
+                        { id: 'type', header: 'Type', cell: (a: StorageAnalyticsSummary) => a.type },
+                        { id: 'period', header: 'Period', cell: (a: StorageAnalyticsSummary) => a.period },
+                        { id: 'total_cost', header: 'Total Cost', cell: (a: StorageAnalyticsSummary) => `$${(a.total_cost || 0).toFixed(4)}` },
+                        { id: 'daily_cost', header: 'Daily Cost', cell: (a: StorageAnalyticsSummary) => `$${(a.daily_cost || 0).toFixed(4)}` },
+                        { id: 'usage', header: 'Usage %', cell: (a: StorageAnalyticsSummary) => `${(a.usage_percent || 0).toFixed(1)}%` },
+                      ]}
+                    />
+                  </Container>
+                );
+              })()
             }
           ]}
         />
+
+        {/* Mount S3 Bucket Modal (#22c) */}
+        <Modal
+          visible={mountS3ModalVisible}
+          onDismiss={() => { setMountS3ModalVisible(false); setMountS3Bucket(''); setMountS3Path(''); setMountS3Method('mountpoint'); setMountS3ReadOnly(false); }}
+          header="Mount S3 Bucket"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setMountS3ModalVisible(false)}>Cancel</Button>
+                <Button
+                  variant="primary"
+                  disabled={!mountS3Bucket || !mountS3Path}
+                  onClick={async () => {
+                    await api.mountS3Bucket(s3MountsInstance, mountS3Bucket, mountS3Path, mountS3Method, mountS3ReadOnly);
+                    setMountS3ModalVisible(false);
+                    setMountS3Bucket(''); setMountS3Path(''); setMountS3Method('mountpoint'); setMountS3ReadOnly(false);
+                    const mounts = await api.listInstanceS3Mounts(s3MountsInstance);
+                    setS3Mounts(mounts);
+                  }}
+                >
+                  Mount
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            <FormField label="Bucket Name">
+              <input
+                data-testid="mount-s3-bucket-input"
+                value={mountS3Bucket}
+                onChange={e => setMountS3Bucket(e.target.value)}
+                placeholder="my-bucket"
+                style={{ width: '100%', padding: '6px 12px', border: '1px solid #aab', borderRadius: 4 }}
+              />
+            </FormField>
+            <FormField label="Mount Path">
+              <input
+                data-testid="mount-s3-path-input"
+                value={mountS3Path}
+                onChange={e => setMountS3Path(e.target.value)}
+                placeholder="/mnt/data"
+                style={{ width: '100%', padding: '6px 12px', border: '1px solid #aab', borderRadius: 4 }}
+              />
+            </FormField>
+            <FormField label="Method">
+              <Select
+                data-testid="mount-s3-method-select"
+                options={[{ label: 'mountpoint-s3', value: 'mountpoint' }, { label: 's3fs', value: 's3fs' }]}
+                selectedOption={{ label: mountS3Method === 'mountpoint' ? 'mountpoint-s3' : 's3fs', value: mountS3Method }}
+                onChange={({ detail }) => setMountS3Method(detail.selectedOption?.value || 'mountpoint')}
+              />
+            </FormField>
+            <FormField label="Read-Only">
+              <Toggle checked={mountS3ReadOnly} onChange={({ detail }) => setMountS3ReadOnly(detail.checked)}>
+                Read-only mount
+              </Toggle>
+            </FormField>
+          </SpaceBetween>
+        </Modal>
+
+        {/* Push File Modal (#30b) */}
+        <Modal
+          visible={pushFileModalVisible}
+          onDismiss={() => setPushFileModalVisible(false)}
+          header="Push File to Instance"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setPushFileModalVisible(false)}>Cancel</Button>
+                <Button
+                  variant="primary"
+                  disabled={!pushFileLocal || !pushFileRemote}
+                  onClick={async () => {
+                    await api.pushFileToInstance(filesInstance, pushFileLocal, pushFileRemote);
+                    setPushFileModalVisible(false);
+                    setPushFileLocal(''); setPushFileRemote('');
+                  }}
+                >
+                  Push
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            <FormField label="Local File Path">
+              <input
+                data-testid="push-local-path-input"
+                value={pushFileLocal}
+                onChange={e => setPushFileLocal(e.target.value)}
+                placeholder="/Users/me/data.csv"
+                style={{ width: '100%', padding: '6px 12px', border: '1px solid #aab', borderRadius: 4 }}
+              />
+            </FormField>
+            <FormField label="Remote Path">
+              <input
+                data-testid="push-remote-path-input"
+                value={pushFileRemote}
+                onChange={e => setPushFileRemote(e.target.value)}
+                placeholder="/home/ec2-user/data.csv"
+                style={{ width: '100%', padding: '6px 12px', border: '1px solid #aab', borderRadius: 4 }}
+              />
+            </FormField>
+          </SpaceBetween>
+        </Modal>
+
+        {/* Pull File Modal (#30b) */}
+        <Modal
+          visible={pullFileModalVisible}
+          onDismiss={() => setPullFileModalVisible(false)}
+          header="Pull File from Instance"
+          footer={
+            <Box float="right">
+              <SpaceBetween direction="horizontal" size="xs">
+                <Button variant="link" onClick={() => setPullFileModalVisible(false)}>Cancel</Button>
+                <Button
+                  variant="primary"
+                  disabled={!pullFileLocal}
+                  onClick={async () => {
+                    await api.pullFileFromInstance(filesInstance, pullFileRemote, pullFileLocal);
+                    setPullFileModalVisible(false);
+                    setPullFileRemote(''); setPullFileLocal('');
+                  }}
+                >
+                  Pull
+                </Button>
+              </SpaceBetween>
+            </Box>
+          }
+        >
+          <SpaceBetween size="m">
+            <FormField label="Remote Path">
+              <input value={pullFileRemote} readOnly style={{ width: '100%', padding: '6px 12px', border: '1px solid #aab', borderRadius: 4, background: '#f5f5f5' }} />
+            </FormField>
+            <FormField label="Local Destination">
+              <input
+                data-testid="pull-local-path-input"
+                value={pullFileLocal}
+                onChange={e => setPullFileLocal(e.target.value)}
+                placeholder="/Users/me/results.csv"
+                style={{ width: '100%', padding: '6px 12px', border: '1px solid #aab', borderRadius: 4 }}
+              />
+            </FormField>
+          </SpaceBetween>
+        </Modal>
 
         {/* Attach EBS Volume Modal */}
         <Modal
@@ -12827,6 +13450,12 @@ export default function PrismApp() {
                   : undefined
               },
               {
+                id: "capacity-blocks",
+                type: "link",
+                text: "Capacity Blocks",
+                href: "/capacity-blocks",
+              },
+              {
                 id: "budgets",
                 type: "link",
                 text: "Budgets",
@@ -12948,6 +13577,7 @@ export default function PrismApp() {
             {state.activeView === 'approvals' && <ApprovalsView />}
             {state.activeView === 'courses' && <CoursesManagementView />}
             {state.activeView === 'workshops' && <WorkshopsManagementView />}
+            {state.activeView === 'capacity-blocks' && <CapacityBlocksManagementView />}
             {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
             {state.activeView === 'users' && <UserManagementView />}
             {state.activeView === 'ami' && <AMIManagementView />}

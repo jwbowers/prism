@@ -151,6 +151,8 @@ For shared storage (EFS), use 'prism volume' commands.`,
 			},
 		},
 		deleteCmd,
+		NewS3MountCobraCommands(sc.app).CreateS3Command(),
+		NewStorageAnalyticsCobraCommands(sc.app).CreateAnalyticsCommand(),
 	)
 
 	return cmd

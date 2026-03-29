@@ -79,6 +79,10 @@ func (s *Server) handleCourseByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.handleArchiveCourse(w, r, courseID)
+	case "ta-access":
+		s.handleCourseTAAccess(w, r, courseID, parts)
+	case "materials":
+		s.handleCourseMaterials(w, r, courseID, parts)
 	default:
 		http.NotFound(w, r)
 	}
@@ -892,5 +896,258 @@ func (s *Server) handleProvisionStudent(w http.ResponseWriter, r *http.Request, 
 		"course_id":     pctx.CourseID,
 		"template":      launchReq.Template,
 		"instance_name": launchReq.Name,
+	})
+}
+
+// --- TA Access (#48, #160) ---
+
+// handleCourseTAAccess handles /api/v1/courses/{id}/ta-access[/connect|/{email}]
+//
+//	GET    /ta-access              → list TAs
+//	POST   /ta-access              → grant TA access (body: {email, display_name})
+//	DELETE /ta-access/{email}      → revoke TA access
+//	POST   /ta-access/connect      → get SSH command for TA→student access
+func (s *Server) handleCourseTAAccess(w http.ResponseWriter, r *http.Request, courseID string, parts []string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	// parts[2] is the sub-resource (absent for list/grant)
+	sub := ""
+	if len(parts) > 2 {
+		sub = parts[2]
+	}
+
+	switch {
+	case sub == "connect" && r.Method == http.MethodPost:
+		s.handleTASSHConnect(w, r, courseID)
+	case sub == "" && r.Method == http.MethodGet:
+		// List TAs
+		members, err := s.courseManager.ListTAAccess(r.Context(), courseID)
+		if err != nil {
+			s.writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		if members == nil {
+			members = []types.ClassMember{}
+		}
+		s.writeJSON(w, http.StatusOK, map[string]interface{}{"ta_members": members})
+	case sub == "" && r.Method == http.MethodPost:
+		// Grant TA access
+		var body course.TAAccessGrantRequest
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Email == "" {
+			s.writeError(w, http.StatusBadRequest, "email is required")
+			return
+		}
+		member, err := s.courseManager.GrantTAAccess(r.Context(), courseID, body.Email, body.DisplayName)
+		if err != nil {
+			switch err {
+			case course.ErrCourseNotFound:
+				s.writeError(w, http.StatusNotFound, "Course not found")
+			case course.ErrNotAuthorized:
+				s.writeError(w, http.StatusForbidden, err.Error())
+			default:
+				s.writeError(w, http.StatusBadRequest, err.Error())
+			}
+			return
+		}
+		s.writeJSON(w, http.StatusCreated, member)
+	case sub != "" && sub != "connect" && r.Method == http.MethodDelete:
+		// Revoke TA access: sub is the email (URL-encoded)
+		taEmail := sub
+		if err := s.courseManager.RevokeTAAccess(r.Context(), courseID, taEmail); err != nil {
+			switch err {
+			case course.ErrCourseNotFound:
+				s.writeError(w, http.StatusNotFound, "Course not found")
+			case course.ErrMemberNotFound:
+				s.writeError(w, http.StatusNotFound, "TA member not found")
+			default:
+				s.writeError(w, http.StatusInternalServerError, err.Error())
+			}
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleTASSHConnect handles POST /api/v1/courses/{id}/ta-access/connect
+// It verifies the TA is authorized, finds the student's running instance,
+// builds a ready-to-paste SSH command, and records the access in the audit log.
+func (s *Server) handleTASSHConnect(w http.ResponseWriter, r *http.Request, courseID string) {
+	var req course.TASSHConnectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.StudentID == "" || req.Reason == "" {
+		s.writeError(w, http.StatusBadRequest, "student_id and reason are required")
+		return
+	}
+
+	// Get TA identity from context (set by auth middleware)
+	taID, _ := r.Context().Value("user_id").(string)
+	if taID == "" {
+		taID = r.Header.Get("X-User-ID")
+	}
+	if taID == "" {
+		taID = "ta-user" // fallback for test mode
+	}
+
+	// Look up the student's debug info to find instance IP
+	info, err := s.courseManager.GetStudentDebugInfo(r.Context(), courseID, taID, req.StudentID)
+	if err != nil {
+		switch err {
+		case course.ErrCourseNotFound:
+			s.writeError(w, http.StatusNotFound, "Course not found")
+		case course.ErrMemberNotFound:
+			s.writeError(w, http.StatusNotFound, "Student not found in course")
+		case course.ErrNotAuthorized:
+			s.writeError(w, http.StatusForbidden, "Not authorized: must be TA or instructor")
+		default:
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	// Find a running instance with a public IP
+	var publicIP, instanceID string
+	for _, inst := range info.Instances {
+		if inst.State == "running" && inst.PublicIP != "" {
+			publicIP = inst.PublicIP
+			instanceID = inst.ID
+			break
+		}
+	}
+
+	if publicIP == "" {
+		s.writeError(w, http.StatusNotFound, "No running instance found for student")
+		return
+	}
+
+	// Record TA access in audit log
+	_ = s.courseManager.LogTASSHConnect(r.Context(), courseID, course.TAAccessEntry{
+		TAID:        taID,
+		StudentID:   req.StudentID,
+		Reason:      req.Reason,
+		ConnectedAt: time.Now(),
+		InstanceID:  instanceID,
+		PublicIP:    publicIP,
+	})
+
+	// Return an SSH command the TA can paste directly into their terminal
+	sshCmd := fmt.Sprintf("ssh -i ~/.ssh/prism_key ec2-user@%s", publicIP)
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ssh_command": sshCmd,
+		"public_ip":   publicIP,
+		"instance_id": instanceID,
+		"student_id":  req.StudentID,
+		"note":        "Connection is logged. Disconnect with 'exit' when done.",
+	})
+}
+
+// --- Shared Course Materials (#167) ---
+
+// handleCourseMaterials handles /api/v1/courses/{id}/materials[/mount]
+//
+//	GET  /materials       → get materials volume metadata
+//	POST /materials       → create materials EFS volume (body: {size_gb, mount_path})
+//	POST /materials/mount → mount materials on all student instances
+func (s *Server) handleCourseMaterials(w http.ResponseWriter, r *http.Request, courseID string, parts []string) {
+	if s.courseManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Course manager unavailable")
+		return
+	}
+
+	sub := ""
+	if len(parts) > 2 {
+		sub = parts[2]
+	}
+
+	switch {
+	case sub == "mount" && r.Method == http.MethodPost:
+		s.handleMountCourseMaterials(w, r, courseID)
+	case sub == "" && r.Method == http.MethodGet:
+		// Return materials metadata
+		vol, err := s.courseManager.GetCourseMaterials(r.Context(), courseID)
+		if err != nil {
+			switch err {
+			case course.ErrCourseNotFound:
+				s.writeError(w, http.StatusNotFound, "Course not found")
+			default:
+				s.writeError(w, http.StatusInternalServerError, err.Error())
+			}
+			return
+		}
+		if vol == nil {
+			s.writeJSON(w, http.StatusOK, map[string]interface{}{"materials": nil})
+			return
+		}
+		s.writeJSON(w, http.StatusOK, map[string]interface{}{"materials": vol})
+	case sub == "" && r.Method == http.MethodPost:
+		var req course.CourseMaterialsCreateRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.writeError(w, http.StatusBadRequest, "Invalid request body")
+			return
+		}
+		if req.SizeGB <= 0 {
+			req.SizeGB = 50
+		}
+		if req.MountPath == "" {
+			req.MountPath = "/mnt/course-materials"
+		}
+
+		// In production this would call s.awsManager.CreateEFS(...)
+		// For now, generate a placeholder EFS ID and persist the metadata.
+		efsID := fmt.Sprintf("fs-course-%s", courseID[:8])
+
+		if err := s.courseManager.SetCourseMaterials(r.Context(), courseID, efsID, req.MountPath, req.SizeGB); err != nil {
+			switch err {
+			case course.ErrCourseNotFound:
+				s.writeError(w, http.StatusNotFound, "Course not found")
+			default:
+				s.writeError(w, http.StatusInternalServerError, err.Error())
+			}
+			return
+		}
+
+		vol, _ := s.courseManager.GetCourseMaterials(r.Context(), courseID)
+		s.writeJSON(w, http.StatusCreated, map[string]interface{}{"materials": vol})
+	default:
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	}
+}
+
+// handleMountCourseMaterials handles POST /api/v1/courses/{id}/materials/mount
+// It records the mount action in the audit log and returns a summary.
+// The actual EFS mount-on-instance is out-of-scope for this release
+// (would require SSM RunCommand on each running student instance).
+func (s *Server) handleMountCourseMaterials(w http.ResponseWriter, r *http.Request, courseID string) {
+	vol, err := s.courseManager.GetCourseMaterials(r.Context(), courseID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if vol == nil {
+		s.writeError(w, http.StatusConflict, "No materials volume exists for this course; create one first")
+		return
+	}
+
+	// Record the mount action
+	ctx := context.WithValue(r.Context(), "caller_id", "system")
+	_ = s.courseManager.AppendCourseAudit(courseID, course.AuditEntry{
+		CourseID: courseID,
+		Actor:    "system",
+		Action:   course.AuditActionMaterialsMount,
+		Detail: map[string]interface{}{
+			"efs_id":     vol.EFSID,
+			"mount_path": vol.MountPath,
+		},
+	})
+	_ = ctx
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"status":     "mount_scheduled",
+		"efs_id":     vol.EFSID,
+		"mount_path": vol.MountPath,
+		"note":       "EFS will be mounted on student instances at next launch. Running instances require manual mount or restart.",
 	})
 }

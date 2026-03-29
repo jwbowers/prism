@@ -583,9 +583,20 @@ func (s *Server) routeInstanceOperation(w http.ResponseWriter, r *http.Request, 
 	case 2:
 		s.handleInstanceSubOperation(w, r, instanceName, parts[1])
 	case 3, 4:
-		if parts[1] == "idle" && parts[2] == "policies" {
-			s.handleIdlePolicyOperation(w, r, instanceName, parts)
-		} else {
+		switch parts[1] {
+		case "idle":
+			if parts[2] == "policies" {
+				s.handleIdlePolicyOperation(w, r, instanceName, parts)
+			} else {
+				s.writeError(w, http.StatusNotFound, "Invalid path")
+			}
+		case "files":
+			// /instances/{name}/files, /files/push, /files/pull
+			s.handleInstanceFiles(w, r, instanceName)
+		case "s3-mounts":
+			// /instances/{name}/s3-mounts, /s3-mounts/{mountPath}
+			s.handleInstanceS3Mounts(w, r, instanceName)
+		default:
 			s.writeError(w, http.StatusNotFound, "Invalid path")
 		}
 	default:
@@ -616,7 +627,9 @@ func (s *Server) handleInstanceSubOperation(w http.ResponseWriter, r *http.Reque
 		"resize":                s.handleResizeInstance,
 		"idle-policies":         s.handleInstanceIdlePolicies,
 		"recommend-idle-policy": s.handleInstanceRecommendIdlePolicy,
-		"progress":              s.handleGetProgress, // Launch progress monitoring (v0.7.2 - Issue #453)
+		"progress":              s.handleGetProgress,      // Launch progress monitoring (v0.7.2 - Issue #453)
+		"files":                 s.handleInstanceFiles,    // SSM file ops (#30)
+		"s3-mounts":             s.handleInstanceS3Mounts, // S3 mount ops (#22)
 	}
 
 	if handler, exists := operationHandlers[operation]; exists {

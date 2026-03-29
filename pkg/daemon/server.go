@@ -1003,6 +1003,14 @@ func (s *Server) registerV1Routes(mux *http.ServeMux, applyMiddleware func(http.
 	mux.HandleFunc("/api/v1/instances", applyAWSMiddleware(s.handleInstances))
 	mux.HandleFunc("/api/v1/instances/", applyAWSMiddleware(s.handleInstanceOperations))
 
+	// EC2 Capacity Blocks (#63)
+	mux.HandleFunc("/api/v1/capacity-blocks", applyAWSMiddleware(s.handleCapacityBlocks))
+	mux.HandleFunc("/api/v1/capacity-blocks/", applyAWSMiddleware(s.handleCapacityBlockByID))
+
+	// Storage analytics (#23)
+	mux.HandleFunc("/api/v1/storage/analytics", applyAWSMiddleware(s.handleStorageAnalytics))
+	mux.HandleFunc("/api/v1/storage/analytics/", applyAWSMiddleware(s.handleStorageAnalytics))
+
 	// Tunnel operations (requires AWS - needs instances)
 	mux.HandleFunc("/api/v1/tunnels", applyAWSMiddleware(s.handleTunnels))
 
