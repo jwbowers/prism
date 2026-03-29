@@ -49,7 +49,9 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&ResearchUserCommand{})
 	dispatcher.RegisterCommand(&VersionCommand{})
 	dispatcher.RegisterCommand(&SSHKeyCommand{})
-	dispatcher.RegisterCommand(&CapacityBlockCommand{}) // EC2 Capacity Blocks (#63)
+	dispatcher.RegisterCommand(&CapacityBlockCommand{})   // EC2 Capacity Blocks (#63)
+	dispatcher.RegisterCommand(&RequestApprovalCommand{}) // Approval workflow (#495)
+	dispatcher.RegisterCommand(&ApprovalIDCommand{})      // Approval workflow (#495)
 
 	// Universal AMI System commands (Phase 5.1 Week 2)
 	dispatcher.RegisterCommand(&AMIStrategyCommand{})
@@ -439,6 +441,33 @@ func (c *CapacityBlockCommand) Execute(req *types.LaunchRequest, args []string, 
 		return index, fmt.Errorf("--capacity-block requires a reservation ID")
 	}
 	req.CapacityBlockID = args[index+1]
+	return index + 1, nil
+}
+
+// RequestApprovalCommand handles --request-approval flag (#495)
+type RequestApprovalCommand struct{}
+
+func (c *RequestApprovalCommand) CanHandle(arg string) bool {
+	return arg == "--request-approval"
+}
+
+func (c *RequestApprovalCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	req.RequestApproval = true
+	return index, nil
+}
+
+// ApprovalIDCommand handles --approval <id> flag (#495)
+type ApprovalIDCommand struct{}
+
+func (c *ApprovalIDCommand) CanHandle(arg string) bool {
+	return arg == "--approval"
+}
+
+func (c *ApprovalIDCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	if index+1 >= len(args) {
+		return index, fmt.Errorf("--approval requires an approval request ID")
+	}
+	req.ApprovalID = args[index+1]
 	return index + 1, nil
 }
 

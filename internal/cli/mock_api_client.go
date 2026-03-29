@@ -2822,6 +2822,17 @@ func (m *MockAPIClient) DenyRequest(ctx context.Context, projectID, requestID, n
 	}, nil
 }
 
+func (m *MockAPIClient) GetApproval(ctx context.Context, projectID, approvalID string) (*project.ApprovalRequest, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return &project.ApprovalRequest{
+		ID:        approvalID,
+		ProjectID: projectID,
+		Status:    project.ApprovalStatusPending,
+	}, nil
+}
+
 func (m *MockAPIClient) GetMonthlyReport(ctx context.Context, projectID, month, format string) (string, error) {
 	if m.ShouldReturnError {
 		return "", fmt.Errorf("%s", m.ErrorMessage)

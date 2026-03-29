@@ -488,6 +488,10 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(approvalCobra.CreateDenyCommand())
 	rootCmd.AddCommand(approvalCobra.CreateApprovalsCommand())
 
+	// v0.21.0: Unified approval command group (#495)
+	approvalV2 := NewApprovalCobraCommandsV2(r.app)
+	rootCmd.AddCommand(approvalV2.CreateApprovalCommand())
+
 	// v0.14.0: University Education System
 	courseCobra := NewCourseCobraCommands(r.app)
 	rootCmd.AddCommand(courseCobra.CreateCourseCommand())

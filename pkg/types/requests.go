@@ -43,6 +43,12 @@ type LaunchRequest struct {
 
 	// EC2 Capacity Blocks (#63): pin launch to a pre-reserved capacity reservation
 	CapacityBlockID string `json:"capacity_block_id,omitempty"`
+
+	// Approval workflow (#495): create an approval request instead of launching
+	RequestApproval bool `json:"request_approval,omitempty"`
+
+	// Approval workflow (#495): launch using a pre-approved request ID
+	ApprovalID string `json:"approval_id,omitempty"`
 }
 
 // LaunchResponse represents a successful launch response
@@ -51,6 +57,11 @@ type LaunchResponse struct {
 	Message        string   `json:"message"`
 	EstimatedCost  string   `json:"estimated_cost"`
 	ConnectionInfo string   `json:"connection_info"`
+
+	// ApprovalPending is set when the daemon returned HTTP 202 (approval required)
+	// instead of launching. The approval request ID is in ApprovalRequestID.
+	ApprovalPending   bool   `json:"approval_pending,omitempty"`
+	ApprovalRequestID string `json:"approval_request_id,omitempty"`
 }
 
 // ListResponse represents a list of instances

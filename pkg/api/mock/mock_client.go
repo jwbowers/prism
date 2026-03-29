@@ -2470,6 +2470,14 @@ func (m *MockClient) DenyRequest(ctx context.Context, projectID, requestID, note
 	}, nil
 }
 
+func (m *MockClient) GetApproval(ctx context.Context, projectID, approvalID string) (*project.ApprovalRequest, error) {
+	return &project.ApprovalRequest{
+		ID:        approvalID,
+		ProjectID: projectID,
+		Status:    project.ApprovalStatusPending,
+	}, nil
+}
+
 func (m *MockClient) GetMonthlyReport(ctx context.Context, projectID, month, format string) (string, error) {
 	return "Monthly Report: " + projectID + " " + month, nil
 }

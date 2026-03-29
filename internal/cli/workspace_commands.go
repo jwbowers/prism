@@ -95,6 +95,8 @@ func (f *WorkspaceCommandFactory) buildLaunchArgs(cmd *cobra.Command, args []str
 	args = appendBoolFlag(cmd, args, "no-progress", "--no-progress")
 	args = appendBoolFlag(cmd, args, "yes", "--yes")
 	args = appendStringFlag(cmd, args, "capacity-block", "--capacity-block")
+	args = appendBoolFlag(cmd, args, "request-approval", "--request-approval")
+	args = appendStringFlag(cmd, args, "approval", "--approval")
 	return f.app.Launch(args)
 }
 
@@ -115,6 +117,8 @@ func (f *WorkspaceCommandFactory) addLaunchFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("no-progress", false, "Disable progress monitoring")
 	cmd.Flags().BoolP("yes", "y", false, "Skip cost confirmation prompt")
 	cmd.Flags().String("capacity-block", "", "Pin launch to a pre-reserved EC2 Capacity Block ID (#63)")
+	cmd.Flags().Bool("request-approval", false, "Request PI/admin approval instead of launching (#495)")
+	cmd.Flags().String("approval", "", "Launch using a pre-approved request ID (#495)")
 }
 
 func (f *WorkspaceCommandFactory) createListCommand() *cobra.Command {

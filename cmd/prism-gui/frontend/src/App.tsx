@@ -1022,7 +1022,7 @@ class SafePrismAPI {
     }
   }
 
-  async launchInstance(templateSlug: string, name: string, size: string = 'M', dryRun: boolean = false): Promise<Instance> {
+  async launchInstance(templateSlug: string, name: string, size: string = 'M', dryRun: boolean = false): Promise<Instance & { approval_pending?: boolean; approval_request_id?: string; message?: string }> {
     const body: Record<string, unknown> = {
       template: templateSlug,
       name,
@@ -2132,6 +2132,21 @@ class SafePrismAPI {
     return data?.approvals || [];
   }
 
+  // v0.21.0: Get a single approval request by ID (#495)
+  async getApproval(projectId: string, approvalId: string): Promise<ApprovalRequest> {
+    return this.safeRequest<ApprovalRequest>(`/api/v1/projects/${projectId}/approvals/${approvalId}`);
+  }
+
+  // v0.21.0: Submit approval request for a launch (#495)
+  async submitApprovalForLaunch(projectId: string, templateName: string, size: string, reason: string): Promise<ApprovalRequest> {
+    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/approvals`, 'POST', {
+      type: 'expensive_instance',
+      details: { template: templateName, size },
+      reason,
+    });
+    return data;
+  }
+
   async shareProjectBudget(projectId: string, req: BudgetShareRequest): Promise<void> {
     await this.safeRequest(`/api/v1/projects/${projectId}/budget/share`, 'POST', req);
   }
@@ -3168,7 +3183,29 @@ export default function PrismApp() {
 
     // Fire-and-forget
     try {
-      await api.launchInstance(templateSlug, instanceName, instanceSize, isDryRun);
+      const result = await api.launchInstance(templateSlug, instanceName, instanceSize, isDryRun);
+      // HTTP 202 approval pending (#495)
+      if (result && (result as any).approval_pending) {
+        const approvalId = (result as any).approval_request_id || 'unknown';
+        setState(prev => ({
+          ...prev,
+          notifications: [
+            {
+              type: 'info',
+              header: 'Approval Required',
+              content: `Launch of ${instanceName} requires PI approval. Request created: ${approvalId}. Check the Approvals panel.`,
+              dismissible: true,
+              id: Date.now().toString()
+            },
+            ...prev.notifications
+          ]
+        }));
+        // Refresh pending approvals count
+        api.listAllApprovals('pending').then(approvals =>
+          setState(prev => ({ ...prev, pendingApprovalsCount: approvals.length }))
+        ).catch(() => {});
+        return;
+      }
       setState(prev => ({
         ...prev,
         notifications: [

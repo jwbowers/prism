@@ -322,6 +322,20 @@ func (a *App) Launch(args []string) error {
 		return WrapAPIError("launch workspace "+req.Name, err)
 	}
 
+	// Approval required (#495): daemon returned HTTP 202 instead of launching
+	if response.ApprovalPending {
+		if spinner != nil {
+			spinner.Stop()
+		}
+		fmt.Printf("✋ Approval required. Request created: %s\n", response.ApprovalRequestID)
+		fmt.Printf("   Status:  pending\n")
+		fmt.Printf("\nYour PI or admin can approve with:\n")
+		fmt.Printf("   prism approval approve %s\n", response.ApprovalRequestID)
+		fmt.Printf("\nOnce approved, launch with:\n")
+		fmt.Printf("   prism workspace launch %s %s --approval %s\n", req.Template, req.Name, response.ApprovalRequestID)
+		return nil
+	}
+
 	if spinner != nil {
 		spinner.StopWithMessage(fmt.Sprintf("✅ %s", response.Message))
 	}

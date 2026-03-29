@@ -194,6 +194,24 @@ func (c *HTTPClient) LaunchInstance(ctx context.Context, req types.LaunchRequest
 	}
 	defer resp.Body.Close()
 
+	// HTTP 202 Accepted means an approval request was created instead of launching (#495)
+	if resp.StatusCode == http.StatusAccepted {
+		var body struct {
+			ApprovalRequest struct {
+				ID string `json:"id"`
+			} `json:"approval_request"`
+			Message string `json:"message"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+			return nil, fmt.Errorf("failed to decode approval response: %w", err)
+		}
+		return &types.LaunchResponse{
+			ApprovalPending:   true,
+			ApprovalRequestID: body.ApprovalRequest.ID,
+			Message:           body.Message,
+		}, nil
+	}
+
 	var result types.LaunchResponse
 	if err := c.handleResponse(resp, &result); err != nil {
 		return nil, err
@@ -2540,6 +2558,19 @@ func (c *HTTPClient) ApproveRequest(ctx context.Context, projectID, requestID, n
 func (c *HTTPClient) DenyRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error) {
 	body := map[string]string{"note": note}
 	resp, err := c.makeRequest(ctx, "POST", "/api/v1/projects/"+projectID+"/approvals/"+requestID+"/deny", body)
+	if err != nil {
+		return nil, err
+	}
+	var ar project.ApprovalRequest
+	if err := c.handleResponse(resp, &ar); err != nil {
+		return nil, err
+	}
+	return &ar, nil
+}
+
+// GetApproval retrieves a single approval request by ID (#495).
+func (c *HTTPClient) GetApproval(ctx context.Context, projectID, approvalID string) (*project.ApprovalRequest, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/api/v1/projects/"+projectID+"/approvals/"+approvalID, nil)
 	if err != nil {
 		return nil, err
 	}

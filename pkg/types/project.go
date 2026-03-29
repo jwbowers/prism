@@ -70,6 +70,24 @@ type Project struct {
 
 	// OnboardingTemplates defines templates applied to new members on joining (#154)
 	OnboardingTemplates []OnboardingTemplate `json:"onboarding_templates,omitempty"`
+
+	// ApprovalPolicy configures budget-triggered launch approval (#495)
+	ApprovalPolicy *ProjectApprovalPolicy `json:"approval_policy,omitempty"`
+}
+
+// ProjectApprovalPolicy defines when launches require PI/admin approval (#495)
+type ProjectApprovalPolicy struct {
+	// RequireApprovalAbove is the hourly cost threshold above which approval is required.
+	// Zero means approval gating is disabled (default).
+	RequireApprovalAbove float64 `json:"require_approval_above"`
+
+	// ApproverRoles lists the project roles that can approve requests.
+	// Defaults to ["admin", "owner"] when nil.
+	ApproverRoles []string `json:"approver_roles,omitempty"`
+
+	// ApprovalTimeoutHours is how long a pending request stays active before expiring.
+	// Defaults to 24 when zero.
+	ApprovalTimeoutHours int `json:"approval_timeout_hours,omitempty"`
 }
 
 // ProjectMember represents a project member with specific permissions

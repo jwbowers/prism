@@ -284,6 +284,7 @@ type PrismAPI interface {
 	ListAllApprovals(ctx context.Context, status project.ApprovalStatus) ([]*project.ApprovalRequest, error)
 	ApproveRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error)
 	DenyRequest(ctx context.Context, projectID, requestID, note string) (*project.ApprovalRequest, error)
+	GetApproval(ctx context.Context, projectID, approvalID string) (*project.ApprovalRequest, error)
 
 	// Monthly budget reports (#141)
 	GetMonthlyReport(ctx context.Context, projectID, month, format string) (string, error)

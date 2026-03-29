@@ -410,6 +410,113 @@ func (s *Server) handleLaunchInstance(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Approval workflow (#495): explicit --request-approval flag
+	if req.RequestApproval {
+		if s.approvalManager == nil {
+			s.writeError(w, http.StatusServiceUnavailable, "approval manager not initialized")
+			return
+		}
+		if req.ProjectID == "" {
+			s.writeError(w, http.StatusBadRequest, "project ID required when requesting approval (use --project <name>)")
+			return
+		}
+		userID := "default_user"
+		if pm, err := profile.NewManagerEnhanced(); err == nil {
+			if cp, err := pm.GetCurrentProfile(); err == nil {
+				userID = cp.Name
+			}
+		}
+		details := map[string]interface{}{
+			"template":   req.Template,
+			"name":       req.Name,
+			"size":       req.Size,
+			"spot":       req.Spot,
+			"est_hourly": estimateHourlyCostFromSize(req.Size),
+		}
+		approvalReq, err := s.approvalManager.Submit(req.ProjectID, userID, project.ApprovalTypeExpensiveInstance, details, "")
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create approval request: %v", err))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"approval_request": approvalReq,
+			"message":          fmt.Sprintf("Approval request created (ID: %s). Use 'prism approval approve %s' to approve.", approvalReq.ID, approvalReq.ID),
+		})
+		return
+	}
+
+	// Approval workflow (#495): validate pre-approved request
+	if req.ApprovalID != "" {
+		if s.approvalManager == nil {
+			s.writeError(w, http.StatusServiceUnavailable, "approval manager not initialized")
+			return
+		}
+		approvalReq, err := s.approvalManager.Get(req.ApprovalID)
+		if err != nil {
+			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("approval request not found: %v", err))
+			return
+		}
+		if approvalReq.Status != project.ApprovalStatusApproved {
+			s.writeError(w, http.StatusForbidden, fmt.Sprintf("approval request %s is not approved (status: %s)", req.ApprovalID, approvalReq.Status))
+			return
+		}
+	}
+
+	// Approval workflow (#495): budget-threshold gate — auto-require approval when
+	// estimated hourly cost exceeds project policy threshold
+	if req.ProjectID != "" && s.projectManager != nil && s.approvalManager != nil {
+		if proj, err := s.projectManager.GetProject(r.Context(), req.ProjectID); err == nil &&
+			proj.ApprovalPolicy != nil && proj.ApprovalPolicy.RequireApprovalAbove > 0 {
+
+			estimatedHourly := estimateHourlyCostFromSize(req.Size)
+			if estimatedHourly > proj.ApprovalPolicy.RequireApprovalAbove {
+				// Check if caller is admin/owner (they bypass the gate)
+				userID := "default_user"
+				if pm, err := profile.NewManagerEnhanced(); err == nil {
+					if cp, err := pm.GetCurrentProfile(); err == nil {
+						userID = cp.Name
+					}
+				}
+				isApprover := false
+				for _, m := range proj.Members {
+					if m.UserID == userID && (m.Role == "admin" || m.Role == "owner") {
+						isApprover = true
+						break
+					}
+				}
+				if proj.Owner == userID {
+					isApprover = true
+				}
+
+				if !isApprover && req.ApprovalID == "" {
+					details := map[string]interface{}{
+						"template":   req.Template,
+						"name":       req.Name,
+						"size":       req.Size,
+						"est_hourly": estimatedHourly,
+						"threshold":  proj.ApprovalPolicy.RequireApprovalAbove,
+					}
+					approvalReq, err := s.approvalManager.Submit(req.ProjectID, userID, project.ApprovalTypeExpensiveInstance, details, "auto-triggered by cost threshold")
+					if err != nil {
+						s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create approval request: %v", err))
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusAccepted)
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
+						"approval_request": approvalReq,
+						"message": fmt.Sprintf("Launch blocked: estimated cost $%.2f/hr exceeds project threshold $%.2f/hr. "+
+							"Approval request created (ID: %s). Use 'prism approval approve %s' to proceed.",
+							estimatedHourly, proj.ApprovalPolicy.RequireApprovalAbove, approvalReq.ID, approvalReq.ID),
+					})
+					return
+				}
+			}
+		}
+	}
+
 	// Check instance name uniqueness (skip in test mode)
 	if !s.instanceNameCheckPassed(&req, w, r) {
 		return
