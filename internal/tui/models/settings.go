@@ -139,9 +139,9 @@ func (m SettingsModel) View() string {
 
 	// Daemon Management
 	daemonInfo := "\nDaemon Management:\n"
-	daemonInfo += "  prism daemon start              # Start daemon\n"
-	daemonInfo += "  prism daemon stop               # Stop daemon\n"
-	daemonInfo += "  prism daemon status             # Check daemon status\n"
+	daemonInfo += "  prism admin daemon start        # Start daemon\n"
+	daemonInfo += "  prism admin daemon stop         # Stop daemon\n"
+	daemonInfo += "  prism admin daemon status       # Check daemon status\n"
 
 	// TUI Controls
 	tuiInfo := "\nTUI Navigation:\n"

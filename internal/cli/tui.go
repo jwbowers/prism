@@ -102,7 +102,7 @@ func ensureDaemonForTUI() error {
 		fmt.Println(DaemonAutoStartFailedMessage)
 		fmt.Printf("\n💡 Troubleshooting:\n")
 		fmt.Printf("   • Check if 'prismd' binary is in your PATH\n")
-		fmt.Printf("   • Try manual start: prism daemon start\n")
+		fmt.Printf("   • Try manual start: prism admin daemon start\n")
 		fmt.Printf("   • Check daemon logs for errors\n")
 		return WrapAPIError("auto-start daemon", err)
 	}

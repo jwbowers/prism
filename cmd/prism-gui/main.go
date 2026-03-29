@@ -200,7 +200,7 @@ func main() {
 	// Ensure daemon is running before starting GUI
 	if err := startDaemon(); err != nil {
 		log.Printf("❌ Failed to start daemon: %v", err)
-		log.Println("Please start the daemon manually with: prism daemon start")
+		log.Println("Please start the daemon manually with: prism admin daemon start")
 		// Continue anyway - GUI will show connection error to user
 	}
 

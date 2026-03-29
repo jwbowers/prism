@@ -62,7 +62,7 @@ func TestConstants(t *testing.T) {
 func TestUsageMessages(t *testing.T) {
 	// Test daemon message
 	assert.Contains(t, DaemonNotRunningMessage, "daemon not running")
-	assert.Contains(t, DaemonNotRunningMessage, "prism daemon status")
+	assert.Contains(t, DaemonNotRunningMessage, "prism admin daemon status")
 
 	// Test no instances messages
 	assert.Contains(t, NoInstancesFoundMessage, "No workstations found")
@@ -263,7 +263,7 @@ func TestErrorHelperFunctions(t *testing.T) {
 	assert.Contains(t, wrappedErr.Error(), "connect to service failed")
 	assert.Contains(t, wrappedErr.Error(), "connection failed")
 	assert.Contains(t, wrappedErr.Error(), "Need help?")
-	assert.Contains(t, wrappedErr.Error(), "prism daemon status")
+	assert.Contains(t, wrappedErr.Error(), "prism admin daemon status")
 
 	// Test WrapDaemonError - now uses enhanced error handling
 	daemonErr := WrapDaemonError(originalErr)

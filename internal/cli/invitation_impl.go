@@ -24,7 +24,7 @@ func (a *App) Invitation(args []string) error {
 
 	// Check daemon is running
 	if err := a.apiClient.Ping(a.ctx); err != nil {
-		return fmt.Errorf("daemon not running. Start with: prism daemon start")
+		return fmt.Errorf("daemon not running. Start with: prism admin daemon start")
 	}
 
 	switch action {

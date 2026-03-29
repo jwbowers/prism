@@ -108,7 +108,7 @@ func (s *IdleInstanceService) FindAndValidateInstance(instanceName string) (*Idl
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(interface{}) error }); ok {
 		if err := pingable.Ping(nil); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism admin daemon start")
 		}
 	}
 

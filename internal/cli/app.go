@@ -192,7 +192,7 @@ func (a *App) ensureDaemonRunning() error {
 		fmt.Println(DaemonAutoStartFailedMessage)
 		fmt.Printf("\n💡 Troubleshooting:\n")
 		fmt.Printf("   • Check if 'prismd' binary is in your PATH\n")
-		fmt.Printf("   • Try manual start: prism daemon start\n")
+		fmt.Printf("   • Try manual start: prism admin daemon start\n")
 		fmt.Printf("   • Check daemon logs for errors\n")
 		return WrapAPIError("auto-start daemon", err)
 	}
@@ -1318,7 +1318,7 @@ func (a *App) Project(args []string) error {
 
 	// Check daemon is running
 	if err := a.apiClient.Ping(a.ctx); err != nil {
-		return fmt.Errorf("daemon not running. Start with: prism daemon start")
+		return fmt.Errorf("daemon not running. Start with: prism admin daemon start")
 	}
 
 	switch action {
