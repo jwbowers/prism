@@ -153,6 +153,7 @@ type PrismAPI interface {
 	ListSharedTokens(context.Context, string) ([]*types.SharedInvitationToken, error)
 	ExtendSharedToken(context.Context, string, int) error
 	RevokeSharedToken(context.Context, string) error
+	GetSharedTokenQR(context.Context, string) ([]byte, error)
 
 	// Policy management operations (Phase 5A.5)
 	GetPolicyStatus(context.Context) (*PolicyStatusResponse, error)

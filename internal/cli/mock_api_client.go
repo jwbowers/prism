@@ -2260,6 +2260,13 @@ func (m *MockAPIClient) RevokeSharedToken(ctx context.Context, tokenID string) e
 	return nil
 }
 
+func (m *MockAPIClient) GetSharedTokenQR(ctx context.Context, tokenCode string) ([]byte, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []byte("mock-qr-png"), nil
+}
+
 // Throttling operations
 func (m *MockAPIClient) ConfigureThrottling(ctx context.Context, config throttle.Config) error {
 	if m.ShouldReturnError {

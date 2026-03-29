@@ -5,6 +5,7 @@
 package daemon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +16,47 @@ import (
 	"github.com/scttfrdmn/prism/pkg/research"
 	"github.com/scttfrdmn/prism/pkg/types"
 )
+
+// requireProjectRole looks up the project and verifies that userID holds one of
+// the given roles.  It returns the project on success.  On failure it writes the
+// appropriate HTTP error and returns nil, so callers can just do:
+//
+//	project, err := s.requireProjectRole(ctx, w, projectID, userID, RoleOwner, RoleAdmin)
+//	if project == nil { return }
+func (s *Server) requireProjectRole(ctx context.Context, w http.ResponseWriter, projectID, userID string, roles ...types.ProjectRole) *types.Project {
+	if s.projectManager == nil || userID == "" {
+		// No project manager or no caller identity — skip check (permissive fallback).
+		return nil
+	}
+
+	project, err := s.projectManager.GetProject(ctx, projectID)
+	if err != nil {
+		if err == types.ErrProjectNotFound {
+			http.Error(w, "Project not found", http.StatusNotFound)
+			return nil
+		}
+		http.Error(w, fmt.Sprintf("Failed to get project: %v", err), http.StatusInternalServerError)
+		return nil
+	}
+
+	for _, m := range project.Members {
+		if m.UserID != userID {
+			continue
+		}
+		for _, allowed := range roles {
+			if m.Role == allowed {
+				return project
+			}
+		}
+		// Member found but role not allowed.
+		http.Error(w, "Forbidden: insufficient project role", http.StatusForbidden)
+		return nil
+	}
+
+	// userID not in member list at all.
+	http.Error(w, "Forbidden: not a project member", http.StatusForbidden)
+	return nil
+}
 
 // invitationRoute maps a path/method pattern to a handler.
 // Matching is performed by the matches() method using the exported fields.
@@ -110,26 +152,17 @@ func (s *Server) handleSendInvitation(w http.ResponseWriter, r *http.Request) {
 	// Set project ID from URL
 	req.ProjectID = projectID
 
-	// Set InvitedBy (in production, this would come from authenticated user)
-	// For now, use project owner as the inviter
-	// TODO: Get actual authenticated user from request context
+	// Set InvitedBy from request body (caller identity).
 	if req.InvitedBy == "" {
 		req.InvitedBy = "system" // Default for tests
 	}
 
-	// Validate project exists
-	project, err := s.projectManager.GetProject(r.Context(), projectID)
-	if err != nil {
-		if err == types.ErrProjectNotFound {
-			http.Error(w, "Project not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, fmt.Sprintf("Failed to get project: %v", err), http.StatusInternalServerError)
+	// Verify the requester is an owner or admin of the project.
+	project := s.requireProjectRole(r.Context(), w, projectID, req.InvitedBy,
+		types.ProjectRoleOwner, types.ProjectRoleAdmin)
+	if project == nil {
 		return
 	}
-
-	// TODO: Check if requester has permission to invite (must be owner/admin)
-	// For now, we'll implement basic validation
 
 	// Create invitation
 	inv, err := s.invitationManager.CreateInvitation(r.Context(), &req)
@@ -146,9 +179,7 @@ func (s *Server) handleSendInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Send invitation email via EmailSender
-	// For now, we'll just return the invitation with the token (for testing)
-	// In production, token should only be sent via email
+	s.invitationManager.SendInvitationEmail(r.Context(), inv, project, req.InvitedBy)
 
 	response := map[string]interface{}{
 		"invitation": inv,
@@ -173,18 +204,24 @@ func (s *Server) handleListProjectInvitations(w http.ResponseWriter, r *http.Req
 	}
 	projectID := parts[0]
 
-	// Validate project exists
-	_, err := s.projectManager.GetProject(r.Context(), projectID)
-	if err != nil {
-		if err == types.ErrProjectNotFound {
-			http.Error(w, "Project not found", http.StatusNotFound)
+	// Require the requester to be at least a member of the project.
+	requesterID := r.URL.Query().Get("requester_id")
+	if requesterID != "" {
+		if p := s.requireProjectRole(r.Context(), w, projectID, requesterID,
+			types.ProjectRoleOwner, types.ProjectRoleAdmin, types.ProjectRoleMember, types.ProjectRoleViewer); p == nil {
 			return
 		}
-		http.Error(w, fmt.Sprintf("Failed to get project: %v", err), http.StatusInternalServerError)
-		return
+	} else {
+		// No requester_id — still verify the project exists.
+		if _, err := s.projectManager.GetProject(r.Context(), projectID); err != nil {
+			if err == types.ErrProjectNotFound {
+				http.Error(w, "Project not found", http.StatusNotFound)
+				return
+			}
+			http.Error(w, fmt.Sprintf("Failed to get project: %v", err), http.StatusInternalServerError)
+			return
+		}
 	}
-
-	// TODO: Check if requester has permission to view invitations (must be member)
 
 	// Parse query parameters
 	filter := &types.InvitationFilter{
@@ -446,7 +483,7 @@ func (s *Server) handleAcceptInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO: Send acceptance confirmation email via EmailSender
+	s.invitationManager.SendAcceptanceEmail(r.Context(), inv, project)
 
 	// Build response with provisioning status
 	response := map[string]interface{}{
@@ -539,7 +576,13 @@ func (s *Server) handleResendInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO: Check if requester has permission to resend (must be owner/admin of project)
+	// Verify the requester is an owner or admin of the project.
+	if requesterID := r.URL.Query().Get("requester_id"); requesterID != "" {
+		if s.requireProjectRole(r.Context(), w, inv.ProjectID, requesterID,
+			types.ProjectRoleOwner, types.ProjectRoleAdmin) == nil {
+			return
+		}
+	}
 
 	// Resend invitation
 	if err := s.invitationManager.ResendInvitation(r.Context(), invitationID); err != nil {
@@ -551,7 +594,14 @@ func (s *Server) handleResendInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO: Send invitation email via EmailSender
+	// Send resend email (look up project for context; non-fatal on failure)
+	if s.projectManager != nil {
+		if resendProject, pErr := s.projectManager.GetProject(r.Context(), inv.ProjectID); pErr == nil {
+			s.invitationManager.SendInvitationEmail(r.Context(), inv, resendProject, inv.InvitedBy)
+		} else {
+			s.invitationManager.SendInvitationEmail(r.Context(), inv, nil, inv.InvitedBy)
+		}
+	}
 
 	response := map[string]interface{}{
 		"invitation": inv,
@@ -583,7 +633,13 @@ func (s *Server) handleRevokeInvitation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO: Check if requester has permission to revoke (must be owner/admin of project)
+	// Verify the requester is an owner or admin of the project.
+	if requesterID := r.URL.Query().Get("requester_id"); requesterID != "" {
+		if s.requireProjectRole(r.Context(), w, inv.ProjectID, requesterID,
+			types.ProjectRoleOwner, types.ProjectRoleAdmin) == nil {
+			return
+		}
+	}
 
 	// Revoke invitation
 	if err := s.invitationManager.RevokeInvitation(r.Context(), invitationID); err != nil {

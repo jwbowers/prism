@@ -3,6 +3,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"os/user"
 	"time"
 
@@ -324,21 +325,24 @@ func (a *App) projectInvitationsSharedQR(args []string, output string) error {
 
 	fmt.Printf("🔲 Generating QR code for token %s...\n", tokenCode)
 
-	// Get QR code from API
-	// For now, we'll construct the API URL and make a direct request
-	// TODO: Add GetSharedTokenQR method to API client
-
-	// Build redemption URL
-	redemptionURL := fmt.Sprintf("https://prism.dev/join/%s", tokenCode)
-
-	fmt.Println()
-	fmt.Println("✅ QR Code Information")
-	fmt.Printf("   Token: %s\n", tokenCode)
-	fmt.Printf("   Redemption URL: %s\n", redemptionURL)
-	fmt.Println()
+	qrBytes, err := a.apiClient.GetSharedTokenQR(a.ctx, tokenCode)
+	if err != nil {
+		// Fall back to informational display if API call fails
+		redemptionURL := fmt.Sprintf("https://prism.dev/join/%s", tokenCode)
+		fmt.Println()
+		fmt.Println("⚠️  Could not fetch QR code from daemon:", err)
+		fmt.Println()
+		fmt.Printf("   Redemption URL: %s\n", redemptionURL)
+		fmt.Printf("   curl http://localhost:8947/api/v1/invitations/shared/%s/qr?format=png > qr.png\n", tokenCode)
+		return nil
+	}
 
 	if output != "" {
-		fmt.Printf("💾 QR code saved to: %s\n", output)
+		if writeErr := os.WriteFile(output, qrBytes, 0644); writeErr != nil {
+			return fmt.Errorf("failed to write QR code to %s: %w", output, writeErr)
+		}
+		fmt.Println()
+		fmt.Printf("✅ QR code saved to: %s\n", output)
 		fmt.Println()
 		fmt.Println("   Print this QR code and display it at:")
 		fmt.Println("   • Workshop registration desk")
@@ -348,11 +352,9 @@ func (a *App) projectInvitationsSharedQR(args []string, output string) error {
 		fmt.Println()
 		fmt.Println("   Participants can scan with their phone camera to redeem")
 	} else {
-		fmt.Println("💡 To save QR code to file:")
-		fmt.Printf("   prism project invitations shared qr %s --output workshop-qr.png\n", tokenCode)
 		fmt.Println()
-		fmt.Println("   Or use API endpoint:")
-		fmt.Printf("   curl http://localhost:8947/api/v1/invitations/shared/%s/qr?format=png > qr.png\n", tokenCode)
+		fmt.Printf("✅ QR code generated (%d bytes). Use --output to save to a file:\n", len(qrBytes))
+		fmt.Printf("   prism project invitations shared qr %s --output workshop-qr.png\n", tokenCode)
 	}
 
 	return nil

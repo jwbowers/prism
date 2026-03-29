@@ -561,9 +561,6 @@ func (a *App) projectInvite(args []string) error {
 		return err
 	}
 
-	// TODO: Use role, message, and expiration in API call when implemented
-	_, _, _ = flags.role, flags.message, expiresAt // Suppress unused variable warnings
-
 	// Get project ID by name
 	projectResponse, err := a.apiClient.ListProjects(a.ctx, nil)
 	if err != nil {

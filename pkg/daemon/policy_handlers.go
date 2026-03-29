@@ -199,17 +199,8 @@ func (s *Server) handlePolicyAssign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Assign policy set
-	var err error
-	switch req.PolicySet {
-	case "student":
-		err = s.policyService.AssignStudentPolicies()
-	case "researcher":
-		err = s.policyService.AssignResearcherPolicies()
-	default:
-		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Assignment not implemented for policy set: %s", req.PolicySet))
-		return
-	}
+	// Assign policy set — supports both built-in and custom policy sets
+	err := s.policyService.AssignPolicySetToUser(req.UserID, req.PolicySet)
 
 	if err != nil {
 		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to assign policy set: %v", err))

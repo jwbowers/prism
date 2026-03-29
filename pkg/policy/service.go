@@ -95,6 +95,18 @@ func (s *Service) AssignResearcherPolicies() error {
 	return s.manager.AssignPolicySet(userID, "researcher")
 }
 
+// AssignPolicySetToUser assigns any named policy set to a specific user.
+// If userID is empty it falls back to the current profile user.
+func (s *Service) AssignPolicySetToUser(userID, policySetID string) error {
+	if !s.enabled {
+		return nil
+	}
+	if userID == "" {
+		userID = s.manager.GetProfileUserID()
+	}
+	return s.manager.AssignPolicySet(userID, policySetID)
+}
+
 // GetPolicyViolationMessage returns user-friendly policy violation messages
 func (s *Service) GetPolicyViolationMessage(response *PolicyResponse, action string) string {
 	if response.Allowed {

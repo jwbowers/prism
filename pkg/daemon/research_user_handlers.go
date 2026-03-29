@@ -480,6 +480,36 @@ func (s *Server) handleProvisionResearchUser(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// In production, provisioning requires SSM and a running instance
-	s.writeError(w, http.StatusNotImplemented, "Workspace provisioning via SSM is not yet implemented in the daemon.")
+	// Look up instance public IP from state
+	var publicIP string
+	if st, err := s.stateManager.LoadState(); err == nil {
+		if inst, ok := st.Instances[req.Instance]; ok {
+			publicIP = inst.PublicIP
+		}
+	}
+	if publicIP == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("instance '%s' not found or has no public IP", req.Instance))
+		return
+	}
+
+	// Get research user service
+	service, err := s.getResearchUserService()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to initialize research user service: %v", err))
+		return
+	}
+
+	// Provision the user on the instance
+	provResp, err := service.ProvisionUserOnInstance(r.Context(), &research.ProvisionInstanceRequest{
+		InstanceID:   req.Instance,
+		InstanceName: req.Instance,
+		PublicIP:     publicIP,
+		Username:     username,
+	})
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("provisioning failed: %v", err))
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, provResp)
 }

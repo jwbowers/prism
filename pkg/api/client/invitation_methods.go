@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/scttfrdmn/prism/pkg/types"
@@ -410,6 +411,29 @@ func (c *HTTPClient) ExtendSharedToken(ctx context.Context, token string, addDay
 	}
 
 	return nil
+}
+
+// GetSharedTokenQR fetches the QR code PNG for a shared token.
+// Returns raw PNG image bytes.
+// GET /api/v1/invitations/shared/{token}/qr?format=png
+func (c *HTTPClient) GetSharedTokenQR(ctx context.Context, tokenCode string) ([]byte, error) {
+	path := fmt.Sprintf("/api/v1/invitations/shared/%s/qr?format=png", tokenCode)
+
+	resp, err := c.makeRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get QR code: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseHTTPError(resp)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read QR code response: %w", err)
+	}
+	return data, nil
 }
 
 // RevokeSharedToken revokes a shared token

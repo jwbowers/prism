@@ -170,8 +170,19 @@ func (s *Server) handleRedeemSharedToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// TODO: Add user to project with specified role
-	// This would integrate with the project membership system
+	// Add the redeemer as a project member with the role from the token
+	if s.projectManager != nil && req.RedeemedBy != "" && resp.ProjectID != "" {
+		member := &types.ProjectMember{
+			UserID:  req.RedeemedBy,
+			Role:    resp.Role,
+			AddedAt: time.Now(),
+			AddedBy: "shared-token:" + req.Token,
+		}
+		if err := s.projectManager.AddProjectMember(r.Context(), resp.ProjectID, member); err != nil {
+			// Duplicate member is acceptable; log other errors but don't fail the redemption
+			fmt.Printf("[shared-token] add member %s to project %s: %v\n", req.RedeemedBy, resp.ProjectID, err)
+		}
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)

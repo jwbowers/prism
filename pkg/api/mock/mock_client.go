@@ -2038,6 +2038,10 @@ func (m *MockClient) RevokeSharedToken(ctx context.Context, tokenID string) erro
 	return nil
 }
 
+func (m *MockClient) GetSharedTokenQR(ctx context.Context, tokenCode string) ([]byte, error) {
+	return []byte("mock-qr-png"), nil
+}
+
 // Transfer operations (S3-backed file transfer)
 func (m *MockClient) StartTransfer(ctx context.Context, req client.TransferRequest) (*client.TransferResponse, error) {
 	return &client.TransferResponse{

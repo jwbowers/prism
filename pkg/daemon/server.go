@@ -283,7 +283,7 @@ func NewServer(port string) (*Server, error) {
 	}
 
 	// Initialize invitation manager (v0.5.11 user invitation system)
-	invitationManager, err := invitation.NewManager(nil) // nil EmailSender for now, will be added later
+	invitationManager, err := invitation.NewManager(invitation.NewEmailSender())
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize invitation manager: %w", err)
 	}
