@@ -449,7 +449,7 @@ func (s *ScalingCommands) rightsizingExport(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism workspace list' to see available instances")
 	}
 
 	fmt.Printf("📊 **Usage Analytics Export**\n")
@@ -469,7 +469,7 @@ func (s *ScalingCommands) rightsizingExport(args []string) error {
 
 	fmt.Printf("💻 **Command to Access Data**:\n")
 	fmt.Printf("   # Connect to workspace and view analytics\n")
-	fmt.Printf("   prism connect %s\n", instanceName)
+	fmt.Printf("   prism workspace connect %s\n", instanceName)
 	fmt.Printf("   \n")
 	fmt.Printf("   # Then on the instance:\n")
 	fmt.Printf("   sudo cat %s | jq .\n", AnalyticsLogFile)
@@ -650,7 +650,7 @@ func (s *ScalingCommands) scalingAnalyze(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism workspace list' to see available instances")
 	}
 
 	fmt.Printf("📊 **Current Instance Configuration**:\n")
@@ -666,7 +666,7 @@ func (s *ScalingCommands) scalingAnalyze(args []string) error {
 	if instance.State != "running" {
 		fmt.Printf("\n⚠️  **Instance Not Running**\n")
 		fmt.Printf("   Instance must be running to collect usage analytics.\n")
-		fmt.Printf("   Start instance: prism start %s\n", instanceName)
+		fmt.Printf("   Start instance: prism workspace start %s\n", instanceName)
 		return nil
 	}
 
@@ -725,7 +725,7 @@ func (s *ScalingCommands) scalingPredict(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism workspace list' to see available instances")
 	}
 
 	fmt.Printf("📊 **Instance Analysis**:\n")
@@ -739,7 +739,7 @@ func (s *ScalingCommands) scalingPredict(args []string) error {
 	if instance.State != "running" {
 		fmt.Printf("⚠️  **Instance Not Running**\n")
 		fmt.Printf("   Predictive analysis requires running instance with usage data.\n")
-		fmt.Printf("   Start instance: prism start %s\n", instanceName)
+		fmt.Printf("   Start instance: prism workspace start %s\n", instanceName)
 		fmt.Printf("   Allow 1+ hours of runtime for meaningful predictions.\n")
 		return nil
 	}
@@ -915,7 +915,7 @@ func (s *ScalingCommands) scalingScale(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism workspace list' to see available instances")
 	}
 
 	currentSize := s.parseInstanceSize(instance.InstanceType)
@@ -956,9 +956,9 @@ func (s *ScalingCommands) scalingScale(args []string) error {
 	fmt.Printf("   Currently showing preview mode - full implementation pending.\n\n")
 
 	fmt.Printf("🛠️  **Manual Scaling Process**:\n")
-	fmt.Printf("   1. Stop instance: prism stop %s\n", instanceName)
+	fmt.Printf("   1. Stop instance: prism workspace stop %s\n", instanceName)
 	fmt.Printf("   2. Modify via AWS Console or CLI\n")
-	fmt.Printf("   3. Start instance: prism start %s\n\n", instanceName)
+	fmt.Printf("   3. Start instance: prism workspace start %s\n\n", instanceName)
 
 	fmt.Printf("🚧 **Implementation Status**: Preview Mode\n")
 	fmt.Printf("   Full dynamic scaling will be implemented in future release.\n")
@@ -1003,7 +1003,7 @@ func (s *ScalingCommands) scalingPreview(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism workspace list' to see available instances")
 	}
 
 	currentSize := s.parseInstanceSize(instance.InstanceType)
@@ -1090,7 +1090,7 @@ func (s *ScalingCommands) scalingHistory(args []string) error {
 		}
 	}
 	if instance == nil {
-		return NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
+		return NewNotFoundError("workspace", instanceName, "Use 'prism workspace list' to see available instances")
 	}
 
 	fmt.Printf("🏷️  **Instance**: %s\n", instance.Name)

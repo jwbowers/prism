@@ -461,7 +461,7 @@ func (a *App) repoPull(args []string) error {
 
 	fmt.Printf("\n✅ Template downloaded successfully\n")
 	fmt.Printf("   File: %s\n", destFile)
-	fmt.Printf("   Use: prism launch %s <workspace-name>\n", ref.Template)
+	fmt.Printf("   Use: prism workspace launch %s <workspace-name>\n", ref.Template)
 
 	return nil
 }

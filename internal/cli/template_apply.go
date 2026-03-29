@@ -133,7 +133,7 @@ func (a *App) Rollback(args []string) error {
 
 	fmt.Printf("✅ Successfully rolled back instance '%s' to checkpoint '%s'\n", instanceName, checkpointID)
 	fmt.Printf("💡 Use 'prism layers %s' to see the current state\n", instanceName)
-	fmt.Printf("💡 Use 'prism list' to verify the instance is healthy\n")
+	fmt.Printf("💡 Use 'prism workspace list' to verify the instance is healthy\n")
 
 	return nil
 }

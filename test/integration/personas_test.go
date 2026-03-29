@@ -39,7 +39,7 @@ func TestSoloResearcherPersona(t *testing.T) {
 
 	t.Run("Phase1_LaunchBioinformaticsWorkspace", func(t *testing.T) {
 		// Launch instance with bioinformatics template
-		// Per walkthrough: "prism launch bioinformatics-suite rnaseq-analysis --size M"
+		// Per walkthrough: "prism workspace launch bioinformatics-suite rnaseq-analysis --size M"
 		// Using Python ML Workstation template (slug: python-ml-workstation)
 		instance, err := ctx.LaunchInstance("python-ml-workstation", instanceName, "M")
 		AssertNoError(t, err, "Launch bioinformatics workspace")
@@ -128,7 +128,7 @@ func TestSoloResearcherPersona(t *testing.T) {
 		t.Logf("✅ Instance hibernated successfully")
 
 		// Resume from hibernation
-		// Per walkthrough: "prism start rnaseq-analysis" (resumes in 30 seconds)
+		// Per walkthrough: "prism workspace start rnaseq-analysis" (resumes in 30 seconds)
 		err = ctx.StartInstance(instanceName)
 		AssertNoError(t, err, "Resume from hibernation")
 
@@ -178,7 +178,7 @@ func TestSoloResearcherPersona(t *testing.T) {
 
 	t.Run("Phase6_Cleanup", func(t *testing.T) {
 		// Delete instance
-		// Per walkthrough: "prism delete rnaseq-analysis"
+		// Per walkthrough: "prism workspace delete rnaseq-analysis"
 		err := ctx.DeleteInstance(instanceName)
 		AssertNoError(t, err, "Delete instance")
 
@@ -274,7 +274,7 @@ func TestSoloResearcherPersona_Complete(t *testing.T) {
 
 	t.Run("Week1_LaunchBioinformaticsWorkspace", func(t *testing.T) {
 		// Launch bioinformatics workspace (size M, ~$0.16/hour)
-		// Per walkthrough: "prism launch bioinformatics-suite rnaseq-analysis --size M"
+		// Per walkthrough: "prism workspace launch bioinformatics-suite rnaseq-analysis --size M"
 		t.Log("Launching bioinformatics workspace...")
 
 		instance, err := ctx.LaunchInstance("python-ml-workstation", instanceName, "M")

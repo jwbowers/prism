@@ -224,7 +224,7 @@ func (m *MockAPIClient) LaunchInstance(ctx context.Context, req types.LaunchRequ
 		Instance:       instance,
 		Message:        fmt.Sprintf("Instance %s launched successfully", req.Name),
 		EstimatedCost:  "$2.40/day",
-		ConnectionInfo: fmt.Sprintf("prism connect %s", req.Name),
+		ConnectionInfo: fmt.Sprintf("prism workspace connect %s", req.Name),
 	}, nil
 }
 

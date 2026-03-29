@@ -40,7 +40,7 @@ func NewInstanceCommands(app *App) *InstanceCommands {
 func (ic *InstanceCommands) Connect(args []string) error {
 	// Validate arguments
 	if len(args) < 1 {
-		return NewUsageError("prism connect <workspace-name>", "prism connect my-workspace")
+		return NewUsageError("prism workspace connect <workspace-name>", "prism workspace connect my-workspace")
 	}
 
 	// Parse flags
@@ -195,7 +195,7 @@ func (ic *InstanceCommands) connectWebInstance(instance *types.Instance, name st
 		fmt.Printf("🌐 Web services available for %s\n", name)
 		if len(instance.Services) > 0 {
 			fmt.Printf("   Services will be tunneled automatically when accessed\n")
-			fmt.Printf("   Use: prism connect %s\n", name)
+			fmt.Printf("   Use: prism workspace connect %s\n", name)
 		}
 	}
 	return nil
@@ -325,7 +325,7 @@ func (ic *InstanceCommands) startSSMPortForwarding(instanceID string, remotePort
 // Stop handles the stop command
 func (ic *InstanceCommands) Stop(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("prism stop <name>", "prism stop my-workspace")
+		return NewUsageError("prism workspace stop <name>", "prism workspace stop my-workspace")
 	}
 
 	name := args[0]
@@ -347,7 +347,7 @@ func (ic *InstanceCommands) Stop(args []string) error {
 // Start handles the start command with intelligent state management
 func (ic *InstanceCommands) Start(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("prism start <name>", "prism start my-workspace")
+		return NewUsageError("prism workspace start <name>", "prism workspace start my-workspace")
 	}
 
 	name := args[0]
@@ -372,7 +372,7 @@ func (ic *InstanceCommands) Start(args []string) error {
 	}
 
 	if targetInstance == nil {
-		return NewNotFoundError("workspace", name, "Use 'prism list' to see available instances")
+		return NewNotFoundError("workspace", name, "Use 'prism workspace list' to see available instances")
 	}
 
 	// Check current state and handle appropriately
@@ -381,8 +381,8 @@ func (ic *InstanceCommands) Start(args []string) error {
 		fmt.Printf("✅ Workspace %s is already running\n", name)
 		return nil
 	case "hibernated":
-		fmt.Printf("🛌 Workspace %s is hibernated - use 'prism resume %s' for instant startup\n", name, name)
-		fmt.Printf("   Or use 'prism start %s' for regular boot (slower)\n", name)
+		fmt.Printf("🛌 Workspace %s is hibernated - use 'prism workspace resume %s' for instant startup\n", name, name)
+		fmt.Printf("   Or use 'prism workspace start %s' for regular boot (slower)\n", name)
 		fmt.Printf("   Proceeding with regular start...\n")
 	case "stopped", "stopping":
 		// Normal case - proceed with start
@@ -402,7 +402,7 @@ func (ic *InstanceCommands) Start(args []string) error {
 // Delete handles the delete command
 func (ic *InstanceCommands) Delete(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("prism delete <name>", "prism delete my-workspace")
+		return NewUsageError("prism workspace delete <name>", "prism workspace delete my-workspace")
 	}
 
 	name := args[0]
@@ -424,7 +424,7 @@ func (ic *InstanceCommands) Delete(args []string) error {
 // Hibernate handles the hibernate command
 func (ic *InstanceCommands) Hibernate(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("prism hibernate <name>", "prism hibernate my-workspace")
+		return NewUsageError("prism workspace hibernate <name>", "prism workspace hibernate my-workspace")
 	}
 
 	name := args[0]
@@ -465,7 +465,7 @@ func (ic *InstanceCommands) Hibernate(args []string) error {
 // Resume handles the resume command
 func (ic *InstanceCommands) Resume(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("prism resume <name>", "prism resume my-workspace")
+		return NewUsageError("prism workspace resume <name>", "prism workspace resume my-workspace")
 	}
 
 	name := args[0]
@@ -507,7 +507,7 @@ func (ic *InstanceCommands) Resume(args []string) error {
 func (ic *InstanceCommands) Exec(args []string) error {
 	// Validate arguments
 	if len(args) < 2 {
-		return NewUsageError("prism exec <workspace-name> <command>", "prism exec my-workspace \"ls -la\"")
+		return NewUsageError("prism workspace exec <workspace-name> <command>", "prism workspace exec my-workspace \"ls -la\"")
 	}
 
 	// Parse command arguments and flags
@@ -752,7 +752,7 @@ func (ic *InstanceCommands) getInstanceForResize(instanceName string) (*types.In
 		}
 	}
 
-	return nil, NewNotFoundError("workspace", instanceName, "Use 'prism list' to see available instances")
+	return nil, NewNotFoundError("workspace", instanceName, "Use 'prism workspace list' to see available instances")
 }
 
 // resolveTargetInstanceType determines the target workspace type from options
@@ -903,8 +903,8 @@ func (ic *InstanceCommands) executeResize(instanceName, targetType string, opts 
 		return ic.monitorResizeProgress(instanceName)
 	}
 
-	fmt.Printf("💡 Monitor progress with: prism list\n")
-	fmt.Printf("💡 Check when ready: prism connect %s\n", instanceName)
+	fmt.Printf("💡 Monitor progress with: prism workspace list\n")
+	fmt.Printf("💡 Check when ready: prism workspace connect %s\n", instanceName)
 	return nil
 }
 
@@ -956,7 +956,7 @@ func (ic *InstanceCommands) monitorResizeProgress(instanceName string) error {
 		switch instance.State {
 		case "running":
 			fmt.Printf("✅ Resize complete! Instance is running with new configuration.\n")
-			fmt.Printf("🔗 Connect: prism connect %s\n", instanceName)
+			fmt.Printf("🔗 Connect: prism workspace connect %s\n", instanceName)
 			return nil
 		case "stopped", "stopping":
 			fmt.Printf("⏳ Instance stopping for resize... (%ds)\n", i*5)
@@ -972,6 +972,6 @@ func (ic *InstanceCommands) monitorResizeProgress(instanceName string) error {
 	}
 
 	fmt.Printf("⚠️  Resize monitoring timeout. Instance may still be resizing.\n")
-	fmt.Printf("💡 Check status with: prism list\n")
+	fmt.Printf("💡 Check status with: prism workspace list\n")
 	return nil
 }

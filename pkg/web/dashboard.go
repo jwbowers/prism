@@ -596,17 +596,17 @@ async function loadCostAnalysis() {
 
 // Instance actions
 function connectSSH(instanceName) {
-    alert('SSH connection command:\\n\\nprism connect ' + instanceName);
+    alert('SSH connection command:\\n\\nprism workspace connect ' + instanceName);
 }
 
 async function stopInstance(instanceId) {
     if (confirm('Are you sure you want to stop this instance?')) {
-        alert('Stop command:\\n\\nprism stop ' + instanceId);
+        alert('Stop command:\\n\\nprism workspace stop ' + instanceId);
     }
 }
 
 async function startInstance(instanceId) {
-    alert('Start command:\\n\\nprism start ' + instanceId);
+    alert('Start command:\\n\\nprism workspace start ' + instanceId);
 }
 
 // Add additional styles for new elements

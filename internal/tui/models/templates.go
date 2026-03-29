@@ -249,13 +249,13 @@ func (m *TemplatesModel) updateDetailView() {
 		}
 
 		content.WriteString(theme.SubTitle.Render("Launch Command:") + "\n")
-		content.WriteString(fmt.Sprintf("prism launch %s instance-name\n", m.selected))
-		content.WriteString("prism launch " + m.selected + " instance-name --size L\n")
-		content.WriteString("prism launch " + m.selected + " instance-name --volume data-volume\n")
+		content.WriteString(fmt.Sprintf("prism workspace launch %s instance-name\n", m.selected))
+		content.WriteString("prism workspace launch " + m.selected + " instance-name --size L\n")
+		content.WriteString("prism workspace launch " + m.selected + " instance-name --volume data-volume\n")
 
 		// Add research user launch example if supported
 		if template.ResearchUser != nil && template.ResearchUser.AutoCreate {
-			content.WriteString("prism launch " + m.selected + " instance-name --research-user alice\n")
+			content.WriteString("prism workspace launch " + m.selected + " instance-name --research-user alice\n")
 		}
 
 		m.detailView.SetContent(content.String())

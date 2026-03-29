@@ -407,7 +407,7 @@ func (ic *InitCobraCommands) reviewAndConfirm(template *templateInfo, name, size
 	costPerMonth := costPerHour * 730 // Average hours per month
 	fmt.Printf("  Estimated cost: $%.2f/hour (~$%.2f/month if running 24/7)\n", costPerHour, costPerMonth)
 	fmt.Println()
-	fmt.Println("💡 Tip: Use 'prism stop' when not in use to save costs")
+	fmt.Println("💡 Tip: Use 'prism workspace stop' when not in use to save costs")
 	fmt.Println()
 
 	// Confirm
@@ -458,9 +458,9 @@ func (ic *InitCobraCommands) displaySuccess(name string) error {
 	if err != nil {
 		// Still show basic success even if we can't get details
 		fmt.Println("📚 Next Steps:")
-		fmt.Println("  • Connect:  prism connect", name)
-		fmt.Println("  • Monitor:  prism list")
-		fmt.Println("  • Stop:     prism stop", name)
+		fmt.Println("  • Connect:  prism workspace connect", name)
+		fmt.Println("  • Monitor:  prism workspace list")
+		fmt.Println("  • Stop:     prism workspace stop", name)
 		fmt.Println()
 		return nil
 	}
@@ -484,10 +484,10 @@ func (ic *InitCobraCommands) displaySuccess(name string) error {
 
 	// Next steps
 	fmt.Println("📚 Next Steps:")
-	fmt.Println("  • Connect:  prism connect", name)
-	fmt.Println("  • Monitor:  prism list")
-	fmt.Println("  • Stop:     prism stop", name)
-	fmt.Println("  • Delete:   prism delete", name)
+	fmt.Println("  • Connect:  prism workspace connect", name)
+	fmt.Println("  • Monitor:  prism workspace list")
+	fmt.Println("  • Stop:     prism workspace stop", name)
+	fmt.Println("  • Delete:   prism workspace delete", name)
 	fmt.Println()
 	fmt.Println("💡 Run 'prism --help' to see all available commands")
 	fmt.Println()

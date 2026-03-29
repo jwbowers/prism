@@ -273,7 +273,7 @@ func (m DashboardModel) View() string {
 		// Build instances panel
 		var instancesContent string
 		if len(m.instances) == 0 {
-			instancesContent = theme.Help.Render("No workspaces running.\nprism launch <template> <name>")
+			instancesContent = theme.Help.Render("No workspaces running.\nprism workspace launch <template> <name>")
 		} else {
 			instancesContent = m.instancesTable.View()
 		}

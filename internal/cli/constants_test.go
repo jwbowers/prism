@@ -66,7 +66,7 @@ func TestUsageMessages(t *testing.T) {
 
 	// Test no instances messages
 	assert.Contains(t, NoInstancesFoundMessage, "No workstations found")
-	assert.Contains(t, NoInstancesFoundMessage, "prism launch")
+	assert.Contains(t, NoInstancesFoundMessage, "prism workspace launch")
 
 	assert.Contains(t, NoInstancesFoundProjectMessage, "No workstations found in project")
 	assert.Contains(t, NoInstancesFoundProjectMessage, "%s")
