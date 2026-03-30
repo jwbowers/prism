@@ -828,7 +828,7 @@ func (s *Server) handleGetInstance(w http.ResponseWriter, r *http.Request, ident
 	// Update state with latest AWS data
 	if err := s.stateManager.SaveInstance(*liveInstance); err != nil {
 		// Log error but don't fail - we still have the live data
-		// TODO: Add proper logging here
+		log.Printf("[WARNING] handleRefreshInstance: failed to save state for %s: %v", liveInstance.Name, err)
 	}
 
 	_ = json.NewEncoder(w).Encode(liveInstance)

@@ -141,9 +141,17 @@ func (r *RPackageInstaller) Validate(ctx context.Context, plugin *PluginManifest
 
 	// Check compatibility constraints if specified
 	if plugin.Spec.Compatibility.Tools != nil {
-		if rConstraint, exists := plugin.Spec.Compatibility.Tools["r"]; exists {
-			// TODO: Parse R version from result.Stdout and check against constraints
-			_ = rConstraint
+		if constraint, exists := plugin.Spec.Compatibility.Tools["r"]; exists {
+			if installed := parseVersionFromOutput(result.Stdout); installed != "" {
+				if constraint.MinVersion != "" && !versionSatisfiesConstraint(installed, ">="+constraint.MinVersion) {
+					return fmt.Errorf("installed R version %s is below minimum required %s",
+						installed, constraint.MinVersion)
+				}
+				if constraint.MaxVersion != "" && !versionSatisfiesConstraint(installed, "<="+constraint.MaxVersion) {
+					return fmt.Errorf("installed R version %s exceeds maximum allowed %s",
+						installed, constraint.MaxVersion)
+				}
+			}
 		}
 	}
 

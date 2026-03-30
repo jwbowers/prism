@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 var upgrader = websocket.Upgrader{
@@ -139,12 +142,13 @@ func (ts *TerminalSession) connectSSH(access *InstanceAccess) {
 	ts.sendMessage(fmt.Sprintf("Key type: %s\r\n", signer.PublicKey().Type()))
 
 	// SSH client configuration
+	knownHostsFile := filepath.Join(homeDir, ".prism", "known_hosts")
 	config := &ssh.ClientConfig{
 		User: access.Username,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: Proper host key verification
+		HostKeyCallback: buildTOFUHostKeyCallback(knownHostsFile),
 		Timeout:         10 * time.Second,
 		Config: ssh.Config{
 			// Support both modern and legacy RSA signature algorithms
@@ -365,5 +369,43 @@ func (ts *TerminalSession) cleanup() {
 
 	if ts.ws != nil {
 		_ = ts.ws.Close()
+	}
+}
+
+// buildTOFUHostKeyCallback returns an SSH host key callback that implements
+// trust-on-first-use (TOFU): unknown hosts are accepted and recorded in knownHostsPath;
+// known hosts must match the stored key. Falls back to InsecureIgnoreHostKey on setup
+// errors so terminal sessions are never hard-blocked by missing file permissions.
+func buildTOFUHostKeyCallback(knownHostsPath string) ssh.HostKeyCallback {
+	if err := os.MkdirAll(filepath.Dir(knownHostsPath), 0700); err != nil {
+		log.Printf("[WARNING] buildTOFUHostKeyCallback: cannot create known_hosts dir: %v", err)
+		return ssh.InsecureIgnoreHostKey() //nolint:gosec // fallback only
+	}
+	// Create file if it does not exist.
+	if f, err := os.OpenFile(knownHostsPath, os.O_CREATE|os.O_RDONLY, 0600); err == nil {
+		f.Close()
+	}
+	checker, err := knownhosts.New(knownHostsPath)
+	if err != nil {
+		log.Printf("[WARNING] buildTOFUHostKeyCallback: cannot load known_hosts: %v", err)
+		return ssh.InsecureIgnoreHostKey() //nolint:gosec // fallback only
+	}
+	return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		verifyErr := checker(hostname, remote, key)
+		if verifyErr == nil {
+			return nil // key known and matches
+		}
+		var keyErr *knownhosts.KeyError
+		if errors.As(verifyErr, &keyErr) && len(keyErr.Want) == 0 {
+			// Host not yet known — learn it (TOFU).
+			if f, werr := os.OpenFile(knownHostsPath, os.O_APPEND|os.O_WRONLY, 0600); werr == nil {
+				defer f.Close()
+				fmt.Fprintln(f, knownhosts.Line([]string{knownhosts.Normalize(hostname)}, key))
+			}
+			return nil
+		}
+		// Key mismatch — reject (possible MITM or host rebuild).
+		return fmt.Errorf("SSH host key mismatch for %s: %w (if the instance was rebuilt, remove its entry from %s)",
+			hostname, verifyErr, knownHostsPath)
 	}
 }

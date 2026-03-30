@@ -142,9 +142,17 @@ func (j *JupyterExtensionInstaller) Validate(ctx context.Context, plugin *Plugin
 
 	// Check compatibility constraints if specified
 	if plugin.Spec.Compatibility.Tools != nil {
-		if jupyterConstraint, exists := plugin.Spec.Compatibility.Tools["jupyter"]; exists {
-			// TODO: Parse JupyterLab version from result.Stdout and check against constraints
-			_ = jupyterConstraint
+		if constraint, exists := plugin.Spec.Compatibility.Tools["jupyter"]; exists {
+			if installed := parseVersionFromOutput(result.Stdout); installed != "" {
+				if constraint.MinVersion != "" && !versionSatisfiesConstraint(installed, ">="+constraint.MinVersion) {
+					return fmt.Errorf("installed JupyterLab version %s is below minimum required %s",
+						installed, constraint.MinVersion)
+				}
+				if constraint.MaxVersion != "" && !versionSatisfiesConstraint(installed, "<="+constraint.MaxVersion) {
+					return fmt.Errorf("installed JupyterLab version %s exceeds maximum allowed %s",
+						installed, constraint.MaxVersion)
+				}
+			}
 		}
 	}
 

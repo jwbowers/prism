@@ -184,33 +184,44 @@ func (c *TUIClient) ListIdlePolicies(ctx context.Context) (*ListIdlePoliciesResp
 	}, nil
 }
 
-// UpdateIdlePolicy updates an idle detection policy
-func (c *TUIClient) UpdateIdlePolicy(ctx context.Context, req IdlePolicyUpdateRequest) error {
-	// This is a stub implementation
+// UpdateIdlePolicy updates an idle detection policy.
+// No daemon endpoint exists for modifying policy templates server-side; this is intentionally a no-op.
+func (c *TUIClient) UpdateIdlePolicy(_ context.Context, _ IdlePolicyUpdateRequest) error {
 	return nil
 }
 
-// GetInstanceIdleStatus returns idle detection status for an instance
+// GetInstanceIdleStatus returns idle detection status for an instance by querying applied policies.
 func (c *TUIClient) GetInstanceIdleStatus(ctx context.Context, name string) (*IdleDetectionResponse, error) {
-	// This is a stub implementation
-	return &IdleDetectionResponse{
-		Enabled:       true,
-		Policy:        "default",
-		IdleTime:      5,  // 5 minutes
-		Threshold:     30, // 30 minutes
-		ActionPending: false,
-	}, nil
+	policies, err := c.client.GetInstanceIdlePolicies(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	resp := &IdleDetectionResponse{Enabled: len(policies) > 0}
+	if len(policies) > 0 {
+		resp.Policy = policies[0].ID
+		if len(policies[0].Schedules) > 0 {
+			resp.Threshold = policies[0].Schedules[0].IdleMinutes
+		}
+	}
+	return resp, nil
 }
 
-// EnableIdleDetection enables idle detection for an instance
+// EnableIdleDetection enables idle detection for an instance by applying the named policy.
 func (c *TUIClient) EnableIdleDetection(ctx context.Context, name, policy string) error {
-	// This is a stub implementation
-	return nil
+	return c.client.ApplyIdlePolicy(ctx, name, policy)
 }
 
-// DisableIdleDetection disables idle detection for an instance
+// DisableIdleDetection disables idle detection for an instance by removing all applied policies.
 func (c *TUIClient) DisableIdleDetection(ctx context.Context, name string) error {
-	// This is a stub implementation
+	policies, err := c.client.GetInstanceIdlePolicies(ctx, name)
+	if err != nil {
+		return err
+	}
+	for _, p := range policies {
+		if err := c.client.RemoveIdlePolicy(ctx, name, p.ID); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -281,6 +281,7 @@ func NewServer(port string) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize budget manager: %w", err)
 	}
+	budgetManager.SetProjectManager(projectManager)
 
 	// Initialize invitation manager (v0.5.11 user invitation system)
 	invitationManager, err := invitation.NewManager(invitation.NewEmailSender())

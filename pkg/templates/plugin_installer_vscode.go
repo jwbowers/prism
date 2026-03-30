@@ -141,9 +141,17 @@ func (v *VSCodeExtensionInstaller) Validate(ctx context.Context, plugin *PluginM
 
 	// Check compatibility constraints if specified
 	if plugin.Spec.Compatibility.Tools != nil {
-		if vscodeConstraint, exists := plugin.Spec.Compatibility.Tools["vscode"]; exists {
-			// TODO: Parse VS Code version from result.Stdout and check against constraints
-			_ = vscodeConstraint
+		if constraint, exists := plugin.Spec.Compatibility.Tools["vscode"]; exists {
+			if installed := parseVersionFromOutput(result.Stdout); installed != "" {
+				if constraint.MinVersion != "" && !versionSatisfiesConstraint(installed, ">="+constraint.MinVersion) {
+					return fmt.Errorf("installed VS Code version %s is below minimum required %s",
+						installed, constraint.MinVersion)
+				}
+				if constraint.MaxVersion != "" && !versionSatisfiesConstraint(installed, "<="+constraint.MaxVersion) {
+					return fmt.Errorf("installed VS Code version %s exceeds maximum allowed %s",
+						installed, constraint.MaxVersion)
+				}
+			}
 		}
 	}
 

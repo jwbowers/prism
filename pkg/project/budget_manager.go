@@ -31,6 +31,14 @@ type BudgetManager struct {
 	projectAllocations      map[string][]*types.ProjectBudgetAllocation // project_id → [Allocations]
 	budgetAllocations       map[string][]*types.ProjectBudgetAllocation // budget_id → [Allocations]
 	allocationReallocations map[string][]*ReallocationRecord            // allocation_id → [Reallocations]
+	// Optional project manager for name/allocation enrichment (injected via SetProjectManager).
+	projectManager *Manager
+}
+
+// SetProjectManager injects a project manager so GetBudgetSummary and
+// GetProjectFundingSummary can populate project names and default allocation IDs.
+func (bm *BudgetManager) SetProjectManager(m *Manager) {
+	bm.projectManager = m
 }
 
 // NewBudgetManager creates a new budget manager
@@ -492,10 +500,19 @@ func (bm *BudgetManager) GetBudgetSummary(ctx context.Context, budgetID string) 
 		utilizationRate = budget.SpentAmount / budget.AllocatedAmount
 	}
 
+	projectNames := make(map[string]string)
+	if bm.projectManager != nil {
+		for _, alloc := range allocationCopies {
+			if proj, err := bm.projectManager.GetProject(ctx, alloc.ProjectID); err == nil {
+				projectNames[alloc.ProjectID] = proj.Name
+			}
+		}
+	}
+
 	return &types.BudgetSummary{
 		Budget:          *budget,
 		Allocations:     allocationCopies,
-		ProjectNames:    make(map[string]string), // TODO: Populate from project manager
+		ProjectNames:    projectNames,
 		RemainingAmount: remainingAmount,
 		UtilizationRate: utilizationRate,
 	}, nil
@@ -525,14 +542,23 @@ func (bm *BudgetManager) GetProjectFundingSummary(ctx context.Context, projectID
 		}
 	}
 
+	var projectName string
+	var defaultAllocationID *string
+	if bm.projectManager != nil {
+		if proj, err := bm.projectManager.GetProject(ctx, projectID); err == nil {
+			projectName = proj.Name
+			defaultAllocationID = proj.DefaultAllocationID
+		}
+	}
+
 	return &types.ProjectFundingSummary{
 		ProjectID:           projectID,
-		ProjectName:         "", // TODO: Populate from project manager
+		ProjectName:         projectName,
 		Allocations:         allocationCopies,
 		BudgetNames:         budgetNames,
 		TotalAllocated:      totalAllocated,
 		TotalSpent:          totalSpent,
-		DefaultAllocationID: nil, // TODO: Populate from project manager
+		DefaultAllocationID: defaultAllocationID,
 	}, nil
 }
 

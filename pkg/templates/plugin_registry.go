@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -268,57 +270,20 @@ func (r *PluginRegistry) CheckConflicts(plugins []*PluginManifest) error {
 	return nil
 }
 
-// versionSatisfies checks if a version satisfies a constraint
-// For now, implements basic version comparison
-// TODO: Implement full semantic versioning (>=, <=, ~, ^, etc.)
-func (r *PluginRegistry) versionSatisfies(version, constraint string) bool {
-	// Handle "latest" and empty constraints
-	if constraint == "" || constraint == "latest" {
-		return true
-	}
+// parseVersionFromOutput extracts the first X.Y.Z or X.Y version string from command output.
+// Used by plugin installers to parse tool versions from stdout.
+var versionPattern = regexp.MustCompile(`\d+\.\d+(?:\.\d+)?`)
 
-	// Handle exact version match
-	if !strings.ContainsAny(constraint, "><=~^") {
-		return version == constraint
-	}
-
-	// Handle >= constraint (most common)
-	if strings.HasPrefix(constraint, ">=") {
-		requiredVersion := strings.TrimPrefix(constraint, ">=")
-		return r.compareVersions(version, requiredVersion) >= 0
-	}
-
-	// Handle > constraint
-	if strings.HasPrefix(constraint, ">") {
-		requiredVersion := strings.TrimPrefix(constraint, ">")
-		return r.compareVersions(version, requiredVersion) > 0
-	}
-
-	// Handle <= constraint
-	if strings.HasPrefix(constraint, "<=") {
-		requiredVersion := strings.TrimPrefix(constraint, "<=")
-		return r.compareVersions(version, requiredVersion) <= 0
-	}
-
-	// Handle < constraint
-	if strings.HasPrefix(constraint, "<") {
-		requiredVersion := strings.TrimPrefix(constraint, "<")
-		return r.compareVersions(version, requiredVersion) < 0
-	}
-
-	// Default: assume satisfied (be permissive)
-	return true
+func parseVersionFromOutput(output string) string {
+	return versionPattern.FindString(output)
 }
 
-// compareVersions compares two version strings
+// compareVersionStrings compares two version strings numerically by component.
 // Returns: -1 if v1 < v2, 0 if v1 == v2, 1 if v1 > v2
-// Simple implementation for now - compares version components numerically
-func (r *PluginRegistry) compareVersions(v1, v2 string) int {
-	// Split versions into components
+func compareVersionStrings(v1, v2 string) int {
 	parts1 := strings.Split(strings.TrimSpace(v1), ".")
 	parts2 := strings.Split(strings.TrimSpace(v2), ".")
 
-	// Compare component by component
 	maxLen := len(parts1)
 	if len(parts2) > maxLen {
 		maxLen = len(parts2)
@@ -326,14 +291,12 @@ func (r *PluginRegistry) compareVersions(v1, v2 string) int {
 
 	for i := 0; i < maxLen; i++ {
 		var n1, n2 int
-
 		if i < len(parts1) {
 			fmt.Sscanf(parts1[i], "%d", &n1)
 		}
 		if i < len(parts2) {
 			fmt.Sscanf(parts2[i], "%d", &n2)
 		}
-
 		if n1 < n2 {
 			return -1
 		}
@@ -341,8 +304,67 @@ func (r *PluginRegistry) compareVersions(v1, v2 string) int {
 			return 1
 		}
 	}
+	return 0
+}
 
-	return 0 // Equal
+// versionSatisfiesConstraint checks if a version satisfies a constraint string.
+// Supports: exact match, >=, >, <=, <, ~X.Y.Z (patch range), ^X.Y.Z (minor range).
+func versionSatisfiesConstraint(version, constraint string) bool {
+	if constraint == "" || constraint == "latest" {
+		return true
+	}
+
+	if !strings.ContainsAny(constraint, "><=~^") {
+		return version == constraint
+	}
+
+	if strings.HasPrefix(constraint, ">=") {
+		return compareVersionStrings(version, strings.TrimPrefix(constraint, ">=")) >= 0
+	}
+	if strings.HasPrefix(constraint, ">") {
+		return compareVersionStrings(version, strings.TrimPrefix(constraint, ">")) > 0
+	}
+	if strings.HasPrefix(constraint, "<=") {
+		return compareVersionStrings(version, strings.TrimPrefix(constraint, "<=")) <= 0
+	}
+	if strings.HasPrefix(constraint, "<") {
+		return compareVersionStrings(version, strings.TrimPrefix(constraint, "<")) < 0
+	}
+
+	// ~X.Y.Z — patch-level range: >=X.Y.Z <X.Y+1.0
+	if strings.HasPrefix(constraint, "~") {
+		base := strings.TrimPrefix(constraint, "~")
+		parts := strings.SplitN(base, ".", 3)
+		if len(parts) >= 2 {
+			minor, _ := strconv.Atoi(parts[1])
+			upper := fmt.Sprintf("%s.%d.0", parts[0], minor+1)
+			return compareVersionStrings(version, base) >= 0 &&
+				compareVersionStrings(version, upper) < 0
+		}
+		return compareVersionStrings(version, base) >= 0
+	}
+
+	// ^X.Y.Z — minor-level range: >=X.Y.Z <X+1.0.0
+	if strings.HasPrefix(constraint, "^") {
+		base := strings.TrimPrefix(constraint, "^")
+		parts := strings.SplitN(base, ".", 3)
+		major, _ := strconv.Atoi(parts[0])
+		upper := fmt.Sprintf("%d.0.0", major+1)
+		return compareVersionStrings(version, base) >= 0 &&
+			compareVersionStrings(version, upper) < 0
+	}
+
+	return true // permissive default
+}
+
+// versionSatisfies checks if a version satisfies a constraint (method wrapper).
+func (r *PluginRegistry) versionSatisfies(version, constraint string) bool {
+	return versionSatisfiesConstraint(version, constraint)
+}
+
+// compareVersions compares two version strings (method wrapper).
+func (r *PluginRegistry) compareVersions(v1, v2 string) int {
+	return compareVersionStrings(v1, v2)
 }
 
 // Clear removes all plugins from the registry (useful for testing)

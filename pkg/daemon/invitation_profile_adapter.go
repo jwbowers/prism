@@ -53,7 +53,8 @@ func (p *ProfileManagerAdapter) GetProfile(ctx context.Context, profileID string
 		Name:       awsProfile,
 		AWSProfile: awsProfile,
 		Region:     region,
-		ExpiresAt:  nil, // TODO: Look up expiration if stored
+		ExpiresAt:  nil, // Profile expiration not tracked for system profiles;
+		// invitation-scoped expiry is managed by InvitationManager.
 	}
 
 	return profile, nil
