@@ -225,12 +225,8 @@ func getMacOSSystemUUID() string {
 	return "macos-system-uuid-unavailable"
 }
 
-func getWindowsMachineGUID() string {
-	// Get Windows machine GUID from registry
-	// In a real implementation, this would read from Windows registry
-	// For now, return a placeholder that would be replaced with actual implementation
-	return "windows-machine-guid-placeholder"
-}
+// getWindowsMachineGUID is provided by platform-specific files:
+// crypto_windows.go (registry read) and crypto_notwindows.go (stub).
 
 func getLinuxMachineID() string {
 	// Try to read /etc/machine-id

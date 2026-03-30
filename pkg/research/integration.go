@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/scttfrdmn/prism/pkg/profile"
 )
@@ -343,20 +344,71 @@ func (rus *ResearchUserService) GetRecommendedDualUserConfig(templateName string
 
 // Migration and Compatibility Functions
 
-// MigrateExistingUser migrates an existing system user to research user
+// MigrateExistingUser migrates an existing system user to a research user on a remote instance.
+// It backs up the existing home directory, creates the new research user, copies files, and
+// migrates SSH authorized_keys.
 func (rus *ResearchUserService) MigrateExistingUser(instanceIP, existingUser, newResearchUser, sshKeyPath string) error {
-	// This would handle migration of existing users to research users
-	// Implementation would involve:
-	// 1. Backing up existing user data
-	// 2. Creating research user with same files
-	// 3. Updating permissions
-	// 4. Migrating SSH keys
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
 
-	fmt.Printf("Migrating user %s to research user %s on instance %s\n",
+	// Try root first; fall back to ubuntu for AWS instances
+	client, err := rus.provisioner.connectToInstance(instanceIP, "root", sshKeyPath)
+	if err != nil {
+		client, err = rus.provisioner.connectToInstance(instanceIP, "ubuntu", sshKeyPath)
+		if err != nil {
+			return fmt.Errorf("failed to connect to instance %s: %w", instanceIP, err)
+		}
+	}
+	defer client.Close()
+
+	steps := []struct {
+		desc string
+		cmd  string
+	}{
+		{
+			"backup existing user data",
+			fmt.Sprintf("tar czf /tmp/%s-migration-backup.tar.gz /home/%s 2>/dev/null || true",
+				existingUser, existingUser),
+		},
+		{
+			"create research user if not exists",
+			fmt.Sprintf("id %s &>/dev/null || useradd -m -s /bin/bash %s",
+				newResearchUser, newResearchUser),
+		},
+		{
+			"copy home directory contents",
+			fmt.Sprintf("rsync -a --exclude='.ssh' /home/%s/ /home/%s/",
+				existingUser, newResearchUser),
+		},
+		{
+			"migrate SSH authorized_keys",
+			fmt.Sprintf(
+				"mkdir -p /home/%s/.ssh && "+
+					"cat /home/%s/.ssh/authorized_keys >> /home/%s/.ssh/authorized_keys 2>/dev/null; "+
+					"sort -u -o /home/%s/.ssh/authorized_keys /home/%s/.ssh/authorized_keys; "+
+					"chmod 700 /home/%s/.ssh && chmod 600 /home/%s/.ssh/authorized_keys",
+				newResearchUser,
+				existingUser, newResearchUser,
+				newResearchUser, newResearchUser,
+				newResearchUser, newResearchUser,
+			),
+		},
+		{
+			"fix ownership",
+			fmt.Sprintf("chown -R %s: /home/%s && chmod 700 /home/%s",
+				newResearchUser, newResearchUser, newResearchUser),
+		},
+	}
+
+	for _, step := range steps {
+		if _, err := rus.provisioner.executeCommandWithContext(ctx, client, step.cmd); err != nil {
+			return fmt.Errorf("migration step '%s' failed: %w", step.desc, err)
+		}
+	}
+
+	fmt.Printf("Successfully migrated user %s to research user %s on instance %s\n",
 		existingUser, newResearchUser, instanceIP)
-
-	// Placeholder implementation
-	return fmt.Errorf("user migration not yet implemented")
+	return nil
 }
 
 // ValidateInstanceCompatibility checks if an instance is compatible with research users

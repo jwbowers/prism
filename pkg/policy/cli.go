@@ -133,15 +133,7 @@ func (h *CLIHandler) assignPolicySet(args []string) error {
 		return fmt.Errorf("policy set '%s' not found. Use 'prism policy list' to see available sets", policySetName)
 	}
 
-	var err error
-	switch policySetName {
-	case "student":
-		err = h.service.AssignStudentPolicies()
-	case "researcher":
-		err = h.service.AssignResearcherPolicies()
-	default:
-		return fmt.Errorf("assignment not implemented for policy set: %s", policySetName)
-	}
+	err := h.service.AssignPolicySetToUser("", policySetName)
 
 	if err != nil {
 		return fmt.Errorf("failed to assign policy set: %v", err)

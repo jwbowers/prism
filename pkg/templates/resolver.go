@@ -954,14 +954,9 @@ func (vr *VersionResolver) ResolveTemplateVersion(template *Template, userOverri
 	return "", nil
 }
 
-// parseVersionRequirement parses version requirements like ">=24.04", "^9", "24.04"
+// parseVersionRequirement parses version requirements like ">=24.04", "^9", "24.04".
+// Both exact versions and constraint expressions are returned as-is so callers
+// can pass them to versionSatisfiesConstraint for matching.
 func (vr *VersionResolver) parseVersionRequirement(requirement string) (string, error) {
-	// Exact version: "24.04", "9", "2023"
-	if !strings.ContainsAny(requirement, ">=<^~*") {
-		return requirement, nil
-	}
-
-	// For now, just handle exact versions
-	// Future: implement semver-style version constraint parsing
-	return "", fmt.Errorf("version constraint '%s' not yet supported (use exact version)", requirement)
+	return requirement, nil
 }

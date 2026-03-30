@@ -718,9 +718,9 @@ func TestMigrateExistingUser(t *testing.T) {
 
 	err := service.MigrateExistingUser("54.123.45.67", "olduser", "newresearcher", "/tmp/test-key")
 
-	// Current implementation returns "not yet implemented" error
+	// Implementation attempts SSH connection; fails on missing key / unreachable host.
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not yet implemented")
+	assert.Contains(t, err.Error(), "failed to connect")
 }
 
 // TestCreateDefaultResearchUserService tests default service creation
