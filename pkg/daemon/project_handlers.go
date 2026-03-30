@@ -115,6 +115,8 @@ func (s *Server) handleProjectSubOp(w http.ResponseWriter, r *http.Request, proj
 		}
 	case "onboarding-templates":
 		s.handleProjectOnboardingTemplates(w, r, projectID, parts)
+	case "instances":
+		s.handleGetProjectInstances(w, r, projectID)
 	default:
 		s.writeError(w, http.StatusNotFound, "Unknown project operation")
 	}
@@ -342,12 +344,49 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request, pro
 // handleDeleteProject deletes a project
 func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request, projectID string) {
 	ctx := context.Background()
+
+	// Block deletion if the project has running instances (Gap F fix).
+	if active := s.calculateActiveInstances(projectID); active > 0 {
+		s.writeError(w, http.StatusConflict,
+			fmt.Sprintf("cannot delete project: %d active instance(s) still running", active))
+		return
+	}
+
 	if err := s.projectManager.DeleteProject(ctx, projectID); err != nil {
 		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to delete project: %v", err))
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleGetProjectInstances lists all instances associated with a project.
+// GET /api/v1/projects/{id}/instances
+// Returns instances from local state whose ProjectID matches the given project.
+func (s *Server) handleGetProjectInstances(w http.ResponseWriter, r *http.Request, projectID string) {
+	if r.Method != http.MethodGet {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	state, err := s.stateManager.LoadState()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to load state: %v", err))
+		return
+	}
+
+	instances := make([]types.Instance, 0)
+	for _, inst := range state.Instances {
+		if inst.ProjectID == projectID {
+			instances = append(instances, inst)
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"instances":  instances,
+		"project_id": projectID,
+		"count":      len(instances),
+	})
 }
 
 // handleProjectMembers manages project members

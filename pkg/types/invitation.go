@@ -178,6 +178,10 @@ func (i *Invitation) Validate() error {
 
 // BulkInvitationRequest represents a bulk invitation request (v0.5.12+)
 type BulkInvitationRequest struct {
+	// InvitedBy is the user ID of the person sending the invitations.
+	// Used for permission checks and audit trail.  Defaults to "system" if empty.
+	InvitedBy string `json:"invited_by,omitempty"`
+
 	// Invitations is the list of invitations to create
 	Invitations []BulkInvitationEntry `json:"invitations"`
 

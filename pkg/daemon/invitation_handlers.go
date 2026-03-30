@@ -683,8 +683,6 @@ func (s *Server) handleBulkInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Check if requester has permission to invite (must be owner/admin)
-
 	// Parse bulk invitation request
 	var bulkReq types.BulkInvitationRequest
 	if err := json.NewDecoder(r.Body).Decode(&bulkReq); err != nil {
@@ -703,9 +701,19 @@ func (s *Server) handleBulkInvitation(w http.ResponseWriter, r *http.Request) {
 		bulkReq.DefaultRole = types.ProjectRoleMember
 	}
 
-	// TODO: Get inviter from authenticated user
-	// For now, use project owner or first admin
-	invitedBy := "system" // Placeholder
+	// Resolve inviter from request body; fall back to "system" for backward compatibility.
+	invitedBy := bulkReq.InvitedBy
+	if invitedBy == "" {
+		invitedBy = "system"
+	}
+
+	// Verify the requester is an owner or admin of the project (Gap I fix).
+	if invitedBy != "system" {
+		if s.requireProjectRole(r.Context(), w, projectID, invitedBy,
+			types.ProjectRoleOwner, types.ProjectRoleAdmin) == nil {
+			return
+		}
+	}
 
 	// Create bulk invitations
 	bulkResp, err := s.invitationManager.CreateBulkInvitations(r.Context(), projectID, invitedBy, &bulkReq)
@@ -714,8 +722,14 @@ func (s *Server) handleBulkInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Send invitation emails via EmailSender for all successful invitations
-	// For now, tokens are returned in the response (for testing)
+	// Send invitation emails for each successfully created invitation (Gap K fix, fire-and-forget).
+	for _, result := range bulkResp.Results {
+		if result.Status == "sent" && result.InvitationID != "" {
+			if inv, err := s.invitationManager.GetInvitation(r.Context(), result.InvitationID); err == nil {
+				s.invitationManager.SendInvitationEmail(r.Context(), inv, project, invitedBy)
+			}
+		}
+	}
 
 	response := map[string]interface{}{
 		"summary": bulkResp.Summary,

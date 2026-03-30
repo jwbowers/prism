@@ -2651,7 +2651,7 @@ func (e *InstanceTagExtractor) ExtractTags(ec2Instance ec2types.Instance) (name,
 				name = *tag.Value
 			case "Template":
 				template = *tag.Value
-			case "Project":
+			case "prism:project-id":
 				project = *tag.Value
 			}
 		}
