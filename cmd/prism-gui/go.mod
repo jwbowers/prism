@@ -1,4 +1,4 @@
-module github.com/scttfrdmn/prism/cmd/cws-gui
+module github.com/scttfrdmn/prism/cmd/prism-gui
 
 go 1.25
 

@@ -9,6 +9,10 @@ prismd.exe
 cmd/cws-gui/bin/
 cmd/cws-gui/cws-gui
 cmd/cws-gui/cws-gui.exe
+cmd/prism-gui/prism-gui
+cmd/prism-gui/prism-gui.exe
+cmd/prism-gui/cws-gui
+cmd/prism-gui/cws-gui.exe
 
 # Go build artifacts
 *.o
