@@ -12,7 +12,6 @@ import (
 
 // TestCommunityMetadataStore_CreateAndGet tests basic metadata operations
 func TestCommunityMetadataStore_CreateAndGet(t *testing.T) {
-	t.Skip("TODO: Update test to match current CommunityMetadata API (v0.7.3)")
 	store := createTestMetadataStore(t)
 
 	templateName := "Test Template"
@@ -182,7 +181,6 @@ func TestCommunityMetadataStore_PopularityScoring(t *testing.T) {
 
 // TestCommunityMetadataStore_GetPopularTemplates tests popular templates query
 func TestCommunityMetadataStore_GetPopularTemplates(t *testing.T) {
-	t.Skip("TODO: Update test to match current CommunityMetadata API (v0.7.3)")
 	store := createTestMetadataStore(t)
 
 	// Create multiple templates with different popularity
@@ -209,12 +207,17 @@ func TestCommunityMetadataStore_GetPopularTemplates(t *testing.T) {
 	popular, err := store.GetPopularTemplates(3)
 	require.NoError(t, err)
 	require.Len(t, popular, 3)
-	// TODO: Update assertions once TemplateName field is added or API is clarified
+
+	// TemplateName is now stamped by SetMetadata — verify the most popular template is identifiable.
+	assert.Equal(t, "Very Popular", popular[0].TemplateName,
+		"most popular template should be first; got %q", popular[0].TemplateName)
+	for _, tmpl := range popular {
+		assert.NotEmpty(t, tmpl.TemplateName, "every result must carry its template name")
+	}
 }
 
 // TestCommunityMetadataStore_GetFeaturedTemplates tests featured query
 func TestCommunityMetadataStore_GetFeaturedTemplates(t *testing.T) {
-	t.Skip("TODO: Update test to match current CommunityMetadata API (v0.7.3)")
 	store := createTestMetadataStore(t)
 
 	// Create templates, some featured
@@ -282,7 +285,6 @@ func TestCommunityMetadataStore_GetHighRatedTemplates(t *testing.T) {
 
 // TestCommunityMetadataStore_SearchByKeywords tests keyword search
 func TestCommunityMetadataStore_SearchByKeywords(t *testing.T) {
-	t.Skip("TODO: Update test to match current CommunityMetadata API (v0.7.3)")
 	store := createTestMetadataStore(t)
 
 	// Create templates with keywords
@@ -304,14 +306,20 @@ func TestCommunityMetadataStore_SearchByKeywords(t *testing.T) {
 	// Search for "python"
 	results, err := store.SearchByKeywords([]string{"python"})
 	require.NoError(t, err)
-	assert.Len(t, results, 2) // Python ML and Python Web
+	assert.Len(t, results, 2, "searching 'python' should return Python ML and Python Web")
 
-	// TODO: Add assertions once TemplateName field is added or API is clarified
+	// TemplateName is now stamped — verify results carry their names.
+	names := make([]string, 0, len(results))
+	for _, r := range results {
+		assert.NotEmpty(t, r.TemplateName)
+		names = append(names, r.TemplateName)
+	}
+	assert.Contains(t, names, "Python ML")
+	assert.Contains(t, names, "Python Web")
 }
 
 // TestCommunityMetadataStore_DisplayMethods tests display helper methods
 func TestCommunityMetadataStore_DisplayMethods(t *testing.T) {
-	t.Skip("TODO: Update test to match current CommunityMetadata API (v0.7.3)")
 	metadata := &CommunityMetadata{
 		Rating:        4.6,
 		RatingCount:   15,
@@ -334,29 +342,34 @@ func TestCommunityMetadataStore_DisplayMethods(t *testing.T) {
 	})
 
 	t.Run("GetSecurityBadge", func(t *testing.T) {
-		// Excellent
-		metadata.SecurityScore = 85
+		// Must be marked as scanned for score-based badges to appear.
+		metadata.SecurityScanned = true
+
+		// Excellent (score >= 90)
+		metadata.SecurityScore = 95
 		badge := metadata.GetSecurityBadge()
 		assert.Contains(t, badge, "🟢")
 		assert.Contains(t, badge, "EXCELLENT")
 
-		// Good
-		metadata.SecurityScore = 75
+		// Good (score >= 75)
+		metadata.SecurityScore = 80
 		badge = metadata.GetSecurityBadge()
 		assert.Contains(t, badge, "🟢")
+		assert.Contains(t, badge, "GOOD")
 
-		// Fair
+		// Fair (score >= 60)
 		metadata.SecurityScore = 65
 		badge = metadata.GetSecurityBadge()
 		assert.Contains(t, badge, "🟡")
 		assert.Contains(t, badge, "FAIR")
 
-		// Poor
+		// Poor (score >= 40)
 		metadata.SecurityScore = 45
 		badge = metadata.GetSecurityBadge()
 		assert.Contains(t, badge, "🟠")
+		assert.Contains(t, badge, "POOR")
 
-		// Critical
+		// Critical (score < 40)
 		metadata.SecurityScore = 25
 		badge = metadata.GetSecurityBadge()
 		assert.Contains(t, badge, "🔴")
@@ -382,7 +395,7 @@ func TestCommunityMetadataStore_DisplayMethods(t *testing.T) {
 		metadata.Rating = 0.0
 		metadata.RatingCount = 0
 		display = metadata.GetRatingDisplay()
-		assert.Contains(t, display, "No ratings")
+		assert.Contains(t, display, "no ratings")
 	})
 }
 

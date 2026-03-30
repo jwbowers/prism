@@ -100,8 +100,18 @@ func (s *Server) handleCreateSharedToken(w http.ResponseWriter, r *http.Request)
 		req.Role = types.ProjectRoleMember
 	}
 
-	// Set creator (TODO: Get from authenticated user)
-	req.CreatedBy = "system"
+	// Use caller-supplied CreatedBy; fall back to "system" for backward compatibility (Gap M fix).
+	if req.CreatedBy == "" {
+		req.CreatedBy = "system"
+	}
+
+	// Verify the requester is an owner or admin of the project (Gap N fix).
+	if req.CreatedBy != "system" {
+		if s.requireProjectRole(r.Context(), w, projectID, req.CreatedBy,
+			types.ProjectRoleOwner, types.ProjectRoleAdmin) == nil {
+			return
+		}
+	}
 
 	// Create shared token
 	token, err := s.sharedTokenManager.CreateSharedToken(r.Context(), &req)
@@ -222,6 +232,15 @@ func (s *Server) handleListSharedTokens(w http.ResponseWriter, r *http.Request) 
 	}
 	projectID := parts[0]
 
+	// Optional: verify requester is a project member (Gap N fix).
+	if requesterID := r.URL.Query().Get("requester_id"); requesterID != "" {
+		if s.requireProjectRole(r.Context(), w, projectID, requesterID,
+			types.ProjectRoleOwner, types.ProjectRoleAdmin,
+			types.ProjectRoleMember, types.ProjectRoleViewer) == nil {
+			return
+		}
+	}
+
 	// List tokens
 	tokens, err := s.sharedTokenManager.ListSharedTokens(r.Context(), projectID)
 	if err != nil {
@@ -264,6 +283,17 @@ func (s *Server) handleExtendSharedToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Look up token to obtain projectID for auth check (Gap N fix).
+	tokenInfo, lookupErr := s.sharedTokenManager.GetSharedToken(r.Context(), tokenCode)
+	if lookupErr == nil {
+		if requesterID := r.URL.Query().Get("requester_id"); requesterID != "" {
+			if s.requireProjectRole(r.Context(), w, tokenInfo.ProjectID, requesterID,
+				types.ProjectRoleOwner, types.ProjectRoleAdmin) == nil {
+				return
+			}
+		}
+	}
+
 	// Extend expiration
 	duration := time.Duration(req.AddDays) * 24 * time.Hour
 	err := s.sharedTokenManager.ExtendExpiration(r.Context(), tokenCode, duration)
@@ -301,9 +331,27 @@ func (s *Server) handleRevokeSharedToken(w http.ResponseWriter, r *http.Request)
 	path := r.URL.Path[len("/api/v1/invitations/shared/"):]
 	tokenCode := strings.TrimSuffix(path, "/")
 
-	// Revoke token
-	err := s.sharedTokenManager.RevokeSharedToken(r.Context(), tokenCode)
+	// Look up token to obtain projectID for auth check.
+	tokenInfo, err := s.sharedTokenManager.GetSharedToken(r.Context(), tokenCode)
 	if err != nil {
+		if err == types.ErrSharedTokenNotFound {
+			http.Error(w, "Token not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to get token: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Optional: verify requester is owner or admin (Gap N fix).
+	if requesterID := r.URL.Query().Get("requester_id"); requesterID != "" {
+		if s.requireProjectRole(r.Context(), w, tokenInfo.ProjectID, requesterID,
+			types.ProjectRoleOwner, types.ProjectRoleAdmin) == nil {
+			return
+		}
+	}
+
+	// Revoke token
+	if err := s.sharedTokenManager.RevokeSharedToken(r.Context(), tokenCode); err != nil {
 		if err == types.ErrSharedTokenNotFound {
 			http.Error(w, "Token not found", http.StatusNotFound)
 			return

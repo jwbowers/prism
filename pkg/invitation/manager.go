@@ -360,7 +360,8 @@ func (m *Manager) ResendInvitation(ctx context.Context, invitationID string) err
 		return fmt.Errorf("failed to save invitation: %w", err)
 	}
 
-	// TODO: Send email via EmailSender
+	// Email is sent by the daemon handler after this call returns,
+	// where the project object is available for email context.
 
 	return nil
 }

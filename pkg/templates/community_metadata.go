@@ -12,6 +12,11 @@ import (
 
 // CommunityMetadata extends template with community-specific information
 type CommunityMetadata struct {
+	// TemplateName is the canonical name of the template this metadata belongs to.
+	// Populated automatically by SetMetadata so callers can identify returned records
+	// in list/search results without a separate key lookup.
+	TemplateName string `json:"template_name,omitempty"`
+
 	// Author information
 	Author          string   `json:"author"`
 	MaintainerEmail string   `json:"maintainer_email,omitempty"`
@@ -126,6 +131,9 @@ func (cms *CommunityMetadataStore) SetMetadata(templateName, sourceURL string, m
 
 // setMetadataLocked writes metadata to disk; caller must hold cms.mu
 func (cms *CommunityMetadataStore) setMetadataLocked(templateName, sourceURL string, metadata *CommunityMetadata) error {
+	// Stamp the canonical template name so list/search results are self-identifying.
+	metadata.TemplateName = templateName
+
 	// Ensure metadata directory exists
 	if err := os.MkdirAll(cms.metadataDir, 0755); err != nil {
 		return fmt.Errorf("failed to create metadata directory: %w", err)
