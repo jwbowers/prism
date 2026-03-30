@@ -3133,6 +3133,16 @@ export default function PrismApp() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [state.activeView, loadApplicationData]);
 
+  // Handle navigation events dispatched by the Go backend (e.g. system tray menu clicks)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const view = (e as CustomEvent<string>).detail;
+      setState(prev => ({ ...prev, activeView: view as typeof prev.activeView }));
+    };
+    window.addEventListener('prism-navigate', handler);
+    return () => window.removeEventListener('prism-navigate', handler);
+  }, []);
+
   // Safe template selection
   const handleTemplateSelection = (template: Template) => {
     try {

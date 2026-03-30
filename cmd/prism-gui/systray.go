@@ -92,7 +92,7 @@ func (stm *SystemTrayManager) createMenu() *application.Menu {
 		OnClick(func(ctx *application.Context) {
 			stm.window.Show()
 			stm.window.Focus()
-			// TODO: Navigate to instances page via JavaScript execution
+			stm.window.ExecJS("window.dispatchEvent(new CustomEvent('prism-navigate',{detail:'workspaces'}))")
 		})
 
 	// Cost Summary
@@ -100,7 +100,7 @@ func (stm *SystemTrayManager) createMenu() *application.Menu {
 		OnClick(func(ctx *application.Context) {
 			stm.window.Show()
 			stm.window.Focus()
-			// TODO: Navigate to cost page via JavaScript execution
+			stm.window.ExecJS("window.dispatchEvent(new CustomEvent('prism-navigate',{detail:'dashboard'}))")
 		})
 
 	menu.AddSeparator()
@@ -111,7 +111,7 @@ func (stm *SystemTrayManager) createMenu() *application.Menu {
 		OnClick(func(ctx *application.Context) {
 			stm.window.Show()
 			stm.window.Focus()
-			// TODO: Navigate to settings page via JavaScript execution
+			stm.window.ExecJS("window.dispatchEvent(new CustomEvent('prism-navigate',{detail:'settings'}))")
 		})
 
 	menu.AddSeparator()
@@ -143,7 +143,7 @@ func (stm *SystemTrayManager) addQuickLaunchItems(submenu *application.Menu) {
 			OnClick(func(ctx *application.Context) {
 				stm.window.Show()
 				stm.window.Focus()
-				// TODO: Trigger template launch via JavaScript execution
+				stm.window.ExecJS("window.dispatchEvent(new CustomEvent('prism-navigate',{detail:'templates'}))")
 				log.Printf("Quick launch requested: %s", templateName)
 			})
 	}
@@ -154,7 +154,7 @@ func (stm *SystemTrayManager) addQuickLaunchItems(submenu *application.Menu) {
 		OnClick(func(ctx *application.Context) {
 			stm.window.Show()
 			stm.window.Focus()
-			// TODO: Navigate to templates page via JavaScript execution
+			stm.window.ExecJS("window.dispatchEvent(new CustomEvent('prism-navigate',{detail:'templates'}))")
 		})
 }
 

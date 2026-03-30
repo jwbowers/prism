@@ -150,9 +150,17 @@ func (v *VimPluginInstaller) Validate(ctx context.Context, plugin *PluginManifes
 
 	// Check compatibility constraints if specified
 	if plugin.Spec.Compatibility.Tools != nil {
-		if vimConstraint, exists := plugin.Spec.Compatibility.Tools["vim"]; exists {
-			// TODO: Parse Vim version from result.Stdout and check against constraints
-			_ = vimConstraint
+		if constraint, exists := plugin.Spec.Compatibility.Tools["vim"]; exists {
+			if installed := parseVersionFromOutput(result.Stdout); installed != "" {
+				if constraint.MinVersion != "" && !versionSatisfiesConstraint(installed, ">="+constraint.MinVersion) {
+					return fmt.Errorf("installed Vim version %s is below minimum required %s",
+						installed, constraint.MinVersion)
+				}
+				if constraint.MaxVersion != "" && !versionSatisfiesConstraint(installed, "<="+constraint.MaxVersion) {
+					return fmt.Errorf("installed Vim version %s exceeds maximum allowed %s",
+						installed, constraint.MaxVersion)
+				}
+			}
 		}
 	}
 
@@ -181,7 +189,13 @@ func (v *VimPluginInstaller) GetInstalledVersion(ctx context.Context, plugin *Pl
 
 	output := strings.TrimSpace(result.Stdout)
 	if output == "installed" {
-		// TODO: Parse actual version from plugin metadata if available
+		// Run vim --version to extract the actual version number
+		versionResult, err := v.executor.Execute(ctx, v.instanceName, "vim --version")
+		if err == nil && versionResult.ExitCode == 0 {
+			if v := parseVersionFromOutput(versionResult.Stdout); v != "" {
+				return v, nil
+			}
+		}
 		return "installed", nil
 	}
 

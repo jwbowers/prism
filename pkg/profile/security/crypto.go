@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"os/user"
 	"runtime"
 	"strings"
@@ -206,10 +207,22 @@ func deriveSalt() []byte {
 // Platform-specific system identifier functions
 
 func getMacOSSystemUUID() string {
-	// Get macOS system UUID from IOPlatformUUID
-	// In a real implementation, this would use system calls
-	// For now, return a placeholder that would be replaced with actual implementation
-	return "macos-system-uuid-placeholder"
+	out, err := exec.Command("ioreg", "-rd1", "-c", "IOPlatformExpertDevice").Output()
+	if err != nil {
+		return "macos-system-uuid-unavailable"
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.Contains(line, "IOPlatformUUID") {
+			// Line format: "  \"IOPlatformUUID\" = \"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX\""
+			parts := strings.Split(line, "\"")
+			for i, p := range parts {
+				if p == "IOPlatformUUID" && i+2 < len(parts) {
+					return parts[i+2]
+				}
+			}
+		}
+	}
+	return "macos-system-uuid-unavailable"
 }
 
 func getWindowsMachineGUID() string {

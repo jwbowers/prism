@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -291,7 +293,7 @@ func (s *Server) createRemoteExecutor(instance types.Instance) (templates.Remote
 	// Determine the best connection method based on instance configuration
 	if instance.PublicIP != "" {
 		// Use SSH for instances with public IPs
-		keyPath := s.getSSHKeyPath()
+		keyPath := s.getSSHKeyPath(instance)
 		username := s.getSSHUsername(instance)
 
 		return templates.NewSSHRemoteExecutor(keyPath, username), nil
@@ -320,15 +322,20 @@ func (s *Server) createRemoteExecutor(instance types.Instance) (templates.Remote
 	}
 }
 
-// getSSHKeyPath returns the path to the SSH key for instance connections
-func (s *Server) getSSHKeyPath() string {
-	// In a full implementation, this would:
-	// 1. Check for key in Prism config
-	// 2. Look for default AWS key pairs
-	// 3. Handle per-instance key management
-
-	// For now, return a placeholder that would be configured
-	return "~/.ssh/prism-key.pem"
+// getSSHKeyPath returns the local path to the SSH private key for an instance.
+// It derives the path from the instance's EC2 key pair name stored in state.
+func (s *Server) getSSHKeyPath(instance types.Instance) string {
+	home := os.Getenv("HOME")
+	if instance.KeyName == "" {
+		return filepath.Join(home, ".ssh", "prism-key.pem") // legacy fallback
+	}
+	// Try exact key name (e.g. "prism-test-aws-west2-key")
+	plain := filepath.Join(home, ".ssh", instance.KeyName)
+	if _, err := os.Stat(plain); err == nil {
+		return plain
+	}
+	// Try with .pem extension
+	return filepath.Join(home, ".ssh", instance.KeyName+".pem")
 }
 
 // getSSHUsername returns the appropriate SSH username for the instance

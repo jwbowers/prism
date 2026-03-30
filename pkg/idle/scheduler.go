@@ -286,10 +286,41 @@ func (s *Scheduler) shouldExecuteIdle(schedule *Schedule) bool {
 	return false
 }
 
-// shouldExecuteCustom checks custom schedule
+// shouldExecuteCustom checks custom schedule based on configured time window and days of week.
+// It respects schedule.Timezone, schedule.StartTime (HH:MM), schedule.EndTime (HH:MM),
+// and schedule.DaysOfWeek. Any unset constraint is treated as "always match".
 func (s *Scheduler) shouldExecuteCustom(schedule *Schedule, now time.Time) bool {
-	// Custom logic based on schedule configuration
-	return false
+	// Apply timezone if configured
+	loc := time.UTC
+	if schedule.Timezone != "" {
+		if tz, err := time.LoadLocation(schedule.Timezone); err == nil {
+			loc = tz
+		}
+	}
+	localNow := now.In(loc)
+
+	// If days of week are specified, current day must be among them
+	if len(schedule.DaysOfWeek) > 0 {
+		currentDay := strings.ToLower(localNow.Weekday().String())
+		matched := false
+		for _, day := range schedule.DaysOfWeek {
+			if string(day) == currentDay {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+
+	// If a time window is specified, current time must fall within [StartTime, EndTime)
+	if schedule.StartTime != "" && schedule.EndTime != "" {
+		currentTime := localNow.Format("15:04")
+		return schedule.StartTime <= currentTime && currentTime < schedule.EndTime
+	}
+
+	return true // no time/day constraint → always active
 }
 
 // executeSchedule executes a hibernation schedule
