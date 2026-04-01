@@ -178,6 +178,52 @@ func TestHandleGetInstance(t *testing.T) {
 	}
 }
 
+// TestHandleDeleteDryRunInstance tests that dry-run instances can be deleted
+// without attempting AWS operations. Dry-run instances are created by
+// "prism workspace launch --dry-run" and never exist on AWS.
+func TestHandleDeleteDryRunInstance(t *testing.T) {
+	server := createTestServer(t)
+	handler := server.createHTTPHandler()
+
+	// Seed a dry-run instance in state
+	dryRunInstance := types.Instance{
+		Name:  "test-dry-run",
+		State: "dry-run",
+		ID:    "",
+	}
+	err := server.stateManager.SaveInstance(dryRunInstance)
+	require.NoError(t, err)
+
+	// Verify it exists
+	state, err := server.stateManager.LoadState()
+	require.NoError(t, err)
+	_, exists := state.Instances["test-dry-run"]
+	require.True(t, exists, "dry-run instance should exist in state before delete")
+
+	// Delete it
+	req := httptest.NewRequest("DELETE", "/api/v1/instances/test-dry-run", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNoContent, w.Code)
+
+	// Verify it was removed from state
+	state, err = server.stateManager.LoadState()
+	require.NoError(t, err)
+	_, exists = state.Instances["test-dry-run"]
+	assert.False(t, exists, "dry-run instance should be removed from state after delete")
+}
+
+// TestHandleDeleteNonExistentInstance tests that deleting a non-existent instance returns 404
+func TestHandleDeleteNonExistentInstance(t *testing.T) {
+	server := createTestServer(t)
+	handler := server.createHTTPHandler()
+
+	req := httptest.NewRequest("DELETE", "/api/v1/instances/does-not-exist", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
 // TestHandleInstanceActions tests instance control actions (start, stop, terminate)
 func TestHandleInstanceActions(t *testing.T) {
 	server := createTestServer(t)
