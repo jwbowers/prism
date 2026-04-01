@@ -866,6 +866,13 @@ func (s *Server) handleDeleteInstance(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 
+	// Dry-run instances were never launched on AWS, so just remove from local state
+	if instance, exists := state.Instances[instanceName]; exists && instance.State == "dry-run" {
+		_ = s.stateManager.RemoveInstance(instanceName)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	// Initiate AWS deletion and refresh state from AWS
 	var deleteErr error
 	var updatedInstance *types.Instance
