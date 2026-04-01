@@ -88,7 +88,7 @@ const (
 
 const (
 	// DaemonNotRunningMessage is the standard message when daemon is not running
-	DaemonNotRunningMessage = "daemon not running - this is unusual since daemon auto-starts. Try: prism daemon status"
+	DaemonNotRunningMessage = "daemon not running - this is unusual since daemon auto-starts. Try: prism admin daemon status"
 
 	// DaemonAutoStartMessage is displayed when auto-starting the daemon
 	DaemonAutoStartMessage = "🚀 Starting Prism daemon..."
@@ -97,7 +97,7 @@ const (
 	DaemonAutoStartSuccessMessage = "✅ Daemon ready"
 
 	// DaemonAutoStartFailedMessage is displayed when auto-start fails
-	DaemonAutoStartFailedMessage = "❌ Failed to auto-start daemon. Please start manually with: prism daemon start"
+	DaemonAutoStartFailedMessage = "❌ Failed to auto-start daemon. Please start manually with: prism admin daemon start"
 
 	// NoInstancesFoundMessage is displayed when no instances are found
 	NoInstancesFoundMessage = "No workstations found. Launch one with: prism launch <template> <name>"

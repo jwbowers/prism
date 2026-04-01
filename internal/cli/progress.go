@@ -269,7 +269,7 @@ func (pr *ProgressReporter) ShowError(err error, instance *types.Instance) {
 	}
 
 	fmt.Printf("💡 Troubleshooting:\n")
-	fmt.Printf("   • Check logs: prism daemon logs\n")
+	fmt.Printf("   • Check logs: prism admin daemon logs\n")
 	fmt.Printf("   • Retry with: prism launch %s %s\n", pr.templateName, pr.instanceName)
 	fmt.Printf("   • Try different region: --region us-west-2\n")
 	fmt.Printf("   • Try smaller size: --size S\n")

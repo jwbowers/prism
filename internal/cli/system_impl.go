@@ -43,7 +43,7 @@ func NewSystemCommands(app *App) *SystemCommands {
 // Daemon handles daemon management commands
 func (s *SystemCommands) Daemon(args []string) error {
 	if len(args) < 1 {
-		return NewUsageError("prism daemon <action>", "prism daemon start")
+		return NewUsageError("prism admin daemon <action>", "prism admin daemon start")
 	}
 
 	action := args[0]
@@ -179,7 +179,7 @@ func (s *SystemCommands) daemonStatus() error {
 	// Check if daemon is running
 	if err := s.app.apiClient.Ping(s.app.ctx); err != nil {
 		fmt.Println("❌ Daemon is not running")
-		fmt.Println("Start with: prism daemon start")
+		fmt.Println("Start with: prism admin daemon start")
 		return nil
 	}
 
@@ -278,8 +278,8 @@ func (s *SystemCommands) daemonConfigShow() error {
 	fmt.Printf("  • Port: %s\n", daemonConfig.Port)
 
 	fmt.Printf("\n💡 Configuration Commands:\n")
-	fmt.Printf("  prism daemon config set retention <minutes>  # Set retention period (0=indefinite)\n")
-	fmt.Printf("  prism daemon config reset                     # Reset to defaults (5 minutes)\n")
+	fmt.Printf("  prism admin daemon config set retention <minutes>  # Set retention period (0=indefinite)\n")
+	fmt.Printf("  prism admin daemon config reset                     # Reset to defaults (5 minutes)\n")
 
 	return nil
 }
@@ -287,7 +287,7 @@ func (s *SystemCommands) daemonConfigShow() error {
 // daemonConfigSet sets daemon configuration values
 func (s *SystemCommands) daemonConfigSet(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: prism daemon config set <setting> <value>\nAvailable settings: retention")
+		return fmt.Errorf("usage: prism admin daemon config set <setting> <value>\nAvailable settings: retention")
 	}
 
 	setting := args[0]
@@ -326,7 +326,7 @@ func (s *SystemCommands) daemonConfigSet(args []string) error {
 			fmt.Printf("   Terminated instances will be cleaned up after %d minutes\n", retentionMinutes)
 		}
 
-		fmt.Printf("\n⚠️  Changes take effect after daemon restart: prism daemon stop && prism daemon start\n")
+		fmt.Printf("\n⚠️  Changes take effect after daemon restart: prism admin daemon stop && prism admin daemon start\n")
 
 	default:
 		return fmt.Errorf("unknown setting: %s\nAvailable settings: retention", setting)
@@ -347,7 +347,7 @@ func (s *SystemCommands) daemonConfigReset() error {
 	fmt.Printf("   Instance retention: %d minutes\n", defaultConfig.InstanceRetentionMinutes)
 	fmt.Printf("   Port: %s\n", defaultConfig.Port)
 
-	fmt.Printf("\n⚠️  Changes take effect after daemon restart: prism daemon stop && prism daemon start\n")
+	fmt.Printf("\n⚠️  Changes take effect after daemon restart: prism admin daemon stop && prism admin daemon start\n")
 
 	return nil
 }
@@ -484,8 +484,8 @@ func (s *SystemCommands) daemonProcesses() error {
 	}
 
 	fmt.Printf("💡 Management Commands:\n")
-	fmt.Printf("  prism daemon stop      # Graceful shutdown\n")
-	fmt.Printf("  prism daemon cleanup   # Force cleanup all processes\n")
+	fmt.Printf("  prism admin daemon stop      # Graceful shutdown\n")
+	fmt.Printf("  prism admin daemon cleanup   # Force cleanup all processes\n")
 
 	return nil
 }
@@ -531,9 +531,9 @@ func (s *SystemCommands) directProcessScan() error {
 	}
 
 	fmt.Printf("💡 Management Commands:\n")
-	fmt.Printf("  prism daemon stop      # Graceful shutdown\n")
-	fmt.Printf("  prism daemon cleanup   # Force cleanup all processes\n")
-	fmt.Printf("  kill -TERM <pid>     # Manual graceful termination\n")
+	fmt.Printf("  prism admin daemon stop      # Graceful shutdown\n")
+	fmt.Printf("  prism admin daemon cleanup   # Force cleanup all processes\n")
+	fmt.Printf("  kill -TERM <pid>             # Manual graceful termination\n")
 	fmt.Printf("  kill -KILL <pid>     # Manual force termination\n")
 
 	return nil
@@ -552,7 +552,7 @@ func (s *SystemCommands) daemonCleanup(args []string) error {
 		case "--yes", "-y":
 			confirmed = true
 		case "--help", "-h":
-			fmt.Printf("Usage: prism daemon cleanup [OPTIONS]\n\n")
+			fmt.Printf("Usage: prism admin daemon cleanup [OPTIONS]\n\n")
 			fmt.Printf("Options:\n")
 			fmt.Printf("  --force    Force kill processes instead of graceful shutdown\n")
 			fmt.Printf("  --yes, -y  Skip confirmation prompts\n")
@@ -561,9 +561,9 @@ func (s *SystemCommands) daemonCleanup(args []string) error {
 			fmt.Printf("  Performs comprehensive cleanup of all Prism daemon processes\n")
 			fmt.Printf("  and related files. This is useful for troubleshooting or uninstallation.\n\n")
 			fmt.Printf("Examples:\n")
-			fmt.Printf("  prism daemon cleanup           # Interactive cleanup with confirmations\n")
-			fmt.Printf("  prism daemon cleanup --yes     # Non-interactive cleanup\n")
-			fmt.Printf("  prism daemon cleanup --force   # Force kill all processes\n")
+			fmt.Printf("  prism admin daemon cleanup           # Interactive cleanup with confirmations\n")
+			fmt.Printf("  prism admin daemon cleanup --yes     # Non-interactive cleanup\n")
+			fmt.Printf("  prism admin daemon cleanup --force   # Force kill all processes\n")
 			return nil
 		default:
 			return fmt.Errorf("unknown cleanup option: %s\nUse --help for usage information", arg)

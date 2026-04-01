@@ -868,7 +868,7 @@ func (s *TemplateSnapshotValidationService) ValidateInstance(config *TemplateSna
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(context.Context) error }); ok {
 		if err := pingable.Ping(context.Background()); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism admin daemon start")
 		}
 	}
 
@@ -1183,7 +1183,7 @@ func (s *TemplateApplyValidationService) ValidateTemplateAndDaemon(config *Templ
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(context.Context) error }); ok {
 		if err := pingable.Ping(context.Background()); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism admin daemon start")
 		}
 	}
 
@@ -1418,7 +1418,7 @@ func (s *TemplateDiffValidationService) ValidateTemplateAndDaemon(config *Templa
 	// Check daemon is running
 	if pingable, ok := s.apiClient.(interface{ Ping(context.Context) error }); ok {
 		if err := pingable.Ping(context.Background()); err != nil {
-			return nil, fmt.Errorf("daemon not running. Start with: prism daemon start")
+			return nil, fmt.Errorf("daemon not running. Start with: prism admin daemon start")
 		}
 	}
 

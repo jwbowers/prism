@@ -2371,10 +2371,10 @@ func (c *HTTPClient) CheckVersionCompatibility(ctx context.Context, clientVersio
 			"The client and daemon have incompatible major versions.\n"+
 			"Both must be updated to the same major version.\n\n"+
 			"💡 To fix this:\n"+
-			"   1. Stop the daemon: prism daemon stop\n"+
+			"   1. Stop the daemon: prism admin daemon stop\n"+
 			"   2. Update Prism: brew upgrade prism\n"+
-			"   3. Restart the daemon: prism daemon start\n"+
-			"   4. Verify versions match: prism version && prism daemon status",
+			"   3. Restart the daemon: prism admin daemon start\n"+
+			"   4. Verify versions match: prism version && prism admin daemon status",
 			clientVersion, daemonVersionStr)
 	}
 
@@ -2385,10 +2385,10 @@ func (c *HTTPClient) CheckVersionCompatibility(ctx context.Context, clientVersio
 			"Your CLI client is newer than the daemon.\n"+
 			"The daemon needs to be updated.\n\n"+
 			"💡 To fix this:\n"+
-			"   1. Stop the daemon: prism daemon stop\n"+
+			"   1. Stop the daemon: prism admin daemon stop\n"+
 			"   2. The daemon will auto-start with the new version\n"+
-			"   3. Or manually restart: prism daemon start\n"+
-			"   4. Verify versions match: prism version && prism daemon status",
+			"   3. Or manually restart: prism admin daemon start\n"+
+			"   4. Verify versions match: prism version && prism admin daemon status",
 			clientVersion, daemonVersionStr)
 	}
 

@@ -40,7 +40,7 @@ func runGUI() {
 
 		if err := startDaemonForGUI(); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", FormatErrorForCLI(err, "start daemon for GUI"))
-			fmt.Println("Please start the daemon manually with: prism daemon start")
+			fmt.Println("Please start the daemon manually with: prism admin daemon start")
 			os.Exit(1)
 		}
 

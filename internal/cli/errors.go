@@ -69,13 +69,13 @@ The Prism background service is not responding. This is unusual since the daemon
 
 🔧 Quick fixes:
 1. Try your command again (daemon may be starting up)
-2. Check daemon status: prism daemon status
-3. If needed, restart daemon: prism daemon stop (next command will auto-start)
+2. Check daemon status: prism admin daemon status
+3. If needed, restart daemon: prism admin daemon stop (next command will auto-start)
 
 🔍 If this persists:
 - Check for port conflicts: lsof -i :8947
 - Verify binary permissions: ls -la $(which prism) $(which prismd)
-- Check logs: prism daemon logs
+- Check logs: prism admin daemon logs
 
 Need help? https://github.com/scttfrdmn/prism/issues`)
 }
@@ -95,7 +95,7 @@ Prism's auto-start couldn't connect to the background service.
 🔧 Quick fixes:
 1. Wait a moment and try again (daemon may still be starting)
 2. Check what's using port 8947: lsof -i :8947
-3. Manual restart: prism daemon stop && prism templates
+3. Manual restart: prism admin daemon stop && prism templates
 
 🔍 If this continues:
 - Check if another Prism is running
@@ -382,7 +382,7 @@ Need help?
    https://github.com/scttfrdmn/prism/blob/main/docs/user-guides/TROUBLESHOOTING.md
 
 2. Verify daemon status:
-   prism daemon status
+   prism admin daemon status
 
 3. Check AWS credentials:
    aws sts get-caller-identity
