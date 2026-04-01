@@ -28,6 +28,7 @@ Examples:
 	// Add subcommands
 	cmd.AddCommand(f.createLaunchCommand())
 	cmd.AddCommand(f.createListCommand())
+	cmd.AddCommand(f.createCostCommand())
 	cmd.AddCommand(f.createStartCommand())
 	cmd.AddCommand(f.createStopCommand())
 	cmd.AddCommand(f.createDeleteCommand())
@@ -143,6 +144,24 @@ func (f *WorkspaceCommandFactory) createListCommand() *cobra.Command {
 	}
 	cmd.Flags().BoolP("refresh", "r", false, "Refresh instance data from AWS (slower but accurate)")
 	cmd.Flags().BoolP("detailed", "d", false, "Show detailed instance information")
+	cmd.Flags().String("project", "", "Filter by project ID")
+	return cmd
+}
+
+func (f *WorkspaceCommandFactory) createCostCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "cost",
+		Short: "Detailed cost breakdown with savings analysis",
+		Long: `Show detailed cost analysis for all workspaces, including running time,
+per-minute costs, monthly estimates, and institutional discount savings.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var flagArgs []string
+			if project, _ := cmd.Flags().GetString("project"); project != "" {
+				flagArgs = append(flagArgs, "--project", project)
+			}
+			return f.app.ListCost(flagArgs)
+		},
+	}
 	cmd.Flags().String("project", "", "Filter by project ID")
 	return cmd
 }
