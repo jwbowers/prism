@@ -646,7 +646,15 @@ func (r *TemplateRegistry) ResolveInheritance() error {
 	for _, template := range templatesWithInheritance {
 		resolved, err := r.resolveTemplateInheritance(template)
 		if err != nil {
-			return fmt.Errorf("failed to resolve inheritance for template %s: %w", template.Name, err)
+			// Warn and remove the broken template instead of aborting the entire scan.
+			// A missing parent (e.g. user template referencing a base template that
+			// isn't in the scanned directories) should not block all template operations.
+			fmt.Fprintf(os.Stderr, "Warning: skipping template %s: %v\n", template.Name, err)
+			delete(r.Templates, template.Name)
+			if template.Slug != "" {
+				delete(r.SlugIndex, template.Slug)
+			}
+			continue
 		}
 
 		// Replace original template with resolved one
