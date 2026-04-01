@@ -758,16 +758,23 @@ func TestTemplateRegistry_ResolveInheritance(t *testing.T) {
 func TestTemplateRegistry_ResolveInheritance_Errors(t *testing.T) {
 	registry := NewTemplateRegistry([]string{})
 
-	// Test missing parent template
+	// Test missing parent template: should warn and remove the broken
+	// template rather than aborting the entire inheritance pass.
 	child := &Template{
 		Name:        "Child",
+		Slug:        "child",
 		Description: "Child template",
 		Base:        "ubuntu-22.04",
 		Inherits:    []string{"NonexistentParent"},
 	}
 	registry.Templates["Child"] = child
+	registry.SlugIndex["child"] = "Child"
 
 	err := registry.ResolveInheritance()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "parent template not found: NonexistentParent")
+	assert.NoError(t, err)
+	// The broken template should have been removed from the registry
+	_, exists := registry.Templates["Child"]
+	assert.False(t, exists, "broken template should be removed from registry")
+	_, slugExists := registry.SlugIndex["child"]
+	assert.False(t, slugExists, "broken template slug should be removed from index")
 }
