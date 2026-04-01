@@ -897,7 +897,7 @@ func printRunningCostSummary(instances []types.Instance) {
 		fmt.Printf("   Total accumulated:  $%.4f (since launch)\n", totalCurrent)
 		fmt.Printf("   Effective rate:     $%.4f/hr (actual usage)\n", totalEffective)
 		fmt.Printf("   Estimated daily:    $%.2f (at current rate)\n", totalEffective*24)
-		fmt.Printf("\n💡 Tip: Use 'prism list cost' for detailed cost breakdown with savings analysis\n")
+		fmt.Printf("\n💡 Tip: Use 'prism workspace cost' for detailed cost breakdown with savings analysis\n")
 	}
 }
 
@@ -1020,7 +1020,7 @@ func (a *App) ListCost(args []string) error {
 	// Display cost summary
 	a.displayCostSummary(summary, hasDiscounts, pricingConfig)
 
-	fmt.Printf("\n💡 Tip: Use 'prism list' for a clean workspace overview without cost data\n")
+	fmt.Printf("\n💡 Tip: Use 'prism workspace list' for a clean workspace overview without cost data\n")
 
 	return nil
 }
