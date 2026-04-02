@@ -5,6 +5,8 @@ package aws
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -14,15 +16,47 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/scttfrdmn/prism/pkg/state"
 	ctypes "github.com/scttfrdmn/prism/pkg/types"
 	"github.com/scttfrdmn/substrate"
 )
+
+// setupSubstrateVPC creates a VPC and public subnet in the Substrate server,
+// returning their IDs. LaunchRequest can set VpcID/SubnetID directly to skip
+// DiscoverDefaultVPC (which requires an isDefault=true VPC that only exists
+// after RunInstances auto-creates it).
+func setupSubstrateVPC(t *testing.T, cfg aws.Config) (vpcID, subnetID string) {
+	t.Helper()
+	ctx := context.Background()
+	ec2Client := ec2.NewFromConfig(cfg)
+
+	vpcResp, err := ec2Client.CreateVpc(ctx, &ec2.CreateVpcInput{
+		CidrBlock: aws.String("10.0.0.0/16"),
+	})
+	if err != nil {
+		t.Fatalf("CreateVpc: %v", err)
+	}
+	vpcID = *vpcResp.Vpc.VpcId
+
+	subnetResp, err := ec2Client.CreateSubnet(ctx, &ec2.CreateSubnetInput{
+		VpcId:     aws.String(vpcID),
+		CidrBlock: aws.String("10.0.1.0/24"),
+	})
+	if err != nil {
+		t.Fatalf("CreateSubnet: %v", err)
+	}
+	subnetID = *subnetResp.Subnet.SubnetId
+	return vpcID, subnetID
+}
 
 // setupSubstrateManager starts an in-process Substrate server and returns a
 // Manager wired to it. No Docker, no external processes — the server is
 // automatically shut down when the test ends via t.Cleanup().
 func setupSubstrateManager(t *testing.T) (*Manager, *substrate.TestServer) {
 	t.Helper()
+
+	// Isolated state directory so tests don't touch ~/.prism
+	t.Setenv("PRISM_STATE_DIR", t.TempDir())
 
 	ts := substrate.StartTestServer(t)
 
@@ -40,29 +74,71 @@ func setupSubstrateManager(t *testing.T) (*Manager, *substrate.TestServer) {
 		Credentials: credentials.NewStaticCredentialsProvider("test", "test", ""),
 	}
 
+	ec2Client := ec2.NewFromConfig(cfg)
+	ssmClient := ssm.NewFromConfig(cfg)
+
+	stateMgr, err := state.NewManager()
+	if err != nil {
+		t.Fatalf("state.NewManager: %v", err)
+	}
+
 	manager := &Manager{
-		cfg:            cfg,
-		ec2:            ec2.NewFromConfig(cfg),
-		efs:            efs.NewFromConfig(cfg),
-		iam:            iam.NewFromConfig(cfg),
-		ssm:            ssm.NewFromConfig(cfg),
-		sts:            sts.NewFromConfig(cfg),
-		region:         "us-east-1",
-		templates:      getTemplates(),
-		discountConfig: ctypes.DiscountConfig{},
+		cfg:                 cfg,
+		ec2:                 ec2Client,
+		efs:                 efs.NewFromConfig(cfg),
+		iam:                 iam.NewFromConfig(cfg),
+		ssm:                 ssmClient,
+		sts:                 sts.NewFromConfig(cfg),
+		region:              "us-east-1",
+		templates:           getTemplates(),
+		discountConfig:      ctypes.DiscountConfig{},
+		stateManager:        stateMgr,
+		amiResolver:         NewUniversalAMIResolver(ec2Client),
+		amiDiscovery:        NewAMIDiscovery(ssmClient),
+		healthMonitor:       NewHealthMonitor(cfg, "us-east-1"),
+		quotaManager:        NewQuotaManager(cfg, "us-east-1"),
+		availabilityManager: NewAvailabilityManager(cfg, "us-east-1"),
+		architectureCache:   make(map[string]string),
 	}
 
 	return manager, ts
 }
 
 func TestSubstrateLaunchInstance(t *testing.T) {
-	// LaunchInstance resolves AMI IDs via SSM GetParameter against public AWS paths
-	// (/aws/service/canonical/ubuntu/..., /aws/service/ami-amazon-linux-latest/...).
-	// A fresh TestServer has no SSM parameters seeded. Re-enable once
-	// scttfrdmn/substrate#267 (TestServer.SeedSSMParameter helper) is implemented,
-	// then call ts.SeedSSMParameter(...) for each AMI path before launching.
-	t.Skip("Skipping: waiting for substrate#267 (TestServer.SeedSSMParameter helper)")
-	manager, _ := setupSubstrateManager(t)
+	manager, ts := setupSubstrateManager(t)
+
+	// Seed AMI IDs that LaunchInstance resolves via SSM (substrate#267)
+	ts.SeedSSMParameters(map[string]string{
+		"/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id": "ami-ubuntu2404-amd64",
+		"/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id": "ami-ubuntu2404-arm64",
+		"/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp3/ami-id": "ami-ubuntu2204-amd64",
+		"/aws/service/canonical/ubuntu/server/22.04/stable/current/arm64/hvm/ebs-gp3/ami-id": "ami-ubuntu2204-arm64",
+		"/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64":              "ami-al2023-x86",
+		"/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64":               "ami-al2023-arm64",
+	})
+
+	// Write a minimal template YAML to a temp dir so GetTemplateInfo can find it.
+	// LaunchInstance calls the package-level templates.GetTemplateInfo which scans
+	// filesystem dirs; it does not use the Manager's internal templates map.
+	templateDir := t.TempDir()
+	templateYAML := `name: "basic-ubuntu"
+description: "Substrate test template"
+base: "ubuntu-24.04"
+package_manager: "apt"
+users:
+  - name: ubuntu
+    groups: [sudo]
+instance_defaults:
+  ports: [22]
+`
+	if err := os.WriteFile(filepath.Join(templateDir, "basic-ubuntu.yml"), []byte(templateYAML), 0644); err != nil {
+		t.Fatalf("write template: %v", err)
+	}
+	t.Setenv("PRISM_TEMPLATE_DIR", templateDir)
+
+	// Pre-create VPC+subnet so ResolveNetworking skips DiscoverDefaultVPC
+	// (Substrate only auto-creates the default VPC on RunInstances, not before)
+	vpcID, subnetID := setupSubstrateVPC(t, manager.cfg)
 
 	req := ctypes.LaunchRequest{
 		Template: "basic-ubuntu",
@@ -70,6 +146,8 @@ func TestSubstrateLaunchInstance(t *testing.T) {
 		Size:     "M",
 		Region:   "us-east-1",
 		DryRun:   false,
+		VpcID:    vpcID,
+		SubnetID: subnetID,
 	}
 
 	instance, err := manager.LaunchInstance(req)
@@ -128,10 +206,35 @@ func TestSubstrateCreateEBSVolume(t *testing.T) {
 }
 
 func TestSubstrateEBSAttachDetach(t *testing.T) {
-	// Depends on LaunchInstance. Re-enable alongside TestSubstrateLaunchInstance
-	// once substrate#267 (TestServer.SeedSSMParameter) is implemented.
-	t.Skip("Skipping: depends on LaunchInstance (blocked on substrate#267)")
 	manager, ts := setupSubstrateManager(t)
+
+	// Seed AMI IDs needed by LaunchInstance (substrate#267)
+	ts.SeedSSMParameters(map[string]string{
+		"/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id": "ami-ubuntu2404-amd64",
+		"/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id": "ami-ubuntu2404-arm64",
+		"/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp3/ami-id": "ami-ubuntu2204-amd64",
+		"/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64":              "ami-al2023-x86",
+	})
+
+	// Write minimal template to temp dir (same pattern as TestSubstrateLaunchInstance)
+	templateDir := t.TempDir()
+	templateYAML := `name: "basic-ubuntu"
+description: "Substrate test template"
+base: "ubuntu-24.04"
+package_manager: "apt"
+users:
+  - name: ubuntu
+    groups: [sudo]
+instance_defaults:
+  ports: [22]
+`
+	if err := os.WriteFile(filepath.Join(templateDir, "basic-ubuntu.yml"), []byte(templateYAML), 0644); err != nil {
+		t.Fatalf("write template: %v", err)
+	}
+	t.Setenv("PRISM_TEMPLATE_DIR", templateDir)
+
+	// Pre-create VPC+subnet (same reason as TestSubstrateLaunchInstance)
+	vpcID, subnetID := setupSubstrateVPC(t, manager.cfg)
 
 	// Launch an instance
 	launchReq := ctypes.LaunchRequest{
@@ -139,6 +242,8 @@ func TestSubstrateEBSAttachDetach(t *testing.T) {
 		Name:     "attach-test-instance",
 		Size:     "M",
 		Region:   "us-east-1",
+		VpcID:    vpcID,
+		SubnetID: subnetID,
 	}
 	instance, err := manager.LaunchInstance(launchReq)
 	if err != nil {
@@ -168,9 +273,6 @@ func TestSubstrateEBSAttachDetach(t *testing.T) {
 	if err := manager.DetachStorage(vol.Name); err != nil {
 		t.Fatalf("DetachStorage failed: %v", err)
 	}
-
-	// Prevent unused warning
-	_ = ts
 }
 
 func TestSubstrateIAMInstanceProfile(t *testing.T) {

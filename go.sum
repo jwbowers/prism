@@ -180,8 +180,8 @@ github.com/sagikazarmark/locafero v0.11.0 h1:1iurJgmM9G3PA/I+wWYIOw/5SyBtxapeHDc
 github.com/sagikazarmark/locafero v0.11.0/go.mod h1:nVIGvgyzw595SUSUE6tvCp3YYTeHs15MvlmU87WwIik=
 github.com/sahilm/fuzzy v0.1.1 h1:ceu5RHF8DGgoi+/dR5PsECjCDH1BE3Fnmpo7aVXOdRA=
 github.com/sahilm/fuzzy v0.1.1/go.mod h1:VFvziUEIMCrT6A6tw2RFIXPXXmzXbOsSHF0DOI8ZK9Y=
-github.com/scttfrdmn/substrate v0.45.10 h1:Typi54VYDmZO8eGAFiKZJ3X8cOXVWj9u5DHVhkejV74=
-github.com/scttfrdmn/substrate v0.45.10/go.mod h1:gKkftVt2MxQ465Rs/Na4SsEvm/SJMBypfCGmdKlvfro=
+github.com/scttfrdmn/substrate v0.46.0 h1:dIc7hTKkYJNd5PqJmFWBJiMrAAIpVB6cwIQ9IH5yJ5A=
+github.com/scttfrdmn/substrate v0.46.0/go.mod h1:gKkftVt2MxQ465Rs/Na4SsEvm/SJMBypfCGmdKlvfro=
 github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e h1:MRM5ITcdelLK2j1vwZ3Je0FKVCfqOLp5zO6trqMLYs0=
 github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e/go.mod h1:XV66xRDqSt+GTGFMVlhk3ULuV0y9ZmzeVGR4mloJI3M=
 github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 h1:+jumHNA0Wrelhe64i8F6HNlS8pkoyMv5sreGx2Ry5Rw=
