@@ -289,6 +289,7 @@ ls -la --time-style=+%%Y-%%m-%%dT%%H:%%M:%%S "%s" 2>/dev/null || echo "ERROR: pa
 }
 
 // parseLsOutput parses the output of `ls -la --time-style=+%Y-%m-%dT%H:%M:%S` into RemoteFileEntry slices.
+// The format is 7 fields: permissions links owner group size date name…
 func parseLsOutput(output, basePath string) []RemoteFileEntry {
 	var entries []RemoteFileEntry
 	for _, line := range strings.Split(output, "\n") {
@@ -298,7 +299,7 @@ func parseLsOutput(output, basePath string) []RemoteFileEntry {
 		}
 		// Format: permissions links owner group size date name
 		fields := strings.Fields(line)
-		if len(fields) < 9 {
+		if len(fields) < 7 {
 			continue
 		}
 		perms := fields[0]
@@ -314,7 +315,7 @@ func parseLsOutput(output, basePath string) []RemoteFileEntry {
 			modTime = t
 		}
 
-		name := strings.Join(fields[8:], " ")
+		name := strings.Join(fields[6:], " ")
 		if name == "." || name == ".." {
 			continue
 		}

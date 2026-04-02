@@ -185,6 +185,11 @@ type PrismAPI interface {
 	ListTransfers(context.Context) ([]*storage.TransferProgress, error)
 	CancelTransfer(context.Context, string) error
 
+	// SSM file operations (#30a)
+	ListInstanceFiles(context.Context, string, string) ([]interface{}, error)
+	PushFileToInstance(context.Context, string, string, string) (map[string]interface{}, error)
+	PullFileFromInstance(context.Context, string, string, string) (map[string]interface{}, error)
+
 	// Throttling operations (v0.6.0 - Issue #90)
 	GetThrottlingStatus(context.Context, string) (*throttle.Status, error)
 	ConfigureThrottling(context.Context, throttle.Config) error

@@ -2068,6 +2068,19 @@ func (m *MockClient) CancelTransfer(ctx context.Context, transferID string) erro
 	return nil
 }
 
+// SSM file operations (#30a)
+func (m *MockClient) ListInstanceFiles(ctx context.Context, instanceName, path string) ([]interface{}, error) {
+	return []interface{}{}, nil
+}
+
+func (m *MockClient) PushFileToInstance(ctx context.Context, instanceName, localPath, remotePath string) (map[string]interface{}, error) {
+	return map[string]interface{}{"status": "ok", "remote_path": remotePath}, nil
+}
+
+func (m *MockClient) PullFileFromInstance(ctx context.Context, instanceName, remotePath, localPath string) (map[string]interface{}, error) {
+	return map[string]interface{}{"status": "ok", "local_path": localPath}, nil
+}
+
 // Throttling operations
 
 // ConfigureThrottling configures throttling settings (mock)

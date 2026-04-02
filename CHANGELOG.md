@@ -5,6 +5,21 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-04-02
+
+### Added
+- SSM file operations backend: `prism workspace files push/pull/list` — transfers files to/from running instances via S3 relay (`pkg/aws/file_ops.go`, `pkg/daemon/file_ops_handlers.go`, `internal/cli/file_ops_cobra.go`) (#30a)
+- `PrismAPI` interface now declares `ListInstanceFiles`, `PushFileToInstance`, `PullFileFromInstance`
+- Unit tests for `parseLsOutput` covering all edge cases (`pkg/aws/file_ops_test.go`)
+- Substrate v0.48.0 — all 6 Substrate integration tests now pass (`TestSubstrateLaunchInstance`, `TestSubstrateEBSAttachDetach`, `TestSubstrateIAMInstanceProfile`, `TestSubstrateSSMRunCommand`, `TestSubstrateCreateEBSVolume`, `TestSubstrateErrorHandling`) (closes substrate#265, #267)
+
+### Fixed
+- All 268 pre-existing TypeScript typecheck errors resolved (`npm run typecheck` now clean)
+- `parseLsOutput`: field-count guard reduced from 9 to 7 to match actual `ls -la --time-style` output (name field index corrected from `[8:]` to `[6:]`)
+
+### Changed
+- Replaced LocalStack with Substrate for all AWS integration testing (no Docker required)
+
 ## [0.28.1] - 2026-04-02
 
 ### Added

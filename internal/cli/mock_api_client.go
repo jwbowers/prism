@@ -2362,6 +2362,28 @@ func (m *MockAPIClient) CancelTransfer(ctx context.Context, transferID string) e
 	return nil
 }
 
+// SSM file operations (#30a)
+func (m *MockAPIClient) ListInstanceFiles(ctx context.Context, instanceName, path string) ([]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return []interface{}{}, nil
+}
+
+func (m *MockAPIClient) PushFileToInstance(ctx context.Context, instanceName, localPath, remotePath string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"status": "ok", "remote_path": remotePath}, nil
+}
+
+func (m *MockAPIClient) PullFileFromInstance(ctx context.Context, instanceName, remotePath, localPath string) (map[string]interface{}, error) {
+	if m.ShouldReturnError {
+		return nil, fmt.Errorf("%s", m.ErrorMessage)
+	}
+	return map[string]interface{}{"status": "ok", "local_path": localPath}, nil
+}
+
 // CheckAllocationStatus checks if an allocation is exhausted (mock)
 func (m *MockAPIClient) CheckAllocationStatus(ctx context.Context, allocationID string) (*client.AllocationStatus, error) {
 	if m.ShouldReturnError {
