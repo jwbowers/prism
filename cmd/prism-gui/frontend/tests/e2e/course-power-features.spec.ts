@@ -20,7 +20,12 @@ const BASE_URL = 'http://localhost:8947';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function createCourseViaAPI(code: string): Promise<string> {
+function uniquePowerCode(prefix: string): string {
+  // Keep under 20-char backend limit: prefix (≤8) + hyphen(1) + 5 digits = ≤14 chars
+  return `${prefix}-${Date.now() % 100000}`;
+}
+
+async function createCourseViaAPI(code: string): Promise<{ id: string; code: string }> {
   const apiContext = await request.newContext({ baseURL: BASE_URL });
   const resp = await apiContext.post('/api/v1/courses', {
     data: {
@@ -34,7 +39,7 @@ async function createCourseViaAPI(code: string): Promise<string> {
   });
   const body = await resp.json();
   await apiContext.dispose();
-  return body.id || '';
+  return { id: body.id || '', code };
 }
 
 async function deleteCourseViaAPI(courseId: string): Promise<void> {
@@ -64,7 +69,7 @@ async function addTemplateViaAPI(courseId: string, templateSlug: string): Promis
 
 test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => {
-    localStorage.setItem('cws_onboarding_complete', 'true');
+    localStorage.setItem('prism_onboarding_complete', 'true');
   });
 });
 
@@ -72,9 +77,12 @@ test.beforeEach(async ({ context }) => {
 
 test.describe('TA Access Management', () => {
   let courseId = '';
+  let courseCode = '';
 
   test.beforeEach(async () => {
-    courseId = await createCourseViaAPI(`PWR-TA-${Date.now()}`);
+    const result = await createCourseViaAPI(uniquePowerCode('PWR-TA'));
+    courseId = result.id;
+    courseCode = result.code;
   });
 
   test.afterEach(async () => {
@@ -84,7 +92,7 @@ test.describe('TA Access Management', () => {
   test('TA Access tab renders in course detail', async ({ page }) => {
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-TA-`);
+    await coursePage.openCourse(courseCode);
 
     await coursePage.switchToTab('TA Access');
     await expect(page.getByTestId('ta-access-table')).toBeVisible({ timeout: 10000 });
@@ -93,7 +101,7 @@ test.describe('TA Access Management', () => {
   test('shows "No TAs" empty state initially', async ({ page }) => {
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-TA-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.openTAAccessTab();
 
     await expect(page.getByText(/no tas/i)).toBeVisible({ timeout: 5000 });
@@ -102,7 +110,7 @@ test.describe('TA Access Management', () => {
   test('shows grant TA button', async ({ page }) => {
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-TA-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.openTAAccessTab();
 
     await expect(page.getByTestId('ta-grant-button')).toBeVisible({ timeout: 5000 });
@@ -113,7 +121,7 @@ test.describe('TA Access Management', () => {
 
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-TA-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.openTAAccessTab();
 
     await expect(page.getByText('ta-e2e@uni.edu')).toBeVisible({ timeout: 10000 });
@@ -124,9 +132,12 @@ test.describe('TA Access Management', () => {
 
 test.describe('Template Enforcement', () => {
   let courseId = '';
+  let courseCode = '';
 
   test.beforeEach(async () => {
-    courseId = await createCourseViaAPI(`PWR-TPL-${Date.now()}`);
+    const result = await createCourseViaAPI(uniquePowerCode('PWR-TPL'));
+    courseId = result.id;
+    courseCode = result.code;
   });
 
   test.afterEach(async () => {
@@ -136,7 +147,7 @@ test.describe('Template Enforcement', () => {
   test('Templates tab shows no enforcement badge when whitelist is empty', async ({ page }) => {
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-TPL-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.switchToTab('Templates');
 
     await page.waitForTimeout(500);
@@ -148,7 +159,7 @@ test.describe('Template Enforcement', () => {
 
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-TPL-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.switchToTab('Templates');
 
     await expect(page.getByTestId('enforcement-active-badge')).toBeVisible({ timeout: 10000 });
@@ -159,9 +170,12 @@ test.describe('Template Enforcement', () => {
 
 test.describe('Shared Course Materials', () => {
   let courseId = '';
+  let courseCode = '';
 
   test.beforeEach(async () => {
-    courseId = await createCourseViaAPI(`PWR-MAT-${Date.now()}`);
+    const result = await createCourseViaAPI(uniquePowerCode('PWR-MAT'));
+    courseId = result.id;
+    courseCode = result.code;
   });
 
   test.afterEach(async () => {
@@ -171,7 +185,7 @@ test.describe('Shared Course Materials', () => {
   test('Materials tab renders in course detail', async ({ page }) => {
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-MAT-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.openMaterialsTab();
 
     // Create button visible when no volume exists
@@ -188,7 +202,7 @@ test.describe('Shared Course Materials', () => {
 
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-MAT-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.openMaterialsTab();
 
     // Should show EFS ID (not the create button)
@@ -204,7 +218,7 @@ test.describe('Shared Course Materials', () => {
 
     const coursePage = new CoursePage(page);
     await coursePage.navigateToCourses();
-    await coursePage.openCourse(`PWR-MAT-`);
+    await coursePage.openCourse(courseCode);
     await coursePage.openMaterialsTab();
 
     await expect(page.getByTestId('mount-materials-button')).toBeVisible({ timeout: 10000 });

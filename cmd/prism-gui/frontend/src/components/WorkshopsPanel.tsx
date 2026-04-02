@@ -339,7 +339,7 @@ function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: Worksho
             actions={
               <SpaceBetween direction="horizontal" size="xs">
                 <Button onClick={load} iconName="refresh">Refresh</Button>
-                <Button variant="primary" onClick={() => setShowCreate(true)}>
+                <Button data-testid="create-workshop-button" variant="primary" onClick={() => setShowCreate(true)}>
                   Create Workshop
                 </Button>
               </SpaceBetween>

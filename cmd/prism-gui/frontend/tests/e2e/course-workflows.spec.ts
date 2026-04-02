@@ -54,7 +54,7 @@ test.describe('Course Workflows', () => {
   test.beforeEach(async ({ page, context }) => {
     // Dismiss onboarding modal before navigation
     await context.addInitScript(() => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
     });
     coursePage = new CoursePage(page);
   });
@@ -202,7 +202,7 @@ test.describe('Course Workflows', () => {
       await coursePage.openCourse(code);
       await coursePage.switchToTab('Members');
       await page.getByTestId('enroll-member-button').click();
-      await page.getByTestId('enroll-email-input').fill('alice@uni.edu');
+      await page.getByTestId('enroll-email-input').locator('input').fill('alice@uni.edu');
       await page.getByTestId('enroll-submit-button').click();
       await page.waitForTimeout(500);
       // Members table should update
@@ -246,7 +246,7 @@ test.describe('Course Workflows', () => {
 
       // Add via API first
       const apiContext = await request.newContext({ baseURL: BASE_URL });
-      await apiContext.put(`/api/v1/courses/${id}/templates/python-ml`);
+      await apiContext.post(`/api/v1/courses/${id}/templates`, { data: { template: 'python-ml' } });
       await apiContext.dispose();
 
       await coursePage.navigateToCourses();

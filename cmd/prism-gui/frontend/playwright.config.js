@@ -74,8 +74,12 @@ export default defineConfig({
   // reuseExistingServer: true allows reusing a running dev server (e.g., from a previous test run
   // that didn't clean up). The daemon is always restarted fresh by global-setup.js, so tests
   // remain properly isolated even when the Vite server is reused.
+  //
+  // NODE_OPTIONS --max-old-space-size=4096: App.tsx exceeds Babel's 500KB inline-styling limit,
+  // which triggers deoptimization. With default Node heap (~512MB) Vite crashes after a few browser
+  // contexts. 4GB heap keeps the dev server alive for the full chromium + webkit test run.
   webServer: {
-    command: 'npm run dev',
+    command: 'NODE_OPTIONS="--max-old-space-size=4096" npm run dev',
     port: 3000,
     reuseExistingServer: true,
     timeout: 120 * 1000,

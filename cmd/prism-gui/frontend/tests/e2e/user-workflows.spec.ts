@@ -231,8 +231,8 @@ test.describe('User Management Workflows', () => {
       await projectsPage.page.getByRole('link', { name: /^dashboard$/i }).click();
       await projectsPage.page.getByRole('link', { name: /^users$/i }).click();
 
-      // Wait for user table to be visible
-      await projectsPage.page.locator('table tbody').waitFor({ state: 'visible' });
+      // Wait for user table to be visible (scoped to avoid strict mode with "Current Members" table)
+      await projectsPage.page.locator('[data-testid="users-table"] tbody').waitFor({ state: 'visible' });
 
       // Verify SSH key count updated in table
       const updatedRow = projectsPage.getUserByUsername(uniqueUsername);
@@ -481,7 +481,7 @@ test.describe('User Management Workflows', () => {
       // Wait for either the heading or the table to be visible
       await Promise.race([
         projectsPage.page.locator('h1:has-text("User Management")').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
-        projectsPage.page.locator('table tbody').waitFor({ state: 'visible', timeout: 10000 })
+        projectsPage.page.locator('[data-testid="users-table"] tbody').waitFor({ state: 'visible', timeout: 10000 })
       ]);
 
       // Get initial count

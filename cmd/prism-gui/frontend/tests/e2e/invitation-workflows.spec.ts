@@ -485,30 +485,26 @@ test.describe('Invitation Management Workflows', () => {
         'another@example.com'
       ];
 
-      // Select project first
+      // Select project first - wait for the option to appear after dropdown opens
       const projectSelect = projectsPage.page.getByTestId('bulk-invite-project-select');
       await projectSelect.click();
       const projectOption = projectsPage.page.locator(`[data-value="${testProjectId}"]`);
-      if (await projectOption.isVisible({ timeout: 3000 })) {
-        await projectOption.click();
-      }
+      await projectOption.waitFor({ state: 'visible', timeout: 8000 });
+      await projectOption.click();
 
       // Fill emails - target the actual textarea within the Cloudscape wrapper
       const emailTextarea = projectsPage.page.getByTestId('bulk-emails-textarea').locator('textarea');
       await emailTextarea.fill(invalidEmails.join('\n'));
 
-      // Select role
-      const roleSelect = projectsPage.page.getByTestId('bulk-role-select');
-      await roleSelect.click();
-      await projectsPage.page.locator('[data-value="member"]').waitFor({ state: 'visible', timeout: 3000 });
-      await projectsPage.page.locator('[data-value="member"]').click();
+      // Validation happens inline: invalid emails disable the submit button and show an error alert
+      // The component shows data-testid="email-validation-error" when invalid emails are detected
+      const validationError = projectsPage.page.getByTestId('email-validation-error');
+      await validationError.waitFor({ state: 'visible', timeout: 5000 });
+      expect(await validationError.isVisible()).toBe(true);
 
-      await projectsPage.clickButton('send bulk invitations');
-
-      // Should show validation error or results with failed emails
-      const resultsContainer = projectsPage.page.getByTestId('bulk-results-container');
-      await resultsContainer.waitFor({ state: 'visible', timeout: 10000 });
-      expect(await resultsContainer.isVisible()).toBe(true);
+      // Send button should be disabled due to validation errors
+      const sendButton = projectsPage.page.getByTestId('send-bulk-invitations-button');
+      expect(await sendButton.isDisabled()).toBe(true);
 
       // Cleanup
       await projectsPage.deleteTestProject(testProjectId);

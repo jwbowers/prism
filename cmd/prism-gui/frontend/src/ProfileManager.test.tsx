@@ -98,8 +98,8 @@ async function navigateToProfiles() {
   await user.click(profilesLinks[0]);
 
   await waitFor(() => {
-    expect(screen.getByTestId('profiles-table')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Profile Management')).toBeInTheDocument();
+  }, { timeout: 5000 });
 
   return user;
 }

@@ -275,6 +275,58 @@ async function cleanupTestStorage() {
   }
 }
 
+// Delete test courses that accumulated from previous test runs.
+// Runs after daemon starts to prevent strict-mode violations caused by multiple rows
+// matching the same code prefix when openCourse() uses a prefix filter.
+//
+// API routes:
+//   GET    /api/v1/courses           → { courses: [...] }  (each has id + code)
+//   DELETE /api/v1/courses/{id}      → 204
+async function cleanupTestCourses() {
+  const testCoursePrefixes = [
+    // course-workflows.spec.ts prefixes (uniqueCode generates PREFIX-{n})
+    'CRS-', 'VIEW-', 'TABS-', 'BACK-', 'MBR-', 'ENR-', 'MOD-', 'ESTUD-',
+    'TMPL-', 'TADD-', 'TREM-', 'TEMPTY-', 'BDG-', 'BMOD-', 'BDIST-',
+    'OVW-', 'AUD-', 'RPT-', 'ARCH-', 'ACNF-', 'E2E-',
+    // course-power-features.spec.ts prefixes
+    'PWR-TA-', 'PWR-TPL-', 'PWR-MAT-',
+  ]
+
+  try {
+    const res = await fetch('http://localhost:8947/api/v1/courses')
+    if (!res.ok) return
+
+    const text = await res.text()
+    if (!text || !text.trim()) return
+    const data = JSON.parse(text)
+    const courses = data.courses || []
+
+    const testCourses = courses.filter(c =>
+      c.code && testCoursePrefixes.some(prefix => c.code.startsWith(prefix))
+    )
+
+    if (testCourses.length === 0) {
+      console.log('[setup-daemon] No leftover test courses found')
+      return
+    }
+
+    console.log(`[setup-daemon] Cleaning up ${testCourses.length} leftover test courses...`)
+    let deleted = 0
+    for (const course of testCourses) {
+      const delRes = await fetch(`http://localhost:8947/api/v1/courses/${course.id}`, {
+        method: 'DELETE'
+      }).catch(() => null)
+      if (delRes && (delRes.status === 204 || delRes.status === 200 || delRes.status === 404)) {
+        deleted++
+      }
+    }
+    console.log(`[setup-daemon] Course cleanup: removed ${deleted}/${testCourses.length} test courses`)
+  } catch (e) {
+    // Non-critical — tests can still run if cleanup fails
+    console.log(`[setup-daemon] Course cleanup skipped: ${e.message}`)
+  }
+}
+
 // Check for zombie Prism-managed EC2 instances left running in AWS after the test suite.
 //
 // Strategy:
@@ -444,4 +496,4 @@ async function createGovernanceTestProject() {
   }
 }
 
-export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestProjects, cleanupTestStorage, createGovernanceTestProject, checkZombieInstances }
+export { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestProjects, cleanupTestStorage, cleanupTestCourses, createGovernanceTestProject, checkZombieInstances }

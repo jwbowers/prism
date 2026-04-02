@@ -2222,11 +2222,11 @@ class SafePrismAPI {
 
   async getCourseTemplates(id: string): Promise<{ templates: string[] }> {
     const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/templates`);
-    return { templates: data?.templates || [] };
+    return { templates: data?.approved_templates || [] };
   }
 
   async addCourseTemplate(id: string, slug: string): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/templates/${encodeURIComponent(slug)}`, 'PUT');
+    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/templates`, 'POST', { template: slug });
   }
 
   async removeCourseTemplate(id: string, slug: string): Promise<void> {
@@ -2355,8 +2355,8 @@ class SafePrismAPI {
 
   // ── v0.19.0 TA Access, Shared Materials, Workspace Reset ──
   async listCourseTAAccess(courseId: string): Promise<ClassMember[]> {
-    const data = await this.safeRequest<{ tas: ClassMember[] }>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access`, 'GET');
-    return (data?.tas || []) as ClassMember[];
+    const data = await this.safeRequest<{ ta_members: ClassMember[] }>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access`, 'GET');
+    return (data?.ta_members || []) as ClassMember[];
   }
 
   async grantCourseTAAccess(courseId: string, email: string, displayName?: string): Promise<ClassMember> {
@@ -2379,13 +2379,13 @@ class SafePrismAPI {
   }
 
   async getCourseMaterials(courseId: string): Promise<SharedMaterialsVolume | null> {
-    const data = await this.safeRequest<SharedMaterialsVolume>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'GET');
-    return data || null;
+    const data = await this.safeRequest<{ materials: SharedMaterialsVolume | null }>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'GET');
+    return data?.materials || null;
   }
 
   async createCourseMaterials(courseId: string, sizeGB: number, mountPath: string): Promise<SharedMaterialsVolume> {
-    const data = await this.safeRequest<SharedMaterialsVolume>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'POST', { size_gb: sizeGB, mount_path: mountPath });
-    return data as SharedMaterialsVolume;
+    const data = await this.safeRequest<{ materials: SharedMaterialsVolume }>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'POST', { size_gb: sizeGB, mount_path: mountPath });
+    return data?.materials as SharedMaterialsVolume;
   }
 
   async mountCourseMaterials(courseId: string): Promise<{ status: string; note: string }> {

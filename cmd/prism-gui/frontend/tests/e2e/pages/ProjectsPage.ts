@@ -129,8 +129,8 @@ export class ProjectsPage extends BasePage {
     // Wait for Create Project dialog to appear by name (deterministic, avoids strict mode violation)
     await this.page.getByRole('dialog', { name: /create.*project/i }).waitFor({ state: 'visible', timeout: 5000 });
 
-    // Fill form fields using data-testids
-    await this.fillInput('project name', name);
+    // Fill project name using data-testid to avoid strict mode violation with edit dialog
+    await this.page.getByTestId('project-name-input').locator('input').fill(name);
 
     // Use data-testid for description (Cloudscape wraps textarea)
     await this.page.getByTestId('project-description-input').locator('textarea').fill(description);
@@ -176,22 +176,20 @@ export class ProjectsPage extends BasePage {
     const actionsButton = projectRow.getByRole('button', { name: /actions/i });
     await actionsButton.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Retry click if element gets detached (common during table updates)
-    let clickSuccess = false;
-    for (let attempt = 0; attempt < 3 && !clickSuccess; attempt++) {
+    // Retry entire open-menu + click sequence (table re-renders can detach menu items)
+    let menuSuccess = false;
+    for (let attempt = 0; attempt < 3 && !menuSuccess; attempt++) {
       try {
         await actionsButton.click({ timeout: 5000 });
-        clickSuccess = true;
+        const deleteOption = this.page.getByRole('menuitem', { name: /delete/i });
+        await deleteOption.waitFor({ state: 'visible', timeout: 3000 });
+        await deleteOption.click();
+        menuSuccess = true;
       } catch (e) {
         if (attempt === 2) throw e; // Throw on final attempt
         await this.page.waitForTimeout(1000); // Wait for table to stabilize
       }
     }
-
-    // Wait for menu to appear (deterministic)
-    const deleteOption = this.page.getByRole('menuitem', { name: /delete/i });
-    await deleteOption.waitFor({ state: 'visible', timeout: 3000 });
-    await deleteOption.click();
 
     // Wait for delete confirmation modal dialog to be visible
     await this.page.getByRole('dialog', { name: /delete/i }).waitFor({ state: 'visible', timeout: 5000 });
@@ -220,15 +218,25 @@ export class ProjectsPage extends BasePage {
       throw new Error(`Project "${projectName}" not found in projects table`);
     }
 
-    const projectRow = this.getProjectByName(projectName);
-    const actionsButton = projectRow.getByRole('button', { name: /actions/i });
-    await actionsButton.waitFor({ state: 'visible', timeout: 5000 });
-    await actionsButton.click();
+    // Retry click + menu item sequence (table may re-render causing element detachment)
+    let clicked = false;
+    for (let attempt = 0; attempt < 3 && !clicked; attempt++) {
+      try {
+        const projectRow = this.getProjectByName(projectName);
+        const actionsButton = projectRow.getByRole('button', { name: /actions/i });
+        await actionsButton.waitFor({ state: 'visible', timeout: 5000 });
+        await actionsButton.click();
 
-    // Wait for menu to appear
-    const viewDetailsOption = this.page.getByRole('menuitem', { name: /view details/i });
-    await viewDetailsOption.waitFor({ state: 'visible', timeout: 3000 });
-    await viewDetailsOption.click();
+        // Wait for menu to appear
+        const viewDetailsOption = this.page.getByRole('menuitem', { name: /view details/i });
+        await viewDetailsOption.waitFor({ state: 'visible', timeout: 3000 });
+        await viewDetailsOption.click();
+        clicked = true;
+      } catch {
+        // Menu closed due to table re-render, retry
+        await this.page.waitForTimeout(500);
+      }
+    }
     await this.waitForLoadingComplete();
   }
 
@@ -329,7 +337,7 @@ export class ProjectsPage extends BasePage {
    * Excludes empty state rows that show "No users found"
    */
   getUserRows(): Locator {
-    return this.page.locator('[data-testid="users-table"] tbody tr, table tbody tr')
+    return this.page.locator('[data-testid="users-table"] tbody tr')
       .filter({ hasText: /.+/ })
       .filter({ hasNotText: /No users found/ });
   }
@@ -509,7 +517,7 @@ export class ProjectsPage extends BasePage {
    * Get all invitation rows
    */
   getInvitationRows(): Locator {
-    return this.page.locator('[data-testid="invitations-table"] tbody tr, table tbody tr').filter({ hasText: /.+/ });
+    return this.page.locator('[data-testid="invitations-table"] tbody tr').filter({ hasText: /.+/ });
   }
 
   /**
@@ -1013,7 +1021,7 @@ export class ProjectsPage extends BasePage {
       const project = await api.createProject({
         name: projectName,
         description: 'Test project for invitation workflows',
-        owner: 'test-owner'
+        owner: 'test-user'
       });
       return project.id;
     }, name);

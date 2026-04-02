@@ -18,6 +18,9 @@ export { GovernancePage } from './GovernancePage';
 export { CoursePage } from './CoursePage';
 export { WorkshopPage } from './WorkshopPage';
 export { StoragePowerPage } from './StoragePowerPage';
+export { AMIPage } from './AMIPage';
+export { MarketplacePage } from './MarketplacePage';
+export { IdlePage } from './IdlePage';
 
 // Dialog exports
 export { LaunchDialog } from './dialogs/LaunchDialog';

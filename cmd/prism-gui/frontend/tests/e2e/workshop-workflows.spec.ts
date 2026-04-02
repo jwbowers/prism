@@ -64,7 +64,7 @@ test.describe('Workshop Workflows', () => {
 
   test.beforeEach(async ({ page, context }) => {
     await context.addInitScript(() => {
-      localStorage.setItem('cws_onboarding_complete', 'true');
+      localStorage.setItem('prism_onboarding_complete', 'true');
     });
     workshopPage = new WorkshopPage(page);
   });
@@ -214,8 +214,9 @@ test.describe('Workshop Workflows', () => {
       await workshopPage.clickEndWorkshop(title);
 
       // Confirmation modal should appear
-      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
-      await expect(page.getByText(/end workshop/i)).toBeVisible();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible({ timeout: 5000 });
+      await expect(dialog.getByText(/end workshop/i).first()).toBeVisible();
     });
   });
 

@@ -50,7 +50,7 @@ export class WorkshopPage extends BasePage {
       timeout: 10000
     });
 
-    await this.page.getByTestId('workshop-title-input').fill(data.title);
+    await this.page.getByTestId('workshop-title-input').locator('input').fill(data.title);
 
     if (data.owner) {
       await this.page.getByLabel(/^owner/i).fill(data.owner);

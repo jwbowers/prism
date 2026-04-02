@@ -1,5 +1,5 @@
 // Global setup for Playwright tests
-import { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestProjects, cleanupTestStorage, createGovernanceTestProject } from './setup-daemon.js'
+import { startDaemon, stopDaemon, isDaemonRunning, cleanupTestUsers, cleanupTestProjects, cleanupTestStorage, cleanupTestCourses, createGovernanceTestProject } from './setup-daemon.js'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
@@ -77,6 +77,11 @@ async function globalSetup() {
   // governance-workflows.spec.ts tests look up this project by name; having it pre-created
   // avoids beforeAll/afterAll lifecycle issues when Playwright re-evaluates the spec per describe group.
   await createGovernanceTestProject()
+
+  // Remove test courses left over from previous runs.
+  // Prevents strict-mode violations: openCourse(prefix) finds multiple rows when stale
+  // courses from interrupted runs share the same code prefix (e.g. PWR-TA-12345).
+  await cleanupTestCourses()
 
   // Remove test storage volumes (EFS + EBS) left over from previous runs.
   // Stale volumes in transitional states (creating, deleting) cause storage test failures:

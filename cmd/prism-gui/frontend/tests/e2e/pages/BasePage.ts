@@ -334,6 +334,42 @@ export class BasePage {
   }
 
   /**
+   * Navigate to a Settings Advanced sub-section (AMI Management, Template Marketplace, Idle Detection, etc.)
+   *
+   * Settings sub-nav has an expandable "Advanced" group. This method:
+   * 1. Navigates to the Settings main view
+   * 2. Expands the "Advanced" group if collapsed
+   * 3. Clicks the specific section link
+   */
+  async navigateToSettingsAdvanced(sectionName: string) {
+    // Navigate to Settings main view
+    await this.navigateToTab('settings');
+
+    // Wait for the Settings sub-nav to be visible (General link is always shown)
+    await this.page.waitForSelector('a[href="#general"]', { state: 'visible', timeout: 8000 });
+
+    // Expand the "Advanced" group if the target section link is not yet visible.
+    // Check by link text (more reliable than computing hrefs which may differ from names).
+    const sectionLinkCheck = this.page.getByRole('link', { name: new RegExp(sectionName, 'i') });
+    const sectionAlreadyVisible = await sectionLinkCheck.first().isVisible({ timeout: 1000 }).catch(() => false);
+    if (!sectionAlreadyVisible) {
+      const advancedLink = this.page.locator('a[href="#advanced"]');
+      if (await advancedLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await advancedLink.click();
+        await this.page.waitForTimeout(300); // Allow expand animation
+      }
+    }
+
+    // Click the specific section link by text
+    const sectionLink = this.page.getByRole('link', { name: new RegExp(sectionName, 'i') });
+    await sectionLink.first().waitFor({ state: 'visible', timeout: 5000 });
+    await sectionLink.first().click();
+
+    // Wait for content to load
+    await this.waitForLoadingComplete();
+  }
+
+  /**
    * Wait for daemon API to be ready
    */
   async waitForDaemonReady(maxAttempts: number = 20) {

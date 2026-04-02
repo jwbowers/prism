@@ -19,14 +19,37 @@ export class CoursePage extends BasePage {
     await coursesLink.waitFor({ state: 'visible', timeout: 10000 });
     await coursesLink.click();
     await this.waitForCourseList();
+    // Explicitly refresh the list so newly-created courses appear, then wait for the API response.
+    const refreshBtn = this.page.getByTestId('refresh-courses-button');
+    await refreshBtn.waitFor({ state: 'visible', timeout: 5000 });
+    const courseResponsePromise = this.page.waitForResponse(
+      response => response.url().includes('/api/v1/courses') && response.status() === 200,
+      { timeout: 10000 }
+    ).catch(() => {});
+    await refreshBtn.click();
+    await courseResponsePromise;
+    await this.page.waitForTimeout(300);
   }
 
-  /** Wait for the courses table to render. */
+  /** Wait for the courses table to render and finish loading. */
   async waitForCourseList() {
     await this.page.waitForSelector('[data-testid="courses-panel"]', {
       state: 'visible',
       timeout: 15000
     });
+    // Explicitly refresh courses to ensure the table reflects the latest daemon state.
+    // Without this, openCourse() can race against the initial loadCourses() API call
+    // and see an empty list when a course was just created in beforeEach.
+    const refreshBtn = this.page.getByTestId('refresh-courses-button');
+    if (await refreshBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      // Set up response waiter BEFORE clicking to capture the refresh response
+      const responsePromise = this.page.waitForResponse(
+        resp => resp.url().includes('/api/v1/courses') && resp.status() === 200,
+        { timeout: 8000 }
+      ).catch(() => {});
+      await refreshBtn.click();
+      await responsePromise;
+    }
   }
 
   /**
@@ -51,20 +74,31 @@ export class CoursePage extends BasePage {
       timeout: 10000
     });
 
-    await this.page.getByTestId('course-code-input').fill(data.code);
-    await this.page.getByTestId('course-title-input').fill(data.title);
+    await this.page.getByTestId('course-code-input').locator('input').fill(data.code);
+    await this.page.getByTestId('course-title-input').locator('input').fill(data.title);
 
     if (data.department) {
-      await this.page.getByLabel(/department/i).fill(data.department);
+      await this.page.getByLabel('Department', { exact: true }).fill(data.department);
     }
     if (data.semester) {
-      await this.page.getByLabel(/semester/i).fill(data.semester);
+      await this.page.getByLabel('Semester', { exact: true }).fill(data.semester);
     }
+    // Semester Start and End are required by backend — use keyboard type to trigger React state
+    const startInput = this.page.getByLabel('Semester Start', { exact: true });
+    await startInput.click();
+    await startInput.press('Control+a');
+    await this.page.keyboard.type(data.start || '2099-09-01');
+    await this.page.keyboard.press('Tab');
+    const endInput = this.page.getByLabel('Semester End', { exact: true });
+    await endInput.click();
+    await endInput.press('Control+a');
+    await this.page.keyboard.type(data.end || '2099-12-15');
+    await this.page.keyboard.press('Tab');
     if (data.owner) {
-      await this.page.getByLabel(/owner/i).fill(data.owner);
+      await this.page.getByLabel('Owner (User ID)', { exact: true }).fill(data.owner);
     }
     if (data.budget) {
-      await this.page.getByLabel(/budget/i).fill(data.budget);
+      await this.page.getByLabel('Per-Student Budget (USD)', { exact: true }).fill(data.budget);
     }
 
     await this.page.getByTestId('create-course-submit').click();
@@ -101,7 +135,7 @@ export class CoursePage extends BasePage {
     await this.switchToTab('Members');
     await this.page.getByTestId('enroll-member-button').click();
     await this.page.waitForTimeout(300);
-    await this.page.getByTestId('enroll-email-input').fill(email);
+    await this.page.getByTestId('enroll-email-input').locator('input').fill(email);
     const roleSelect = this.page.getByLabel(/role/i).last();
     await roleSelect.selectOption(role);
     await this.page.getByTestId('enroll-submit-button').click();
@@ -126,9 +160,16 @@ export class CoursePage extends BasePage {
 
   async addTemplate(slug: string) {
     await this.switchToTab('Templates');
-    await this.page.getByTestId('add-template-input').fill(slug);
-    await this.page.getByTestId('add-template-button').click();
-    await this.page.waitForTimeout(300);
+    // Wait for templates content to load before interacting with input
+    const addBtn = this.page.getByTestId('add-template-button');
+    await addBtn.waitFor({ state: 'visible', timeout: 5000 });
+    // Use pressSequentially with delay to ensure each keypress triggers Cloudscape onChange
+    const templateInput = this.page.getByTestId('add-template-input').locator('input');
+    await templateInput.click();
+    await templateInput.pressSequentially(slug, { delay: 50 });
+    await this.page.waitForTimeout(300); // allow React to batch-process state updates
+    await addBtn.click();
+    await this.page.waitForTimeout(1500);
   }
 
   async removeTemplate(slug: string) {
@@ -144,7 +185,7 @@ export class CoursePage extends BasePage {
     await this.switchToTab('Budget');
     await this.page.getByTestId('distribute-budget-button').click();
     await this.page.waitForTimeout(200);
-    await this.page.getByTestId('distribute-amount-input').fill(String(amount));
+    await this.page.getByTestId('distribute-amount-input').locator('input').fill(String(amount));
     await this.page.getByTestId('distribute-submit-button').click();
     await this.page.waitForTimeout(300);
   }
@@ -204,9 +245,9 @@ export class CoursePage extends BasePage {
   async grantTAAccess(email: string, displayName?: string) {
     await this.page.getByTestId('ta-grant-button').click();
     await this.page.waitForSelector('[data-testid="ta-grant-modal"]', { state: 'visible', timeout: 5000 });
-    await this.page.getByTestId('ta-email-input').fill(email);
+    await this.page.getByTestId('ta-email-input').locator('input').fill(email);
     if (displayName) {
-      await this.page.getByTestId('ta-name-input').fill(displayName);
+      await this.page.getByTestId('ta-name-input').locator('input').fill(displayName);
     }
     await this.page.getByTestId('ta-grant-submit').click();
     await this.page.waitForSelector('[data-testid="ta-grant-modal"]', { state: 'hidden', timeout: 5000 });
@@ -230,9 +271,9 @@ export class CoursePage extends BasePage {
   async createMaterials(sizeGB: number, mountPath?: string) {
     await this.page.getByTestId('create-materials-button').click();
     await this.page.waitForSelector('[data-testid="create-materials-modal"]', { state: 'visible', timeout: 5000 });
-    await this.page.getByTestId('materials-size-input').fill(String(sizeGB));
+    await this.page.getByTestId('materials-size-input').locator('input').fill(String(sizeGB));
     if (mountPath) {
-      await this.page.getByTestId('materials-mount-input').fill(mountPath);
+      await this.page.getByTestId('materials-mount-input').locator('input').fill(mountPath);
     }
     await this.page.getByTestId('create-materials-submit').click();
     await this.page.waitForSelector('[data-testid="create-materials-modal"]', { state: 'hidden', timeout: 5000 });

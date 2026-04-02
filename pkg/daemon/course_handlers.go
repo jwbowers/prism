@@ -1096,20 +1096,26 @@ func (s *Server) handleCourseMaterials(w http.ResponseWriter, r *http.Request, c
 		}
 
 		// Create a real EFS volume for course materials storage.
-		if s.awsManager == nil {
-			s.writeError(w, http.StatusServiceUnavailable, "AWS manager not available; cannot create EFS volume")
-			return
+		// In test mode, skip the AWS call and use a deterministic fake EFS ID.
+		var efsID string
+		if s.testMode {
+			efsID = fmt.Sprintf("fs-test-%s", courseID[:8])
+		} else {
+			if s.awsManager == nil {
+				s.writeError(w, http.StatusServiceUnavailable, "AWS manager not available; cannot create EFS volume")
+				return
+			}
+			efsVol, err := s.awsManager.CreateVolume(types.VolumeCreateRequest{
+				Name:            fmt.Sprintf("course-materials-%s", courseID),
+				PerformanceMode: "generalPurpose",
+				ThroughputMode:  "bursting",
+			})
+			if err != nil {
+				s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create EFS volume: %v", err))
+				return
+			}
+			efsID = efsVol.FileSystemID
 		}
-		efsVol, err := s.awsManager.CreateVolume(types.VolumeCreateRequest{
-			Name:            fmt.Sprintf("course-materials-%s", courseID),
-			PerformanceMode: "generalPurpose",
-			ThroughputMode:  "bursting",
-		})
-		if err != nil {
-			s.writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create EFS volume: %v", err))
-			return
-		}
-		efsID := efsVol.FileSystemID
 
 		if err := s.courseManager.SetCourseMaterials(r.Context(), courseID, efsID, req.MountPath, req.SizeGB); err != nil {
 			switch err {
