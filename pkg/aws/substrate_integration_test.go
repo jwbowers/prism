@@ -56,11 +56,12 @@ func setupSubstrateManager(t *testing.T) (*Manager, *substrate.TestServer) {
 }
 
 func TestSubstrateLaunchInstance(t *testing.T) {
-	// LaunchInstance calls templates.GetTemplateInfo() which queries the community
-	// template registry (filesystem + remote fetch). Substrate does not pre-seed
-	// VPCs, subnets, AMIs, or key pairs the way LocalStack's init scripts do.
-	// This test is a placeholder for when Substrate gains a SeedDefaults() helper.
-	t.Skip("Skipping: LaunchInstance requires pre-seeded VPC/AMI/subnet state not yet available in Substrate")
+	// LaunchInstance resolves AMI IDs via SSM GetParameter against public AWS paths
+	// (/aws/service/canonical/ubuntu/..., /aws/service/ami-amazon-linux-latest/...).
+	// A fresh TestServer has no SSM parameters seeded. Re-enable once
+	// scttfrdmn/substrate#267 (TestServer.SeedSSMParameter helper) is implemented,
+	// then call ts.SeedSSMParameter(...) for each AMI path before launching.
+	t.Skip("Skipping: waiting for substrate#267 (TestServer.SeedSSMParameter helper)")
 	manager, _ := setupSubstrateManager(t)
 
 	req := ctypes.LaunchRequest{
@@ -127,9 +128,9 @@ func TestSubstrateCreateEBSVolume(t *testing.T) {
 }
 
 func TestSubstrateEBSAttachDetach(t *testing.T) {
-	// Depends on LaunchInstance which requires pre-seeded VPC/AMI state. Skip
-	// until TestSubstrateLaunchInstance is unblocked.
-	t.Skip("Skipping: depends on LaunchInstance (see TestSubstrateLaunchInstance)")
+	// Depends on LaunchInstance. Re-enable alongside TestSubstrateLaunchInstance
+	// once substrate#267 (TestServer.SeedSSMParameter) is implemented.
+	t.Skip("Skipping: depends on LaunchInstance (blocked on substrate#267)")
 	manager, ts := setupSubstrateManager(t)
 
 	// Launch an instance
