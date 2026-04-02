@@ -5,6 +5,11 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.1] - 2026-04-02
+
+### Fixed
+- Project deletion now blocks when running instances belong to the project (#539). `project.Manager.getActiveInstancesForProject` was a permanent stub returning empty — deletion safety was silently bypassed. Added `SetActiveInstancesFunc` callback; daemon wires it against `stateManager.LoadState()` on startup. Added unit test asserting deletion fails with active instances and succeeds after they stop.
+
 ## [0.29.0] - 2026-04-02
 
 ### Added

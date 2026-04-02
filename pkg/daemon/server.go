@@ -275,6 +275,20 @@ func NewServer(port string) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize project manager: %w", err)
 	}
+	// Wire active-instance check so DeleteProject blocks while instances are running (#539)
+	projectManager.SetActiveInstancesFunc(func(projectID string) ([]string, error) {
+		st, err := stateManager.LoadState()
+		if err != nil {
+			return nil, err
+		}
+		var active []string
+		for name, inst := range st.Instances {
+			if inst.ProjectID == projectID && inst.State == "running" {
+				active = append(active, name)
+			}
+		}
+		return active, nil
+	})
 
 	// Initialize budget manager (v0.5.10 multi-budget system)
 	budgetManager, err := project.NewBudgetManager()

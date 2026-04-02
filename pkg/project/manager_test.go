@@ -680,6 +680,45 @@ func TestManager_DeleteProject(t *testing.T) {
 	assert.Equal(t, "Project to Keep", remainingProject.Name)
 }
 
+// TestManager_DeleteProject_BlockedByActiveInstances verifies that DeleteProject
+// returns an error when the injected activeInstancesFunc reports running instances,
+// and succeeds once no instances are active. (#539)
+func TestManager_DeleteProject_BlockedByActiveInstances(t *testing.T) {
+	manager := setupTestManager(t)
+	defer teardownTestManager(manager)
+
+	ctx := context.Background()
+
+	proj, err := manager.CreateProject(ctx, &CreateProjectRequest{
+		Name:  "Blocked Project",
+		Owner: "researcher",
+	})
+	require.NoError(t, err)
+
+	// Wire up an activeInstancesFunc that reports one running instance.
+	manager.SetActiveInstancesFunc(func(projectID string) ([]string, error) {
+		if projectID == proj.ID {
+			return []string{"research-instance-1"}, nil
+		}
+		return nil, nil
+	})
+
+	err = manager.DeleteProject(ctx, proj.ID)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "active instance")
+
+	// Clear the running instance — deletion should now succeed.
+	manager.SetActiveInstancesFunc(func(projectID string) ([]string, error) {
+		return nil, nil
+	})
+
+	err = manager.DeleteProject(ctx, proj.ID)
+	require.NoError(t, err)
+
+	_, err = manager.GetProject(ctx, proj.ID)
+	assert.Error(t, err)
+}
+
 // Helper functions
 func setupTestManager(t *testing.T) *Manager {
 	t.Helper()

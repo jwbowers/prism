@@ -22,10 +22,19 @@ import (
 
 // Manager handles project lifecycle, budget tracking, and cost controls
 type Manager struct {
-	projectsPath  string
-	mutex         sync.RWMutex
-	projects      map[string]*types.Project
-	budgetTracker *BudgetTracker
+	projectsPath        string
+	mutex               sync.RWMutex
+	projects            map[string]*types.Project
+	budgetTracker       *BudgetTracker
+	activeInstancesFunc func(projectID string) ([]string, error)
+}
+
+// SetActiveInstancesFunc registers a callback used by DeleteProject to check
+// whether any running instances belong to the given project. The daemon wires
+// this up against the state manager so the project manager does not need a
+// direct dependency on pkg/state.
+func (m *Manager) SetActiveInstancesFunc(fn func(projectID string) ([]string, error)) {
+	m.activeInstancesFunc = fn
 }
 
 // NewManager creates a new project manager
@@ -487,21 +496,14 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-// getActiveInstancesForProject checks for active instances in a project
-// Currently returns empty slice - project-instance association needs to be implemented
-// at the daemon level where both state manager and AWS manager are available
+// getActiveInstancesForProject returns the names of running instances that
+// belong to projectID. It delegates to activeInstancesFunc when set (wired by
+// the daemon via SetActiveInstancesFunc). Without that hook the check is a
+// no-op so that the project package compiles and runs standalone.
 func (m *Manager) getActiveInstancesForProject(projectID string) ([]string, error) {
-	// This method is called during project deletion to check if there are active instances
-	// For now, return empty slice to allow project operations to proceed
-	//
-	// Proper implementation would require:
-	// 1. Access to state manager or AWS manager (not available in project manager)
-	// 2. Standardized project tagging on EC2 instances
-	// 3. Query instances with Project tag = projectID and State = running
-	//
-	// The actual instance counting is now implemented in daemon/project_handlers.go
-	// where both awsManager and budgetTracker are available
-
+	if m.activeInstancesFunc != nil {
+		return m.activeInstancesFunc(projectID)
+	}
 	return []string{}, nil
 }
 
