@@ -1,6 +1,6 @@
 # Prism Testing Guide
 
-This guide covers the comprehensive testing strategy for Prism, including unit tests, integration tests with LocalStack, and code coverage analysis.
+This guide covers the comprehensive testing strategy for Prism, including unit tests, integration tests with Substrate, and code coverage analysis.
 
 ## Test Coverage Targets
 
@@ -39,21 +39,25 @@ Unit tests cover:
 - `pkg/state/manager_test.go` - State management tests
 - `pkg/types/types_test.go` - Type validation tests
 
-### 2. Integration Tests
+### 2. Substrate Integration Tests
 
-**Location**: `pkg/aws/integration_test.go`
-**Command**: `INTEGRATION_TESTS=1 go test ./pkg/aws -tags=integration -v`
+**Location**: `pkg/aws/substrate_integration_test.go`
+**Build tag**: `substrate`
+**Commands**:
+```bash
+make test-substrate          # In-process (no Docker)
+make test-substrate-docker   # Via Docker container
+```
 
-Integration tests use LocalStack to provide:
+Substrate tests provide in-process AWS emulation:
 - Real AWS API testing without actual cloud costs
-- Complete instance lifecycle testing (launch, stop, start, delete)
-- EBS and EFS volume operations
-- Error handling with real AWS errors
-- Multi-instance management
+- Sub-100ms startup (no Docker needed for unit tests)
+- Complete EBS/EFS volume lifecycle testing
+- Error handling with real AWS error types
 
-**Prerequisites:**
-- Docker and Docker Compose installed
-- LocalStack container running
+**Prerequisites for Docker mode:**
+- Docker installed
+- `make substrate-start` (or Docker Compose)
 
 ### 3. Test Coverage Analysis
 
@@ -79,20 +83,19 @@ go test ./... -coverprofile=coverage.out -covermode=atomic
 go tool cover -html=coverage.out -o coverage.html
 ```
 
-### Integration Tests with LocalStack
+### Substrate Integration Tests
 
 ```bash
-# Start LocalStack
-docker-compose -f docker-compose.test.yml up -d localstack
+# In-process (fastest — no Docker needed)
+make test-substrate
 
-# Wait for LocalStack to be ready (10 seconds)
-sleep 10
+# Via Docker container
+make substrate-start
+make test-substrate-docker
+make substrate-stop
 
-# Run integration tests
-INTEGRATION_TESTS=1 go test ./pkg/aws -tags=integration -v
-
-# Stop LocalStack
-docker-compose -f docker-compose.test.yml down
+# Manually
+go test -tags=substrate ./pkg/aws/... -v
 ```
 
 ### Individual Package Testing
@@ -104,31 +107,40 @@ go test ./pkg/daemon -coverprofile=daemon_coverage.out
 go test ./pkg/api -coverprofile=api_coverage.out
 ```
 
-## LocalStack Setup
+## Substrate Setup
 
-LocalStack provides a local AWS cloud stack for testing:
+[Substrate](https://github.com/scttfrdmn/substrate) provides in-process AWS emulation:
 
-**Services Used:**
+**Services Emulated:**
 - EC2 (instance management)
-- EFS (file system volumes) 
+- EFS (file system volumes)
+- EBS (block storage)
 - STS (security token service)
-- IAM (basic permissions)
+- IAM (basic permissions — pending protocol fix substrate#260)
+- SSM (run command — pending DateTime fix substrate#261)
 
-**Configuration** (`docker-compose.test.yml`):
-```yaml
-services:
-  localstack:
-    image: localstack/localstack:3.0
-    ports:
-      - "127.0.0.1:4566:4566"
-    environment:
-      - SERVICES=ec2,efs,sts,iam
-      - AWS_DEFAULT_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
+**In-process usage** (`pkg/aws/substrate_integration_test.go`):
+```go
+//go:build substrate
+
+ts := substrate.StartTestServer(t) // stops automatically at test end
+cfg := aws.Config{
+    Credentials: credentials.NewStaticCredentialsProvider("test", "test", ""),
+    EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
+        func(service, region string, _ ...interface{}) (aws.Endpoint, error) {
+            return aws.Endpoint{URL: ts.URL, HostnameImmutable: true}, nil
+        }),
+}
 ```
 
-**Endpoint**: http://localhost:4566
+**Docker Compose** (`test/substrate/docker-compose.yml`):
+```yaml
+services:
+  substrate:
+    image: ghcr.io/scttfrdmn/substrate:latest
+    ports:
+      - "4566:4566"
+```
 
 ## Test Categories
 
@@ -169,23 +181,17 @@ services:
 - `/api/v1/volumes` - Volume operations
 - `/api/v1/storage` - Storage operations
 
-### 3. Integration Tests (`pkg/aws/integration_test.go`)
+### 3. Substrate Integration Tests (`pkg/aws/substrate_integration_test.go`)
 
-**Instance Lifecycle:**
-- Launch instances with different templates
-- Start/stop/delete operations
-- Connection info retrieval
-- Multi-instance management
+**Currently Passing:**
+- `TestSubstrateCreateEBSVolume` - EBS volume create/list/delete
+- `TestSubstrateErrorHandling` - Invalid resource error propagation
 
-**Volume Operations:**
-- EFS volume creation/deletion
-- EBS volume creation/deletion
-- Storage attachment/detachment
-
-**Error Handling:**
-- Invalid template handling
-- Nonexistent resource operations
-- AWS API error propagation
+**Skipped (pending Substrate fixes):**
+- `TestSubstrateLaunchInstance` — needs VPC/AMI pre-seeding (substrate SeedDefaults helper)
+- `TestSubstrateEBSAttachDetach` — depends on instance launch
+- `TestSubstrateIAMInstanceProfile` — substrate#260 (IAM Query/XML protocol)
+- `TestSubstrateSSMRunCommand` — substrate#261 (SSM DateTime format)
 
 ## Coverage Improvement Strategies
 
@@ -204,7 +210,7 @@ services:
 🔄 AWS API error handling
 🔄 Network and security group creation
 
-**Strategy**: Use LocalStack integration tests to cover the actual AWS operations that require API calls.
+**Strategy**: Use Substrate integration tests to cover the actual AWS operations that require API calls.
 
 ### For Daemon Package (Target: 80%)
 
@@ -227,13 +233,12 @@ services:
 **Recommended CI Pipeline:**
 1. **Lint**: `golangci-lint run`
 2. **Unit Tests**: `go test ./... -coverprofile=coverage.out`
-3. **Integration Tests**: LocalStack + `INTEGRATION_TESTS=1 go test ./pkg/aws -tags=integration`
+3. **Substrate Tests**: `go test -tags=substrate ./pkg/aws/...`
 4. **Coverage Analysis**: Fail if below targets
 5. **Build**: Ensure all binaries build successfully
 
 **Environment Variables:**
-- `INTEGRATION_TESTS=1` - Enable integration tests
-- `AWS_ENDPOINT_URL=http://localhost:4566` - LocalStack endpoint
+- `PRISM_TEST_MODE=true` - Bypass API authentication in daemon
 
 ## Debugging Tests
 
@@ -243,16 +248,16 @@ go test ./pkg/aws -v  # Verbose test output
 go test ./pkg/aws -v -run TestSpecificFunction  # Run specific test
 ```
 
-### LocalStack Debugging
+### Substrate Debugging
 ```bash
-# View LocalStack logs
-docker-compose -f docker-compose.test.yml logs -f localstack
+# View Substrate container logs
+make substrate-logs
 
-# Check LocalStack health
+# Check Substrate health
 curl http://localhost:4566/health
 
-# List LocalStack services
-curl http://localhost:4566/_localstack/health
+# Reset Substrate state between tests
+curl -X POST http://localhost:4566/_substrate/reset
 ```
 
 ### Coverage Debugging
@@ -269,7 +274,7 @@ go tool cover -func=aws.out
 
 1. **Test Structure**: Use table-driven tests for multiple scenarios
 2. **Isolation**: Each test should be independent and clean up after itself
-3. **Mocking**: Use LocalStack for AWS integration, avoid complex mocking
+3. **Substrate for AWS**: Use Substrate for AWS API tests — in-process, no Docker required
 4. **Coverage**: Focus on critical paths and error conditions
 5. **Performance**: Keep unit tests fast (<1s each), integration tests can be slower
 6. **Documentation**: Test names should clearly describe what they test
@@ -281,23 +286,23 @@ go tool cover -func=aws.out
 3. **Property Testing**: Add property-based tests for complex algorithms
 4. **Load Testing**: Add load tests for daemon server
 5. **End-to-End**: Add full workflow tests with real AWS (optional)
+6. **Substrate coverage**: Re-enable skipped tests when substrate#260 and #261 are fixed
 
 ## Troubleshooting
 
 **Common Issues:**
-- LocalStack container not starting: Check Docker daemon and port 4566
-- Integration tests failing: Ensure LocalStack is fully initialized (wait 10s)
+- Substrate container not starting: Check Docker daemon and port 4566
+- `go test -tags=substrate` failing: Run `go mod tidy` to ensure substrate dep is present
 - Coverage reports not generating: Check file permissions and output directory
-- AWS SDK errors: Verify LocalStack endpoint configuration
 
 **Debug Commands:**
 ```bash
-# Check LocalStack status
-docker ps | grep localstack
+# Check Substrate container status
+docker ps | grep substrate
 
-# Test LocalStack connectivity
+# Test Substrate connectivity
 curl -v http://localhost:4566/health
 
 # Validate test build tags
-go list -tags=integration ./pkg/aws
+go list -tags=substrate ./pkg/aws
 ```

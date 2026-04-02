@@ -260,35 +260,7 @@ await page.route('**/api/v1/instances', route => {
 });
 ```
 
-### Option 2: LocalStack
-
-**Approach**: Use LocalStack to emulate AWS services locally
-
-**Pros**:
-- ✅ No AWS costs
-- ✅ Tests real AWS SDK calls
-- ✅ Full AWS API compatibility
-- ✅ Faster than real AWS
-
-**Cons**:
-- ❌ LocalStack Pro required for some services ($40/month)
-- ❌ Not 100% feature parity with real AWS
-- ❌ Additional infrastructure complexity
-
-**Implementation**:
-```bash
-# Start LocalStack
-docker run -d \
-  -p 4566:4566 \
-  -e SERVICES=ec2,efs,elasticfilesystem \
-  localstack/localstack
-
-# Configure daemon to use LocalStack
-export AWS_ENDPOINT_URL=http://localhost:4566
-export PRISM_TEST_MODE=localstack
-```
-
-### Option 3: Focus on Non-AWS Tests
+### Option 2: Focus on Non-AWS Tests
 
 **Approach**: Run only the 107 non-AWS tests in CI/CD
 
@@ -380,7 +352,7 @@ npx playwright test \
 
 3. ✅ **Skipped tests are working as designed** - Graceful handling of missing data
 
-4. ⚠️ **84 tests (44%) require AWS** - Need strategy for AWS testing (real, mocked, or LocalStack)
+4. ⚠️ **84 tests (44%) require AWS** - Need strategy for AWS testing (real or Substrate-backed)
 
 5. ✅ **Test categorization complete** - Clear path forward for both AWS and non-AWS tests
 
@@ -390,11 +362,13 @@ npx playwright test \
 
 The 84 AWS-dependent tests require a decision:
 - **Option A**: Pay ~$0.50 per test run for ephemeral AWS resources
-- **Option B**: Use LocalStack (~$40/month) for local AWS emulation
-- **Option C**: Mock AWS responses (free, but less realistic)
-- **Option D**: Accept 56% pass rate, run AWS tests manually with real account
+- **Option B**: Mock AWS responses (free, but less realistic)
+- **Option C**: Accept 56% pass rate, run AWS tests manually with real account
 
-**Recommended**: Start with Option D (focus on non-AWS tests), add Option A (ephemeral AWS) for critical AWS integration testing when needed.
+Go-level AWS integration uses [Substrate](https://github.com/scttfrdmn/substrate) (in-process,
+no Docker, <100ms startup) — see `pkg/aws/substrate_integration_test.go`.
+
+**Recommended**: Start with Option C (focus on non-AWS tests), add Option A (ephemeral AWS) for critical AWS integration testing when needed.
 
 ---
 

@@ -121,163 +121,98 @@ go test -race ./...
 
 ---
 
-## LocalStack Integration (Offline AWS Testing)
+## Substrate Integration (In-Process AWS Emulation)
 
-**Location**: `test/localstack/`
+**Location**: `pkg/aws/substrate_integration_test.go`
 
-LocalStack enables **offline development and testing** without AWS credentials or costs. It mocks AWS services locally using Docker.
+[Substrate](https://github.com/scttfrdmn/substrate) provides in-process AWS service emulation
+with sub-100ms startup, no Docker required, and full Go test integration.
 
 ### Benefits
 
-- ✅ **Offline Development**: No AWS credentials needed
-- ✅ **Faster Tests**: ~5x faster than real AWS (5-10 min vs 45-60 min)
-- ✅ **Cost Savings**: $0 vs $80-150/month per developer
-- ✅ **Safe Testing**: No risk of affecting production resources
-- ✅ **CI/CD Friendly**: Run tests in GitHub Actions without AWS setup
+- ✅ **In-process**: No Docker, no daemon, <100ms startup
+- ✅ **Automatic cleanup**: Test server stops when test ends
+- ✅ **No credentials needed**: Static mock credentials
+- ✅ **Docker option**: `ghcr.io/scttfrdmn/substrate:latest` for CI/CD
 
 ### Quick Start
 
 ```bash
-# Start LocalStack (one-time per dev session)
-make localstack-start
+# Run Substrate unit tests (in-process, no Docker)
+make test-substrate
 
-# Run LocalStack tests
-make test-localstack
+# Run Substrate tests with Docker container
+make test-substrate-docker
 
-# OR: Run with environment variable
-PRISM_USE_LOCALSTACK=true go test -tags=integration ./test/localstack/... -v
-
-# Stop LocalStack when done
-make localstack-stop
+# Start/stop Substrate container for manual testing
+make substrate-start
+make substrate-stop
 ```
-
-### Architecture
-
-```
-test/localstack/
-├── docker-compose.yml       # LocalStack configuration
-├── init/
-│   ├── 01-seed-ec2.sh      # Creates VPC, subnets, AMIs, key pairs
-│   ├── 02-seed-efs.sh      # Creates EFS file systems
-│   └── 03-seed-ssm.sh      # Populates SSM Parameter Store
-├── fixtures/
-│   └── fixtures.go         # LocalStack test helpers
-├── localstack_test.go      # Verification tests
-└── README.md               # Detailed documentation
-
-pkg/aws/localstack/
-├── config.go               # Environment detection & configuration
-└── helpers.go              # Health checks & utilities
-```
-
-### LocalStack vs Real AWS
-
-| Feature | LocalStack | Real AWS | Notes |
-|---------|-----------|----------|-------|
-| **Instance Launching** | ✅ Full support | ✅ Full support | LocalStack mocks EC2 API |
-| **EFS Volumes** | ✅ Full support | ✅ Full support | LocalStack mocks EFS API |
-| **AMI Discovery** | ✅ Via SSM | ✅ Via SSM | Pre-seeded parameters |
-| **Security Groups** | ✅ Full support | ✅ Full support | LocalStack mocks networking |
-| **GPU Instances** | ❌ Mocked only | ✅ Full support | No GPU hardware in LocalStack |
-| **Spot Instances** | ❌ Limited | ✅ Full support | Requires real pricing |
-| **Multi-Region** | ❌ Single region | ✅ 8 regions | LocalStack is single-region |
-| **Network Latency** | ❌ Local | ✅ Real latency | LocalStack has no network delay |
 
 ### Test Workflow
 
 ```go
-// +build integration
+//go:build substrate
 
-package localstack_test
+package aws_test
 
 import (
     "testing"
-    "github.com/scttfrdmn/prism/pkg/aws/localstack"
-    "github.com/scttfrdmn/prism/test/localstack/fixtures"
+    substrate "github.com/scttfrdmn/substrate/pkg"
+    "github.com/aws/aws-sdk-go-v2/aws"
+    "github.com/aws/aws-sdk-go-v2/credentials"
+    ec2sdk "github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
-func TestInstanceLaunch(t *testing.T) {
-    if !localstack.IsLocalStackEnabled() {
-        t.Skip("LocalStack not enabled")
+func TestEBSVolume(t *testing.T) {
+    ts := substrate.StartTestServer(t)  // stops automatically at end of test
+
+    cfg := aws.Config{
+        Region:      "us-east-1",
+        Credentials: credentials.NewStaticCredentialsProvider("test", "test", ""),
+        EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
+            func(service, region string, _ ...interface{}) (aws.Endpoint, error) {
+                return aws.Endpoint{URL: ts.URL, HostnameImmutable: true}, nil
+            }),
     }
-
-    // Create test fixtures (loads LocalStack config)
-    f := fixtures.NewTestFixtures(t)
-
-    // Verify network setup
-    f.VerifyNetworkSetup(t)
-
-    // Launch test instance
-    instanceID := f.LaunchTestInstance(t, "test-instance")
-    t.Logf("Launched instance: %s", instanceID)
+    ec2Client := ec2sdk.NewFromConfig(cfg)
+    // ... test against ec2Client
 }
 ```
 
-### Configuration
+### Substrate vs Real AWS
 
-LocalStack is automatically configured when `PRISM_USE_LOCALSTACK=true` is set:
+| Feature | Substrate | Real AWS | Notes |
+|---------|-----------|----------|-------|
+| **EBS Volumes** | ✅ Full support | ✅ Full support | EC2 API emulated |
+| **EFS Volumes** | ✅ Full support | ✅ Full support | EFS API emulated |
+| **SSM** | ✅ Full support | ✅ Full support | SSM API emulated |
+| **IAM** | ⚠️ In progress | ✅ Full support | substrate#260 |
+| **GPU Instances** | ❌ Mocked only | ✅ Full support | No hardware |
+| **Startup time** | <100ms | N/A | No Docker needed |
+| **Network Latency** | ❌ Local | ✅ Real | In-process |
 
-- **Endpoint**: `http://localhost:4566` (all AWS services)
-- **Region**: `us-west-2` (default test region)
-- **Credentials**: `test` / `test` (mock credentials)
-- **Services**: EC2, EFS, S3, SSM, IAM, STS
+### Known Limitations
 
-### Common Commands
+- **IAM Query/XML protocol** (substrate#260): Go IAM SDK uses Query/XML; Substrate currently
+  returns JSON. `TestSubstrateIAMInstanceProfile` is skipped until fixed.
+- **SSM DateTime format** (substrate#261): SDK expects Unix epoch float64; Substrate returns
+  RFC3339. `TestSubstrateSSMRunCommand` is skipped until fixed.
+- **VPC pre-seeding**: `TestSubstrateLaunchInstance` requires pre-seeded VPC/AMI/subnet state;
+  skipped until Substrate gains a `SeedDefaults()` helper.
 
-```bash
-# Development workflow
-make localstack-start              # Start LocalStack
-make localstack-status             # Check status
-make localstack-logs               # View logs
-make localstack-stop               # Stop LocalStack
-make localstack-reset              # Clean restart
+### Docker (CI/CD)
 
-# Run tests
-make test-localstack               # Run LocalStack verification tests
-PRISM_USE_LOCALSTACK=true make test-workflows  # Run integration tests
-
-# CI/CD
-.github/workflows/localstack-tests.yml  # Automated CI pipeline
+```yaml
+# test/substrate/docker-compose.yml
+services:
+  substrate:
+    image: ghcr.io/scttfrdmn/substrate:latest
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:4566/health"]
 ```
-
-### Performance Comparison
-
-| Test Suite | Real AWS | LocalStack | Speedup |
-|------------|----------|------------|---------|
-| Basic Templates | 10 min | 2 min | 5x |
-| Instance Lifecycle | 15 min | 3 min | 5x |
-| Storage Operations | 8 min | 1.5 min | 5x |
-| **Full Suite** | **45-60 min** | **8-12 min** | **~5x** |
-
-### Supported Test Scenarios
-
-**✅ Fully Supported**:
-- Instance launching (all templates)
-- Instance lifecycle (start, stop, terminate)
-- EFS volume creation and attachment
-- Security groups and networking
-- Template validation
-- AMI discovery via SSM
-
-**⚠️ Partially Supported**:
-- EBS volumes (basic support, limited snapshots)
-- IAM roles (basic support)
-- Hibernation (mocked, not fully realistic)
-
-**❌ Not Supported**:
-- GPU instance testing (no GPU hardware emulation)
-- Real network latency simulation
-- Spot instances (requires real AWS pricing)
-- Multi-region replication (LocalStack is single-region)
-
-### Documentation
-
-See **[test/localstack/README.md](../test/localstack/README.md)** for:
-- Detailed setup instructions
-- Initialization script details
-- Troubleshooting guide
-- Cost savings analysis
-- Advanced configuration options
 
 ---
 
