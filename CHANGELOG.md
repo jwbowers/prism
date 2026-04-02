@@ -5,6 +5,35 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.1] - 2026-04-02
+
+### Added
+- E2E tests for AMI Management (`ami-workflows.spec.ts`, 4 tests — Settings > Advanced > AMI Management)
+- E2E tests for Template Marketplace (`marketplace-workflows.spec.ts`, 3 tests — Settings > Advanced > Template Marketplace)
+- E2E tests for Idle Detection (`idle-workflows.spec.ts`, 4 tests — Settings > Advanced > Idle Detection)
+- `AMIPage`, `MarketplacePage`, `IdlePage` page objects
+
+### Fixed
+- `WorkshopsPanel.tsx`: added `data-testid="create-workshop-button"` (missing testid caused 17.5s timeout and cascade ECONNREFUSED failures in E2E)
+- `course_handlers.go`: EFS creation now skips AWS in `PRISM_TEST_MODE=true`, returning a deterministic fake ID — previously the handler hung indefinitely during E2E tests
+- `BasePage.navigateToSettingsAdvanced()`: expansion check computed wrong href (e.g. `#ami-management` instead of `#ami`); now checks link visibility by text
+- `CoursePage.waitForCourseList()`: added explicit refresh + `waitForResponse` to eliminate `beforeEach` course-creation race condition
+- `global-setup.js`: added `cleanupTestCourses()` pre-run cleanup to prevent stale test courses causing strict-mode violations
+- `workshop-workflows.spec.ts`: scoped `getByText(/end workshop/i)` to dialog to fix strict-mode violation (header + button both matched)
+- `playwright.config.js`: added `NODE_OPTIONS="--max-old-space-size=4096"` to Vite dev server command to prevent crash after BABEL deoptimisation of App.tsx (>500 KB)
+
+## [0.28.0] - 2026-04-01
+
+### Added
+- Cloudscape Design System upgrade to 3.0.1255
+- Windows GUID support
+- Semver constraint enforcement
+- Policy framework fixes
+- Research migration
+
+### Changed
+- Multiple community PRs (#562–563)
+
 ## [0.7.5] - 2026-01-27
 
 ### 🎯 Focus: Complete User Management System

@@ -698,6 +698,25 @@ type CreateProjectRequest struct {
 - Frontend API: `cmd/prism-gui/frontend/src/App.tsx` (SafePrismAPI class)
 - Test helpers: `cmd/prism-gui/frontend/tests/e2e/pages/*.ts`
 
+## Versioning and Changelog
+
+Prism follows **[Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html)** and maintains a **[Keep a Changelog](https://keepachangelog.com/en/1.0.0/)** formatted `CHANGELOG.md` at the repo root.
+
+**Every release commit must include a `CHANGELOG.md` entry** under a new `## [X.Y.Z] - YYYY-MM-DD` heading with the standard sections:
+
+- `### Added` — new features, tests, endpoints
+- `### Changed` — modifications to existing behaviour
+- `### Fixed` — bug fixes
+- `### Removed` — deleted features or files
+- `### Security` — vulnerability fixes
+- `### Deprecated` — soon-to-be-removed features
+
+Keep entries concise (one line per item) and reference issue/PR numbers where relevant. Do not leave an `## [Unreleased]` section — add the version and date at release time.
+
+Version numbers live in two places and must stay in sync:
+- `pkg/version/version.go` — `Version = "X.Y.Z"`
+- `cmd/prism-gui/frontend/package.json` — `"version": "X.Y.Z"`
+
 ## Release Quality Gates ⚠️ MANDATORY
 
 **No release commit may be made until ALL of the following pass with zero failures:**
@@ -707,6 +726,7 @@ type CreateProjectRequest struct {
 3. **Frontend unit tests** — `cd cmd/prism-gui/frontend && npm run test:unit` passes with zero failures
 4. **Go lint** — `make lint` (or `golangci-lint run`) reports zero issues
 5. **TypeScript typecheck** — `npm run typecheck` reports zero errors
+6. **CHANGELOG.md** — a `## [X.Y.Z] - YYYY-MM-DD` entry exists for the release version
 
 This applies to every version bump commit (`chore: bump version to vX.Y.Z`) and every feature PR. If any gate fails, the failures must be fixed before the release proceeds — not deferred to the next release.
 
