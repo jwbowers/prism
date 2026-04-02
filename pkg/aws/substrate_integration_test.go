@@ -173,10 +173,6 @@ func TestSubstrateEBSAttachDetach(t *testing.T) {
 }
 
 func TestSubstrateIAMInstanceProfile(t *testing.T) {
-	// Blocked by scttfrdmn/substrate#260: IAM plugin returns JSON but AWS IAM SDK
-	// uses the Query/XML protocol. GetInstanceProfile returns nil InstanceProfile,
-	// causing a nil dereference panic. Re-enable once fixed.
-	t.Skip("Skipping: waiting for substrate#260 (IAM Query/XML protocol fix)")
 	_, ts := setupSubstrateManager(t)
 
 	ctx := context.Background()
@@ -233,10 +229,6 @@ func TestSubstrateIAMInstanceProfile(t *testing.T) {
 }
 
 func TestSubstrateSSMRunCommand(t *testing.T) {
-	// Blocked by scttfrdmn/substrate#261: SSM plugin returns DateTime as RFC3339
-	// string but Go SDK JSON protocol expects Unix epoch float64.
-	// SendCommand fails with "expected DateTime to be a JSON Number, got string".
-	t.Skip("Skipping: waiting for substrate#261 (SSM DateTime timestamp format fix)")
 	_, ts := setupSubstrateManager(t)
 
 	ctx := context.Background()
