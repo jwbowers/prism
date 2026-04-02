@@ -30,7 +30,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock ResizeObserver for Cloudscape components
-global.ResizeObserver = class ResizeObserver {
+(globalThis as typeof globalThis & { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}

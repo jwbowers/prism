@@ -54,15 +54,25 @@ import {
 interface Project {
   id: string;
   name: string;
-  description: string;
-  budget_limit: number;
-  current_spend: number;
-  owner_id: string;
-  owner_email: string;
+  description?: string;
+  budget_limit?: number;
+  current_spend?: number;
+  owner_id?: string;
+  owner_email?: string;
+  owner?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   status: string;
   member_count?: number;
+  active_instances?: number;
+  total_cost?: number;
+  budget_status?: {
+    total_budget: number;
+    spent_amount: number;
+    spent_percentage: number;
+    alert_count: number;
+  };
+  last_activity?: string;
 }
 
 interface User {
@@ -102,6 +112,9 @@ interface Instance {
   instance_type?: string;
   launch_time?: string;
   region?: string;
+  username?: string;
+  project?: string;
+  web_services?: WebService[];
 }
 
 // Unified StorageVolume interface matching backend API
@@ -174,25 +187,6 @@ interface InstanceSnapshot {
   size_gb?: number;
 }
 
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  owner: string;
-  status: string;
-  member_count: number;
-  active_instances: number;
-  total_cost: number;
-  budget_status?: {
-    total_budget: number;
-    spent_amount: number;
-    spent_percentage: number;
-    alert_count: number;
-  };
-  created_at: string;
-  last_activity: string;
-}
-
 interface BudgetData {
   project_id: string;
   project_name: string;
@@ -212,12 +206,14 @@ interface BudgetData {
 }
 
 interface CostBreakdown {
-  ec2_compute: number;
-  ebs_storage: number;
-  efs_storage: number;
+  ec2_compute?: number;
+  ebs_storage?: number;
+  efs_storage?: number;
   data_transfer: number;
-  other: number;
+  other?: number;
   total: number;
+  instances?: number;
+  storage?: number;
 }
 
 interface Budget {
@@ -426,7 +422,9 @@ interface ProjectData {
 
 interface MemberData {
   user_id: string;
+  username?: string;
   role: string;
+  joined_at?: string;
   [key: string]: unknown;
 }
 
@@ -449,6 +447,7 @@ interface BulkInviteResponse {
   total: number;
   sent: number;
   failed: number;
+  skipped?: number;
   errors?: Array<{email: string; error: string}>;
 }
 
@@ -480,55 +479,6 @@ interface ProjectMember {
   joined_at: string;
 }
 
-interface CostBreakdown {
-  instances: number;
-  storage: number;
-  data_transfer: number;
-  total: number;
-}
-
-interface CreateProjectRequest {
-  name: string;
-  description: string;
-  budget_limit?: number;
-}
-
-interface CreateUserRequest {
-  username: string;
-  email: string;
-  display_name: string;
-}
-
-interface SendInvitationRequest {
-  email: string;
-  role: 'viewer' | 'member' | 'admin';
-  message?: string;
-}
-
-interface BulkInvitationRequest {
-  emails: string[];
-  role: 'viewer' | 'member' | 'admin';
-  message?: string;
-}
-
-interface BulkInvitationResponse {
-  sent: number;
-  failed: number;
-  invitations: Invitation[];
-  errors: { email: string; error: string }[];
-}
-
-interface CreateSharedTokenRequest {
-  name: string;
-  role: 'viewer' | 'member' | 'admin';
-  redemption_limit: number;
-  expires_in?: string;
-  message?: string;
-}
-
-interface ExtendTokenRequest {
-  expires_in: '1d' | '7d' | '30d' | '90d';
-}
 
 interface SharedInvitationToken {
   token: string;
@@ -538,11 +488,13 @@ interface SharedInvitationToken {
   role: 'viewer' | 'member' | 'admin';
   redemption_limit: number;
   redemptions: number;
+  redemption_count?: number;
   created_at: string;
   created_by: string;
   expires_at: string;
   revoked: boolean;
   qr_code_url?: string;
+  status?: string;
 }
 
 // v0.13.0 Governance Interfaces
@@ -885,6 +837,7 @@ interface WebService {
   port: number;
   url?: string;
   description?: string;
+  type?: string;
 }
 
 interface UserUpdateRequest {
@@ -949,17 +902,6 @@ class SafePrismAPI {
 
   constructor() {
     // API key loading disabled - daemon runs in PRISM_TEST_MODE with auth bypass
-    // this.loadAPIKey();
-  }
-
-  private async loadAPIKey() {
-    try {
-      const response = await fetch('http://localhost:8948/api-key');
-      const data = await response.json();
-      this.apiKey = data.api_key;
-    } catch (error) {
-      logger.error('❌ Failed to load API key:', error);
-    }
   }
 
   private async safeRequest<T = unknown>(endpoint: string, method = 'GET', body?: unknown): Promise<T> {
@@ -1004,7 +946,7 @@ class SafePrismAPI {
 
   async getTemplates(): Promise<Record<string, Template>> {
     try {
-      const data = await this.safeRequest('/api/v1/templates');
+      const data = await this.safeRequest<Record<string, Template>>('/api/v1/templates');
       return data || {};
     } catch (error) {
       logger.error('Failed to fetch templates:', error);
@@ -1014,7 +956,7 @@ class SafePrismAPI {
 
   async getInstances(): Promise<Instance[]> {
     try {
-      const data = await this.safeRequest('/api/v1/instances');
+      const data = await this.safeRequest<{instances: Instance[]}>('/api/v1/instances');
       return Array.isArray(data?.instances) ? data.instances : [];
     } catch (error) {
       logger.error('Failed to fetch instances:', error);
@@ -1052,7 +994,7 @@ class SafePrismAPI {
   }
 
   async getConnectionInfo(identifier: string): Promise<string> {
-    const data = await this.safeRequest(`/api/v1/instances/${identifier}/connect`);
+    const data = await this.safeRequest<{connection_info?: string}>(`/api/v1/instances/${identifier}/connect`);
     return data.connection_info || '';
   }
 
@@ -1221,7 +1163,7 @@ class SafePrismAPI {
   // Project Operations
   async getProjects(): Promise<Project[]> {
     try {
-      const data = await this.safeRequest('/api/v1/projects');
+      const data = await this.safeRequest<{projects?: Project[]}>('/api/v1/projects');
       return Array.isArray(data?.projects) ? data.projects : [];
     } catch (error) {
       logger.error('Failed to fetch projects:', error);
@@ -1270,7 +1212,7 @@ class SafePrismAPI {
 
   // Budget Management
   async getProjectBudget(projectId: string): Promise<BudgetData> {
-    return this.safeRequest(`/api/v1/projects/${projectId}/budget`);
+    return this.safeRequest<BudgetData>(`/api/v1/projects/${projectId}/budget`);
   }
 
   // Cost Analysis
@@ -1279,22 +1221,22 @@ class SafePrismAPI {
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     const query = params.toString();
-    return this.safeRequest(`/api/v1/projects/${projectId}/costs${query ? '?' + query : ''}`);
+    return this.safeRequest<CostBreakdown>(`/api/v1/projects/${projectId}/costs${query ? '?' + query : ''}`);
   }
 
   // Resource Usage
   async getProjectUsage(projectId: string, period?: string): Promise<ProjectUsageResponse> {
     const query = period ? `?period=${period}` : '';
-    return this.safeRequest(`/api/v1/projects/${projectId}/usage${query}`);
+    return this.safeRequest<ProjectUsageResponse>(`/api/v1/projects/${projectId}/usage${query}`);
   }
 
   // User Operations
   async getUsers(): Promise<User[]> {
     try {
-      const data = await this.safeRequest('/api/v1/users');
+      const data = await this.safeRequest<User[] | {users?: User[]}>('/api/v1/users');
       // Handle both direct array response and wrapped object response
       if (Array.isArray(data)) return data;
-      if (Array.isArray(data?.users)) return data.users;
+      if (!Array.isArray(data) && Array.isArray((data as {users?: User[]}).users)) return (data as {users: User[]}).users;
       return [];
     } catch (error) {
       logger.error('Failed to fetch users:', error);
@@ -1369,7 +1311,7 @@ class SafePrismAPI {
       // Fetch budget status for each project
       for (const project of projects) {
         try {
-          const budgetStatus = await this.safeRequest(`/api/v1/projects/${project.id}/budget`);
+          const budgetStatus = await this.safeRequest<BudgetData>(`/api/v1/projects/${project.id}/budget`);
 
           if (budgetStatus && budgetStatus.total_budget > 0) {
             const remaining = budgetStatus.total_budget - budgetStatus.spent_amount;
@@ -1408,7 +1350,7 @@ class SafePrismAPI {
       if (endDate) params.append('end_date', endDate);
       const query = params.toString();
 
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/costs${query ? '?' + query : ''}`);
+      const data = await this.safeRequest<CostBreakdown>(`/api/v1/projects/${projectId}/costs${query ? '?' + query : ''}`);
 
       return {
         ec2_compute: data.ec2_compute || 0,
@@ -1448,7 +1390,7 @@ class SafePrismAPI {
   // Budget Pool Operations (v0.6.0+)
   async getBudgetPools(): Promise<Budget[]> {
     try {
-      const data = await this.safeRequest('/api/v1/budgets');
+      const data = await this.safeRequest<{budgets?: Budget[]}>('/api/v1/budgets');
       return Array.isArray(data?.budgets) ? data.budgets : [];
     } catch (error) {
       logger.error('Failed to fetch budget pools:', error);
@@ -1478,7 +1420,7 @@ class SafePrismAPI {
 
   async getBudgetAllocations(budgetId: string): Promise<BudgetAllocation[]> {
     try {
-      const data = await this.safeRequest(`/api/v1/budgets/${budgetId}/allocations`);
+      const data = await this.safeRequest<{allocations?: BudgetAllocation[]}>(`/api/v1/budgets/${budgetId}/allocations`);
       return Array.isArray(data?.allocations) ? data.allocations : [];
     } catch (error) {
       logger.error('Failed to fetch budget allocations:', error);
@@ -1489,7 +1431,7 @@ class SafePrismAPI {
   // Invitation Management APIs (v0.5.11+)
   async getInvitationByToken(token: string): Promise<CachedInvitation> {
     try {
-      const data = await this.safeRequest(`/api/v1/invitations/${token}`);
+      const data = await this.safeRequest<{invitation: Invitation; project: {name: string}}>(`/api/v1/invitations/${token}`);
       const inv = data.invitation;
 
       // Map backend Invitation type to frontend CachedInvitation type
@@ -1587,7 +1529,7 @@ class SafePrismAPI {
   // Shared Token APIs (Issue #241)
   async getSharedTokens(projectId: string): Promise<SharedToken[]> {
     try {
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations/shared`);
+      const data = await this.safeRequest<{tokens?: SharedToken[]}>(`/api/v1/projects/${projectId}/invitations/shared`);
       return Array.isArray(data?.tokens) ? data.tokens : [];
     } catch (error) {
       logger.error('Failed to fetch shared tokens:', error);
@@ -1629,7 +1571,7 @@ class SafePrismAPI {
 
   async redeemSharedToken(token: string): Promise<RedeemTokenResponse> {
     try {
-      const data = await this.safeRequest(`/api/v1/invitations/shared/redeem`, 'POST', { token });
+      const data = await this.safeRequest<RedeemTokenResponse>(`/api/v1/invitations/shared/redeem`, 'POST', { token });
       return data;
     } catch (error) {
       logger.error('Failed to redeem shared token:', error);
@@ -1639,7 +1581,7 @@ class SafePrismAPI {
 
   async getSharedTokenQRCode(token: string, format: 'json' | 'png' = 'json'): Promise<QRCodeData> {
     try {
-      const data = await this.safeRequest(`/api/v1/invitations/shared/${token}/qr?format=${format}`);
+      const data = await this.safeRequest<QRCodeData>(`/api/v1/invitations/shared/${token}/qr?format=${format}`);
       return data;
     } catch (error) {
       logger.error('Failed to get QR code:', error);
@@ -1774,7 +1716,7 @@ class SafePrismAPI {
   }
 
   async buildAMI(templateName: string): Promise<{ build_id: string }> {
-    const response = await this.safeRequest('/api/v1/ami/create', 'POST', {
+    const response = await this.safeRequest<{ build_id: string }>('/api/v1/ami/create', 'POST', {
       template_name: templateName
     });
     return response;
@@ -1783,7 +1725,7 @@ class SafePrismAPI {
   // Rightsizing APIs
   async getRightsizingRecommendations(): Promise<RightsizingRecommendation[]> {
     try {
-      const data = await this.safeRequest('/api/v1/rightsizing/recommendations');
+      const data = await this.safeRequest<{recommendations?: Record<string, unknown>[]}>('/api/v1/rightsizing/recommendations');
       if (!data || !Array.isArray(data.recommendations)) {
         return [];
       }
@@ -1797,8 +1739,8 @@ class SafePrismAPI {
         recommended_cost: (rec.recommended_cost as number) || (rec.RecommendedCost as number) || 0,
         monthly_savings: (rec.monthly_savings as number) || (rec.MonthlySavings as number) || 0,
         savings_percentage: (rec.savings_percentage as number) || (rec.SavingsPercentage as number) || 0,
-        confidence: (rec.confidence as string) || (rec.Confidence as string) || 'medium',
-        reason: rec.reason || rec.Reason
+        confidence: ((rec.confidence as string) || (rec.Confidence as string) || 'medium') as 'high' | 'medium' | 'low',
+        reason: (rec.reason || rec.Reason) as string | undefined
       }));
     } catch (error) {
       logger.error('Failed to fetch rightsizing recommendations:', error);
@@ -1808,7 +1750,7 @@ class SafePrismAPI {
 
   async getRightsizingStats(): Promise<RightsizingStats | null> {
     try {
-      const data = await this.safeRequest('/api/v1/rightsizing/stats');
+      const data = await this.safeRequest<Partial<RightsizingStats>>('/api/v1/rightsizing/stats');
       return {
         total_recommendations: data.total_recommendations || 0,
         total_monthly_savings: data.total_monthly_savings || 0,
@@ -1836,7 +1778,7 @@ class SafePrismAPI {
   // Policy APIs
   async getPolicyStatus(): Promise<PolicyStatus | null> {
     try {
-      const data = await this.safeRequest('/api/v1/policies/status');
+      const data = await this.safeRequest<Partial<PolicyStatus>>('/api/v1/policies/status');
       return {
         enabled: data.enabled || false,
         status: data.status || 'unknown',
@@ -1852,17 +1794,17 @@ class SafePrismAPI {
 
   async getPolicySets(): Promise<PolicySet[]> {
     try {
-      const data = await this.safeRequest('/api/v1/policies/sets');
+      const data = await this.safeRequest<{policy_sets?: Record<string, Record<string, unknown>>}>('/api/v1/policies/sets');
       if (!data || !data.policy_sets) {
         return [];
       }
-      return Object.entries(data.policy_sets).map(([id, info]: [string, unknown]) => ({
+      return Object.entries(data.policy_sets).map(([id, info]: [string, Record<string, unknown>]) => ({
         id,
-        name: info.name || id,
-        description: info.description || '',
-        policies: info.policies || 0,
-        status: info.status || 'active',
-        tags: info.tags
+        name: (info.name as string) || id,
+        description: (info.description as string) || '',
+        policies: (info.policies as number) || 0,
+        status: (info.status as string) || 'active',
+        tags: info.tags as Record<string, string> | undefined
       }));
     } catch (error) {
       logger.error('Failed to fetch policy sets:', error);
@@ -1879,7 +1821,7 @@ class SafePrismAPI {
   }
 
   async checkTemplateAccess(templateName: string): Promise<PolicyCheckResult> {
-    const data = await this.safeRequest('/api/v1/policies/check', 'POST', { template_name: templateName });
+    const data = await this.safeRequest<Partial<PolicyCheckResult>>('/api/v1/policies/check', 'POST', { template_name: templateName });
     return {
       allowed: data.allowed || false,
       template_name: data.template_name || templateName,
@@ -1896,7 +1838,7 @@ class SafePrismAPI {
       if (query) url += `query=${encodeURIComponent(query)}&`;
       if (category) url += `category=${encodeURIComponent(category)}&`;
 
-      const data = await this.safeRequest(url);
+      const data = await this.safeRequest<{templates?: Record<string, unknown>[]}>( url);
       if (!data || !Array.isArray(data.templates)) {
         return [];
       }
@@ -1927,7 +1869,7 @@ class SafePrismAPI {
 
   async getMarketplaceCategories(): Promise<MarketplaceCategory[]> {
     try {
-      const data = await this.safeRequest('/api/v1/marketplace/categories');
+      const data = await this.safeRequest<{categories?: Record<string, unknown>[]}>('/api/v1/marketplace/categories');
       if (!data || !Array.isArray(data.categories)) {
         return [];
       }
@@ -1949,20 +1891,20 @@ class SafePrismAPI {
   // Idle Detection APIs
   async getIdlePolicies(): Promise<IdlePolicy[]> {
     try {
-      const data = await this.safeRequest('/api/v1/idle/policies');
+      const data = await this.safeRequest<{policies?: Record<string, Record<string, unknown>>}>('/api/v1/idle/policies');
       if (!data || !data.policies) {
         return [];
       }
-      const policies = Object.entries(data.policies).map(([id, p]: [string, unknown]) => ({
+      const policies = Object.entries(data.policies).map(([id, p]: [string, Record<string, unknown>]) => ({
         id,
-        name: p.name || p.Name || id,
-        idle_minutes: p.idle_minutes || p.IdleMinutes || 0,
-        action: p.action || p.Action || 'notify',
-        cpu_threshold: p.cpu_threshold || p.CPUThreshold || 10,
-        memory_threshold: p.memory_threshold || p.MemoryThreshold || 10,
-        network_threshold: p.network_threshold || p.NetworkThreshold || 1,
-        description: p.description || p.Description,
-        enabled: p.enabled !== undefined ? p.enabled : (p.Enabled !== undefined ? p.Enabled : true)
+        name: (p.name as string) || (p.Name as string) || id,
+        idle_minutes: (p.idle_minutes as number) || (p.IdleMinutes as number) || 0,
+        action: ((p.action as string) || (p.Action as string) || 'notify') as 'hibernate' | 'stop' | 'notify',
+        cpu_threshold: (p.cpu_threshold as number) || (p.CPUThreshold as number) || 10,
+        memory_threshold: (p.memory_threshold as number) || (p.MemoryThreshold as number) || 10,
+        network_threshold: (p.network_threshold as number) || (p.NetworkThreshold as number) || 1,
+        description: (p.description as string) || (p.Description as string),
+        enabled: p.enabled !== undefined ? (p.enabled as boolean) : (p.Enabled !== undefined ? (p.Enabled as boolean) : true)
       }));
       return policies;
     } catch (error) {
@@ -1973,7 +1915,7 @@ class SafePrismAPI {
 
   async getIdleSchedules(): Promise<IdleSchedule[]> {
     try {
-      const data = await this.safeRequest('/api/v1/idle/schedules');
+      const data = await this.safeRequest<{schedules?: Record<string, unknown>[]}>('/api/v1/idle/schedules');
       if (!data || !Array.isArray(data.schedules)) {
         return [];
       }
@@ -2595,7 +2537,7 @@ export default function PrismApp() {
   const [selectedInstances, setSelectedInstances] = useState<Instance[]>([]);
 
   // Filtering state for instances table
-  const [instancesFilterQuery, setInstancesFilterQuery] = useState({ tokens: [], operation: 'and' as const });
+  const [instancesFilterQuery, setInstancesFilterQuery] = useState<import('@cloudscape-design/components').PropertyFilterProps.Query>({ tokens: [], operation: 'and' });
 
   // Create Backup modal state
   const [createBackupModalVisible, setCreateBackupModalVisible] = useState(false);
@@ -2763,7 +2705,7 @@ export default function PrismApp() {
   const [editProjectSubmitting, setEditProjectSubmitting] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
   const [selectedProjectForMembers, setSelectedProjectForMembers] = useState<Project | null>(null);
-  const [manageMembersData, setManageMembersData] = useState<ProjectMember[]>([]);
+  const [manageMembersData, setManageMembersData] = useState<MemberData[]>([]);
   const [manageMembersLoading, setManageMembersLoading] = useState(false);
   const [addMemberUsername, setAddMemberUsername] = useState('');
   const [addMemberRole, setAddMemberRole] = useState('member');
@@ -2787,6 +2729,51 @@ export default function PrismApp() {
   const [editUserDisplayName, setEditUserDisplayName] = useState('');
   const [editUserRole, setEditUserRole] = useState('');
   const [editUserSubmitting, setEditUserSubmitting] = useState(false);
+
+  // Helper: add a notification to state
+  // Supports two calling conventions:
+  //   addNotification('error', 'Header', 'Content')
+  //   addNotification({ type: 'success', content: '...' })
+  const addNotification = (
+    typeOrObj: Notification['type'] | Partial<Notification>,
+    header?: string,
+    content?: string
+  ) => {
+    const notification: Notification = typeof typeOrObj === 'string'
+      ? {
+          id: Date.now().toString(),
+          type: typeOrObj,
+          header: header,
+          content: content || '',
+          dismissible: true
+        }
+      : {
+          id: Date.now().toString(),
+          type: (typeOrObj as Partial<Notification>).type || 'info',
+          header: (typeOrObj as Partial<Notification>).header,
+          content: (typeOrObj as Partial<Notification>).content || '',
+          dismissible: (typeOrObj as Partial<Notification>).dismissible !== false
+        };
+    setState(prev => ({
+      ...prev,
+      notifications: [...prev.notifications, notification]
+    }));
+  };
+
+  // Helper: set (replace) notifications
+  const setNotification = (notification: Partial<Notification>) => {
+    const n: Notification = {
+      id: notification.id || Date.now().toString(),
+      type: notification.type || 'info',
+      header: notification.header,
+      content: notification.content || '',
+      dismissible: notification.dismissible !== false
+    };
+    setState(prev => ({
+      ...prev,
+      notifications: [n, ...prev.notifications.filter(x => x.id !== n.id)]
+    }));
+  };
 
   // Safe data loading with comprehensive error handling
   // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
@@ -2827,7 +2814,7 @@ export default function PrismApp() {
       ]);
 
       // Extract successful results, using empty fallbacks for failed promises
-      const [templatesData, instancesData, efsVolumesData, ebsVolumesData, snapshotsData, projectsData, usersData, amisData, amiBuildsData, amiRegionsData, rightsizingRecommendationsData, policyStatusData, policySetsData, marketplaceTemplatesData, marketplaceCategoriesData, idlePoliciesData, idleSchedulesData, invitationsData, autoStartStatusData, coursesData, workshopsData] = results.map((result, index) => {
+      const rawResults = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
@@ -2838,6 +2825,27 @@ export default function PrismApp() {
           return []; // everything else (arrays)
         }
       });
+      const templatesData = rawResults[0] as Record<string, Template>;
+      const instancesData = rawResults[1] as Instance[];
+      const efsVolumesData = rawResults[2] as EFSVolume[];
+      const ebsVolumesData = rawResults[3] as EBSVolume[];
+      const snapshotsData = rawResults[4] as InstanceSnapshot[];
+      const projectsData = rawResults[5] as Project[];
+      const usersData = rawResults[6] as User[];
+      const amisData = rawResults[7] as AMI[];
+      const amiBuildsData = rawResults[8] as AMIBuild[];
+      const amiRegionsData = rawResults[9] as AMIRegion[];
+      const rightsizingRecommendationsData = rawResults[10] as RightsizingRecommendation[];
+      const policyStatusData = rawResults[11] as PolicyStatus | null;
+      const policySetsData = rawResults[12] as PolicySet[];
+      const marketplaceTemplatesData = rawResults[13] as MarketplaceTemplate[];
+      const marketplaceCategoriesData = rawResults[14] as MarketplaceCategory[];
+      const idlePoliciesData = rawResults[15] as IdlePolicy[];
+      const idleSchedulesData = rawResults[16] as IdleSchedule[];
+      const invitationsData = rawResults[17] as Invitation[];
+      const autoStartStatusData = rawResults[18] as { enabled: boolean } | null;
+      const coursesData = rawResults[19] as Course[];
+      const workshopsData = rawResults[20] as WorkshopEvent[];
 
       // Initialize rightsizingStatsData since api.getRightsizingStats() was removed (requires instance name parameter)
       const rightsizingStatsData = null;
@@ -2934,9 +2942,8 @@ export default function PrismApp() {
         api.getBudgetPools()
       ]);
 
-      const [budgetsData, budgetPoolsData] = results.map(result =>
-        result.status === 'fulfilled' ? result.value : []
-      );
+      const budgetsData = results[0].status === 'fulfilled' ? results[0].value as BudgetData[] : [];
+      const budgetPoolsData = results[1].status === 'fulfilled' ? results[1].value as Budget[] : [];
 
       setState(prev => ({
         ...prev,
@@ -3110,7 +3117,7 @@ export default function PrismApp() {
         };
         if (viewMap[event.key]) {
           event.preventDefault();
-          setState(prev => ({ ...prev, activeView: viewMap[event.key] }));
+          setState(prev => ({ ...prev, activeView: viewMap[event.key] as AppState['activeView'] }));
         }
       }
 
@@ -3147,7 +3154,7 @@ export default function PrismApp() {
   const handleTemplateSelection = (template: Template) => {
     try {
       setState(prev => ({ ...prev, selectedTemplate: template }));
-      setLaunchConfig({ name: '', size: 'M' });
+      setLaunchConfig({ name: '', size: 'M', spot: false, hibernation: false, dryRun: false });
       setLaunchModalVisible(true);
     } catch (error) {
       logger.error('Template selection failed:', error);
@@ -3419,40 +3426,6 @@ export default function PrismApp() {
   };
 
   // Handle Delete Budget Pool
-  const handleDeleteBudget = async (budgetId: string, budgetName: string) => {
-    if (!window.confirm(`Delete budget pool "${budgetName}"? This will remove all project allocations.`)) {
-      return;
-    }
-
-    try {
-      await api.deleteBudgetPool(budgetId);
-
-      // Optimistic UI update
-      setState(prev => ({
-        ...prev,
-        budgetPools: prev.budgetPools.filter(b => b.id !== budgetId),
-        notifications: [{
-          type: 'success',
-          header: 'Budget Deleted',
-          content: `Budget pool "${budgetName}" has been deleted`,
-          dismissible: true,
-          id: Date.now().toString()
-        }, ...prev.notifications]
-      }));
-    } catch (error: any) {
-      setState(prev => ({
-        ...prev,
-        notifications: [{
-          type: 'error',
-          header: 'Delete Failed',
-          content: `Failed to delete budget: ${error.message || 'Unknown error'}`,
-          dismissible: true,
-          id: Date.now().toString()
-        }, ...prev.notifications]
-      }));
-    }
-  };
-
   // SSH Key generation handler
   const handleGenerateSSHKey = async (username: string): Promise<any> => {
     try {
@@ -3538,12 +3511,8 @@ export default function PrismApp() {
     try {
       const invitationData = await api.getInvitationByToken(invitationToken.trim());
 
-      // Extract invitation and project info
-      const invitation = invitationData.invitation;
-      const project = invitationData.project;
-
       // Show confirmation with invitation details
-      const confirmed = confirm(`Accept invitation to project "${project.name}" as ${invitation.role}?`);
+      const confirmed = confirm(`Accept invitation to project "${invitationData.project_name}" as ${invitationData.role}?`);
 
       if (confirmed) {
         await api.acceptInvitation(invitationToken.trim());
@@ -3553,7 +3522,7 @@ export default function PrismApp() {
           notifications: [{
             type: 'success',
             header: 'Token Redeemed',
-            content: `Successfully joined project "${project.name}"`,
+            content: `Successfully joined project "${invitationData.project_name}"`,
             dismissible: true,
             id: Date.now().toString()
           }, ...prev.notifications]
@@ -3792,7 +3761,7 @@ export default function PrismApp() {
               <Box variant="awsui-key-label">Connection</Box>
               <StatusIndicator
                 type={state.connected ? 'success' : 'error'}
-                ariaLabel={getStatusLabel('connection', state.connected ? 'success' : 'error')}
+                iconAriaLabel={getStatusLabel('connection', state.connected ? 'success' : 'error')}
               >
                 {state.connected ? 'Connected' : 'Disconnected'}
               </StatusIndicator>
@@ -4381,21 +4350,25 @@ export default function PrismApp() {
             {
               key: 'name',
               propertyLabel: 'Workspace Name',
+              groupValuesLabel: 'Workspace Name values',
               operators: [':', '!:', '=', '!=']
             },
             {
               key: 'template',
               propertyLabel: 'Template',
+              groupValuesLabel: 'Template values',
               operators: [':', '!:', '=', '!=']
             },
             {
               key: 'state',
               propertyLabel: 'Status',
+              groupValuesLabel: 'Status values',
               operators: ['=', '!=']
             },
             {
               key: 'public_ip',
               propertyLabel: 'Public IP',
+              groupValuesLabel: 'Public IP values',
               operators: [':', '!:', '=', '!=']
             }
           ]}
@@ -4475,7 +4448,7 @@ export default function PrismApp() {
                         item.state === 'hibernated' ? 'pending' :
                         item.state === 'pending' ? 'in-progress' : 'error'
                       }
-                      ariaLabel={getStatusLabel('workspace', item.state)}
+                      iconAriaLabel={getStatusLabel('workspace', item.state)}
                     >
                       {item.state}
                     </StatusIndicator>
@@ -4517,7 +4490,7 @@ export default function PrismApp() {
                     expandToViewport
                     items={[
                       { text: 'Connect', id: 'connect', disabled: item.state !== 'running' },
-                      { text: 'Open Terminal', id: 'terminal', disabled: item.state !== 'running', iconName: 'console' },
+                      { text: 'Open Terminal', id: 'terminal', disabled: item.state !== 'running', iconName: 'command-prompt' },
                       { text: 'Open Web Service', id: 'webservice', disabled: item.state !== 'running' || !item.web_services || item.web_services.length === 0, iconName: 'external' },
                       { text: 'Stop', id: 'stop', disabled: item.state !== 'running' },
                       { text: 'Start', id: 'start', disabled: item.state === 'running' },
@@ -4890,7 +4863,7 @@ export default function PrismApp() {
                                 item.state === 'creating' ? 'in-progress' :
                                 item.state === 'deleting' ? 'warning' : 'error'
                               }
-                              ariaLabel={getStatusLabel('volume', item.state)}
+                              iconAriaLabel={getStatusLabel('volume', item.state)}
                             >
                               {item.state}
                             </StatusIndicator>
@@ -5041,7 +5014,7 @@ export default function PrismApp() {
                                 item.state === 'creating' ? 'in-progress' :
                                 item.state === 'deleting' ? 'warning' : 'error'
                               }
-                              ariaLabel={getStatusLabel('volume', item.state)}
+                              iconAriaLabel={getStatusLabel('volume', item.state)}
                             >
                               {item.state}
                             </StatusIndicator>
@@ -6189,7 +6162,7 @@ export default function PrismApp() {
                         item.state === 'creating' || item.state === 'pending' ? 'in-progress' :
                         item.state === 'deleting' ? 'warning' : 'error'
                       }
-                      ariaLabel={getStatusLabel('snapshot', item.state)}
+                      iconAriaLabel={getStatusLabel('snapshot', item.state)}
                     >
                       {item.state}
                     </StatusIndicator>
@@ -6509,7 +6482,7 @@ export default function PrismApp() {
                     <span {...(percentage > 80 ? { 'data-testid': 'budget-alert' } : {})}>
                       <StatusIndicator
                         type={colorType}
-                        ariaLabel={getStatusLabel('budget', colorType === 'error' ? 'critical' : colorType === 'warning' ? 'warning' : 'ok', `$${spend.toFixed(2)}`)}
+                        iconAriaLabel={getStatusLabel('budget', colorType === 'error' ? 'critical' : colorType === 'warning' ? 'warning' : 'ok', `$${spend.toFixed(2)}`)}
                       >
                         ${spend.toFixed(2)}
                       </StatusIndicator>
@@ -6541,7 +6514,7 @@ export default function PrismApp() {
                     item.status === 'active' ? 'success' :
                     item.status === 'suspended' ? 'warning' : 'error'
                   }
-                  ariaLabel={getStatusLabel('project', item.status || 'active')}
+                  iconAriaLabel={getStatusLabel('project', item.status || 'active')}
                 >
                   {item.status || 'active'}
                 </StatusIndicator>
@@ -6774,7 +6747,7 @@ export default function PrismApp() {
                       <Box fontWeight="bold">{project.name}:</Box>
                       <StatusIndicator
                         type={percentage > 80 ? 'error' : percentage > 60 ? 'warning' : 'success'}
-                        ariaLabel={getStatusLabel('budget', percentage > 80 ? 'critical' : percentage > 60 ? 'warning' : 'ok', `${percentage.toFixed(1)}% used`)}
+                        iconAriaLabel={getStatusLabel('budget', percentage > 80 ? 'critical' : percentage > 60 ? 'warning' : 'ok', `${percentage.toFixed(1)}% used`)}
                       >
                         ${spend.toFixed(2)} / ${limit.toFixed(2)} ({percentage.toFixed(1)}%)
                       </StatusIndicator>
@@ -7350,7 +7323,7 @@ export default function PrismApp() {
                   <SpaceBetween direction="horizontal" size="xs">
                     <StatusIndicator
                       type={keyCount > 0 ? 'success' : 'warning'}
-                      ariaLabel={keyCount > 0 ? `User has ${keyCount} SSH keys` : 'User has no SSH keys'}
+                      iconAriaLabel={keyCount > 0 ? `User has ${keyCount} SSH keys` : 'User has no SSH keys'}
                     >
                       {keyCount}
                     </StatusIndicator>
@@ -7387,7 +7360,7 @@ export default function PrismApp() {
                 return (
                   <StatusIndicator
                     type={statusType}
-                    ariaLabel={displayStatus}
+                    iconAriaLabel={displayStatus}
                   >
                     {displayStatus}
                   </StatusIndicator>
@@ -7646,12 +7619,12 @@ export default function PrismApp() {
                       <Box fontWeight="bold">{user.username}:</Box>
                       <StatusIndicator
                         type={keyCount > 0 ? 'success' : 'warning'}
-                        ariaLabel={getStatusLabel('auth', keyCount > 0 ? 'authenticated' : 'warning', `${keyCount} SSH keys`)}
+                        iconAriaLabel={getStatusLabel('auth', keyCount > 0 ? 'authenticated' : 'warning', `${keyCount} SSH keys`)}
                       >
                         {keyCount > 0 ? `${keyCount} SSH keys` : 'No SSH keys'}
                       </StatusIndicator>
                       {keyCount === 0 && (
-                        <Button size="small" variant="link">Generate Key</Button>
+                        <Button variant="link">Generate Key</Button>
                       )}
                     </SpaceBetween>
                   </Box>
@@ -7676,7 +7649,7 @@ export default function PrismApp() {
                     <Box key={instance.id}>
                       <StatusIndicator
                         type="success"
-                        ariaLabel={getStatusLabel('workspace', 'running', instance.name)}
+                        iconAriaLabel={getStatusLabel('workspace', 'running', instance.name)}
                       >
                         {instance.name}
                       </StatusIndicator>
@@ -7693,1742 +7666,25 @@ export default function PrismApp() {
     </SpaceBetween>
   );
 
-  // Invitation Management View (v0.5.11)
-  const InvitationView = () => {
-    const [activeTabId, setActiveTabId] = useState('individual');
-    const [newToken, setNewToken] = useState('');
-    const [addingInvitation, setAddingInvitation] = useState(false);
-    const [actionModalVisible, setActionModalVisible] = useState(false);
-    const [actionModalConfig, setActionModalConfig] = useState<{
-      type: 'accept' | 'decline' | null;
-      invitation: CachedInvitation | null;
-      reason: string;
-    }>({
-      type: null,
-      invitation: null,
-      reason: ''
-    });
-
-    // Bulk invitation state
-    const [bulkEmailList, setBulkEmailList] = useState('');
-    const [bulkRole, setBulkRole] = useState('member');
-    const [bulkMessage, setBulkMessage] = useState('');
-    const [bulkSending, setBulkSending] = useState(false);
-    const [bulkResults, setBulkResults] = useState<BulkInviteResponse | null>(null);
-    const [bulkProjects, setBulkProjects] = useState<Array<{ id: string; name: string }>>([]);
-    const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-
-    // Shared token state
-    const [sharedTokens, setSharedTokens] = useState<SharedToken[]>([]);
-    const [loadingTokens, setLoadingTokens] = useState(false);
-    const [creatingToken, setCreatingToken] = useState(false);
-    const [tokenModalVisible, setTokenModalVisible] = useState(false);
-    const [newTokenConfig, setNewTokenConfig] = useState({
-      name: '',
-      redemption_limit: 50,
-      expires_in: '7d',
-      role: 'member',
-      message: ''
-    });
-    const [qrModalVisible, setQrModalVisible] = useState(false);
-    const [selectedTokenForQR, setSelectedTokenForQR] = useState<SharedToken | null>(null);
-
-    // Handle adding a new invitation
-    const handleAddInvitation = async () => {
-      if (!newToken.trim()) {
-        addNotification('error', 'Token Required', 'Please enter an invitation token');
-        return;
-      }
-
-      setAddingInvitation(true);
-      try {
-        // Fetch invitation details from daemon
-        const invitationData = await api.getInvitationByToken(newToken.trim());
-
-        // Extract invitation and project info
-        const invitation = invitationData.invitation;
-        const project = invitationData.project;
-
-        // Create cached invitation object
-        const cachedInvitation: CachedInvitation = {
-          token: newToken.trim(),
-          invitation_id: invitation.id,
-          project_id: invitation.project_id,
-          project_name: project.name,
-          email: invitation.email,
-          role: invitation.role,
-          invited_by: invitation.invited_by,
-          invited_at: invitation.invited_at,
-          expires_at: invitation.expires_at,
-          status: invitation.status,
-          message: invitation.message,
-          added_at: new Date().toISOString()
-        };
-
-        // Add to state
-        setState(prev => ({
-          ...prev,
-          invitations: [...prev.invitations, cachedInvitation]
-        }));
-
-        addNotification('success', 'Invitation Added', `Added invitation to ${project.name}`);
-        setNewToken('');
-      } catch (error) {
-        logger.error('Failed to add invitation:', error);
-        addNotification('error', 'Failed to Add', String(error));
-      } finally {
-        setAddingInvitation(false);
-      }
-    };
-
-    // Handle accepting invitation
-    const handleAcceptInvitation = async (invitation: CachedInvitation) => {
-      try {
-        await api.acceptInvitation(invitation.token);
-
-        // Update status in state
-        setState(prev => ({
-          ...prev,
-          invitations: prev.invitations.map(inv =>
-            inv.invitation_id === invitation.invitation_id
-              ? { ...inv, status: 'accepted' }
-              : inv
-          )
-        }));
-
-        addNotification('success', 'Invitation Accepted', `You now have access to ${invitation.project_name}`);
-        setActionModalVisible(false);
-      } catch (error) {
-        logger.error('Failed to accept invitation:', error);
-        addNotification('error', 'Failed to Accept', String(error));
-      }
-    };
-
-    // Handle declining invitation
-    const handleDeclineInvitation = async (invitation: CachedInvitation, reason: string) => {
-      try {
-        await api.declineInvitation(invitation.token, reason);
-
-        // Update status in state
-        setState(prev => ({
-          ...prev,
-          invitations: prev.invitations.map(inv =>
-            inv.invitation_id === invitation.invitation_id
-              ? { ...inv, status: 'declined' }
-              : inv
-          )
-        }));
-
-        addNotification('success', 'Invitation Declined', `Declined invitation to ${invitation.project_name}`);
-        setActionModalVisible(false);
-      } catch (error) {
-        logger.error('Failed to decline invitation:', error);
-        addNotification('error', 'Failed to Decline', String(error));
-      }
-    };
-
-    // Handle removing invitation from cache
-    const handleRemoveInvitation = (invitationId: string) => {
-      setState(prev => ({
-        ...prev,
-        invitations: prev.invitations.filter(inv => inv.invitation_id !== invitationId)
-      }));
-      addNotification('info', 'Invitation Removed', 'Invitation removed from local cache');
-    };
-
-    // Handle bulk invitation submission
-    const handleBulkInvite = async () => {
-      if (!bulkEmailList.trim()) {
-        addNotification('error', 'Email List Required', 'Please enter at least one email address');
-        return;
-      }
-
-      // Parse email list (comma or newline separated)
-      const emails = bulkEmailList
-        .split(/[,\n]/)
-        .map(e => e.trim())
-        .filter(e => e.length > 0);
-
-      if (emails.length === 0) {
-        addNotification('error', 'No Valid Emails', 'Please enter valid email addresses');
-        return;
-      }
-
-      // Validate project selection
-      if (!selectedProjectId) {
-        addNotification('error', 'Project Required', 'Please select a project for the invitations');
-        return;
-      }
-
-      setBulkSending(true);
-      try {
-        const result = await api.bulkInvite(selectedProjectId, emails, bulkRole, bulkMessage || undefined);
-        setBulkResults(result);
-        addNotification('success', 'Bulk Invitations Sent',
-          `Sent: ${result.sent}, Failed: ${result.failed}, Skipped: ${result.skipped}`);
-
-        // Clear form on success
-        setBulkEmailList('');
-        setBulkMessage('');
-      } catch (error) {
-        logger.error('Failed to send bulk invitations:', error);
-        addNotification('error', 'Failed to Send', String(error));
-      } finally {
-        setBulkSending(false);
-      }
-    };
-
-    // Load projects for bulk invite selector
-    const loadBulkProjects = async () => {
-      try {
-        const projects = await api.getProjects();
-        setBulkProjects(projects.map(p => ({ id: p.id, name: p.name })));
-
-        // Auto-select first project if available and none selected
-        if (projects.length > 0 && !selectedProjectId) {
-          setSelectedProjectId(projects[0].id);
-        }
-      } catch (error) {
-        logger.error('Failed to load projects:', error);
-        addNotification('error', 'Failed to Load Projects', String(error));
-      }
-    };
-
-    // Load shared tokens when tab is selected
-    const loadSharedTokens = async () => {
-      setLoadingTokens(true);
-      try {
-        const projects = await api.getProjects();
-        if (projects.length > 0) {
-          const tokens = await api.getSharedTokens(projects[0].id);
-          setSharedTokens(tokens);
-        }
-      } catch (error) {
-        logger.error('Failed to load shared tokens:', error);
-        addNotification('error', 'Failed to Load Tokens', String(error));
-      } finally {
-        setLoadingTokens(false);
-      }
-    };
-
-    // Handle shared token creation
-    const handleCreateSharedToken = async () => {
-      if (!newTokenConfig.name.trim()) {
-        addNotification('error', 'Name Required', 'Please enter a name for the shared token');
-        return;
-      }
-
-      const projects = await api.getProjects();
-      if (projects.length === 0) {
-        addNotification('error', 'No Projects', 'You must create a project before creating shared tokens');
-        return;
-      }
-
-      setCreatingToken(true);
-      try {
-        await api.createSharedToken(projects[0].id, newTokenConfig);
-        addNotification('success', 'Token Created', `Shared token "${newTokenConfig.name}" created successfully`);
-        setTokenModalVisible(false);
-
-        // Reset form
-        setNewTokenConfig({
-          name: '',
-          redemption_limit: 50,
-          expires_in: '7d',
-          role: 'member',
-          message: ''
-        });
-
-        // Reload tokens
-        await loadSharedTokens();
-      } catch (error) {
-        logger.error('Failed to create shared token:', error);
-        addNotification('error', 'Failed to Create', String(error));
-      } finally {
-        setCreatingToken(false);
-      }
-    };
-
-    // Handle shared token extend
-    const handleExtendToken = async (token: SharedInvitationToken) => {
-      const projects = await api.getProjects();
-      if (projects.length === 0) return;
-
-      try {
-        await api.extendSharedToken(projects[0].id, token.id, '7d');
-        addNotification('success', 'Token Extended', `Extended "${token.name}" by 7 days`);
-        await loadSharedTokens();
-      } catch (error) {
-        logger.error('Failed to extend token:', error);
-        addNotification('error', 'Failed to Extend', String(error));
-      }
-    };
-
-    // Handle shared token revoke
-    const handleRevokeToken = async (token: SharedInvitationToken) => {
-      const projects = await api.getProjects();
-      if (projects.length === 0) return;
-
-      try {
-        await api.revokeSharedToken(projects[0].id, token.id);
-        addNotification('success', 'Token Revoked', `Revoked "${token.name}"`);
-        await loadSharedTokens();
-      } catch (error) {
-        logger.error('Failed to revoke token:', error);
-        addNotification('error', 'Failed to Revoke', String(error));
-      }
-    };
-
-    // Handle QR code display
-    const handleShowQRCode = (token: SharedInvitationToken) => {
-      setSelectedTokenForQR(token);
-      setQrModalVisible(true);
-    };
-
-    // Handle tab change
-    const handleTabChange = ({ detail }: { detail: { activeTabId: string } }) => {
-      setActiveTabId(detail.activeTabId);
-      if (detail.activeTabId === 'shared') {
-        loadSharedTokens();
-      } else if (detail.activeTabId === 'bulk') {
-        loadBulkProjects();
-      }
-    };
-
-    // Format time remaining
-    const formatTimeRemaining = (expiresAt: string) => {
-      const now = new Date();
-      const expires = new Date(expiresAt);
-      const diff = expires.getTime() - now.getTime();
-
-      if (diff < 0) {
-        return 'Expired';
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-      if (days > 0) {
-        return `${days} day${days !== 1 ? 's' : ''} remaining`;
-      }
-      return `${hours} hour${hours !== 1 ? 's' : ''} remaining`;
-    };
-
-    // Get status indicator
-    const getStatusIndicator = (status: string) => {
-      switch (status) {
-        case 'pending':
-          return <StatusIndicator type="pending">Pending</StatusIndicator>;
-        case 'accepted':
-          return <StatusIndicator type="success">Accepted</StatusIndicator>;
-        case 'declined':
-          return <StatusIndicator type="stopped">Declined</StatusIndicator>;
-        case 'expired':
-          return <StatusIndicator type="error">Expired</StatusIndicator>;
-        default:
-          return <StatusIndicator>{status}</StatusIndicator>;
-      }
-    };
-
-    const pendingCount = state.invitations.filter(i => i.status === 'pending').length;
-    const acceptedCount = state.invitations.filter(i => i.status === 'accepted').length;
-
-    return (
-      <>
-        <SpaceBetween size="l">
-          <Header
-            variant="h1"
-            description="Manage project invitations and collaborate with research teams"
-            counter={`(${state.invitations.length} total, ${pendingCount} pending)`}
-            actions={
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button
-                  onClick={() => setRedeemTokenModalVisible(true)}
-                  data-testid="redeem-token-button"
-                >
-                  Redeem Token
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    if (state.projects.length === 0) {
-                      setState(prev => ({
-                        ...prev,
-                        notifications: [{
-                          type: 'warning',
-                          header: 'No Projects',
-                          content: 'Create a project first before sending invitations',
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }, ...prev.notifications]
-                      }));
-                      return;
-                    }
-                    setSendInvitationModalVisible(true);
-                  }}
-                  data-testid="send-invitation-button"
-                >
-                  Send Invitation
-                </Button>
-              </SpaceBetween>
-            }
-          >
-            Invitations
-          </Header>
-
-          {/* Tabbed Interface */}
-          <Tabs
-            activeTabId={activeTabId}
-            onChange={handleTabChange}
-            tabs={[
-              {
-                id: 'individual',
-                label: 'Individual Invitations',
-                content: (
-                  <SpaceBetween size="l">
-
-                    {/* Add Invitation Token */}
-                    <Container header={<Header variant="h2">Add Invitation</Header>}>
-                      <SpaceBetween size="m">
-                        <FormField
-                          label="Invitation Token"
-                          description="Paste the invitation token you received via email or Slack"
-                        >
-                          <Input
-                            value={newToken}
-                            onChange={({ detail }) => setNewToken(detail.value)}
-                            placeholder="eyJhbGciOiJIUzI1NiIs..."
-                            disabled={addingInvitation}
-                          />
-                        </FormField>
-                        <Button
-                          variant="primary"
-                          onClick={handleAddInvitation}
-                          loading={addingInvitation}
-                          disabled={!newToken.trim()}
-                        >
-                          Add Invitation
-                        </Button>
-                      </SpaceBetween>
-                    </Container>
-
-                    {/* Summary Stats */}
-                    <ColumnLayout columns={3} variant="text-grid">
-                      <Container header={<Header variant="h3">Total</Header>}>
-                        <Box fontSize="display-l" fontWeight="bold">
-                          {state.invitations.length}
-                        </Box>
-                      </Container>
-                      <Container header={<Header variant="h3">Pending</Header>}>
-                        <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-                          {pendingCount}
-                        </Box>
-                      </Container>
-                      <Container header={<Header variant="h3">Accepted</Header>}>
-                        <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-                          {acceptedCount}
-                        </Box>
-                      </Container>
-                    </ColumnLayout>
-
-                    {/* Invitations Table */}
-                    <Table
-                      data-testid="invitations-table"
-                      columnDefinitions={[
-                        {
-                          id: 'project',
-                          header: 'Project',
-                          cell: (item: CachedInvitation) => item.project_name
-                        },
-                        {
-                          id: 'role',
-                          header: 'Role',
-                          cell: (item: CachedInvitation) => (
-                            <Badge color={item.role === 'owner' ? 'red' : item.role === 'admin' ? 'blue' : 'grey'}>
-                              {item.role}
-                            </Badge>
-                          )
-                        },
-                        {
-                          id: 'invited_by',
-                          header: 'Invited By',
-                          cell: (item: CachedInvitation) => item.invited_by
-                        },
-                        {
-                          id: 'expires',
-                          header: 'Expiration',
-                          cell: (item: CachedInvitation) => (
-                            <Box>
-                              <div>{new Date(item.expires_at).toLocaleDateString()}</div>
-                              <Box variant="small" color="text-body-secondary">
-                                {formatTimeRemaining(item.expires_at)}
-                              </Box>
-                            </Box>
-                          )
-                        },
-                        {
-                          id: 'status',
-                          header: 'Status',
-                          cell: (item: CachedInvitation) => getStatusIndicator(item.status)
-                        },
-                        {
-                          id: 'actions',
-                          header: 'Actions',
-                          cell: (item: CachedInvitation) => (
-                            <SpaceBetween direction="horizontal" size="xs">
-                              {item.status === 'pending' && (
-                                <>
-                                  <Button
-                                    variant="primary"
-                                    onClick={() => {
-                                      setActionModalConfig({
-                                        type: 'accept',
-                                        invitation: item,
-                                        reason: ''
-                                      });
-                                      setActionModalVisible(true);
-                                    }}
-                                  >
-                                    Accept
-                                  </Button>
-                                  <Button
-                                    onClick={() => {
-                                      setActionModalConfig({
-                                        type: 'decline',
-                                        invitation: item,
-                                        reason: ''
-                                      });
-                                      setActionModalVisible(true);
-                                    }}
-                                  >
-                                    Decline
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                variant="icon"
-                                iconName="remove"
-                                onClick={() => handleRemoveInvitation(item.invitation_id)}
-                              />
-                            </SpaceBetween>
-                          )
-                        }
-                      ]}
-                      items={state.invitations}
-                      empty={
-                        <Box textAlign="center" color="inherit">
-                          <SpaceBetween size="m">
-                            <b>No invitations</b>
-                            <Box variant="p" color="inherit">
-                              Add an invitation token above to get started
-                            </Box>
-                          </SpaceBetween>
-                        </Box>
-                      }
-                      header={
-                        <Header
-                          variant="h2"
-                          description="Your project invitations"
-                          counter={`(${state.invitations.length})`}
-                        >
-                          My Invitations
-                        </Header>
-                      }
-                    />
-                  </SpaceBetween>
-                )
-              },
-              {
-                id: 'bulk',
-                label: 'Bulk Invitations',
-                content: (
-                  <SpaceBetween size="l">
-                    <Container header={<Header variant="h2">Send Bulk Invitations</Header>}>
-                      <SpaceBetween size="m">
-                        <Alert type="info">
-                          Send invitations to multiple people at once. Enter email addresses separated by commas or new lines.
-                        </Alert>
-
-                        <FormField
-                          label="Email Addresses"
-                          description="Enter one or more email addresses (comma or newline separated)"
-                        >
-                          <Textarea
-                            value={bulkEmailList}
-                            onChange={({ detail }) => setBulkEmailList(detail.value)}
-                            placeholder="alice@university.edu, bob@research.org&#10;charlie@lab.edu"
-                            rows={6}
-                            disabled={bulkSending}
-                          />
-                        </FormField>
-
-                        <FormField label="Role" description="Role for all recipients">
-                          <Select
-                            selectedOption={{ label: bulkRole, value: bulkRole }}
-                            onChange={({ detail }) => setBulkRole(detail.selectedOption.value || 'member')}
-                            options={[
-                              { label: 'viewer', value: 'viewer' },
-                              { label: 'member', value: 'member' },
-                              { label: 'admin', value: 'admin' }
-                            ]}
-                            disabled={bulkSending}
-                          />
-                        </FormField>
-
-                        <FormField
-                          label="Project"
-                          description="Select the project for these invitations"
-                        >
-                          <Select
-                            selectedOption={
-                              bulkProjects.find(p => p.id === selectedProjectId)
-                                ? { label: bulkProjects.find(p => p.id === selectedProjectId)!.name, value: selectedProjectId }
-                                : null
-                            }
-                            onChange={({ detail }) => setSelectedProjectId(detail.selectedOption.value || '')}
-                            options={bulkProjects.map(p => ({ label: p.name, value: p.id }))}
-                            placeholder="Choose a project"
-                            disabled={bulkSending || bulkProjects.length === 0}
-                            data-testid="bulk-invite-project-select"
-                          />
-                        </FormField>
-
-                        <FormField
-                          label="Message (optional)"
-                          description="Personal message to include in all invitations"
-                        >
-                          <Textarea
-                            value={bulkMessage}
-                            onChange={({ detail }) => setBulkMessage(detail.value)}
-                            placeholder="You're invited to join our research project..."
-                            rows={3}
-                            disabled={bulkSending}
-                          />
-                        </FormField>
-
-                        <Button
-                          variant="primary"
-                          onClick={handleBulkInvite}
-                          loading={bulkSending}
-                          disabled={!bulkEmailList.trim()}
-                        >
-                          Send Bulk Invitations
-                        </Button>
-                      </SpaceBetween>
-                    </Container>
-
-                    {bulkResults && (
-                      <Container header={<Header variant="h2">Results</Header>}>
-                        <ColumnLayout columns={3} variant="text-grid">
-                          <Container header={<Header variant="h3">Sent</Header>}>
-                            <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-                              {bulkResults.sent || 0}
-                            </Box>
-                          </Container>
-                          <Container header={<Header variant="h3">Failed</Header>}>
-                            <Box fontSize="display-l" fontWeight="bold" color="text-status-error">
-                              {bulkResults.failed || 0}
-                            </Box>
-                          </Container>
-                          <Container header={<Header variant="h3">Skipped</Header>}>
-                            <Box fontSize="display-l" fontWeight="bold" color="text-status-warning">
-                              {bulkResults.skipped || 0}
-                            </Box>
-                          </Container>
-                        </ColumnLayout>
-                      </Container>
-                    )}
-                  </SpaceBetween>
-                )
-              },
-              {
-                id: 'shared',
-                label: 'Shared Tokens',
-                content: (
-                  <SpaceBetween size="l">
-                    <Container
-                      header={
-                        <Header
-                          variant="h2"
-                          description="Reusable invitation tokens for workshops and classes"
-                          actions={
-                            <Button data-testid="create-shared-token-button" variant="primary" onClick={() => setTokenModalVisible(true)}>
-                              Create Shared Token
-                            </Button>
-                          }
-                        >
-                          Shared Tokens
-                        </Header>
-                      }
-                    >
-                      {loadingTokens ? (
-                        <Spinner />
-                      ) : (
-                        <Table
-                          data-testid="shared-tokens-table"
-                          columnDefinitions={[
-                            {
-                              id: 'name',
-                              header: 'Name',
-                              cell: (item: SharedInvitationToken) => item.name
-                            },
-                            {
-                              id: 'role',
-                              header: 'Role',
-                              cell: (item: SharedInvitationToken) => (
-                                <Badge color={item.role === 'admin' ? 'blue' : 'grey'}>
-                                  {item.role}
-                                </Badge>
-                              )
-                            },
-                            {
-                              id: 'redemptions',
-                              header: 'Redemptions',
-                              cell: (item: SharedInvitationToken) => `${item.redemption_count || 0} / ${item.redemption_limit}`
-                            },
-                            {
-                              id: 'expires',
-                              header: 'Expires',
-                              cell: (item: SharedInvitationToken) => new Date(item.expires_at).toLocaleDateString()
-                            },
-                            {
-                              id: 'status',
-                              header: 'Status',
-                              cell: (item: SharedInvitationToken) => (
-                                <StatusIndicator type={item.status === 'active' ? 'success' : 'stopped'}>
-                                  {item.status}
-                                </StatusIndicator>
-                              )
-                            },
-                            {
-                              id: 'actions',
-                              header: 'Actions',
-                              cell: (item: SharedInvitationToken) => (
-                                <SpaceBetween direction="horizontal" size="xs">
-                                  <Button
-                                    data-testid="view-qr-code-button"
-                                    variant="icon"
-                                    iconName="view-full"
-                                    onClick={() => handleShowQRCode(item)}
-                                  />
-                                  <Button
-                                    data-testid="extend-token-button"
-                                    variant="icon"
-                                    iconName="add-plus"
-                                    onClick={() => handleExtendToken(item)}
-                                    disabled={item.status !== 'active'}
-                                  />
-                                  <Button
-                                    data-testid="revoke-token-button"
-                                    variant="icon"
-                                    iconName="close"
-                                    onClick={() => handleRevokeToken(item)}
-                                    disabled={item.status !== 'active'}
-                                  />
-                                </SpaceBetween>
-                              )
-                            }
-                          ]}
-                          items={sharedTokens}
-                          empty={
-                            <Box textAlign="center" color="inherit">
-                              <SpaceBetween size="m">
-                                <b>No shared tokens</b>
-                                <Box variant="p" color="inherit">
-                                  Create a shared token to invite multiple people with a single link
-                                </Box>
-                              </SpaceBetween>
-                            </Box>
-                          }
-                        />
-                      )}
-                    </Container>
-                  </SpaceBetween>
-                )
-              }
-            ]}
-          />
-        </SpaceBetween>
-
-        {/* Action Modal */}
-        <Modal
-          data-testid={actionModalConfig.type === 'accept' ? 'accept-invitation-dialog' : 'decline-invitation-dialog'}
-          visible={actionModalVisible}
-          onDismiss={() => setActionModalVisible(false)}
-          header={actionModalConfig.type === 'accept' ? 'Accept Invitation' : 'Decline Invitation'}
-          footer={
-            <Box float="right">
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button onClick={() => setActionModalVisible(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  data-testid={actionModalConfig.type === 'accept' ? 'confirm-accept-button' : 'confirm-decline-button'}
-                  variant={actionModalConfig.type === 'accept' ? 'primary' : 'normal'}
-                  onClick={() => {
-                    if (actionModalConfig.invitation) {
-                      if (actionModalConfig.type === 'accept') {
-                        handleAcceptInvitation(actionModalConfig.invitation);
-                      } else {
-                        handleDeclineInvitation(actionModalConfig.invitation, actionModalConfig.reason);
-                      }
-                    }
-                  }}
-                >
-                  {actionModalConfig.type === 'accept' ? 'Accept' : 'Decline'}
-                </Button>
-              </SpaceBetween>
-            </Box>
-          }
-        >
-          {actionModalConfig.invitation && (
-            <SpaceBetween size="m">
-              {actionModalConfig.type === 'accept' ? (
-                <>
-                  <Box>
-                    Are you sure you want to accept the invitation to join <strong>{actionModalConfig.invitation.project_name}</strong> as a <strong>{actionModalConfig.invitation.role}</strong>?
-                  </Box>
-                  {actionModalConfig.invitation.message && (
-                    <Alert type="info" header="Message from inviter">
-                      {actionModalConfig.invitation.message}
-                    </Alert>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Box>
-                    Are you sure you want to decline the invitation to <strong>{actionModalConfig.invitation.project_name}</strong>?
-                  </Box>
-                  <FormField label="Reason (optional)" description="Provide a reason for declining">
-                    <Input
-                      data-testid="decline-reason-input"
-                      value={actionModalConfig.reason}
-                      onChange={({ detail }) => setActionModalConfig(prev => ({ ...prev, reason: detail.value }))}
-                      placeholder="Not interested in this project"
-                    />
-                  </FormField>
-                </>
-              )}
-            </SpaceBetween>
-          )}
-        </Modal>
-
-        {/* Token Creation Modal */}
-        <Modal
-          data-testid="create-shared-token-modal"
-          visible={tokenModalVisible}
-          onDismiss={() => setTokenModalVisible(false)}
-          header="Create Shared Token"
-          footer={
-            <Box float="right">
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button data-testid="cancel-create-token-button" onClick={() => setTokenModalVisible(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  data-testid="create-token-button"
-                  variant="primary"
-                  onClick={handleCreateSharedToken}
-                  loading={creatingToken}
-                  disabled={!newTokenConfig.name.trim()}
-                >
-                  Create Token
-                </Button>
-              </SpaceBetween>
-            </Box>
-          }
-        >
-          <SpaceBetween size="m">
-            <Alert type="info">
-              Shared tokens can be redeemed by multiple people until they expire or reach the redemption limit.
-              Perfect for workshops, classes, or team onboarding.
-            </Alert>
-
-            <FormField
-              label="Token Name"
-              description="Descriptive name for this token"
-            >
-              <Input
-                value={newTokenConfig.name}
-                onChange={({ detail }) => setNewTokenConfig(prev => ({ ...prev, name: detail.value }))}
-                placeholder="Workshop Spring 2024"
-                disabled={creatingToken}
-              />
-            </FormField>
-
-            <FormField
-              label="Redemption Limit"
-              description="Maximum number of times this token can be used"
-            >
-              <Input
-                type="number"
-                value={String(newTokenConfig.redemption_limit)}
-                onChange={({ detail }) => setNewTokenConfig(prev => ({
-                  ...prev,
-                  redemption_limit: parseInt(detail.value) || 50
-                }))}
-                disabled={creatingToken}
-              />
-            </FormField>
-
-            <FormField label="Expires In" description="When this token will expire">
-              <Select
-                data-testid="expires-in-select"
-                selectedOption={{ label: newTokenConfig.expires_in, value: newTokenConfig.expires_in }}
-                onChange={({ detail }) => setNewTokenConfig(prev => ({
-                  ...prev,
-                  expires_in: detail.selectedOption.value || '7d'
-                }))}
-                options={[
-                  { label: '1 day', value: '1d' },
-                  { label: '7 days', value: '7d' },
-                  { label: '30 days', value: '30d' },
-                  { label: 'Never', value: 'never' }
-                ]}
-                disabled={creatingToken}
-              />
-            </FormField>
-
-            <FormField label="Role" description="Role for all users who redeem this token">
-              <Select
-                data-testid="role-select"
-                selectedOption={{ label: newTokenConfig.role, value: newTokenConfig.role }}
-                onChange={({ detail }) => setNewTokenConfig(prev => ({
-                  ...prev,
-                  role: detail.selectedOption.value || 'member'
-                }))}
-                options={[
-                  { label: 'viewer', value: 'viewer' },
-                  { label: 'member', value: 'member' },
-                  { label: 'admin', value: 'admin' }
-                ]}
-                disabled={creatingToken}
-              />
-            </FormField>
-
-            <FormField
-              label="Welcome Message (optional)"
-              description="Message shown when token is redeemed"
-            >
-              <Textarea
-                value={newTokenConfig.message}
-                onChange={({ detail }) => setNewTokenConfig(prev => ({ ...prev, message: detail.value }))}
-                placeholder="Welcome to our research project!"
-                rows={3}
-                disabled={creatingToken}
-              />
-            </FormField>
-          </SpaceBetween>
-        </Modal>
-
-        {/* QR Code Modal */}
-        <Modal
-          data-testid="qr-code-modal"
-          visible={qrModalVisible}
-          onDismiss={() => setQrModalVisible(false)}
-          header={`QR Code: ${selectedTokenForQR?.name || ''}`}
-          size="medium"
-        >
-          {selectedTokenForQR && (
-            <SpaceBetween size="l">
-              <Box textAlign="center">
-                <Box variant="p" color="text-body-secondary">
-                  Scan this QR code to redeem the shared token
-                </Box>
-              </Box>
-
-              <Box textAlign="center">
-                {/* QR code image would be displayed here from backend */}
-                <Box
-                  padding="xxl"
-                  variant="div"
-                  textAlign="center"
-                  color="text-body-secondary"
-                  fontSize="heading-xl"
-                >
-                  <div style={{
-                    border: '2px solid #ddd',
-                    borderRadius: '8px',
-                    padding: '40px',
-                    backgroundColor: '#f9f9f9',
-                    display: 'inline-block'
-                  }}>
-                    {/* Placeholder - actual QR code would come from backend */}
-                    <img
-                      src={`http://localhost:8947/api/v1/shared-tokens/${selectedTokenForQR.token}/qr`}
-                      alt="QR Code"
-                      style={{ width: '256px', height: '256px' }}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<div style="width: 256px; height: 256px; display: flex; align-items: center; justify-content: center; background: white; border: 1px dashed #999;">QR Code</div>';
-                      }}
-                    />
-                  </div>
-                </Box>
-              </Box>
-
-              <FormField label="Token" description="Share this token or use the QR code">
-                <Input
-                  value={selectedTokenForQR.token || ''}
-                  readOnly
-                />
-              </FormField>
-
-              <Box textAlign="center">
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Button
-                    onClick={() => {
-                      navigator.clipboard.writeText(selectedTokenForQR.token || '');
-                      addNotification('success', 'Copied', 'Token copied to clipboard');
-                    }}
-                  >
-                    Copy Token
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      const url = `${window.location.origin}/redeem?token=${selectedTokenForQR.token}`;
-                      navigator.clipboard.writeText(url);
-                      addNotification('success', 'Copied', 'Redemption URL copied to clipboard');
-                    }}
-                  >
-                    Copy URL
-                  </Button>
-                </SpaceBetween>
-              </Box>
-            </SpaceBetween>
-          )}
-        </Modal>
-      </>
-    );
-  };
-
-  // Budget Pool Management View (v0.6.0+)
-  const BudgetPoolManagementView = () => {
-    // Filter state for budget pools
-    const [budgetFilter, setBudgetFilter] = useState<string>('all');
-
-    // Enrich budgets with status and percentages using useMemo
-    const enrichedBudgets = useMemo(() => {
-      return state.budgetPools.map(budget => {
-        const spentPercent = budget.allocated_amount > 0
-          ? (budget.spent_amount / budget.allocated_amount) * 100
-          : 0;
-
-        const status: 'ok' | 'warning' | 'critical' =
-          spentPercent >= 95 ? 'critical' :
-          spentPercent >= 80 ? 'warning' : 'ok';
-
-        return { ...budget, spentPercent, status };
-      });
-    }, [state.budgetPools]);
-
-    // Filtered budgets using useMemo for performance
-    const filteredBudgets = useMemo(() => {
-      if (budgetFilter === 'all') return enrichedBudgets;
-      if (budgetFilter === 'warning') return enrichedBudgets.filter(b => b.status === 'warning');
-      if (budgetFilter === 'critical') return enrichedBudgets.filter(b => b.status === 'critical');
-      return enrichedBudgets;
-    }, [enrichedBudgets, budgetFilter]);
-
-    // Calculate aggregate statistics
-    const totalBudgetAmount = enrichedBudgets.reduce((sum, b) => sum + b.total_amount, 0);
-    const totalAllocated = enrichedBudgets.reduce((sum, b) => sum + b.allocated_amount, 0);
-    const totalSpent = enrichedBudgets.reduce((sum, b) => sum + b.spent_amount, 0);
-    const criticalCount = enrichedBudgets.filter(b => b.status === 'critical').length;
-
-    return (
-      <SpaceBetween size="l">
-        <Header
-          variant="h1"
-          description="Manage budget pools, project allocations, and spending forecasts"
-          counter={`(${state.budgetPools.length} budget pools)`}
-          actions={
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={loadApplicationData} disabled={state.loading}>
-                {state.loading ? <Spinner /> : 'Refresh'}
-              </Button>
-              <Button
-                variant="primary"
-                data-testid="create-budget-button"
-                onClick={() => setCreateBudgetModalVisible(true)}
-              >
-                Create Budget Pool
-              </Button>
-            </SpaceBetween>
-          }
-        >
-          Budget Overview
-        </Header>
-
-        {/* Budget Overview Stats */}
-        <ColumnLayout columns={4} variant="text-grid">
-          <Container header={<Header variant="h3">Total Budgets</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-              {state.budgetPools.length}
-            </Box>
-          </Container>
-          <Container header={<Header variant="h3">Total Allocated</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color="text-body-secondary">
-              ${totalAllocated.toFixed(2)}
-            </Box>
-            <Box variant="small" color="text-body-secondary">
-              of ${totalBudgetAmount.toFixed(2)} total
-            </Box>
-          </Container>
-          <Container header={<Header variant="h3">Total Spent</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color={totalSpent / totalAllocated > 0.8 ? 'text-status-error' : 'text-status-success'}>
-              ${totalSpent.toFixed(2)}
-            </Box>
-            <Box variant="small" color="text-body-secondary">
-              {totalAllocated > 0 ? ((totalSpent / totalAllocated) * 100).toFixed(1) : 0}% of allocated
-            </Box>
-          </Container>
-          <Container header={<Header variant="h3">Active Alerts</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color={criticalCount > 0 ? 'text-status-error' : 'text-status-success'}>
-              {criticalCount}
-            </Box>
-            <Box variant="small" color="text-body-secondary">
-              Critical budget alerts
-            </Box>
-          </Container>
-        </ColumnLayout>
-
-        {/* Budget Pools Table */}
-        <Container
-          header={
-            <Header
-              variant="h2"
-              description="Budget pools with project allocations and spending status"
-              counter={`(${filteredBudgets.length})`}
-              actions={
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Select
-                    selectedOption={{
-                      label: budgetFilter === 'all' ? 'All Budgets' :
-                             budgetFilter === 'warning' ? 'Warning (80-95%)' : 'Critical (≥95%)',
-                      value: budgetFilter
-                    }}
-                    onChange={({ detail }) => setBudgetFilter(detail.selectedOption.value!)}
-                    options={[
-                      { label: 'All Budgets', value: 'all' },
-                      { label: 'Warning (80-95%)', value: 'warning' },
-                      { label: 'Critical (≥95%)', value: 'critical' }
-                    ]}
-                    data-testid="budget-filter-select"
-                  />
-                </SpaceBetween>
-              }
-            >
-              Budget Pools
-            </Header>
-          }
-        >
-          <Table
-            data-testid="budgets-table"
-            columnDefinitions={[
-              {
-                id: "name",
-                header: "Budget Name",
-                cell: (item: Budget & { spentPercent: number; status: string }) => (
-                  <Link
-                    fontSize="body-m"
-                    onFollow={() => {
-                      setState(prev => ({ ...prev, selectedBudgetId: item.id }));
-                    }}
-                  >
-                    {item.name}
-                  </Link>
-                ),
-                sortingField: "name"
-              },
-              {
-                id: "total",
-                header: "Total Amount",
-                cell: (item: Budget) => `$${item.total_amount.toFixed(2)}`,
-                sortingField: "total_amount"
-              },
-              {
-                id: "allocated",
-                header: "Allocated",
-                cell: (item: Budget) => {
-                  const utilization = item.total_amount > 0 ? (item.allocated_amount / item.total_amount) * 100 : 0;
-                  return (
-                    <SpaceBetween direction="horizontal" size="xs">
-                      <span>${item.allocated_amount.toFixed(2)}</span>
-                      <Badge color={utilization > 90 ? 'red' : utilization > 70 ? 'blue' : 'green'}>
-                        {utilization.toFixed(1)}%
-                      </Badge>
-                    </SpaceBetween>
-                  );
-                },
-                sortingField: "allocated_amount"
-              },
-              {
-                id: "spent",
-                header: "Spent",
-                cell: (item: Budget & { spentPercent: number; status: string }) => {
-                  const colorType = item.status === 'critical' ? 'error' :
-                                   item.status === 'warning' ? 'warning' : 'success';
-                  return (
-                    <SpaceBetween direction="horizontal" size="xs">
-                      <StatusIndicator
-                        type={colorType}
-                        ariaLabel={getStatusLabel('budget', item.status, `$${item.spent_amount.toFixed(2)}`)}
-                      >
-                        ${item.spent_amount.toFixed(2)}
-                      </StatusIndicator>
-                      <Badge color={item.status === 'critical' ? 'red' :
-                                    item.status === 'warning' ? 'blue' : 'green'}>
-                        {item.spentPercent.toFixed(1)}%
-                      </Badge>
-                    </SpaceBetween>
-                  );
-                }
-              },
-              {
-                id: "remaining",
-                header: "Remaining",
-                cell: (item: Budget) => {
-                  const remaining = item.allocated_amount - item.spent_amount;
-                  return `$${remaining.toFixed(2)}`;
-                }
-              },
-              {
-                id: "period",
-                header: "Period",
-                cell: (item: Budget) => item.period,
-                sortingField: "period"
-              },
-              {
-                id: "actions",
-                header: "Actions",
-                cell: (item: Budget) => (
-                  <ButtonDropdown
-                    data-testid={`budget-actions-${item.id}`}
-                    expandToViewport
-                    items={[
-                      { text: "View Summary", id: "view" },
-                      { text: "Manage Allocations", id: "allocations" },
-                      { text: "Spending Report", id: "report" },
-                      { text: "Edit Budget", id: "edit" },
-                      { text: "Delete", id: "delete" }
-                    ]}
-                    onItemClick={(detail) => {
-                      if (detail.detail.id === 'view') {
-                        setState(prev => ({ ...prev, selectedBudgetId: item.id }));
-                      } else if (detail.detail.id === 'delete') {
-                        handleDeleteBudget(item.id, item.name);
-                      } else {
-                        // Show "coming soon" notification for other actions
-                        setState(prev => ({
-                          ...prev,
-                          notifications: [
-                            {
-                              type: 'info',
-                              header: 'Budget Action',
-                              content: `${detail.detail.text} for budget "${item.name}" - Feature coming soon!`,
-                              dismissible: true,
-                              id: Date.now().toString()
-                            },
-                            ...prev.notifications
-                          ]
-                        }));
-                      }
-                    }}
-                  >
-                    Actions
-                  </ButtonDropdown>
-                )
-              }
-            ]}
-            items={filteredBudgets}
-            loadingText="Loading budget pools..."
-            empty={
-              <Box textAlign="center" color="text-body-secondary">
-                <Box variant="strong" textAlign="center" color="text-body-secondary">
-                  No budget pools found
-                </Box>
-                <Box variant="p" padding={{ bottom: 's' }} color="text-body-secondary">
-                  Create your first budget pool to track spending across projects.
-                </Box>
-                <Button variant="primary" onClick={() => setCreateBudgetModalVisible(true)}>
-                  Create Budget Pool
-                </Button>
-              </Box>
-            }
-            header={
-              <Header
-                counter={`(${filteredBudgets.length})`}
-                description="Budget pools for managing research funding and project allocations"
-              >
-                All Budget Pools
-              </Header>
-            }
-            pagination={<Box>Showing {filteredBudgets.length} of {state.budgetPools.length} budget pools</Box>}
-          />
-        </Container>
-      </SpaceBetween>
-    );
-  };
-
-  // Project Detail View with Integrated Budget (Legacy - kept for backward compatibility)
-  const ProjectDetailViewLegacy = () => {
-    // Hooks must be called at the top level before any conditional returns
-    const [activeTabId, setActiveTabId] = React.useState('overview');
-
-    if (!state.selectedProject) {
-      // Fallback if no project selected
-      return (
-        <SpaceBetween size="l">
-          <Alert type="warning" header="No project selected">
-            Please select a project from the Projects page to view details.
-          </Alert>
-          <Button onClick={() => setState(prev => ({ ...prev, activeView: 'projects' }))}>
-            Back to Projects
-          </Button>
-        </SpaceBetween>
-      );
-    }
-
-    const project = state.selectedProject;
-
-    // Get budget data for this project (reserved for future use)
-    const _projectBudget = state.budgets.find(b => b.project_id === project.id);
-
-    // Get workspaces for this project
-    const projectWorkspaces = state.instances.filter(i =>
-      i.project === project.name || i.project === project.id
-    );
-
-    return (
-      <SpaceBetween size="l">
-        {/* Project Header */}
-        <Header
-          variant="h1"
-          description={project.description || 'No description provided'}
-          actions={
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={() => setState(prev => ({ ...prev, activeView: 'projects', selectedProject: null }))}>
-                Back to Projects
-              </Button>
-              <Button>Edit Project</Button>
-              <Button variant="primary">Configure Budget</Button>
-            </SpaceBetween>
-          }
-        >
-          {project.name}
-        </Header>
-
-        {/* Quick Stats */}
-        <ColumnLayout columns={4} variant="text-grid">
-          <Container>
-            <SpaceBetween size="s">
-              <Box variant="awsui-key-label">Status</Box>
-              <StatusIndicator
-                type={project.status === 'active' ? 'success' : project.status === 'suspended' ? 'warning' : 'error'}
-              >
-                {project.status || 'active'}
-              </StatusIndicator>
-            </SpaceBetween>
-          </Container>
-          <Container>
-            <SpaceBetween size="s">
-              <Box variant="awsui-key-label">Workspaces</Box>
-              <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-                {projectWorkspaces.length}
-              </Box>
-            </SpaceBetween>
-          </Container>
-          <Container>
-            <SpaceBetween size="s">
-              <Box variant="awsui-key-label">Members</Box>
-              <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-                {project.member_count || 1}
-              </Box>
-            </SpaceBetween>
-          </Container>
-          <Container>
-            <SpaceBetween size="s">
-              <Box variant="awsui-key-label">Owner</Box>
-              <Box fontSize="heading-m">{project.owner_email || 'Unknown'}</Box>
-            </SpaceBetween>
-          </Container>
-        </ColumnLayout>
-
-        {/* Tabbed Interface */}
-        <Tabs
-          activeTabId={activeTabId}
-          onChange={({ detail }) => setActiveTabId(detail.activeTabId)}
-          tabs={[
-            {
-              id: 'overview',
-              label: 'Overview',
-              content: (
-                <SpaceBetween size="l">
-                  {/* Project Details */}
-                  <Container header={<Header variant="h2">Project Details</Header>}>
-                    <ColumnLayout columns={2} variant="text-grid">
-                      <SpaceBetween size="m">
-                        <div>
-                          <Box variant="awsui-key-label">Project ID</Box>
-                          <Box>{project.id}</Box>
-                        </div>
-                        <div>
-                          <Box variant="awsui-key-label">Created</Box>
-                          <Box>{new Date(project.created_at).toLocaleString()}</Box>
-                        </div>
-                        <div>
-                          <Box variant="awsui-key-label">Last Updated</Box>
-                          <Box>{new Date(project.updated_at).toLocaleString()}</Box>
-                        </div>
-                      </SpaceBetween>
-                      <SpaceBetween size="m">
-                        <div>
-                          <Box variant="awsui-key-label">Owner</Box>
-                          <Box>{project.owner_email || 'Unknown'}</Box>
-                        </div>
-                        <div>
-                          <Box variant="awsui-key-label">Members</Box>
-                          <Box>{project.member_count || 1} member{(project.member_count || 1) !== 1 ? 's' : ''}</Box>
-                        </div>
-                        <div>
-                          <Box variant="awsui-key-label">Status</Box>
-                          <StatusIndicator type={project.status === 'active' ? 'success' : 'warning'}>
-                            {project.status || 'active'}
-                          </StatusIndicator>
-                        </div>
-                      </SpaceBetween>
-                    </ColumnLayout>
-                  </Container>
-
-                  {/* Project Workspaces */}
-                  <Container
-                    header={
-                      <Header
-                        variant="h2"
-                        counter={`(${projectWorkspaces.length})`}
-                        description="Workspaces associated with this project"
-                      >
-                        Project Workspaces
-                      </Header>
-                    }
-                  >
-                    {projectWorkspaces.length > 0 ? (
-                      <Table
-                        columnDefinitions={[
-                          {
-                            id: 'name',
-                            header: 'Workspace Name',
-                            cell: (item: Instance) => item.name
-                          },
-                          {
-                            id: 'template',
-                            header: 'Template',
-                            cell: (item: Instance) => item.template
-                          },
-                          {
-                            id: 'state',
-                            header: 'State',
-                            cell: (item: Instance) => (
-                              <StatusIndicator
-                                type={item.state === 'running' ? 'success' : 'stopped'}
-                              >
-                                {item.state}
-                              </StatusIndicator>
-                            )
-                          },
-                          {
-                            id: 'type',
-                            header: 'Type',
-                            cell: (item: Instance) => item.instance_type || 'Unknown'
-                          }
-                        ]}
-                        items={projectWorkspaces}
-                        empty={
-                          <Box textAlign="center" color="inherit">
-                            <Box variant="p">No workspaces in this project</Box>
-                          </Box>
-                        }
-                      />
-                    ) : (
-                      <Box textAlign="center" padding={{ vertical: 'xl' }}>
-                        <SpaceBetween size="m">
-                          <Box variant="strong">No workspaces yet</Box>
-                          <Box color="text-body-secondary">
-                            Launch workspaces and assign them to this project
-                          </Box>
-                          <Button variant="primary">Launch Workspace</Button>
-                        </SpaceBetween>
-                      </Box>
-                    )}
-                  </Container>
-                </SpaceBetween>
-              )
-            },
-            {
-              id: 'budget',
-              label: 'Budget & Costs',
-              content: (
-                <SpaceBetween size="l">
-                  {/* Budget Overview */}
-                  <ColumnLayout columns={4} variant="text-grid">
-                    <Container>
-                      <SpaceBetween size="s">
-                        <Box variant="awsui-key-label">Budget Limit</Box>
-                        <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-                          ${(project.budget_limit || 0).toFixed(2)}
-                        </Box>
-                      </SpaceBetween>
-                    </Container>
-                    <Container>
-                      <SpaceBetween size="s">
-                        <Box variant="awsui-key-label">Current Spend</Box>
-                        <Box
-                          fontSize="display-l"
-                          fontWeight="bold"
-                          color={
-                            (project.budget_limit || 0) > 0 &&
-                            ((project.current_spend || 0) / project.budget_limit) > 0.8
-                              ? 'text-status-error'
-                              : 'text-status-success'
-                          }
-                        >
-                          ${(project.current_spend || 0).toFixed(2)}
-                        </Box>
-                      </SpaceBetween>
-                    </Container>
-                    <Container>
-                      <SpaceBetween size="s">
-                        <Box variant="awsui-key-label">Remaining</Box>
-                        <Box fontSize="display-l" fontWeight="bold" color="text-status-warning">
-                          ${Math.max(0, (project.budget_limit || 0) - (project.current_spend || 0)).toFixed(2)}
-                        </Box>
-                      </SpaceBetween>
-                    </Container>
-                    <Container>
-                      <SpaceBetween size="s">
-                        <Box variant="awsui-key-label">% Used</Box>
-                        <Box fontSize="display-l" fontWeight="bold">
-                          {project.budget_limit && project.budget_limit > 0
-                            ? ((project.current_spend || 0) / project.budget_limit * 100).toFixed(1)
-                            : 0}%
-                        </Box>
-                      </SpaceBetween>
-                    </Container>
-                  </ColumnLayout>
-
-                  {/* Budget Status Alert */}
-                  {project.budget_limit && project.budget_limit > 0 && (
-                    (() => {
-                      const percentage = ((project.current_spend || 0) / project.budget_limit) * 100;
-                      if (percentage >= 95) {
-                        return (
-                          <Alert type="error" header="Budget Critical">
-                            This project has used {percentage.toFixed(1)}% of its budget. Consider hibernating workspaces or increasing the budget limit.
-                          </Alert>
-                        );
-                      } else if (percentage >= 80) {
-                        return (
-                          <Alert type="warning" header="Budget Warning">
-                            This project has used {percentage.toFixed(1)}% of its budget. Monitor spending closely.
-                          </Alert>
-                        );
-                      }
-                      return null;
-                    })()
-                  )}
-
-                  {/* Budget Configuration */}
-                  <Container
-                    header={
-                      <Header
-                        variant="h2"
-                        description="Configure budget limits and alerts for this project"
-                        actions={<Button variant="primary">Edit Budget</Button>}
-                      >
-                        Budget Configuration
-                      </Header>
-                    }
-                  >
-                    <SpaceBetween size="m">
-                      {project.budget_limit && project.budget_limit > 0 ? (
-                        <>
-                          <ColumnLayout columns={2}>
-                            <div>
-                              <Box variant="awsui-key-label">Monthly Budget Limit</Box>
-                              <Box fontSize="heading-l">${project.budget_limit.toFixed(2)}</Box>
-                            </div>
-                            <div>
-                              <Box variant="awsui-key-label">Budget Period</Box>
-                              <Box fontSize="heading-m">Monthly (resets 1st of month)</Box>
-                            </div>
-                          </ColumnLayout>
-                          <Box variant="h4">Alert Thresholds</Box>
-                          <ColumnLayout columns={3}>
-                            <div>
-                              <Box color="text-body-secondary">50% Warning</Box>
-                              <Box>${(project.budget_limit * 0.5).toFixed(2)}</Box>
-                            </div>
-                            <div>
-                              <Box color="text-body-secondary">80% Alert</Box>
-                              <Box>${(project.budget_limit * 0.8).toFixed(2)}</Box>
-                            </div>
-                            <div>
-                              <Box color="text-body-secondary">100% Critical</Box>
-                              <Box>${project.budget_limit.toFixed(2)}</Box>
-                            </div>
-                          </ColumnLayout>
-                        </>
-                      ) : (
-                        <Box textAlign="center" padding={{ vertical: 'xl' }}>
-                          <SpaceBetween size="m">
-                            <Box variant="strong">No budget configured</Box>
-                            <Box color="text-body-secondary">
-                              Set a budget limit to track spending and receive alerts
-                            </Box>
-                            <Button variant="primary">Configure Budget</Button>
-                          </SpaceBetween>
-                        </Box>
-                      )}
-                    </SpaceBetween>
-                  </Container>
-
-                  {/* Per-Workspace Cost Breakdown */}
-                  <Container
-                    header={
-                      <Header
-                        variant="h2"
-                        description="Cost breakdown by workspace"
-                        counter={`(${projectWorkspaces.length} workspaces)`}
-                      >
-                        Workspace Costs
-                      </Header>
-                    }
-                  >
-                    {projectWorkspaces.length > 0 ? (
-                      <Table
-                        columnDefinitions={[
-                          {
-                            id: 'name',
-                            header: 'Workspace',
-                            cell: (item: Instance) => item.name
-                          },
-                          {
-                            id: 'state',
-                            header: 'State',
-                            cell: (item: Instance) => (
-                              <StatusIndicator type={item.state === 'running' ? 'success' : 'stopped'}>
-                                {item.state}
-                              </StatusIndicator>
-                            )
-                          },
-                          {
-                            id: 'cost',
-                            header: 'Accumulated Cost',
-                            cell: () => {
-                              // Mock cost calculation - in real implementation, fetch from API
-                              const mockCost = Math.random() * 50;
-                              return `$${mockCost.toFixed(2)}`;
-                            }
-                          },
-                          {
-                            id: 'rate',
-                            header: 'Hourly Rate',
-                            cell: () => {
-                              // Mock rate - in real implementation, fetch from API
-                              return '$0.85/hr';
-                            }
-                          },
-                          {
-                            id: 'runtime',
-                            header: 'Runtime',
-                            cell: (item: Instance) => {
-                              if (item.launch_time) {
-                                const hours = Math.floor(
-                                  (Date.now() - new Date(item.launch_time).getTime()) / (1000 * 60 * 60)
-                                );
-                                return `${hours}h`;
-                              }
-                              return 'N/A';
-                            }
-                          }
-                        ]}
-                        items={projectWorkspaces}
-                      />
-                    ) : (
-                      <Box textAlign="center" padding={{ vertical: 'xl' }} color="inherit">
-                        <Box variant="p">No workspace costs to display</Box>
-                      </Box>
-                    )}
-                  </Container>
-
-                  {/* Cost Optimization Recommendations */}
-                  {projectWorkspaces.some(i => i.state === 'running') && (
-                    <Alert type="info" header="💡 Cost Optimization Tips">
-                      <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
-                        <li>Hibernate idle workspaces to reduce costs while preserving state</li>
-                        <li>Use spot workspaces for non-critical workloads (up to 90% savings)</li>
-                        <li>Configure auto-hibernation policies for unused workspaces</li>
-                        <li>Right-size workspaces based on actual usage patterns</li>
-                      </ul>
-                    </Alert>
-                  )}
-                </SpaceBetween>
-              )
-            },
-            {
-              id: 'members',
-              label: `Members (${project.member_count || 1})`,
-              content: (
-                <Container
-                  header={
-                    <Header
-                      variant="h2"
-                      description="Manage project members and their permissions"
-                      counter={`(${project.member_count || 1} members)`}
-                      actions={<Button variant="primary">Add Member</Button>}
-                    >
-                      Project Members
-                    </Header>
-                  }
-                >
-                  <Box data-testid="project-members" textAlign="center" padding={{ vertical: 'xl' }}>
-                    <SpaceBetween size="m">
-                      <Box variant="strong">Member management coming soon</Box>
-                      <Box color="text-body-secondary">
-                        View and manage project members, assign roles, and configure permissions
-                      </Box>
-                    </SpaceBetween>
-                  </Box>
-                </Container>
-              )
-            }
-          ]}
-        />
-      </SpaceBetween>
-    );
-  };
-
   // Settings View
   const SettingsView = () => {
     // Settings side navigation items
-    const settingsNavItems = [
-      { id: "general", type: "link", text: "General", href: "#general" },
-      { id: "profiles", type: "link", text: "Profiles", href: "#profiles" },
-      { id: "users", type: "link", text: "Users", href: "#users" },
-      { id: "divider-1", type: "divider" },
+    const settingsNavItems: import('@cloudscape-design/components').SideNavigationProps.Item[] = [
+      { type: "link", text: "General", href: "#general" },
+      { type: "link", text: "Profiles", href: "#profiles" },
+      { type: "link", text: "Users", href: "#users" },
+      { type: "divider" },
       {
-        id: "advanced",
         type: "expandable-link-group",
         text: "Advanced",
         href: "#advanced",
         items: [
-          { id: "ami", type: "link", text: "AMI Management", href: "#ami" },
-          { id: "rightsizing", type: "link", text: "Rightsizing", href: "#rightsizing" },
-          { id: "policy", type: "link", text: "Policy Framework", href: "#policy" },
-          { id: "marketplace", type: "link", text: "Template Marketplace", href: "#marketplace" },
-          { id: "idle", type: "link", text: "Idle Detection", href: "#idle" },
-          { id: "logs", type: "link", text: "Logs Viewer", href: "#logs" }
+          { type: "link", text: "AMI Management", href: "#ami" },
+          { type: "link", text: "Rightsizing", href: "#rightsizing" },
+          { type: "link", text: "Policy Framework", href: "#policy" },
+          { type: "link", text: "Template Marketplace", href: "#marketplace" },
+          { type: "link", text: "Idle Detection", href: "#idle" },
+          { type: "link", text: "Logs Viewer", href: "#logs" }
         ]
       }
     ];
@@ -9472,7 +7728,7 @@ export default function PrismApp() {
             <Box variant="awsui-key-label">Daemon Status</Box>
             <StatusIndicator
               type={state.connected ? 'success' : 'error'}
-              ariaLabel={getStatusLabel('connection', state.connected ? 'success' : 'error')}
+              iconAriaLabel={getStatusLabel('connection', state.connected ? 'success' : 'error')}
             >
               {state.connected ? 'Connected' : 'Disconnected'}
             </StatusIndicator>
@@ -9684,7 +7940,7 @@ export default function PrismApp() {
             <Box variant="strong">Authentication Status</Box>
             <StatusIndicator
               type="success"
-              ariaLabel={getStatusLabel('auth', 'authenticated')}
+              iconAriaLabel={getStatusLabel('auth', 'authenticated')}
             >
               Authenticated via AWS profile
             </StatusIndicator>
@@ -9720,13 +7976,13 @@ export default function PrismApp() {
           ].map((feature) => (
             <Box key={feature.name}>
               <SpaceBetween direction="horizontal" size="s">
-                <Box fontWeight="bold" style={{ minWidth: '200px' }}>{feature.name}:</Box>
+                <span style={{ fontWeight: 'bold', minWidth: '200px', display: 'inline-block' }}>{feature.name}:</span>
                 <StatusIndicator
                   type={
                     feature.status === 'enabled' ? 'success' :
                     feature.status === 'partial' ? 'warning' : 'error'
                   }
-                  ariaLabel={getStatusLabel('policy', feature.status, feature.name)}
+                  iconAriaLabel={getStatusLabel('policy', feature.status, feature.name)}
                 >
                   {feature.status}
                 </StatusIndicator>
@@ -9834,413 +8090,13 @@ export default function PrismApp() {
     );
   };
 
-  // Budget Management View
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const BudgetManagementView = () => {
-    const [selectedTab, setSelectedTab] = useState<number>(0);
-    const [selectedBudget, setSelectedBudget] = useState<BudgetData | null>(null);
-    const [costBreakdown, setCostBreakdown] = useState<CostBreakdown | null>(null);
-
-    // Load cost breakdown when a budget is selected
-    useEffect(() => {
-      if (selectedBudget && selectedTab === 1) {
-        api.getCostBreakdown(selectedBudget.project_id).then(setCostBreakdown);
-      }
-    }, [selectedBudget, selectedTab]);
-
-    // Calculate aggregate statistics
-    const totalBudget = state.budgets.reduce((sum, b) => sum + b.total_budget, 0);
-    const totalSpent = state.budgets.reduce((sum, b) => sum + b.spent_amount, 0);
-    const totalRemaining = totalBudget - totalSpent;
-    const overallPercent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
-    const criticalCount = state.budgets.filter(b => b.status === 'critical').length;
-    const warningCount = state.budgets.filter(b => b.status === 'warning').length;
-
-    return (
-      <SpaceBetween size="l">
-        <Header
-          variant="h1"
-          description="Monitor budgets, analyze costs, and optimize spending across research projects"
-          counter={`(${state.budgets.length} budgets)`}
-          actions={
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={loadApplicationData} disabled={state.loading}>
-                {state.loading ? <Spinner /> : 'Refresh'}
-              </Button>
-              <Button variant="primary">
-                Configure Budget
-              </Button>
-            </SpaceBetween>
-          }
-        >
-          Budget Management
-        </Header>
-
-        {/* Budget Overview Stats */}
-        <ColumnLayout columns={4} variant="text-grid">
-          <Container header={<Header variant="h3">Total Budget</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-              ${totalBudget.toFixed(2)}
-            </Box>
-          </Container>
-          <Container header={<Header variant="h3">Total Spent</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color={overallPercent > 80 ? 'text-status-error' : 'text-status-success'}>
-              ${totalSpent.toFixed(2)}
-            </Box>
-            <Box variant="small" color="text-body-secondary">
-              {overallPercent.toFixed(1)}% of budget
-            </Box>
-          </Container>
-          <Container header={<Header variant="h3">Remaining</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color="text-status-warning">
-              ${totalRemaining.toFixed(2)}
-            </Box>
-          </Container>
-          <Container header={<Header variant="h3">Alerts</Header>}>
-            <Box fontSize="display-l" fontWeight="bold" color={criticalCount > 0 ? 'text-status-error' : 'text-body-secondary'}>
-              {criticalCount} Critical
-            </Box>
-            <Box variant="small" color="text-body-secondary">
-              {warningCount} warnings
-            </Box>
-          </Container>
-        </ColumnLayout>
-
-        {/* Budget Table - Overview Tab */}
-        <Container
-          header={
-            <Header
-              variant="h2"
-              description="Project budgets with spending tracking and alert monitoring"
-              counter={`(${state.budgets.length})`}
-              actions={
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Button>Export Report</Button>
-                  <Button variant="primary">Set Budget</Button>
-                </SpaceBetween>
-              }
-            >
-              Project Budgets
-            </Header>
-          }
-        >
-          <Table
-            columnDefinitions={[
-              {
-                id: "project",
-                header: "Project",
-                cell: (item: BudgetData) => <Link fontSize="body-m" onFollow={() => setSelectedBudget(item)}>{item.project_name}</Link>,
-                sortingField: "project_name"
-              },
-              {
-                id: "budget",
-                header: "Budget",
-                cell: (item: BudgetData) => `$${item.total_budget.toFixed(2)}`,
-                sortingField: "total_budget"
-              },
-              {
-                id: "spent",
-                header: "Spent",
-                cell: (item: BudgetData) => `$${item.spent_amount.toFixed(2)}`,
-                sortingField: "spent_amount"
-              },
-              {
-                id: "remaining",
-                header: "Remaining",
-                cell: (item: BudgetData) => `$${item.remaining.toFixed(2)}`,
-                sortingField: "remaining"
-              },
-              {
-                id: "percentage",
-                header: "% Used",
-                cell: (item: BudgetData) => {
-                  const percent = item.spent_percentage * 100;
-                  return (
-                    <SpaceBetween direction="horizontal" size="xs">
-                      <StatusIndicator
-                        type={
-                          percent >= 95 ? 'error' :
-                          percent >= 80 ? 'warning' : 'success'
-                        }
-                        ariaLabel={getStatusLabel('budget',
-                          percent >= 95 ? 'critical' : percent >= 80 ? 'warning' : 'ok',
-                          `${percent.toFixed(1)}%`)}
-                      >
-                        {percent.toFixed(1)}%
-                      </StatusIndicator>
-                    </SpaceBetween>
-                  );
-                }
-              },
-              {
-                id: "status",
-                header: "Status",
-                cell: (item: BudgetData) => (
-                  <StatusIndicator
-                    type={
-                      item.status === 'critical' ? 'error' :
-                      item.status === 'warning' ? 'warning' : 'success'
-                    }
-                    ariaLabel={getStatusLabel('budget', item.status)}
-                  >
-                    {item.status === 'ok' ? 'OK' : item.status.toUpperCase()}
-                  </StatusIndicator>
-                )
-              },
-              {
-                id: "alerts",
-                header: "Alerts",
-                cell: (item: BudgetData) => {
-                  if (item.alert_count > 0) {
-                    return (
-                      <Badge color="red">{item.alert_count} active</Badge>
-                    );
-                  }
-                  return <Box color="text-body-secondary">None</Box>;
-                }
-              },
-              {
-                id: "actions",
-                header: "Actions",
-                cell: (item: BudgetData) => (
-                  <ButtonDropdown
-                    expandToViewport
-                    items={[
-                      { text: "View Breakdown", id: "breakdown" },
-                      { text: "View Forecast", id: "forecast" },
-                      { text: "Cost Analysis", id: "costs" },
-                      { text: "Configure Alerts", id: "alerts" },
-                      { text: "Edit Budget", id: "edit" },
-                    ]}
-                    onItemClick={({ detail }) => {
-                      setSelectedBudget(item);
-                      if (detail.id === 'breakdown') {
-                        setSelectedTab(1);
-                      } else if (detail.id === 'forecast') {
-                        setSelectedTab(2);
-                      }
-                    }}
-                  >
-                    Actions
-                  </ButtonDropdown>
-                )
-              }
-            ]}
-            items={state.budgets}
-            loadingText="Loading budgets..."
-            loading={state.loading}
-            trackBy="project_id"
-            empty={
-              <Box textAlign="center" color="text-body-secondary">
-                <Box variant="strong" textAlign="center" color="text-body-secondary">
-                  No budgets configured
-                </Box>
-                <Box variant="p" padding={{ bottom: 's' }} color="text-body-secondary">
-                  Configure budgets for your projects to track spending and set alerts.
-                </Box>
-                <Button variant="primary">Configure Budget</Button>
-              </Box>
-            }
-            sortingDisabled={false}
-          />
-        </Container>
-
-        {/* Cost Breakdown View - when budget is selected */}
-        {selectedBudget && selectedTab === 1 && (
-          <Container
-            header={
-              <Header
-                variant="h2"
-                description={`Detailed cost breakdown for ${selectedBudget.project_name}`}
-                actions={
-                  <Button onClick={() => { setSelectedBudget(null); setSelectedTab(0); }}>
-                    Back to Overview
-                  </Button>
-                }
-              >
-                Cost Breakdown
-              </Header>
-            }
-          >
-            <SpaceBetween size="m">
-              <ColumnLayout columns={3} variant="text-grid">
-                <Box>
-                  <Box variant="awsui-key-label">Total Spent</Box>
-                  <Box fontSize="heading-l" fontWeight="bold">
-                    ${selectedBudget.spent_amount.toFixed(2)}
-                  </Box>
-                </Box>
-                <Box>
-                  <Box variant="awsui-key-label">Total Budget</Box>
-                  <Box fontSize="heading-l" fontWeight="bold">
-                    ${selectedBudget.total_budget.toFixed(2)}
-                  </Box>
-                </Box>
-                <Box>
-                  <Box variant="awsui-key-label">Remaining</Box>
-                  <Box fontSize="heading-l" fontWeight="bold" color="text-status-warning">
-                    ${selectedBudget.remaining.toFixed(2)}
-                  </Box>
-                </Box>
-              </ColumnLayout>
-
-              {costBreakdown ? (
-                <>
-                  <Header variant="h3">Cost by Service</Header>
-                  <ColumnLayout columns={2}>
-                    <SpaceBetween size="s">
-                      <Box>
-                        <SpaceBetween direction="horizontal" size="s">
-                          <Box fontWeight="bold" style={{ minWidth: '150px' }}>EC2 Compute:</Box>
-                          <Box>${costBreakdown.ec2_compute.toFixed(2)}</Box>
-                        </SpaceBetween>
-                      </Box>
-                      <Box>
-                        <SpaceBetween direction="horizontal" size="s">
-                          <Box fontWeight="bold" style={{ minWidth: '150px' }}>EBS Storage:</Box>
-                          <Box>${costBreakdown.ebs_storage.toFixed(2)}</Box>
-                        </SpaceBetween>
-                      </Box>
-                      <Box>
-                        <SpaceBetween direction="horizontal" size="s">
-                          <Box fontWeight="bold" style={{ minWidth: '150px' }}>EFS Storage:</Box>
-                          <Box>${costBreakdown.efs_storage.toFixed(2)}</Box>
-                        </SpaceBetween>
-                      </Box>
-                    </SpaceBetween>
-                    <SpaceBetween size="s">
-                      <Box>
-                        <SpaceBetween direction="horizontal" size="s">
-                          <Box fontWeight="bold" style={{ minWidth: '150px' }}>Data Transfer:</Box>
-                          <Box>${costBreakdown.data_transfer.toFixed(2)}</Box>
-                        </SpaceBetween>
-                      </Box>
-                      <Box>
-                        <SpaceBetween direction="horizontal" size="s">
-                          <Box fontWeight="bold" style={{ minWidth: '150px' }}>Other:</Box>
-                          <Box>${costBreakdown.other.toFixed(2)}</Box>
-                        </SpaceBetween>
-                      </Box>
-                      <Box>
-                        <SpaceBetween direction="horizontal" size="s">
-                          <Box fontWeight="bold" style={{ minWidth: '150px' }}>Total:</Box>
-                          <Box fontSize="heading-m" fontWeight="bold">${costBreakdown.total.toFixed(2)}</Box>
-                        </SpaceBetween>
-                      </Box>
-                    </SpaceBetween>
-                  </ColumnLayout>
-                </>
-              ) : (
-                <Box textAlign="center" padding="l">
-                  <Spinner size="large" />
-                  <Box variant="p" color="text-body-secondary">Loading cost breakdown...</Box>
-                </Box>
-              )}
-            </SpaceBetween>
-          </Container>
-        )}
-
-        {/* Forecast View - when budget is selected */}
-        {selectedBudget && selectedTab === 2 && (
-          <Container
-            header={
-              <Header
-                variant="h2"
-                description={`Spending forecast and projections for ${selectedBudget.project_name}`}
-                actions={
-                  <Button onClick={() => { setSelectedBudget(null); setSelectedTab(0); }}>
-                    Back to Overview
-                  </Button>
-                }
-              >
-                Spending Forecast
-              </Header>
-            }
-          >
-            <SpaceBetween size="m">
-              <ColumnLayout columns={3} variant="text-grid">
-                <Box>
-                  <Box variant="awsui-key-label">Current Spending</Box>
-                  <Box fontSize="heading-l" fontWeight="bold">
-                    ${selectedBudget.spent_amount.toFixed(2)}
-                  </Box>
-                  <Box variant="small" color="text-body-secondary">
-                    {(selectedBudget.spent_percentage * 100).toFixed(1)}% of budget
-                  </Box>
-                </Box>
-                {selectedBudget.projected_monthly_spend && (
-                  <Box>
-                    <Box variant="awsui-key-label">Projected Monthly</Box>
-                    <Box fontSize="heading-l" fontWeight="bold" color="text-status-warning">
-                      ${selectedBudget.projected_monthly_spend.toFixed(2)}
-                    </Box>
-                  </Box>
-                )}
-                {selectedBudget.days_until_exhausted && (
-                  <Box>
-                    <Box variant="awsui-key-label">Budget Exhaustion</Box>
-                    <Box fontSize="heading-l" fontWeight="bold" color="text-status-error">
-                      {selectedBudget.days_until_exhausted} days
-                    </Box>
-                  </Box>
-                )}
-              </ColumnLayout>
-
-              {selectedBudget.projected_monthly_spend && selectedBudget.days_until_exhausted && (
-                <Alert type="warning">
-                  <Box variant="strong">Budget Alert</Box>
-                  <Box>
-                    At current spending rate (${selectedBudget.projected_monthly_spend.toFixed(2)}/month),
-                    your budget will be exhausted in approximately {selectedBudget.days_until_exhausted} days.
-                    Consider implementing cost optimization measures or adjusting your budget.
-                  </Box>
-                </Alert>
-              )}
-            </SpaceBetween>
-          </Container>
-        )}
-
-        {/* Active Alerts */}
-        {state.budgets.some(b => b.alert_count > 0) && (
-          <Container
-            header={
-              <Header
-                variant="h2"
-                description="Active budget alerts requiring attention"
-              >
-                Active Alerts
-              </Header>
-            }
-          >
-            <SpaceBetween size="m">
-              {state.budgets.filter(b => b.alert_count > 0).map(budget => (
-                <Alert key={budget.project_id} type="warning">
-                  <Box variant="strong">{budget.project_name}</Box>
-                  <Box>
-                    Budget usage: {(budget.spent_percentage * 100).toFixed(1)}%
-                    (${budget.spent_amount.toFixed(2)} of ${budget.total_budget.toFixed(2)})
-                  </Box>
-                  {budget.active_alerts && budget.active_alerts.length > 0 && (
-                    <Box variant="small" color="text-body-secondary">
-                      {budget.active_alerts.length} active alert(s)
-                    </Box>
-                  )}
-                </Alert>
-              ))}
-            </SpaceBetween>
-          </Container>
-        )}
-      </SpaceBetween>
-    );
-  };
 
   // AMI Management View
   const AMIManagementView = () => {
     const [selectedTab, setSelectedTab] = useState<'amis' | 'builds' | 'regions'>('amis');
     const [selectedAMI, setSelectedAMI] = useState<AMI | null>(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [buildModalVisible, setBuildModalVisible] = useState(false);
+    const [, setBuildModalVisible] = useState(false);
 
     const totalSize = state.amis.reduce((sum, ami) => sum + ami.size_gb, 0);
     const monthlyCost = totalSize * 0.05; // $0.05 per GB-month
@@ -10250,12 +8106,12 @@ export default function PrismApp() {
 
       try {
         await api.deleteAMI(selectedAMI.id);
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: `AMI ${selectedAMI.id} deleted successfully` }] }));
+        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: `AMI ${selectedAMI.id} deleted successfully`, id: Date.now().toString(), dismissible: true }] }));
         setDeleteModalVisible(false);
         setSelectedAMI(null);
         await loadApplicationData();
       } catch (error) {
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to delete AMI: ${error}` }] }));
+        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to delete AMI: ${error}`, id: Date.now().toString(), dismissible: true }] }));
       }
     };
 
@@ -10342,7 +8198,7 @@ export default function PrismApp() {
                         cell: (item: AMI) => (
                           <StatusIndicator
                             type={item.state === 'available' ? 'success' : 'pending'}
-                            ariaLabel={getStatusLabel('ami', item.state)}
+                            iconAriaLabel={getStatusLabel('ami', item.state)}
                           >
                             {item.state}
                           </StatusIndicator>
@@ -10433,7 +8289,7 @@ export default function PrismApp() {
                                 item.status === 'completed' ? 'success' :
                                 item.status === 'failed' ? 'error' : 'in-progress'
                               }
-                              ariaLabel={getStatusLabel('build', item.status)}
+                              iconAriaLabel={getStatusLabel('build', item.status)}
                             >
                               {item.status}
                             </StatusIndicator>
@@ -10564,12 +8420,12 @@ export default function PrismApp() {
 
       try {
         await api.installMarketplaceTemplate(selectedTemplate.id, selectedTemplate.id);
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: `Installing template: ${selectedTemplate.display_name}` }] }));
+        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: `Installing template: ${selectedTemplate.display_name}`, id: Date.now().toString(), dismissible: true }] }));
         setInstallModalVisible(false);
         setSelectedTemplate(null);
         await loadApplicationData();
       } catch (error) {
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to install template: ${error}` }] }));
+        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to install template: ${error}`, id: Date.now().toString(), dismissible: true }] }));
       }
     };
 
@@ -10748,9 +8604,9 @@ export default function PrismApp() {
                   <div>
                     <Box variant="awsui-key-label">Verified</Box>
                     {selectedTemplate.verified ? (
-                      <StatusIndicator type="success" ariaLabel={getStatusLabel('marketplace', 'verified')}>Verified Publisher</StatusIndicator>
+                      <StatusIndicator type="success" iconAriaLabel={getStatusLabel('marketplace', 'verified')}>Verified Publisher</StatusIndicator>
                     ) : (
-                      <StatusIndicator type="pending" ariaLabel={getStatusLabel('marketplace', 'community')}>Community</StatusIndicator>
+                      <StatusIndicator type="pending" iconAriaLabel={getStatusLabel('marketplace', 'community')}>Community</StatusIndicator>
                     )}
                   </div>
                 </SpaceBetween>
@@ -10849,7 +8705,7 @@ export default function PrismApp() {
                 <br />
                 {selectedTemplate.verified && (
                   <>
-                    <Box variant="strong">Status:</Box> <StatusIndicator type="success" ariaLabel={getStatusLabel('marketplace', 'verified')}>Verified Publisher</StatusIndicator>
+                    <Box variant="strong">Status:</Box> <StatusIndicator type="success" iconAriaLabel={getStatusLabel('marketplace', 'verified')}>Verified Publisher</StatusIndicator>
                   </>
                 )}
               </div>
@@ -10963,7 +8819,7 @@ export default function PrismApp() {
                         cell: (item: IdlePolicy) => (
                           <StatusIndicator
                             type={item.enabled ? 'success' : 'stopped'}
-                            ariaLabel={getStatusLabel('idle', item.enabled ? 'enabled' : 'disabled')}
+                            iconAriaLabel={getStatusLabel('idle', item.enabled ? 'enabled' : 'disabled')}
                           >
                             {item.enabled ? 'Enabled' : 'Disabled'}
                           </StatusIndicator>
@@ -11027,7 +8883,7 @@ export default function PrismApp() {
                         cell: (item: IdleSchedule) => (
                           <StatusIndicator
                             type={item.enabled ? 'success' : 'stopped'}
-                            ariaLabel={getStatusLabel('idle', item.enabled ? 'enabled' : 'disabled')}
+                            iconAriaLabel={getStatusLabel('idle', item.enabled ? 'enabled' : 'disabled')}
                           >
                             {item.enabled ? 'Enabled' : 'Disabled'}
                           </StatusIndicator>
@@ -11087,7 +8943,7 @@ export default function PrismApp() {
                     <Box variant="awsui-key-label">Status</Box>
                     <StatusIndicator
                       type={selectedPolicy.enabled ? 'success' : 'stopped'}
-                      ariaLabel={getStatusLabel('idle', selectedPolicy.enabled ? 'enabled' : 'disabled')}
+                      iconAriaLabel={getStatusLabel('idle', selectedPolicy.enabled ? 'enabled' : 'disabled')}
                     >
                       {selectedPolicy.enabled ? 'Enabled' : 'Disabled'}
                     </StatusIndicator>
@@ -11219,7 +9075,7 @@ export default function PrismApp() {
 
         setLogLines(mockLogs);
       } catch (error) {
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to fetch logs: ${error}` }] }));
+        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to fetch logs: ${error}`, id: Date.now().toString(), dismissible: true }] }));
         setLogLines([`Error fetching logs: ${error}`]);
       } finally {
         setLoadingLogs(false);
@@ -11277,7 +9133,7 @@ export default function PrismApp() {
               >
                 <Select
                   selectedOption={logType ?
-                    logTypes.find(t => t.value === logType) : null}
+                    (logTypes.find(t => t.value === logType) || null) : null}
                   onChange={({ detail }) => {
                     setLogType(detail.selectedOption?.value || 'console');
                     setLogLines([]);
@@ -11353,7 +9209,7 @@ export default function PrismApp() {
                 <SpaceBetween direction="horizontal" size="xs">
                   <Button iconName="copy" onClick={() => {
                     navigator.clipboard.writeText(logLines.join('\n'));
-                    setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: 'Logs copied to clipboard' }] }));
+                    setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: 'Logs copied to clipboard', id: Date.now().toString(), dismissible: true }] }));
                   }}>
                     Copy to Clipboard
                   </Button>
@@ -11365,7 +9221,7 @@ export default function PrismApp() {
                     a.download = `${selectedInstance}-${logType}-${new Date().toISOString().split('T')[0]}.log`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: 'Log file downloaded' }] }));
+                    setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: 'Log file downloaded', id: Date.now().toString(), dismissible: true }] }));
                   }}>
                     Download Log File
                   </Button>
@@ -11422,7 +9278,7 @@ export default function PrismApp() {
             </ColumnLayout>
             <Alert type="info">
               <Box variant="strong">Note:</Box> Log viewing is read-only. To interact with your workspace,
-              use SSH: <Box fontFamily="monospace" variant="code">
+              use SSH: <Box variant="code">
                 ssh {selectedInstance && state.instances.find(i => i.name === selectedInstance)?.public_ip || 'instance-ip'}
               </Box>
             </Alert>
@@ -11445,7 +9301,6 @@ export default function PrismApp() {
       description="Policy management allows you to configure institutional policies, access controls, and governance rules for your Prism deployment."
     />
   );
-
 
   const WebViewView = () => {
     const [selectedService, setSelectedService] = React.useState<{instance: string, service: WebService} | null>(null);
@@ -11493,7 +9348,7 @@ export default function PrismApp() {
             </FormField>
             {selectedService && (
               <WebView
-                url={selectedService.service.url}
+                url={selectedService.service.url || ''}
                 serviceName={selectedService.service.name}
                 instanceName={selectedService.instance}
               />
@@ -11650,7 +9505,6 @@ export default function PrismApp() {
                 cell: (item: ApprovalRequest) => item.status === 'pending' ? (
                   <SpaceBetween direction="horizontal" size="xs">
                     <Button
-                      size="small"
                       variant="primary"
                       data-testid={`approve-btn-${item.id}`}
                       onClick={() => openReview(item, 'approve')}
@@ -11658,7 +9512,6 @@ export default function PrismApp() {
                       Approve
                     </Button>
                     <Button
-                      size="small"
                       variant="link"
                       data-testid={`deny-btn-${item.id}`}
                       onClick={() => openReview(item, 'deny')}
@@ -11721,6 +9574,20 @@ export default function PrismApp() {
         <Alert type="info">This feature will be available in a future update.</Alert>
       </Box>
     </Container>
+  );
+
+  const BudgetPoolManagementView = () => (
+    <PlaceholderView
+      title="Budget Pool Management"
+      description="Manage budget pools and allocations for your research projects."
+    />
+  );
+
+  const ProjectDetailViewLegacy = () => (
+    <PlaceholderView
+      title="Project Detail"
+      description="Select a project from the Projects view to see its details."
+    />
   );
 
   // Launch Modal
@@ -12137,7 +10004,7 @@ export default function PrismApp() {
           <FormField label="Workspace size" description="Choose the right size for your workload">
             <Select
               selectedOption={{ label: "Medium (M) - Recommended", value: "M" }}
-              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, size: detail.selectedOption.value }))}
+              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, size: detail.selectedOption.value || 'M' }))}
               options={[
                 { label: "Small (S) - Light workloads", value: "S" },
                 { label: "Medium (M) - Recommended", value: "M" },
@@ -12880,11 +10747,11 @@ export default function PrismApp() {
       setQuickStartActiveStepIndex(3); // Move to progress step
 
       try {
-        const result = await api.launchInstance({
-          template: getTemplateSlug(quickStartConfig.selectedTemplate),
-          name: quickStartConfig.workspaceName,
-          size: quickStartConfig.size
-        });
+        const result = await api.launchInstance(
+          getTemplateSlug(quickStartConfig.selectedTemplate),
+          quickStartConfig.workspaceName,
+          quickStartConfig.size
+        );
 
         setQuickStartConfig(prev => ({
           ...prev,
@@ -13421,14 +11288,12 @@ export default function PrismApp() {
             header={{ text: "Prism", href: "/" }}
             items={[
               {
-                id: "dashboard",
                 type: "link",
                 text: "Dashboard",
                 href: "/dashboard"
               },
-              { id: "divider-1", type: "divider" },
+              { type: "divider" },
               {
-                id: "templates",
                 type: "link",
                 text: "Templates",
                 href: "/templates",
@@ -13436,7 +11301,6 @@ export default function PrismApp() {
                       <Badge color="blue">{Object.keys(state.templates).length}</Badge> : undefined
               },
               {
-                id: "workspaces",
                 type: "link",
                 text: "My Workspaces",
                 href: "/workspaces",
@@ -13445,33 +11309,28 @@ export default function PrismApp() {
                         {state.instances.length}
                       </Badge> : undefined
               },
-              { id: "divider-2", type: "divider" },
+              { type: "divider" },
               {
-                id: "storage",
                 type: "link",
                 text: "Storage",
                 href: "/storage"
               },
               {
-                id: "backups",
                 type: "link",
                 text: "Backups",
                 href: "/backups"
               },
               {
-                id: "projects",
                 type: "link",
                 text: "Projects",
                 href: "/projects"
               },
               {
-                id: "users",
                 type: "link",
                 text: "Users",
                 href: "/users"
               },
               {
-                id: "invitations",
                 type: "link",
                 text: "Invitations",
                 href: "/invitations",
@@ -13479,7 +11338,6 @@ export default function PrismApp() {
                       <Badge color="blue">{state.invitations.filter(i => i.status === 'pending').length}</Badge> : undefined
               },
               {
-                id: "courses",
                 type: "link",
                 text: "Courses",
                 href: "/courses",
@@ -13488,7 +11346,6 @@ export default function PrismApp() {
                   : undefined
               },
               {
-                id: "workshops",
                 type: "link",
                 text: "Workshops",
                 href: "/workshops",
@@ -13497,13 +11354,11 @@ export default function PrismApp() {
                   : undefined
               },
               {
-                id: "capacity-blocks",
                 type: "link",
                 text: "Capacity Blocks",
                 href: "/capacity-blocks",
               },
               {
-                id: "budgets",
                 type: "link",
                 text: "Budgets",
                 href: "/budgets",
@@ -13511,7 +11366,6 @@ export default function PrismApp() {
                       <Badge color="blue">{state.budgetPools.length}</Badge> : undefined
               },
               {
-                id: "approvals",
                 type: "link",
                 text: "Approvals",
                 href: "/approvals",
@@ -13519,9 +11373,8 @@ export default function PrismApp() {
                   ? <Badge color="red">{state.pendingApprovalsCount}</Badge>
                   : undefined
               },
-              { id: "divider-3", type: "divider" },
+              { type: "divider" },
               {
-                id: "settings",
                 type: "link",
                 text: "Settings",
                 href: "/settings",
@@ -13539,13 +11392,15 @@ export default function PrismApp() {
         }
         notifications={
           <Flashbar
-            items={state.notifications}
-            onDismiss={({ detail }) => {
-              setState(prev => ({
-                ...prev,
-                notifications: prev.notifications.filter(item => item.id !== detail.id)
-              }));
-            }}
+            items={state.notifications.map(n => ({
+              ...n,
+              onDismiss: n.dismissible ? () => {
+                setState(prev => ({
+                  ...prev,
+                  notifications: prev.notifications.filter(item => item.id !== n.id)
+                }));
+              } : undefined
+            }))}
           />
         }
         content={
@@ -13729,8 +11584,8 @@ export default function PrismApp() {
                       id: "fingerprint",
                       header: "Fingerprint",
                       cell: (item: SSHKeyConfig) => (
-                        <Box fontSize="body-s" fontFamily="monospace">
-                          {item.fingerprint}
+                        <Box fontSize="body-s">
+                          <span style={{ fontFamily: 'monospace' }}>{item.fingerprint}</span>
                         </Box>
                       )
                     },
@@ -14534,12 +12389,12 @@ export default function PrismApp() {
                 {
                   id: 'username',
                   header: 'Username',
-                  cell: (member: ProjectMember) => member.username
+                  cell: (member: MemberData) => member.username || member.user_id
                 },
                 {
                   id: 'role',
                   header: 'Role',
-                  cell: (member: ProjectMember) => (
+                  cell: (member: MemberData) => (
                     <Badge color={member.role === 'admin' ? 'red' : member.role === 'member' ? 'blue' : 'grey'}>
                       {member.role}
                     </Badge>
@@ -14548,12 +12403,12 @@ export default function PrismApp() {
                 {
                   id: 'joined_at',
                   header: 'Joined',
-                  cell: (member: ProjectMember) => new Date(member.joined_at).toLocaleDateString()
+                  cell: (member: MemberData) => member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '-'
                 },
                 {
                   id: 'actions',
                   header: 'Actions',
-                  cell: (member: ProjectMember) => (
+                  cell: (member: MemberData) => (
                     <SpaceBetween direction="horizontal" size="xs">
                       <Select
                         selectedOption={{ value: member.role, label: member.role }}
@@ -14577,7 +12432,6 @@ export default function PrismApp() {
                         ]}
                       />
                       <Button
-                        size="small"
                         variant="link"
                         onClick={async () => {
                           if (!selectedProjectForMembers) return;
@@ -14667,7 +12521,7 @@ export default function PrismApp() {
               value={Math.min((budgetModalData.spent_percentage || 0) * 100, 100)}
               status={
                 (budgetModalData.spent_percentage || 0) >= 0.95 ? 'error' :
-                (budgetModalData.spent_percentage || 0) >= 0.80 ? 'warning' : 'success'
+                (budgetModalData.spent_percentage || 0) >= 0.80 ? 'in-progress' : 'success'
               }
               label="Budget utilization"
               description={`${((budgetModalData.spent_percentage || 0) * 100).toFixed(1)}% used`}

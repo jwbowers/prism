@@ -73,7 +73,7 @@ class Logger {
 
 // Default logger instance for the application
 export const logger = new Logger({
-  minLevel: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+  minLevel: (typeof window !== 'undefined' && (window as Window & { __NODE_ENV__?: string }).__NODE_ENV__ === 'production') ? 'warn' : 'debug',
   prefix: 'Prism',
 });
 

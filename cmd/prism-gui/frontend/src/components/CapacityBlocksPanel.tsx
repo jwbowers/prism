@@ -7,7 +7,7 @@
  *   - Cancel an active block
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Container,
   Header,

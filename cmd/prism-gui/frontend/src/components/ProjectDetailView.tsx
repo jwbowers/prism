@@ -119,10 +119,10 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
     ? (project.current_spend || 0) / project.budget_limit * 100
     : 0;
 
-  const budgetStatus = budgetUtilization >= 90
+  const budgetStatus: 'error' | 'success' | 'in-progress' = budgetUtilization >= 90
     ? 'error'
     : budgetUtilization >= 75
-    ? 'warning'
+    ? 'in-progress'
     : 'success';
 
   return (

@@ -62,7 +62,7 @@ const WebView: React.FC<WebViewProps> = ({ url, serviceName, instanceName }) => 
           </span>
           {loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Spinner size="small" />
+              <Spinner size="normal" />
               <span style={{ fontSize: '12px', opacity: 0.8 }}>Loading...</span>
             </div>
           )}

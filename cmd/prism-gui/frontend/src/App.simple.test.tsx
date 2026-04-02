@@ -157,7 +157,7 @@ describe('Prism App - Essential Tests', () => {
 
       // Template cards render description text
       // Description may be in a small text element
-      const descMatches = screen.queryAllByText(/Complete ML environment/i);
+      screen.queryAllByText(/Complete ML environment/i);
       // Either the description is shown OR the template card is shown without it
       // (implementation detail — just verify the template name is there)
       expect(screen.getAllByText('Python Machine Learning').length).toBeGreaterThan(0);

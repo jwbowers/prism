@@ -8,10 +8,9 @@
  * Uses window.__apiClient (set in App.tsx).
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Tabs,
-  Container,
   Header,
   SpaceBetween,
   Button,
@@ -20,7 +19,6 @@ import {
   Form,
   FormField,
   Input,
-  Select,
   Box,
   Spinner,
   Badge,

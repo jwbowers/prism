@@ -432,7 +432,7 @@ describe('ProfileManager', () => {
     it('handles profiles API failure gracefully', async () => {
       vi.stubGlobal('fetch', buildFetchMock({ failProfiles: true }));
 
-      const user = userEvent.setup();
+      userEvent.setup();
       render(<App />);
 
       // App should still render
