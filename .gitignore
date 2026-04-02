@@ -51,6 +51,9 @@ Thumbs.db
 # Build output directories
 dist/
 build/
+# Exception: GUI platform icon assets are source files, not build artifacts
+!cmd/prism-gui/build/
+!cmd/prism-gui/build/**
 /node_modules/
 **/node_modules/
 /package-lock.json
