@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/scttfrdmn/prism/pkg/aws/localstack"
 )
 
 // ReducedModeError represents an error when AWS credentials are required but unavailable
@@ -23,13 +21,6 @@ func (s *Server) requireAWSMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Skip check if in test mode
 		if s.testMode {
-			next(w, r)
-			return
-		}
-
-		// Skip check if LocalStack mode is active: LocalStack always provides
-		// valid (mock) credentials, so reduced-mode is never correct here.
-		if localstack.IsLocalStackEnabled() {
 			next(w, r)
 			return
 		}

@@ -29,7 +29,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	"github.com/scttfrdmn/prism/pkg/aws/localstack"
 	"github.com/scttfrdmn/prism/pkg/security"
 	"github.com/scttfrdmn/prism/pkg/state"
 	"github.com/scttfrdmn/prism/pkg/templates"
@@ -107,19 +106,11 @@ func NewManager(opts ...ManagerOptions) (*Manager, error) {
 
 	ctx := context.Background()
 
-	// Check if LocalStack mode is enabled
 	var cfg aws.Config
 	var err error
 
-	if localstack.IsLocalStackEnabled() {
-		// Use LocalStack configuration
-		log.Println("LocalStack mode enabled - using LocalStack endpoints")
-		cfg, err = localstack.NewAWSConfigWithProfile(ctx, opt.Profile, opt.Region)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load LocalStack config: %w", err)
-		}
-	} else {
-		// Load regular AWS configuration with optional profile and region
+	{
+		// Load AWS configuration with optional profile and region
 		cfgOpts := []func(*config.LoadOptions) error{}
 
 		// Set profile if specified

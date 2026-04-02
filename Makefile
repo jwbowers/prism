@@ -109,6 +109,7 @@ clean:
 
 # Test targets
 .PHONY: test test-unit test-integration test-substrate test-substrate-docker substrate-start substrate-stop substrate-reset substrate-logs substrate-status test-e2e test-coverage test-all test-aws test-aws-quick test-aws-setup test-smoke test-regression
+.PHONY: test-localstack localstack-start localstack-stop localstack-reset localstack-logs localstack-status localstack-up localstack-down localstack-test
 
 # Run automated test suite
 test-automated: build
@@ -127,84 +128,25 @@ test-unit:
 	@echo "🧪 Running unit tests..."
 	@PRISM_DEV=true GO_ENV=test go test -race -short $$(go list ./... | grep -v -E "(cmd/prism-gui|internal/tui)") -coverprofile=unit-coverage.out
 
-# Run LocalStack integration tests (offline, fast, no AWS costs)
-test-localstack: build
-	@echo "🐳 Running LocalStack integration tests..."
-	@echo "📋 Starting LocalStack..."
-	@cd test/localstack && docker-compose up -d
-	@echo "⏳ Waiting for LocalStack to be ready..."
-	@timeout 120 bash -c 'until curl -f http://localhost:4566/_localstack/health 2>/dev/null; do sleep 3; done' || (echo "❌ LocalStack failed to start" && exit 1)
-	@timeout 60 bash -c 'until [ -f /tmp/prism-localstack-config.json ]; do sleep 3; done' || (echo "❌ LocalStack initialization failed" && exit 1)
-	@echo "✅ LocalStack ready"
-	@echo "🧪 Running tests..."
-	@PRISM_USE_LOCALSTACK=true go test -v -tags=integration ./test/localstack/... -timeout=10m || (cd test/localstack && docker-compose down && exit 1)
-	@cd test/localstack && docker-compose down
-	@echo "✅ LocalStack tests complete"
-
-# Start LocalStack for development
-localstack-start:
-	@echo "🐳 Starting LocalStack..."
-	@cd test/localstack && docker-compose up -d
-	@echo "⏳ Waiting for LocalStack to be ready..."
-	@timeout 120 bash -c 'until curl -f http://localhost:4566/_localstack/health 2>/dev/null; do sleep 3; done'
-	@echo "✅ LocalStack is ready at http://localhost:4566"
-	@echo "📋 Configuration: /tmp/prism-localstack-config.json"
-	@echo ""
-	@echo "To run tests: PRISM_USE_LOCALSTACK=true go test -tags=integration ./test/integration/..."
-	@echo "To stop: make localstack-stop"
-
-# Stop LocalStack
-localstack-stop:
-	@echo "🛑 Stopping LocalStack..."
-	@cd test/localstack && docker-compose down
-	@echo "✅ LocalStack stopped"
-
-# Clean LocalStack data and restart
-localstack-reset:
-	@echo "🔄 Resetting LocalStack..."
-	@cd test/localstack && docker-compose down -v
-	@rm -f /tmp/prism-localstack-config.json
-	@echo "✅ LocalStack reset complete"
-	@echo "Run 'make localstack-start' to start fresh"
-
-# Show LocalStack logs
-localstack-logs:
-	@cd test/localstack && docker-compose logs -f localstack
-
-# Show LocalStack status
-localstack-status:
-	@echo "🐳 LocalStack Status:"
-	@cd test/localstack && docker-compose ps
-	@echo ""
-	@echo "🏥 Health Check:"
-	@curl -s http://localhost:4566/_localstack/health 2>/dev/null | jq . || echo "LocalStack not running"
-	@echo ""
-	@echo "📋 Configuration:"
-	@cat /tmp/prism-localstack-config.json 2>/dev/null | jq . || echo "Configuration not found"
-
-# Run Substrate integration tests (in-process, no Docker required)
-# Uses build tag 'substrate' so these tests are excluded from normal 'go test ./...' runs.
+# Run Substrate integration tests — in-process, no Docker required
+# Uses build tag 'substrate'; excluded from normal 'go test ./...' runs.
 .PHONY: test-substrate
 test-substrate:
-	@echo "🧪 Running Substrate integration tests (in-process, no Docker needed)..."
+	@echo "🧪 Running Substrate integration tests (in-process)..."
 	@go test -tags=substrate -v ./pkg/aws/... -run "^TestSubstrate" -timeout=2m
 	@echo "✅ Substrate tests complete"
 
 # Run Substrate integration tests via Docker container (ghcr.io/scttfrdmn/substrate:latest)
-# Requires: docker login ghcr.io -u <user> --password-stdin  (GitHub PAT with read:packages)
-# Same port as LocalStack (4566) — mutually exclusive, don't run both simultaneously.
 .PHONY: test-substrate-docker substrate-start substrate-stop substrate-reset substrate-logs substrate-status
 test-substrate-docker: substrate-start
 	@echo "🧪 Running Substrate integration tests (Docker mode)..."
-	@PRISM_USE_LOCALSTACK=true LOCALSTACK_ENDPOINT=http://localhost:4566 \
-		go test -v -tags=integration ./test/localstack/... -timeout=10m \
+	@go test -tags=substrate -v ./pkg/aws/... -run "^TestSubstrate" -timeout=5m \
 		|| (cd test/substrate && docker compose down && exit 1)
 	@cd test/substrate && docker compose down
 	@echo "✅ Substrate Docker tests complete"
 
 substrate-start:
 	@echo "🐳 Starting Substrate container..."
-	@docker login ghcr.io 2>/dev/null || (echo "⚠️  Not logged in to ghcr.io — run: docker login ghcr.io -u <user> --password-stdin" && exit 1)
 	@cd test/substrate && docker compose up -d
 	@echo "⏳ Waiting for Substrate to be ready..."
 	@timeout 60 bash -c 'until curl -sf http://localhost:4566/health >/dev/null; do sleep 1; done' \
@@ -232,14 +174,8 @@ substrate-status:
 	@echo "🏥 Health Check:"
 	@curl -s http://localhost:4566/health 2>/dev/null | python3 -m json.tool 2>/dev/null || echo "Substrate not running"
 
-# Run integration tests with LocalStack (legacy target kept for compatibility)
-test-integration: test-localstack
-
-# LocalStack convenience aliases (shorter names for common operations)
-.PHONY: localstack-up localstack-down localstack-test
-localstack-up: localstack-start
-localstack-down: localstack-stop
-localstack-test: test-localstack
+# test-integration now runs Substrate (replaces LocalStack)
+test-integration: test-substrate
 
 # Run AMI builder integration tests specifically
 test-ami-builder:
@@ -1131,7 +1067,7 @@ help:
 	@echo "  clean        Remove build artifacts"
 	@echo "  test         Run unit tests (legacy)"
 	@echo "  test-unit    Run unit tests"
-	@echo "  test-integration Run integration tests with LocalStack"
+	@echo "  test-integration Run integration tests with Substrate (in-process)"
 	@echo "  test-e2e     Run end-to-end tests"
 	@echo "  test-coverage Generate coverage report"
 	@echo "  test-smoke   Run smoke tests (fast critical path verification)"
