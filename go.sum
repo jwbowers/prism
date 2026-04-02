@@ -184,6 +184,8 @@ github.com/scttfrdmn/substrate v0.45.6 h1:gqf7RMhxP4EYsCwhBX/7Wz7X73S4Xiq3UyWzQ+
 github.com/scttfrdmn/substrate v0.45.6/go.mod h1:gKkftVt2MxQ465Rs/Na4SsEvm/SJMBypfCGmdKlvfro=
 github.com/scttfrdmn/substrate v0.45.8 h1:vjnAzn3En+2j45nCSMWCyZHvmYbu+2imy/svRy0ipD4=
 github.com/scttfrdmn/substrate v0.45.8/go.mod h1:gKkftVt2MxQ465Rs/Na4SsEvm/SJMBypfCGmdKlvfro=
+github.com/scttfrdmn/substrate v0.45.9 h1:wClbUtwcFzqs+xGmrc+PXGML8td/j2tfrqt2eYrLJoc=
+github.com/scttfrdmn/substrate v0.45.9/go.mod h1:gKkftVt2MxQ465Rs/Na4SsEvm/SJMBypfCGmdKlvfro=
 github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e h1:MRM5ITcdelLK2j1vwZ3Je0FKVCfqOLp5zO6trqMLYs0=
 github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e/go.mod h1:XV66xRDqSt+GTGFMVlhk3ULuV0y9ZmzeVGR4mloJI3M=
 github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 h1:+jumHNA0Wrelhe64i8F6HNlS8pkoyMv5sreGx2Ry5Rw=
