@@ -108,7 +108,7 @@ clean:
 	@go clean
 
 # Test targets
-.PHONY: test test-unit test-integration test-e2e test-coverage test-all test-aws test-aws-quick test-aws-setup test-smoke test-regression
+.PHONY: test test-unit test-integration test-substrate test-e2e test-coverage test-all test-aws test-aws-quick test-aws-setup test-smoke test-regression
 
 # Run automated test suite
 test-automated: build
@@ -181,6 +181,14 @@ localstack-status:
 	@echo ""
 	@echo "📋 Configuration:"
 	@cat /tmp/prism-localstack-config.json 2>/dev/null | jq . || echo "Configuration not found"
+
+# Run integration tests with Substrate (in-process, no Docker required)
+# Uses build tag 'substrate' so these tests are excluded from normal 'go test ./...' runs.
+.PHONY: test-substrate
+test-substrate:
+	@echo "🧪 Running Substrate integration tests (in-process, no Docker needed)..."
+	@go test -tags=substrate -v ./pkg/aws/... -run "^TestSubstrate" -timeout=2m
+	@echo "✅ Substrate tests complete"
 
 # Run integration tests with LocalStack (legacy target kept for compatibility)
 test-integration: test-localstack
