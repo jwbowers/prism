@@ -1,0 +1,13 @@
+services:
+  substrate:
+    image: ghcr.io/scttfrdmn/substrate:latest
+    container_name: prism-substrate
+    ports:
+      - "4566:4566"
+    environment:
+      - SUBSTRATE_LOG_LEVEL=error
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:4566/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 15

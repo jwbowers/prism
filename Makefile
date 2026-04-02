@@ -108,7 +108,7 @@ clean:
 	@go clean
 
 # Test targets
-.PHONY: test test-unit test-integration test-substrate test-e2e test-coverage test-all test-aws test-aws-quick test-aws-setup test-smoke test-regression
+.PHONY: test test-unit test-integration test-substrate test-substrate-docker substrate-start substrate-stop substrate-reset substrate-logs substrate-status test-e2e test-coverage test-all test-aws test-aws-quick test-aws-setup test-smoke test-regression
 
 # Run automated test suite
 test-automated: build
@@ -182,13 +182,55 @@ localstack-status:
 	@echo "📋 Configuration:"
 	@cat /tmp/prism-localstack-config.json 2>/dev/null | jq . || echo "Configuration not found"
 
-# Run integration tests with Substrate (in-process, no Docker required)
+# Run Substrate integration tests (in-process, no Docker required)
 # Uses build tag 'substrate' so these tests are excluded from normal 'go test ./...' runs.
 .PHONY: test-substrate
 test-substrate:
 	@echo "🧪 Running Substrate integration tests (in-process, no Docker needed)..."
 	@go test -tags=substrate -v ./pkg/aws/... -run "^TestSubstrate" -timeout=2m
 	@echo "✅ Substrate tests complete"
+
+# Run Substrate integration tests via Docker container (ghcr.io/scttfrdmn/substrate:latest)
+# Requires: docker login ghcr.io -u <user> --password-stdin  (GitHub PAT with read:packages)
+# Same port as LocalStack (4566) — mutually exclusive, don't run both simultaneously.
+.PHONY: test-substrate-docker substrate-start substrate-stop substrate-reset substrate-logs substrate-status
+test-substrate-docker: substrate-start
+	@echo "🧪 Running Substrate integration tests (Docker mode)..."
+	@PRISM_USE_LOCALSTACK=true LOCALSTACK_ENDPOINT=http://localhost:4566 \
+		go test -v -tags=integration ./test/localstack/... -timeout=10m \
+		|| (cd test/substrate && docker compose down && exit 1)
+	@cd test/substrate && docker compose down
+	@echo "✅ Substrate Docker tests complete"
+
+substrate-start:
+	@echo "🐳 Starting Substrate container..."
+	@docker login ghcr.io 2>/dev/null || (echo "⚠️  Not logged in to ghcr.io — run: docker login ghcr.io -u <user> --password-stdin" && exit 1)
+	@cd test/substrate && docker compose up -d
+	@echo "⏳ Waiting for Substrate to be ready..."
+	@timeout 60 bash -c 'until curl -sf http://localhost:4566/health >/dev/null; do sleep 1; done' \
+		|| (echo "❌ Substrate failed to start" && cd test/substrate && docker compose logs && exit 1)
+	@echo "✅ Substrate ready at http://localhost:4566"
+
+substrate-stop:
+	@echo "🛑 Stopping Substrate container..."
+	@cd test/substrate && docker compose down
+	@echo "✅ Substrate stopped"
+
+substrate-reset:
+	@echo "🔄 Resetting Substrate state..."
+	@curl -sf -X POST http://localhost:4566/_substrate/reset >/dev/null \
+		&& echo "✅ State reset" \
+		|| echo "⚠️  Substrate not running (start with: make substrate-start)"
+
+substrate-logs:
+	@cd test/substrate && docker compose logs -f substrate
+
+substrate-status:
+	@echo "🐳 Substrate Status:"
+	@cd test/substrate && docker compose ps
+	@echo ""
+	@echo "🏥 Health Check:"
+	@curl -s http://localhost:4566/health 2>/dev/null | python3 -m json.tool 2>/dev/null || echo "Substrate not running"
 
 # Run integration tests with LocalStack (legacy target kept for compatibility)
 test-integration: test-localstack
