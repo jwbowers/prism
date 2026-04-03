@@ -1,7 +1,7 @@
-site_name: Prism Documentation
-site_url: https://prism.io
-site_description: Pre-configured cloud research environments for academic computing
-site_author: Prism Team
+site_name: Prism
+site_url: https://prismcloud.io
+site_description: Cloud research workstations for scientists — launch in seconds, not hours.
+site_author: Scott Friedman
 
 repo_url: https://github.com/scttfrdmn/prism
 repo_name: scttfrdmn/prism
@@ -61,8 +61,9 @@ theme:
     edit: material/pencil
     view: material/eye
 
-  logo: images/prism-transparent.png
-  favicon: images/prism-favicon-32.png
+  custom_dir: docs/overrides
+  logo: images/prism-icon.png
+  favicon: images/prism-icon.png
 
 plugins:
   - search:
