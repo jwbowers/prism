@@ -76,7 +76,7 @@ jobs:
       - name: Run unit tests
         run: |
           PRISM_DEV=true GO_ENV=test go test -short -timeout 5m \
-            $(go list ./... | grep -v -E "(cmd/|internal/tui|test/integration/cli|test/localstack)") \
+            $(go list ./... | grep -v -E "(cmd/|test/integration/cli|test/localstack)") \
             -coverprofile=unit-coverage.out \
             -covermode=atomic
 

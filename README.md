@@ -251,9 +251,6 @@ prism launch python-ml analysis --project ml-research
 # Command line
 prism templates
 
-# Terminal UI
-prism tui
-
 # REST API
 curl http://localhost:8947/api/v1/instances
 ```

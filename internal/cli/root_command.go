@@ -453,7 +453,6 @@ func (r *CommandFactoryRegistry) RegisterAllCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(r.createWebCommand())
 
 	// System commands (kept at root level)
-	rootCmd.AddCommand(r.app.tuiCommand)
 	rootCmd.AddCommand(NewGUICommand())
 	rootCmd.AddCommand(NewAboutCommand())
 	rootCmd.AddCommand(NewVersionCommand())

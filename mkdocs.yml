@@ -132,7 +132,7 @@ nav:
   - User Guides:
     - CLI User Guide: user-guides/USER_GUIDE_v0.5.x.md
     - GUI User Guide: user-guides/GUI_USER_GUIDE.md
-    - TUI User Guide: user-guides/TUI_USER_GUIDE.md
+
     - Template Format: user-guides/TEMPLATE_FORMAT.md
     - Template Marketplace: user-guides/TEMPLATE_MARKETPLACE_USER_GUIDE.md
     - Multi-Profile Guide: user-guides/MULTI_PROFILE_GUIDE.md

@@ -129,13 +129,6 @@ prism admin daemon status
 prism gui
 ```
 
-### Launch Terminal Interface
-
-```bash
-# Start the interactive terminal UI
-prism tui
-```
-
 ### Use Command Line
 
 ```bash

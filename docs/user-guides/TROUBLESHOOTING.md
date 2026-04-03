@@ -237,11 +237,7 @@ Interface unresponsive
 
 **Quick fix:**
 ```bash
-# For TUI display issues
-export TERM=xterm-256color
-prism tui
-
-# For interface problems, use CLI as backup
+# For interface problems, use CLI
 prism workspace list
 prism workspace connect instance-name
 ```

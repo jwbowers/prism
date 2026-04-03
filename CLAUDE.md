@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Command-line tool that provides academic researchers with pre-configured cloud workstations on AWS. Three client interfaces (CLI, TUI, GUI) share a single backend daemon.
+Command-line tool that provides academic researchers with pre-configured cloud workstations on AWS. Two client interfaces (CLI, GUI) share a single backend daemon.
 
 ```
 cmd/
@@ -25,8 +25,7 @@ pkg/
 └── types/        # Shared types
 
 internal/
-├── cli/          # CLI application logic
-└── tui/          # TUI (BubbleTea)
+└── cli/          # CLI application logic
 ```
 
 ## Core Design Principles
@@ -43,9 +42,8 @@ These guide every design decision:
 
 ### Multi-Modal Design
 - **CLI**: automation, scripting, power users
-- **TUI**: keyboard-first interactive terminal
 - **GUI**: mouse-friendly desktop (Wails v3 + Cloudscape)
-- **Unified Backend**: all three share the daemon REST API on port 8947
+- **Unified Backend**: both share the daemon REST API on port 8947
 
 ### Frontend API Client Pattern (SafePrismAPI)
 
@@ -109,7 +107,6 @@ make cross-compile                            # all platforms
 ### Run
 ```bash
 ./bin/prism workspace launch python-ml my-project   # CLI (daemon auto-starts)
-./bin/prism tui                                      # TUI
 ./bin/prism-gui                                      # GUI
 curl http://localhost:8947/api/v1/ping               # verify daemon
 ./bin/prism admin daemon status

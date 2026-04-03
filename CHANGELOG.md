@@ -5,6 +5,11 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-04-02
+
+### Removed
+- TUI (Terminal User Interface) — retired the BubbleTea `prism tui` command (#578). The interface had fallen behind the CLI and GUI in feature coverage (missing file ops, governance, courses, and all features added after v0.26.0), was excluded from CI, and contributed ~22,000 lines of maintenance overhead. The CLI and GUI cover all use cases. Removes `github.com/charmbracelet/bubbletea`, `bubbles`, and `lipgloss` dependencies.
+
 ## [0.29.2] - 2026-04-02
 
 ### Fixed

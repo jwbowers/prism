@@ -58,12 +58,6 @@ Perfect for visual management and one-click operations.
 prism gui
 ```
 
-### 📱 **TUI (Terminal Interface)**
-Keyboard-driven interface for remote work and SSH sessions.
-```bash
-prism tui
-```
-
 ### 💻 **CLI (Command Line)**
 Scriptable interface for automation and power users.
 ```bash

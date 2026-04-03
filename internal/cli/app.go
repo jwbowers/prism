@@ -49,15 +49,14 @@ import (
 	"github.com/scttfrdmn/prism/pkg/project"
 	"github.com/scttfrdmn/prism/pkg/templates"
 	"github.com/scttfrdmn/prism/pkg/types"
-	"github.com/spf13/cobra"
 )
 
 // App represents the CLI application
 type App struct {
-	version               string
-	apiClient             client.PrismAPI
-	ctx                   context.Context // Context for AWS operations
-	tuiCommand            *cobra.Command
+	version   string
+	apiClient client.PrismAPI
+	ctx       context.Context // Context for AWS operations
+
 	config                *Config
 	profileManager        *profile.ManagerEnhanced
 	launchDispatcher      *LaunchCommandDispatcher // Command Pattern for launch flags
@@ -153,9 +152,6 @@ func NewApp(version string) *App {
 	app.backupCommands = NewBackupCommands(app)
 	app.webCommands = NewWebCommands(app)
 
-	// Initialize TUI command
-	app.tuiCommand = NewTUICommand()
-
 	return app
 }
 
@@ -249,22 +245,7 @@ func NewAppWithClient(version string, apiClient client.PrismAPI) *App {
 	app.backupCommands = NewBackupCommands(app)
 	app.webCommands = NewWebCommands(app)
 
-	// Initialize TUI command
-	app.tuiCommand = NewTUICommand()
-
 	return app
-}
-
-// TUI launches the terminal UI
-func (a *App) TUI(_ []string) error {
-	// In test mode, just verify TUI command exists without running it
-	if a.testMode {
-		if a.tuiCommand == nil {
-			return fmt.Errorf("TUI command not initialized")
-		}
-		return nil
-	}
-	return a.tuiCommand.Execute()
 }
 
 // Launch handles the launch command

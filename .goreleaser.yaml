@@ -172,9 +172,6 @@ brews:
       Command Line Interface (CLI):
         prism --help
 
-      Terminal User Interface (TUI):
-        prism tui
-
       Quick start:
         prism templates                           # List available templates
         prism launch <template-name> <instance>   # Launch a workstation

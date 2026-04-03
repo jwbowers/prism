@@ -373,12 +373,6 @@ func TestSimplified_MultiModalAccess(t *testing.T) {
 		assert.NoError(t, err, "CLI template access should work")
 	})
 
-	t.Run("TUI_Availability", func(t *testing.T) {
-		// Test TUI command exists (won't run interactively in test mode)
-		err := app.TUI([]string{})
-		assert.NoError(t, err, "TUI should be available and initialized")
-	})
-
 	t.Run("API_Through_Daemon", func(t *testing.T) {
 		// Test daemon provides API access
 		err := app.Daemon([]string{"status"})

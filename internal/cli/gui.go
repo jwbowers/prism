@@ -57,7 +57,7 @@ func runGUI() {
 		fmt.Println("\nTo install GUI support:")
 		fmt.Println("  1. Install Wails CLI: go install github.com/wailsapp/wails/v3/cmd/wails@latest")
 		fmt.Println("  2. Build GUI: make build-gui")
-		fmt.Println("  3. Or use TUI instead: prism tui")
+
 		os.Exit(1)
 	}
 
