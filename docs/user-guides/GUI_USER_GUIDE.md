@@ -1,156 +1,106 @@
-# Prism GUI Guide
+# GUI Guide
 
-<p align="center">
-  <img src="images/prism.png" alt="Prism Logo" width="200">
-</p>
+The Prism desktop application provides a visual interface for managing workspaces, storage, and settings without typing commands.
 
-## Welcome to the Prism GUI!
+## Starting the GUI
 
-The Prism GUI makes managing your research cloud computers easy - no more typing commands! Just click buttons and see everything visually.
+```bash
+prism gui
+```
 
-## What is the GUI?
+Or launch Prism from your Applications folder (macOS) or Start menu (Windows).
 
-GUI stands for "Graphical User Interface." Instead of typing commands, you'll use:
-- Mouse clicks
-- Buttons
-- Menus
-- Windows
+---
 
-The GUI is perfect for visual learners and anyone who prefers using a mouse over typing commands.
+## Main views
 
-## Main Features of the GUI
+### Dashboard
 
-### Main Dashboard
+The Dashboard shows all your workspaces at a glance:
 
-The Dashboard shows you:
-- All your running and stopped cloud computers
-- Real-time cost information per instance
-- Quick launch buttons for common templates
-- System status and notifications
-- Profile and AWS region information
+- Status indicators (running, stopped, hibernated)
+- Real-time cost per instance
+- Quick-action buttons: Launch, Stop, Hibernate, Connect
+- Profile and region in the sidebar
 
-**Key Features:**
-- **Instance Overview**: See all your instances at a glance with status indicators
-- **Cost Monitoring**: Real-time cost tracking with daily estimates
-- **Quick Actions**: Launch, stop, hibernate, and connect with one click
+### Template gallery
 
-### Template Gallery
+Browse available research environments:
 
-Browse research environments with pictures and descriptions:
-- Visual cards for each template
-- Detailed descriptions of included software
-- One-click launching
-- Size selection sliders (XS to XL)
+- Visual cards with descriptions and included software
+- One-click launch
+- Size selection (XS to XL)
 
-### Instance Manager
+### Instance manager
 
-Manage all your cloud computers in one place:
-- Start and stop with a single click
-- Connect buttons that open connections automatically
+Manage all workspaces from one screen:
+
+- Start and stop with a click
+- Connect buttons that open SSH or browser connections
 - Color-coded status indicators
-- Detailed cost and usage information
+- Cost and usage details
 
-### Storage Manager
+### Storage manager
 
-Manage your data storage visually:
-- Create new storage volumes with size sliders
-- Drag-and-drop to attach storage to computers
-- Visual space usage indicators
-- One-click backup options
+Create and manage EFS and EBS volumes:
 
-## Cool GUI Features
+- Create volumes with a size slider
+- Attach/detach volumes to running workspaces
+- Usage indicators
 
-### System Tray / Menu Bar
-The GUI runs in your system tray or menu bar (top of your screen), so you can:
-- See status at a glance
-- Get notifications about your cloud computers
+---
+
+## System tray / menu bar
+
+The GUI runs in your system tray (Windows) or menu bar (macOS) so you can:
+
+- Monitor workspace status at a glance
+- Receive notifications about running workspaces
 - Access Prism without opening a terminal
-- Monitor costs continuously
 
-### Profile Management
-Manage different AWS accounts from one place:
-- Switch between your personal AWS account and invited accounts
-- See which profile you're currently using in the sidebar
-- Add new personal profiles for your own AWS accounts
-- Add invitation profiles when someone invites you to use their account
-- Learn more in the [Multi-Profile Guide](MULTI_PROFILE_GUIDE.md)
+---
 
-### Automatic Updates
-The GUI checks for updates and lets you know when:
-- New Prism versions are available
-- New templates have been added
-- Your cloud computers need attention
+## Profile management
 
-### Dark and Light Themes
-Choose the colors that work best for you:
-- Dark theme for nighttime use
-- Light theme for daytime use
-- Automatic switching based on your computer's settings
+Manage multiple AWS accounts from one place:
 
-## How to Use the GUI
+1. Open Settings → Profile Management
+2. **Add a personal profile** — for your own AWS account
+3. **Add an invitation profile** — when a collaborator invites you to their account
+4. **Switch profiles** — click the profile name in the sidebar
 
-1. **Starting the GUI**
-   ```bash
-   prism gui
-   ```
-   Or click the Prism icon in your applications menu.
+When you switch profiles, the GUI refreshes to show workspaces in that AWS account.
 
-2. **Launching a Cloud Computer**
-   - Click "Launch New Instance"
-   - Select a template from the gallery
-   - Enter a name for your computer
-   - Choose a size (XS to XL)
-   - Click "Launch"
+---
 
-3. **Connecting to Your Computer**
-   - Find your computer in the Instances list
-   - Click "Connect"
-   - Choose SSH (command line) or Web (browser)
-   - Start working!
+## Launching a workspace
 
-4. **Managing Your Computer**
-   - Click "Stop" when you're done for the day
-   - Click "Start" when you want to use it again
-   - Click "Delete" when you're completely finished
+1. Click **Launch New Instance**
+2. Select a template from the gallery
+3. Enter a name
+4. Choose a size (XS to XL)
+5. Click **Launch**
 
-## Switching Between AWS Profiles
+The workspace appears in the instance list and becomes ready in about 2 minutes.
 
-The Prism GUI makes it easy to switch between different AWS accounts:
+---
 
-1. **See your current profile**
-   - Look in the sidebar under "AWS Profile"
-   - It shows the name and type (Personal or Invitation)
+## Connecting to a workspace
 
-2. **Switch profiles**
-   - Click the "Switch Profile" button in the sidebar, or
-   - Go to Settings → Profile Management
-   - Select the profile you want to use
+1. Find the workspace in the Instances list
+2. Click **Connect**
+3. Copy the SSH command, or click a web service link (Jupyter, RStudio)
 
-3. **Add a new personal profile**
-   - Go to Settings → Profile Management
-   - Click "Add Personal Profile"
-   - Fill in the profile information
-   - Click "Submit"
+---
 
-4. **Add an invitation profile**
-   - Go to Settings → Profile Management
-   - Click "Add Invitation"
-   - Enter the invitation token and other details
-   - Click "Submit"
+## Dark and light themes
 
-When you switch profiles, the GUI automatically refreshes to show the cloud computers in that AWS account.
+The GUI follows your system appearance setting automatically, or you can switch manually in Settings.
 
-## Get Help
+---
 
-If you need help with the GUI:
+## Getting help
 
-1. Check the documentation at [docs.prism.org](https://docs.prism.org)
+Report issues: [github.com/scttfrdmn/prism/issues](https://github.com/scttfrdmn/prism/issues)
 
-2. Run the tests to check your setup:
-   ```bash
-   prism test
-   ```
-
-3. Visit the community forum at [community.prism.org](https://community.prism.org)
-
-4. Report issues on GitHub at [github.com/scttfrdmn/prism/issues](https://github.com/scttfrdmn/prism/issues)
+Community discussions: [github.com/scttfrdmn/prism/discussions](https://github.com/scttfrdmn/prism/discussions)

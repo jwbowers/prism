@@ -1,213 +1,172 @@
-# Getting Started with Prism
+# Installation & Setup
 
-## Quick Start (5 minutes)
+## Install Prism
 
-Prism provides pre-configured research environments without complex setup requirements.
+=== "macOS (Homebrew)"
+    ```bash
+    brew install scttfrdmn/tap/prism
+    ```
 
-### 1. Installation
+=== "Windows (Scoop)"
+    ```powershell
+    scoop bucket add scttfrdmn https://github.com/scttfrdmn/scoop-bucket
+    scoop install prism
+    ```
 
-See the main [Installation Guide](../index.md#installation) for detailed installation instructions for your platform (macOS, Linux, Windows, Conda).
+=== "Linux"
+    Download the latest tarball from the [releases page](https://github.com/scttfrdmn/prism/releases/latest), extract, and add to your PATH.
 
-Quick install:
+Verify:
 ```bash
-# macOS/Linux
-brew tap scttfrdmn/prism
-brew install prism
+prism version
 ```
 
-```powershell
-# Windows
-scoop bucket add scttfrdmn https://github.com/scttfrdmn/scoop-bucket
-scoop install prism
-```
+---
 
-### 2. AWS Setup
+## Connect AWS credentials
 
-Prism uses your existing AWS credentials. If you don't have AWS CLI configured:
+Prism uses your AWS credentials to launch instances in your account.
 
+**Step 1 — Configure the AWS CLI** (skip if already done):
 ```bash
 aws configure
-# Enter your AWS Access Key ID, Secret Access Key, and default region
+# Prompts for: AWS Access Key ID, Secret Access Key, region, output format
 ```
 
-For detailed AWS setup including IAM permissions, see the [Administrator Guide](../admin-guides/ADMINISTRATOR_GUIDE.md) or [AWS IAM Permissions](../admin-guides/AWS_IAM_PERMISSIONS.md).
-
-### 3. Launch Your First Environment
+Verify it works:
 ```bash
-# See available templates
+aws sts get-caller-identity
+```
+
+**Step 2 — Add a Prism profile**:
+```bash
+prism profile add
+```
+
+This interactive wizard links a Prism profile name to your AWS credentials and default region. You only need to do this once.
+
+For detailed IAM permission requirements, see the [Administrator Guide](../admin-guides/ADMINISTRATOR_GUIDE.md).
+
+---
+
+## First-time setup wizard
+
+If this is your first time running Prism, the init wizard covers AWS setup, profile creation, and a test launch:
+
+```bash
+prism init
+```
+
+---
+
+## Launch your first workspace
+
+```bash
+# See what's available
 prism templates
 
-# Launch a Python ML environment
+# Launch a Python + Jupyter environment
 prism workspace launch python-ml my-first-project
+
+# Check it's ready (takes ~2 minutes)
+prism workspace list
 
 # Get connection info
 prism workspace connect my-first-project
 ```
 
-That's it! Your research environment is ready.
+`prism workspace connect` prints the SSH command and any web service URLs (Jupyter, RStudio, etc.).
 
 ---
 
-## Choose Your Interface
+## Two interfaces
 
-Prism offers three ways to interact:
+### CLI
+The `prism` command is the primary interface. It's scriptable and works in automated pipelines.
 
-### 🖥️ **GUI (Desktop App)**
-Perfect for visual management and one-click operations.
+```bash
+prism workspace launch python-ml my-project --size L --spot
+```
+
+### GUI (desktop app)
+A visual desktop app for managing workspaces, storage, and settings.
+
 ```bash
 prism gui
 ```
 
-### 💻 **CLI (Command Line)**
-Scriptable interface for automation and power users.
-```bash
-prism workspace launch python-ml my-project --size L
-```
+Or launch Prism from your Applications folder (macOS) / Start menu (Windows).
 
 ---
 
-## Essential Commands
+## Common workflows
 
-### Template Management
+### Data science
 ```bash
-prism templates                                    # List available environments
-prism templates info python-ml                     # Get template details
-prism workspace launch python-ml my-project        # Launch environment
-```
-
-### Instance Management
-```bash
-prism workspace list                               # Show running instances
-prism workspace connect my-project                 # Get connection info
-prism workspace stop my-project                    # Stop when not in use
-prism workspace resume my-project                  # Resume later
-prism workspace delete my-project                  # Remove completely
-```
-
-### Cost Optimization
-```bash
-prism workspace hibernate my-project               # Preserve work, reduce costs
-prism workspace resume my-project                  # Resume hibernated instance
-```
-
-Auto-hibernation is configured per template (see each template's idle detection settings).
-
----
-
-## Common Research Workflows
-
-### Data Science Project
-```bash
-# Launch Jupyter environment
 prism workspace launch python-ml data-analysis --size L
-
-# Create shared storage
-prism volume create shared-datasets
-
-# Connect and start working
 prism workspace connect data-analysis
-# Opens: ssh user@ip-address -L 8888:localhost:8888
-# Jupyter: http://localhost:8888
+# Jupyter is available at http://localhost:8888 via SSH tunnel
 ```
 
-### R Statistical Analysis
+### R / statistics
 ```bash
-# Launch R + RStudio environment
-prism workspace launch r-rstudio-server stats-project
-
-# Get RStudio connection
+prism workspace launch r-research stats-project
 prism workspace connect stats-project
-# Opens: http://ip-address:8787 (RStudio Server)
+# RStudio Server available at http://localhost:8787 via SSH tunnel
 ```
 
-### Custom Environment
+### Shared storage
 ```bash
-# Start with base template
-prism workspace launch basic-ubuntu my-custom
+prism volume create shared-datasets
+prism volume attach shared-datasets my-project
+```
 
-# Customize your setup
-prism workspace connect my-custom
-# Install packages, configure tools
+---
 
-# Save for reuse as an AMI
-prism ami save my-custom "my-custom-template"
+## Cost management
+
+Stop workspaces when not in use — stopped instances have no compute cost:
+
+```bash
+prism workspace stop my-project
+prism workspace start my-project   # Resume later
+```
+
+Hibernation preserves RAM state and reduces cost further:
+
+```bash
+prism workspace hibernate my-project
+prism workspace resume my-project
 ```
 
 ---
 
 ## Troubleshooting
 
-### "Daemon not running"
+**"Daemon not running"**
 ```bash
-# Check daemon status (daemon usually auto-starts)
 prism admin daemon status
-
-# Restart daemon if needed
-prism admin daemon stop
-# Next command will auto-start a fresh daemon
-prism templates
+prism admin daemon stop     # Then run any prism command to auto-restart
 ```
 
-### "AWS credentials not found"
+**"AWS credentials not found"**
 ```bash
-# Verify AWS configuration
-aws sts get-caller-identity
-
-# Reconfigure if needed
-aws configure
+aws sts get-caller-identity    # Verify credentials work
+aws configure                  # Reconfigure if needed
 ```
 
-### "Permission denied" errors
-Make sure your AWS user has the required permissions. See our [AWS IAM Permissions](../admin-guides/AWS_IAM_PERMISSIONS.md) for complete IAM policies, or run:
-
+**Instance launch fails**
 ```bash
-./scripts/setup-iam-permissions.sh
-```
-
-### Instance launch fails
-```bash
-# Check AWS region and availability
-aws ec2 describe-availability-zones
-
-# Try different region
 prism workspace launch python-ml my-project --region us-east-1
 ```
 
----
-
-## Next Steps
-
-- **Browse Templates**: Explore research environments with `prism templates`
-- **Join Community**: Share templates and get help
-- **Read Guides**: Detailed documentation in `/docs` folder
-- **Cost Optimization**: Learn about hibernation and spot instances
-- **Team Collaboration**: Set up shared storage and project management
-
-**Need Help?** Open an issue on [GitHub](https://github.com/scttfrdmn/prism/issues) or check our documentation.
+For more, see the [Troubleshooting Guide](TROUBLESHOOTING.md).
 
 ---
 
-## Advanced Features
+## Next steps
 
-### Project Management
-```bash
-# Create research project
-prism project create brain-study --budget 500
-
-# Launch in project context
-prism workspace launch neuroimaging analysis --project brain-study
-```
-
-### Custom AMIs
-```bash
-# Build an AMI from a template (pre-baked, fast launch)
-prism ami create python-ml
-
-# Save a running instance as an AMI
-prism ami save my-project "My Custom Environment"
-
-# Launch from your saved AMI
-prism workspace launch --ami "My Custom Environment" fast-start
-```
-
-**🎯 Key Principle**: Prism defaults to success. Most commands work without options, with smart defaults for research computing.
+- **[Quick Start](QUICK_START.md)** — 5-minute guide
+- **[CLI Reference](CLI_REFERENCE.md)** — all commands
+- **[GUI Guide](GUI_USER_GUIDE.md)** — desktop app
+- **[Templates](TEMPLATE_FORMAT.md)** — template format and customization

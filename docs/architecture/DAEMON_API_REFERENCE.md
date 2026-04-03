@@ -1,8 +1,8 @@
 # Prism Daemon API Reference
 
-## Version: v0.5.10
-**Last Updated**: December 13, 2025
-**Port**: 8947 (CWS on phone keypad)
+## Version: v0.30.0
+**Last Updated**: 2026-04-02
+**Port**: 8947
 **Base URL**: `http://localhost:8947`
 **Protocol**: REST API with JSON
 
@@ -13,8 +13,7 @@
 ## 🔌 **API Architecture**
 
 The Prism daemon provides a unified REST API that serves all client interfaces:
-- **CLI Client** (`cmd/cws`) - Command-line interface
-- **TUI Client** (`prism tui`) - Interactive terminal interface  
+- **CLI Client** (`cmd/prism`) - Command-line interface
 - **GUI Client** (`cmd/prism-gui`) - Desktop application (Wails 3.x)
 
 All clients use the same API endpoints through the `pkg/api/client` library for consistent functionality across interfaces.
@@ -1162,7 +1161,7 @@ Gracefully shutdown the daemon service.
     "code": "INSTANCE_NOT_FOUND",
     "message": "Workspace 'my-research' not found in current region",
     "details": "Check workspace name and ensure correct AWS profile/region",
-    "remediation": "Use 'cws list' to see available workspaces",
+    "remediation": "Use 'prism workspace list' to see available workspaces",
     "timestamp": "2024-06-15T10:30:00Z"
   }
 }

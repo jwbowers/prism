@@ -124,85 +124,17 @@ nav:
   - Home: index.md
 
   - Getting Started:
-    - Installation: user-guides/GETTING_STARTED.md
-    - Zero-Setup Guide: user-guides/ZERO_SETUP_GUIDE.md
-    - macOS Installation: user-guides/MACOS_INSTALLATION.md
-    - Linux Installation: user-guides/LINUX_INSTALLATION.md
+    - Installation & Setup: user-guides/GETTING_STARTED.md
+    - Quick Start: user-guides/QUICK_START.md
 
-  - User Guides:
-    - CLI User Guide: user-guides/USER_GUIDE_v0.5.x.md
-    - GUI User Guide: user-guides/GUI_USER_GUIDE.md
-
-    - Template Format: user-guides/TEMPLATE_FORMAT.md
-    - Template Marketplace: user-guides/TEMPLATE_MARKETPLACE_USER_GUIDE.md
-    - Multi-Profile Guide: user-guides/MULTI_PROFILE_GUIDE.md
-    - Web Services: user-guides/WEB_SERVICES_INTEGRATION_GUIDE.md
+  - User Guide:
+    - CLI Reference: user-guides/CLI_REFERENCE.md
+    - GUI Guide: user-guides/GUI_USER_GUIDE.md
+    - Templates: user-guides/TEMPLATE_FORMAT.md
     - Troubleshooting: user-guides/TROUBLESHOOTING.md
 
-  - Persona Walkthroughs:
-    - Solo Researcher: USER_SCENARIOS/01_SOLO_RESEARCHER_WALKTHROUGH.md
-    - Lab Environment: USER_SCENARIOS/02_LAB_ENVIRONMENT_WALKTHROUGH.md
-    - University Class: USER_SCENARIOS/03_UNIVERSITY_CLASS_WALKTHROUGH.md
-    - Conference Workshop: USER_SCENARIOS/04_CONFERENCE_WORKSHOP_WALKTHROUGH.md
-    - Cross-Institutional: USER_SCENARIOS/05_CROSS_INSTITUTIONAL_COLLABORATION_WALKTHROUGH.md
-    - NIH Researcher (CUI/NIST 800-171): USER_SCENARIOS/06_NIH_RESEARCHER_CUI_COMPLIANCE.md
-    - NIH Researcher (PHI/HIPAA): USER_SCENARIOS/07_NIH_RESEARCHER_PHI_HIPAA_COMPLIANCE.md
-    - Institutional Research IT: USER_SCENARIOS/08_INSTITUTIONAL_RESEARCH_IT_WALKTHROUGH.md
+  - Administrator Guide: admin-guides/ADMINISTRATOR_GUIDE.md
 
-  - Administrator Guides:
-    - Administrator Guide: admin-guides/ADMINISTRATOR_GUIDE.md
-    - Research User Management: admin-guides/RESEARCH_USER_MANAGEMENT_GUIDE.md
-    - Batch Invitation: admin-guides/BATCH_INVITATION_GUIDE.md
-    - Security Hardening: admin-guides/SECURITY_HARDENING_GUIDE.md
-    - Security & Compliance Roadmap: admin-guides/SECURITY_COMPLIANCE_ROADMAP.md
-    - Compliance Matrix: admin-guides/COMPLIANCE_MATRIX.md
-    - NIST 800-171 Compliance: admin-guides/NIST_800_171_COMPLIANCE.md
-    - Compliance Disclaimer: admin-guides/COMPLIANCE_DISCLAIMER.md
-    - AWS IAM Permissions: admin-guides/AWS_IAM_PERMISSIONS.md
-    - AWS Quota Management: admin-guides/AWS_QUOTA_MANAGEMENT.md
-    - Policy Examples: admin-guides/BASIC_POLICY_EXAMPLES.md
+  - Architecture: architecture/DAEMON_API_REFERENCE.md
 
-  - Architecture:
-    - Vision: VISION.md
-    - Design Principles: DESIGN_PRINCIPLES.md
-    - GUI Architecture: architecture/GUI_ARCHITECTURE.md
-    - API Reference: architecture/DAEMON_API_REFERENCE.md
-    - Dual User Architecture: architecture/DUAL_USER_ARCHITECTURE.md
-    - Template Marketplace: architecture/TEMPLATE_MARKETPLACE_ARCHITECTURE.md
-    - Auto-AMI System: architecture/AUTO_AMI_SYSTEM.md
-    - Idle Detection: architecture/IDLE_DETECTION.md
-    - International Support: architecture/INTERNATIONAL_SUPPORT_ROADMAP.md
-    - UX Evaluation: architecture/UX_EVALUATION_AND_RECOMMENDATIONS.md
-
-  - Roadmap & Planning:
-    - Development Roadmap: ROADMAP.md
-    - Planned Features:
-      - Auto-Update System: https://github.com/scttfrdmn/prism/issues/61
-      - GUI System Tray & Auto-Start: https://github.com/scttfrdmn/prism/issues/62
-      - EC2 Capacity Blocks for ML: https://github.com/scttfrdmn/prism/issues/63
-      - AWS Quota Management: https://github.com/scttfrdmn/prism/issues/57
-      - Directory Sync (Dropbox-like): https://github.com/scttfrdmn/prism/issues/53
-      - Configuration Sync: https://github.com/scttfrdmn/prism/issues/54
-    - Planning Documents:
-      - Directory Sync Planning: archive/planning/DIRECTORY_SYNC_PLANNING.md
-      - Configuration Sync Planning: archive/planning/CONFIG_SYNC_PLANNING.md
-    - Technical Debt Backlog: archive/roadmap/TECHNICAL_DEBT_BACKLOG.md
-
-  - Development:
-    - Development Setup: development/DEVELOPMENT_SETUP.md
-    - Testing Guide: development/TESTING.md
-    - Code Quality: development/CODE_QUALITY_BEST_PRACTICES.md
-    - Release Process: development/RELEASE_PROCESS.md
-    - Distribution: development/DISTRIBUTION.md
-    - Template System: development/TEMPLATE_SYSTEM_IMPLEMENTATION.md
-
-  - Release Notes:
-    - All Releases: releases/RELEASE_NOTES.md
-    - v0.5.2: releases/RELEASE_NOTES_v0.5.2.md
-    - v0.5.1: releases/RELEASE_NOTES_v0.5.1.md
-
-  - Community:
-    - Contributing: https://github.com/scttfrdmn/prism/blob/main/.github/README.md
-    - Discussions: https://github.com/scttfrdmn/prism/discussions
-    - Issues: https://github.com/scttfrdmn/prism/issues
-    - Projects: https://github.com/scttfrdmn/prism/projects
+  - Release Notes: releases/RELEASE_NOTES.md

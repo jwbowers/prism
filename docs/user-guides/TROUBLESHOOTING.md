@@ -226,12 +226,11 @@ aws ec2 describe-availability-zones --region us-west-2
 
 ---
 
-### 🔧 GUI and Interface Issues
+### 🔧 Interface Issues
 
 **What you see:**
 ```
 GUI won't start
-TUI looks broken
 Interface unresponsive
 ```
 
@@ -290,7 +289,7 @@ prism templates
 
 1. **Check daemon status**: `prism admin daemon status`
 2. **Verify AWS credentials**: `aws sts get-caller-identity`
-3. **Try CLI interface**: Sometimes GUI/TUI have display issues
+3. **Try CLI if GUI is unresponsive**: `prism workspace list`
 4. **Check recent changes**: Did you update AWS credentials or change regions?
 
 ### Include This Information
