@@ -1003,6 +1003,26 @@ func (s *Server) refreshInstanceStateFromAWS(awsManager *aws.Manager, instanceNa
 	return liveInstance
 }
 
+// applyExpectedTransitionalState sets the instance to the expected transitional
+// state when AWS DescribeInstances has not caught up after a state-changing API
+// call. EC2 state changes are not instantaneous: StopInstances returns success
+// as soon as the request is accepted, but DescribeInstances may still report
+// the old state for several seconds. Without this, the cached state stays stale
+// until the next explicit --refresh, making "workspace list" show the old state.
+func applyExpectedTransitionalState(instance *types.Instance, fromState, toState string) {
+	if instance == nil || instance.State != fromState {
+		return
+	}
+	instance.State = toState
+	instance.StateHistory = append(instance.StateHistory, types.StateTransition{
+		FromState: fromState,
+		ToState:   toState,
+		Timestamp: time.Now(),
+		Reason:    "user_action",
+		Initiator: "user",
+	})
+}
+
 // handleStartInstance starts a stopped instance
 func (s *Server) handleStartInstance(w http.ResponseWriter, r *http.Request, identifier string) {
 	if r.Method != http.MethodPost {
@@ -1033,6 +1053,7 @@ func (s *Server) handleStartInstance(w http.ResponseWriter, r *http.Request, ide
 
 		// Refresh state from AWS to get actual current state (pending, running, etc.)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
+		applyExpectedTransitionalState(updatedInstance, "stopped", "pending")
 		return nil
 	})
 
@@ -1075,6 +1096,7 @@ func (s *Server) handleStopInstance(w http.ResponseWriter, r *http.Request, iden
 
 		// Refresh state from AWS to get actual current state (stopping, stopped, etc.)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
+		applyExpectedTransitionalState(updatedInstance, "running", "stopping")
 		return nil
 	})
 
@@ -1117,6 +1139,7 @@ func (s *Server) handleHibernateInstance(w http.ResponseWriter, r *http.Request,
 
 		// Refresh state from AWS to get actual current state (stopping for hibernation)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
+		applyExpectedTransitionalState(updatedInstance, "running", "stopping")
 		return nil
 	})
 
@@ -1159,6 +1182,7 @@ func (s *Server) handleResumeInstance(w http.ResponseWriter, r *http.Request, id
 
 		// Refresh state from AWS to get actual current state (pending, running)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
+		applyExpectedTransitionalState(updatedInstance, "stopped", "pending")
 		return nil
 	})
 

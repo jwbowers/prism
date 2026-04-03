@@ -245,6 +245,36 @@ func TestHandleInstanceActions(t *testing.T) {
 	}
 }
 
+// TestApplyExpectedTransitionalState tests the optimistic state helper
+func TestApplyExpectedTransitionalState(t *testing.T) {
+	t.Run("applies transitional state when AWS has not caught up", func(t *testing.T) {
+		inst := &types.Instance{State: "running"}
+		applyExpectedTransitionalState(inst, "running", "stopping")
+		assert.Equal(t, "stopping", inst.State)
+		require.Len(t, inst.StateHistory, 1)
+		assert.Equal(t, "running", inst.StateHistory[0].FromState)
+		assert.Equal(t, "stopping", inst.StateHistory[0].ToState)
+	})
+
+	t.Run("no-op when AWS already reports expected state", func(t *testing.T) {
+		inst := &types.Instance{State: "stopping"}
+		applyExpectedTransitionalState(inst, "running", "stopping")
+		assert.Equal(t, "stopping", inst.State)
+		assert.Empty(t, inst.StateHistory)
+	})
+
+	t.Run("no-op for nil instance", func(t *testing.T) {
+		applyExpectedTransitionalState(nil, "running", "stopping")
+		// no panic is the assertion
+	})
+
+	t.Run("start: stopped to pending", func(t *testing.T) {
+		inst := &types.Instance{State: "stopped"}
+		applyExpectedTransitionalState(inst, "stopped", "pending")
+		assert.Equal(t, "pending", inst.State)
+	})
+}
+
 // TestHandleTemplates tests the template listing endpoint
 func TestHandleTemplates(t *testing.T) {
 	server := createTestServer(t)
