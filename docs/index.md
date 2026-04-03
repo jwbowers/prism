@@ -18,7 +18,7 @@ hide:
       <a href="https://github.com/scttfrdmn/prism" class="btn-hero-secondary" target="_blank">View on GitHub</a>
     </div>
     <div class="install-block">
-      <code>brew install scttfrdmn/prism/prism</code>
+      <code>brew install scttfrdmn/tap/prism</code>
     </div>
   </div>
 </div>
@@ -42,8 +42,8 @@ hide:
     </article>
     <article class="feature-card">
       <span class="feature-icon" aria-hidden="true">🖥️</span>
-      <h2>CLI, TUI, and GUI</h2>
-      <p>Script with the CLI, navigate with the terminal UI, or use the desktop app. All three share the same backend.</p>
+      <h2>CLI and GUI</h2>
+      <p>Script with the CLI or use the desktop app for visual management. Both share the same backend daemon.</p>
     </article>
     <article class="feature-card">
       <span class="feature-icon" aria-hidden="true">👥</span>
@@ -63,7 +63,7 @@ hide:
 
 ```bash
 # Install
-brew install scttfrdmn/prism/prism
+brew install scttfrdmn/tap/prism
 
 # Connect your AWS credentials
 prism profile add
