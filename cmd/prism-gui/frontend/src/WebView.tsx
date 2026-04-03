@@ -150,6 +150,9 @@ const WebView: React.FC<WebViewProps> = ({ url, serviceName, instanceName }) => 
         />
         {loading && !error && (
           <div
+            role="status"
+            aria-live="polite"
+            aria-label={`Loading ${serviceName}`}
             style={{
               position: 'absolute',
               top: 0,

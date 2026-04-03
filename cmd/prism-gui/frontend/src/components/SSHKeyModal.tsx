@@ -191,6 +191,8 @@ export const SSHKeyModal: React.FC<SSHKeyModalProps> = ({
                   readOnly
                   value={keyData.public_key}
                   data-testid="ssh-public-key-display"
+                  aria-label="SSH public key — copy to authorized_keys on your server"
+                  aria-readonly="true"
                   style={{
                     width: '100%',
                     fontFamily: 'monospace',
@@ -247,6 +249,8 @@ export const SSHKeyModal: React.FC<SSHKeyModalProps> = ({
                   readOnly
                   value={keyData.private_key}
                   data-testid="ssh-private-key-display"
+                  aria-label="SSH private key — save as ~/.ssh/id_rsa with chmod 600"
+                  aria-readonly="true"
                   style={{
                     width: '100%',
                     fontFamily: 'monospace',

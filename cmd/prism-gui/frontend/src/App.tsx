@@ -11279,6 +11279,15 @@ export default function PrismApp() {
   // Main render
   return (
     <>
+      <a
+        href="#main-content"
+        style={{ position: 'absolute', top: '-40px', left: 0, background: '#000', color: '#fff',
+                 padding: '8px 16px', zIndex: 9999, fontWeight: 600 }}
+        onFocus={(e) => { e.currentTarget.style.top = '0'; }}
+        onBlur={(e) => { e.currentTarget.style.top = '-40px'; }}
+      >
+        Skip to main content
+      </a>
       <AppLayout
         navigationOpen={navigationOpen}
         onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
@@ -11404,7 +11413,7 @@ export default function PrismApp() {
           />
         }
         content={
-          <div id="main-content" role="main">
+          <div id="main-content" role="main" tabIndex={-1}>
             {/* Update Notification Banner */}
             {state.updateInfo && state.updateInfo.is_update_available && (
               <Alert

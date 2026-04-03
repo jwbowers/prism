@@ -5,6 +5,17 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.2] - 2026-04-02
+
+### Fixed
+- ARIA/WAI-ARIA accessibility fixes across GUI and landing page (#568, #569, #571, #572, #573, #574, #575, #576, #577)
+- Terminal.tsx: added `role="status" aria-live="polite" aria-atomic="true"` to connection status bar; `aria-hidden="true"` on decorative pulsing dot; `role="application"` + `aria-label` on terminal container (#568, #576)
+- SSHKeyModal.tsx: added `aria-label` and `aria-readonly="true"` to public key and private key textareas (#569)
+- WebView.tsx: added `role="status" aria-live="polite"` + `aria-label` to service loading overlay (#574)
+- App.tsx: added skip-navigation link and `tabIndex={-1}` on `#main-content` for keyboard navigation (#573)
+- Landing page (`docs/index.md`): added `<main>` landmark, `<section aria-labelledby>` for each section, `<article>` for all cards, fixed heading hierarchy (`h3` → `h2` for feature cards), `aria-hidden="true"` on all decorative emoji (#572, #575)
+- Landing page CSS (`docs/overrides/home.html`): added `:focus-visible` outlines to all three button classes (#571)
+
 ## [0.29.1] - 2026-04-02
 
 ### Fixed

@@ -153,6 +153,9 @@ const Terminal: React.FC<TerminalProps> = React.memo(({ instanceName }) => {
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Connection status bar */}
       <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
         style={{
           padding: '8px 16px',
           backgroundColor: isConnected ? '#0dbc79' : '#cd3131',
@@ -164,7 +167,9 @@ const Terminal: React.FC<TerminalProps> = React.memo(({ instanceName }) => {
           gap: '8px',
         }}
       >
-        <span style={{
+        <span
+          aria-hidden="true"
+          style={{
           width: '8px',
           height: '8px',
           borderRadius: '50%',
@@ -183,6 +188,8 @@ const Terminal: React.FC<TerminalProps> = React.memo(({ instanceName }) => {
       {/* Terminal container */}
       <div
         ref={terminalRef}
+        role="application"
+        aria-label={`SSH Terminal — ${instanceName}`}
         style={{
           flex: 1,
           padding: '10px',
