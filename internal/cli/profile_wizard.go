@@ -264,19 +264,31 @@ func (pw *ProfileWizard) getProfileName() string {
 // getAWSProfile prompts for AWS profile selection
 func (pw *ProfileWizard) getAWSProfile() string {
 	fmt.Printf("\n🔑 %s\n", color.BlueString("AWS Profile"))
-	fmt.Println("This should match a profile in your ~/.aws/credentials file.")
+	fmt.Println("This should match a profile in your ~/.aws/config or ~/.aws/credentials.")
 
-	// Try to detect available AWS profiles
-	awsProfiles := pw.detectAWSProfiles()
+	// Try to detect available AWS profiles from both config files
+	awsProfiles := pw.detectAWSProfilesDetailed()
 	if len(awsProfiles) > 0 {
-		fmt.Printf("Detected AWS profiles: %s\n", strings.Join(awsProfiles, ", "))
+		fmt.Println("Detected AWS profiles:")
+		for _, p := range awsProfiles {
+			label := ""
+			switch p.credType {
+			case "sso":
+				label = "  [SSO / Identity Center]"
+			case "role":
+				label = "  [assume role]"
+			case "process":
+				label = "  [credential process]"
+			}
+			fmt.Printf("  %-30s%s\n", p.name, label)
+		}
 	}
 	fmt.Println()
 
 	for {
 		defaultProfile := "default"
-		if len(awsProfiles) > 0 && awsProfiles[0] != "default" {
-			defaultProfile = awsProfiles[0]
+		if len(awsProfiles) > 0 {
+			defaultProfile = awsProfiles[0].name
 		}
 
 		awsProfile := pw.promptString("AWS profile name", defaultProfile)
@@ -465,28 +477,88 @@ func (pw *ProfileWizard) profileNameExists(name string) bool {
 	return false
 }
 
-func (pw *ProfileWizard) detectAWSProfiles() []string {
-	// Try to read AWS credentials file
+// awsProfileInfo holds a detected AWS profile name and its credential type.
+type awsProfileInfo struct {
+	name     string
+	credType string // "sso", "role", "process", or "" for static/unknown
+}
+
+// detectAWSProfilesDetailed reads both ~/.aws/config and ~/.aws/credentials
+// and returns all profiles with their credential type annotated.
+// ~/.aws/config is read first so SSO/role profiles appear at the top.
+func (pw *ProfileWizard) detectAWSProfilesDetailed() []awsProfileInfo {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return []string{}
+		return nil
 	}
 
-	credentialsPath := fmt.Sprintf("%s/.aws/credentials", homeDir)
-	file, err := os.Open(credentialsPath)
-	if err != nil {
-		return []string{}
-	}
-	defer file.Close()
+	seen := map[string]bool{}
+	var profiles []awsProfileInfo
 
-	var profiles []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
-			profile := strings.Trim(line, "[]")
-			if profile != "" {
-				profiles = append(profiles, profile)
+	// --- ~/.aws/config ---
+	// Profiles are [default] or [profile <name>].
+	// We read each section's keys to determine the credential type.
+	if f, err := os.Open(homeDir + "/.aws/config"); err == nil {
+		defer f.Close()
+		var current string
+		var info awsProfileInfo
+		flush := func() {
+			if current != "" && !seen[current] {
+				seen[current] = true
+				profiles = append(profiles, info)
+			}
+		}
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+				flush()
+				section := strings.Trim(line, "[]")
+				switch {
+				case section == "default":
+					current = "default"
+				case strings.HasPrefix(section, "profile "):
+					current = strings.TrimPrefix(section, "profile ")
+				default:
+					current = "" // e.g. [sso-session ...] — not a profile section
+				}
+				info = awsProfileInfo{name: current}
+				continue
+			}
+			if current == "" {
+				continue
+			}
+			key := strings.SplitN(line, "=", 2)[0]
+			key = strings.TrimSpace(key)
+			switch key {
+			case "sso_start_url", "sso_session":
+				info.credType = "sso"
+			case "role_arn":
+				if info.credType == "" {
+					info.credType = "role"
+				}
+			case "credential_process":
+				if info.credType == "" {
+					info.credType = "process"
+				}
+			}
+		}
+		flush()
+	}
+
+	// --- ~/.aws/credentials ---
+	// Profiles are [<name>] with static access keys.
+	if f, err := os.Open(homeDir + "/.aws/credentials"); err == nil {
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+				name := strings.Trim(line, "[]")
+				if name != "" && !seen[name] {
+					seen[name] = true
+					profiles = append(profiles, awsProfileInfo{name: name})
+				}
 			}
 		}
 	}
