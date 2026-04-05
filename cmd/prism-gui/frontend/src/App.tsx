@@ -20,6 +20,8 @@ import { PlaceholderView } from './views/placeholder-view';
 import { LogsView } from './views/LogsView';
 import { WebViewView } from './views/WebViewView';
 import { DashboardView as DashboardViewExtracted } from './views/DashboardView';
+import { TemplateSelectionView as TemplateSelectionViewExtracted } from './views/TemplateSelectionView';
+import { getTemplateName, getTemplateSlug, getTemplateDescription, getTemplateTags } from './lib/template-utils';
 
 import {
   SideNavigation,
@@ -3488,138 +3490,6 @@ export default function PrismApp() {
   };
 
   // Safe accessors for template data
-  const getTemplateName = (template: Template): string => {
-    return template.Name || template.name || 'Unnamed Template';
-  };
-
-  const getTemplateSlug = (template: Template): string => {
-    return template.Slug || template.slug || '';
-  };
-
-  const getTemplateDescription = (template: Template): string => {
-    return template.Description || template.description || 'Professional research computing environment';
-  };
-
-  const getTemplateTags = (template: Template): string[] => {
-    const tags: string[] = [];
-
-    // Add category if available
-    if (template.category) {
-      tags.push(template.category);
-    }
-
-    // Add complexity if available
-    if (template.complexity) {
-      tags.push(template.complexity);
-    }
-
-    // Add package manager if available
-    if (template.package_manager) {
-      tags.push(template.package_manager);
-    }
-
-    // Add first few features if available
-    if (template.features && Array.isArray(template.features)) {
-      tags.push(...template.features.slice(0, 2));
-    }
-
-    return tags;
-  };
-
-  // Templates View
-  const TemplateSelectionView = () => {
-    // Deduplicate templates by name (keep first occurrence)
-    const templateList = Object.values(state.templates).reduce((acc, template) => {
-      const name = getTemplateName(template);
-      if (!acc.some(t => getTemplateName(t) === name)) {
-        acc.push(template);
-      }
-      return acc;
-    }, [] as Template[]);
-
-    if (state.loading) {
-      return (
-        <Container>
-          <Box data-testid="loading" textAlign="center" padding="xl">
-            <Spinner size="large" />
-            <Box variant="p" color="text-body-secondary">
-              Loading templates from AWS...
-            </Box>
-          </Box>
-        </Container>
-      );
-    }
-
-    if (templateList.length === 0) {
-      return (
-        <Container>
-          <Box textAlign="center" padding="xl">
-            <Box variant="strong">No templates available</Box>
-            <Box variant="p">Unable to load templates. Check your connection.</Box>
-            <Button onClick={loadApplicationData}>Retry</Button>
-          </Box>
-        </Container>
-      );
-    }
-
-    return (
-      <SpaceBetween size="l">
-        <Container
-          header={
-            <Header
-              variant="h1"
-              description={`${templateList.length} pre-configured research environments ready to launch`}
-              counter={`(${templateList.length} templates)`}
-              actions={
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Button onClick={loadApplicationData} disabled={state.loading}>
-                    {state.loading ? <Spinner /> : 'Refresh'}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    disabled={!state.selectedTemplate}
-                    onClick={() => setLaunchModalVisible(true)}
-                  >
-                    Launch Selected
-                  </Button>
-                </SpaceBetween>
-              }
-            >
-              Research Templates
-            </Header>
-          }
-        >
-          {/* Working Template Cards Implementation */}
-          <SpaceBetween size="m" data-testid="cards">
-            {templateList.map((template, index) => (
-              <Container
-                key={getTemplateSlug(template) || `${getTemplateName(template)}-${index}`}
-                data-testid="template-card"
-              >
-                <SpaceBetween size="s">
-                  <Box>
-                    <Box variant="h3">{getTemplateName(template)}</Box>
-                    <Box variant="small" color="text-body-secondary">
-                      {getTemplateDescription(template)}
-                    </Box>
-                  </Box>
-                  <Box>
-                    <Button
-                      variant="primary"
-                      onClick={() => handleTemplateSelection(template)}
-                    >
-                      Launch Template
-                    </Button>
-                  </Box>
-                </SpaceBetween>
-              </Container>
-            ))}
-          </SpaceBetween>
-        </Container>
-      </SpaceBetween>
-    );
-  };
-
   // Comprehensive Instance Action Handler
   const handleInstanceAction = async (action: string, instance: Instance) => {
     // Hibernate requires a confirmation dialog with educational content
@@ -10413,7 +10283,16 @@ export default function PrismApp() {
               }}
             />
           )}
-          {state.activeView === 'templates' && <TemplateSelectionView />}
+          {state.activeView === 'templates' && (
+            <TemplateSelectionViewExtracted
+              templates={state.templates}
+              loading={state.loading}
+              selectedTemplate={state.selectedTemplate}
+              onRefresh={loadApplicationData}
+              onLaunch={() => setLaunchModalVisible(true)}
+              onSelectTemplate={handleTemplateSelection}
+            />
+          )}
           {state.activeView === 'workspaces' && <InstanceManagementView />}
           {state.activeView === 'terminal' && (() => {
               const runningInstances = state.instances.filter(i => i.state === 'running');
