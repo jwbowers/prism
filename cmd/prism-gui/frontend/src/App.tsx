@@ -11189,8 +11189,7 @@ export default function PrismApp() {
           {state.activeView === 'dashboard' && <DashboardView />}
           {state.activeView === 'templates' && <TemplateSelectionView />}
           {state.activeView === 'workspaces' && <InstanceManagementView />}
-          <div style={{ display: state.activeView === 'terminal' ? 'block' : 'none' }}>
-            {(() => {
+          {state.activeView === 'terminal' && (() => {
               const runningInstances = state.instances.filter(i => i.state === 'running');
 
               if (runningInstances.length === 0) {
@@ -11221,7 +11220,6 @@ export default function PrismApp() {
                 </SpaceBetween>
               );
             })()}
-          </div>
           {state.activeView === 'webview' && <WebViewView />}
           {state.activeView === 'storage' && <StorageManagementView />}
           {state.activeView === 'backups' && <BackupManagementView />}

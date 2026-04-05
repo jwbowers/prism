@@ -112,17 +112,17 @@ export function Header({ children, variant, actions, counter, description }: any
   )
 }
 
-export function SpaceBetween({ direction = 'vertical', size = 'm', children }: any) {
+export function SpaceBetween({ direction = 'vertical', size = 'm', children, ...rest }: any) {
   const gapMap: Record<string, string> = { xs: '1', s: '2', m: '4', l: '6', xl: '8', xxl: '12' }
   const gap = gapMap[size] || '4'
   if (direction === 'horizontal') {
-    return <div className={`flex flex-wrap items-center gap-${gap}`}>{children}</div>
+    return <div className={`flex flex-wrap items-center gap-${gap}`} {...rest}>{children}</div>
   }
-  return <div className={`flex flex-col gap-${gap}`}>{children}</div>
+  return <div className={`flex flex-col gap-${gap}`} {...rest}>{children}</div>
 }
 
-export function ColumnLayout({ columns = 2, children }: any) {
-  return <div className={`grid grid-cols-${columns} gap-4`}>{children}</div>
+export function ColumnLayout({ columns = 2, children, variant: _v, ...rest }: any) {
+  return <div className={`grid grid-cols-${columns} gap-4`} {...rest}>{children}</div>
 }
 
 export function Box({ variant, fontSize, color, textAlign, float, padding, children, as: As = 'div', ...rest }: any) {
@@ -217,7 +217,7 @@ export function Button({ children, variant: cv, size: cs, iconName: _icon, loadi
   )
 }
 
-export function Input({ value, onChange, placeholder, disabled, type = 'text', invalid }: {
+export function Input({ value, onChange, placeholder, disabled, type = 'text', invalid, ...rest }: {
   value?: string
   onChange?: (e: CE<{ value: string }>) => void
   placeholder?: string
@@ -226,7 +226,10 @@ export function Input({ value, onChange, placeholder, disabled, type = 'text', i
   invalid?: boolean
   [k: string]: any
 }) {
-  return (
+  // Wrap in a div so data-testid consumers can do wrapper.querySelector('input')
+  const hasTestId = 'data-testid' in rest
+  const { 'data-testid': testId, ...inputRest } = rest as { 'data-testid'?: string; [k: string]: any }
+  const input = (
     <ShadInput
       value={value ?? ''}
       onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.({ detail: { value: e.target.value } })}
@@ -235,11 +238,14 @@ export function Input({ value, onChange, placeholder, disabled, type = 'text', i
       type={type}
       className={cn(invalid && 'border-destructive')}
       data-invalid={invalid || undefined}
+      {...inputRest}
     />
   )
+  if (hasTestId) return <div data-testid={testId}>{input}</div>
+  return input
 }
 
-export function Textarea({ value, onChange, placeholder, disabled, rows }: {
+export function Textarea({ value, onChange, placeholder, disabled, rows, ...rest }: {
   value?: string
   onChange?: (e: CE<{ value: string }>) => void
   placeholder?: string
@@ -247,18 +253,22 @@ export function Textarea({ value, onChange, placeholder, disabled, rows }: {
   rows?: number
   [k: string]: any
 }) {
-  return (
+  const { 'data-testid': testId, ...taRest } = rest as { 'data-testid'?: string; [k: string]: any }
+  const el = (
     <ShadTextarea
       value={value ?? ''}
       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange?.({ detail: { value: e.target.value } })}
       placeholder={placeholder}
       disabled={disabled}
       rows={rows}
+      {...taRest}
     />
   )
+  if (testId) return <div data-testid={testId}>{el}</div>
+  return el
 }
 
-export function Select({ selectedOption, onChange, options, disabled, placeholder, invalid }: {
+export function Select({ selectedOption, onChange, options, disabled, placeholder, invalid, ...rest }: {
   selectedOption?: { value: string; label: string; description?: string } | null
   onChange?: (e: CE<{ selectedOption: { value: string; label: string; description?: string } }>) => void
   options?: Array<{ value: string; label: string; disabled?: boolean; description?: string }>
@@ -267,7 +277,8 @@ export function Select({ selectedOption, onChange, options, disabled, placeholde
   invalid?: boolean
   [k: string]: any
 }) {
-  return (
+  const { 'data-testid': testId, ...selectRest } = rest as { 'data-testid'?: string; [k: string]: any }
+  const el = (
     <select
       value={selectedOption?.value ?? ''}
       onChange={(e) => {
@@ -279,6 +290,7 @@ export function Select({ selectedOption, onChange, options, disabled, placeholde
         'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
         invalid && 'border-destructive'
       )}
+      {...selectRest}
     >
       {placeholder && <option value="">{placeholder}</option>}
       {options?.map((o) => (
@@ -286,6 +298,8 @@ export function Select({ selectedOption, onChange, options, disabled, placeholde
       ))}
     </select>
   )
+  if (testId) return <div data-testid={testId}>{el}</div>
+  return el
 }
 
 export function Checkbox({ checked, onChange, disabled, children, description }: {
@@ -364,7 +378,7 @@ export function FormField({ label, children, errorText, description, constraintT
 
 // ── Feedback ───────────────────────────────────────────────────────────────
 
-export function Alert({ type = 'info', header, children, dismissible, onDismiss, action }: any) {
+export function Alert({ type = 'info', header, children, dismissible, onDismiss, action, ...rest }: any) {
   const variantMap: Record<string, string> = {
     error: 'border-destructive/50 text-destructive',
     warning: 'border-yellow-500/50 text-yellow-700 dark:text-yellow-400',
@@ -372,7 +386,7 @@ export function Alert({ type = 'info', header, children, dismissible, onDismiss,
     info: '',
   }
   return (
-    <ShadAlert className={variantMap[type]}>
+    <ShadAlert className={variantMap[type]} {...rest}>
       {header && <div className="font-semibold mb-1 text-sm">{header}</div>}
       <AlertDescription>{children}</AlertDescription>
       {(dismissible || action) && (
@@ -589,11 +603,11 @@ export function Pagination({ currentPageIndex, pagesCount, onChange, disabled, a
 
 // ── Overlays ───────────────────────────────────────────────────────────────
 
-export function Modal({ visible, onDismiss, header, children, footer, size }: any) {
+export function Modal({ visible, onDismiss, header, children, footer, size, ...rest }: any) {
   if (!visible) return null
   const sizeClass = size === 'large' ? 'max-w-4xl' : size === 'small' ? 'max-w-sm' : 'max-w-2xl'
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" {...rest}>
       <div className="absolute inset-0 bg-black/50" onClick={onDismiss} />
       <div className={cn('relative bg-card rounded-lg shadow-xl w-full mx-4 flex flex-col max-h-[90vh]', sizeClass)}>
         {header && (
@@ -649,20 +663,27 @@ export function ButtonDropdown({ items, onItemClick, disabled, children, variant
   )
 }
 
-export function Tabs({ tabs, activeTabId, onChange, variant }: {
+export function Tabs({ tabs, activeTabId, onChange, variant, ...rest }: {
   tabs?: Array<{ id: string; label: string; content?: React.ReactNode; disabled?: boolean }>
   activeTabId?: string
   onChange?: (e: CE<{ activeTabId: string }>) => void
   variant?: string
+  [k: string]: any
 }) {
   const [active, setActive] = React.useState(activeTabId ?? tabs?.[0]?.id)
+  // Sync with controlled activeTabId prop
+  React.useEffect(() => {
+    if (activeTabId !== undefined) setActive(activeTabId)
+  }, [activeTabId])
   const current = active ?? tabs?.[0]?.id
   return (
-    <div>
-      <div className={cn('flex border-b', variant === 'container' && 'bg-muted/50 rounded-t-md px-2')}>
+    <div {...rest}>
+      <div role="tablist" className={cn('flex border-b', variant === 'container' && 'bg-muted/50 rounded-t-md px-2')}>
         {tabs?.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={current === tab.id}
             disabled={tab.disabled}
             onClick={() => { setActive(tab.id); onChange?.({ detail: { activeTabId: tab.id } }) }}
             className={cn(
@@ -674,7 +695,7 @@ export function Tabs({ tabs, activeTabId, onChange, variant }: {
           </button>
         ))}
       </div>
-      <div className="pt-4">
+      <div role="tabpanel" className="pt-4">
         {tabs?.find((t) => t.id === current)?.content}
       </div>
     </div>

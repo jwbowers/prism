@@ -127,7 +127,7 @@ export function SideNav({
   return (
     <Sidebar>
       <SidebarHeader className="border-b px-4 py-3">
-        <span className="text-lg font-semibold tracking-tight">Prism</span>
+        <a href="/" className="text-lg font-semibold tracking-tight no-underline text-foreground">Prism</a>
       </SidebarHeader>
       <SidebarContent>
         {sections.map((section, si) => (

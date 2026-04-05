@@ -285,7 +285,7 @@ function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: Worksho
           },
           {
             id: 'end',
-            header: 'End',
+            header: 'Ends At',
             cell: (item) => item.end_time?.substring(0, 16) || '—',
           },
           {
