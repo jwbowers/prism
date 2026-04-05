@@ -5,6 +5,16 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0] - 2026-04-05
+
+### Changed
+- GUI shell migrated from Cloudscape `AppLayout` + `SideNavigation` + `Flashbar` to shadcn/ui `Sidebar` + Sonner toasts. All 23 nav items preserved; badges for pending approvals, courses, workshops, instances, and templates use shadcn `Badge` variants. The Cloudscape-shim compatibility layer bridges remaining views during incremental migration.
+- Installed shadcn/ui component library (Radix-based, code-owned), Tailwind CSS v4 (`@tailwindcss/vite` — no config file), Sonner toast library, and Lucide React icons. Removed all `@cloudscape-design/*` packages.
+- Extracted six views from the monolithic `App.tsx` to top-level components, fixing React re-mount on every state change (issue #13): `ApprovalsView`, `DashboardView` (+ `RecentWorkspaces`), `LogsView`, `WebViewView`, `TemplateSelectionView`, `PlaceholderView`.
+- Template helper functions (`getTemplateName`, `getTemplateSlug`, `getTemplateDescription`, `getTemplateTags`) moved to `src/lib/template-utils.ts` — shared across views without closure coupling.
+- All `addNotification` / `setNotification` patterns for user-visible events replaced with `toast.success()` / `toast.error()` / `toast.warning()` calls.
+- `src/hooks/use-api.ts` `ApiContext` now used by extracted views instead of `window.__apiClient` closure.
+
 ## [0.30.0] - 2026-04-02
 
 ### Removed
