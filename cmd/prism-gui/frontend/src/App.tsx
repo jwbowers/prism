@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import { AppLayout as AppLayoutShell } from './components/app-layout';
 import { SideNav } from './components/side-nav';
 import Terminal from './Terminal';
-import WebView from './WebView';
 import { ValidationError } from './components/ValidationError';
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { InvitationManagementView } from './components/InvitationManagementView';
@@ -18,6 +17,8 @@ import CapacityBlocksPanel from './components/CapacityBlocksPanel';
 import { SSHKeyModal } from './components/SSHKeyModal';
 import { ApprovalsView as ApprovalsViewExtracted } from './views/ApprovalsView';
 import { PlaceholderView } from './views/placeholder-view';
+import { LogsView } from './views/LogsView';
+import { WebViewView } from './views/WebViewView';
 
 import {
   SideNavigation,
@@ -7959,10 +7960,10 @@ export default function PrismApp() {
           return <AMIManagementView />;
 
         case 'rightsizing':
-          return <RightsizingView />;
+          return <PlaceholderView title="Rightsizing Recommendations" description="Workspace rightsizing recommendations will help optimize your costs by suggesting better-sized workspaces based on actual usage patterns." />;
 
         case 'policy':
-          return <PolicyView />;
+          return <PlaceholderView title="Policy Management" description="Policy management allows you to configure institutional policies, access controls, and governance rules for your Prism deployment." />;
 
         case 'marketplace':
           return <MarketplaceView />;
@@ -7971,7 +7972,7 @@ export default function PrismApp() {
           return <IdleDetectionView />;
 
         case 'logs':
-          return <LogsView />;
+          return <LogsView instances={state.instances} loading={state.loading} onRefresh={loadApplicationData} />;
 
         default:
           return (
@@ -8948,334 +8949,6 @@ export default function PrismApp() {
       </SpaceBetween>
     );
   };
-
-  // Logs Viewer
-  const LogsView = () => {
-    const [selectedInstance, setSelectedInstance] = useState<string>('');
-    const [logType, setLogType] = useState<string>('console');
-    const [logLines, setLogLines] = useState<string[]>([]);
-    const [loadingLogs, setLoadingLogs] = useState(false);
-
-    const logTypes = [
-      { label: 'Console Output', value: 'console' },
-      { label: 'Cloud-Init Log', value: 'cloud-init' },
-      { label: 'System Log', value: 'system' },
-      { label: 'Application Log', value: 'application' }
-    ];
-
-    const runningInstances = state.instances.filter(i => i.state === 'running' || i.state === 'stopped');
-
-    // Wrapped in useCallback to prevent unnecessary re-renders in dependent useEffect hooks
-    const fetchLogs = React.useCallback(async () => {
-      if (!selectedInstance) return;
-
-      setLoadingLogs(true);
-      try {
-        // Mock log fetching - in real implementation would call API
-        // const logs = await api.getInstanceLogs(selectedInstance, logType);
-
-        // Generate mock logs for demonstration
-        const mockLogs = [
-          `[${new Date().toISOString()}] Workspace ${selectedInstance} logs (${logType})`,
-          `[INFO] Workspace started successfully`,
-          `[INFO] Loading configuration...`,
-          `[INFO] Mounting EFS volumes...`,
-          `[INFO] Starting services...`,
-          `[INFO] Prism template: ${state.instances.find(i => i.name === selectedInstance)?.template || 'unknown'}`,
-          `[INFO] All services running`,
-          `[DEBUG] Memory usage: 1.2GB / 8GB`,
-          `[DEBUG] CPU usage: 5%`,
-          `[INFO] Workspace ready for use`,
-          `[INFO] SSH access: ssh ${state.instances.find(i => i.name === selectedInstance)?.public_ip || 'N/A'}`,
-          `--- End of ${logType} log ---`
-        ];
-
-        setLogLines(mockLogs);
-      } catch (error) {
-        toast.error(`Failed to fetch logs: ${error}`);
-        setLogLines([`Error fetching logs: ${error}`]);
-      } finally {
-        setLoadingLogs(false);
-      }
-    }, [selectedInstance, logType]);
-
-    useEffect(() => {
-      if (selectedInstance) {
-        fetchLogs();
-      }
-    }, [selectedInstance, logType, fetchLogs]);
-
-    return (
-      <SpaceBetween size="l">
-        <Header
-          variant="h1"
-          description="View workspace console output and system logs"
-          actions={
-            <Button onClick={loadApplicationData} disabled={state.loading}>
-              {state.loading ? <Spinner /> : 'Refresh'}
-            </Button>
-          }
-        >
-          Workspace Logs Viewer
-        </Header>
-
-        {/* Workspace and Log Type Selection */}
-        <Container>
-          <SpaceBetween size="m">
-            <FormField
-              label="Workspace"
-              description="Select a workspace to view its logs"
-            >
-              <Select
-                selectedOption={selectedInstance ?
-                  { label: selectedInstance, value: selectedInstance } : null}
-                onChange={({ detail }) => {
-                  setSelectedInstance(detail.selectedOption?.value || '');
-                  setLogLines([]);
-                }}
-                options={runningInstances.map(i => ({
-                  label: `${i.name} (${i.state})`,
-                  value: i.name
-                }))}
-                placeholder="Choose a workspace"
-                selectedAriaLabel="Selected workspace"
-                disabled={runningInstances.length === 0}
-              />
-            </FormField>
-
-            {selectedInstance && (
-              <FormField
-                label="Log Type"
-                description="Select the type of log to view"
-              >
-                <Select
-                  selectedOption={logType ?
-                    (logTypes.find(t => t.value === logType) || null) : null}
-                  onChange={({ detail }) => {
-                    setLogType(detail.selectedOption?.value || 'console');
-                    setLogLines([]);
-                  }}
-                  options={logTypes}
-                  selectedAriaLabel="Selected log type"
-                />
-              </FormField>
-            )}
-
-            {selectedInstance && (
-              <Button
-                onClick={fetchLogs}
-                loading={loadingLogs}
-                disabled={loadingLogs}
-              >
-                Refresh Logs
-              </Button>
-            )}
-          </SpaceBetween>
-        </Container>
-
-        {/* Log Display */}
-        {selectedInstance ? (
-          <Container
-            header={
-              <Header
-                variant="h2"
-                description={`Viewing ${logType} logs for ${selectedInstance}`}
-              >
-                Log Output
-              </Header>
-            }
-          >
-            {loadingLogs ? (
-              <Box textAlign="center" padding="xl">
-                <Spinner size="large" />
-                <Box variant="p">Loading logs...</Box>
-              </Box>
-            ) : logLines.length > 0 ? (
-              <Box
-                padding="s"
-                variant="code"
-              >
-                <pre style={{
-                  fontFamily: 'monospace',
-                  fontSize: '12px',
-                  lineHeight: '1.5',
-                  margin: 0,
-                  padding: '8px',
-                  backgroundColor: '#232f3e',
-                  color: '#d4d4d4',
-                  borderRadius: '4px',
-                  maxHeight: '600px',
-                  overflow: 'auto',
-                  whiteSpace: 'pre-wrap',
-                  wordWrap: 'break-word'
-                }}>
-                  {logLines.join('\n')}
-                </pre>
-              </Box>
-            ) : (
-              <Box textAlign="center" padding="xl">
-                <Box variant="strong">No logs available</Box>
-                <Box variant="p" color="text-body-secondary">
-                  Select a log type and click "Refresh Logs" to view output.
-                </Box>
-              </Box>
-            )}
-
-            {logLines.length > 0 && (
-              <Box padding={{ top: 'm' }}>
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Button iconName="copy" onClick={() => {
-                    navigator.clipboard.writeText(logLines.join('\n'));
-                    toast.success('Logs copied to clipboard');
-                  }}>
-                    Copy to Clipboard
-                  </Button>
-                  <Button iconName="download" onClick={() => {
-                    const blob = new Blob([logLines.join('\n')], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${selectedInstance}-${logType}-${new Date().toISOString().split('T')[0]}.log`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    toast.success('Log file downloaded');
-                  }}>
-                    Download Log File
-                  </Button>
-                </SpaceBetween>
-              </Box>
-            )}
-          </Container>
-        ) : (
-          <Container>
-            <Box textAlign="center" padding="xl">
-              <Box variant="strong">Select a Workspace</Box>
-              <Box variant="p" color="text-body-secondary">
-                {runningInstances.length === 0
-                  ? 'No running or stopped workspaces available. Start a workspace to view its logs.'
-                  : 'Choose a workspace from the dropdown above to view its logs.'}
-              </Box>
-            </Box>
-          </Container>
-        )}
-
-        {/* Information */}
-        <Container header={<Header variant="h2">About Log Viewing</Header>}>
-          <SpaceBetween size="m">
-            <Box variant="p">
-              View real-time console output and system logs from your Prism workspaces.
-              Logs are useful for troubleshooting startup issues, monitoring application output,
-              and understanding workspace behavior.
-            </Box>
-            <ColumnLayout columns={4}>
-              <div>
-                <Box variant="strong">Console Output</Box>
-                <Box variant="small" color="text-body-secondary">
-                  System boot messages and console output
-                </Box>
-              </div>
-              <div>
-                <Box variant="strong">Cloud-Init</Box>
-                <Box variant="small" color="text-body-secondary">
-                  Prism provisioning logs
-                </Box>
-              </div>
-              <div>
-                <Box variant="strong">System Log</Box>
-                <Box variant="small" color="text-body-secondary">
-                  Operating system events and services
-                </Box>
-              </div>
-              <div>
-                <Box variant="strong">Application Log</Box>
-                <Box variant="small" color="text-body-secondary">
-                  Application-specific output
-                </Box>
-              </div>
-            </ColumnLayout>
-            <Alert type="info">
-              <Box variant="strong">Note:</Box> Log viewing is read-only. To interact with your workspace,
-              use SSH: <Box variant="code">
-                ssh {selectedInstance && state.instances.find(i => i.name === selectedInstance)?.public_ip || 'instance-ip'}
-              </Box>
-            </Alert>
-          </SpaceBetween>
-        </Container>
-      </SpaceBetween>
-    );
-  };
-
-  const RightsizingView = () => (
-    <PlaceholderView
-      title="Rightsizing Recommendations"
-      description="Workspace rightsizing recommendations will help optimize your costs by suggesting better-sized workspaces based on actual usage patterns."
-    />
-  );
-
-  const PolicyView = () => (
-    <PlaceholderView
-      title="Policy Management"
-      description="Policy management allows you to configure institutional policies, access controls, and governance rules for your Prism deployment."
-    />
-  );
-
-  const WebViewView = () => {
-    const [selectedService, setSelectedService] = React.useState<{instance: string, service: WebService} | null>(null);
-    const instancesWithServices = state.instances.filter(i =>
-      i.state === 'running' && i.web_services && i.web_services.length > 0
-    );
-
-    if (instancesWithServices.length === 0) {
-      return (
-        <Container header={<Header variant="h1">Web Services</Header>}>
-          <Alert type="info">
-            No running instances with web services available. Launch a workspace with Jupyter or RStudio to access web services.
-          </Alert>
-        </Container>
-      );
-    }
-
-    const serviceOptions = instancesWithServices.flatMap(instance =>
-      (instance.web_services || []).map(service => ({
-        label: `${instance.name} - ${service.name} (${service.type})`,
-        value: JSON.stringify({ instance: instance.name, service }),
-        instanceName: instance.name,
-        service: service
-      }))
-    );
-
-    return (
-      <SpaceBetween size="l">
-        <Container header={<Header variant="h1">Web Services</Header>}>
-          <SpaceBetween size="m">
-            <FormField label="Select Web Service">
-              <Select
-                selectedOption={selectedService ?
-                  { label: `${selectedService.instance} - ${selectedService.service.name} (${selectedService.service.type})`,
-                    value: JSON.stringify(selectedService) } : null}
-                onChange={({ detail }) => {
-                  if (detail.selectedOption.value) {
-                    const parsed = JSON.parse(detail.selectedOption.value);
-                    setSelectedService(parsed);
-                  }
-                }}
-                options={serviceOptions.map(opt => ({ label: opt.label, value: opt.value }))}
-                placeholder="Choose a web service"
-              />
-            </FormField>
-            {selectedService && (
-              <WebView
-                url={selectedService.service.url || ''}
-                serviceName={selectedService.service.name}
-                instanceName={selectedService.instance}
-              />
-            )}
-          </SpaceBetween>
-        </Container>
-      </SpaceBetween>
-    );
-  };
-
 
   // Launch Modal
   // Delete Confirmation Modal Component
@@ -10992,7 +10665,7 @@ export default function PrismApp() {
                 </SpaceBetween>
               );
             })()}
-          {state.activeView === 'webview' && <WebViewView />}
+          {state.activeView === 'webview' && <WebViewView instances={state.instances} />}
           {state.activeView === 'storage' && <StorageManagementView />}
           {state.activeView === 'backups' && <BackupManagementView />}
           {state.activeView === 'projects' && (
@@ -11014,11 +10687,11 @@ export default function PrismApp() {
           {state.activeView === 'project-detail' && <PlaceholderView title="Project Detail" description="Select a project from the Projects view to see its details." />}
           {state.activeView === 'users' && <UserManagementView />}
           {state.activeView === 'ami' && <AMIManagementView />}
-          {state.activeView === 'rightsizing' && <RightsizingView />}
-          {state.activeView === 'policy' && <PolicyView />}
+          {state.activeView === 'rightsizing' && <PlaceholderView title="Rightsizing Recommendations" description="Workspace rightsizing recommendations will help optimize your costs by suggesting better-sized workspaces based on actual usage patterns." />}
+          {state.activeView === 'policy' && <PlaceholderView title="Policy Management" description="Policy management allows you to configure institutional policies, access controls, and governance rules for your Prism deployment." />}
           {state.activeView === 'marketplace' && <MarketplaceView />}
           {state.activeView === 'idle' && <IdleDetectionView />}
-          {state.activeView === 'logs' && <LogsView />}
+          {state.activeView === 'logs' && <LogsView instances={state.instances} loading={state.loading} onRefresh={loadApplicationData} />}
           {state.activeView === 'settings' && <SettingsView />}
         </div>
       </AppLayoutShell>
