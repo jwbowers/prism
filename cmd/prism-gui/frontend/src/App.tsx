@@ -22,6 +22,7 @@ import { WebViewView } from './views/WebViewView';
 import { DashboardView as DashboardViewExtracted } from './views/DashboardView';
 import { TemplateSelectionView as TemplateSelectionViewExtracted } from './views/TemplateSelectionView';
 import { getTemplateName, getTemplateSlug, getTemplateDescription, getTemplateTags } from './lib/template-utils';
+import { DeleteConfirmationModal as DeleteConfirmationModalExtracted } from './modals/DeleteConfirmationModal';
 
 import {
   SideNavigation,
@@ -2501,7 +2502,6 @@ export default function PrismApp() {
     requireNameConfirmation: false,
     onConfirm: async () => {}
   });
-  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
 
   // Hibernate confirmation modal state
   const [hibernateModalVisible, setHibernateModalVisible] = useState(false);
@@ -3632,7 +3632,6 @@ export default function PrismApp() {
                   ]
                 }));
                 setDeleteModalVisible(false);
-                setDeleteConfirmationText('');
                 setTimeout(loadApplicationData, 1000);
               } catch (error) {
                 setState(prev => ({
@@ -8579,102 +8578,6 @@ export default function PrismApp() {
 
   // Launch Modal
   // Delete Confirmation Modal Component
-  const DeleteConfirmationModal = () => {
-    const getDeleteMessage = () => {
-      switch (deleteModalConfig.type) {
-        case 'workspace':
-          return `You are about to permanently delete the workspace "${deleteModalConfig.name}". This action cannot be undone.`;
-        case 'efs-volume':
-          return `You are about to permanently delete the EFS volume "${deleteModalConfig.name}". All data on this volume will be lost. This action cannot be undone.`;
-        case 'ebs-volume':
-          return `You are about to permanently delete the EBS volume "${deleteModalConfig.name}". All data on this volume will be lost. This action cannot be undone.`;
-        case 'project':
-          return `You are about to permanently delete the project "${deleteModalConfig.name}". This action cannot be undone.`;
-        case 'user':
-          return `You are about to permanently delete the user "${deleteModalConfig.name}". This action cannot be undone.`;
-        default:
-          return 'This action cannot be undone.';
-      }
-    };
-
-    const isConfirmationValid = deleteModalConfig.requireNameConfirmation
-      ? deleteConfirmationText === deleteModalConfig.name
-      : true;
-
-    return (
-      <Modal
-        visible={deleteModalVisible}
-        onDismiss={() => {
-          setDeleteModalVisible(false);
-          setDeleteConfirmationText('');
-        }}
-        header={`Delete ${deleteModalConfig.type?.replace('-', ' ') || 'Resource'}?`}
-        size="medium"
-        data-testid="delete-confirmation-modal"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button
-                variant="link"
-                onClick={() => {
-                  setDeleteModalVisible(false);
-                  setDeleteConfirmationText('');
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={deleteModalConfig.onConfirm}
-                disabled={!isConfirmationValid}
-                data-testid="confirm-delete-button"
-              >
-                Delete
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          <Alert type="warning" header="Warning: This action is permanent">
-            {getDeleteMessage()}
-          </Alert>
-
-          {deleteModalConfig.warning && (
-            <Alert type="error" header="Additional Warning">
-              {deleteModalConfig.warning}
-            </Alert>
-          )}
-
-          {deleteModalConfig.requireNameConfirmation && (
-            <FormField
-              label={`Type "${deleteModalConfig.name}" to confirm deletion`}
-              description="This extra step helps prevent accidental deletions"
-              errorText={
-                deleteConfirmationText.length > 0 && deleteConfirmationText !== deleteModalConfig.name
-                  ? `Name must match exactly: "${deleteModalConfig.name}"`
-                  : ""
-              }
-            >
-              <Input
-                value={deleteConfirmationText}
-                onChange={({ detail }) => setDeleteConfirmationText(detail.value)}
-                placeholder={deleteModalConfig.name}
-                ariaRequired
-                invalid={deleteConfirmationText.length > 0 && deleteConfirmationText !== deleteModalConfig.name}
-              />
-            </FormField>
-          )}
-
-          <Box variant="p" color="text-body-secondary">
-            {deleteModalConfig.requireNameConfirmation
-              ? 'Enter the exact name above to enable the delete button.'
-              : 'Click Delete to confirm this action.'}
-          </Box>
-        </SpaceBetween>
-      </Modal>
-    );
-  };
 
   // Idle Policy Modal — apply/remove idle policies on a specific instance (Issue #288)
   const IdlePolicyModal = () => {
@@ -10359,7 +10262,11 @@ export default function PrismApp() {
       <CreateBackupModal />
       <DeleteBackupModal />
       <RestoreBackupModal />
-      <DeleteConfirmationModal />
+      <DeleteConfirmationModalExtracted
+        visible={deleteModalVisible}
+        config={deleteModalConfig}
+        onDismiss={() => setDeleteModalVisible(false)}
+      />
       <HibernateConfirmationModal />
       <IdlePolicyModal />
       <OnboardingWizard />
