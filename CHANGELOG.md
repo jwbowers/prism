@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template helper functions (`getTemplateName`, `getTemplateSlug`, `getTemplateDescription`, `getTemplateTags`) moved to `src/lib/template-utils.ts` — shared across views without closure coupling.
 - All `addNotification` / `setNotification` patterns for user-visible events replaced with `toast.success()` / `toast.error()` / `toast.warning()` calls.
 - `src/hooks/use-api.ts` `ApiContext` now used by extracted views instead of `window.__apiClient` closure.
+- Extracted three modals from `App.tsx` to `src/modals/`: `DeleteConfirmationModal` (moves `confirmationText` state into modal; `DeleteModalConfig` interface exported for callers), `HibernateConfirmationModal` (uses `useApi()` + Sonner toasts; conditional render pattern prevents ApiProvider requirement in unit tests), `IdlePolicyModal` (same conditional-render pattern; removes `logger.error` dependency).
 
 ## [0.30.0] - 2026-04-02
 
