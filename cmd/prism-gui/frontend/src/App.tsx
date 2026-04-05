@@ -26,6 +26,7 @@ import { AMIManagementView as AMIManagementViewExtracted } from './views/AMIMana
 import { MarketplaceView as MarketplaceViewExtracted } from './views/MarketplaceView';
 import { IdleDetectionView as IdleDetectionViewExtracted } from './views/IdleDetectionView';
 import { ProfileSelectorView as ProfileSelectorViewExtracted } from './views/ProfileSelectorView';
+import { InstanceManagementView as InstanceManagementViewExtracted } from './views/InstanceManagementView';
 import { getTemplateName, getTemplateSlug, getTemplateDescription, getTemplateTags } from './lib/template-utils';
 import { ApiContext } from './hooks/use-api';
 import { DeleteConfirmationModal as DeleteConfirmationModalExtracted } from './modals/DeleteConfirmationModal';
@@ -54,7 +55,6 @@ import {
   Link,
   ButtonDropdown,
   Tabs,
-  PropertyFilter,
   Wizard,
   ProgressBar,
   Textarea,
@@ -3879,230 +3879,6 @@ export default function PrismApp() {
   };
 
   // Instances View
-  const InstanceManagementView = () => (
-    <SpaceBetween size="l">
-      <Container
-        header={
-          <Header
-            variant="h1"
-            description="Monitor and manage your research computing environments"
-            counter={`(${state.instances.length})`}
-            actions={
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button
-                  onClick={loadApplicationData}
-                  disabled={state.loading}
-                  data-testid="refresh-instances-button"
-                >
-                  {state.loading ? <Spinner /> : 'Refresh'}
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => setState(prev => ({ ...prev, activeView: 'templates' }))}
-                >
-                  Launch New Workspace
-                </Button>
-              </SpaceBetween>
-            }
-          >
-            My Workspaces
-          </Header>
-        }
-      >
-        {/* Advanced Filtering */}
-        <PropertyFilter
-          query={instancesFilterQuery}
-          onChange={({ detail }) => setInstancesFilterQuery(detail)}
-          filteringPlaceholder="Search instances by name or filter by status"
-          filteringProperties={[
-            {
-              key: 'name',
-              propertyLabel: 'Workspace Name',
-              groupValuesLabel: 'Workspace Name values',
-              operators: [':', '!:', '=', '!=']
-            },
-            {
-              key: 'template',
-              propertyLabel: 'Template',
-              groupValuesLabel: 'Template values',
-              operators: [':', '!:', '=', '!=']
-            },
-            {
-              key: 'state',
-              propertyLabel: 'Status',
-              groupValuesLabel: 'Status values',
-              operators: ['=', '!=']
-            },
-            {
-              key: 'public_ip',
-              propertyLabel: 'Public IP',
-              groupValuesLabel: 'Public IP values',
-              operators: [':', '!:', '=', '!=']
-            }
-          ]}
-          filteringOptions={[
-            { propertyKey: 'state', value: 'running', label: 'Status: Running' },
-            { propertyKey: 'state', value: 'stopped', label: 'Status: Stopped' },
-            { propertyKey: 'state', value: 'hibernated', label: 'Status: Hibernated' },
-            { propertyKey: 'state', value: 'pending', label: 'Status: Pending' }
-          ]}
-        />
-
-        {/* Bulk Actions Toolbar */}
-        {selectedInstances.length > 0 && (
-          <SpaceBetween direction="horizontal" size="xs">
-            <Box variant="awsui-key-label">
-              {selectedInstances.length} workspace{selectedInstances.length !== 1 ? 's' : ''} selected
-            </Box>
-            <Button
-              onClick={() => handleBulkAction('start')}
-              disabled={state.loading || selectedInstances.every(i => i.state === 'running')}
-            >
-              Start Selected
-            </Button>
-            <Button
-              onClick={() => handleBulkAction('stop')}
-              disabled={state.loading || selectedInstances.every(i => i.state !== 'running')}
-            >
-              Stop Selected
-            </Button>
-            <Button
-              onClick={() => handleBulkAction('hibernate')}
-              disabled={state.loading || selectedInstances.every(i => i.state !== 'running')}
-            >
-              Hibernate Selected
-            </Button>
-            <Button
-              onClick={() => handleBulkAction('delete')}
-              disabled={state.loading}
-            >
-              Delete Selected
-            </Button>
-            <Button
-              variant="link"
-              onClick={() => setSelectedInstances([])}
-            >
-              Clear Selection
-            </Button>
-          </SpaceBetween>
-        )}
-        <Table
-          data-testid="instances-table"
-          selectionType="multi"
-          selectedItems={selectedInstances}
-          onSelectionChange={({ detail }) => setSelectedInstances(detail.selectedItems)}
-          columnDefinitions={[
-            {
-              id: "name",
-              header: "Workspace Name",
-              cell: (item: Instance) => <Link fontSize="body-m" data-testid="instance-name">{item.name}</Link>,
-              sortingField: "name"
-            },
-            {
-              id: "template",
-              header: "Template",
-              cell: (item: Instance) => item.template
-            },
-            {
-              id: "status",
-              header: "Status",
-              cell: (item: Instance) => (
-                <div data-testid="instance-status">
-                  <span data-testid="status-badge">
-                    <StatusIndicator
-                      type={
-                        item.state === 'running' ? 'success' :
-                        item.state === 'stopped' ? 'stopped' :
-                        item.state === 'hibernated' ? 'pending' :
-                        item.state === 'pending' ? 'in-progress' : 'error'
-                      }
-                      iconAriaLabel={getStatusLabel('workspace', item.state)}
-                    >
-                      {item.state}
-                    </StatusIndicator>
-                  </span>
-                </div>
-              )
-            },
-            {
-              id: "public_ip",
-              header: "Public IP",
-              cell: (item: Instance) => item.public_ip || 'Not assigned'
-            },
-            {
-              id: "actions",
-              header: "Actions",
-              cell: (item: Instance) => (
-                <SpaceBetween direction="horizontal" size="xs">
-                  {item.state === 'running' && (
-                    <Button
-                      data-testid={`connect-btn-${item.name}`}
-                      iconName="external"
-                      variant="inline-link"
-                      onClick={() => {
-                        const ip = item.public_ip || '';
-                        const user = item.username || 'ubuntu';
-                        setConnectionInfo({
-                          instanceName: item.name,
-                          publicIP: ip,
-                          sshCommand: ip ? `ssh ${user}@${ip}` : `ssh ${user}@<instance-ip>`,
-                          webPort: ''
-                        });
-                        setConnectionModalVisible(true);
-                      }}
-                    >
-                      Connect
-                    </Button>
-                  )}
-                  <ButtonDropdown
-                    expandToViewport
-                    items={[
-                      { text: 'Connect', id: 'connect', disabled: item.state !== 'running' },
-                      { text: 'Open Terminal', id: 'terminal', disabled: item.state !== 'running', iconName: 'command-prompt' },
-                      { text: 'Open Web Service', id: 'webservice', disabled: item.state !== 'running' || !item.web_services || item.web_services.length === 0, iconName: 'external' },
-                      { text: 'Stop', id: 'stop', disabled: item.state !== 'running' },
-                      { text: 'Start', id: 'start', disabled: item.state === 'running' },
-                      { text: 'Hibernate', id: 'hibernate', disabled: item.state !== 'running' },
-                      { text: 'Resume', id: 'resume', disabled: item.state !== 'stopped' && item.state !== 'hibernated' },
-                      { text: 'Manage Idle Policy', id: 'manage-idle-policy' },
-                      { text: 'Delete', id: 'delete', disabled: item.state === 'running' || item.state === 'pending' }
-                    ]}
-                    onItemClick={({ detail }) => {
-                      handleInstanceAction(detail.id, item);
-                    }}
-                  >
-                    Actions
-                  </ButtonDropdown>
-                </SpaceBetween>
-              )
-            }
-          ]}
-          items={getFilteredInstances()}
-          loadingText="Loading workspaces from AWS"
-          loading={state.loading}
-          trackBy="id"
-          empty={
-            <Box data-testid="empty-instances" textAlign="center" color="inherit">
-              <Box variant="strong" textAlign="center" color="inherit">
-                No workspaces running
-              </Box>
-              <Box variant="p" padding={{ bottom: 's' }} color="inherit">
-                Launch your first research environment to get started.
-              </Box>
-              <Button
-                variant="primary"
-                onClick={() => setState(prev => ({ ...prev, activeView: 'templates' }))}
-              >
-                Browse Templates
-              </Button>
-            </Box>
-          }
-          sortingDisabled={false}
-        />
-      </Container>
-    </SpaceBetween>
-  );
-
   // Comprehensive Storage Action Handler
   const handleStorageAction = async (action: string, volume: EFSVolume | EBSVolume, volumeType: 'efs' | 'ebs') => {
     try {
@@ -8420,7 +8196,21 @@ export default function PrismApp() {
               onSelectTemplate={handleTemplateSelection}
             />
           )}
-          {state.activeView === 'workspaces' && <InstanceManagementView />}
+          {state.activeView === 'workspaces' && (
+            <InstanceManagementViewExtracted
+              instances={getFilteredInstances()}
+              loading={state.loading}
+              filterQuery={instancesFilterQuery}
+              onFilterChange={setInstancesFilterQuery}
+              selectedInstances={selectedInstances}
+              onSelectionChange={setSelectedInstances}
+              onRefresh={loadApplicationData}
+              onNavigateToTemplates={() => setState(prev => ({ ...prev, activeView: 'templates' }))}
+              onConnect={(info) => { setConnectionInfo(info); setConnectionModalVisible(true); }}
+              onInstanceAction={handleInstanceAction}
+              onBulkAction={handleBulkAction}
+            />
+          )}
           {state.activeView === 'terminal' && (() => {
               const runningInstances = state.instances.filter(i => i.state === 'running');
 
