@@ -16,6 +16,8 @@ import { CoursesPanel } from './components/CoursesPanel';
 import { WorkshopsPanel } from './components/WorkshopsPanel';
 import CapacityBlocksPanel from './components/CapacityBlocksPanel';
 import { SSHKeyModal } from './components/SSHKeyModal';
+import { ApprovalsView as ApprovalsViewExtracted } from './views/ApprovalsView';
+import { PlaceholderView } from './views/placeholder-view';
 
 import {
   SideNavigation,
@@ -9274,236 +9276,6 @@ export default function PrismApp() {
     );
   };
 
-  // v0.13.0 Approvals Dashboard
-  const ApprovalsView = () => {
-    const [approvals, setApprovals] = React.useState<ApprovalRequest[]>([]);
-    const [approvalsLoading, setApprovalsLoading] = React.useState(true);
-    const [approvalsError, setApprovalsError] = React.useState<string | null>(null);
-    const [statusFilter, setStatusFilter] = React.useState('pending');
-    const [reviewModalVisible, setReviewModalVisible] = React.useState(false);
-    const [reviewingApproval, setReviewingApproval] = React.useState<ApprovalRequest | null>(null);
-    const [reviewAction, setReviewAction] = React.useState<'approve' | 'deny'>('approve');
-    const [reviewNote, setReviewNote] = React.useState('');
-
-    const loadApprovals = async () => {
-      setApprovalsLoading(true);
-      setApprovalsError(null);
-      try {
-        const result = await api.listAllApprovals(statusFilter || undefined);
-        setApprovals(result);
-      } catch (e: any) {
-        setApprovalsError(e.message || 'Failed to load approvals');
-      } finally {
-        setApprovalsLoading(false);
-      }
-    };
-
-    React.useEffect(() => { loadApprovals(); }, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const openReview = (item: ApprovalRequest, action: 'approve' | 'deny') => {
-      setReviewingApproval(item);
-      setReviewAction(action);
-      setReviewNote('');
-      setReviewModalVisible(true);
-    };
-
-    const submitReview = async () => {
-      if (!reviewingApproval) return;
-      setReviewModalVisible(false);
-      try {
-        if (reviewAction === 'approve') {
-          await api.approveRequest(reviewingApproval.project_id, reviewingApproval.id, reviewNote);
-        } else {
-          await api.denyRequest(reviewingApproval.project_id, reviewingApproval.id, reviewNote);
-        }
-        loadApprovals();
-      } catch (e: any) {
-        setApprovalsError(e.message || 'Failed to submit review');
-      }
-    };
-
-    const statusColor = (s: string) => {
-      switch (s) {
-        case 'pending': return 'in-progress' as const;
-        case 'approved': return 'success' as const;
-        case 'denied': return 'error' as const;
-        default: return 'stopped' as const;
-      }
-    };
-
-    const typeColor = (t: string): 'blue' | 'red' | 'grey' | 'green' => {
-      if (t.includes('gpu') || t.includes('expensive')) return 'red';
-      if (t.includes('emergency')) return 'red';
-      if (t.includes('budget')) return 'blue';
-      return 'grey';
-    };
-
-    return (
-      <SpaceBetween size="l" data-testid="approvals-view">
-        <Header variant="h1">Approval Requests</Header>
-        {approvalsError && (
-          <Alert type="error" dismissible onDismiss={() => setApprovalsError(null)}>{approvalsError}</Alert>
-        )}
-        <Container
-          header={
-            <Header
-              variant="h2"
-              actions={
-                <SpaceBetween direction="horizontal" size="xs">
-                  <Select
-                    data-testid="approvals-status-filter"
-                    selectedOption={{ value: statusFilter, label: statusFilter || 'All' }}
-                    onChange={({ detail }) => setStatusFilter(detail.selectedOption.value || '')}
-                    options={[
-                      { value: '', label: 'All' },
-                      { value: 'pending', label: 'Pending' },
-                      { value: 'approved', label: 'Approved' },
-                      { value: 'denied', label: 'Denied' },
-                      { value: 'expired', label: 'Expired' }
-                    ]}
-                  />
-                  <Button onClick={loadApprovals} iconName="refresh" data-testid="approvals-refresh-button">Refresh</Button>
-                </SpaceBetween>
-              }
-            >
-              {statusFilter ? `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Requests` : 'All Requests'}
-            </Header>
-          }
-        >
-          <Table
-            data-testid="approvals-table"
-            loading={approvalsLoading}
-            loadingText="Loading approvals..."
-            columnDefinitions={[
-              {
-                id: 'type',
-                header: 'Type',
-                cell: (item: ApprovalRequest) => (
-                  <Badge color={typeColor(item.type)}>{item.type}</Badge>
-                )
-              },
-              {
-                id: 'requested_by',
-                header: 'Requester',
-                cell: (item: ApprovalRequest) => item.requested_by
-              },
-              {
-                id: 'project_id',
-                header: 'Project',
-                cell: (item: ApprovalRequest) => item.project_id
-              },
-              {
-                id: 'reason',
-                header: 'Reason',
-                cell: (item: ApprovalRequest) => item.reason.length > 60 ? item.reason.slice(0, 57) + '...' : item.reason
-              },
-              {
-                id: 'created_at',
-                header: 'Requested',
-                cell: (item: ApprovalRequest) => new Date(item.created_at).toLocaleDateString()
-              },
-              {
-                id: 'expires_at',
-                header: 'Expires',
-                cell: (item: ApprovalRequest) => new Date(item.expires_at).toLocaleDateString()
-              },
-              {
-                id: 'status',
-                header: 'Status',
-                cell: (item: ApprovalRequest) => (
-                  <StatusIndicator type={statusColor(item.status)}>{item.status}</StatusIndicator>
-                )
-              },
-              {
-                id: 'actions',
-                header: 'Actions',
-                cell: (item: ApprovalRequest) => item.status === 'pending' ? (
-                  <SpaceBetween direction="horizontal" size="xs">
-                    <Button
-                      variant="primary"
-                      data-testid={`approve-btn-${item.id}`}
-                      onClick={() => openReview(item, 'approve')}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="link"
-                      data-testid={`deny-btn-${item.id}`}
-                      onClick={() => openReview(item, 'deny')}
-                    >
-                      Deny
-                    </Button>
-                  </SpaceBetween>
-                ) : null
-              }
-            ]}
-            items={approvals}
-            empty={
-              <Box textAlign="center" color="inherit">
-                <b>No approval requests</b>
-                <Box variant="p" color="inherit">No {statusFilter || ''} approval requests found.</Box>
-              </Box>
-            }
-          />
-        </Container>
-
-        <Modal
-          visible={reviewModalVisible}
-          onDismiss={() => setReviewModalVisible(false)}
-          header={reviewAction === 'approve' ? 'Approve Request' : 'Deny Request'}
-          footer={
-            <Box float="right">
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button variant="link" onClick={() => setReviewModalVisible(false)}>Cancel</Button>
-                <Button
-                  variant="primary"
-                  data-testid="submit-review-button"
-                  onClick={submitReview}
-                >
-                  {reviewAction === 'approve' ? 'Approve' : 'Deny'}
-                </Button>
-              </SpaceBetween>
-            </Box>
-          }
-        >
-          <Form>
-            <FormField label="Review note (optional)">
-              <Textarea
-                value={reviewNote}
-                onChange={({ detail }) => setReviewNote(detail.value)}
-                placeholder="Add a note explaining your decision..."
-                data-testid="review-note-input"
-              />
-            </FormField>
-          </Form>
-        </Modal>
-      </SpaceBetween>
-    );
-  };
-
-  const PlaceholderView = ({ title, description }: { title: string; description: string }) => (
-    <Container header={<Header variant="h1">{title}</Header>}>
-      <Box textAlign="center" padding="xl">
-        <Box variant="strong">{title}</Box>
-        <Box variant="p">{description}</Box>
-        <Alert type="info">This feature will be available in a future update.</Alert>
-      </Box>
-    </Container>
-  );
-
-  const BudgetPoolManagementView = () => (
-    <PlaceholderView
-      title="Budget Pool Management"
-      description="Manage budget pools and allocations for your research projects."
-    />
-  );
-
-  const ProjectDetailViewLegacy = () => (
-    <PlaceholderView
-      title="Project Detail"
-      description="Select a project from the Projects view to see its details."
-    />
-  );
 
   // Launch Modal
   // Delete Confirmation Modal Component
@@ -11234,12 +11006,12 @@ export default function PrismApp() {
             )
           )}
           {state.activeView === 'invitations' && <InvitationManagementView />}
-          {state.activeView === 'budgets' && <BudgetPoolManagementView />}
-          {state.activeView === 'approvals' && <ApprovalsView />}
+          {state.activeView === 'budgets' && <PlaceholderView title="Budget Pool Management" description="Manage budget pools and allocations for your research projects." />}
+          {state.activeView === 'approvals' && <ApprovalsViewExtracted />}
           {state.activeView === 'courses' && <CoursesManagementView />}
           {state.activeView === 'workshops' && <WorkshopsManagementView />}
           {state.activeView === 'capacity-blocks' && <CapacityBlocksManagementView />}
-          {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
+          {state.activeView === 'project-detail' && <PlaceholderView title="Project Detail" description="Select a project from the Projects view to see its details." />}
           {state.activeView === 'users' && <UserManagementView />}
           {state.activeView === 'ami' && <AMIManagementView />}
           {state.activeView === 'rightsizing' && <RightsizingView />}
