@@ -19,6 +19,7 @@ import { ApprovalsView as ApprovalsViewExtracted } from './views/ApprovalsView';
 import { PlaceholderView } from './views/placeholder-view';
 import { LogsView } from './views/LogsView';
 import { WebViewView } from './views/WebViewView';
+import { DashboardView as DashboardViewExtracted } from './views/DashboardView';
 
 import {
   SideNavigation,
@@ -45,7 +46,6 @@ import {
   PropertyFilter,
   Wizard,
   ProgressBar,
-  TextContent,
   Textarea,
   Toggle,
   Pagination,
@@ -3486,249 +3486,6 @@ export default function PrismApp() {
       setTokenValidationError(`Failed to redeem token: ${error.message || 'Invalid or expired token'}`);
     }
   };
-
-  // Recent Workspaces Component (for returning users)
-  const RecentWorkspaces = () => {
-    // Get most recent 3 workspaces
-    const recentWorkspaces = state.instances.slice(0, 3);
-
-    return (
-      <Container header={<Header variant="h2">Recent Workspaces</Header>}>
-        <SpaceBetween size="m">
-          {recentWorkspaces.length === 0 ? (
-            <Box textAlign="center" padding={{ vertical: 'l' }}>
-              <TextContent>
-                <Box variant="p" color="text-body-secondary">
-                  No workspaces yet. Launch your first workspace to get started.
-                </Box>
-              </TextContent>
-              <Button
-                variant="primary"
-                iconName="add-plus"
-                onClick={() => setQuickStartWizardVisible(true)}
-              >
-                Launch Workspace
-              </Button>
-            </Box>
-          ) : (
-            <>
-              {recentWorkspaces.map((instance) => (
-                <Container key={instance.name}>
-                  <SpaceBetween size="s">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <Box variant="h3">{instance.name}</Box>
-                        <Box variant="small" color="text-body-secondary">
-                          Template: {instance.template} | Type: {instance.instance_type || 'N/A'}
-                        </Box>
-                      </div>
-                      <StatusIndicator type={
-                        instance.state === 'running' ? 'success' :
-                        instance.state === 'stopped' ? 'stopped' :
-                        instance.state === 'pending' ? 'in-progress' :
-                        'error'
-                      }>
-                        {instance.state}
-                      </StatusIndicator>
-                    </div>
-                    <SpaceBetween direction="horizontal" size="xs">
-                      {instance.state === 'running' && (
-                        <Button
-                          iconName="external"
-                          onClick={() => {
-                            setConnectionInfo({
-                              instanceName: instance.name,
-                              publicIP: instance.public_ip || '',
-                              sshCommand: `ssh -i ~/.ssh/your-key.pem ubuntu@${instance.public_ip}`,
-                              webPort: ''
-                            });
-                            setConnectionModalVisible(true);
-                          }}
-                        >
-                          Connect
-                        </Button>
-                      )}
-                      {instance.state === 'stopped' && (
-                        <Button
-                          onClick={async () => {
-                            try {
-                              await api.startInstance(instance.name);
-                              toast.success(`Starting workspace "${instance.name}"`);
-                              setTimeout(loadApplicationData, 2000);
-                            } catch (error) {
-                              toast.error(`Failed to start workspace: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                            }
-                          }}
-                        >
-                          Start
-                        </Button>
-                      )}
-                      <Button
-                        variant="normal"
-                        onClick={() => setState({ ...state, activeView: 'workspaces' })}
-                      >
-                        Manage
-                      </Button>
-                    </SpaceBetween>
-                  </SpaceBetween>
-                </Container>
-              ))}
-              {state.instances.length > 3 && (
-                <Box textAlign="center">
-                  <Link onFollow={() => setState({ ...state, activeView: 'workspaces' })}>
-                    View all {state.instances.length} workspaces
-                  </Link>
-                </Box>
-              )}
-            </>
-          )}
-        </SpaceBetween>
-      </Container>
-    );
-  };
-
-  // Dashboard View
-  const DashboardView = () => (
-    <SpaceBetween size="l">
-      {/* Context-aware Hero Section */}
-      <Container>
-        <SpaceBetween size="l">
-          <Box textAlign="center" padding={{ top: 'xl', bottom: 'l' }}>
-            <SpaceBetween size="m">
-              <TextContent>
-                <h1>Welcome to Prism</h1>
-                <Box variant="p" fontSize="heading-m" color="text-body-secondary">
-                  {isFirstTimeUser
-                    ? 'Launch your research workspace in seconds'
-                    : 'Manage your research workspaces'}
-                </Box>
-              </TextContent>
-              {isFirstTimeUser && (
-                <>
-                  <Button
-                    variant="primary"
-                    iconName="add-plus"
-                    onClick={() => setQuickStartWizardVisible(true)}
-                  >
-                    Quick Start - Launch Workspace
-                  </Button>
-                  <Box color="text-body-secondary">
-                    Pre-configured environments for ML, Data Science, Bioinformatics, and more
-                  </Box>
-                </>
-              )}
-              {!isFirstTimeUser && (
-                <SpaceBetween direction="horizontal" size="s">
-                  <Button
-                    variant="primary"
-                    iconName="add-plus"
-                    onClick={() => setQuickStartWizardVisible(true)}
-                  >
-                    New Workspace
-                  </Button>
-                  <Button
-                    variant="normal"
-                    iconName="view-full"
-                    onClick={() => setState({ ...state, activeView: 'workspaces' })}
-                  >
-                    View All Workspaces
-                  </Button>
-                </SpaceBetween>
-              )}
-            </SpaceBetween>
-          </Box>
-        </SpaceBetween>
-      </Container>
-
-      {/* Show Recent Workspaces for returning users */}
-      {!isFirstTimeUser && <RecentWorkspaces />}
-
-      <Header
-        variant="h1"
-        description="Prism research computing platform - manage your cloud environments"
-        actions={
-          <Button onClick={loadApplicationData} disabled={state.loading}>
-            {state.loading ? <Spinner size="normal" /> : 'Refresh'}
-          </Button>
-        }
-      >
-        Dashboard
-      </Header>
-
-      <ColumnLayout columns={3} variant="text-grid">
-        <Container header={<Header variant="h2">Research Templates</Header>}>
-          <SpaceBetween size="s">
-            <Box>
-              <Box variant="awsui-key-label">Available Templates</Box>
-              <Box fontSize="display-l" fontWeight="bold" color={state.connected ? 'text-status-success' : 'text-status-error'}>
-                {Object.keys(state.templates).length}
-              </Box>
-            </Box>
-            <Button
-              variant="primary"
-              onClick={() => setState(prev => ({ ...prev, activeView: 'templates' }))}
-            >
-              Browse Templates
-            </Button>
-          </SpaceBetween>
-        </Container>
-
-        <Container header={<Header variant="h2">Active Workspaces</Header>}>
-          <SpaceBetween size="s">
-            <Box>
-              <Box variant="awsui-key-label">Running Workspaces</Box>
-              <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-                {state.instances.filter(i => i.state === 'running').length}
-              </Box>
-            </Box>
-            <Button
-              onClick={() => setState(prev => ({ ...prev, activeView: 'workspaces' }))}
-            >
-              Manage Workspaces
-            </Button>
-          </SpaceBetween>
-        </Container>
-
-        <Container header={<Header variant="h2">System Status</Header>}>
-          <SpaceBetween size="s">
-            <Box>
-              <Box variant="awsui-key-label">Connection</Box>
-              <StatusIndicator
-                type={state.connected ? 'success' : 'error'}
-                iconAriaLabel={getStatusLabel('connection', state.connected ? 'success' : 'error')}
-              >
-                {state.connected ? 'Connected' : 'Disconnected'}
-              </StatusIndicator>
-            </Box>
-            <Button onClick={loadApplicationData} disabled={state.loading}>
-              {state.loading ? 'Checking...' : 'Test Connection'}
-            </Button>
-          </SpaceBetween>
-        </Container>
-      </ColumnLayout>
-
-      <Container header={<Header variant="h2">Quick Actions</Header>}>
-        <SpaceBetween direction="horizontal" size="s">
-          <Button
-            variant="primary"
-            onClick={() => setState(prev => ({ ...prev, activeView: 'templates' }))}
-            disabled={Object.keys(state.templates).length === 0}
-          >
-            Launch New Workspace
-          </Button>
-          <Button
-            onClick={() => setState(prev => ({ ...prev, activeView: 'workspaces' }))}
-            disabled={state.instances.length === 0}
-          >
-            View Workspaces ({state.instances.length})
-          </Button>
-          <Button onClick={() => setState(prev => ({ ...prev, activeView: 'storage' }))}>
-            Storage Management
-          </Button>
-        </SpaceBetween>
-      </Container>
-    </SpaceBetween>
-  );
 
   // Safe accessors for template data
   const getTemplateName = (template: Template): string => {
@@ -10631,7 +10388,31 @@ export default function PrismApp() {
               </SpaceBetween>
             </Alert>
           )}
-          {state.activeView === 'dashboard' && <DashboardView />}
+          {state.activeView === 'dashboard' && (
+            <DashboardViewExtracted
+              instances={state.instances}
+              templates={state.templates}
+              connected={state.connected}
+              loading={state.loading}
+              isFirstTimeUser={isFirstTimeUser}
+              onNavigate={(view) => setState(prev => ({ ...prev, activeView: view as AppState['activeView'] }))}
+              onRefresh={loadApplicationData}
+              onShowQuickStart={() => setQuickStartWizardVisible(true)}
+              onConnect={(info) => {
+                setConnectionInfo(info)
+                setConnectionModalVisible(true)
+              }}
+              onStartInstance={async (instanceName) => {
+                try {
+                  await api.startInstance(instanceName)
+                  toast.success(`Starting workspace "${instanceName}"`)
+                  setTimeout(loadApplicationData, 2000)
+                } catch (error) {
+                  toast.error(`Failed to start workspace: ${error instanceof Error ? error.message : 'Unknown error'}`)
+                }
+              }}
+            />
+          )}
           {state.activeView === 'templates' && <TemplateSelectionView />}
           {state.activeView === 'workspaces' && <InstanceManagementView />}
           {state.activeView === 'terminal' && (() => {
