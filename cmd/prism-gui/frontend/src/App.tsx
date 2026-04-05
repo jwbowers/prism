@@ -23,6 +23,8 @@ import { DashboardView as DashboardViewExtracted } from './views/DashboardView';
 import { TemplateSelectionView as TemplateSelectionViewExtracted } from './views/TemplateSelectionView';
 import { getTemplateName, getTemplateSlug, getTemplateDescription, getTemplateTags } from './lib/template-utils';
 import { DeleteConfirmationModal as DeleteConfirmationModalExtracted } from './modals/DeleteConfirmationModal';
+import { HibernateConfirmationModal as HibernateConfirmationModalExtracted } from './modals/HibernateConfirmationModal';
+import { IdlePolicyModal as IdlePolicyModalExtracted } from './modals/IdlePolicyModal';
 
 import {
   SideNavigation,
@@ -8577,228 +8579,7 @@ export default function PrismApp() {
   };
 
   // Launch Modal
-  // Delete Confirmation Modal Component
 
-  // Idle Policy Modal — apply/remove idle policies on a specific instance (Issue #288)
-  const IdlePolicyModal = () => {
-    const [availablePolicies, setAvailablePolicies] = useState<IdlePolicy[]>([]);
-    const [appliedPolicies, setAppliedPolicies] = useState<IdlePolicy[]>([]);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-      if (!idlePolicyModalInstance) return;
-      setLoading(true);
-      Promise.all([
-        api.getIdlePolicies(),
-        api.getInstanceIdlePolicies(idlePolicyModalInstance)
-      ]).then(([all, applied]) => {
-        setAvailablePolicies(all);
-        setAppliedPolicies(applied);
-      }).catch(err => {
-        logger.error('Failed to load idle policies:', err);
-      }).finally(() => setLoading(false));
-    }, [idlePolicyModalInstance]);
-
-    if (!idlePolicyModalInstance) return null;
-
-    const appliedIds = new Set(appliedPolicies.map(p => p.id));
-
-    const handleApply = async (policyId: string, policyName: string) => {
-      setIdlePolicyModalInstance(null);
-      toast('Applying Idle Policy', { description: `Applying "${policyName}" to ${idlePolicyModalInstance}...` });
-      try {
-        await api.applyIdlePolicy(idlePolicyModalInstance, policyId);
-        toast.success('Idle Policy Applied', { description: `"${policyName}" applied to ${idlePolicyModalInstance}` });
-      } catch (error) {
-        toast.error('Failed to Apply Policy', { description: `${error instanceof Error ? error.message : String(error)}` });
-      }
-    };
-
-    const handleRemove = async (policyId: string, policyName: string) => {
-      setIdlePolicyModalInstance(null);
-      toast('Removing Idle Policy', { description: `Removing "${policyName}" from ${idlePolicyModalInstance}...` });
-      try {
-        await api.removeIdlePolicy(idlePolicyModalInstance, policyId);
-        toast.success('Idle Policy Removed', { description: `"${policyName}" removed from ${idlePolicyModalInstance}` });
-      } catch (error) {
-        toast.error('Failed to Remove Policy', { description: `${error instanceof Error ? error.message : String(error)}` });
-      }
-    };
-
-    return (
-      <Modal
-        visible={!!idlePolicyModalInstance}
-        onDismiss={() => setIdlePolicyModalInstance(null)}
-        header={`Manage Idle Policy — ${idlePolicyModalInstance}`}
-        size="medium"
-        data-testid="idle-policy-modal"
-        footer={
-          <Box float="right">
-            <Button variant="link" onClick={() => setIdlePolicyModalInstance(null)}>Close</Button>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          {appliedPolicies.length > 0 && (
-            <Alert type="info" header="Currently Applied">
-              {appliedPolicies.map(p => (
-                <SpaceBetween key={p.id} direction="horizontal" size="xs">
-                  <Box variant="span"><strong>{p.name}</strong> — {p.description}</Box>
-                  <Button
-                    variant="link"
-                    onClick={() => handleRemove(p.id, p.name)}
-                    data-testid={`remove-idle-policy-${p.id}`}
-                  >
-                    Remove
-                  </Button>
-                </SpaceBetween>
-              ))}
-            </Alert>
-          )}
-          {loading ? (
-            <Box textAlign="center"><Spinner /></Box>
-          ) : (
-            <Table
-              data-testid="idle-policy-templates-table"
-              columnDefinitions={[
-                { id: 'name', header: 'Policy', cell: (item: IdlePolicy) => item.name },
-                { id: 'description', header: 'Description', cell: (item: IdlePolicy) => item.description || '' },
-                { id: 'savings', header: 'Est. Savings', cell: (item: IdlePolicy) => `${(item as unknown as Record<string, unknown>).estimated_savings_percent ?? '—'}%` },
-                {
-                  id: 'action',
-                  header: '',
-                  cell: (item: IdlePolicy) => appliedIds.has(item.id) ? (
-                    <Button
-                      variant="link"
-                      onClick={() => handleRemove(item.id, item.name)}
-                      data-testid={`remove-idle-policy-${item.id}`}
-                    >
-                      Remove
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleApply(item.id, item.name)}
-                      data-testid={`apply-idle-policy-${item.id}`}
-                    >
-                      Apply
-                    </Button>
-                  )
-                }
-              ]}
-              items={availablePolicies}
-              empty={<Box textAlign="center">No idle policy templates available</Box>}
-            />
-          )}
-        </SpaceBetween>
-      </Modal>
-    );
-  };
-
-  const HibernateConfirmationModal = () => {
-    if (!hibernateModalInstance) return null;
-
-    const handleConfirmHibernate = async () => {
-      const instance = hibernateModalInstance;
-      setHibernateModalVisible(false);
-      setHibernateModalInstance(null);
-
-      // Fire-and-forget: show progress notification immediately
-      setState(prev => ({
-        ...prev,
-        notifications: [
-          ...prev.notifications,
-          {
-            type: 'info',
-            header: 'Hibernating Workspace',
-            content: `Hibernating ${instance.name}...`,
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
-      }));
-
-      try {
-        await api.hibernateInstance(instance.name);
-        await loadApplicationData();
-        setState(prev => ({
-          ...prev,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'success',
-              header: 'Workspace Hibernated',
-              content: `${instance.name} hibernated successfully`,
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-      } catch (error) {
-        logger.error(`Failed to hibernate workspace ${instance.name}:`, error);
-        setState(prev => ({
-          ...prev,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'error',
-              header: 'Hibernation Failed',
-              content: `Failed to hibernate ${instance.name}: ${error instanceof Error ? error.message : String(error)}`,
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-      }
-    };
-
-    return (
-      <Modal
-        visible={hibernateModalVisible}
-        onDismiss={() => {
-          setHibernateModalVisible(false);
-          setHibernateModalInstance(null);
-        }}
-        header="Hibernate Workspace?"
-        size="medium"
-        data-testid="hibernate-confirmation-modal"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button
-                variant="link"
-                onClick={() => {
-                  setHibernateModalVisible(false);
-                  setHibernateModalInstance(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleConfirmHibernate}
-                data-testid="confirm-hibernate-button"
-              >
-                Hibernate
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          <Alert type="info" header="Cost Optimization">
-            Hibernating preserves your workspace state for instant resume. You save approximately $0.90/hour in compute costs — only storage charges apply while hibernated (typically 80% cheaper than keeping it running).
-          </Alert>
-          <Box variant="p">
-            Workspace <strong>{hibernateModalInstance.name}</strong> will be hibernated. The instance state (RAM contents and running processes) is saved to EBS storage so you can resume exactly where you left off.
-          </Box>
-          <Box variant="p" color="text-body-secondary">
-            Resuming from hibernation is faster than a full stop/start because the state is fully preserved.
-          </Box>
-        </SpaceBetween>
-      </Modal>
-    );
-  };
 
   const LaunchModal = () => (
     <Modal
@@ -10267,8 +10048,22 @@ export default function PrismApp() {
         config={deleteModalConfig}
         onDismiss={() => setDeleteModalVisible(false)}
       />
-      <HibernateConfirmationModal />
-      <IdlePolicyModal />
+      {hibernateModalVisible && hibernateModalInstance && (
+        <HibernateConfirmationModalExtracted
+          instance={hibernateModalInstance}
+          onDismiss={() => {
+            setHibernateModalVisible(false);
+            setHibernateModalInstance(null);
+          }}
+          onRefresh={loadApplicationData}
+        />
+      )}
+      {idlePolicyModalInstance && (
+        <IdlePolicyModalExtracted
+          instanceName={idlePolicyModalInstance}
+          onDismiss={() => setIdlePolicyModalInstance(null)}
+        />
+      )}
       <OnboardingWizard />
       <QuickStartWizard />
       <CreateProjectModal />
