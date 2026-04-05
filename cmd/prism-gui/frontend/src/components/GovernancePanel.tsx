@@ -28,7 +28,7 @@ import {
   Alert,
   Textarea,
   ColumnLayout
-} from '@cloudscape-design/components';
+} from '../lib/cloudscape-shim';
 
 interface RoleQuota {
   role: string;

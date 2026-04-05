@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert } from '@cloudscape-design/components';
+import { Alert } from '../lib/cloudscape-shim';
 
 interface ValidationErrorProps {
   message: string;

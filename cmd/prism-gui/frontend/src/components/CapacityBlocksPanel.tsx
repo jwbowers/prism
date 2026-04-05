@@ -23,7 +23,7 @@ import {
   Badge,
   Alert,
   TextContent,
-} from '@cloudscape-design/components';
+} from '../lib/cloudscape-shim';
 
 interface CapacityBlock {
   id: string;

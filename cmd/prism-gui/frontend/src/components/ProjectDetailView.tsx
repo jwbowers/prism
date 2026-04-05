@@ -15,7 +15,7 @@ import {
   Form,
   FormField,
   Tabs
-} from '@cloudscape-design/components';
+} from '../lib/cloudscape-shim';
 import { GovernancePanel } from './GovernancePanel';
 
 interface ProjectMember {

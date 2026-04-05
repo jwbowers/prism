@@ -27,7 +27,7 @@ import {
   ProgressBar,
   DatePicker,
   StatusIndicator
-} from '@cloudscape-design/components';
+} from '../lib/cloudscape-shim';
 
 // ── Local types (mirror App.tsx interfaces) ──────────────────────────────────
 

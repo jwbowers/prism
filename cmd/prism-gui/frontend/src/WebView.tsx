@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Box, Button, SpaceBetween, Spinner } from '@cloudscape-design/components';
+import { Alert, Box, Button, SpaceBetween, Spinner } from './lib/cloudscape-shim';
 
 interface WebViewProps {
   url: string;

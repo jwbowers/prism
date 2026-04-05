@@ -27,7 +27,7 @@ import {
   Grid,
   ColumnLayout,
   FormField,
-} from '@cloudscape-design/components';
+} from '../lib/cloudscape-shim';
 
 // ==================== TYPE DEFINITIONS ====================
 

@@ -9,7 +9,7 @@ import {
   Container,
   Header,
   ColumnLayout,
-} from '@cloudscape-design/components';
+} from '../lib/cloudscape-shim';
 
 interface SSHKeyModalProps {
   visible: boolean;

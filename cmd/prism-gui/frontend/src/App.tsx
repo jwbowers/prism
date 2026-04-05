@@ -3,7 +3,6 @@ import { logger } from './utils/logger';
 // Complete error handling, real API integration, professional UX
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import '@cloudscape-design/global-styles/index.css';
 import './index.css';
 import Terminal from './Terminal';
 import WebView from './WebView';
@@ -48,7 +47,7 @@ import {
   Pagination,
   TextFilter,
   Checkbox
-} from '@cloudscape-design/components';
+} from './lib/cloudscape-shim';
 
 // Type definitions
 interface Project {
@@ -2537,7 +2536,7 @@ export default function PrismApp() {
   const [selectedInstances, setSelectedInstances] = useState<Instance[]>([]);
 
   // Filtering state for instances table
-  const [instancesFilterQuery, setInstancesFilterQuery] = useState<import('@cloudscape-design/components').PropertyFilterProps.Query>({ tokens: [], operation: 'and' });
+  const [instancesFilterQuery, setInstancesFilterQuery] = useState<{ tokens: Array<{ propertyKey?: string; operator: string; value: string }>; operation: 'and' | 'or' }>({ tokens: [], operation: 'and' });
 
   // Create Backup modal state
   const [createBackupModalVisible, setCreateBackupModalVisible] = useState(false);
@@ -7669,7 +7668,7 @@ export default function PrismApp() {
   // Settings View
   const SettingsView = () => {
     // Settings side navigation items
-    const settingsNavItems: import('@cloudscape-design/components').SideNavigationProps.Item[] = [
+    const settingsNavItems: Array<{ type: string; text?: string; href?: string; items?: Array<{ type: string; text?: string; href?: string }> }> = [
       { type: "link", text: "General", href: "#general" },
       { type: "link", text: "Profiles", href: "#profiles" },
       { type: "link", text: "Users", href: "#users" },
