@@ -4,6 +4,9 @@ import { logger } from './utils/logger';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './index.css';
+import { toast } from 'sonner';
+import { AppLayout as AppLayoutShell } from './components/app-layout';
+import { SideNav } from './components/side-nav';
 import Terminal from './Terminal';
 import WebView from './WebView';
 import { ValidationError } from './components/ValidationError';
@@ -15,7 +18,6 @@ import CapacityBlocksPanel from './components/CapacityBlocksPanel';
 import { SSHKeyModal } from './components/SSHKeyModal';
 
 import {
-  AppLayout,
   SideNavigation,
   Container,
   Header,
@@ -31,7 +33,6 @@ import {
   Input,
   Select,
   Alert,
-  Flashbar,
   Spinner,
   Box,
   ColumnLayout,
@@ -738,7 +739,7 @@ interface AppState {
   selectedProject: Project | null;
   selectedTerminalInstance: string;
   loading: boolean;
-  notifications: Notification[];
+  notifications: Notification[]; // kept for migration; will be removed in Phase 8
   connected: boolean;
   error: string | null;
   updateInfo: any | null;
@@ -2472,7 +2473,6 @@ export default function PrismApp() {
     pendingApprovalsCount: 0
   });
 
-  const [navigationOpen, setNavigationOpen] = useState(true);
   const [launchModalVisible, setLaunchModalVisible] = useState(false);
   const [launchConfig, setLaunchConfig] = useState({
     name: '',
@@ -2729,49 +2729,29 @@ export default function PrismApp() {
   const [editUserRole, setEditUserRole] = useState('');
   const [editUserSubmitting, setEditUserSubmitting] = useState(false);
 
-  // Helper: add a notification to state
+  // Helper: add a toast notification
   // Supports two calling conventions:
   //   addNotification('error', 'Header', 'Content')
   //   addNotification({ type: 'success', content: '...' })
   const addNotification = (
-    typeOrObj: Notification['type'] | Partial<Notification>,
+    typeOrObj: 'success' | 'error' | 'warning' | 'info' | Partial<{ type: string; header?: string; content: string; dismissible?: boolean }>,
     header?: string,
     content?: string
   ) => {
-    const notification: Notification = typeof typeOrObj === 'string'
-      ? {
-          id: Date.now().toString(),
-          type: typeOrObj,
-          header: header,
-          content: content || '',
-          dismissible: true
-        }
-      : {
-          id: Date.now().toString(),
-          type: (typeOrObj as Partial<Notification>).type || 'info',
-          header: (typeOrObj as Partial<Notification>).header,
-          content: (typeOrObj as Partial<Notification>).content || '',
-          dismissible: (typeOrObj as Partial<Notification>).dismissible !== false
-        };
-    setState(prev => ({
-      ...prev,
-      notifications: [...prev.notifications, notification]
-    }));
+    const type = typeof typeOrObj === 'string' ? typeOrObj : (typeOrObj.type || 'info');
+    const title = typeof typeOrObj === 'string' ? (header || content || '') : (typeOrObj.header || typeOrObj.content || '');
+    const desc = typeof typeOrObj === 'string' ? (header && content ? content : undefined) : (typeOrObj.header && typeOrObj.content ? typeOrObj.content : undefined);
+    const toastFn = type === 'success' ? toast.success : type === 'error' ? toast.error : type === 'warning' ? toast.warning : toast;
+    toastFn(title, desc ? { description: desc } : undefined);
   };
 
-  // Helper: set (replace) notifications
-  const setNotification = (notification: Partial<Notification>) => {
-    const n: Notification = {
-      id: notification.id || Date.now().toString(),
-      type: notification.type || 'info',
-      header: notification.header,
-      content: notification.content || '',
-      dismissible: notification.dismissible !== false
-    };
-    setState(prev => ({
-      ...prev,
-      notifications: [n, ...prev.notifications.filter(x => x.id !== n.id)]
-    }));
+  // Helper: set (replace/update) a toast notification
+  const setNotification = (notification: Partial<{ id?: string; type?: string; header?: string; content: string; dismissible?: boolean }>) => {
+    const title = notification.header || notification.content || '';
+    const desc = notification.header && notification.content ? notification.content : undefined;
+    const type = notification.type || 'info';
+    const toastFn = type === 'success' ? toast.success : type === 'error' ? toast.error : type === 'warning' ? toast.warning : toast;
+    toastFn(title, { ...(desc ? { description: desc } : {}), ...(notification.id ? { id: notification.id } : {}) });
   };
 
   // Safe data loading with comprehensive error handling
@@ -2897,13 +2877,6 @@ export default function PrismApp() {
         error: null
       }));
 
-      // Clear connection error notifications
-      setState(prev => ({
-        ...prev,
-        notifications: prev.notifications.filter(n =>
-          n.type !== 'error' || !n.content.includes('daemon')
-        )
-      }));
 
       // Load pending approvals count (fire-and-forget)
       api.listAllApprovals('pending').then(approvals =>
@@ -2913,20 +2886,12 @@ export default function PrismApp() {
     } catch (error) {
       logger.error('Failed to load application data:', error);
 
+      toast.error('Connection Error', { description: `Failed to connect to Prism daemon: ${error instanceof Error ? error.message : 'Unknown error'}` });
       setState(prev => ({
         ...prev,
         loading: false,
         connected: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        notifications: [
-          {
-            type: 'error',
-            header: 'Connection Error',
-            content: `Failed to connect to Prism daemon: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3084,15 +3049,7 @@ export default function PrismApp() {
       if ((event.metaKey || event.ctrlKey) && event.key === 'r') {
         event.preventDefault();
         loadApplicationData();
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'success',
-            content: 'Data refreshed',
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast.success('Data refreshed');
       }
 
       // Cmd/Ctrl + K: Focus search/filter
@@ -3122,16 +3079,7 @@ export default function PrismApp() {
 
       // ? : Show keyboard shortcuts help
       if (event.key === '?' && !event.shiftKey) {
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'info',
-            header: 'Keyboard Shortcuts',
-            content: 'Cmd/Ctrl+R: Refresh | Cmd/Ctrl+K: Search | 1-7: Navigate views | ?: Help',
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast('Keyboard Shortcuts', { description: 'Cmd/Ctrl+R: Refresh | Cmd/Ctrl+K: Search | 1-7: Navigate views | ?: Help' });
       }
     };
 
@@ -3602,26 +3550,10 @@ export default function PrismApp() {
                           onClick={async () => {
                             try {
                               await api.startInstance(instance.name);
-                              setState(prev => ({
-                                ...prev,
-                                notifications: [...prev.notifications, {
-                                  type: 'success',
-                                  content: `Starting workspace "${instance.name}"`,
-                                  dismissible: true,
-                                  id: Date.now().toString()
-                                }]
-                              }));
+                              toast.success(`Starting workspace "${instance.name}"`);
                               setTimeout(loadApplicationData, 2000);
                             } catch (error) {
-                              setState(prev => ({
-                                ...prev,
-                                notifications: [...prev.notifications, {
-                                  type: 'error',
-                                  content: `Failed to start workspace: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                                  dismissible: true,
-                                  id: Date.now().toString()
-                                }]
-                              }));
+                              toast.error(`Failed to start workspace: ${error instanceof Error ? error.message : 'Unknown error'}`);
                             }
                           }}
                         >
@@ -6899,26 +6831,10 @@ export default function PrismApp() {
         // This ensures we have the correct state regardless of timing issues
         await loadProfiles();
 
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'success' as const,
-            content: `Switched to profile: ${activatedProfile.name}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast.success(`Switched to profile: ${activatedProfile.name}`);
       } catch (error) {
         console.error('Failed to switch profile:', error);
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'error' as const,
-            content: `Failed to switch profile: ${error}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast.error(`Failed to switch profile: ${error}`);
       }
     };
 
@@ -8072,7 +7988,7 @@ export default function PrismApp() {
             activeHref={`#${state.settingsSection}`}
             header={{ text: "Settings", href: "#general" }}
             items={settingsNavItems}
-            onFollow={(e) => {
+            onFollow={(e: { detail: { href: string; external?: boolean }; preventDefault: () => void }) => {
               e.preventDefault();
               const href = e.detail.href.replace('#', '');
               setState(prev => ({
@@ -8105,12 +8021,12 @@ export default function PrismApp() {
 
       try {
         await api.deleteAMI(selectedAMI.id);
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: `AMI ${selectedAMI.id} deleted successfully`, id: Date.now().toString(), dismissible: true }] }));
+        toast.success(`AMI ${selectedAMI.id} deleted successfully`);
         setDeleteModalVisible(false);
         setSelectedAMI(null);
         await loadApplicationData();
       } catch (error) {
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to delete AMI: ${error}`, id: Date.now().toString(), dismissible: true }] }));
+        toast.error(`Failed to delete AMI: ${error}`);
       }
     };
 
@@ -8419,12 +8335,12 @@ export default function PrismApp() {
 
       try {
         await api.installMarketplaceTemplate(selectedTemplate.id, selectedTemplate.id);
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: `Installing template: ${selectedTemplate.display_name}`, id: Date.now().toString(), dismissible: true }] }));
+        toast.success(`Installing template: ${selectedTemplate.display_name}`);
         setInstallModalVisible(false);
         setSelectedTemplate(null);
         await loadApplicationData();
       } catch (error) {
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to install template: ${error}`, id: Date.now().toString(), dismissible: true }] }));
+        toast.error(`Failed to install template: ${error}`);
       }
     };
 
@@ -9074,7 +8990,7 @@ export default function PrismApp() {
 
         setLogLines(mockLogs);
       } catch (error) {
-        setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'error', content: `Failed to fetch logs: ${error}`, id: Date.now().toString(), dismissible: true }] }));
+        toast.error(`Failed to fetch logs: ${error}`);
         setLogLines([`Error fetching logs: ${error}`]);
       } finally {
         setLoadingLogs(false);
@@ -9208,7 +9124,7 @@ export default function PrismApp() {
                 <SpaceBetween direction="horizontal" size="xs">
                   <Button iconName="copy" onClick={() => {
                     navigator.clipboard.writeText(logLines.join('\n'));
-                    setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: 'Logs copied to clipboard', id: Date.now().toString(), dismissible: true }] }));
+                    toast.success('Logs copied to clipboard');
                   }}>
                     Copy to Clipboard
                   </Button>
@@ -9220,7 +9136,7 @@ export default function PrismApp() {
                     a.download = `${selectedInstance}-${logType}-${new Date().toISOString().split('T')[0]}.log`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    setState(prev => ({ ...prev, notifications: [...prev.notifications, { type: 'success', content: 'Log file downloaded', id: Date.now().toString(), dismissible: true }] }));
+                    toast.success('Log file downloaded');
                   }}>
                     Download Log File
                   </Button>
@@ -9714,77 +9630,23 @@ export default function PrismApp() {
 
     const handleApply = async (policyId: string, policyName: string) => {
       setIdlePolicyModalInstance(null);
-      setState(prev => ({
-        ...prev,
-        notifications: [...prev.notifications, {
-          type: 'info',
-          header: 'Applying Idle Policy',
-          content: `Applying "${policyName}" to ${idlePolicyModalInstance}...`,
-          dismissible: true,
-          id: Date.now().toString()
-        }]
-      }));
+      toast('Applying Idle Policy', { description: `Applying "${policyName}" to ${idlePolicyModalInstance}...` });
       try {
         await api.applyIdlePolicy(idlePolicyModalInstance, policyId);
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'success',
-            header: 'Idle Policy Applied',
-            content: `"${policyName}" applied to ${idlePolicyModalInstance}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast.success('Idle Policy Applied', { description: `"${policyName}" applied to ${idlePolicyModalInstance}` });
       } catch (error) {
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'error',
-            header: 'Failed to Apply Policy',
-            content: `${error instanceof Error ? error.message : String(error)}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast.error('Failed to Apply Policy', { description: `${error instanceof Error ? error.message : String(error)}` });
       }
     };
 
     const handleRemove = async (policyId: string, policyName: string) => {
       setIdlePolicyModalInstance(null);
-      setState(prev => ({
-        ...prev,
-        notifications: [...prev.notifications, {
-          type: 'info',
-          header: 'Removing Idle Policy',
-          content: `Removing "${policyName}" from ${idlePolicyModalInstance}...`,
-          dismissible: true,
-          id: Date.now().toString()
-        }]
-      }));
+      toast('Removing Idle Policy', { description: `Removing "${policyName}" from ${idlePolicyModalInstance}...` });
       try {
         await api.removeIdlePolicy(idlePolicyModalInstance, policyId);
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'success',
-            header: 'Idle Policy Removed',
-            content: `"${policyName}" removed from ${idlePolicyModalInstance}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast.success('Idle Policy Removed', { description: `"${policyName}" removed from ${idlePolicyModalInstance}` });
       } catch (error) {
-        setState(prev => ({
-          ...prev,
-          notifications: [...prev.notifications, {
-            type: 'error',
-            header: 'Failed to Remove Policy',
-            content: `${error instanceof Error ? error.message : String(error)}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }]
-        }));
+        toast.error('Failed to Remove Policy', { description: `${error instanceof Error ? error.message : String(error)}` });
       }
     };
 
@@ -11287,220 +11149,109 @@ export default function PrismApp() {
       >
         Skip to main content
       </a>
-      <AppLayout
-        navigationOpen={navigationOpen}
-        onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
-        navigation={
-          <SideNavigation
-            activeHref={`/${state.activeView}`}
-            header={{ text: "Prism", href: "/" }}
-            items={[
-              {
-                type: "link",
-                text: "Dashboard",
-                href: "/dashboard"
-              },
-              { type: "divider" },
-              {
-                type: "link",
-                text: "Templates",
-                href: "/templates",
-                info: Object.keys(state.templates).length > 0 ?
-                      <Badge color="blue">{Object.keys(state.templates).length}</Badge> : undefined
-              },
-              {
-                type: "link",
-                text: "My Workspaces",
-                href: "/workspaces",
-                info: state.instances.length > 0 ?
-                      <Badge color={state.instances.some(i => i.state === 'running') ? 'green' : 'grey'}>
-                        {state.instances.length}
-                      </Badge> : undefined
-              },
-              { type: "divider" },
-              {
-                type: "link",
-                text: "Storage",
-                href: "/storage"
-              },
-              {
-                type: "link",
-                text: "Backups",
-                href: "/backups"
-              },
-              {
-                type: "link",
-                text: "Projects",
-                href: "/projects"
-              },
-              {
-                type: "link",
-                text: "Users",
-                href: "/users"
-              },
-              {
-                type: "link",
-                text: "Invitations",
-                href: "/invitations",
-                info: state.invitations.filter(i => i.status === 'pending').length > 0 ?
-                      <Badge color="blue">{state.invitations.filter(i => i.status === 'pending').length}</Badge> : undefined
-              },
-              {
-                type: "link",
-                text: "Courses",
-                href: "/courses",
-                info: state.courses.filter(c => c.status === 'active').length > 0
-                  ? <Badge color="blue">{state.courses.filter(c => c.status === 'active').length}</Badge>
-                  : undefined
-              },
-              {
-                type: "link",
-                text: "Workshops",
-                href: "/workshops",
-                info: state.workshops.filter(w => w.status === 'active').length > 0
-                  ? <Badge color="green">{state.workshops.filter(w => w.status === 'active').length}</Badge>
-                  : undefined
-              },
-              {
-                type: "link",
-                text: "Capacity Blocks",
-                href: "/capacity-blocks",
-              },
-              {
-                type: "link",
-                text: "Budgets",
-                href: "/budgets",
-                info: state.budgetPools.length > 0 ?
-                      <Badge color="blue">{state.budgetPools.length}</Badge> : undefined
-              },
-              {
-                type: "link",
-                text: "Approvals",
-                href: "/approvals",
-                info: state.pendingApprovalsCount > 0
-                  ? <Badge color="red">{state.pendingApprovalsCount}</Badge>
-                  : undefined
-              },
-              { type: "divider" },
-              {
-                type: "link",
-                text: "Settings",
-                href: "/settings",
-                info: <Badge color="grey">Advanced</Badge>
-              }
-            ]}
-            onFollow={event => {
-              if (!event.detail.external) {
-                event.preventDefault();
-                const view = event.detail.href.substring(1) as AppState['activeView'];
-                setState(prev => ({ ...prev, activeView: view || 'dashboard' }));
-              }
-            }}
+      <AppLayoutShell
+        sidebar={
+          <SideNav
+            activeView={state.activeView}
+            onNavigate={(view) => setState(prev => ({ ...prev, activeView: view }))}
+            instanceCount={state.instances.length}
+            hasRunningInstances={state.instances.some(i => i.state === 'running')}
+            templateCount={Object.keys(state.templates).length}
+            pendingInvitations={state.invitations.filter(i => i.status === 'pending').length}
+            activeCourses={state.courses.filter(c => c.status === 'active').length}
+            activeWorkshops={state.workshops.filter(w => w.status === 'active').length}
+            budgetPoolCount={state.budgetPools.length}
+            pendingApprovalsCount={state.pendingApprovalsCount}
           />
         }
-        notifications={
-          <Flashbar
-            items={state.notifications.map(n => ({
-              ...n,
-              onDismiss: n.dismissible ? () => {
-                setState(prev => ({
-                  ...prev,
-                  notifications: prev.notifications.filter(item => item.id !== n.id)
-                }));
-              } : undefined
-            }))}
-          />
-        }
-        content={
-          <div id="main-content" role="main" tabIndex={-1}>
-            {/* Update Notification Banner */}
-            {state.updateInfo && state.updateInfo.is_update_available && (
-              <Alert
-                type="info"
-                dismissible
-                onDismiss={() => setState(prev => ({ ...prev, updateInfo: prev.updateInfo ? { ...prev.updateInfo, is_update_available: false } : null }))}
-                header={`New version available: ${state.updateInfo.latest_version}`}
-              >
-                <SpaceBetween size="xs">
-                  <div>You're currently running version {state.updateInfo.current_version}</div>
-                  <div><strong>Installation method:</strong> {state.updateInfo.install_method}</div>
-                  <div><strong>Update command:</strong> <code>{state.updateInfo.update_command}</code></div>
-                  <div>
-                    <a href={state.updateInfo.release_url} target="_blank" rel="noopener noreferrer">
-                      View release notes
-                    </a>
-                  </div>
-                </SpaceBetween>
-              </Alert>
-            )}
-            {state.activeView === 'dashboard' && <DashboardView />}
-            {state.activeView === 'templates' && <TemplateSelectionView />}
-            {state.activeView === 'workspaces' && <InstanceManagementView />}
-            <div style={{ display: state.activeView === 'terminal' ? 'block' : 'none' }}>
-              {(() => {
-                const runningInstances = state.instances.filter(i => i.state === 'running');
+      >
+        <div id="main-content" role="main" tabIndex={-1}>
+          {/* Update Notification Banner */}
+          {state.updateInfo && state.updateInfo.is_update_available && (
+            <Alert
+              type="info"
+              dismissible
+              onDismiss={() => setState(prev => ({ ...prev, updateInfo: prev.updateInfo ? { ...prev.updateInfo, is_update_available: false } : null }))}
+              header={`New version available: ${state.updateInfo.latest_version}`}
+            >
+              <SpaceBetween size="xs">
+                <div>You're currently running version {state.updateInfo.current_version}</div>
+                <div><strong>Installation method:</strong> {state.updateInfo.install_method}</div>
+                <div><strong>Update command:</strong> <code>{state.updateInfo.update_command}</code></div>
+                <div>
+                  <a href={state.updateInfo.release_url} target="_blank" rel="noopener noreferrer">
+                    View release notes
+                  </a>
+                </div>
+              </SpaceBetween>
+            </Alert>
+          )}
+          {state.activeView === 'dashboard' && <DashboardView />}
+          {state.activeView === 'templates' && <TemplateSelectionView />}
+          {state.activeView === 'workspaces' && <InstanceManagementView />}
+          <div style={{ display: state.activeView === 'terminal' ? 'block' : 'none' }}>
+            {(() => {
+              const runningInstances = state.instances.filter(i => i.state === 'running');
 
-                if (runningInstances.length === 0) {
-                  return (
-                    <Container header={<Header variant="h1">SSH Terminal</Header>}>
-                      <Alert type="info">
-                        No running workspaces available. Launch a workspace to access the SSH terminal.
-                      </Alert>
-                    </Container>
-                  );
-                }
-
+              if (runningInstances.length === 0) {
                 return (
-                  <SpaceBetween size="l">
-                    <Container header={<Header variant="h1">SSH Terminal</Header>}>
-                      <SpaceBetween size="m">
-                        <FormField label="Select Workspace">
-                          <Select
-                            selectedOption={state.selectedTerminalInstance ? { label: state.selectedTerminalInstance, value: state.selectedTerminalInstance } : null}
-                            onChange={({ detail }) => setState({ ...state, selectedTerminalInstance: detail.selectedOption.value || '' })}
-                            options={runningInstances.map(i => ({ label: i.name, value: i.name }))}
-                            placeholder="Choose a workspace"
-                          />
-                        </FormField>
-                        {state.selectedTerminalInstance && <Terminal instanceName={state.selectedTerminalInstance} />}
-                      </SpaceBetween>
-                    </Container>
-                  </SpaceBetween>
+                  <Container header={<Header variant="h1">SSH Terminal</Header>}>
+                    <Alert type="info">
+                      No running workspaces available. Launch a workspace to access the SSH terminal.
+                    </Alert>
+                  </Container>
                 );
-              })()}
-            </div>
-            {state.activeView === 'webview' && <WebViewView />}
-            {state.activeView === 'storage' && <StorageManagementView />}
-            {state.activeView === 'backups' && <BackupManagementView />}
-            {state.activeView === 'projects' && (
-              selectedProjectId ? (
-                <ProjectDetailView
-                  projectId={selectedProjectId}
-                  onBack={() => setSelectedProjectId(null)}
-                />
-              ) : (
-                <ProjectManagementView />
-              )
-            )}
-            {state.activeView === 'invitations' && <InvitationManagementView />}
-            {state.activeView === 'budgets' && <BudgetPoolManagementView />}
-            {state.activeView === 'approvals' && <ApprovalsView />}
-            {state.activeView === 'courses' && <CoursesManagementView />}
-            {state.activeView === 'workshops' && <WorkshopsManagementView />}
-            {state.activeView === 'capacity-blocks' && <CapacityBlocksManagementView />}
-            {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
-            {state.activeView === 'users' && <UserManagementView />}
-            {state.activeView === 'ami' && <AMIManagementView />}
-            {state.activeView === 'rightsizing' && <RightsizingView />}
-            {state.activeView === 'policy' && <PolicyView />}
-            {state.activeView === 'marketplace' && <MarketplaceView />}
-            {state.activeView === 'idle' && <IdleDetectionView />}
-            {state.activeView === 'logs' && <LogsView />}
-            {state.activeView === 'settings' && <SettingsView />}
+              }
+
+              return (
+                <SpaceBetween size="l">
+                  <Container header={<Header variant="h1">SSH Terminal</Header>}>
+                    <SpaceBetween size="m">
+                      <FormField label="Select Workspace">
+                        <Select
+                          selectedOption={state.selectedTerminalInstance ? { label: state.selectedTerminalInstance, value: state.selectedTerminalInstance } : null}
+                          onChange={({ detail }) => setState({ ...state, selectedTerminalInstance: detail.selectedOption.value || '' })}
+                          options={runningInstances.map(i => ({ label: i.name, value: i.name }))}
+                          placeholder="Choose a workspace"
+                        />
+                      </FormField>
+                      {state.selectedTerminalInstance && <Terminal instanceName={state.selectedTerminalInstance} />}
+                    </SpaceBetween>
+                  </Container>
+                </SpaceBetween>
+              );
+            })()}
           </div>
-        }
-        toolsHide
-      />
+          {state.activeView === 'webview' && <WebViewView />}
+          {state.activeView === 'storage' && <StorageManagementView />}
+          {state.activeView === 'backups' && <BackupManagementView />}
+          {state.activeView === 'projects' && (
+            selectedProjectId ? (
+              <ProjectDetailView
+                projectId={selectedProjectId}
+                onBack={() => setSelectedProjectId(null)}
+              />
+            ) : (
+              <ProjectManagementView />
+            )
+          )}
+          {state.activeView === 'invitations' && <InvitationManagementView />}
+          {state.activeView === 'budgets' && <BudgetPoolManagementView />}
+          {state.activeView === 'approvals' && <ApprovalsView />}
+          {state.activeView === 'courses' && <CoursesManagementView />}
+          {state.activeView === 'workshops' && <WorkshopsManagementView />}
+          {state.activeView === 'capacity-blocks' && <CapacityBlocksManagementView />}
+          {state.activeView === 'project-detail' && <ProjectDetailViewLegacy />}
+          {state.activeView === 'users' && <UserManagementView />}
+          {state.activeView === 'ami' && <AMIManagementView />}
+          {state.activeView === 'rightsizing' && <RightsizingView />}
+          {state.activeView === 'policy' && <PolicyView />}
+          {state.activeView === 'marketplace' && <MarketplaceView />}
+          {state.activeView === 'idle' && <IdleDetectionView />}
+          {state.activeView === 'logs' && <LogsView />}
+          {state.activeView === 'settings' && <SettingsView />}
+        </div>
+      </AppLayoutShell>
       <LaunchModal />
       <CreateBackupModal />
       <DeleteBackupModal />
@@ -12427,10 +12178,7 @@ export default function PrismApp() {
                             const updated = await api.getProjectMembers(selectedProjectForMembers.id);
                             setManageMembersData(updated);
                           } catch (error: any) {
-                            setState(prev => ({
-                              ...prev,
-                              notifications: [{ type: 'error', header: 'Update Failed', content: error.message || 'Failed to update role', dismissible: true, id: Date.now().toString() }, ...prev.notifications]
-                            }));
+                            toast.error('Update Failed', { description: error.message || 'Failed to update role' });
                           }
                         }}
                         options={[
@@ -12448,10 +12196,7 @@ export default function PrismApp() {
                             const updated = await api.getProjectMembers(selectedProjectForMembers.id);
                             setManageMembersData(updated);
                           } catch (error: any) {
-                            setState(prev => ({
-                              ...prev,
-                              notifications: [{ type: 'error', header: 'Remove Failed', content: error.message || 'Failed to remove member', dismissible: true, id: Date.now().toString() }, ...prev.notifications]
-                            }));
+                            toast.error('Remove Failed', { description: error.message || 'Failed to remove member' });
                           }
                         }}
                       >
@@ -12499,10 +12244,7 @@ export default function PrismApp() {
                       setAddMemberUsername('');
                       setAddMemberRole('member');
                     } catch (error: any) {
-                      setState(prev => ({
-                        ...prev,
-                        notifications: [{ type: 'error', header: 'Add Failed', content: error.message || 'Failed to add member', dismissible: true, id: Date.now().toString() }, ...prev.notifications]
-                      }));
+                      toast.error('Add Failed', { description: error.message || 'Failed to add member' });
                     }
                   }}
                 >
