@@ -37,7 +37,6 @@ import { HibernateConfirmationModal as HibernateConfirmationModalExtracted } fro
 import { IdlePolicyModal as IdlePolicyModalExtracted } from './modals/IdlePolicyModal';
 
 import {
-  SideNavigation,
   Container,
   Header,
   SpaceBetween,
@@ -3799,25 +3798,19 @@ export default function PrismApp() {
   // Backup Management View
   // Settings View
   const SettingsView = () => {
-    // Settings side navigation items
-    const settingsNavItems: Array<{ type: string; text?: string; href?: string; items?: Array<{ type: string; text?: string; href?: string }> }> = [
-      { type: "link", text: "General", href: "#general" },
-      { type: "link", text: "Profiles", href: "#profiles" },
-      { type: "link", text: "Users", href: "#users" },
-      { type: "divider" },
-      {
-        type: "expandable-link-group",
-        text: "Advanced",
-        href: "#advanced",
-        items: [
-          { type: "link", text: "AMI Management", href: "#ami" },
-          { type: "link", text: "Rightsizing", href: "#rightsizing" },
-          { type: "link", text: "Policy Framework", href: "#policy" },
-          { type: "link", text: "Template Marketplace", href: "#marketplace" },
-          { type: "link", text: "Idle Detection", href: "#idle" },
-          { type: "link", text: "Logs Viewer", href: "#logs" }
-        ]
-      }
+    type SettingsSection = typeof state.settingsSection;
+    const navItems: Array<{ section: SettingsSection; label: string }> = [
+      { section: 'general', label: 'General' },
+      { section: 'profiles', label: 'Profiles' },
+      { section: 'users', label: 'Users' },
+    ];
+    const advancedItems: Array<{ section: SettingsSection; label: string }> = [
+      { section: 'ami', label: 'AMI Management' },
+      { section: 'rightsizing', label: 'Rightsizing' },
+      { section: 'policy', label: 'Policy Framework' },
+      { section: 'marketplace', label: 'Template Marketplace' },
+      { section: 'idle', label: 'Idle Detection' },
+      { section: 'logs', label: 'Logs Viewer' },
     ];
 
     // Render content based on current section
@@ -4310,23 +4303,41 @@ export default function PrismApp() {
       }
     };
 
-    // Return the layout with side navigation
+    const navButton = (section: SettingsSection, label: string) => (
+      <button
+        key={section}
+        data-testid={`settings-nav-${section}`}
+        onClick={() => setState(prev => ({ ...prev, settingsSection: section }))}
+        style={{
+          display: 'block',
+          width: '100%',
+          textAlign: 'left',
+          padding: '6px 12px',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          background: state.settingsSection === section ? 'var(--sidebar-accent, #f1f5f9)' : 'transparent',
+          fontWeight: state.settingsSection === section ? '600' : '400',
+          color: state.settingsSection === section ? 'var(--sidebar-primary, #0f172a)' : 'var(--sidebar-foreground, #475569)',
+        }}
+      >
+        {label}
+      </button>
+    );
+
     return (
       <div style={{ display: 'flex', height: '100%' }}>
-        <div style={{ width: '280px', borderRight: '1px solid #e9ebed', padding: '20px 0' }}>
-          <SideNavigation
-            activeHref={`#${state.settingsSection}`}
-            header={{ text: "Settings", href: "#general" }}
-            items={settingsNavItems}
-            onFollow={(e: { detail: { href: string; external?: boolean }; preventDefault: () => void }) => {
-              e.preventDefault();
-              const href = e.detail.href.replace('#', '');
-              setState(prev => ({
-                ...prev,
-                settingsSection: href as typeof prev.settingsSection
-              }));
-            }}
-          />
+        <div style={{ width: '220px', borderRight: '1px solid #e9ebed', padding: '16px 8px' }}>
+          <div style={{ padding: '4px 12px 8px', fontSize: '13px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Settings
+          </div>
+          {navItems.map(item => navButton(item.section, item.label))}
+          <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e9ebed' }} />
+          <div style={{ padding: '4px 12px 4px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Advanced
+          </div>
+          {advancedItems.map(item => navButton(item.section, item.label))}
         </div>
         <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
           {renderSettingsContent()}

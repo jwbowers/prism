@@ -25,13 +25,9 @@ export class SettingsPage extends BasePage {
    * Switch to Profiles section
    */
   async switchToProfiles() {
-    // Target the Settings sub-nav "Profiles" link by its unique href="#profiles".
-    // Using waitFor() instead of elementExists() prevents a race condition where
-    // the SettingsView hasn't re-rendered yet after navigateToTab('settings').
-    const profilesLink = this.page.locator('a[href="#profiles"]');
-    await profilesLink.waitFor({ state: 'visible', timeout: 8000 });
-    await profilesLink.click();
-    // Wait for the Profiles section to render before returning
+    const profilesBtn = this.page.getByTestId('settings-nav-profiles');
+    await profilesBtn.waitFor({ state: 'visible', timeout: 8000 });
+    await profilesBtn.click();
     await this.page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 5000 });
   }
 
@@ -39,10 +35,9 @@ export class SettingsPage extends BasePage {
    * Switch to Idle Policies section
    */
   async switchToIdlePolicies() {
-    // Settings uses SideNavigation with links, not tabs
-    const idleLink = this.page.getByRole('link', { name: /idle.*detection/i });
-    if (await this.elementExists(idleLink)) {
-      await idleLink.click();
+    const idleBtn = this.page.getByTestId('settings-nav-idle');
+    if (await this.elementExists(idleBtn)) {
+      await idleBtn.click();
       await this.waitForLoadingComplete();
     }
   }
