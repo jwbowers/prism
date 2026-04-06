@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import {
   SpaceBetween,
@@ -39,9 +39,7 @@ export function MarketplaceView({
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null)
   const [installModalVisible, setInstallModalVisible] = useState(false)
-  const [filteredTemplates, setFilteredTemplates] = useState<MarketplaceTemplate[]>(marketplaceTemplates)
-
-  useEffect(() => {
+  const filteredTemplates = useMemo(() => {
     let filtered = marketplaceTemplates
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
@@ -55,7 +53,7 @@ export function MarketplaceView({
     if (selectedCategory) {
       filtered = filtered.filter(t => t.category === selectedCategory)
     }
-    setFilteredTemplates(filtered)
+    return filtered
   }, [searchQuery, selectedCategory, marketplaceTemplates])
 
   const handleInstallTemplate = async () => {

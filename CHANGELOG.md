@@ -5,16 +5,17 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.31.0] - 2026-04-05
+## [0.31.0] - 2026-04-06
 
 ### Changed
 - GUI shell migrated from Cloudscape `AppLayout` + `SideNavigation` + `Flashbar` to shadcn/ui `Sidebar` + Sonner toasts. All 23 nav items preserved; badges for pending approvals, courses, workshops, instances, and templates use shadcn `Badge` variants. The Cloudscape-shim compatibility layer bridges remaining views during incremental migration.
 - Installed shadcn/ui component library (Radix-based, code-owned), Tailwind CSS v4 (`@tailwindcss/vite` — no config file), Sonner toast library, and Lucide React icons. Removed all `@cloudscape-design/*` packages.
-- Extracted six views from the monolithic `App.tsx` to top-level components, fixing React re-mount on every state change (issue #13): `ApprovalsView`, `DashboardView` (+ `RecentWorkspaces`), `LogsView`, `WebViewView`, `TemplateSelectionView`, `PlaceholderView`.
+- Extracted 13 views from the monolithic `App.tsx` to top-level module components, fixing React re-mount on every state change (issue #13): `ApprovalsView`, `DashboardView` (+ `RecentWorkspaces`), `LogsView`, `WebViewView`, `TemplateSelectionView`, `PlaceholderView`, `BackupManagementView`, `AMIManagementView`, `MarketplaceView`, `IdleDetectionView`, `ProfileSelectorView`, `InstanceManagementView`, `StorageManagementView`, `ProjectManagementView`, `UserManagementView`. App.tsx reduced from ~11,954 → ~7,330 lines.
 - Template helper functions (`getTemplateName`, `getTemplateSlug`, `getTemplateDescription`, `getTemplateTags`) moved to `src/lib/template-utils.ts` — shared across views without closure coupling.
 - All `addNotification` / `setNotification` patterns for user-visible events replaced with `toast.success()` / `toast.error()` / `toast.warning()` calls.
-- `src/hooks/use-api.ts` `ApiContext` now used by extracted views instead of `window.__apiClient` closure.
+- `ApiContext` provider wraps `PrismApp` return; extracted views call `useApi()` from `src/hooks/use-api.ts` instead of `window.__apiClient`. All five component files migrated: `CoursesPanel`, `WorkshopsPanel`, `GovernancePanel`, `ProjectDetailView`, `InvitationManagementView`.
 - Extracted three modals from `App.tsx` to `src/modals/`: `DeleteConfirmationModal` (moves `confirmationText` state into modal; `DeleteModalConfig` interface exported for callers), `HibernateConfirmationModal` (uses `useApi()` + Sonner toasts; conditional render pattern prevents ApiProvider requirement in unit tests), `IdlePolicyModal` (same conditional-render pattern; removes `logger.error` dependency).
+- Settings inner navigation replaced: Cloudscape `SideNavigation` with `#fragment` hrefs removed; replaced with styled `<button>` list using `data-testid="settings-nav-{section}"`. `SettingsPage.ts` E2E page object updated to use `getByTestId()` selectors.
 
 ## [0.30.0] - 2026-04-02
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import {
   SpaceBetween,
   Header,
@@ -73,23 +73,15 @@ export function ProjectManagementView({
     });
   }, [projects, projectFilter]);
 
+  const projectsTotalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPageSize));
+  // Clamp current page to valid range (handles filter reducing total pages)
+  const clampedPage = Math.min(projectsCurrentPage, projectsTotalPages);
+
   const paginatedProjects = useMemo(() => {
-    const startIndex = (projectsCurrentPage - 1) * projectsPageSize;
+    const startIndex = (clampedPage - 1) * projectsPageSize;
     const endIndex = startIndex + projectsPageSize;
     return filteredProjects.slice(startIndex, endIndex);
-  }, [filteredProjects, projectsCurrentPage]);
-
-  const projectsTotalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPageSize));
-
-  useEffect(() => {
-    setProjectsCurrentPage(1);
-  }, [projectFilter]);
-
-  useEffect(() => {
-    if (projectsCurrentPage > projectsTotalPages) {
-      setProjectsCurrentPage(projectsTotalPages);
-    }
-  }, [projectsCurrentPage, projectsTotalPages]);
+  }, [filteredProjects, clampedPage]);
 
   return (
     <SpaceBetween size="l">
@@ -148,7 +140,7 @@ export function ProjectManagementView({
               <SpaceBetween direction="horizontal" size="xs">
                 <Select
                   selectedOption={{ label: projectFilter === 'all' ? 'All Projects' : projectFilter === 'active' ? 'Active Only' : 'Suspended', value: projectFilter }}
-                  onChange={({ detail }) => setProjectFilter(detail.selectedOption.value!)}
+                  onChange={({ detail }) => { setProjectFilter(detail.selectedOption.value!); setProjectsCurrentPage(1); }}
                   options={[
                     { label: 'All Projects', value: 'all' },
                     { label: 'Active Only', value: 'active' },
@@ -199,7 +191,7 @@ export function ProjectManagementView({
               id: "budget",
               header: "Budget",
               cell: (item: Project) => {
-                const budget = item.budget_status?.total_budget || (item as any).budget_limit || 0;
+                const budget = item.budget_status?.total_budget || (item as Record<string, unknown>).budget_limit as number || 0;
                 return budget > 0 ? `$${budget.toFixed(2)}` : '-';
               },
               sortingField: "budget_status"
@@ -208,8 +200,9 @@ export function ProjectManagementView({
               id: "spend",
               header: "Current Spend",
               cell: (item: Project) => {
-                const spend = item.budget_status?.spent_amount || (item as any).current_spend || 0;
-                const limit = item.budget_status?.total_budget || (item as any).budget_limit || 0;
+                const itemRecord = item as Record<string, unknown>;
+                const spend = item.budget_status?.spent_amount || itemRecord.current_spend as number || 0;
+                const limit = item.budget_status?.total_budget || itemRecord.budget_limit as number || 0;
                 const percentage = limit > 0 ? (spend / limit) * 100 : 0;
                 const colorType = percentage > 80 ? 'error' : percentage > 60 ? 'warning' : 'success';
 
@@ -288,7 +281,7 @@ export function ProjectManagementView({
                       try {
                         await api.updateProject(item.id, { status: newStatus });
                         onRefresh();
-                      } catch (_error) {
+                      } catch {
                         // caller can add notification handling if needed
                       }
                     } else if (detail.detail.id === 'members') {
@@ -334,7 +327,7 @@ export function ProjectManagementView({
           }
           pagination={
             <Pagination
-              currentPageIndex={projectsCurrentPage}
+              currentPageIndex={clampedPage}
               pagesCount={projectsTotalPages}
               onChange={({ detail }) => setProjectsCurrentPage(detail.currentPageIndex)}
               ariaLabels={{

@@ -49,4 +49,12 @@ export default tseslint.config(
       'max-lines-per-function': 'off',  // Disable function length checking
     },
   },
+  // Extracted views inherit the complexity of the legacy monolith they came from
+  {
+    files: ['src/views/*.tsx'],
+    rules: {
+      'complexity': 'off',
+      'max-lines-per-function': 'off',
+    },
+  },
 );

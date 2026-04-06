@@ -260,15 +260,15 @@ export function UserManagementView({
                       try {
                         await api.enableUser(item.username)
                         onRefresh()
-                      } catch (error: any) {
-                        toast.error(error.message || 'Failed to enable user')
+                      } catch (error) {
+                        toast.error((error as Error).message || 'Failed to enable user')
                       }
                     } else if (detail.detail.id === 'disable') {
                       try {
                         await api.disableUser(item.username)
                         onRefresh()
-                      } catch (error: any) {
-                        toast.error(error.message || 'Failed to disable user')
+                      } catch (error) {
+                        toast.error((error as Error).message || 'Failed to disable user')
                       }
                     } else if (detail.detail.id === 'edit') {
                       onEditUser(item)

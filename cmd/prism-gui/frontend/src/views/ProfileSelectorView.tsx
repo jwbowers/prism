@@ -82,8 +82,8 @@ export function ProfileSelectorView() {
       setShowCreateDialog(false)
       setFormData({ name: '', aws_profile: '', region: '' })
       await loadProfiles()
-    } catch (error: any) {
-      setValidationError(error.message || 'Failed to create profile')
+    } catch (error) {
+      setValidationError((error as Error).message || 'Failed to create profile')
     } finally {
       setLoading(false)
     }
@@ -104,8 +104,8 @@ export function ProfileSelectorView() {
       setSelectedProfile(null)
       setFormData({ name: '', aws_profile: '', region: '' })
       await loadProfiles()
-    } catch (error: any) {
-      setValidationError(error.message || 'Failed to update profile')
+    } catch (error) {
+      setValidationError((error as Error).message || 'Failed to update profile')
     } finally {
       setLoading(false)
     }
@@ -119,8 +119,8 @@ export function ProfileSelectorView() {
       setShowDeleteDialog(false)
       setSelectedProfile(null)
       await loadProfiles()
-    } catch (error: any) {
-      setValidationError(error.message || 'Failed to delete profile')
+    } catch (error) {
+      setValidationError((error as Error).message || 'Failed to delete profile')
     } finally {
       setLoading(false)
     }

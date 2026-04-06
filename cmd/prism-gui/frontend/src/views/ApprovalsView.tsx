@@ -35,8 +35,8 @@ export function ApprovalsView() {
     try {
       const result = await api.listAllApprovals(statusFilter || undefined)
       setApprovals(result)
-    } catch (e: any) {
-      setApprovalsError(e.message || 'Failed to load approvals')
+    } catch (e) {
+      setApprovalsError((e as Error).message || 'Failed to load approvals')
     } finally {
       setApprovalsLoading(false)
     }
@@ -61,8 +61,8 @@ export function ApprovalsView() {
         await api.denyRequest(reviewingApproval.project_id, reviewingApproval.id, reviewNote)
       }
       loadApprovals()
-    } catch (e: any) {
-      setApprovalsError(e.message || 'Failed to submit review')
+    } catch (e) {
+      setApprovalsError((e as Error).message || 'Failed to submit review')
     }
   }
 
