@@ -7,13 +7,13 @@ import './index.css';
 import { toast } from 'sonner';
 import { AppLayout as AppLayoutShell } from './components/app-layout';
 import { SideNav } from './components/side-nav';
-import Terminal from './Terminal';
 // ValidationError moved to extracted modal components
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { InvitationManagementView } from './components/InvitationManagementView';
-import { CoursesPanel } from './components/CoursesPanel';
-import { WorkshopsPanel } from './components/WorkshopsPanel';
-import CapacityBlocksPanel from './components/CapacityBlocksPanel';
+import { CoursesManagementView } from './views/CoursesManagementView';
+import { WorkshopsManagementView } from './views/WorkshopsManagementView';
+import { CapacityBlocksManagementView } from './views/CapacityBlocksManagementView';
+import { TerminalView } from './views/TerminalView';
 import { SSHKeyModal } from './components/SSHKeyModal';
 import { ApprovalsView as ApprovalsViewExtracted } from './views/ApprovalsView';
 import { PlaceholderView } from './views/placeholder-view';
@@ -63,11 +63,7 @@ import { UsageStatisticsModal as UsageStatisticsModalExtracted } from './modals/
 import { EditUserModal as EditUserModalExtracted } from './modals/EditUserModal';
 
 import {
-  Container,
-  Header,
   SpaceBetween,
-  FormField,
-  Select,
   Alert,
 } from './lib/cloudscape-shim';
 
@@ -532,21 +528,6 @@ interface WebService {
 }
 
 // SafePrismAPI class is in src/lib/api.ts — used via useApi() hook
-// CoursesManagementView — top-level component (not inside App) to prevent re-mount on state change.
-// Pattern matches InvitationManagementView and ApprovalsView.
-function CoursesManagementView() {
-  return <CoursesPanel />;
-}
-
-// WorkshopsManagementView — top-level component to prevent re-mount on state change (#13).
-function WorkshopsManagementView() {
-  return <WorkshopsPanel />;
-}
-
-// CapacityBlocksManagementView — top-level component for EC2 Capacity Blocks (v0.20.0 #63).
-function CapacityBlocksManagementView() {
-  return <CapacityBlocksPanel />;
-}
 
 export default function PrismApp() {
   const api = new SafePrismAPI();
@@ -1722,6 +1703,98 @@ export default function PrismApp() {
   // Backup Management View
   // Settings View — extracted to src/views/SettingsView.tsx
 
+  // Shared UserManagementView — used in both 'users' route and settings sub-view
+  const userMgmtView = (
+    <UserManagementViewExtracted
+      users={state.users}
+      instances={state.instances}
+      loading={state.loading}
+      onRefresh={loadApplicationData}
+      onCreateUser={() => setUserModalVisible(true)}
+      onEditUser={(user) => {
+        setSelectedUserForEdit(user);
+        setShowEditUserModal(true);
+      }}
+      onViewUserDetails={async (user) => {
+        setSelectedUserForDetails(user);
+        setUserDetailsModalVisible(true);
+        setLoadingSSHKeys(true);
+        try {
+          const response = await api.getUserSSHKeys(user.username);
+          setUserSSHKeys(response.keys || []);
+        } catch (_e) {
+          setUserSSHKeys([]);
+        } finally {
+          setLoadingSSHKeys(false);
+        }
+      }}
+      onViewUserStatus={async (user) => {
+        setSelectedUserForStatus(user);
+        setUserStatusModalVisible(true);
+        setLoadingUserStatus(true);
+        try {
+          const statusData = await api.getUserStatus(user.username);
+          setUserStatusDetails(statusData);
+        } catch (_e) {
+          setUserStatusDetails(null);
+        } finally {
+          setLoadingUserStatus(false);
+        }
+      }}
+      onProvisionUser={(username) => {
+        const user = state.users.find(u => u.username === username) || null;
+        setSelectedUserForProvision(user);
+        setProvisionModalVisible(true);
+      }}
+      onManageSSHKeys={(username) => {
+        setSelectedUsername(username);
+        setSshKeyModalVisible(true);
+      }}
+      onDeleteUser={(user) => {
+        const hasWorkspaces = (user.provisioned_instances?.length || 0) > 0;
+        const workspaceWarning = hasWorkspaces
+          ? `This user has ${user.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
+          : undefined;
+        setDeleteModalConfig({
+          type: 'user',
+          name: user.username,
+          requireNameConfirmation: false,
+          warning: workspaceWarning,
+          onConfirm: async () => {
+            try {
+              await api.deleteUser(user.username);
+              usersVersionRef.current++;
+              setState(prev => ({
+                ...prev,
+                users: prev.users.filter(u => u.username !== user.username),
+                notifications: [{
+                  type: 'success',
+                  header: 'User Deleted',
+                  content: `User "${user.username}" deleted successfully`,
+                  dismissible: true,
+                  id: Date.now().toString()
+                }, ...prev.notifications]
+              }));
+              setDeleteModalVisible(false);
+            } catch (error: any) {
+              setState(prev => ({
+                ...prev,
+                notifications: [{
+                  type: 'error',
+                  header: 'Delete Failed',
+                  content: error.message || 'Failed to delete user',
+                  dismissible: true,
+                  id: Date.now().toString()
+                }, ...prev.notifications]
+              }));
+            }
+          }
+        });
+        setDeleteModalVisible(true);
+      }}
+    />
+  );
+
   // Main render
   return (
     <ApiContext.Provider value={api}>
@@ -1821,37 +1894,13 @@ export default function PrismApp() {
               onBulkAction={handleBulkAction}
             />
           )}
-          {state.activeView === 'terminal' && (() => {
-              const runningInstances = state.instances.filter(i => i.state === 'running');
-
-              if (runningInstances.length === 0) {
-                return (
-                  <Container header={<Header variant="h1">SSH Terminal</Header>}>
-                    <Alert type="info">
-                      No running workspaces available. Launch a workspace to access the SSH terminal.
-                    </Alert>
-                  </Container>
-                );
-              }
-
-              return (
-                <SpaceBetween size="l">
-                  <Container header={<Header variant="h1">SSH Terminal</Header>}>
-                    <SpaceBetween size="m">
-                      <FormField label="Select Workspace">
-                        <Select
-                          selectedOption={state.selectedTerminalInstance ? { label: state.selectedTerminalInstance, value: state.selectedTerminalInstance } : null}
-                          onChange={({ detail }) => setState({ ...state, selectedTerminalInstance: detail.selectedOption.value || '' })}
-                          options={runningInstances.map(i => ({ label: i.name, value: i.name }))}
-                          placeholder="Choose a workspace"
-                        />
-                      </FormField>
-                      {state.selectedTerminalInstance && <Terminal instanceName={state.selectedTerminalInstance} />}
-                    </SpaceBetween>
-                  </Container>
-                </SpaceBetween>
-              );
-            })()}
+          {state.activeView === 'terminal' && (
+            <TerminalView
+              instances={state.instances}
+              selectedTerminalInstance={state.selectedTerminalInstance || ''}
+              onSelectInstance={(name) => setState({ ...state, selectedTerminalInstance: name })}
+            />
+          )}
           {state.activeView === 'webview' && <WebViewView instances={state.instances} />}
           {state.activeView === 'storage' && (
             <StorageManagementViewExtracted
@@ -2005,96 +2054,7 @@ export default function PrismApp() {
           {state.activeView === 'workshops' && <WorkshopsManagementView />}
           {state.activeView === 'capacity-blocks' && <CapacityBlocksManagementView />}
           {state.activeView === 'project-detail' && <PlaceholderView title="Project Detail" description="Select a project from the Projects view to see its details." />}
-          {state.activeView === 'users' && (
-            <UserManagementViewExtracted
-              users={state.users}
-              instances={state.instances}
-              loading={state.loading}
-              onRefresh={loadApplicationData}
-              onCreateUser={() => setUserModalVisible(true)}
-              onEditUser={(user) => {
-                setSelectedUserForEdit(user);
-                setShowEditUserModal(true);
-              }}
-              onViewUserDetails={async (user) => {
-                setSelectedUserForDetails(user);
-                setUserDetailsModalVisible(true);
-                setLoadingSSHKeys(true);
-                try {
-                  const response = await api.getUserSSHKeys(user.username);
-                  setUserSSHKeys(response.keys || []);
-                } catch (_e) {
-                  setUserSSHKeys([]);
-                } finally {
-                  setLoadingSSHKeys(false);
-                }
-              }}
-              onViewUserStatus={async (user) => {
-                setSelectedUserForStatus(user);
-                setUserStatusModalVisible(true);
-                setLoadingUserStatus(true);
-                try {
-                  const statusData = await api.getUserStatus(user.username);
-                  setUserStatusDetails(statusData);
-                } catch (_e) {
-                  setUserStatusDetails(null);
-                } finally {
-                  setLoadingUserStatus(false);
-                }
-              }}
-              onProvisionUser={(username) => {
-                const user = state.users.find(u => u.username === username) || null;
-                setSelectedUserForProvision(user);
-                setProvisionModalVisible(true);
-              }}
-              onManageSSHKeys={(username) => {
-                setSelectedUsername(username);
-                setSshKeyModalVisible(true);
-              }}
-              onDeleteUser={(user) => {
-                const hasWorkspaces = (user.provisioned_instances?.length || 0) > 0;
-                const workspaceWarning = hasWorkspaces
-                  ? `This user has ${user.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
-                  : undefined;
-                setDeleteModalConfig({
-                  type: 'user',
-                  name: user.username,
-                  requireNameConfirmation: false,
-                  warning: workspaceWarning,
-                  onConfirm: async () => {
-                    try {
-                      await api.deleteUser(user.username);
-                      usersVersionRef.current++;
-                      setState(prev => ({
-                        ...prev,
-                        users: prev.users.filter(u => u.username !== user.username),
-                        notifications: [{
-                          type: 'success',
-                          header: 'User Deleted',
-                          content: `User "${user.username}" deleted successfully`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }, ...prev.notifications]
-                      }));
-                      setDeleteModalVisible(false);
-                    } catch (error: any) {
-                      setState(prev => ({
-                        ...prev,
-                        notifications: [{
-                          type: 'error',
-                          header: 'Delete Failed',
-                          content: error.message || 'Failed to delete user',
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }, ...prev.notifications]
-                      }));
-                    }
-                  }
-                });
-                setDeleteModalVisible(true);
-              }}
-            />
-          )}
+          {state.activeView === 'users' && userMgmtView}
           {state.activeView === 'ami' && (
             <AMIManagementViewExtracted
               amis={state.amis}
@@ -2157,96 +2117,7 @@ export default function PrismApp() {
               }}
               subViews={{
                 profiles: <ProfileSelectorViewExtracted />,
-                users: (
-                  <UserManagementViewExtracted
-                    users={state.users}
-                    instances={state.instances}
-                    loading={state.loading}
-                    onRefresh={loadApplicationData}
-                    onCreateUser={() => setUserModalVisible(true)}
-                    onEditUser={(user) => {
-                      setSelectedUserForEdit(user);
-                      setShowEditUserModal(true);
-                    }}
-                    onViewUserDetails={async (user) => {
-                      setSelectedUserForDetails(user);
-                      setUserDetailsModalVisible(true);
-                      setLoadingSSHKeys(true);
-                      try {
-                        const response = await api.getUserSSHKeys(user.username);
-                        setUserSSHKeys(response.keys || []);
-                      } catch (_e) {
-                        setUserSSHKeys([]);
-                      } finally {
-                        setLoadingSSHKeys(false);
-                      }
-                    }}
-                    onViewUserStatus={async (user) => {
-                      setSelectedUserForStatus(user);
-                      setUserStatusModalVisible(true);
-                      setLoadingUserStatus(true);
-                      try {
-                        const statusData = await api.getUserStatus(user.username);
-                        setUserStatusDetails(statusData);
-                      } catch (_e) {
-                        setUserStatusDetails(null);
-                      } finally {
-                        setLoadingUserStatus(false);
-                      }
-                    }}
-                    onProvisionUser={(username) => {
-                      const user = state.users.find(u => u.username === username) || null;
-                      setSelectedUserForProvision(user);
-                      setProvisionModalVisible(true);
-                    }}
-                    onManageSSHKeys={(username) => {
-                      setSelectedUsername(username);
-                      setSshKeyModalVisible(true);
-                    }}
-                    onDeleteUser={(user) => {
-                      const hasWorkspaces = (user.provisioned_instances?.length || 0) > 0;
-                      const workspaceWarning = hasWorkspaces
-                        ? `This user has ${user.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
-                        : undefined;
-                      setDeleteModalConfig({
-                        type: 'user',
-                        name: user.username,
-                        requireNameConfirmation: false,
-                        warning: workspaceWarning,
-                        onConfirm: async () => {
-                          try {
-                            await api.deleteUser(user.username);
-                            usersVersionRef.current++;
-                            setState(prev => ({
-                              ...prev,
-                              users: prev.users.filter(u => u.username !== user.username),
-                              notifications: [{
-                                type: 'success',
-                                header: 'User Deleted',
-                                content: `User "${user.username}" deleted successfully`,
-                                dismissible: true,
-                                id: Date.now().toString()
-                              }, ...prev.notifications]
-                            }));
-                            setDeleteModalVisible(false);
-                          } catch (error: any) {
-                            setState(prev => ({
-                              ...prev,
-                              notifications: [{
-                                type: 'error',
-                                header: 'Delete Failed',
-                                content: error.message || 'Failed to delete user',
-                                dismissible: true,
-                                id: Date.now().toString()
-                              }, ...prev.notifications]
-                            }));
-                          }
-                        }
-                      });
-                      setDeleteModalVisible(true);
-                    }}
-                  />
-                ),
+                users: userMgmtView,
                 ami: (
                   <AMIManagementViewExtracted
                     amis={state.amis}
