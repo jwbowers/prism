@@ -96,11 +96,9 @@ export class BasePage {
       await this.page.waitForSelector('#root > *', { state: 'visible', timeout: 15000 });
       console.log('[waitForAppReady] React root mounted successfully');
 
-      console.log('[waitForAppReady] Waiting for Cloudscape side navigation...');
-      // Wait for Cloudscape side navigation to be present and visible
-      // Cloudscape renders multiple navigation elements (some hidden), so we wait for actual navigation links
-      // which will only be present in the visible navigation
-      await this.page.waitForSelector('a[href="/dashboard"]', { state: 'visible', timeout: 10000 });
+      console.log('[waitForAppReady] Waiting for side navigation...');
+      // Wait for shadcn SidebarMenuButton "Dashboard" to be present and visible
+      await this.page.waitForSelector('[data-sidebar="menu-button"]:has-text("Dashboard")', { state: 'visible', timeout: 10000 });
       console.log('[waitForAppReady] Side navigation is visible');
 
       // Wait for initial API calls to complete
@@ -129,12 +127,12 @@ export class BasePage {
       // Check for specific elements
       const rootCount = await this.page.locator('#root').count();
       const rootChildren = await this.page.locator('#root > *').count();
-      const navCount = await this.page.locator('a[href="/dashboard"]').count();
+      const navCount = await this.page.locator('[data-sidebar="menu-button"]:has-text("Dashboard")').count();
 
       console.log('[waitForAppReady] Elements found:');
       console.log('  - #root elements:', rootCount);
       console.log('  - #root children:', rootChildren);
-      console.log('  - navigation links (a[href="/dashboard"]):', navCount);
+      console.log('  - navigation buttons (Dashboard):', navCount);
 
       // Check if there are any errors collected
       if (this.pageErrors.length > 0) {
@@ -146,7 +144,7 @@ export class BasePage {
 
       // Re-throw if navigation still isn't present - this indicates a serious problem
       // Check for actual navigation links (which will only be present in visible navigation)
-      const navExists = await this.page.locator('a[href="/dashboard"]').count();
+      const navExists = await this.page.locator('[data-sidebar="menu-button"]:has-text("Dashboard")').count();
       if (navExists === 0) {
         throw new Error('React app failed to render: side navigation not present');
       }
@@ -171,9 +169,8 @@ export class BasePage {
 
     // CRITICAL: Wait for navigation to be fully rendered and interactive
     // This is essential for tests that call navigateToTab() immediately after page load
-    // Wait for actual navigation links (Dashboard link) which will only be present in visible navigation
     console.log(`[navigateToTab] Ensuring navigation is ready for "${tabName}"...`);
-    await this.page.waitForSelector('a[href="/dashboard"]', {
+    await this.page.waitForSelector('[data-sidebar="menu-button"]:has-text("Dashboard")', {
       state: 'visible',
       timeout: 15000
     }).catch(async (error) => {
@@ -201,7 +198,7 @@ export class BasePage {
     const linkText = linkTextMap[tabName.toLowerCase()] || tabName;
     console.log(`[navigateToTab] Looking for link: "${linkText}"`);
 
-    const link = this.page.getByRole('link', { name: new RegExp(linkText, 'i') });
+    const link = this.page.getByRole('button', { name: new RegExp(linkText, 'i') });
 
     // Wait for the link to be both visible and enabled before clicking
     await link.waitFor({ state: 'visible', timeout: 10000 });
@@ -345,25 +342,33 @@ export class BasePage {
     // Navigate to Settings main view
     await this.navigateToTab('settings');
 
-    // Wait for the Settings sub-nav to be visible (General link is always shown)
-    await this.page.waitForSelector('a[href="#general"]', { state: 'visible', timeout: 8000 });
+    // Wait for the Settings sub-nav to be visible (General button is always shown)
+    await this.page.waitForSelector('[data-testid="settings-nav-general"]', { state: 'visible', timeout: 8000 });
 
-    // Expand the "Advanced" group if the target section link is not yet visible.
-    // Check by link text (more reliable than computing hrefs which may differ from names).
-    const sectionLinkCheck = this.page.getByRole('link', { name: new RegExp(sectionName, 'i') });
-    const sectionAlreadyVisible = await sectionLinkCheck.first().isVisible({ timeout: 1000 }).catch(() => false);
-    if (!sectionAlreadyVisible) {
-      const advancedLink = this.page.locator('a[href="#advanced"]');
-      if (await advancedLink.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await advancedLink.click();
-        await this.page.waitForTimeout(300); // Allow expand animation
-      }
+    // Map section names to their data-testid values
+    const sectionTestIdMap: Record<string, string> = {
+      'AMI Management': 'settings-nav-ami',
+      'Template Marketplace': 'settings-nav-marketplace',
+      'Idle Detection': 'settings-nav-idle',
+      'Logs Viewer': 'settings-nav-logs',
+      'Rightsizing': 'settings-nav-rightsizing',
+      'Policy Framework': 'settings-nav-policy',
+      'General': 'settings-nav-general',
+      'Profiles': 'settings-nav-profiles',
+      'Users': 'settings-nav-users',
+    };
+
+    const testId = sectionTestIdMap[sectionName];
+    if (testId) {
+      const sectionBtn = this.page.getByTestId(testId);
+      await sectionBtn.waitFor({ state: 'visible', timeout: 5000 });
+      await sectionBtn.click();
+    } else {
+      // Fallback: try by button text
+      const sectionBtn = this.page.getByRole('button', { name: new RegExp(sectionName, 'i') });
+      await sectionBtn.first().waitFor({ state: 'visible', timeout: 5000 });
+      await sectionBtn.first().click();
     }
-
-    // Click the specific section link by text
-    const sectionLink = this.page.getByRole('link', { name: new RegExp(sectionName, 'i') });
-    await sectionLink.first().waitFor({ state: 'visible', timeout: 5000 });
-    await sectionLink.first().click();
 
     // Wait for content to load
     await this.waitForLoadingComplete();

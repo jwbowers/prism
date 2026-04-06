@@ -15,7 +15,7 @@ export class WorkshopPage extends BasePage {
   /** Navigate to the Workshops view via the sidebar. */
   async navigateToWorkshops() {
     await this.goto();
-    const workshopsLink = this.page.getByRole('link', { name: /^Workshops$/i });
+    const workshopsLink = this.page.getByRole('button', { name: /^Workshops$/i });
     await workshopsLink.waitFor({ state: 'visible', timeout: 10000 });
     await workshopsLink.click();
     await this.waitForWorkshopList();
