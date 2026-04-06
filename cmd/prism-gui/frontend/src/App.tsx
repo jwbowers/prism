@@ -2,7 +2,7 @@
 import { logger } from './utils/logger';
 // Complete error handling, real API integration, professional UX
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './index.css';
 import { toast } from 'sonner';
 import { AppLayout as AppLayoutShell } from './components/app-layout';
@@ -28,6 +28,8 @@ import { IdleDetectionView as IdleDetectionViewExtracted } from './views/IdleDet
 import { ProfileSelectorView as ProfileSelectorViewExtracted } from './views/ProfileSelectorView';
 import { InstanceManagementView as InstanceManagementViewExtracted } from './views/InstanceManagementView';
 import { StorageManagementView as StorageManagementViewExtracted } from './views/StorageManagementView';
+import { ProjectManagementView as ProjectManagementViewExtracted } from './views/ProjectManagementView';
+import { UserManagementView as UserManagementViewExtracted } from './views/UserManagementView';
 import { getTemplateName, getTemplateSlug, getTemplateDescription, getTemplateTags } from './lib/template-utils';
 import { ApiContext } from './hooks/use-api';
 import { DeleteConfirmationModal as DeleteConfirmationModalExtracted } from './modals/DeleteConfirmationModal';
@@ -53,14 +55,11 @@ import {
   Spinner,
   Box,
   ColumnLayout,
-  Link,
-  ButtonDropdown,
   Tabs,
   Wizard,
   ProgressBar,
   Textarea,
   Toggle,
-  Pagination,
   Checkbox
 } from './lib/cloudscape-shim';
 
@@ -2607,7 +2606,6 @@ export default function PrismApp() {
   const [loadingSSHKeys, setLoadingSSHKeys] = useState(false);
 
   // User status management state
-  const [userStatusFilter, setUserStatusFilter] = useState<string>('all');
   const [userStatusModalVisible, setUserStatusModalVisible] = useState(false);
   const [selectedUserForStatus, setSelectedUserForStatus] = useState<User | null>(null);
   const [userStatusDetails, setUserStatusDetails] = useState<UserStatus | null>(null);
@@ -3799,967 +3797,6 @@ export default function PrismApp() {
 
   // Storage Management View
   // Backup Management View
-  // Placeholder views for other sections
-  // Project Management View
-  const ProjectManagementView = () => {
-    // Filter state for projects
-    const [projectFilter, setProjectFilter] = useState<string>('all');
-
-    // Pagination state for projects table (Issue #457 - handle large datasets)
-    const [projectsCurrentPage, setProjectsCurrentPage] = useState(1);
-    const projectsPageSize = 20; // Show 20 projects per page
-
-    // Sorting state - disable table sorting, use pre-sorted data
-    const [projectsSortingColumn, setProjectsSortingColumn] = useState({});
-
-    // Filtered and sorted projects using useMemo for performance
-    // Sort by created_at descending (newest first) to ensure consistent pagination (Issue #457)
-    // Backend returns projects from map in random order, so we must sort on frontend
-    const filteredProjects = useMemo(() => {
-      let projects = state.projects;
-      if (projectFilter === 'active') projects = projects.filter(p => p.status === 'active');
-      if (projectFilter === 'suspended') projects = projects.filter(p => p.status === 'suspended');
-
-      // Sort by creation date descending (newest first), then by ID for stable sort
-      // Stable sort ensures consistent ordering when timestamps are identical (Issue #457)
-      return [...projects].sort((a, b) => {
-        // Handle missing/invalid created_at (treat as epoch 0)
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        // Check for NaN (invalid dates) and treat as epoch 0
-        const timeA = isNaN(dateA) ? 0 : dateA;
-        const timeB = isNaN(dateB) ? 0 : dateB;
-
-        // Primary sort: by created_at descending (newest first)
-        if (timeB !== timeA) {
-          return timeB - timeA;
-        }
-
-        // Secondary sort: by ID ascending (stable tiebreaker)
-        return (a.id || '').localeCompare(b.id || '');
-      });
-    }, [state.projects, projectFilter]);
-
-    // Paginated projects - slice filtered projects for current page
-    const paginatedProjects = useMemo(() => {
-      const startIndex = (projectsCurrentPage - 1) * projectsPageSize;
-      const endIndex = startIndex + projectsPageSize;
-      return filteredProjects.slice(startIndex, endIndex);
-    }, [filteredProjects, projectsCurrentPage]);
-
-    // Calculate total pages
-    const projectsTotalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPageSize));
-
-    // Reset to page 1 when filter changes
-    useEffect(() => {
-      setProjectsCurrentPage(1);
-    }, [projectFilter]);
-
-    // Ensure current page is valid (if we're on page 10 but now only have 5 pages, go to page 5)
-    useEffect(() => {
-      if (projectsCurrentPage > projectsTotalPages) {
-        setProjectsCurrentPage(projectsTotalPages);
-      }
-    }, [projectsCurrentPage, projectsTotalPages]);
-
-    return (
-      <SpaceBetween size="l">
-        <Header
-          variant="h1"
-          description="Manage research projects, budgets, and collaboration"
-          counter={`(${state.projects.length} projects)`}
-          actions={
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={loadApplicationData} disabled={state.loading}>
-                {state.loading ? <Spinner /> : 'Refresh'}
-              </Button>
-              <Button
-                variant="primary"
-                data-testid="create-project-button"
-                onClick={() => setProjectModalVisible(true)}
-              >
-                Create Project
-              </Button>
-            </SpaceBetween>
-          }
-        >
-          Project Management
-        </Header>
-
-      {/* Project Overview Stats */}
-      <ColumnLayout columns={4} variant="text-grid">
-        <Container header={<Header variant="h3">Total Projects</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-            {state.projects.length}
-          </Box>
-        </Container>
-        <Container header={<Header variant="h3">Active Projects</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-            {state.projects.filter(p => p.status === 'active').length}
-          </Box>
-        </Container>
-        <Container header={<Header variant="h3">Total Budget</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-body-secondary">
-            ${state.projects.reduce((sum, p) => sum + (p.budget_limit || 0), 0).toFixed(2)}
-          </Box>
-        </Container>
-        <Container header={<Header variant="h3">Current Spend</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-status-warning">
-            ${state.projects.reduce((sum, p) => sum + (p.current_spend || 0), 0).toFixed(2)}
-          </Box>
-        </Container>
-      </ColumnLayout>
-
-      {/* Projects Table */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="Research projects with budget tracking and member management"
-            counter={`(${filteredProjects.length})`}
-            actions={
-              <SpaceBetween direction="horizontal" size="xs">
-                <Select
-                  selectedOption={{ label: projectFilter === 'all' ? 'All Projects' : projectFilter === 'active' ? 'Active Only' : 'Suspended', value: projectFilter }}
-                  onChange={({ detail }) => setProjectFilter(detail.selectedOption.value!)}
-                  options={[
-                    { label: 'All Projects', value: 'all' },
-                    { label: 'Active Only', value: 'active' },
-                    { label: 'Suspended', value: 'suspended' }
-                  ]}
-                  data-testid="project-filter-select"
-                />
-                <Button>Export Data</Button>
-                <Button variant="primary">Create Project</Button>
-              </SpaceBetween>
-            }
-          >
-            Projects
-          </Header>
-        }
-      >
-        <Table
-          data-testid="projects-table"
-          columnDefinitions={[
-            {
-              id: "name",
-              header: "Project Name",
-              cell: (item: Project) => (
-                <Link
-                  fontSize="body-m"
-                  onFollow={() => {
-                    setSelectedProjectId(item.id);
-                  }}
-                >
-                  {item.name}
-                </Link>
-              ),
-              sortingField: "name"
-            },
-            {
-              id: "description",
-              header: "Description",
-              cell: (item: Project) => item.description || 'No description',
-              sortingField: "description"
-            },
-            {
-              id: "owner",
-              header: "Owner",
-              cell: (item: Project) => item.owner_email || 'Unknown',
-              sortingField: "owner_email"
-            },
-            {
-              id: "budget",
-              header: "Budget",
-              cell: (item: Project) => {
-                const budget = item.budget_status?.total_budget || (item as any).budget_limit || 0;
-                return budget > 0 ? `$${budget.toFixed(2)}` : '-';
-              },
-              sortingField: "budget_status"
-            },
-            {
-              id: "spend",
-              header: "Current Spend",
-              cell: (item: Project) => {
-                const spend = item.budget_status?.spent_amount || (item as any).current_spend || 0;
-                const limit = item.budget_status?.total_budget || (item as any).budget_limit || 0;
-                const percentage = limit > 0 ? (spend / limit) * 100 : 0;
-                const colorType = percentage > 80 ? 'error' : percentage > 60 ? 'warning' : 'success';
-
-                return (
-                  <SpaceBetween direction="horizontal" size="xs">
-                    <span {...(percentage > 80 ? { 'data-testid': 'budget-alert' } : {})}>
-                      <StatusIndicator
-                        type={colorType}
-                        iconAriaLabel={getStatusLabel('budget', colorType === 'error' ? 'critical' : colorType === 'warning' ? 'warning' : 'ok', `$${spend.toFixed(2)}`)}
-                      >
-                        ${spend.toFixed(2)}
-                      </StatusIndicator>
-                    </span>
-                    {limit > 0 && (
-                      <Badge color={colorType === 'error' ? 'red' : colorType === 'warning' ? 'blue' : 'green'}>
-                        {percentage.toFixed(1)}%
-                      </Badge>
-                    )}
-                    {percentage >= 100 && (
-                      <Box color="text-status-error" fontSize="body-s">Budget exceeded</Box>
-                    )}
-                  </SpaceBetween>
-                );
-              }
-            },
-            {
-              id: "members",
-              header: "Members",
-              cell: (item: Project) => item.member_count || 1,
-              sortingField: "member_count"
-            },
-            {
-              id: "status",
-              header: "Status",
-              cell: (item: Project) => (
-                <StatusIndicator
-                  type={
-                    item.status === 'active' ? 'success' :
-                    item.status === 'suspended' ? 'warning' : 'error'
-                  }
-                  iconAriaLabel={getStatusLabel('project', item.status || 'active')}
-                >
-                  {item.status || 'active'}
-                </StatusIndicator>
-              ),
-              sortingField: "status"
-            },
-            {
-              id: "created",
-              header: "Created",
-              cell: (item: Project) => new Date(item.created_at).toLocaleDateString(),
-              sortingField: "created_at"
-            },
-            {
-              id: "actions",
-              header: "Actions",
-              cell: (item: Project) => (
-                <ButtonDropdown
-                  data-testid={`project-actions-${item.id}`}
-                  expandToViewport
-                  items={[
-                    { text: "View Details", id: "view" },
-                    { text: "Manage Members", id: "members" },
-                    { text: "Budget Analysis", id: "budget" },
-                    { text: "Cost Report", id: "costs" },
-                    { text: "Usage Statistics", id: "usage" },
-                    { text: "Edit Project", id: "edit" },
-                    { text: item.status === 'paused' ? "Resume Project" : "Suspend Project", id: "suspend" },
-                    { text: "Delete", id: "delete" }
-                  ]}
-                  onItemClick={async (detail) => {
-                    if (detail.detail.id === 'view') {
-                      // Navigate to project detail view
-                      setSelectedProjectId(item.id);
-                    } else if (detail.detail.id === 'delete') {
-                      // Open delete confirmation modal
-                      setDeleteModalConfig({
-                        type: 'project',
-                        name: item.name,
-                        requireNameConfirmation: false,
-                        onConfirm: async () => {
-                          try {
-                            await api.deleteProject(item.id);
-
-                            // Optimistic UI update: remove project directly from state without re-fetching
-                            // This matches the user deletion pattern and avoids race conditions
-                            setState(prev => ({
-                              ...prev,
-                              projects: prev.projects.filter(p => p.id !== item.id),
-                              notifications: [
-                                {
-                                  type: 'success',
-                                  header: 'Project Deleted',
-                                  content: `Project "${item.name}" has been successfully deleted.`,
-                                  dismissible: true,
-                                  id: Date.now().toString()
-                                },
-                                ...prev.notifications
-                              ]
-                            }));
-
-                            // Close modal
-                            setDeleteModalVisible(false);
-                          } catch (error: any) {
-                            setState(prev => ({
-                              ...prev,
-                              notifications: [
-                                {
-                                  type: 'error',
-                                  header: 'Delete Failed',
-                                  content: `Failed to delete project: ${error.message || 'Unknown error'}`,
-                                  dismissible: true,
-                                  id: Date.now().toString()
-                                },
-                                ...prev.notifications
-                              ]
-                            }));
-                          }
-                        }
-                      });
-                      setDeleteModalVisible(true);
-                    } else if (detail.detail.id === 'edit') {
-                      setSelectedProjectForEdit(item);
-                      setEditProjectName(item.name);
-                      setEditProjectDescription(item.description || '');
-                      setEditProjectStatus(item.status || 'active');
-                      setShowEditProjectModal(true);
-                    } else if (detail.detail.id === 'suspend') {
-                      const newStatus = item.status === 'paused' ? 'active' : 'paused';
-                      try {
-                        await api.updateProject(item.id, { status: newStatus });
-                        const updatedProjects = await api.getProjects();
-                        setState(prev => ({ ...prev, projects: updatedProjects }));
-                      } catch (error: any) {
-                        setState(prev => ({
-                          ...prev,
-                          notifications: [
-                            {
-                              type: 'error',
-                              header: 'Action Failed',
-                              content: `Failed to update project status: ${error.message || 'Unknown error'}`,
-                              dismissible: true,
-                              id: Date.now().toString()
-                            },
-                            ...prev.notifications
-                          ]
-                        }));
-                      }
-                    } else if (detail.detail.id === 'members') {
-                      setSelectedProjectForMembers(item);
-                      setManageMembersLoading(true);
-                      setShowManageMembersModal(true);
-                      try {
-                        const members = await api.getProjectMembers(item.id);
-                        setManageMembersData(members);
-                      } catch (error) {
-                        setManageMembersData([]);
-                      } finally {
-                        setManageMembersLoading(false);
-                      }
-                    } else if (detail.detail.id === 'budget') {
-                      setSelectedProjectForBudget(item);
-                      setBudgetModalLoading(true);
-                      setBudgetModalData(null);
-                      setShowBudgetModal(true);
-                      try {
-                        const data = await api.getProjectBudget(item.id);
-                        setBudgetModalData(data);
-                      } catch (error) {
-                        setBudgetModalData(null);
-                      } finally {
-                        setBudgetModalLoading(false);
-                      }
-                    } else if (detail.detail.id === 'costs') {
-                      setSelectedProjectForCosts(item);
-                      setCostModalLoading(true);
-                      setCostModalData(null);
-                      setShowCostModal(true);
-                      try {
-                        const data = await api.getProjectCosts(item.id);
-                        setCostModalData(data);
-                      } catch (error) {
-                        setCostModalData(null);
-                      } finally {
-                        setCostModalLoading(false);
-                      }
-                    } else if (detail.detail.id === 'usage') {
-                      setSelectedProjectForUsage(item);
-                      setUsageModalLoading(true);
-                      setUsageModalData(null);
-                      setShowUsageModal(true);
-                      try {
-                        const data = await api.getProjectUsage(item.id);
-                        setUsageModalData(data);
-                      } catch (error) {
-                        setUsageModalData(null);
-                      } finally {
-                        setUsageModalLoading(false);
-                      }
-                    }
-                  }}
-                >
-                  Actions
-                </ButtonDropdown>
-              )
-            }
-          ]}
-          items={paginatedProjects}
-          trackBy="id"
-          sortingColumn={projectsSortingColumn}
-          onSortingChange={({ detail }) => setProjectsSortingColumn(detail.sortingColumn)}
-          sortingDisabled={true}
-          loadingText="Loading projects..."
-          empty={
-            <Box textAlign="center" color="text-body-secondary">
-              <Box variant="strong" textAlign="center" color="text-body-secondary">
-                No projects found
-              </Box>
-              <Box variant="p" padding={{ bottom: 's' }} color="text-body-secondary">
-                Create your first research project to get started.
-              </Box>
-              <Button variant="primary">Create Project</Button>
-            </Box>
-          }
-          header={
-            <Header
-              counter={`(${filteredProjects.length})`}
-              description="Research projects with comprehensive budget and collaboration management"
-            >
-              All Projects
-            </Header>
-          }
-          pagination={
-            <Pagination
-              currentPageIndex={projectsCurrentPage}
-              pagesCount={projectsTotalPages}
-              onChange={({ detail }) => setProjectsCurrentPage(detail.currentPageIndex)}
-              ariaLabels={{
-                nextPageLabel: 'Next page',
-                previousPageLabel: 'Previous page',
-                pageLabel: pageNumber => `Page ${pageNumber}`
-              }}
-            />
-          }
-        />
-      </Container>
-
-      {/* Quick Stats and Analytics */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="Project analytics and budget insights"
-          >
-            Project Analytics
-          </Header>
-        }
-      >
-        <ColumnLayout columns={2}>
-          <SpaceBetween size="m">
-            <Header variant="h3">Budget Utilization</Header>
-            {state.projects.length > 0 ? (
-              state.projects.map((project) => {
-                const spend = project.current_spend || 0;
-                const limit = project.budget_limit || 0;
-                const percentage = limit > 0 ? (spend / limit) * 100 : 0;
-
-                return (
-                  <Box key={project.id}>
-                    <SpaceBetween direction="horizontal" size="s">
-                      <Box fontWeight="bold">{project.name}:</Box>
-                      <StatusIndicator
-                        type={percentage > 80 ? 'error' : percentage > 60 ? 'warning' : 'success'}
-                        iconAriaLabel={getStatusLabel('budget', percentage > 80 ? 'critical' : percentage > 60 ? 'warning' : 'ok', `${percentage.toFixed(1)}% used`)}
-                      >
-                        ${spend.toFixed(2)} / ${limit.toFixed(2)} ({percentage.toFixed(1)}%)
-                      </StatusIndicator>
-                    </SpaceBetween>
-                  </Box>
-                );
-              })
-            ) : (
-              <Box color="text-body-secondary">No projects to display</Box>
-            )}
-          </SpaceBetween>
-
-          <SpaceBetween size="m">
-            <Header variant="h3">Recent Activity</Header>
-            <Box color="text-body-secondary">
-              Project activity and cost tracking metrics will be displayed here.
-              Connect projects to instances and storage for detailed analytics.
-            </Box>
-          </SpaceBetween>
-        </ColumnLayout>
-      </Container>
-    </SpaceBetween>
-    );
-  };
-
-  // Profile Management View
-  // Get filtered users based on status filter
-  const getFilteredUsers = () => {
-    if (userStatusFilter === 'all') {
-      return state.users;
-    }
-    return state.users.filter(user => {
-      // Mirror the display logic: a user with enabled===false is "Suspended"/"inactive"
-      if (user.enabled === false) {
-        return userStatusFilter === 'inactive';
-      }
-      const userStatus = user.status?.toLowerCase() || 'active'; // Default to active if no status
-      return userStatus === userStatusFilter.toLowerCase();
-    });
-  };
-
-  // User Management View
-  const UserManagementView = () => (
-    <SpaceBetween size="l">
-      <Header
-        variant="h1"
-        description="Manage research users with persistent identity across Prism workspaces"
-        counter={`(${state.users.length} users)`}
-        actions={
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button onClick={loadApplicationData} disabled={state.loading}>
-              {state.loading ? <Spinner /> : 'Refresh'}
-            </Button>
-            <Button
-              variant="primary"
-              data-testid="create-user-button"
-              onClick={() => setUserModalVisible(true)}
-            >
-              Create User
-            </Button>
-          </SpaceBetween>
-        }
-      >
-        User Management
-      </Header>
-
-      {/* User Overview Stats */}
-      <ColumnLayout columns={4} variant="text-grid">
-        <Container header={<Header variant="h3">Total Users</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-status-info">
-            {state.users.length}
-          </Box>
-        </Container>
-        <Container header={<Header variant="h3">Active Users</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-            {state.users.filter(u => u.status !== 'inactive').length}
-          </Box>
-        </Container>
-        <Container header={<Header variant="h3">SSH Keys Generated</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-body-secondary">
-            {state.users.reduce((sum, u) => sum + (u.ssh_keys || 0), 0)}
-          </Box>
-        </Container>
-        <Container header={<Header variant="h3">Provisioned Workspaces</Header>}>
-          <Box fontSize="display-l" fontWeight="bold" color="text-status-warning">
-            {state.users.reduce((sum, u) => sum + (u.provisioned_instances?.length || 0), 0)}
-          </Box>
-        </Container>
-      </ColumnLayout>
-
-      {/* Status Filter */}
-      <Container>
-        <FormField label="Filter by Status">
-          <Select
-            selectedOption={{ label: userStatusFilter === 'all' ? 'All Users' : userStatusFilter === 'active' ? 'Active' : 'Inactive', value: userStatusFilter }}
-            onChange={({ detail }) => setUserStatusFilter(detail.selectedOption.value || 'all')}
-            options={[
-              { label: 'All Users', value: 'all' },
-              { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' }
-            ]}
-            selectedAriaLabel="Selected"
-          />
-        </FormField>
-      </Container>
-
-      {/* Users Table */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="Research users with persistent identity and SSH key management"
-            counter={`(${getFilteredUsers().length})`}
-            actions={
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button>Export Users</Button>
-                <Button variant="primary">Create User</Button>
-              </SpaceBetween>
-            }
-          >
-            Research Users
-          </Header>
-        }
-      >
-        <Table
-          data-testid="users-table"
-          columnDefinitions={[
-            {
-              id: "username",
-              header: "Username",
-              cell: (item: User) => <Link fontSize="body-m">{item.username}</Link>,
-              sortingField: "username"
-            },
-            {
-              id: "uid",
-              header: "UID",
-              cell: (item: User) => item.uid.toString(),
-              sortingField: "uid"
-            },
-            {
-              id: "full_name",
-              header: "Full Name",
-              cell: (item: User) => item.full_name || item.display_name || 'Not provided',
-              sortingField: "full_name"
-            },
-            {
-              id: "email",
-              header: "Email",
-              cell: (item: User) => item.email || 'Not provided',
-              sortingField: "email"
-            },
-            {
-              id: "ssh_keys",
-              header: "SSH Keys",
-              cell: (item: User) => {
-                const keyCount = item.ssh_keys || 0;
-                return (
-                  <SpaceBetween direction="horizontal" size="xs">
-                    <StatusIndicator
-                      type={keyCount > 0 ? 'success' : 'warning'}
-                      iconAriaLabel={keyCount > 0 ? `User has ${keyCount} SSH keys` : 'User has no SSH keys'}
-                    >
-                      {keyCount}
-                    </StatusIndicator>
-                    {keyCount === 0 && (
-                      <Badge color="grey">No keys</Badge>
-                    )}
-                  </SpaceBetween>
-                );
-              }
-            },
-            {
-              id: "workspaces",
-              header: "Workspaces",
-              cell: (item: User) => {
-                const count = item.provisioned_instances?.length || 0;
-                return (
-                  <span data-testid={`workspace-count-${item.username}`}>
-                    {count > 0 ? count.toString() : 'None'}
-                  </span>
-                );
-              }
-            },
-            {
-              id: "status",
-              header: "Status",
-              cell: (item: User) => {
-                // enabled field takes precedence (true/undefined = Active, false = Suspended)
-                const isEnabled = item.enabled !== false;
-                const displayStatus = !isEnabled ? 'Suspended' : (item.status || 'Active');
-                const statusType = !isEnabled ? 'error' : (
-                  item.status === 'active' || !item.status ? 'success' : 'warning'
-                );
-
-                return (
-                  <StatusIndicator
-                    type={statusType}
-                    iconAriaLabel={displayStatus}
-                  >
-                    {displayStatus}
-                  </StatusIndicator>
-                );
-              },
-              sortingField: "status"
-            },
-            {
-              id: "created",
-              header: "Created",
-              cell: (item: User) => new Date(item.created_at).toLocaleDateString(),
-              sortingField: "created_at"
-            },
-            {
-              id: "actions",
-              header: "Actions",
-              cell: (item: User) => (
-                <ButtonDropdown
-                  data-testid={`user-actions-${item.username}`}
-                  expandToViewport
-                  items={[
-                    { text: "View Details", id: "view" },
-                    { text: "Generate SSH Key", id: "ssh-key", disabled: (item.ssh_keys || 0) > 0 },
-                    { text: "Provision on Workspace", id: "provision" },
-                    { text: "User Status", id: "status" },
-                    ...(item.enabled !== false
-                      ? [{ text: "Disable User", id: "disable" }]
-                      : [{ text: "Enable User", id: "enable" }]),
-                    { text: "Edit User", id: "edit" },
-                    { text: "Delete User", id: "delete" }
-                  ]}
-                  onItemClick={async (detail) => {
-                    if (detail.detail.id === 'view') {
-                      setSelectedUserForDetails(item);
-                      setUserDetailsModalVisible(true);
-                      setLoadingSSHKeys(true);
-                      try {
-                        const response = await api.getUserSSHKeys(item.username);
-                        setUserSSHKeys(response.keys || []);
-                      } catch (error: any) {
-                        console.error('Failed to fetch SSH keys:', error);
-                        setUserSSHKeys([]);
-                      } finally {
-                        setLoadingSSHKeys(false);
-                      }
-                    } else if (detail.detail.id === 'status') {
-                      setSelectedUserForStatus(item);
-                      setUserStatusModalVisible(true);
-                      setLoadingUserStatus(true);
-                      try {
-                        const statusData = await api.getUserStatus(item.username);
-                        setUserStatusDetails(statusData);
-                      } catch (error: any) {
-                        console.error('Failed to fetch user status:', error);
-                        setUserStatusDetails(null);
-                      } finally {
-                        setLoadingUserStatus(false);
-                      }
-                    } else if (detail.detail.id === 'provision') {
-                      setSelectedUserForProvision(item);
-                      setProvisionModalVisible(true);
-                    } else if (detail.detail.id === 'ssh-key') {
-                      setSelectedUsername(item.username);
-                      setSshKeyModalVisible(true);
-                    } else if (detail.detail.id === 'delete') {
-                      // Check for provisioned workspaces
-                      const hasWorkspaces = (item.provisioned_instances?.length || 0) > 0;
-                      const workspaceWarning = hasWorkspaces
-                        ? `This user has ${item.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
-                        : undefined;
-
-                      // Open delete confirmation modal
-                      setDeleteModalConfig({
-                        type: 'user',
-                        name: item.username,
-                        requireNameConfirmation: false,
-                        warning: workspaceWarning,
-                        onConfirm: async () => {
-                          try {
-                            await api.deleteUser(item.username);
-
-                            // Increment users version to mark data as fresh
-                            usersVersionRef.current++;
-
-                            setState(prev => ({
-                              ...prev,
-                              users: prev.users.filter(u => u.username !== item.username),
-                              notifications: [
-                                {
-                                  type: 'success',
-                                  header: 'User Deleted',
-                                  content: `User "${item.username}" deleted successfully`,
-                                  dismissible: true,
-                                  id: Date.now().toString()
-                                },
-                                ...prev.notifications
-                              ]
-                            }));
-                            setDeleteModalVisible(false);
-                          } catch (error: any) {
-                            setState(prev => ({
-                              ...prev,
-                              notifications: [
-                                {
-                                  type: 'error',
-                                  header: 'Delete Failed',
-                                  content: error.message || 'Failed to delete user',
-                                  dismissible: true,
-                                  id: Date.now().toString()
-                                },
-                                ...prev.notifications
-                              ]
-                            }));
-                            setDeleteModalVisible(false);
-                          }
-                        }
-                      });
-                      setDeleteModalVisible(true);
-                    } else if (detail.detail.id === 'enable') {
-                      // Enable user
-                      try {
-                        await api.enableUser(item.username);
-
-                        // Update user's enabled status
-                        setState(prev => ({
-                          ...prev,
-                          users: prev.users.map(u =>
-                            u.username === item.username
-                              ? { ...u, enabled: true }
-                              : u
-                          ),
-                          notifications: [
-                            {
-                              type: 'success',
-                              header: 'User Enabled',
-                              content: `User "${item.username}" has been enabled`,
-                              dismissible: true,
-                              id: Date.now().toString()
-                            },
-                            ...prev.notifications
-                          ]
-                        }));
-                      } catch (error: any) {
-                        setState(prev => ({
-                          ...prev,
-                          notifications: [
-                            {
-                              type: 'error',
-                              header: 'Enable Failed',
-                              content: error.message || 'Failed to enable user',
-                              dismissible: true,
-                              id: Date.now().toString()
-                            },
-                            ...prev.notifications
-                          ]
-                        }));
-                      }
-                    } else if (detail.detail.id === 'disable') {
-                      // Disable user
-                      try {
-                        await api.disableUser(item.username);
-
-                        // Update user's enabled status
-                        setState(prev => ({
-                          ...prev,
-                          users: prev.users.map(u =>
-                            u.username === item.username
-                              ? { ...u, enabled: false }
-                              : u
-                          ),
-                          notifications: [
-                            {
-                              type: 'success',
-                              header: 'User Disabled',
-                              content: `User "${item.username}" has been disabled`,
-                              dismissible: true,
-                              id: Date.now().toString()
-                            },
-                            ...prev.notifications
-                          ]
-                        }));
-                      } catch (error: any) {
-                        setState(prev => ({
-                          ...prev,
-                          notifications: [
-                            {
-                              type: 'error',
-                              header: 'Disable Failed',
-                              content: error.message || 'Failed to disable user',
-                              dismissible: true,
-                              id: Date.now().toString()
-                            },
-                            ...prev.notifications
-                          ]
-                        }));
-                      }
-                    } else if (detail.detail.id === 'edit') {
-                      setSelectedUserForEdit(item);
-                      setEditUserEmail(item.email || '');
-                      setEditUserDisplayName(item.display_name || item.full_name || '');
-                      setEditUserRole('');
-                      setShowEditUserModal(true);
-                    }
-                  }}
-                >
-                  Actions
-                </ButtonDropdown>
-              )
-            }
-          ]}
-          items={getFilteredUsers()}
-          loadingText="Loading users..."
-          empty={
-            <Box textAlign="center" color="text-body-secondary">
-              <Box variant="strong" textAlign="center" color="text-body-secondary">
-                No users found
-              </Box>
-              <Box variant="p" padding={{ bottom: 's' }} color="text-body-secondary">
-                Create your first research user to enable persistent identity across workspaces.
-              </Box>
-              <Button variant="primary">Create User</Button>
-            </Box>
-          }
-          header={
-            <Header
-              counter={`(${state.users.length})`}
-              description="Research users with persistent UID/GID mapping and SSH key management"
-            >
-              All Users
-            </Header>
-          }
-          pagination={<Box>Showing all {state.users.length} users</Box>}
-        />
-      </Container>
-
-      {/* User Analytics and SSH Key Management */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="User analytics and SSH key management"
-          >
-            User Analytics
-          </Header>
-        }
-      >
-        <ColumnLayout columns={2}>
-          <SpaceBetween size="m">
-            <Header variant="h3">SSH Key Status</Header>
-            {state.users.length > 0 ? (
-              state.users.map((user) => {
-                const keyCount = user.ssh_keys || 0;
-                return (
-                  <Box key={user.username}>
-                    <SpaceBetween direction="horizontal" size="s">
-                      <Box fontWeight="bold">{user.username}:</Box>
-                      <StatusIndicator
-                        type={keyCount > 0 ? 'success' : 'warning'}
-                        iconAriaLabel={getStatusLabel('auth', keyCount > 0 ? 'authenticated' : 'warning', `${keyCount} SSH keys`)}
-                      >
-                        {keyCount > 0 ? `${keyCount} SSH keys` : 'No SSH keys'}
-                      </StatusIndicator>
-                      {keyCount === 0 && (
-                        <Button variant="link">Generate Key</Button>
-                      )}
-                    </SpaceBetween>
-                  </Box>
-                );
-              })
-            ) : (
-              <Box color="text-body-secondary">No users to display</Box>
-            )}
-          </SpaceBetween>
-
-          <SpaceBetween size="m">
-            <Header variant="h3">Workspace Provisioning</Header>
-            <Box color="text-body-secondary">
-              User provisioning across workspaces and EFS home directory management.
-              Persistent identity ensures same UID/GID mapping across all environments.
-            </Box>
-            {state.users.length > 0 && (
-              <SpaceBetween size="s">
-                <Box variant="strong">Available for Provisioning:</Box>
-                {state.instances.length > 0 ? (
-                  state.instances.filter(i => i.state === 'running').map(instance => (
-                    <Box key={instance.id}>
-                      <StatusIndicator
-                        type="success"
-                        iconAriaLabel={getStatusLabel('workspace', 'running', instance.name)}
-                      >
-                        {instance.name}
-                      </StatusIndicator>
-                    </Box>
-                  ))
-                ) : (
-                  <Box color="text-body-secondary">No running workspaces available</Box>
-                )}
-              </SpaceBetween>
-            )}
-          </SpaceBetween>
-        </ColumnLayout>
-      </Container>
-    </SpaceBetween>
-  );
-
   // Settings View
   const SettingsView = () => {
     // Settings side navigation items
@@ -5130,7 +4167,99 @@ export default function PrismApp() {
           return <ProfileSelectorViewExtracted />;
 
         case 'users':
-          return <UserManagementView />;
+          return (
+            <UserManagementViewExtracted
+              users={state.users}
+              instances={state.instances}
+              loading={state.loading}
+              onRefresh={loadApplicationData}
+              onCreateUser={() => setUserModalVisible(true)}
+              onEditUser={(user) => {
+                setSelectedUserForEdit(user);
+                setEditUserEmail(user.email || '');
+                setEditUserDisplayName(user.display_name || (user as any).full_name || '');
+                setEditUserRole('');
+                setShowEditUserModal(true);
+              }}
+              onViewUserDetails={async (user) => {
+                setSelectedUserForDetails(user);
+                setUserDetailsModalVisible(true);
+                setLoadingSSHKeys(true);
+                try {
+                  const response = await api.getUserSSHKeys(user.username);
+                  setUserSSHKeys(response.keys || []);
+                } catch (_e) {
+                  setUserSSHKeys([]);
+                } finally {
+                  setLoadingSSHKeys(false);
+                }
+              }}
+              onViewUserStatus={async (user) => {
+                setSelectedUserForStatus(user);
+                setUserStatusModalVisible(true);
+                setLoadingUserStatus(true);
+                try {
+                  const statusData = await api.getUserStatus(user.username);
+                  setUserStatusDetails(statusData);
+                } catch (_e) {
+                  setUserStatusDetails(null);
+                } finally {
+                  setLoadingUserStatus(false);
+                }
+              }}
+              onProvisionUser={(username) => {
+                const user = state.users.find(u => u.username === username) || null;
+                setSelectedUserForProvision(user);
+                setProvisionModalVisible(true);
+              }}
+              onManageSSHKeys={(username) => {
+                setSelectedUsername(username);
+                setSshKeyModalVisible(true);
+              }}
+              onDeleteUser={(user) => {
+                const hasWorkspaces = (user.provisioned_instances?.length || 0) > 0;
+                const workspaceWarning = hasWorkspaces
+                  ? `This user has ${user.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
+                  : undefined;
+                setDeleteModalConfig({
+                  type: 'user',
+                  name: user.username,
+                  requireNameConfirmation: false,
+                  warning: workspaceWarning,
+                  onConfirm: async () => {
+                    try {
+                      await api.deleteUser(user.username);
+                      usersVersionRef.current++;
+                      setState(prev => ({
+                        ...prev,
+                        users: prev.users.filter(u => u.username !== user.username),
+                        notifications: [{
+                          type: 'success',
+                          header: 'User Deleted',
+                          content: `User "${user.username}" deleted successfully`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }, ...prev.notifications]
+                      }));
+                      setDeleteModalVisible(false);
+                    } catch (error: any) {
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [{
+                          type: 'error',
+                          header: 'Delete Failed',
+                          content: error.message || 'Failed to delete user',
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }, ...prev.notifications]
+                      }));
+                    }
+                  }
+                });
+                setDeleteModalVisible(true);
+              }}
+            />
+          );
 
         case 'ami':
           return (
@@ -6697,7 +5826,111 @@ export default function PrismApp() {
                 onBack={() => setSelectedProjectId(null)}
               />
             ) : (
-              <ProjectManagementView />
+              <ProjectManagementViewExtracted
+                projects={state.projects}
+                loading={state.loading}
+                onRefresh={loadApplicationData}
+                onCreateProject={() => setProjectModalVisible(true)}
+                onSelectProject={(id) => setSelectedProjectId(id)}
+                onEditProject={(project) => {
+                  setSelectedProjectForEdit(project);
+                  setEditProjectName(project.name);
+                  setEditProjectDescription(project.description || '');
+                  setEditProjectStatus(project.status || 'active');
+                  setShowEditProjectModal(true);
+                }}
+                onManageBudget={async (project) => {
+                  setSelectedProjectForBudget(project);
+                  setBudgetModalLoading(true);
+                  setBudgetModalData(null);
+                  setShowBudgetModal(true);
+                  try {
+                    const data = await api.getProjectBudget(project.id);
+                    setBudgetModalData(data);
+                  } catch (_e) {
+                    setBudgetModalData(null);
+                  } finally {
+                    setBudgetModalLoading(false);
+                  }
+                }}
+                onViewCost={async (project) => {
+                  setSelectedProjectForCosts(project);
+                  setCostModalLoading(true);
+                  setCostModalData(null);
+                  setShowCostModal(true);
+                  try {
+                    const data = await api.getProjectCosts(project.id);
+                    setCostModalData(data);
+                  } catch (_e) {
+                    setCostModalData(null);
+                  } finally {
+                    setCostModalLoading(false);
+                  }
+                }}
+                onViewUsage={async (project) => {
+                  setSelectedProjectForUsage(project);
+                  setUsageModalLoading(true);
+                  setUsageModalData(null);
+                  setShowUsageModal(true);
+                  try {
+                    const data = await api.getProjectUsage(project.id);
+                    setUsageModalData(data);
+                  } catch (_e) {
+                    setUsageModalData(null);
+                  } finally {
+                    setUsageModalLoading(false);
+                  }
+                }}
+                onManageMembers={async (project) => {
+                  setSelectedProjectForMembers(project);
+                  setManageMembersLoading(true);
+                  setShowManageMembersModal(true);
+                  try {
+                    const members = await api.getProjectMembers(project.id);
+                    setManageMembersData(members);
+                  } catch (_e) {
+                    setManageMembersData([]);
+                  } finally {
+                    setManageMembersLoading(false);
+                  }
+                }}
+                onDeleteProject={(project) => {
+                  setDeleteModalConfig({
+                    type: 'project',
+                    name: project.name,
+                    requireNameConfirmation: false,
+                    onConfirm: async () => {
+                      try {
+                        await api.deleteProject(project.id);
+                        setState(prev => ({
+                          ...prev,
+                          projects: prev.projects.filter(p => p.id !== project.id),
+                          notifications: [{
+                            type: 'success',
+                            header: 'Project Deleted',
+                            content: `Project "${project.name}" has been successfully deleted.`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          }, ...prev.notifications]
+                        }));
+                        setDeleteModalVisible(false);
+                      } catch (error: any) {
+                        setState(prev => ({
+                          ...prev,
+                          notifications: [{
+                            type: 'error',
+                            header: 'Delete Failed',
+                            content: `Failed to delete project: ${error.message || 'Unknown error'}`,
+                            dismissible: true,
+                            id: Date.now().toString()
+                          }, ...prev.notifications]
+                        }));
+                      }
+                    }
+                  });
+                  setDeleteModalVisible(true);
+                }}
+              />
             )
           )}
           {state.activeView === 'invitations' && <InvitationManagementView />}
@@ -6707,7 +5940,99 @@ export default function PrismApp() {
           {state.activeView === 'workshops' && <WorkshopsManagementView />}
           {state.activeView === 'capacity-blocks' && <CapacityBlocksManagementView />}
           {state.activeView === 'project-detail' && <PlaceholderView title="Project Detail" description="Select a project from the Projects view to see its details." />}
-          {state.activeView === 'users' && <UserManagementView />}
+          {state.activeView === 'users' && (
+            <UserManagementViewExtracted
+              users={state.users}
+              instances={state.instances}
+              loading={state.loading}
+              onRefresh={loadApplicationData}
+              onCreateUser={() => setUserModalVisible(true)}
+              onEditUser={(user) => {
+                setSelectedUserForEdit(user);
+                setEditUserEmail(user.email || '');
+                setEditUserDisplayName(user.display_name || (user as any).full_name || '');
+                setEditUserRole('');
+                setShowEditUserModal(true);
+              }}
+              onViewUserDetails={async (user) => {
+                setSelectedUserForDetails(user);
+                setUserDetailsModalVisible(true);
+                setLoadingSSHKeys(true);
+                try {
+                  const response = await api.getUserSSHKeys(user.username);
+                  setUserSSHKeys(response.keys || []);
+                } catch (_e) {
+                  setUserSSHKeys([]);
+                } finally {
+                  setLoadingSSHKeys(false);
+                }
+              }}
+              onViewUserStatus={async (user) => {
+                setSelectedUserForStatus(user);
+                setUserStatusModalVisible(true);
+                setLoadingUserStatus(true);
+                try {
+                  const statusData = await api.getUserStatus(user.username);
+                  setUserStatusDetails(statusData);
+                } catch (_e) {
+                  setUserStatusDetails(null);
+                } finally {
+                  setLoadingUserStatus(false);
+                }
+              }}
+              onProvisionUser={(username) => {
+                const user = state.users.find(u => u.username === username) || null;
+                setSelectedUserForProvision(user);
+                setProvisionModalVisible(true);
+              }}
+              onManageSSHKeys={(username) => {
+                setSelectedUsername(username);
+                setSshKeyModalVisible(true);
+              }}
+              onDeleteUser={(user) => {
+                const hasWorkspaces = (user.provisioned_instances?.length || 0) > 0;
+                const workspaceWarning = hasWorkspaces
+                  ? `This user has ${user.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
+                  : undefined;
+                setDeleteModalConfig({
+                  type: 'user',
+                  name: user.username,
+                  requireNameConfirmation: false,
+                  warning: workspaceWarning,
+                  onConfirm: async () => {
+                    try {
+                      await api.deleteUser(user.username);
+                      usersVersionRef.current++;
+                      setState(prev => ({
+                        ...prev,
+                        users: prev.users.filter(u => u.username !== user.username),
+                        notifications: [{
+                          type: 'success',
+                          header: 'User Deleted',
+                          content: `User "${user.username}" deleted successfully`,
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }, ...prev.notifications]
+                      }));
+                      setDeleteModalVisible(false);
+                    } catch (error: any) {
+                      setState(prev => ({
+                        ...prev,
+                        notifications: [{
+                          type: 'error',
+                          header: 'Delete Failed',
+                          content: error.message || 'Failed to delete user',
+                          dismissible: true,
+                          id: Date.now().toString()
+                        }, ...prev.notifications]
+                      }));
+                    }
+                  }
+                });
+                setDeleteModalVisible(true);
+              }}
+            />
+          )}
           {state.activeView === 'ami' && (
             <AMIManagementViewExtracted
               amis={state.amis}
