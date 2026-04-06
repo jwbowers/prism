@@ -30,19 +30,28 @@ import { InstanceManagementView as InstanceManagementViewExtracted } from './vie
 import { StorageManagementView as StorageManagementViewExtracted } from './views/StorageManagementView';
 import { ProjectManagementView as ProjectManagementViewExtracted } from './views/ProjectManagementView';
 import { UserManagementView as UserManagementViewExtracted } from './views/UserManagementView';
-import { getTemplateName, getTemplateSlug, getTemplateDescription, getTemplateTags } from './lib/template-utils';
+import { getTemplateName, getTemplateSlug } from './lib/template-utils';
 import { ApiContext } from './hooks/use-api';
 import { SafePrismAPI } from './lib/api';
 import { DeleteConfirmationModal as DeleteConfirmationModalExtracted } from './modals/DeleteConfirmationModal';
 import { HibernateConfirmationModal as HibernateConfirmationModalExtracted } from './modals/HibernateConfirmationModal';
 import { IdlePolicyModal as IdlePolicyModalExtracted } from './modals/IdlePolicyModal';
+import { CreateProjectModal as CreateProjectModalExtracted } from './modals/CreateProjectModal';
+import { CreateUserModal as CreateUserModalExtracted } from './modals/CreateUserModal';
+import { CreateBudgetModal as CreateBudgetModalExtracted } from './modals/CreateBudgetModal';
+import { OnboardingWizard as OnboardingWizardExtracted } from './modals/OnboardingWizard';
+import { LaunchModal as LaunchModalExtracted } from './modals/LaunchModal';
+import type { LaunchConfig } from './modals/LaunchModal';
+import { CreateBackupModal as CreateBackupModalExtracted } from './modals/CreateBackupModal';
+import { DeleteBackupModal as DeleteBackupModalExtracted } from './modals/DeleteBackupModal';
+import { RestoreBackupModal as RestoreBackupModalExtracted } from './modals/RestoreBackupModal'
+import { QuickStartWizard as QuickStartWizardExtracted } from './modals/QuickStartWizard';
 
 import {
   Container,
   Header,
   SpaceBetween,
   Button,
-  Cards,
   StatusIndicator,
   Badge,
   Table,
@@ -55,12 +64,9 @@ import {
   Spinner,
   Box,
   ColumnLayout,
-  Tabs,
-  Wizard,
   ProgressBar,
   Textarea,
-  Toggle,
-  Checkbox
+  Toggle
 } from './lib/cloudscape-shim';
 
 // Type definitions
@@ -589,13 +595,7 @@ export default function PrismApp() {
   });
 
   const [launchModalVisible, setLaunchModalVisible] = useState(false);
-  const [launchConfig, setLaunchConfig] = useState({
-    name: '',
-    size: 'M',
-    spot: false,
-    hibernation: false,
-    dryRun: false
-  });
+  // launchConfig state moved into LaunchModal component
 
   // Delete confirmation modal state
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -621,7 +621,7 @@ export default function PrismApp() {
 
   // Onboarding wizard state
   const [onboardingVisible, setOnboardingVisible] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
+  // onboardingStep state moved into OnboardingWizard component
   const [onboardingComplete, setOnboardingComplete] = useState(() => {
     // Check if user has completed onboarding before
     const completed = localStorage.getItem('prism_onboarding_complete');
@@ -637,14 +637,6 @@ export default function PrismApp() {
 
   // Quick Start Wizard state
   const [quickStartWizardVisible, setQuickStartWizardVisible] = useState(false);
-  const [quickStartActiveStepIndex, setQuickStartActiveStepIndex] = useState(0);
-  const [quickStartConfig, setQuickStartConfig] = useState({
-    selectedTemplate: null as Template | null,
-    workspaceName: '',
-    size: 'M',
-    launchInProgress: false,
-    launchedWorkspaceId: null as string | null
-  });
 
   // Bulk selection state for instances
   const [selectedInstances, setSelectedInstances] = useState<Instance[]>([]);
@@ -654,13 +646,6 @@ export default function PrismApp() {
 
   // Create Backup modal state
   const [createBackupModalVisible, setCreateBackupModalVisible] = useState(false);
-  const [createBackupConfig, setCreateBackupConfig] = useState({
-    instanceId: '',
-    backupName: '',
-    backupType: 'full',
-    description: ''
-  });
-  const [createBackupValidationAttempted, setCreateBackupValidationAttempted] = useState(false);
 
   // Delete Backup modal state
   const [deleteBackupModalVisible, setDeleteBackupModalVisible] = useState(false);
@@ -669,7 +654,7 @@ export default function PrismApp() {
   // Restore Backup modal state
   const [restoreBackupModalVisible, setRestoreBackupModalVisible] = useState(false);
   const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<InstanceSnapshot | null>(null);
-  const [restoreInstanceName, setRestoreInstanceName] = useState('');
+
 
   // Storage creation modal state
   const [createEFSModalVisible, setCreateEFSModalVisible] = useState(false);
@@ -681,21 +666,12 @@ export default function PrismApp() {
 
   // Create Project modal state
   const [projectModalVisible, setProjectModalVisible] = useState(false);
-  const [projectName, setProjectName] = useState('');
-  const [projectDescription, setProjectDescription] = useState('');
-  const [projectBudget, setProjectBudget] = useState('');
-  const [projectValidationError, setProjectValidationError] = useState('');
 
   // Project detail view state
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   // Create User modal state
   const [userModalVisible, setUserModalVisible] = useState(false);
-  const [username, setUsername] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [userFullName, setUserFullName] = useState('');
-  const [userValidationError, setUserValidationError] = useState('');
-  const [creatingUser, setCreatingUser] = useState(false);
 
   // SSH Key modal state
   const [sshKeyModalVisible, setSshKeyModalVisible] = useState(false);
@@ -730,12 +706,6 @@ export default function PrismApp() {
 
   // Create Budget Pool modal state
   const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
-  const [budgetName, setBudgetName] = useState('');
-  const [budgetDescription, setBudgetDescription] = useState('');
-  const [totalAmount, setTotalAmount] = useState('');
-  const [period, setPeriod] = useState('monthly');
-  const [alertThreshold, setAlertThreshold] = useState('80');
-  const [budgetValidationError, setBudgetValidationError] = useState('');
 
   // Track users data version to prevent stale data overwrites
   // This prevents initial page load getUsers() from overwriting optimistic updates
@@ -789,21 +759,6 @@ export default function PrismApp() {
   const [editUserSubmitting, setEditUserSubmitting] = useState(false);
 
   // Helper: add a toast notification
-  // Supports two calling conventions:
-  //   addNotification('error', 'Header', 'Content')
-  //   addNotification({ type: 'success', content: '...' })
-  const addNotification = (
-    typeOrObj: 'success' | 'error' | 'warning' | 'info' | Partial<{ type: string; header?: string; content: string; dismissible?: boolean }>,
-    header?: string,
-    content?: string
-  ) => {
-    const type = typeof typeOrObj === 'string' ? typeOrObj : (typeOrObj.type || 'info');
-    const title = typeof typeOrObj === 'string' ? (header || content || '') : (typeOrObj.header || typeOrObj.content || '');
-    const desc = typeof typeOrObj === 'string' ? (header && content ? content : undefined) : (typeOrObj.header && typeOrObj.content ? typeOrObj.content : undefined);
-    const toastFn = type === 'success' ? toast.success : type === 'error' ? toast.error : type === 'warning' ? toast.warning : toast;
-    toastFn(title, desc ? { description: desc } : undefined);
-  };
-
   // Helper: set (replace/update) a toast notification
   const setNotification = (notification: Partial<{ id?: string; type?: string; header?: string; content: string; dismissible?: boolean }>) => {
     const title = notification.header || notification.content || '';
@@ -1160,7 +1115,6 @@ export default function PrismApp() {
   const handleTemplateSelection = (template: Template) => {
     try {
       setState(prev => ({ ...prev, selectedTemplate: template }));
-      setLaunchConfig({ name: '', size: 'M', spot: false, hibernation: false, dryRun: false });
       setLaunchModalVisible(true);
     } catch (error) {
       logger.error('Template selection failed:', error);
@@ -1174,17 +1128,17 @@ export default function PrismApp() {
   };
 
   // Safe instance launch
-  const handleLaunchInstance = async () => {
-    if (!state.selectedTemplate || !launchConfig.name.trim()) {
+  const handleLaunchInstance = async (config: LaunchConfig) => {
+    if (!state.selectedTemplate || !config.name.trim()) {
       return;
     }
 
     // Capture inputs before closing modal
     const templateSlug = getTemplateSlug(state.selectedTemplate);
     const templateName = getTemplateName(state.selectedTemplate);
-    const instanceName = launchConfig.name;
-    const instanceSize = launchConfig.size;
-    const isDryRun = launchConfig.dryRun || false;
+    const instanceName = config.name;
+    const instanceSize = config.size;
+    const isDryRun = config.dryRun || false;
 
     // Close modal IMMEDIATELY
     handleModalDismiss();
@@ -1262,85 +1216,70 @@ export default function PrismApp() {
   };
 
   // Handle Create Project
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (data: { name: string; description: string; budget: string }) => {
     // Validate
-    if (!projectName.trim()) {
-      setProjectValidationError('Project name is required');
-      return;
+    if (!data.name.trim()) {
+      throw new Error('Project name is required');
     }
 
-    // Note: Budget validation removed - budget field is deprecated in v0.5.10
-    // Budget configuration is now managed separately via Budget/Allocation system
+    // Call API to create project - send budget via budget.total_budget (backend format)
+    const budgetPayload = data.budget ? { budget: { total_budget: parseFloat(data.budget) } } : {};
+    const createdProject = await api.createProject({
+      name: data.name.trim(),
+      description: data.description.trim(),
+      ...budgetPayload
+    });
 
-    try {
-      // Call API to create project - send budget via budget.total_budget (backend format)
-      const budgetPayload = projectBudget ? { budget: { total_budget: parseFloat(projectBudget) } } : {};
-      const createdProject = await api.createProject({
-        name: projectName.trim(),
-        description: projectDescription.trim(),
-        ...budgetPayload
-      });
+    // Map backend response (types.Project with budget.total_budget) to frontend
+    // ProjectSummary format (with budget_status.total_budget) for the optimistic update
+    const rawProject = createdProject as any;
+    const projectForState = {
+      ...createdProject,
+      budget_status: rawProject.budget ? {
+        total_budget: rawProject.budget.total_budget,
+        spent_amount: rawProject.budget.spent_amount || 0,
+        spent_percentage: 0,
+        alert_count: 0,
+      } : undefined
+    } as Project;
 
-      // Map backend response (types.Project with budget.total_budget) to frontend
-      // ProjectSummary format (with budget_status.total_budget) for the optimistic update
-      const rawProject = createdProject as any;
-      const projectForState = {
-        ...createdProject,
-        budget_status: rawProject.budget ? {
-          total_budget: rawProject.budget.total_budget,
-          spent_amount: rawProject.budget.spent_amount || 0,
-          spent_percentage: 0,
-          alert_count: 0,
-        } : undefined
-      } as Project;
+    // Optimistic UI update: add project directly to state without re-fetching
+    // Prepend new project so it appears at top of list (page 1) - fixes Issue #457
+    setState(prev => ({
+      ...prev,
+      projects: [projectForState, ...prev.projects],
+      notifications: [{
+        type: 'success',
+        header: 'Project Created',
+        content: `Project "${data.name}" created successfully`,
+        dismissible: true,
+        id: Date.now().toString()
+      }, ...prev.notifications]
+    }));
 
-      // Optimistic UI update: add project directly to state without re-fetching
-      // Prepend new project so it appears at top of list (page 1) - fixes Issue #457
-      setState(prev => ({
-        ...prev,
-        projects: [projectForState, ...prev.projects],
-        notifications: [{
-          type: 'success',
-          header: 'Project Created',
-          content: `Project "${projectName}" created successfully`,
-          dismissible: true,
-          id: Date.now().toString()
-        }, ...prev.notifications]
-      }));
-
-      setProjectValidationError('');
-      setProjectModalVisible(false);
-      setProjectName('');
-      setProjectDescription('');
-      setProjectBudget('');
-      // Refresh data from backend to get accurate budget status (e.g. test-mode mock spend)
-      setTimeout(loadApplicationData, 500);
-    } catch (error: any) {
-      setProjectValidationError(`Failed to create project: ${error.message || 'Unknown error'}`);
-    }
+    setProjectModalVisible(false);
+    // Refresh data from backend to get accurate budget status (e.g. test-mode mock spend)
+    setTimeout(loadApplicationData, 500);
   };
 
   // Handle Create User
-  const handleCreateUser = async () => {
+  const handleCreateUser = async (data: { username: string; email: string; fullName: string }) => {
     // Validate
-    if (!username.trim()) {
-      setUserValidationError('Username is required');
-      return;
+    if (!data.username.trim()) {
+      throw new Error('Username is required');
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (userEmail && !emailRegex.test(userEmail)) {
-      setUserValidationError('Please enter a valid email address');
-      return;
+    if (data.email && !emailRegex.test(data.email)) {
+      throw new Error('Please enter a valid email address');
     }
 
-    setCreatingUser(true);
     try {
       // Call API to create user - it returns the created user object
       const newUser = await api.createUser({
-        username: username.trim(),
-        email: userEmail.trim(),
-        display_name: userFullName.trim()
+        username: data.username.trim(),
+        email: data.email.trim(),
+        display_name: data.fullName.trim()
       });
 
       // Increment users version to mark data as fresh
@@ -1355,17 +1294,13 @@ export default function PrismApp() {
         notifications: [{
           type: 'success',
           header: 'User Created',
-          content: `User "${username}" created successfully`,
+          content: `User "${data.username}" created successfully`,
           dismissible: true,
           id: Date.now().toString()
         }, ...prev.notifications]
       }));
 
-      setUserValidationError('');
       setUserModalVisible(false);
-      setUsername('');
-      setUserEmail('');
-      setUserFullName('');
     } catch (error: any) {
       // Check for duplicate error - backend returns HTTP 409
       // Error format: "HTTP 409: Conflict" or error.response.status === 409
@@ -1373,62 +1308,47 @@ export default function PrismApp() {
                    (error.message && error.message.includes('HTTP 409'));
 
       if (is409) {
-        setUserValidationError('A user with this username already exists');
+        throw new Error('A user with this username already exists');
       } else {
-        setUserValidationError(`Failed to create user: ${error.message || 'Unknown error'}`);
+        throw error;
       }
-    } finally {
-      setCreatingUser(false);
     }
   };
 
   // Handle Create Budget Pool
-  const handleCreateBudget = async () => {
+  const handleCreateBudget = async (data: { name: string; description: string; totalAmount: string; period: string; alertThreshold: string }) => {
     // Validation
-    if (!budgetName.trim()) {
-      setBudgetValidationError('Budget name is required');
-      return;
+    if (!data.name.trim()) {
+      throw new Error('Budget name is required');
     }
-    if (!totalAmount || parseFloat(totalAmount) <= 0) {
-      setBudgetValidationError('Total amount must be greater than 0');
-      return;
+    if (!data.totalAmount || parseFloat(data.totalAmount) <= 0) {
+      throw new Error('Total amount must be greater than 0');
     }
 
-    try {
-      const createdBudget = await api.createBudgetPool({
-        name: budgetName.trim(),
-        description: budgetDescription.trim(),
-        total_amount: parseFloat(totalAmount),
-        period: period,
-        start_date: new Date().toISOString(),
-        alert_threshold: parseFloat(alertThreshold) / 100,
-        created_by: 'current-user'  // TODO: Get from auth context
-      });
+    const createdBudget = await api.createBudgetPool({
+      name: data.name.trim(),
+      description: data.description.trim(),
+      total_amount: parseFloat(data.totalAmount),
+      period: data.period,
+      start_date: new Date().toISOString(),
+      alert_threshold: parseFloat(data.alertThreshold) / 100,
+      created_by: 'current-user'  // TODO: Get from auth context
+    });
 
-      // Optimistic UI update (don't re-fetch)
-      setState(prev => ({
-        ...prev,
-        budgetPools: [...prev.budgetPools, createdBudget],
-        notifications: [{
-          type: 'success',
-          header: 'Budget Created',
-          content: `Budget pool "${budgetName}" created successfully`,
-          dismissible: true,
-          id: Date.now().toString()
-        }, ...prev.notifications]
-      }));
+    // Optimistic UI update (don't re-fetch)
+    setState(prev => ({
+      ...prev,
+      budgetPools: [...prev.budgetPools, createdBudget],
+      notifications: [{
+        type: 'success',
+        header: 'Budget Created',
+        content: `Budget pool "${data.name}" created successfully`,
+        dismissible: true,
+        id: Date.now().toString()
+      }, ...prev.notifications]
+    }));
 
-      // Reset and close
-      setBudgetValidationError('');
-      setCreateBudgetModalVisible(false);
-      setBudgetName('');
-      setBudgetDescription('');
-      setTotalAmount('');
-      setPeriod('monthly');
-      setAlertThreshold('80');
-    } catch (error: any) {
-      setBudgetValidationError(`Failed to create budget: ${error.message || 'Unknown error'}`);
-    }
+    setCreateBudgetModalVisible(false);
   };
 
   // Handle Delete Budget Pool
@@ -2449,1322 +2369,6 @@ export default function PrismApp() {
     );
   };
 
-
-  // Launch Modal
-
-
-  const LaunchModal = () => (
-    <Modal
-      onDismiss={handleModalDismiss}
-      visible={launchModalVisible}
-      header={`Launch ${state.selectedTemplate ? getTemplateName(state.selectedTemplate) : 'Research Environment'}`}
-      size="medium"
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button variant="link" onClick={handleModalDismiss}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              disabled={!launchConfig.name.trim()}
-              onClick={handleLaunchInstance}
-            >
-              Launch Workspace
-            </Button>
-          </SpaceBetween>
-        </Box>
-      }
-    >
-      <Form>
-        <SpaceBetween size="m">
-          <FormField
-            label="Workspace name"
-            description="Choose a descriptive name for your research project"
-            errorText={!launchConfig.name.trim() ? "Workspace name is required" : ""}
-          >
-            <Input
-              value={launchConfig.name}
-              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, name: detail.value }))}
-              placeholder="my-research-project"
-            />
-          </FormField>
-
-          <FormField label="Workspace size" description="Choose the right size for your workload">
-            <Select
-              selectedOption={{ label: "Medium (M) - Recommended", value: "M" }}
-              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, size: detail.selectedOption.value || 'M' }))}
-              options={[
-                { label: "Small (S) - Light workloads", value: "S" },
-                { label: "Medium (M) - Recommended", value: "M" },
-                { label: "Large (L) - Heavy compute", value: "L" },
-                { label: "Extra Large (XL) - Maximum performance", value: "XL" }
-              ]}
-              data-testid="instance-size-select"
-            />
-          </FormField>
-
-          {state.selectedTemplate && (
-            <Alert type="info">
-              <Box>
-                <Box variant="strong">Template: {getTemplateName(state.selectedTemplate)}</Box>
-                <Box>Description: {getTemplateDescription(state.selectedTemplate)}</Box>
-                {state.selectedTemplate.package_manager && (
-                  <Box>Package Manager: {state.selectedTemplate.package_manager}</Box>
-                )}
-                {state.selectedTemplate.complexity && (
-                  <Box>Complexity: {state.selectedTemplate.complexity}</Box>
-                )}
-              </Box>
-            </Alert>
-          )}
-
-          <FormField
-            label="Instance Options"
-            description="Configure advanced instance settings"
-          >
-            <SpaceBetween size="s">
-              <Checkbox
-                checked={launchConfig.spot || false}
-                onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, spot: detail.checked }))}
-              >
-                Spot instance - use lower-cost spot pricing
-              </Checkbox>
-              <Checkbox
-                checked={launchConfig.hibernation || false}
-                onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, hibernation: detail.checked }))}
-              >
-                Hibernation - enable instance hibernation support
-              </Checkbox>
-            </SpaceBetween>
-          </FormField>
-
-          <FormField
-            label="Validation"
-            description="Test your configuration without actually launching resources"
-          >
-            <Checkbox
-              checked={launchConfig.dryRun || false}
-              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, dryRun: detail.checked }))}
-            >
-              Dry run mode - validate without creating resources
-            </Checkbox>
-          </FormField>
-        </SpaceBetween>
-      </Form>
-    </Modal>
-  );
-
-  // Create Backup Modal
-  const CreateBackupModal = () => {
-    const handleCreateBackup = async () => {
-      try {
-        setCreateBackupValidationAttempted(true);
-
-        if (!createBackupConfig.instanceId || !createBackupConfig.backupName) {
-          setState(prev => ({
-            ...prev,
-            notifications: [
-              ...prev.notifications,
-              {
-                type: 'error',
-                header: 'Validation Error',
-                content: 'Instance and backup name are required',
-                dismissible: true,
-                id: Date.now().toString()
-              }
-            ]
-          }));
-          return;
-        }
-
-        setState(prev => ({ ...prev, loading: true }));
-        setCreateBackupModalVisible(false);
-
-        await api.createSnapshot(
-          createBackupConfig.instanceId,
-          createBackupConfig.backupName,
-          createBackupConfig.description
-        );
-
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'success',
-              header: 'Backup Created',
-              content: `Backup "${createBackupConfig.backupName}" is being created. This may take 5-10 minutes.`,
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-
-        // Reload data to show new backup
-        await loadApplicationData();
-      } catch (error) {
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'error',
-              header: 'Backup Creation Failed',
-              content: error instanceof Error ? error.message : 'Unknown error occurred',
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-      }
-    };
-
-    const handleDismiss = () => {
-      setCreateBackupModalVisible(false);
-      setCreateBackupValidationAttempted(false);
-      setCreateBackupConfig({
-        instanceId: '',
-        backupName: '',
-        backupType: 'full',
-        description: ''
-      });
-    };
-
-    return (
-      <Modal
-        onDismiss={handleDismiss}
-        visible={createBackupModalVisible}
-        header="Create Backup"
-        size="medium"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={handleDismiss}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                disabled={!createBackupConfig.instanceId || !createBackupConfig.backupName.trim()}
-                onClick={handleCreateBackup}
-                data-testid="create-backup-submit"
-              >
-                Create
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <Form>
-          <SpaceBetween size="m">
-            <FormField
-              label="Instance"
-              description="Select the workspace instance to backup"
-              errorText={createBackupValidationAttempted && !createBackupConfig.instanceId ? "Instance is required" : ""}
-            >
-              <Select
-                data-testid="instance-select"
-                selectedOption={
-                  createBackupConfig.instanceId
-                    ? {
-                        label: state.instances.find(i => i.name === createBackupConfig.instanceId)?.name || createBackupConfig.instanceId,
-                        value: createBackupConfig.instanceId
-                      }
-                    : null
-                }
-                onChange={({ detail }) =>
-                  setCreateBackupConfig(prev => ({ ...prev, instanceId: detail.selectedOption.value || '' }))
-                }
-                options={state.instances.map(instance => ({
-                  label: `${instance.name} (${instance.template || 'Unknown template'})`,
-                  value: instance.name
-                }))}
-                placeholder="Select an instance..."
-                empty="No instances available"
-                ariaLabel="Instance"
-              />
-            </FormField>
-
-            <FormField
-              label="Backup name"
-              description="Choose a descriptive name for this backup"
-              errorText={createBackupValidationAttempted && !createBackupConfig.backupName.trim() ? "Backup name is required" : ""}
-            >
-              <Input
-                value={createBackupConfig.backupName}
-                onChange={({ detail }) =>
-                  setCreateBackupConfig(prev => ({ ...prev, backupName: detail.value }))
-                }
-                placeholder="my-backup-2024-11-16"
-              />
-            </FormField>
-
-            <FormField
-              label="Backup type"
-              description="Full backups capture the entire instance state"
-            >
-              <Select
-                selectedOption={{ label: "Full backup", value: "full" }}
-                onChange={({ detail }) =>
-                  setCreateBackupConfig(prev => ({ ...prev, backupType: detail.selectedOption.value || 'full' }))
-                }
-                options={[
-                  { label: "Full backup", value: "full" },
-                  { label: "Incremental backup", value: "incremental" }
-                ]}
-              />
-            </FormField>
-
-            <FormField
-              label="Description (optional)"
-              description="Add notes about this backup"
-            >
-              <Input
-                value={createBackupConfig.description}
-                onChange={({ detail }) =>
-                  setCreateBackupConfig(prev => ({ ...prev, description: detail.value }))
-                }
-                placeholder="Weekly backup before major update"
-              />
-            </FormField>
-
-            {createBackupConfig.instanceId && (
-              <Alert type="info">
-                <SpaceBetween size="s">
-                  <Box variant="strong">Backup Information</Box>
-                  <Box>
-                    • <strong>Creation time:</strong> 5-10 minutes depending on instance size
-                  </Box>
-                  <Box>
-                    • <strong>Cost:</strong> ~$0.05/GB/month for snapshot storage
-                  </Box>
-                  <Box>
-                    • <strong>Instance continues running:</strong> No downtime during backup creation
-                  </Box>
-                </SpaceBetween>
-              </Alert>
-            )}
-
-            {createBackupValidationAttempted && (!createBackupConfig.instanceId || !createBackupConfig.backupName.trim()) && (
-              <div data-testid="validation-error">
-                {!createBackupConfig.instanceId ? "Instance is required" : !createBackupConfig.backupName.trim() ? "Backup name is required" : ""}
-              </div>
-            )}
-          </SpaceBetween>
-        </Form>
-      </Modal>
-    );
-  };
-
-  // Delete Backup Confirmation Modal
-  const DeleteBackupModal = () => {
-    if (!selectedBackupForDelete) return null;
-
-    const handleDeleteBackup = async () => {
-      try {
-        setState(prev => ({ ...prev, loading: true }));
-        setDeleteBackupModalVisible(false);
-
-        await api.deleteSnapshot(selectedBackupForDelete.snapshot_name);
-
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'success',
-              header: 'Backup Deleted',
-              content: `Backup "${selectedBackupForDelete.snapshot_name}" has been deleted. You will save $${selectedBackupForDelete.storage_cost_monthly.toFixed(2)}/month.`,
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-
-        // Reload data to update backup list
-        await loadApplicationData();
-      } catch (error) {
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'error',
-              header: 'Delete Failed',
-              content: error instanceof Error ? error.message : 'Unknown error occurred',
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-      }
-    };
-
-    const handleDismiss = () => {
-      setDeleteBackupModalVisible(false);
-      setSelectedBackupForDelete(null);
-    };
-
-    const sizeGB = selectedBackupForDelete.size_gb || Math.ceil(selectedBackupForDelete.storage_cost_monthly / 0.05);
-    const monthlySavings = selectedBackupForDelete.storage_cost_monthly;
-
-    return (
-      <Modal
-        onDismiss={handleDismiss}
-        visible={deleteBackupModalVisible}
-        header="Delete Backup Confirmation"
-        size="medium"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={handleDismiss}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleDeleteBackup}
-              >
-                Delete
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          <Alert type="warning">
-            <Box variant="strong">This action cannot be undone</Box>
-          </Alert>
-
-          <Box>
-            Are you sure you want to delete backup <strong>"{selectedBackupForDelete.snapshot_name}"</strong>?
-          </Box>
-
-          <Container>
-            <SpaceBetween size="s">
-              <Box variant="h4">💰 Cost Savings</Box>
-              <ColumnLayout columns={2} variant="text-grid">
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Storage Size</Box>
-                  <Box>{sizeGB} GB</Box>
-                </SpaceBetween>
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Monthly Savings</Box>
-                  <Box color="text-status-success" fontSize="heading-m">
-                    <strong>${monthlySavings.toFixed(2)}/month</strong>
-                  </Box>
-                </SpaceBetween>
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Annual Savings</Box>
-                  <Box>${(monthlySavings * 12).toFixed(2)}/year</Box>
-                </SpaceBetween>
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Free Storage</Box>
-                  <Box>{sizeGB} GB freed</Box>
-                </SpaceBetween>
-              </ColumnLayout>
-            </SpaceBetween>
-          </Container>
-
-          <Box variant="small" color="text-body-secondary">
-            <strong>Backup Details:</strong><br/>
-            • Source: {selectedBackupForDelete.source_instance}<br/>
-            • Template: {selectedBackupForDelete.source_template}<br/>
-            • Created: {new Date(selectedBackupForDelete.created_at).toLocaleString()}
-          </Box>
-        </SpaceBetween>
-      </Modal>
-    );
-  };
-
-  // Restore Backup Modal
-  const RestoreBackupModal = () => {
-    if (!selectedBackupForRestore) return null;
-
-    const handleRestoreBackup = async () => {
-      try {
-        if (!restoreInstanceName.trim()) {
-          setState(prev => ({
-            ...prev,
-            notifications: [
-              ...prev.notifications,
-              {
-                type: 'error',
-                header: 'Validation Error',
-                content: 'New instance name is required',
-                dismissible: true,
-                id: Date.now().toString()
-              }
-            ]
-          }));
-          return;
-        }
-
-        setState(prev => ({ ...prev, loading: true }));
-        setRestoreBackupModalVisible(false);
-
-        await api.restoreSnapshot(selectedBackupForRestore.snapshot_name, restoreInstanceName);
-
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'success',
-              header: 'Restoring Backup',
-              content: `Backup "${selectedBackupForRestore.snapshot_name}" is being restored to instance "${restoreInstanceName}". This may take 10-15 minutes.`,
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-
-        // Reload data to show new instance
-        await loadApplicationData();
-      } catch (error) {
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'error',
-              header: 'Restore Failed',
-              content: error instanceof Error ? error.message : 'Unknown error occurred',
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
-      }
-    };
-
-    const handleDismiss = () => {
-      setRestoreBackupModalVisible(false);
-      setSelectedBackupForRestore(null);
-      setRestoreInstanceName('');
-    };
-
-    const sizeGB = selectedBackupForRestore.size_gb || Math.ceil(selectedBackupForRestore.storage_cost_monthly / 0.05);
-
-    return (
-      <Modal
-        onDismiss={handleDismiss}
-        visible={restoreBackupModalVisible}
-        header="Restore Backup"
-        size="medium"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={handleDismiss}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                disabled={!restoreInstanceName.trim()}
-                onClick={handleRestoreBackup}
-              >
-                Restore
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          <Alert type="info">
-            <Box variant="strong">⏱️ Restore Time</Box>
-            <Box>
-              Restoring this backup may take 10-15 minutes depending on the backup size ({sizeGB} GB).
-              The new instance will be created with all data and configuration from the backup.
-            </Box>
-          </Alert>
-
-          <Box>
-            Restore backup <strong>"{selectedBackupForRestore.snapshot_name}"</strong> to a new instance.
-          </Box>
-
-          <FormField
-            label="New instance name"
-            description="Choose a name for the restored instance"
-            errorText={!restoreInstanceName.trim() ? "Instance name is required" : ""}
-          >
-            <Input
-              value={restoreInstanceName}
-              onChange={({ detail }) => setRestoreInstanceName(detail.value)}
-              placeholder="restored-instance"
-            />
-          </FormField>
-
-          <Container>
-            <SpaceBetween size="s">
-              <Box variant="h4">📋 Backup Details</Box>
-              <ColumnLayout columns={2} variant="text-grid">
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Source Instance</Box>
-                  <Box>{selectedBackupForRestore.source_instance}</Box>
-                </SpaceBetween>
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Template</Box>
-                  <Box>{selectedBackupForRestore.source_template}</Box>
-                </SpaceBetween>
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Backup Size</Box>
-                  <Box>{sizeGB} GB</Box>
-                </SpaceBetween>
-                <SpaceBetween size="xs">
-                  <Box variant="awsui-key-label">Created</Box>
-                  <Box>{new Date(selectedBackupForRestore.created_at).toLocaleDateString()}</Box>
-                </SpaceBetween>
-              </ColumnLayout>
-            </SpaceBetween>
-          </Container>
-
-          <Alert type="warning">
-            <Box variant="strong">What happens during restore:</Box>
-            <ul>
-              <li>A new EC2 instance will be launched from this backup</li>
-              <li>All files, configurations, and installed software will be restored</li>
-              <li>The new instance will have the same specifications as the original</li>
-              <li>You can modify the instance after restoration completes</li>
-            </ul>
-          </Alert>
-        </SpaceBetween>
-      </Modal>
-    );
-  };
-
-  // Onboarding Wizard Modal
-  const OnboardingWizard = () => {
-    const totalSteps = 3;
-
-    const handleNext = () => {
-      if (onboardingStep < totalSteps - 1) {
-        setOnboardingStep(onboardingStep + 1);
-      } else {
-        // Complete onboarding
-        localStorage.setItem('prism_onboarding_complete', 'true');
-        setOnboardingComplete(true);
-        setOnboardingVisible(false);
-        setOnboardingStep(0);
-      }
-    };
-
-    const handleBack = () => {
-      if (onboardingStep > 0) {
-        setOnboardingStep(onboardingStep - 1);
-      }
-    };
-
-    const handleSkip = () => {
-      localStorage.setItem('prism_onboarding_complete', 'true');
-      setOnboardingComplete(true);
-      setOnboardingVisible(false);
-      setOnboardingStep(0);
-    };
-
-    return (
-      <Modal
-        visible={onboardingVisible}
-        onDismiss={handleSkip}
-        header={`Welcome to Prism - Step ${onboardingStep + 1} of ${totalSteps}`}
-        size="large"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              {onboardingStep > 0 && (
-                <Button onClick={handleBack}>
-                  Back
-                </Button>
-              )}
-              <Button variant="link" onClick={handleSkip}>
-                Skip Tour
-              </Button>
-              <Button variant="primary" onClick={handleNext}>
-                {onboardingStep < totalSteps - 1 ? 'Next' : 'Get Started'}
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <SpaceBetween size="l">
-          {/* Step 1: AWS Profile Setup */}
-          {onboardingStep === 0 && (
-            <SpaceBetween size="m">
-              <Alert type="info" header="AWS Credentials Configured">
-                Prism is already connected to your AWS account using the configured profile.
-              </Alert>
-              <Box variant="h2">Step 1: AWS Configuration</Box>
-              <Box>
-                Prism manages cloud workstations in your AWS account. Your current AWS configuration:
-              </Box>
-              <Container>
-                <ColumnLayout columns={2} variant="text-grid">
-                  <div>
-                    <Box variant="awsui-key-label">AWS Profile</Box>
-                    <Box fontWeight="bold">aws</Box>
-                    <Box variant="small" color="text-body-secondary">
-                      Your AWS credentials profile
-                    </Box>
-                  </div>
-                  <div>
-                    <Box variant="awsui-key-label">Region</Box>
-                    <Box fontWeight="bold">us-west-2</Box>
-                    <Box variant="small" color="text-body-secondary">
-                      Resources will be created here
-                    </Box>
-                  </div>
-                </ColumnLayout>
-              </Container>
-              <Box variant="p" color="text-body-secondary">
-                Prism uses your AWS credentials to create and manage cloud workstations.
-                You maintain full control over your resources and costs.
-              </Box>
-            </SpaceBetween>
-          )}
-
-          {/* Step 2: Template Discovery Tour */}
-          {onboardingStep === 1 && (
-            <SpaceBetween size="m">
-              <Box variant="h2">Step 2: Choose Your Research Environment</Box>
-              <Box>
-                Prism provides pre-configured templates for different research workflows.
-                Each template includes specialized software, libraries, and tools.
-              </Box>
-              <ColumnLayout columns={2}>
-                <Container header={<Header variant="h3">Popular Templates</Header>}>
-                  <SpaceBetween size="s">
-                    <Box>
-                      <Box variant="strong">Python Machine Learning</Box>
-                      <Box variant="small" color="text-body-secondary">
-                        Python 3, Jupyter, TensorFlow, PyTorch, scikit-learn
-                      </Box>
-                    </Box>
-                    <Box>
-                      <Box variant="strong">R Research Environment</Box>
-                      <Box variant="small" color="text-body-secondary">
-                        R, RStudio Server, tidyverse, statistical packages
-                      </Box>
-                    </Box>
-                    <Box>
-                      <Box variant="strong">Collaborative Workspace</Box>
-                      <Box variant="small" color="text-body-secondary">
-                        Multi-language support with Python, R, Julia
-                      </Box>
-                    </Box>
-                  </SpaceBetween>
-                </Container>
-                <Container header={<Header variant="h3">What's Included</Header>}>
-                  <SpaceBetween size="s">
-                    <Box>✓ Pre-installed software and dependencies</Box>
-                    <Box>✓ Optimized workspace sizing for your workload</Box>
-                    <Box>✓ Persistent storage for your data</Box>
-                    <Box>✓ SSH and remote access configured</Box>
-                    <Box>✓ Security best practices applied</Box>
-                  </SpaceBetween>
-                </Container>
-              </ColumnLayout>
-              <Alert type="info">
-                You can browse all available templates in the <strong>Templates</strong> section after completing this tour.
-              </Alert>
-            </SpaceBetween>
-          )}
-
-          {/* Step 3: Launch Your First Workspace */}
-          {onboardingStep === 2 && (
-            <SpaceBetween size="m">
-              <Box variant="h2">Step 3: Launch Your First Workstation</Box>
-              <Box>
-                Ready to get started? Here's how to launch your first cloud workstation:
-              </Box>
-              <Container>
-                <SpaceBetween size="m">
-                  <div>
-                    <Box variant="h4">1. Select a Template</Box>
-                    <Box>Choose a template that matches your research needs from the Templates page.</Box>
-                  </div>
-                  <div>
-                    <Box variant="h4">2. Configure Workspace</Box>
-                    <Box>Give your workstation a name and select the appropriate size (Small, Medium, Large).</Box>
-                  </div>
-                  <div>
-                    <Box variant="h4">3. Launch & Connect</Box>
-                    <Box>Prism creates your workspace in minutes. Connect via SSH or web interface when ready.</Box>
-                  </div>
-                </SpaceBetween>
-              </Container>
-              <Alert type="success" header="You're All Set!">
-                After clicking "Get Started", explore the dashboard to see your system status,
-                browse templates, and launch your first cloud workstation.
-              </Alert>
-              <Box variant="p" color="text-body-secondary">
-                💡 <strong>Tip:</strong> Start with a Medium (M) sized workspace for most workloads.
-                You can always stop, resize, or terminate workspaces to manage costs.
-              </Box>
-            </SpaceBetween>
-          )}
-        </SpaceBetween>
-      </Modal>
-    );
-  };
-
-  // Quick Start Wizard
-  const QuickStartWizard = () => {
-    const handleWizardNavigate = (event: { detail: { requestedStepIndex: number; reason: string } }) => {
-      setQuickStartActiveStepIndex(event.detail.requestedStepIndex);
-    };
-
-    const handleWizardCancel = () => {
-      setQuickStartWizardVisible(false);
-      setQuickStartActiveStepIndex(0);
-      setQuickStartConfig({
-        selectedTemplate: null,
-        workspaceName: '',
-        size: 'M',
-        launchInProgress: false,
-        launchedWorkspaceId: null
-      });
-    };
-
-    const handleWizardSubmit = async () => {
-      if (!quickStartConfig.selectedTemplate) return;
-
-      setQuickStartConfig(prev => ({ ...prev, launchInProgress: true }));
-      setQuickStartActiveStepIndex(3); // Move to progress step
-
-      try {
-        const result = await api.launchInstance(
-          getTemplateSlug(quickStartConfig.selectedTemplate),
-          quickStartConfig.workspaceName,
-          quickStartConfig.size
-        );
-
-        setQuickStartConfig(prev => ({
-          ...prev,
-          launchInProgress: false,
-          launchedWorkspaceId: result?.id || null
-        }));
-
-        addNotification({
-          type: 'success',
-          content: `Workspace "${quickStartConfig.workspaceName}" launched successfully!`,
-          dismissible: true
-        });
-
-        // Refresh workspace list
-        await loadApplicationData();
-      } catch (error) {
-        setQuickStartConfig(prev => ({ ...prev, launchInProgress: false }));
-        addNotification({
-          type: 'error',
-          content: `Failed to launch workspace: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          dismissible: true
-        });
-      }
-    };
-
-    const getSizeDescription = (size: string): string => {
-      const descriptions: Record<string, string> = {
-        'S': 'Small - 2 vCPU, 4GB RAM (~$0.08/hour)',
-        'M': 'Medium - 4 vCPU, 8GB RAM (~$0.16/hour)',
-        'L': 'Large - 8 vCPU, 16GB RAM (~$0.32/hour)',
-        'XL': 'Extra Large - 16 vCPU, 32GB RAM (~$0.64/hour)'
-      };
-      return descriptions[size] || descriptions['M'];
-    };
-
-    const getCategoryTemplates = (category: string): Template[] => {
-      return Object.values(state.templates).filter(t => {
-        const name = getTemplateName(t).toLowerCase();
-        const desc = getTemplateDescription(t).toLowerCase();
-        switch (category) {
-          case 'ml':
-            return name.includes('machine learning') || name.includes('ml') || name.includes('python') && desc.includes('tensorflow');
-          case 'datascience':
-            return name.includes('python') || name.includes('jupyter') || name.includes('data');
-          case 'r':
-            return name.includes('r ') || name.includes('rstudio');
-          case 'bio':
-            return name.includes('bio') || name.includes('genomics');
-          default:
-            return true;
-        }
-      });
-    };
-
-    return (
-      <Modal
-        visible={quickStartWizardVisible}
-        onDismiss={handleWizardCancel}
-        size="large"
-        header="Quick Start - Launch Workspace"
-      >
-        <Wizard
-          i18nStrings={{
-            stepNumberLabel: stepNumber => `Step ${stepNumber}`,
-            collapsedStepsLabel: (stepNumber, stepsCount) => `Step ${stepNumber} of ${stepsCount}`,
-            skipToButtonLabel: (step) => `Skip to ${step.title}`,
-            navigationAriaLabel: "Steps",
-            cancelButton: "Cancel",
-            previousButton: "Previous",
-            nextButton: "Next",
-            submitButton: "Launch Workspace",
-            optional: "optional"
-          }}
-          onNavigate={handleWizardNavigate}
-          onCancel={handleWizardCancel}
-          onSubmit={handleWizardSubmit}
-          activeStepIndex={quickStartActiveStepIndex}
-          isLoadingNextStep={quickStartConfig.launchInProgress}
-          steps={[
-            {
-              title: "Select Template",
-              description: "Choose a pre-configured research environment",
-              content: (
-                <SpaceBetween size="l">
-                  <Alert type="info">
-                    Select a template that matches your research needs. Each template includes specialized software and tools.
-                  </Alert>
-
-                  <Tabs
-                    tabs={[
-                      {
-                        id: "all",
-                        label: "All Templates",
-                        content: (
-                          <Cards
-                            cardDefinition={{
-                              header: item => (
-                                <Box variant="h3">{getTemplateName(item)}</Box>
-                              ),
-                              sections: [
-                                {
-                                  id: "description",
-                                  content: item => getTemplateDescription(item)
-                                },
-                                {
-                                  id: "tags",
-                                  content: item => (
-                                    <SpaceBetween direction="horizontal" size="xs">
-                                      {getTemplateTags(item).slice(0, 3).map((tag, idx) => (
-                                        <Badge key={idx} color="blue">{tag}</Badge>
-                                      ))}
-                                    </SpaceBetween>
-                                  )
-                                }
-                              ]
-                            }}
-                            items={Object.values(state.templates)}
-                            selectionType="single"
-                            selectedItems={quickStartConfig.selectedTemplate ? [quickStartConfig.selectedTemplate] : []}
-                            onSelectionChange={({ detail }) => {
-                              if (detail.selectedItems.length > 0) {
-                                setQuickStartConfig(prev => ({
-                                  ...prev,
-                                  selectedTemplate: detail.selectedItems[0]
-                                }));
-                              }
-                            }}
-                            cardsPerRow={[{ cards: 1 }, { minWidth: 500, cards: 2 }]}
-                            empty={
-                              <Box textAlign="center" color="inherit">
-                                <b>No templates available</b>
-                                <Box padding={{ bottom: "s" }} variant="p" color="inherit">
-                                  No research templates found.
-                                </Box>
-                              </Box>
-                            }
-                          />
-                        )
-                      },
-                      {
-                        id: "ml",
-                        label: "ML/AI",
-                        content: (
-                          <Cards
-                            cardDefinition={{
-                              header: item => <Box variant="h3">{getTemplateName(item)}</Box>,
-                              sections: [{ id: "description", content: item => getTemplateDescription(item) }]
-                            }}
-                            items={getCategoryTemplates('ml')}
-                            selectionType="single"
-                            selectedItems={quickStartConfig.selectedTemplate ? [quickStartConfig.selectedTemplate] : []}
-                            onSelectionChange={({ detail }) => {
-                              if (detail.selectedItems.length > 0) {
-                                setQuickStartConfig(prev => ({ ...prev, selectedTemplate: detail.selectedItems[0] }));
-                              }
-                            }}
-                            cardsPerRow={[{ cards: 1 }, { minWidth: 500, cards: 2 }]}
-                          />
-                        )
-                      },
-                      {
-                        id: "datascience",
-                        label: "Data Science",
-                        content: (
-                          <Cards
-                            cardDefinition={{
-                              header: item => <Box variant="h3">{getTemplateName(item)}</Box>,
-                              sections: [{ id: "description", content: item => getTemplateDescription(item) }]
-                            }}
-                            items={getCategoryTemplates('datascience')}
-                            selectionType="single"
-                            selectedItems={quickStartConfig.selectedTemplate ? [quickStartConfig.selectedTemplate] : []}
-                            onSelectionChange={({ detail }) => {
-                              if (detail.selectedItems.length > 0) {
-                                setQuickStartConfig(prev => ({ ...prev, selectedTemplate: detail.selectedItems[0] }));
-                              }
-                            }}
-                            cardsPerRow={[{ cards: 1 }, { minWidth: 500, cards: 2 }]}
-                          />
-                        )
-                      }
-                    ]}
-                  />
-                </SpaceBetween>
-              ),
-              isOptional: false
-            },
-            {
-              title: "Configure Workspace",
-              description: "Set workspace name and size",
-              content: (
-                <SpaceBetween size="l">
-                  <FormField
-                    label="Workspace Name"
-                    description="Choose a unique name for your workspace"
-                    constraintText="Use lowercase letters, numbers, and hyphens only"
-                  >
-                    <Input
-                      value={quickStartConfig.workspaceName}
-                      onChange={({ detail }) => setQuickStartConfig(prev => ({ ...prev, workspaceName: detail.value }))}
-                      placeholder="my-research-workspace"
-                    />
-                  </FormField>
-
-                  <FormField
-                    label="Workspace Size"
-                    description="Choose the compute resources for your workspace"
-                  >
-                    <Select
-                      selectedOption={{ label: getSizeDescription(quickStartConfig.size), value: quickStartConfig.size }}
-                      onChange={({ detail }) => setQuickStartConfig(prev => ({ ...prev, size: detail.selectedOption.value || 'M' }))}
-                      options={[
-                        { label: getSizeDescription('S'), value: 'S' },
-                        { label: getSizeDescription('M'), value: 'M' },
-                        { label: getSizeDescription('L'), value: 'L' },
-                        { label: getSizeDescription('XL'), value: 'XL' }
-                      ]}
-                    />
-                  </FormField>
-
-                  <Alert type="info">
-                    💡 <strong>Tip:</strong> Start with Medium size for most workloads. You can always stop and resize later.
-                  </Alert>
-                </SpaceBetween>
-              ),
-              isOptional: false
-            },
-            {
-              title: "Review & Launch",
-              description: "Review your configuration",
-              content: (
-                <SpaceBetween size="l">
-                  <Container header={<Header variant="h3">Configuration Summary</Header>}>
-                    <ColumnLayout columns={2} variant="text-grid">
-                      <div>
-                        <Box variant="awsui-key-label">Template</Box>
-                        <Box>{quickStartConfig.selectedTemplate ? getTemplateName(quickStartConfig.selectedTemplate) : 'None'}</Box>
-                      </div>
-                      <div>
-                        <Box variant="awsui-key-label">Workspace Name</Box>
-                        <Box>{quickStartConfig.workspaceName || 'Not set'}</Box>
-                      </div>
-                      <div>
-                        <Box variant="awsui-key-label">Size</Box>
-                        <Box>{getSizeDescription(quickStartConfig.size)}</Box>
-                      </div>
-                      <div>
-                        <Box variant="awsui-key-label">Estimated Cost</Box>
-                        <Box data-testid="cost-estimate">
-                          {quickStartConfig.size === 'S' && '~$0.08/hour (~$58/month)'}
-                          {quickStartConfig.size === 'M' && '~$0.16/hour (~$115/month)'}
-                          {quickStartConfig.size === 'L' && '~$0.32/hour (~$230/month)'}
-                          {quickStartConfig.size === 'XL' && '~$0.64/hour (~$460/month)'}
-                        </Box>
-                      </div>
-                    </ColumnLayout>
-                  </Container>
-
-                  <Alert type="warning">
-                    <strong>Cost Reminder:</strong> Remember to stop or hibernate your workspace when not in use to save costs.
-                  </Alert>
-
-                  {quickStartConfig.selectedTemplate && quickStartConfig.workspaceName && (
-                    <Alert type="success">
-                      ✅ Ready to launch! Click "Launch Workspace" to proceed.
-                    </Alert>
-                  )}
-                </SpaceBetween>
-              ),
-              isOptional: false
-            },
-            {
-              title: "Launch Progress",
-              description: "Launching your workspace",
-              content: (
-                <SpaceBetween size="l">
-                  {quickStartConfig.launchInProgress && (
-                    <Box>
-                      <ProgressBar value={50} description="Launching workspace..." />
-                      <Box margin={{ top: "m" }} color="text-body-secondary">
-                        This typically takes 2-3 minutes. Your workspace is being provisioned with all required software and configurations.
-                      </Box>
-                    </Box>
-                  )}
-
-                  {!quickStartConfig.launchInProgress && quickStartConfig.launchedWorkspaceId && (
-                    <Alert type="success" header="Workspace Launched Successfully!">
-                      <SpaceBetween size="m">
-                        <Box>
-                          Your workspace <strong>{quickStartConfig.workspaceName}</strong> is now running and ready to use.
-                        </Box>
-                        <Box>
-                          <strong>Next Steps:</strong>
-                          <ul>
-                            <li>Connect via SSH or web interface from the Workspaces page</li>
-                            <li>Access pre-installed software and tools</li>
-                            <li>Remember to stop or hibernate when done to save costs</li>
-                          </ul>
-                        </Box>
-                        <SpaceBetween direction="horizontal" size="s">
-                          <Button
-                            variant="primary"
-                            onClick={() => {
-                              setState(prev => ({ ...prev, activeView: 'workspaces' }));
-                              handleWizardCancel();
-                            }}
-                          >
-                            View Workspace
-                          </Button>
-                          <Button onClick={handleWizardCancel}>
-                            Close
-                          </Button>
-                        </SpaceBetween>
-                      </SpaceBetween>
-                    </Alert>
-                  )}
-
-                  {!quickStartConfig.launchInProgress && !quickStartConfig.launchedWorkspaceId && (
-                    <Alert type="info">
-                      Click "Launch Workspace" to start the deployment process.
-                    </Alert>
-                  )}
-                </SpaceBetween>
-              ),
-              isOptional: false
-            }
-          ]}
-        />
-      </Modal>
-    );
-  };
-
-  // Create Project Modal
-  const CreateProjectModal = () => (
-    <Modal
-      visible={projectModalVisible}
-      onDismiss={() => {
-        setProjectModalVisible(false);
-        setProjectValidationError('');
-      }}
-      header="Create New Project"
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button onClick={() => setProjectModalVisible(false)}>Cancel</Button>
-            <Button variant="primary" data-testid="create-project-submit-button" onClick={handleCreateProject}>Create</Button>
-          </SpaceBetween>
-        </Box>
-      }
-    >
-      <SpaceBetween size="m">
-        {projectValidationError && (
-          <Alert type="error" data-testid="validation-error">
-            {projectValidationError}
-          </Alert>
-        )}
-
-        <FormField label="Project Name" description="Unique identifier for the project">
-          <Input
-            data-testid="project-name-input"
-            value={projectName}
-            onChange={({ detail }) => setProjectName(detail.value)}
-            placeholder="e.g., ML Research 2024"
-          />
-        </FormField>
-
-        <FormField label="Description" description="Brief description of the project">
-          <Textarea
-            data-testid="project-description-input"
-            value={projectDescription}
-            onChange={({ detail }) => setProjectDescription(detail.value)}
-            placeholder="Describe the project purpose..."
-          />
-        </FormField>
-
-        <FormField label="Budget Limit (optional)" description="Maximum spending limit in USD">
-          <Input
-            data-testid="project-budget-input"
-            type="number"
-            value={projectBudget}
-            onChange={({ detail }) => setProjectBudget(detail.value)}
-            placeholder="1000.00"
-          />
-        </FormField>
-      </SpaceBetween>
-    </Modal>
-  );
-
-  // Create User Modal
-  const CreateUserModal = () => (
-    <Modal
-      visible={userModalVisible}
-      onDismiss={() => {
-        setUserModalVisible(false);
-        setUserValidationError('');
-      }}
-      header="Create New User"
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button onClick={() => setUserModalVisible(false)} disabled={creatingUser}>Cancel</Button>
-            <Button variant="primary" onClick={handleCreateUser} disabled={creatingUser} loading={creatingUser}>
-              {creatingUser ? 'Creating...' : 'Create'}
-            </Button>
-          </SpaceBetween>
-        </Box>
-      }
-    >
-      <SpaceBetween size="m">
-        {userValidationError && (
-          <ValidationError message={userValidationError} visible={true} />
-        )}
-
-        <FormField label="Username" description="Unique username for the user">
-          <Input
-            data-testid="user-username-input"
-            value={username}
-            onChange={({ detail }) => setUsername(detail.value)}
-            placeholder="e.g., jsmith"
-          />
-        </FormField>
-
-        <FormField label="Email" description="User's email address">
-          <Input
-            data-testid="user-email-input"
-            type="email"
-            value={userEmail}
-            onChange={({ detail }) => setUserEmail(detail.value)}
-            placeholder="user@example.com"
-          />
-        </FormField>
-
-        <FormField label="Full Name" description="User's full name">
-          <Input
-            data-testid="user-fullname-input"
-            value={userFullName}
-            onChange={({ detail }) => setUserFullName(detail.value)}
-            placeholder="John Smith"
-          />
-        </FormField>
-      </SpaceBetween>
-    </Modal>
-  );
-
-  // Create Budget Pool Modal
-  const CreateBudgetModal = () => (
-    <Modal
-      visible={createBudgetModalVisible}
-      onDismiss={() => {
-        setCreateBudgetModalVisible(false);
-        setBudgetValidationError('');
-      }}
-      header="Create Budget Pool"
-      footer={
-        <Box float="right">
-          <SpaceBetween direction="horizontal" size="xs">
-            <Button onClick={() => setCreateBudgetModalVisible(false)}>Cancel</Button>
-            <Button variant="primary" data-testid="create-budget-submit-button" onClick={handleCreateBudget}>Create Budget</Button>
-          </SpaceBetween>
-        </Box>
-      }
-    >
-      <SpaceBetween size="m">
-        {budgetValidationError && (
-          <Alert type="error" data-testid="budget-validation-error">
-            {budgetValidationError}
-          </Alert>
-        )}
-
-        <FormField label="Budget Name" description="E.g., 'NSF Grant CISE-2024-12345'">
-          <Input
-            data-testid="budget-name-input"
-            value={budgetName}
-            onChange={({ detail }) => setBudgetName(detail.value)}
-            placeholder="Enter budget pool name"
-          />
-        </FormField>
-
-        <FormField label="Description" description="Brief description of the funding source">
-          <Textarea
-            data-testid="budget-description-input"
-            value={budgetDescription}
-            onChange={({ detail }) => setBudgetDescription(detail.value)}
-            placeholder="Describe the budget source..."
-          />
-        </FormField>
-
-        <FormField label="Total Amount (USD)" description="Total funding available">
-          <Input
-            data-testid="budget-amount-input"
-            value={totalAmount}
-            onChange={({ detail }) => setTotalAmount(detail.value)}
-            type="number"
-            placeholder="50000.00"
-          />
-        </FormField>
-
-        <FormField label="Budget Period" description="Timeframe for this budget">
-          <Select
-            data-testid="budget-period-select"
-            selectedOption={{ label: period.charAt(0).toUpperCase() + period.slice(1), value: period }}
-            onChange={({ detail }) => setPeriod(detail.selectedOption.value!)}
-            options={[
-              { label: 'Monthly', value: 'monthly' },
-              { label: 'Quarterly', value: 'quarterly' },
-              { label: 'Yearly', value: 'yearly' },
-              { label: 'Project Lifetime', value: 'project' }
-            ]}
-          />
-        </FormField>
-
-        <FormField label="Alert Threshold (%)" description="Alert when spending exceeds this percentage">
-          <Input
-            data-testid="budget-threshold-input"
-            value={alertThreshold}
-            onChange={({ detail }) => setAlertThreshold(detail.value)}
-            type="number"
-            placeholder="80"
-          />
-        </FormField>
-      </SpaceBetween>
-    </Modal>
-  );
-
   // Main render
   return (
     <ApiContext.Provider value={api}>
@@ -3918,8 +2522,6 @@ export default function PrismApp() {
               onRefresh={loadApplicationData}
               onNavigate={(view) => setState(prev => ({ ...prev, activeView: view as AppState['activeView'] }))}
               onCreateBackup={() => {
-                setCreateBackupConfig({ instanceId: '', backupName: '', backupType: 'full', description: '' });
-                setCreateBackupValidationAttempted(false);
                 setCreateBackupModalVisible(true);
               }}
               onDeleteBackup={(item) => {
@@ -3928,7 +2530,6 @@ export default function PrismApp() {
               }}
               onRestoreBackup={(item) => {
                 setSelectedBackupForRestore(item);
-                setRestoreInstanceName('');
                 setRestoreBackupModalVisible(true);
               }}
             />
@@ -4178,10 +2779,30 @@ export default function PrismApp() {
           {state.activeView === 'settings' && <SettingsView />}
         </div>
       </AppLayoutShell>
-      <LaunchModal />
-      <CreateBackupModal />
-      <DeleteBackupModal />
-      <RestoreBackupModal />
+      <LaunchModalExtracted
+        visible={launchModalVisible}
+        selectedTemplate={state.selectedTemplate}
+        onDismiss={handleModalDismiss}
+        onLaunch={handleLaunchInstance}
+      />
+      <CreateBackupModalExtracted
+        visible={createBackupModalVisible}
+        instances={state.instances}
+        onDismiss={() => setCreateBackupModalVisible(false)}
+        onSuccess={loadApplicationData}
+      />
+      <DeleteBackupModalExtracted
+        visible={deleteBackupModalVisible}
+        backup={selectedBackupForDelete}
+        onDismiss={() => { setDeleteBackupModalVisible(false); setSelectedBackupForDelete(null); }}
+        onSuccess={loadApplicationData}
+      />
+      <RestoreBackupModalExtracted
+        visible={restoreBackupModalVisible}
+        backup={selectedBackupForRestore}
+        onDismiss={() => { setRestoreBackupModalVisible(false); setSelectedBackupForRestore(null); }}
+        onSuccess={loadApplicationData}
+      />
       <DeleteConfirmationModalExtracted
         visible={deleteModalVisible}
         config={deleteModalConfig}
@@ -4203,11 +2824,35 @@ export default function PrismApp() {
           onDismiss={() => setIdlePolicyModalInstance(null)}
         />
       )}
-      <OnboardingWizard />
-      <QuickStartWizard />
-      <CreateProjectModal />
-      <CreateUserModal />
-      <CreateBudgetModal />
+      <OnboardingWizardExtracted
+        visible={onboardingVisible}
+        onComplete={() => {
+          setOnboardingComplete(true);
+          setOnboardingVisible(false);
+        }}
+      />
+      <QuickStartWizardExtracted
+        visible={quickStartWizardVisible}
+        templates={state.templates}
+        onDismiss={() => setQuickStartWizardVisible(false)}
+        onSuccess={loadApplicationData}
+        onNavigateToWorkspaces={() => setState(prev => ({ ...prev, activeView: 'workspaces' }))}
+      />
+      <CreateProjectModalExtracted
+        visible={projectModalVisible}
+        onDismiss={() => setProjectModalVisible(false)}
+        onSubmit={handleCreateProject}
+      />
+      <CreateUserModalExtracted
+        visible={userModalVisible}
+        onDismiss={() => setUserModalVisible(false)}
+        onSubmit={handleCreateUser}
+      />
+      <CreateBudgetModalExtracted
+        visible={createBudgetModalVisible}
+        onDismiss={() => setCreateBudgetModalVisible(false)}
+        onSubmit={handleCreateBudget}
+      />
       <SSHKeyModal
         visible={sshKeyModalVisible}
         username={selectedUsername}
