@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { AppLayout as AppLayoutShell } from './components/app-layout';
 import { SideNav } from './components/side-nav';
 import Terminal from './Terminal';
-import { ValidationError } from './components/ValidationError';
+// ValidationError moved to extracted modal components
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { InvitationManagementView } from './components/InvitationManagementView';
 import { CoursesPanel } from './components/CoursesPanel';
@@ -30,6 +30,7 @@ import { InstanceManagementView as InstanceManagementViewExtracted } from './vie
 import { StorageManagementView as StorageManagementViewExtracted } from './views/StorageManagementView';
 import { ProjectManagementView as ProjectManagementViewExtracted } from './views/ProjectManagementView';
 import { UserManagementView as UserManagementViewExtracted } from './views/UserManagementView';
+import { SettingsView as SettingsViewExtracted } from './views/SettingsView';
 import { getTemplateName, getTemplateSlug } from './lib/template-utils';
 import { ApiContext } from './hooks/use-api';
 import { SafePrismAPI } from './lib/api';
@@ -46,27 +47,28 @@ import { CreateBackupModal as CreateBackupModalExtracted } from './modals/Create
 import { DeleteBackupModal as DeleteBackupModalExtracted } from './modals/DeleteBackupModal';
 import { RestoreBackupModal as RestoreBackupModalExtracted } from './modals/RestoreBackupModal'
 import { QuickStartWizard as QuickStartWizardExtracted } from './modals/QuickStartWizard';
+import { UserDetailsModal as UserDetailsModalExtracted } from './modals/UserDetailsModal';
+import { UserProvisionModal as UserProvisionModalExtracted } from './modals/UserProvisionModal';
+import { UserStatusModal as UserStatusModalExtracted } from './modals/UserStatusModal';
+import { SendInvitationModal as SendInvitationModalExtracted } from './modals/SendInvitationModal';
+import { RedeemTokenModal as RedeemTokenModalExtracted } from './modals/RedeemTokenModal';
+import { CreateEFSVolumeModal as CreateEFSVolumeModalExtracted } from './modals/CreateEFSVolumeModal';
+import { CreateEBSVolumeModal as CreateEBSVolumeModalExtracted } from './modals/CreateEBSVolumeModal';
+import { ConnectionInfoModal as ConnectionInfoModalExtracted } from './modals/ConnectionInfoModal';
+import { EditProjectModal as EditProjectModalExtracted } from './modals/EditProjectModal';
+import { ManageMembersModal as ManageMembersModalExtracted } from './modals/ManageMembersModal';
+import { BudgetAnalysisModal as BudgetAnalysisModalExtracted } from './modals/BudgetAnalysisModal';
+import { CostReportModal as CostReportModalExtracted } from './modals/CostReportModal';
+import { UsageStatisticsModal as UsageStatisticsModalExtracted } from './modals/UsageStatisticsModal';
+import { EditUserModal as EditUserModalExtracted } from './modals/EditUserModal';
 
 import {
   Container,
   Header,
   SpaceBetween,
-  Button,
-  StatusIndicator,
-  Badge,
-  Table,
-  Modal,
-  Form,
   FormField,
-  Input,
   Select,
   Alert,
-  Spinner,
-  Box,
-  ColumnLayout,
-  ProgressBar,
-  Textarea,
-  Toggle
 } from './lib/cloudscape-shim';
 
 // Type definitions
@@ -529,12 +531,6 @@ interface WebService {
   type?: string;
 }
 
-interface UserUpdateRequest {
-  email?: string;
-  display_name?: string;
-  role?: string;
-}
-
 // SafePrismAPI class is in src/lib/api.ts — used via useApi() hook
 // CoursesManagementView — top-level component (not inside App) to prevent re-mount on state change.
 // Pattern matches InvitationManagementView and ApprovalsView.
@@ -659,10 +655,6 @@ export default function PrismApp() {
   // Storage creation modal state
   const [createEFSModalVisible, setCreateEFSModalVisible] = useState(false);
   const [createEBSModalVisible, setCreateEBSModalVisible] = useState(false);
-  const [storageVolumeName, setStorageVolumeName] = useState('');
-  const [storageVolumeSize, setStorageVolumeSize] = useState('');
-  const [storageVolumeNameError, setStorageVolumeNameError] = useState('');
-  const [storageVolumeSizeError, setStorageVolumeSizeError] = useState('');
 
   // Create Project modal state
   const [projectModalVisible, setProjectModalVisible] = useState(false);
@@ -692,8 +684,6 @@ export default function PrismApp() {
   // User provisioning state
   const [provisionModalVisible, setProvisionModalVisible] = useState(false);
   const [selectedUserForProvision, setSelectedUserForProvision] = useState<User | null>(null);
-  const [selectedWorkspaceForProvision, setSelectedWorkspaceForProvision] = useState<string>('');
-  const [provisioningInProgress, setProvisioningInProgress] = useState(false);
 
   // Connection info modal state
   const [connectionModalVisible, setConnectionModalVisible] = useState(false);
@@ -714,29 +704,17 @@ export default function PrismApp() {
   // Individual invitation states
   const [sendInvitationModalVisible, setSendInvitationModalVisible] = useState(false);
   const [selectedProjectForInvitation, setSelectedProjectForInvitation] = useState<string>('');
-  const [invitationEmail, setInvitationEmail] = useState('');
-  const [invitationRole, setInvitationRole] = useState<'viewer' | 'member' | 'admin'>('member');
-  const [invitationMessage, setInvitationMessage] = useState('');
-  const [invitationValidationError, setInvitationValidationError] = useState('');
 
   // Invitation token redemption
   const [redeemTokenModalVisible, setRedeemTokenModalVisible] = useState(false);
-  const [invitationToken, setInvitationToken] = useState('');
-  const [tokenValidationError, setTokenValidationError] = useState('');
 
   // Project management modals
   const [showEditProjectModal, setShowEditProjectModal] = useState(false);
   const [selectedProjectForEdit, setSelectedProjectForEdit] = useState<Project | null>(null);
-  const [editProjectName, setEditProjectName] = useState('');
-  const [editProjectDescription, setEditProjectDescription] = useState('');
-  const [editProjectStatus, setEditProjectStatus] = useState('');
-  const [editProjectSubmitting, setEditProjectSubmitting] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
   const [selectedProjectForMembers, setSelectedProjectForMembers] = useState<Project | null>(null);
   const [manageMembersData, setManageMembersData] = useState<MemberData[]>([]);
   const [manageMembersLoading, setManageMembersLoading] = useState(false);
-  const [addMemberUsername, setAddMemberUsername] = useState('');
-  const [addMemberRole, setAddMemberRole] = useState('member');
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [selectedProjectForBudget, setSelectedProjectForBudget] = useState<Project | null>(null);
   const [budgetModalData, setBudgetModalData] = useState<BudgetData | null>(null);
@@ -753,10 +731,6 @@ export default function PrismApp() {
   // User management modals
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
-  const [editUserEmail, setEditUserEmail] = useState('');
-  const [editUserDisplayName, setEditUserDisplayName] = useState('');
-  const [editUserRole, setEditUserRole] = useState('');
-  const [editUserSubmitting, setEditUserSubmitting] = useState(false);
 
   // Helper: add a toast notification
   // Helper: set (replace/update) a toast notification
@@ -943,69 +917,7 @@ export default function PrismApp() {
   }, [state.activeView, loadBudgetData]);
 
   // Utility function to get accessible status labels (WCAG 1.1.1)
-  const getStatusLabel = (context: string, status: string, additionalInfo?: string): string => {
-    const labels: Record<string, Record<string, string>> = {
-      instance: {
-        running: 'Workspace running',
-        stopped: 'Workspace stopped',
-        pending: 'Workspace pending',
-        stopping: 'Workspace stopping',
-        terminated: 'Workspace terminated',
-        hibernated: 'Workspace hibernated'
-      },
-      volume: {
-        available: 'Volume available',
-        'in-use': 'Volume in use',
-        creating: 'Volume creating',
-        deleting: 'Volume deleting'
-      },
-      project: {
-        active: 'Project active',
-        suspended: 'Project suspended',
-        archived: 'Project archived'
-      },
-      user: {
-        active: 'User active',
-        inactive: 'User inactive'
-      },
-      connection: {
-        success: 'Connected to daemon',
-        error: 'Disconnected from daemon'
-      },
-      ami: {
-        available: 'AMI available',
-        pending: 'AMI pending',
-        failed: 'AMI failed'
-      },
-      build: {
-        completed: 'Build completed',
-        failed: 'Build failed',
-        'in-progress': 'Build in progress'
-      },
-      budget: {
-        ok: 'Budget OK',
-        warning: 'Budget warning',
-        critical: 'Budget critical'
-      },
-      policy: {
-        enabled: 'Policy enabled',
-        disabled: 'Policy disabled'
-      },
-      marketplace: {
-        verified: 'Verified publisher',
-        community: 'Community template'
-      },
-      idle: {
-        enabled: 'Idle detection enabled',
-        disabled: 'Idle detection disabled'
-      },
-      auth: {
-        authenticated: 'Authenticated'
-      }
-    };
-    const label = labels[context]?.[status] || `${context} ${status}`;
-    return additionalInfo ? `${label}: ${additionalInfo}` : label;
-  };
+  // getStatusLabel moved to src/views/SettingsView.tsx
 
   // Load data on mount and refresh periodically
   // NOTE: Budget loading on navigation is handled by the separate effect below (line 2145)
@@ -1384,26 +1296,23 @@ export default function PrismApp() {
   };
 
   // Individual Invitation Handlers
-  const handleSendInvitation = async () => {
+  const handleSendInvitation = async (data: { email: string; role: 'viewer' | 'member' | 'admin'; message: string }) => {
     // Validate
-    if (!invitationEmail.trim()) {
-      setInvitationValidationError('Email address is required');
-      return;
+    if (!data.email.trim()) {
+      throw new Error('Email address is required');
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(invitationEmail)) {
-      setInvitationValidationError('Please enter a valid email address');
-      return;
+    if (!emailRegex.test(data.email)) {
+      throw new Error('Please enter a valid email address');
     }
 
     if (!selectedProjectForInvitation) {
-      setInvitationValidationError('Please select a project');
-      return;
+      throw new Error('Please select a project');
     }
 
     try {
-      await api.sendInvitation(selectedProjectForInvitation, invitationEmail.trim(), invitationRole, invitationMessage.trim() || undefined);
+      await api.sendInvitation(selectedProjectForInvitation, data.email.trim(), data.role, data.message.trim() || undefined);
 
       // Show success notification
       setState(prev => ({
@@ -1411,37 +1320,31 @@ export default function PrismApp() {
         notifications: [{
           type: 'success',
           header: 'Invitation Sent',
-          content: `Invitation sent to ${invitationEmail}`,
+          content: `Invitation sent to ${data.email}`,
           dismissible: true,
           id: Date.now().toString()
         }, ...prev.notifications]
       }));
 
-      // Reset form
-      setInvitationValidationError('');
       setSendInvitationModalVisible(false);
-      setInvitationEmail('');
-      setInvitationMessage('');
-      setInvitationRole('member');
     } catch (error: any) {
-      setInvitationValidationError(`Failed to send invitation: ${error.message || 'Unknown error'}`);
+      throw new Error(`Failed to send invitation: ${error.message || 'Unknown error'}`);
     }
   };
 
-  const handleRedeemToken = async () => {
-    if (!invitationToken.trim()) {
-      setTokenValidationError('Invitation token is required');
-      return;
+  const handleRedeemToken = async (token: string) => {
+    if (!token.trim()) {
+      throw new Error('Invitation token is required');
     }
 
     try {
-      const invitationData = await api.getInvitationByToken(invitationToken.trim());
+      const invitationData = await api.getInvitationByToken(token.trim());
 
       // Show confirmation with invitation details
       const confirmed = confirm(`Accept invitation to project "${invitationData.project_name}" as ${invitationData.role}?`);
 
       if (confirmed) {
-        await api.acceptInvitation(invitationToken.trim());
+        await api.acceptInvitation(token.trim());
 
         setState(prev => ({
           ...prev,
@@ -1454,12 +1357,10 @@ export default function PrismApp() {
           }, ...prev.notifications]
         }));
 
-        setTokenValidationError('');
         setRedeemTokenModalVisible(false);
-        setInvitationToken('');
       }
     } catch (error: any) {
-      setTokenValidationError(`Failed to redeem token: ${error.message || 'Invalid or expired token'}`);
+      throw new Error(`Failed to redeem token: ${error.message || 'Invalid or expired token'}`);
     }
   };
 
@@ -1819,555 +1720,7 @@ export default function PrismApp() {
 
   // Storage Management View
   // Backup Management View
-  // Settings View
-  const SettingsView = () => {
-    type SettingsSection = typeof state.settingsSection;
-    const navItems: Array<{ section: SettingsSection; label: string }> = [
-      { section: 'general', label: 'General' },
-      { section: 'profiles', label: 'Profiles' },
-      { section: 'users', label: 'Users' },
-    ];
-    const advancedItems: Array<{ section: SettingsSection; label: string }> = [
-      { section: 'ami', label: 'AMI Management' },
-      { section: 'rightsizing', label: 'Rightsizing' },
-      { section: 'policy', label: 'Policy Framework' },
-      { section: 'marketplace', label: 'Template Marketplace' },
-      { section: 'idle', label: 'Idle Detection' },
-      { section: 'logs', label: 'Logs Viewer' },
-    ];
-
-    // Render content based on current section
-    const renderSettingsContent = () => {
-      switch (state.settingsSection) {
-        case 'general':
-          return (
-            <SpaceBetween size="l">
-              <Header
-                variant="h1"
-                description="Configure Prism preferences and system settings"
-                actions={
-                  <SpaceBetween direction="horizontal" size="xs">
-                    <Button onClick={loadApplicationData} disabled={state.loading}>
-                      {state.loading ? <Spinner /> : 'Refresh'}
-                    </Button>
-                    <Button variant="primary">
-                      Save Settings
-                    </Button>
-                  </SpaceBetween>
-                }
-              >
-                General Settings
-              </Header>
-
-      {/* System Status Section */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="System status and daemon configuration"
-          >
-            System Status
-          </Header>
-        }
-      >
-        <ColumnLayout columns={3} variant="text-grid">
-          <SpaceBetween size="m">
-            <Box variant="awsui-key-label">Daemon Status</Box>
-            <StatusIndicator
-              type={state.connected ? 'success' : 'error'}
-              iconAriaLabel={getStatusLabel('connection', state.connected ? 'success' : 'error')}
-            >
-              {state.connected ? 'Connected' : 'Disconnected'}
-            </StatusIndicator>
-            <Box color="text-body-secondary">
-              Prism daemon on port 8947
-            </Box>
-          </SpaceBetween>
-          <SpaceBetween size="m">
-            <Box variant="awsui-key-label">API Version</Box>
-            <Box fontSize="heading-m">v0.5.1</Box>
-            <Box color="text-body-secondary">
-              Current Prism version
-            </Box>
-          </SpaceBetween>
-          <SpaceBetween size="m">
-            <Box variant="awsui-key-label">Active Resources</Box>
-            <Box fontSize="heading-m">{state.instances.length + state.efsVolumes.length + state.ebsVolumes.length}</Box>
-            <Box color="text-body-secondary">
-              Workspaces, EFS and EBS volumes
-            </Box>
-          </SpaceBetween>
-        </ColumnLayout>
-      </Container>
-
-      {/* Update Information Section */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="Check for and install Prism updates"
-          >
-            Update Information
-          </Header>
-        }
-      >
-        {state.updateInfo ? (
-          <SpaceBetween size="m">
-            <ColumnLayout columns={3} variant="text-grid">
-              <SpaceBetween size="m">
-                <Box variant="awsui-key-label">Current Version</Box>
-                <Box fontSize="heading-m">{state.updateInfo.current_version}</Box>
-              </SpaceBetween>
-              <SpaceBetween size="m">
-                <Box variant="awsui-key-label">Latest Version</Box>
-                <Box fontSize="heading-m">
-                  {state.updateInfo.latest_version}
-                  {state.updateInfo.is_update_available && (
-                    <span style={{ marginLeft: '8px' }}><Badge color="green">New</Badge></span>
-                  )}
-                </Box>
-              </SpaceBetween>
-              <SpaceBetween size="m">
-                <Box variant="awsui-key-label">Status</Box>
-                <StatusIndicator
-                  type={state.updateInfo.is_update_available ? 'info' : 'success'}
-                >
-                  {state.updateInfo.is_update_available ? 'Update Available' : 'Up to Date'}
-                </StatusIndicator>
-              </SpaceBetween>
-            </ColumnLayout>
-
-            {state.updateInfo.is_update_available && (
-              <Alert type="info" header="New version available">
-                <SpaceBetween size="s">
-                  <div><strong>Installation method:</strong> {state.updateInfo.install_method}</div>
-                  <div><strong>Update command:</strong> <code>{state.updateInfo.update_command}</code></div>
-                  <div><strong>Published:</strong> {new Date(state.updateInfo.published_at).toLocaleDateString()}</div>
-                  <div>
-                    <a href={state.updateInfo.release_url} target="_blank" rel="noopener noreferrer">
-                      View release notes →
-                    </a>
-                  </div>
-                </SpaceBetween>
-              </Alert>
-            )}
-          </SpaceBetween>
-        ) : (
-          <Alert type="info">Checking for updates...</Alert>
-        )}
-      </Container>
-
-      {/* Configuration Section */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="Prism configuration and preferences"
-          >
-            Configuration
-          </Header>
-        }
-      >
-        <SpaceBetween size="l">
-          <FormField
-            label="Auto-refresh interval"
-            description="How often the GUI should refresh data from the daemon"
-          >
-            <Select
-              selectedOption={{ label: "30 seconds", value: "30" }}
-              onChange={() => {}}
-              options={[
-                { label: "15 seconds", value: "15" },
-                { label: "30 seconds", value: "30" },
-                { label: "1 minute", value: "60" },
-                { label: "2 minutes", value: "120" }
-              ]}
-            />
-          </FormField>
-
-          <FormField
-            label="Default workspace size"
-            description="Default size for new workspaces when launching templates"
-          >
-            <Select
-              selectedOption={{ label: "Medium (M)", value: "M" }}
-              onChange={() => {}}
-              options={[
-                { label: "Small (S)", value: "S" },
-                { label: "Medium (M)", value: "M" },
-                { label: "Large (L)", value: "L" },
-                { label: "Extra Large (XL)", value: "XL" }
-              ]}
-            />
-          </FormField>
-
-          <FormField
-            label="Show advanced features"
-            description="Display advanced management options like hibernation policies and cost tracking"
-          >
-            <Select
-              selectedOption={{ label: "Enabled", value: "enabled" }}
-              onChange={() => {}}
-              options={[
-                { label: "Enabled", value: "enabled" },
-                { label: "Disabled", value: "disabled" }
-              ]}
-            />
-          </FormField>
-
-          <FormField
-            label="Start at login"
-            description="Automatically start Prism GUI when you log in to your computer"
-          >
-            <Toggle
-              checked={state.autoStartEnabled || false}
-              onChange={async ({ detail }) => {
-                try {
-                  await api.setAutoStart(detail.checked);
-                  setState(prev => ({ ...prev, autoStartEnabled: detail.checked }));
-
-                  setNotification({
-                    type: 'success',
-                    content: `Auto-start ${detail.checked ? 'enabled' : 'disabled'} successfully`,
-                    dismissible: true,
-                    id: 'auto-start-update'
-                  });
-                } catch (error) {
-                  logger.error('Failed to update auto-start:', error);
-                  setNotification({
-                    type: 'error',
-                    content: `Failed to update auto-start: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                    dismissible: true,
-                    id: 'auto-start-error'
-                  });
-                }
-              }}
-            >
-              {state.autoStartEnabled ? 'Enabled' : 'Disabled'}
-            </Toggle>
-          </FormField>
-        </SpaceBetween>
-      </Container>
-
-      {/* Profile and Authentication Section */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="AWS profile and authentication settings"
-          >
-            AWS Configuration
-          </Header>
-        }
-      >
-        <ColumnLayout columns={2}>
-          <SpaceBetween size="m">
-            <FormField
-              label="AWS Profile"
-              description="Current AWS profile for authentication"
-            >
-              <Input
-                value="aws"
-                readOnly
-                placeholder="AWS profile name"
-              />
-            </FormField>
-            <FormField
-              label="AWS Region"
-              description="Current AWS region for resources"
-            >
-              <Input
-                value="us-west-2"
-                readOnly
-                placeholder="AWS region"
-              />
-            </FormField>
-          </SpaceBetween>
-          <SpaceBetween size="m">
-            <Box variant="strong">Authentication Status</Box>
-            <StatusIndicator
-              type="success"
-              iconAriaLabel={getStatusLabel('auth', 'authenticated')}
-            >
-              Authenticated via AWS profile
-            </StatusIndicator>
-            <Box color="text-body-secondary">
-              Using credentials from AWS profile "aws" in region us-west-2.
-              Prism automatically manages authentication for all API calls.
-            </Box>
-          </SpaceBetween>
-        </ColumnLayout>
-      </Container>
-
-      {/* Feature Management */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="Enable or disable Prism features"
-          >
-            Feature Management
-          </Header>
-        }
-      >
-        <SpaceBetween size="m">
-          {[
-            { name: "Workspace Management", status: "enabled", description: "Launch, manage, and connect to cloud workspaces" },
-            { name: "Storage Management", status: "enabled", description: "EFS and EBS volume operations" },
-            { name: "Project Management", status: "enabled", description: "Multi-user collaboration and budget tracking" },
-            { name: "User Management", status: "enabled", description: "Research users with persistent identity" },
-            { name: "Hibernation Policies", status: "enabled", description: "Automated cost optimization through hibernation" },
-            { name: "Cost Tracking", status: "partial", description: "Budget monitoring and expense analysis" },
-            { name: "Template Marketplace", status: "partial", description: "Community template sharing and discovery" },
-            { name: "Scaling Predictions", status: "partial", description: "Resource optimization recommendations" }
-          ].map((feature) => (
-            <Box key={feature.name}>
-              <SpaceBetween direction="horizontal" size="s">
-                <span style={{ fontWeight: 'bold', minWidth: '200px', display: 'inline-block' }}>{feature.name}:</span>
-                <StatusIndicator
-                  type={
-                    feature.status === 'enabled' ? 'success' :
-                    feature.status === 'partial' ? 'warning' : 'error'
-                  }
-                  iconAriaLabel={getStatusLabel('policy', feature.status, feature.name)}
-                >
-                  {feature.status}
-                </StatusIndicator>
-                <Box color="text-body-secondary">{feature.description}</Box>
-              </SpaceBetween>
-            </Box>
-          ))}
-        </SpaceBetween>
-      </Container>
-
-      {/* Debug and Troubleshooting */}
-      <Container
-        header={
-          <Header
-            variant="h2"
-            description="Debug information and troubleshooting tools"
-          >
-            Debug & Troubleshooting
-          </Header>
-        }
-      >
-        <SpaceBetween size="m">
-          <Alert type="info">
-            <Box variant="strong">Debug Mode</Box>
-            <Box variant="p">
-              Console logging is enabled. Check browser developer tools for detailed API interactions and error messages.
-            </Box>
-          </Alert>
-
-          <ColumnLayout columns={2}>
-            <SpaceBetween size="s">
-              <Box variant="strong">Quick Actions</Box>
-              <Button>Test API Connection</Button>
-              <Button>Refresh All Data</Button>
-              <Button>Clear Notifications</Button>
-              <Button>Export Configuration</Button>
-            </SpaceBetween>
-            <SpaceBetween size="s">
-              <Box variant="strong">Troubleshooting</Box>
-              <Button variant="link" external>View Documentation</Button>
-              <Button variant="link" external>GitHub Issues</Button>
-              <Button variant="link" external>Troubleshooting Guide</Button>
-            </SpaceBetween>
-          </ColumnLayout>
-        </SpaceBetween>
-      </Container>
-            </SpaceBetween>
-          );
-
-        case 'profiles':
-          return <ProfileSelectorViewExtracted />;
-
-        case 'users':
-          return (
-            <UserManagementViewExtracted
-              users={state.users}
-              instances={state.instances}
-              loading={state.loading}
-              onRefresh={loadApplicationData}
-              onCreateUser={() => setUserModalVisible(true)}
-              onEditUser={(user) => {
-                setSelectedUserForEdit(user);
-                setEditUserEmail(user.email || '');
-                setEditUserDisplayName(user.display_name || (user as any).full_name || '');
-                setEditUserRole('');
-                setShowEditUserModal(true);
-              }}
-              onViewUserDetails={async (user) => {
-                setSelectedUserForDetails(user);
-                setUserDetailsModalVisible(true);
-                setLoadingSSHKeys(true);
-                try {
-                  const response = await api.getUserSSHKeys(user.username);
-                  setUserSSHKeys(response.keys || []);
-                } catch (_e) {
-                  setUserSSHKeys([]);
-                } finally {
-                  setLoadingSSHKeys(false);
-                }
-              }}
-              onViewUserStatus={async (user) => {
-                setSelectedUserForStatus(user);
-                setUserStatusModalVisible(true);
-                setLoadingUserStatus(true);
-                try {
-                  const statusData = await api.getUserStatus(user.username);
-                  setUserStatusDetails(statusData);
-                } catch (_e) {
-                  setUserStatusDetails(null);
-                } finally {
-                  setLoadingUserStatus(false);
-                }
-              }}
-              onProvisionUser={(username) => {
-                const user = state.users.find(u => u.username === username) || null;
-                setSelectedUserForProvision(user);
-                setProvisionModalVisible(true);
-              }}
-              onManageSSHKeys={(username) => {
-                setSelectedUsername(username);
-                setSshKeyModalVisible(true);
-              }}
-              onDeleteUser={(user) => {
-                const hasWorkspaces = (user.provisioned_instances?.length || 0) > 0;
-                const workspaceWarning = hasWorkspaces
-                  ? `This user has ${user.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
-                  : undefined;
-                setDeleteModalConfig({
-                  type: 'user',
-                  name: user.username,
-                  requireNameConfirmation: false,
-                  warning: workspaceWarning,
-                  onConfirm: async () => {
-                    try {
-                      await api.deleteUser(user.username);
-                      usersVersionRef.current++;
-                      setState(prev => ({
-                        ...prev,
-                        users: prev.users.filter(u => u.username !== user.username),
-                        notifications: [{
-                          type: 'success',
-                          header: 'User Deleted',
-                          content: `User "${user.username}" deleted successfully`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }, ...prev.notifications]
-                      }));
-                      setDeleteModalVisible(false);
-                    } catch (error: any) {
-                      setState(prev => ({
-                        ...prev,
-                        notifications: [{
-                          type: 'error',
-                          header: 'Delete Failed',
-                          content: error.message || 'Failed to delete user',
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }, ...prev.notifications]
-                      }));
-                    }
-                  }
-                });
-                setDeleteModalVisible(true);
-              }}
-            />
-          );
-
-        case 'ami':
-          return (
-            <AMIManagementViewExtracted
-              amis={state.amis}
-              amiRegions={state.amiRegions}
-              amiBuilds={state.amiBuilds}
-              loading={state.loading}
-              onRefresh={loadApplicationData}
-            />
-          );
-
-        case 'rightsizing':
-          return <PlaceholderView title="Rightsizing Recommendations" description="Workspace rightsizing recommendations will help optimize your costs by suggesting better-sized workspaces based on actual usage patterns." />;
-
-        case 'policy':
-          return <PlaceholderView title="Policy Management" description="Policy management allows you to configure institutional policies, access controls, and governance rules for your Prism deployment." />;
-
-        case 'marketplace':
-          return (
-            <MarketplaceViewExtracted
-              marketplaceTemplates={state.marketplaceTemplates}
-              marketplaceCategories={state.marketplaceCategories}
-              loading={state.loading}
-              onRefresh={loadApplicationData}
-            />
-          );
-
-        case 'idle':
-          return (
-            <IdleDetectionViewExtracted
-              idlePolicies={state.idlePolicies}
-              idleSchedules={state.idleSchedules}
-              loading={state.loading}
-              onRefresh={loadApplicationData}
-            />
-          );
-
-        case 'logs':
-          return <LogsView instances={state.instances} loading={state.loading} onRefresh={loadApplicationData} />;
-
-        default:
-          return (
-            <Alert type="error">
-              Unknown settings section: {state.settingsSection}
-            </Alert>
-          );
-      }
-    };
-
-    const navButton = (section: SettingsSection, label: string) => (
-      <button
-        key={section}
-        data-testid={`settings-nav-${section}`}
-        onClick={() => setState(prev => ({ ...prev, settingsSection: section }))}
-        style={{
-          display: 'block',
-          width: '100%',
-          textAlign: 'left',
-          padding: '6px 12px',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          background: state.settingsSection === section ? 'var(--sidebar-accent, #f1f5f9)' : 'transparent',
-          fontWeight: state.settingsSection === section ? '600' : '400',
-          color: state.settingsSection === section ? 'var(--sidebar-primary, #0f172a)' : 'var(--sidebar-foreground, #475569)',
-        }}
-      >
-        {label}
-      </button>
-    );
-
-    return (
-      <div style={{ display: 'flex', height: '100%' }}>
-        <div style={{ width: '220px', borderRight: '1px solid #e9ebed', padding: '16px 8px' }}>
-          <div style={{ padding: '4px 12px 8px', fontSize: '13px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Settings
-          </div>
-          {navItems.map(item => navButton(item.section, item.label))}
-          <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e9ebed' }} />
-          <div style={{ padding: '4px 12px 4px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Advanced
-          </div>
-          {advancedItems.map(item => navButton(item.section, item.label))}
-        </div>
-        <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
-          {renderSettingsContent()}
-        </div>
-      </div>
-    );
-  };
+  // Settings View — extracted to src/views/SettingsView.tsx
 
   // Main render
   return (
@@ -2549,9 +1902,6 @@ export default function PrismApp() {
                 onSelectProject={(id) => setSelectedProjectId(id)}
                 onEditProject={(project) => {
                   setSelectedProjectForEdit(project);
-                  setEditProjectName(project.name);
-                  setEditProjectDescription(project.description || '');
-                  setEditProjectStatus(project.status || 'active');
                   setShowEditProjectModal(true);
                 }}
                 onManageBudget={async (project) => {
@@ -2664,9 +2014,6 @@ export default function PrismApp() {
               onCreateUser={() => setUserModalVisible(true)}
               onEditUser={(user) => {
                 setSelectedUserForEdit(user);
-                setEditUserEmail(user.email || '');
-                setEditUserDisplayName(user.display_name || (user as any).full_name || '');
-                setEditUserRole('');
                 setShowEditUserModal(true);
               }}
               onViewUserDetails={async (user) => {
@@ -2776,7 +2123,159 @@ export default function PrismApp() {
             />
           )}
           {state.activeView === 'logs' && <LogsView instances={state.instances} loading={state.loading} onRefresh={loadApplicationData} />}
-          {state.activeView === 'settings' && <SettingsView />}
+          {state.activeView === 'settings' && (
+            <SettingsViewExtracted
+              settingsSection={state.settingsSection}
+              onSectionChange={(section) => setState(prev => ({ ...prev, settingsSection: section as typeof prev.settingsSection }))}
+              connected={state.connected}
+              loading={state.loading}
+              instanceCount={state.instances.length}
+              efsVolumeCount={state.efsVolumes.length}
+              ebsVolumeCount={state.ebsVolumes.length}
+              updateInfo={state.updateInfo}
+              autoStartEnabled={state.autoStartEnabled}
+              onRefresh={loadApplicationData}
+              onSetAutoStart={async (enabled) => {
+                try {
+                  await api.setAutoStart(enabled);
+                  setState(prev => ({ ...prev, autoStartEnabled: enabled }));
+                  setNotification({
+                    type: 'success',
+                    content: `Auto-start ${enabled ? 'enabled' : 'disabled'} successfully`,
+                    dismissible: true,
+                    id: 'auto-start-update'
+                  });
+                } catch (error) {
+                  logger.error('Failed to update auto-start:', error);
+                  setNotification({
+                    type: 'error',
+                    content: `Failed to update auto-start: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    dismissible: true,
+                    id: 'auto-start-error'
+                  });
+                }
+              }}
+              subViews={{
+                profiles: <ProfileSelectorViewExtracted />,
+                users: (
+                  <UserManagementViewExtracted
+                    users={state.users}
+                    instances={state.instances}
+                    loading={state.loading}
+                    onRefresh={loadApplicationData}
+                    onCreateUser={() => setUserModalVisible(true)}
+                    onEditUser={(user) => {
+                      setSelectedUserForEdit(user);
+                      setShowEditUserModal(true);
+                    }}
+                    onViewUserDetails={async (user) => {
+                      setSelectedUserForDetails(user);
+                      setUserDetailsModalVisible(true);
+                      setLoadingSSHKeys(true);
+                      try {
+                        const response = await api.getUserSSHKeys(user.username);
+                        setUserSSHKeys(response.keys || []);
+                      } catch (_e) {
+                        setUserSSHKeys([]);
+                      } finally {
+                        setLoadingSSHKeys(false);
+                      }
+                    }}
+                    onViewUserStatus={async (user) => {
+                      setSelectedUserForStatus(user);
+                      setUserStatusModalVisible(true);
+                      setLoadingUserStatus(true);
+                      try {
+                        const statusData = await api.getUserStatus(user.username);
+                        setUserStatusDetails(statusData);
+                      } catch (_e) {
+                        setUserStatusDetails(null);
+                      } finally {
+                        setLoadingUserStatus(false);
+                      }
+                    }}
+                    onProvisionUser={(username) => {
+                      const user = state.users.find(u => u.username === username) || null;
+                      setSelectedUserForProvision(user);
+                      setProvisionModalVisible(true);
+                    }}
+                    onManageSSHKeys={(username) => {
+                      setSelectedUsername(username);
+                      setSshKeyModalVisible(true);
+                    }}
+                    onDeleteUser={(user) => {
+                      const hasWorkspaces = (user.provisioned_instances?.length || 0) > 0;
+                      const workspaceWarning = hasWorkspaces
+                        ? `This user has ${user.provisioned_instances!.length} provisioned workspace(s). Deleting the user will remove their access to these workspaces.`
+                        : undefined;
+                      setDeleteModalConfig({
+                        type: 'user',
+                        name: user.username,
+                        requireNameConfirmation: false,
+                        warning: workspaceWarning,
+                        onConfirm: async () => {
+                          try {
+                            await api.deleteUser(user.username);
+                            usersVersionRef.current++;
+                            setState(prev => ({
+                              ...prev,
+                              users: prev.users.filter(u => u.username !== user.username),
+                              notifications: [{
+                                type: 'success',
+                                header: 'User Deleted',
+                                content: `User "${user.username}" deleted successfully`,
+                                dismissible: true,
+                                id: Date.now().toString()
+                              }, ...prev.notifications]
+                            }));
+                            setDeleteModalVisible(false);
+                          } catch (error: any) {
+                            setState(prev => ({
+                              ...prev,
+                              notifications: [{
+                                type: 'error',
+                                header: 'Delete Failed',
+                                content: error.message || 'Failed to delete user',
+                                dismissible: true,
+                                id: Date.now().toString()
+                              }, ...prev.notifications]
+                            }));
+                          }
+                        }
+                      });
+                      setDeleteModalVisible(true);
+                    }}
+                  />
+                ),
+                ami: (
+                  <AMIManagementViewExtracted
+                    amis={state.amis}
+                    amiRegions={state.amiRegions}
+                    amiBuilds={state.amiBuilds}
+                    loading={state.loading}
+                    onRefresh={loadApplicationData}
+                  />
+                ),
+                marketplace: (
+                  <MarketplaceViewExtracted
+                    marketplaceTemplates={state.marketplaceTemplates}
+                    marketplaceCategories={state.marketplaceCategories}
+                    loading={state.loading}
+                    onRefresh={loadApplicationData}
+                  />
+                ),
+                idle: (
+                  <IdleDetectionViewExtracted
+                    idlePolicies={state.idlePolicies}
+                    idleSchedules={state.idleSchedules}
+                    loading={state.loading}
+                    onRefresh={loadApplicationData}
+                  />
+                ),
+                logs: <LogsView instances={state.instances} loading={state.loading} onRefresh={loadApplicationData} />,
+              }}
+            />
+          )}
         </div>
       </AppLayoutShell>
       <LaunchModalExtracted
@@ -2863,1238 +2362,203 @@ export default function PrismApp() {
         onGenerate={handleGenerateSSHKey}
       />
 
-      {/* User Details Modal */}
-      <Modal
+      <UserDetailsModalExtracted
         visible={userDetailsModalVisible}
+        user={selectedUserForDetails}
+        sshKeys={userSSHKeys}
+        loadingSSHKeys={loadingSSHKeys}
         onDismiss={() => {
           setUserDetailsModalVisible(false);
           setSelectedUserForDetails(null);
           setUserSSHKeys([]);
         }}
-        size="large"
-        header={selectedUserForDetails ? `User Details: ${selectedUserForDetails.username}` : 'User Details'}
-        data-testid="user-details-modal"
-      >
-        {selectedUserForDetails && (
-          <SpaceBetween size="l">
-            {/* User Information */}
-            <Container header={<Header variant="h2">User Information</Header>}>
-              <ColumnLayout columns={2} variant="text-grid">
-                <div>
-                  <Box variant="awsui-key-label">Username</Box>
-                  <div>{selectedUserForDetails.username}</div>
-                </div>
-                <div>
-                  <Box variant="awsui-key-label">Display Name</Box>
-                  <div>{selectedUserForDetails.display_name}</div>
-                </div>
-                <div>
-                  <Box variant="awsui-key-label">Email</Box>
-                  <div>{selectedUserForDetails.email}</div>
-                </div>
-                <div>
-                  <Box variant="awsui-key-label">UID</Box>
-                  <div>{selectedUserForDetails.uid}</div>
-                </div>
-                <div>
-                  <Box variant="awsui-key-label">Created</Box>
-                  <div>{new Date(selectedUserForDetails.created_at).toLocaleString()}</div>
-                </div>
-                <div>
-                  <Box variant="awsui-key-label">SSH Keys</Box>
-                  <div>{selectedUserForDetails.ssh_keys || 0}</div>
-                </div>
-              </ColumnLayout>
-            </Container>
+      />
 
-            {/* SSH Keys Section */}
-            <Container header={<Header variant="h2">SSH Keys</Header>}>
-              {loadingSSHKeys ? (
-                <Box textAlign="center" padding={{ vertical: 'xl' }}>
-                  <Spinner size="large" />
-                </Box>
-              ) : userSSHKeys.length === 0 ? (
-                <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
-                  <Box variant="p" color="text-body-secondary">
-                    No SSH keys found for this user
-                  </Box>
-                </Box>
-              ) : (
-                <Table
-                  columnDefinitions={[
-                    {
-                      id: "key_type",
-                      header: "Type",
-                      cell: (item: SSHKeyConfig) => item.key_type,
-                      width: 100
-                    },
-                    {
-                      id: "fingerprint",
-                      header: "Fingerprint",
-                      cell: (item: SSHKeyConfig) => (
-                        <Box fontSize="body-s">
-                          <span style={{ fontFamily: 'monospace' }}>{item.fingerprint}</span>
-                        </Box>
-                      )
-                    },
-                    {
-                      id: "comment",
-                      header: "Comment",
-                      cell: (item: SSHKeyConfig) => item.comment,
-                      width: 250
-                    },
-                    {
-                      id: "created_at",
-                      header: "Created",
-                      cell: (item: SSHKeyConfig) => new Date(item.created_at).toLocaleString(),
-                      width: 180
-                    },
-                    {
-                      id: "auto_generated",
-                      header: "Auto-Generated",
-                      cell: (item: SSHKeyConfig) => item.auto_generated ? "Yes" : "No",
-                      width: 120
-                    }
-                  ]}
-                  items={userSSHKeys}
-                  variant="embedded"
-                  empty={
-                    <Box textAlign="center" color="inherit">
-                      <Box variant="p" color="text-body-secondary">
-                        No SSH keys
-                      </Box>
-                    </Box>
-                  }
-                />
-              )}
-            </Container>
-
-            {/* Provisioned Workspaces Section */}
-            <Container header={<Header variant="h2">Provisioned Workspaces</Header>}>
-              {selectedUserForDetails.provisioned_instances && selectedUserForDetails.provisioned_instances.length > 0 ? (
-                <Table
-                  columnDefinitions={[
-                    {
-                      id: "workspace",
-                      header: "Workspace",
-                      cell: (item: string) => item
-                    }
-                  ]}
-                  items={selectedUserForDetails.provisioned_instances}
-                  variant="embedded"
-                  empty={
-                    <Box textAlign="center" color="inherit">
-                      <Box variant="p" color="text-body-secondary">
-                        No provisioned workspaces
-                      </Box>
-                    </Box>
-                  }
-                />
-              ) : (
-                <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
-                  <Box variant="p" color="text-body-secondary">
-                    No provisioned workspaces
-                  </Box>
-                </Box>
-              )}
-            </Container>
-          </SpaceBetween>
-        )}
-      </Modal>
-
-      {/* User Provision Modal */}
-      <Modal
+      <UserProvisionModalExtracted
         visible={provisionModalVisible}
+        user={selectedUserForProvision}
+        instances={state.instances}
         onDismiss={() => {
           setProvisionModalVisible(false);
           setSelectedUserForProvision(null);
-          setSelectedWorkspaceForProvision('');
         }}
-        size="medium"
-        header={selectedUserForProvision ? `Provision ${selectedUserForProvision.username} on Workspace` : 'Provision User'}
-        data-testid="provision-modal"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={() => setProvisionModalVisible(false)} disabled={provisioningInProgress}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  if (!selectedUserForProvision || !selectedWorkspaceForProvision) return;
+        onProvision={async (username, workspaceName) => {
+          await api.provisionUser(username, workspaceName);
+          setState(prev => ({
+            ...prev,
+            users: prev.users.map(u =>
+              u.username === username
+                ? { ...u, provisioned_instances: [...(u.provisioned_instances || []), workspaceName] }
+                : u
+            ),
+            notifications: [
+              {
+                type: 'success',
+                header: 'User Provisioned',
+                content: `User "${username}" provisioned on workspace "${workspaceName}"`,
+                dismissible: true,
+                id: Date.now().toString()
+              },
+              ...prev.notifications
+            ]
+          }));
+          setProvisionModalVisible(false);
+        }}
+      />
 
-                  setProvisioningInProgress(true);
-                  try {
-                    await api.provisionUser(selectedUserForProvision.username, selectedWorkspaceForProvision);
-
-                    // Update user's provisioned instances
-                    setState(prev => ({
-                      ...prev,
-                      users: prev.users.map(u =>
-                        u.username === selectedUserForProvision.username
-                          ? { ...u, provisioned_instances: [...(u.provisioned_instances || []), selectedWorkspaceForProvision] }
-                          : u
-                      ),
-                      notifications: [
-                        {
-                          type: 'success',
-                          header: 'User Provisioned',
-                          content: `User "${selectedUserForProvision.username}" provisioned on workspace "${selectedWorkspaceForProvision}"`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
-                    setProvisionModalVisible(false);
-                    setSelectedWorkspaceForProvision('');
-                  } catch (error: any) {
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        {
-                          type: 'error',
-                          header: 'Provisioning Failed',
-                          content: error.message || 'Failed to provision user',
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
-                  } finally {
-                    setProvisioningInProgress(false);
-                  }
-                }}
-                disabled={!selectedWorkspaceForProvision || provisioningInProgress}
-                loading={provisioningInProgress}
-                data-testid="provision"
-              >
-                Provision
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        {selectedUserForProvision && (
-          <SpaceBetween size="m">
-            <FormField label="Workspace" description="Select a running workspace to provision this user on">
-              <Select
-                selectedOption={
-                  selectedWorkspaceForProvision
-                    ? { label: selectedWorkspaceForProvision, value: selectedWorkspaceForProvision }
-                    : null
-                }
-                onChange={({ detail }) => setSelectedWorkspaceForProvision(detail.selectedOption?.value || '')}
-                options={state.instances
-                  .filter(instance => instance.state === 'running')
-                  .map(instance => ({
-                    label: instance.name,
-                    value: instance.name
-                  }))}
-                placeholder="Select a workspace"
-                empty="No running workspaces available"
-                ariaLabel="Workspace"
-              />
-            </FormField>
-
-            <Alert type="info">
-              Provisioning will create a user account for "{selectedUserForProvision.username}" on the selected workspace with the same UID/GID and SSH keys.
-            </Alert>
-          </SpaceBetween>
-        )}
-      </Modal>
-
-      {/* User Status Modal */}
-      <Modal
+      <UserStatusModalExtracted
         visible={userStatusModalVisible}
+        user={selectedUserForStatus}
+        statusDetails={userStatusDetails}
+        loading={loadingUserStatus}
         onDismiss={() => {
           setUserStatusModalVisible(false);
           setSelectedUserForStatus(null);
           setUserStatusDetails(null);
         }}
-        size="medium"
-        header={selectedUserForStatus ? `User Status: ${selectedUserForStatus.username}` : 'User Status'}
-        data-testid="user-status-modal"
-        footer={
-          <Box float="right">
-            <Button onClick={() => setUserStatusModalVisible(false)} data-testid="close">
-              Close
-            </Button>
-          </Box>
-        }
-      >
-        {selectedUserForStatus && (
-          <SpaceBetween size="m">
-            {loadingUserStatus ? (
-              <Box textAlign="center" padding={{ vertical: 'xl' }}>
-                <Spinner size="large" />
-              </Box>
-            ) : userStatusDetails ? (
-              <Container header={<Header variant="h2">Status Details</Header>}>
-                <ColumnLayout columns={2} variant="text-grid">
-                  <div>
-                    <Box variant="awsui-key-label">Username</Box>
-                    <div>{userStatusDetails.username}</div>
-                  </div>
-                  <div>
-                    <Box variant="awsui-key-label">Status</Box>
-                    <div>
-                      <StatusIndicator type={userStatusDetails.status === 'active' ? 'success' : 'warning'}>
-                        {userStatusDetails.status || 'active'}
-                      </StatusIndicator>
-                    </div>
-                  </div>
-                  <div>
-                    <Box variant="awsui-key-label">SSH Keys</Box>
-                    <div>{userStatusDetails.ssh_keys_count || 0}</div>
-                  </div>
-                  <div>
-                    <Box variant="awsui-key-label">Provisioned Workspaces</Box>
-                    <div>{userStatusDetails.provisioned_instances?.length || 0}</div>
-                  </div>
-                  {userStatusDetails.last_active && (
-                    <div>
-                      <Box variant="awsui-key-label">Last Active</Box>
-                      <div>{new Date(userStatusDetails.last_active).toLocaleString()}</div>
-                    </div>
-                  )}
-                </ColumnLayout>
-              </Container>
-            ) : (
-              <Box textAlign="center" color="inherit" padding={{ vertical: 'xl' }}>
-                <Box variant="p" color="text-body-secondary">
-                  Failed to load user status
-                </Box>
-              </Box>
-            )}
-          </SpaceBetween>
-        )}
-      </Modal>
+      />
 
-      {/* Send Invitation Modal */}
-      <Modal
+      <SendInvitationModalExtracted
         visible={sendInvitationModalVisible}
-        onDismiss={() => {
-          setSendInvitationModalVisible(false);
-          setInvitationValidationError('');
-        }}
-        header="Send Project Invitation"
-        data-testid="send-invitation-modal"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={() => setSendInvitationModalVisible(false)}>Cancel</Button>
-              <Button variant="primary" onClick={handleSendInvitation} data-testid="confirm-send-invitation">
-                Send Invitation
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          {invitationValidationError && (
-            <ValidationError message={invitationValidationError} visible={true} />
-          )}
+        projects={state.projects}
+        selectedProjectId={selectedProjectForInvitation}
+        onProjectChange={setSelectedProjectForInvitation}
+        onDismiss={() => setSendInvitationModalVisible(false)}
+        onSubmit={handleSendInvitation}
+      />
 
-          <FormField label="Project" description="Select the project to invite user to">
-            <Select
-              selectedOption={
-                selectedProjectForInvitation
-                  ? { label: state.projects.find(p => p.id === selectedProjectForInvitation)?.name || '', value: selectedProjectForInvitation }
-                  : null
-              }
-              onChange={({ detail }) => setSelectedProjectForInvitation(detail.selectedOption?.value || '')}
-              options={state.projects.map(p => ({ label: p.name, value: p.id }))}
-              placeholder="Select a project"
-              data-testid="invitation-project-select"
-            />
-          </FormField>
-
-          <FormField label="Email Address" description="Enter the recipient's email address">
-            <Input
-              value={invitationEmail}
-              onChange={({ detail }) => setInvitationEmail(detail.value)}
-              placeholder="user@example.com"
-              type="email"
-              data-testid="invitation-email-input"
-            />
-          </FormField>
-
-          <FormField label="Role" description="Select the role for this user">
-            <Select
-              selectedOption={{ label: invitationRole, value: invitationRole }}
-              onChange={({ detail }) => setInvitationRole(detail.selectedOption?.value as 'viewer' | 'member' | 'admin')}
-              options={[
-                { label: 'viewer', value: 'viewer', description: 'Read-only access' },
-                { label: 'member', value: 'member', description: 'Can create and manage resources' },
-                { label: 'admin', value: 'admin', description: 'Full project control' }
-              ]}
-              data-testid="invitation-role-select"
-            />
-          </FormField>
-
-          <FormField label="Message (optional)" description="Add a personal message to the invitation">
-            <Textarea
-              value={invitationMessage}
-              onChange={({ detail }) => setInvitationMessage(detail.value)}
-              placeholder="Welcome to the project! Looking forward to collaborating..."
-              data-testid="invitation-message-input"
-            />
-          </FormField>
-        </SpaceBetween>
-      </Modal>
-
-      {/* Redeem Token Modal */}
-      <Modal
+      <RedeemTokenModalExtracted
         visible={redeemTokenModalVisible}
-        onDismiss={() => {
-          setRedeemTokenModalVisible(false);
-          setTokenValidationError('');
-        }}
-        header="Redeem Invitation Token"
-        data-testid="redeem-token-modal"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button onClick={() => setRedeemTokenModalVisible(false)}>Cancel</Button>
-              <Button variant="primary" onClick={handleRedeemToken} data-testid="confirm-redeem-token">
-                Redeem
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <SpaceBetween size="m">
-          {tokenValidationError && (
-            <ValidationError message={tokenValidationError} visible={true} />
-          )}
+        onDismiss={() => setRedeemTokenModalVisible(false)}
+        onSubmit={handleRedeemToken}
+      />
 
-          <FormField label="Invitation Token" description="Enter the invitation token you received">
-            <Input
-              value={invitationToken}
-              onChange={({ detail }) => setInvitationToken(detail.value)}
-              placeholder="Enter token..."
-              data-testid="invitation-token-input"
-            />
-          </FormField>
-
-          <Alert type="info">
-            The token can be found in your invitation email or shared by the project admin.
-          </Alert>
-        </SpaceBetween>
-      </Modal>
-
-      {/* Create EFS Volume Modal */}
-      <Modal
+      <CreateEFSVolumeModalExtracted
         visible={createEFSModalVisible}
-        onDismiss={() => {
-          setCreateEFSModalVisible(false);
-          setStorageVolumeName('');
-          setStorageVolumeNameError('');
+        onDismiss={() => setCreateEFSModalVisible(false)}
+        onSuccess={loadApplicationData}
+        onNotify={(notification) => {
+          setState(prev => ({
+            ...prev,
+            notifications: [...prev.notifications, notification as any]
+          }));
         }}
-        header="Create EFS Volume"
-        size="medium"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => {
-                setCreateEFSModalVisible(false);
-                setStorageVolumeName('');
-                setStorageVolumeNameError('');
-              }}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  // Validate volume name
-                  if (!storageVolumeName.trim()) {
-                    setStorageVolumeNameError('Volume name is required');
-                    return;
-                  }
+      />
 
-                  const volumeName = storageVolumeName;
-
-                  // Close modal immediately - don't wait for AWS to finish
-                  setCreateEFSModalVisible(false);
-                  setStorageVolumeName('');
-                  setStorageVolumeNameError('');
-
-                  // Show notification that creation is in progress
-                  setState(prev => ({
-                    ...prev,
-                    notifications: [
-                      ...prev.notifications,
-                      {
-                        type: 'info',
-                        header: 'Creating EFS Volume',
-                        content: `Creating EFS volume "${volumeName}"... This may take 1-3 minutes.`,
-                        dismissible: true,
-                        id: Date.now().toString()
-                      }
-                    ]
-                  }));
-
-                  // Start creation in background - backend will wait for AWS
-                  try {
-                    await api.createEFSVolume(volumeName);
-                    // Sync volume state from AWS to ensure we have current state
-                    await api.syncEFSVolume(volumeName);
-                    await loadApplicationData();
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        ...prev.notifications,
-                        {
-                          type: 'success',
-                          header: 'EFS Volume Created',
-                          content: `Successfully created EFS volume "${volumeName}"`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }
-                      ]
-                    }));
-                  } catch (error) {
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        ...prev.notifications,
-                        {
-                          type: 'error',
-                          header: 'Failed to Create EFS Volume',
-                          content: error instanceof Error ? error.message : 'Unknown error occurred',
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }
-                      ]
-                    }));
-                  }
-                }}
-              >
-                Create
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <Form>
-          <SpaceBetween size="m">
-            {storageVolumeNameError && (
-              <Box data-testid="validation-error" color="text-status-error">
-                {storageVolumeNameError}
-              </Box>
-            )}
-            <FormField
-              label="EFS Volume Name"
-              description="Enter a name for your EFS volume"
-              errorText={storageVolumeNameError}
-            >
-              <Input
-                value={storageVolumeName}
-                onChange={({ detail }) => {
-                  setStorageVolumeName(detail.value);
-                  setStorageVolumeNameError(''); // Clear error on change
-                }}
-                placeholder="my-shared-data"
-                ariaLabel="EFS Volume Name"
-              />
-            </FormField>
-          </SpaceBetween>
-        </Form>
-      </Modal>
-
-      {/* Create EBS Volume Modal */}
-      <Modal
+      <CreateEBSVolumeModalExtracted
         visible={createEBSModalVisible}
-        onDismiss={() => {
-          setCreateEBSModalVisible(false);
-          setStorageVolumeName('');
-          setStorageVolumeSize('');
-          setStorageVolumeNameError('');
-          setStorageVolumeSizeError('');
+        onDismiss={() => setCreateEBSModalVisible(false)}
+        onSuccess={loadApplicationData}
+        onNotify={(notification) => {
+          setState(prev => ({
+            ...prev,
+            notifications: [...prev.notifications, notification as any]
+          }));
         }}
-        header="Create EBS Volume"
-        size="medium"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => {
-                setCreateEBSModalVisible(false);
-                setStorageVolumeName('');
-                setStorageVolumeSize('');
-                setStorageVolumeNameError('');
-                setStorageVolumeSizeError('');
-              }}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  // Validate volume name
-                  if (!storageVolumeName.trim()) {
-                    setStorageVolumeNameError('Volume name is required');
-                    return;
-                  }
-
-                  // Validate volume size
-                  if (!storageVolumeSize.trim()) {
-                    setStorageVolumeSizeError('Volume size is required');
-                    return;
-                  }
-
-                  const sizeNum = parseInt(storageVolumeSize);
-                  if (isNaN(sizeNum) || sizeNum <= 0) {
-                    setStorageVolumeSizeError('Volume size must be a positive number');
-                    return;
-                  }
-
-                  const volumeName = storageVolumeName;
-                  const volumeSize = storageVolumeSize;
-
-                  // Close modal immediately - don't wait for AWS to finish
-                  setCreateEBSModalVisible(false);
-                  setStorageVolumeName('');
-                  setStorageVolumeSize('');
-                  setStorageVolumeNameError('');
-                  setStorageVolumeSizeError('');
-
-                  // Show notification that creation is in progress
-                  setState(prev => ({
-                    ...prev,
-                    notifications: [
-                      ...prev.notifications,
-                      {
-                        type: 'info',
-                        header: 'Creating EBS Volume',
-                        content: `Creating EBS volume "${volumeName}" (${volumeSize} GB)... This may take 30-120 seconds.`,
-                        dismissible: true,
-                        id: Date.now().toString()
-                      }
-                    ]
-                  }));
-
-                  // Start creation in background - backend will wait for AWS
-                  try {
-                    await api.createEBSVolume(volumeName, volumeSize);
-                    // Sync volume state from AWS to ensure we have current state
-                    await api.syncEBSVolume(volumeName);
-                    await loadApplicationData();
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        ...prev.notifications,
-                        {
-                          type: 'success',
-                          header: 'EBS Volume Created',
-                          content: `Successfully created EBS volume "${volumeName}"`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }
-                      ]
-                    }));
-                  } catch (error) {
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        ...prev.notifications,
-                        {
-                          type: 'error',
-                          header: 'Failed to Create EBS Volume',
-                          content: error instanceof Error ? error.message : 'Unknown error occurred',
-                          dismissible: true,
-                          id: Date.now().toString()
-                        }
-                      ]
-                    }));
-                  }
-                }}
-              >
-                Create
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <Form>
-          <SpaceBetween size="m">
-            {(storageVolumeNameError || storageVolumeSizeError) && (
-              <Box data-testid="validation-error" color="text-status-error">
-                {storageVolumeNameError || storageVolumeSizeError}
-              </Box>
-            )}
-            <FormField
-              label="EBS Volume Name"
-              description="Enter a name for your EBS volume"
-              errorText={storageVolumeNameError}
-            >
-              <Input
-                value={storageVolumeName}
-                onChange={({ detail }) => {
-                  setStorageVolumeName(detail.value);
-                  setStorageVolumeNameError(''); // Clear error on change
-                }}
-                placeholder="my-private-data"
-                ariaLabel="EBS Volume Name"
-              />
-            </FormField>
-            <FormField
-              label="EBS Volume Size (GB)"
-              description="Enter the size of the volume in gigabytes"
-              errorText={storageVolumeSizeError}
-            >
-              <Input
-                value={storageVolumeSize}
-                onChange={({ detail }) => {
-                  setStorageVolumeSize(detail.value);
-                  setStorageVolumeSizeError(''); // Clear error on change
-                }}
-                placeholder="100"
-                type="number"
-                ariaLabel="EBS Volume Size"
-              />
-            </FormField>
-          </SpaceBetween>
-        </Form>
-      </Modal>
+      />
 
       {/* Connection Info Modal - at App level so it's always mounted regardless of active view */}
-      <Modal
+      <ConnectionInfoModalExtracted
         visible={connectionModalVisible}
+        connectionInfo={connectionInfo}
         onDismiss={() => {
           setConnectionModalVisible(false);
           setConnectionInfo(null);
         }}
-        header="Connection Information"
-        footer={
-          <Box float="right">
-            <Button
-              variant="primary"
-              onClick={() => {
-                setConnectionModalVisible(false);
-                setConnectionInfo(null);
-              }}
-            >
-              Close
-            </Button>
-          </Box>
-        }
-      >
-        {connectionInfo && (
-          <SpaceBetween size="m">
-            <FormField label="Workspace">
-              <Box>{connectionInfo.instanceName}</Box>
-            </FormField>
-            {connectionInfo.publicIP && (
-              <FormField label="Public IP" description="Instance public IP address">
-                <Box data-testid="public-ip">{connectionInfo.publicIP}</Box>
-              </FormField>
-            )}
-            <FormField label="SSH Command" description="Use this command to connect via SSH">
-              <SpaceBetween direction="horizontal" size="xs">
-                <code data-testid="ssh-command">{connectionInfo.sshCommand}</code>
-                <Button
-                  iconName="copy"
-                  onClick={() => navigator.clipboard.writeText(connectionInfo!.sshCommand)}
-                >
-                  Copy SSH
-                </Button>
-              </SpaceBetween>
-            </FormField>
-            {/* web-url is always in DOM (even when empty) for ConnectionDialog.hasWebURL() to work */}
-            <span data-testid="web-url" aria-hidden="true" style={{ display: 'none' }}>
-              {connectionInfo.publicIP && connectionInfo.webPort
-                ? `http://${connectionInfo.publicIP}:${connectionInfo.webPort}`
-                : ''}
-            </span>
-            {connectionInfo.publicIP && connectionInfo.webPort && (
-              <FormField label="Web URL" description="Access web services running on this instance">
-                <Box>{`http://${connectionInfo.publicIP}:${connectionInfo.webPort}`}</Box>
-              </FormField>
-            )}
-          </SpaceBetween>
-        )}
-      </Modal>
+      />
 
       {/* Edit Project Modal (#336) */}
-      <Modal
+      <EditProjectModalExtracted
         visible={showEditProjectModal}
+        project={selectedProjectForEdit}
         onDismiss={() => setShowEditProjectModal(false)}
-        header="Edit Project"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setShowEditProjectModal(false)}>Cancel</Button>
-              <Button
-                variant="primary"
-                loading={editProjectSubmitting}
-                onClick={async () => {
-                  if (!selectedProjectForEdit) return;
-                  setEditProjectSubmitting(true);
-                  try {
-                    await api.updateProject(selectedProjectForEdit.id, {
-                      name: editProjectName,
-                      description: editProjectDescription,
-                      status: editProjectStatus
-                    });
-                    const updatedProjects = await api.getProjects();
-                    setState(prev => ({
-                      ...prev,
-                      projects: updatedProjects,
-                      notifications: [
-                        {
-                          type: 'success',
-                          header: 'Project Updated',
-                          content: `Project "${editProjectName}" updated successfully.`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
-                    setShowEditProjectModal(false);
-                  } catch (error: any) {
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        {
-                          type: 'error',
-                          header: 'Update Failed',
-                          content: `Failed to update project: ${error.message || 'Unknown error'}`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
-                  } finally {
-                    setEditProjectSubmitting(false);
-                  }
-                }}
-              >
-                Save Changes
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <Form>
-          <SpaceBetween size="m">
-            <FormField label="Project Name">
-              <Input
-                value={editProjectName}
-                onChange={({ detail }) => setEditProjectName(detail.value)}
-                placeholder="Project name"
-              />
-            </FormField>
-            <FormField label="Description">
-              <Textarea
-                value={editProjectDescription}
-                onChange={({ detail }) => setEditProjectDescription(detail.value)}
-                placeholder="Project description"
-                rows={3}
-              />
-            </FormField>
-            <FormField label="Status">
-              <Select
-                selectedOption={{ value: editProjectStatus, label: editProjectStatus }}
-                onChange={({ detail }) => setEditProjectStatus(detail.selectedOption.value || 'active')}
-                options={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'paused', label: 'Paused' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'archived', label: 'Archived' }
-                ]}
-              />
-            </FormField>
-          </SpaceBetween>
-        </Form>
-      </Modal>
+        onSubmit={async (projectId, data) => {
+          await api.updateProject(projectId, {
+            name: data.name,
+            description: data.description,
+            status: data.status
+          });
+          const updatedProjects = await api.getProjects();
+          setState(prev => ({
+            ...prev,
+            projects: updatedProjects,
+            notifications: [
+              {
+                type: 'success',
+                header: 'Project Updated',
+                content: `Project "${data.name}" updated successfully.`,
+                dismissible: true,
+                id: Date.now().toString()
+              },
+              ...prev.notifications
+            ]
+          }));
+          setShowEditProjectModal(false);
+        }}
+      />
 
       {/* Manage Members Modal (#332, #339) */}
-      <Modal
+      <ManageMembersModalExtracted
         visible={showManageMembersModal}
-        onDismiss={() => {
-          setShowManageMembersModal(false);
-          setAddMemberUsername('');
-          setAddMemberRole('member');
-        }}
-        header={`Manage Members — ${selectedProjectForMembers?.name || ''}`}
-        size="large"
-        footer={
-          <Box float="right">
-            <Button variant="primary" onClick={() => setShowManageMembersModal(false)}>Close</Button>
-          </Box>
-        }
-      >
-        <SpaceBetween size="l">
-          {manageMembersLoading ? (
-            <Box textAlign="center"><Spinner /> Loading members...</Box>
-          ) : (
-            <Table
-              columnDefinitions={[
-                {
-                  id: 'username',
-                  header: 'Username',
-                  cell: (member: MemberData) => member.username || member.user_id
-                },
-                {
-                  id: 'role',
-                  header: 'Role',
-                  cell: (member: MemberData) => (
-                    <Badge color={member.role === 'admin' ? 'red' : member.role === 'member' ? 'blue' : 'grey'}>
-                      {member.role}
-                    </Badge>
-                  )
-                },
-                {
-                  id: 'joined_at',
-                  header: 'Joined',
-                  cell: (member: MemberData) => member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '-'
-                },
-                {
-                  id: 'actions',
-                  header: 'Actions',
-                  cell: (member: MemberData) => (
-                    <SpaceBetween direction="horizontal" size="xs">
-                      <Select
-                        selectedOption={{ value: member.role, label: member.role }}
-                        onChange={async ({ detail }) => {
-                          if (!selectedProjectForMembers) return;
-                          try {
-                            await api.updateProjectMember(selectedProjectForMembers.id, member.user_id, { role: detail.selectedOption.value });
-                            const updated = await api.getProjectMembers(selectedProjectForMembers.id);
-                            setManageMembersData(updated);
-                          } catch (error: any) {
-                            toast.error('Update Failed', { description: error.message || 'Failed to update role' });
-                          }
-                        }}
-                        options={[
-                          { value: 'viewer', label: 'Viewer' },
-                          { value: 'member', label: 'Member' },
-                          { value: 'admin', label: 'Admin' }
-                        ]}
-                      />
-                      <Button
-                        variant="link"
-                        onClick={async () => {
-                          if (!selectedProjectForMembers) return;
-                          try {
-                            await api.removeProjectMember(selectedProjectForMembers.id, member.user_id);
-                            const updated = await api.getProjectMembers(selectedProjectForMembers.id);
-                            setManageMembersData(updated);
-                          } catch (error: any) {
-                            toast.error('Remove Failed', { description: error.message || 'Failed to remove member' });
-                          }
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </SpaceBetween>
-                  )
-                }
-              ]}
-              items={manageMembersData}
-              empty={<Box textAlign="center">No members yet.</Box>}
-              header={<Header variant="h3">Current Members</Header>}
-            />
-          )}
-          <Container header={<Header variant="h3">Add Member</Header>}>
-            <SpaceBetween direction="horizontal" size="xs">
-              <FormField label="Username">
-                <Input
-                  value={addMemberUsername}
-                  onChange={({ detail }) => setAddMemberUsername(detail.value)}
-                  placeholder="username"
-                />
-              </FormField>
-              <FormField label="Role">
-                <Select
-                  selectedOption={{ value: addMemberRole, label: addMemberRole }}
-                  onChange={({ detail }) => setAddMemberRole(detail.selectedOption.value || 'member')}
-                  options={[
-                    { value: 'viewer', label: 'Viewer' },
-                    { value: 'member', label: 'Member' },
-                    { value: 'admin', label: 'Admin' }
-                  ]}
-                />
-              </FormField>
-              <Box padding={{ top: 'xl' }}>
-                <Button
-                  variant="primary"
-                  disabled={!addMemberUsername.trim()}
-                  onClick={async () => {
-                    if (!selectedProjectForMembers || !addMemberUsername.trim()) return;
-                    try {
-                      await api.addProjectMember(selectedProjectForMembers.id, { user_id: addMemberUsername, role: addMemberRole });
-                      const updated = await api.getProjectMembers(selectedProjectForMembers.id);
-                      setManageMembersData(updated);
-                      setAddMemberUsername('');
-                      setAddMemberRole('member');
-                    } catch (error: any) {
-                      toast.error('Add Failed', { description: error.message || 'Failed to add member' });
-                    }
-                  }}
-                >
-                  Add Member
-                </Button>
-              </Box>
-            </SpaceBetween>
-          </Container>
-        </SpaceBetween>
-      </Modal>
+        project={selectedProjectForMembers}
+        members={manageMembersData}
+        loading={manageMembersLoading}
+        onDismiss={() => setShowManageMembersModal(false)}
+        onMembersChange={setManageMembersData}
+      />
 
       {/* Budget Analysis Modal (#333) */}
-      <Modal
+      <BudgetAnalysisModalExtracted
         visible={showBudgetModal}
+        project={selectedProjectForBudget}
+        budgetData={budgetModalData}
+        loading={budgetModalLoading}
         onDismiss={() => setShowBudgetModal(false)}
-        header={`Budget Analysis — ${selectedProjectForBudget?.name || ''}`}
-        footer={<Box float="right"><Button variant="primary" onClick={() => setShowBudgetModal(false)}>Close</Button></Box>}
-      >
-        {budgetModalLoading ? (
-          <Box textAlign="center"><Spinner /> Loading budget data...</Box>
-        ) : budgetModalData ? (
-          <SpaceBetween size="m">
-            <ProgressBar
-              value={Math.min((budgetModalData.spent_percentage || 0) * 100, 100)}
-              status={
-                (budgetModalData.spent_percentage || 0) >= 0.95 ? 'error' :
-                (budgetModalData.spent_percentage || 0) >= 0.80 ? 'in-progress' : 'success'
-              }
-              label="Budget utilization"
-              description={`${((budgetModalData.spent_percentage || 0) * 100).toFixed(1)}% used`}
-            />
-            <ColumnLayout columns={3} variant="text-grid">
-              <div>
-                <Box variant="awsui-key-label">Budget Limit</Box>
-                <Box>${(budgetModalData.total_budget || 0).toFixed(2)}</Box>
-              </div>
-              <div>
-                <Box variant="awsui-key-label">Spent to Date</Box>
-                <Box>${(budgetModalData.spent_amount || 0).toFixed(2)}</Box>
-              </div>
-              <div>
-                <Box variant="awsui-key-label">Remaining</Box>
-                <Box>${(budgetModalData.remaining || 0).toFixed(2)}</Box>
-              </div>
-            </ColumnLayout>
-            {budgetModalData.projected_monthly_spend !== undefined && (
-              <ColumnLayout columns={2} variant="text-grid">
-                <div>
-                  <Box variant="awsui-key-label">Projected Monthly Spend</Box>
-                  <Box>${budgetModalData.projected_monthly_spend.toFixed(2)}</Box>
-                </div>
-                {budgetModalData.days_until_exhausted !== undefined && (
-                  <div>
-                    <Box variant="awsui-key-label">Days Until Exhausted</Box>
-                    <Box>{budgetModalData.days_until_exhausted} days</Box>
-                  </div>
-                )}
-              </ColumnLayout>
-            )}
-            {budgetModalData.alert_count > 0 && (
-              <Box color="text-status-warning">
-                {budgetModalData.alert_count} budget alert(s) active
-              </Box>
-            )}
-          </SpaceBetween>
-        ) : (
-          <Box color="text-body-secondary">No budget data available for this project.</Box>
-        )}
-      </Modal>
+      />
 
       {/* Cost Report Modal (#334) */}
-      <Modal
+      <CostReportModalExtracted
         visible={showCostModal}
+        project={selectedProjectForCosts}
+        costData={costModalData}
+        loading={costModalLoading}
         onDismiss={() => setShowCostModal(false)}
-        header={`Cost Report — ${selectedProjectForCosts?.name || ''}`}
-        size="medium"
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              {costModalData && (
-                <Button
-                  onClick={() => {
-                    if (!costModalData) return;
-                    const rows = [
-                      ['Service', 'Amount ($)'],
-                      ['Instances', costModalData.instances?.toFixed(2) ?? '0.00'],
-                      ['Storage', costModalData.storage?.toFixed(2) ?? '0.00'],
-                      ['Data Transfer', costModalData.data_transfer?.toFixed(2) ?? '0.00'],
-                      ['Total', costModalData.total?.toFixed(2) ?? '0.00']
-                    ];
-                    const csv = rows.map(r => r.join(',')).join('\n');
-                    const blob = new Blob([csv], { type: 'text/csv' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `cost-report-${selectedProjectForCosts?.name || 'project'}.csv`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                >
-                  Export CSV
-                </Button>
-              )}
-              <Button variant="primary" onClick={() => setShowCostModal(false)}>Close</Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        {costModalLoading ? (
-          <Box textAlign="center"><Spinner /> Loading cost data...</Box>
-        ) : costModalData ? (
-          <SpaceBetween size="m">
-            <Table
-              columnDefinitions={[
-                { id: 'service', header: 'Service', cell: (item: { service: string; amount: number }) => item.service },
-                { id: 'amount', header: 'Amount', cell: (item: { service: string; amount: number }) => `$${item.amount.toFixed(2)}` }
-              ]}
-              items={[
-                { service: 'Instances (EC2)', amount: costModalData.instances || 0 },
-                { service: 'Storage', amount: costModalData.storage || 0 },
-                { service: 'Data Transfer', amount: costModalData.data_transfer || 0 }
-              ]}
-              footer={
-                <Box textAlign="right" fontWeight="bold">
-                  Total: ${(costModalData.total || 0).toFixed(2)}
-                </Box>
-              }
-            />
-          </SpaceBetween>
-        ) : (
-          <Box color="text-body-secondary">No cost data available for this project.</Box>
-        )}
-      </Modal>
+      />
 
       {/* Usage Statistics Modal (#335) */}
-      <Modal
+      <UsageStatisticsModalExtracted
         visible={showUsageModal}
+        project={selectedProjectForUsage}
+        usageData={usageModalData}
+        loading={usageModalLoading}
         onDismiss={() => setShowUsageModal(false)}
-        header={`Usage Statistics — ${selectedProjectForUsage?.name || ''}`}
-        footer={<Box float="right"><Button variant="primary" onClick={() => setShowUsageModal(false)}>Close</Button></Box>}
-      >
-        {usageModalLoading ? (
-          <Box textAlign="center"><Spinner /> Loading usage data...</Box>
-        ) : usageModalData ? (
-          <ColumnLayout columns={2} variant="text-grid">
-            <div>
-              <Box variant="awsui-key-label">Instance Hours</Box>
-              <Box>{(usageModalData.instance_hours || 0).toFixed(1)} hrs</Box>
-            </div>
-            <div>
-              <Box variant="awsui-key-label">Storage (GB-hours)</Box>
-              <Box>{(usageModalData.storage_gb_hours || 0).toFixed(1)} GB-hrs</Box>
-            </div>
-            <div>
-              <Box variant="awsui-key-label">Data Transfer</Box>
-              <Box>{(usageModalData.data_transfer_gb || 0).toFixed(2)} GB</Box>
-            </div>
-            <div>
-              <Box variant="awsui-key-label">Period</Box>
-              <Box>{usageModalData.period || 'current'}</Box>
-            </div>
-          </ColumnLayout>
-        ) : (
-          <Box color="text-body-secondary">No usage data available for this project.</Box>
-        )}
-      </Modal>
+      />
 
       {/* Edit User Modal (#349, #338) */}
-      <Modal
+      <EditUserModalExtracted
         visible={showEditUserModal}
+        user={selectedUserForEdit}
         onDismiss={() => setShowEditUserModal(false)}
-        header={`Edit User — ${selectedUserForEdit?.username || ''}`}
-        footer={
-          <Box float="right">
-            <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setShowEditUserModal(false)}>Cancel</Button>
-              <Button
-                variant="primary"
-                loading={editUserSubmitting}
-                onClick={async () => {
-                  if (!selectedUserForEdit) return;
-                  setEditUserSubmitting(true);
-                  try {
-                    const updates: Partial<UserUpdateRequest> = {};
-                    if (editUserEmail) updates.email = editUserEmail;
-                    if (editUserDisplayName) updates.display_name = editUserDisplayName;
-                    if (editUserRole) updates.role = editUserRole;
-                    await api.updateUser(selectedUserForEdit.username, updates);
-                    const updatedUsers = await api.getUsers();
-                    setState(prev => ({
-                      ...prev,
-                      users: updatedUsers,
-                      notifications: [
-                        {
-                          type: 'success',
-                          header: 'User Updated',
-                          content: `User "${selectedUserForEdit.username}" updated successfully.`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
-                    setShowEditUserModal(false);
-                  } catch (error: any) {
-                    setState(prev => ({
-                      ...prev,
-                      notifications: [
-                        {
-                          type: 'error',
-                          header: 'Update Failed',
-                          content: `Failed to update user: ${error.message || 'Unknown error'}`,
-                          dismissible: true,
-                          id: Date.now().toString()
-                        },
-                        ...prev.notifications
-                      ]
-                    }));
-                  } finally {
-                    setEditUserSubmitting(false);
-                  }
-                }}
-              >
-                Save Changes
-              </Button>
-            </SpaceBetween>
-          </Box>
-        }
-      >
-        <Form>
-          <SpaceBetween size="m">
-            <FormField label="Email">
-              <Input
-                value={editUserEmail}
-                onChange={({ detail }) => setEditUserEmail(detail.value)}
-                placeholder="user@example.com"
-                type="email"
-              />
-            </FormField>
-            <FormField label="Display Name">
-              <Input
-                value={editUserDisplayName}
-                onChange={({ detail }) => setEditUserDisplayName(detail.value)}
-                placeholder="Display name"
-              />
-            </FormField>
-            <FormField label="Role" description="Leave blank to keep current role">
-              <Select
-                selectedOption={editUserRole ? { value: editUserRole, label: editUserRole } : { value: '', label: 'Keep current role' }}
-                onChange={({ detail }) => setEditUserRole(detail.selectedOption.value || '')}
-                options={[
-                  { value: '', label: 'Keep current role' },
-                  { value: 'researcher', label: 'Researcher' },
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'viewer', label: 'Viewer' }
-                ]}
-              />
-            </FormField>
-          </SpaceBetween>
-        </Form>
-      </Modal>
+        onSubmit={async (username, updates) => {
+          await api.updateUser(username, updates);
+          const updatedUsers = await api.getUsers();
+          setState(prev => ({
+            ...prev,
+            users: updatedUsers,
+            notifications: [
+              {
+                type: 'success',
+                header: 'User Updated',
+                content: `User "${username}" updated successfully.`,
+                dismissible: true,
+                id: Date.now().toString()
+              },
+              ...prev.notifications
+            ]
+          }));
+          setShowEditUserModal(false);
+        }}
+      />
     </ApiContext.Provider>
   );
 }
