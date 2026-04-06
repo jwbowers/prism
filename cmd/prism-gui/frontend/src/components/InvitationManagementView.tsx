@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useApi } from '../hooks/use-api';
 import {
   Container,
   Header,
@@ -118,8 +119,8 @@ export const InvitationManagementView: React.FC = () => {
   const [tokenMessage, setTokenMessage] = useState('');
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
 
-  // Access API client from window context
-  const api = (window as any).__apiClient;
+  // Access API client via context hook
+  const api = useApi();
 
   // ==================== DATA LOADING ====================
 
@@ -169,7 +170,7 @@ export const InvitationManagementView: React.FC = () => {
       // For tests: use test-user@example.com to match test invitation recipient
       const testEmail = 'test-user@example.com';
       const data = await api.getMyInvitations(testEmail);
-      setInvitations(data || []);
+      setInvitations((data || []) as unknown as CachedInvitation[]);
     } catch (err: any) {
       console.error('Failed to load invitations:', err);
       setError(err.message || 'Failed to load invitations');
@@ -186,7 +187,7 @@ export const InvitationManagementView: React.FC = () => {
 
     try {
       const data = await api.getSharedTokens(projectId);
-      setSharedTokens(data || []);
+      setSharedTokens((data || []) as unknown as SharedInvitationToken[]);
     } catch (err: any) {
       console.error('Failed to load shared tokens:', err);
       setError(err.message || 'Failed to load shared tokens');

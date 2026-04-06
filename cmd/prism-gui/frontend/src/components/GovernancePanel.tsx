@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { useApi } from '../hooks/use-api';
 import {
   Tabs,
   Container,
@@ -74,7 +75,7 @@ export interface GovernancePanelProps {
 }
 
 export const GovernancePanel: React.FC<GovernancePanelProps> = ({ projectId }) => {
-  const apiClient = (window as any).__apiClient;
+  const apiClient = useApi();
 
   // ── Quotas ────────────────────────────────────────────────────────────────
   const [quotas, setQuotas] = React.useState<RoleQuota[]>([]);

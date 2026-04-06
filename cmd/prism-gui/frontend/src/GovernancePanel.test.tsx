@@ -25,6 +25,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GovernancePanel } from './components/GovernancePanel';
+import { ApiContext } from './hooks/use-api';
 
 // ── Mock API client ──────────────────────────────────────────────────────────
 
@@ -76,7 +77,11 @@ const clickTab = async (label: string) => {
   await user.click(tab);
 };
 
-const renderPanel = () => render(<GovernancePanel projectId={PROJECT_ID} />);
+const renderPanel = () => render(
+  <ApiContext.Provider value={mockApiClient as any}>
+    <GovernancePanel projectId={PROJECT_ID} />
+  </ApiContext.Provider>
+);
 
 // ── Setup ────────────────────────────────────────────────────────────────────
 
@@ -140,7 +145,11 @@ describe('GovernancePanel', () => {
       await waitFor(() => {
         expect(mockApiClient.getProjectQuotas).toHaveBeenCalledWith(PROJECT_ID);
       });
-      rerender(<GovernancePanel projectId="different-project" />);
+      rerender(
+        <ApiContext.Provider value={mockApiClient as any}>
+          <GovernancePanel projectId="different-project" />
+        </ApiContext.Provider>
+      );
       await waitFor(() => {
         expect(mockApiClient.getProjectQuotas).toHaveBeenCalledWith('different-project');
       });

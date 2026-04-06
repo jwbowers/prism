@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { useApi } from '../hooks/use-api';
 import {
   Tabs,
   Container,
@@ -136,7 +137,7 @@ interface CourseDetailPanelProps {
 }
 
 export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, onBack, onRefresh }) => {
-  const api = (window as any).__apiClient;
+  const api = useApi();
 
   // ── Members tab ─────────────────────────────────────────────────────────
 
@@ -1023,7 +1024,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
 // ── CoursesPanel — course list view ─────────────────────────────────────────
 
 export const CoursesPanel: React.FC = () => {
-  const api = (window as any).__apiClient;
+  const api = useApi();
 
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [loading, setLoading] = React.useState(true);

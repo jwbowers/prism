@@ -19,6 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WorkshopsPanel } from './components/WorkshopsPanel';
+import { ApiContext } from './hooks/use-api';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
@@ -114,11 +115,19 @@ beforeEach(() => {
   mockApiClient.createWorkshopFromConfig.mockResolvedValue({ id: 'ws-from-cfg', title: 'New From Config', join_token: 'WS-CFGTOKEN' });
 });
 
+// ── Helper ────────────────────────────────────────────────────────────────────
+
+const renderPanel = () => render(
+  <ApiContext.Provider value={mockApiClient as any}>
+    <WorkshopsPanel />
+  </ApiContext.Provider>
+);
+
 // ── WorkshopsPanel — Workshops tab ────────────────────────────────────────────
 
 describe('WorkshopsPanel — Workshops tab', () => {
   it('renders workshops table with correct columns', async () => {
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => {
       expect(screen.getByTestId('workshops-table')).toBeTruthy();
     });
@@ -130,7 +139,7 @@ describe('WorkshopsPanel — Workshops tab', () => {
   });
 
   it('renders workshop data from API', async () => {
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => {
       expect(screen.getByText('NeurIPS DL Tutorial')).toBeTruthy();
     });
@@ -139,14 +148,14 @@ describe('WorkshopsPanel — Workshops tab', () => {
 
   it('renders empty state when API returns no workshops', async () => {
     mockApiClient.getWorkshops.mockResolvedValue([]);
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => {
       expect(screen.getByText(/no workshops/i)).toBeTruthy();
     });
   });
 
   it('shows draft and active status badges', async () => {
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => {
       expect(screen.getByText('Draft')).toBeTruthy();
       expect(screen.getByText('Active')).toBeTruthy();
@@ -154,7 +163,7 @@ describe('WorkshopsPanel — Workshops tab', () => {
   });
 
   it('shows Create Workshop button', async () => {
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => {
       expect(screen.getByText('Create Workshop')).toBeTruthy();
     });
@@ -162,7 +171,7 @@ describe('WorkshopsPanel — Workshops tab', () => {
 
   it('shows error alert when API fails', async () => {
     mockApiClient.getWorkshops.mockRejectedValue(new Error('Connection refused'));
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => {
       expect(screen.getByText(/connection refused/i)).toBeTruthy();
     });
@@ -174,7 +183,7 @@ describe('WorkshopsPanel — Workshops tab', () => {
 describe('WorkshopsPanel — Create modal', () => {
   it('opens create modal when button clicked', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getByText('Create Workshop'));
     // Click the primary create button (there may be multiple; pick the primary action button)
     const createButtons = screen.getAllByText('Create Workshop');
@@ -190,7 +199,7 @@ describe('WorkshopsPanel — Create modal', () => {
 
   it('shows validation error when required fields missing', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getByText('Create Workshop'));
     const createButtons = screen.getAllByText('Create Workshop');
     await user.click(createButtons[0]);
@@ -213,7 +222,7 @@ describe('WorkshopsPanel — Create modal', () => {
 describe('WorkshopsPanel — Actions', () => {
   it('calls provisionWorkshop on provision click', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getAllByText('Provision'));
     const provisionBtns = screen.getAllByText('Provision');
     await user.click(provisionBtns[0]);
@@ -224,7 +233,7 @@ describe('WorkshopsPanel — Actions', () => {
 
   it('calls deleteWorkshop on delete click', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getAllByText('Delete'));
     const deleteBtns = screen.getAllByText('Delete');
     await user.click(deleteBtns[0]);
@@ -235,7 +244,7 @@ describe('WorkshopsPanel — Actions', () => {
 
   it('shows end confirmation modal when end clicked', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getAllByText('End'));
     const endBtns = screen.getAllByText('End');
     await user.click(endBtns[0]);
@@ -250,7 +259,7 @@ describe('WorkshopsPanel — Actions', () => {
 
 describe('WorkshopsPanel — Dashboard tab', () => {
   it('shows placeholder when no workshop selected', async () => {
-    render(<WorkshopsPanel />);
+    renderPanel();
     // Switch to dashboard tab
     await waitFor(() => screen.getAllByRole('tab'));
     const tabs = screen.getAllByRole('tab');
@@ -266,7 +275,7 @@ describe('WorkshopsPanel — Dashboard tab', () => {
 
   it('loads dashboard when workshop title is clicked', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getByText('NeurIPS DL Tutorial'));
     // Click the title link to load the dashboard
     const titleLink = screen.getByText('NeurIPS DL Tutorial');
@@ -281,7 +290,7 @@ describe('WorkshopsPanel — Dashboard tab', () => {
 
   it('displays dashboard stats', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getByText('NeurIPS DL Tutorial'));
     await user.click(screen.getByText('NeurIPS DL Tutorial'));
     await waitFor(() => {
@@ -296,7 +305,7 @@ describe('WorkshopsPanel — Dashboard tab', () => {
 describe('WorkshopsPanel — Config Templates tab', () => {
   it('renders configs table', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getAllByRole('tab'));
     const tabs = screen.getAllByRole('tab');
     const configTab = tabs.find(t => t.textContent?.includes('Config'));
@@ -310,7 +319,7 @@ describe('WorkshopsPanel — Config Templates tab', () => {
 
   it('shows config data from API', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getAllByRole('tab'));
     const tabs = screen.getAllByRole('tab');
     const configTab = tabs.find(t => t.textContent?.includes('Config'));
@@ -327,7 +336,7 @@ describe('WorkshopsPanel — Config Templates tab', () => {
   it('shows empty state when no configs', async () => {
     mockApiClient.getWorkshopConfigs.mockResolvedValue([]);
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getAllByRole('tab'));
     const tabs = screen.getAllByRole('tab');
     const configTab = tabs.find(t => t.textContent?.includes('Config'));
@@ -341,7 +350,7 @@ describe('WorkshopsPanel — Config Templates tab', () => {
 
   it('opens Use Config modal', async () => {
     const user = userEvent.setup();
-    render(<WorkshopsPanel />);
+    renderPanel();
     await waitFor(() => screen.getAllByRole('tab'));
     const tabs = screen.getAllByRole('tab');
     const configTab = tabs.find(t => t.textContent?.includes('Config'));

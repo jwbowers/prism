@@ -1,4 +1,5 @@
 import React from 'react';
+import { useApi } from '../hooks/use-api';
 import {
   Container,
   Header,
@@ -53,6 +54,7 @@ interface ProjectDetailViewProps {
 }
 
 export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId, onBack, onEditMember, onRemoveMember }) => {
+  const apiClient = useApi();
   const [project, setProject] = React.useState<ProjectDetails | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -69,14 +71,8 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
     setLoading(true);
     setError(null);
     try {
-      // Get API client from window context (set in App.tsx)
-      const apiClient = (window as any).__apiClient;
-      if (!apiClient) {
-        throw new Error('API client not available');
-      }
-
       const details = await apiClient.getProjectDetails(projectId);
-      setProject(details);
+      setProject(details as unknown as ProjectDetails);
     } catch (err: any) {
       setError(err.message || 'Failed to load project details');
     } finally {
@@ -352,11 +348,8 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({ projectId,
                   onClick={async () => {
                     if (!memberToEdit) return;
                     try {
-                      const apiClient = (window as any).__apiClient;
-                      if (apiClient) {
-                        await apiClient.updateProjectMember(projectId, memberToEdit.user_id, { role: editMemberRole });
-                        await loadProjectDetails();
-                      }
+                      await apiClient.updateProjectMember(projectId, memberToEdit.user_id, { role: editMemberRole });
+                      await loadProjectDetails();
                     } catch (err: any) {
                       setError(err.message || 'Failed to update member role');
                     } finally {

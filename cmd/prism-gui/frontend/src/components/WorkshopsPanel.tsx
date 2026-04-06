@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useApi } from '../hooks/use-api';
 import {
   Tabs,
   Header,
@@ -83,12 +84,6 @@ interface WorkshopConfig {
   created_at: string;
 }
 
-// ── API helper ────────────────────────────────────────────────────────────────
-
-function getAPI(): any {
-  return (window as any).__apiClient;
-}
-
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 function statusBadge(status: string) {
@@ -104,6 +99,7 @@ function statusBadge(status: string) {
 // ── WorkshopsPanel ────────────────────────────────────────────────────────────
 
 export function WorkshopsPanel() {
+  const api = useApi();
   const [activeTab, setActiveTab] = useState('workshops');
   const [selectedWorkshop, setSelectedWorkshop] = useState<WorkshopEvent | null>(null);
   const [dashboard, setDashboard] = useState<WorkshopDashboard | null>(null);
@@ -114,7 +110,6 @@ export function WorkshopsPanel() {
     setActiveTab('dashboard');
     setDashboardLoading(true);
     try {
-      const api = getAPI();
       const dash = await api.getWorkshopDashboard(ws.id);
       setDashboard(dash);
     } catch (err) {
@@ -180,6 +175,7 @@ export function WorkshopsPanel() {
 // ── Workshops List Tab ────────────────────────────────────────────────────────
 
 function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: WorkshopEvent) => void }) {
+  const api = useApi();
   const [workshops, setWorkshops] = useState<WorkshopEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -192,7 +188,6 @@ function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: Worksho
     setLoading(true);
     setError(null);
     try {
-      const api = getAPI();
       const data = await api.getWorkshops();
       setWorkshops(data);
     } catch (err: any) {
@@ -206,7 +201,7 @@ function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: Worksho
 
   const handleDelete = async (id: string) => {
     try {
-      await getAPI().deleteWorkshop(id);
+      await api.deleteWorkshop(id);
       setNotification('Workshop deleted.');
       await load();
     } catch (err: any) {
@@ -216,7 +211,7 @@ function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: Worksho
 
   const handleProvision = async (id: string) => {
     try {
-      const result = await getAPI().provisionWorkshop(id);
+      const result = await api.provisionWorkshop(id);
       setNotification(`Provisioned ${result.provisioned} workspaces (${result.skipped} skipped).`);
       await load();
     } catch (err: any) {
@@ -227,7 +222,7 @@ function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: Worksho
   const handleEnd = async () => {
     if (!selectedItems[0]) return;
     try {
-      const result = await getAPI().endWorkshop(selectedItems[0].id);
+      const result = await api.endWorkshop(selectedItems[0].id);
       setShowEndConfirm(false);
       setNotification(`Workshop ended. Stopped ${result.stopped} instances.`);
       await load();
@@ -396,6 +391,7 @@ function CreateWorkshopModal({
   onDismiss: () => void;
   onCreated: () => void;
 }) {
+  const api = useApi();
   const [title, setTitle] = useState('');
   const [template, setTemplate] = useState('');
   const [owner, setOwner] = useState('');
@@ -416,7 +412,7 @@ function CreateWorkshopModal({
     }
     setSaving(true);
     try {
-      await getAPI().createWorkshop({
+      await api.createWorkshop({
         title,
         template,
         owner,
@@ -621,6 +617,7 @@ function DashboardTab({
 // ── Config Templates Tab ──────────────────────────────────────────────────────
 
 function ConfigsTab() {
+  const api = useApi();
   const [configs, setConfigs] = useState<WorkshopConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -632,7 +629,7 @@ function ConfigsTab() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAPI().getWorkshopConfigs();
+      const data = await api.getWorkshopConfigs();
       setConfigs(data);
     } catch (err: any) {
       setError(err?.message || 'Failed to load configs');
@@ -724,6 +721,7 @@ function UseConfigModal({
   onDismiss: () => void;
   onCreated: () => void;
 }) {
+  const api = useApi();
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -740,7 +738,7 @@ function UseConfigModal({
     try {
       const start = new Date(startDate);
       const end = new Date(start.getTime() + config.duration_hours * 3600 * 1000);
-      await getAPI().createWorkshopFromConfig(config.name, {
+      await api.createWorkshopFromConfig(config.name, {
         title,
         owner,
         start_time: start.toISOString(),

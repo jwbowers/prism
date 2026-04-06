@@ -2443,9 +2443,6 @@ function CapacityBlocksManagementView() {
 export default function PrismApp() {
   const api = new SafePrismAPI();
 
-  // Make API client available to ProjectDetailView component
-  (window as any).__apiClient = api;
-
   const [state, setState] = useState<AppState>({
     activeView: 'dashboard',
     settingsSection: 'general',

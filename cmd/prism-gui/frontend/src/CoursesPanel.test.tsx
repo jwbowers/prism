@@ -21,6 +21,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CoursesPanel, CourseDetailPanel } from './components/CoursesPanel';
+import { ApiContext } from './hooks/use-api';
 
 // ── Mock API client ──────────────────────────────────────────────────────────
 
@@ -148,11 +149,23 @@ const clickTab = async (label: string) => {
   await user.click(tab);
 };
 
+const renderCoursesPanel = () => render(
+  <ApiContext.Provider value={mockApiClient as any}>
+    <CoursesPanel />
+  </ApiContext.Provider>
+);
+
+const renderCourseDetailPanel = (course: any, onBack = vi.fn(), onRefresh = vi.fn()) => render(
+  <ApiContext.Provider value={mockApiClient as any}>
+    <CourseDetailPanel course={course} onBack={onBack} onRefresh={onRefresh} />
+  </ApiContext.Provider>
+);
+
 // ── CoursesPanel (list view) tests ────────────────────────────────────────────
 
 describe('CoursesPanel', () => {
   it('renders course list with correct columns', async () => {
-    render(<CoursesPanel />);
+    renderCoursesPanel();
     await waitFor(() => {
       expect(screen.getByTestId('courses-table')).toBeTruthy();
     });
@@ -163,7 +176,7 @@ describe('CoursesPanel', () => {
   });
 
   it('renders course data from API', async () => {
-    render(<CoursesPanel />);
+    renderCoursesPanel();
     await waitFor(() => {
       expect(screen.getByText('CS101')).toBeTruthy();
     });
@@ -172,14 +185,14 @@ describe('CoursesPanel', () => {
 
   it('renders empty state when API returns no courses', async () => {
     mockApiClient.getCourses.mockResolvedValue([]);
-    render(<CoursesPanel />);
+    renderCoursesPanel();
     await waitFor(() => {
       expect(screen.getByText(/no courses found/i)).toBeTruthy();
     });
   });
 
   it('shows Create Course button', async () => {
-    render(<CoursesPanel />);
+    renderCoursesPanel();
     await waitFor(() => {
       expect(screen.getByTestId('create-course-button')).toBeTruthy();
     });
@@ -187,7 +200,7 @@ describe('CoursesPanel', () => {
 
   it('opens Create Course modal on button click', async () => {
     const user = userEvent.setup();
-    render(<CoursesPanel />);
+    renderCoursesPanel();
     await waitFor(() => screen.getByTestId('create-course-button'));
 
     await user.click(screen.getByTestId('create-course-button'));
@@ -198,7 +211,7 @@ describe('CoursesPanel', () => {
 
   it('closes Create Course modal on Cancel without calling API', async () => {
     const user = userEvent.setup();
-    render(<CoursesPanel />);
+    renderCoursesPanel();
     await waitFor(() => screen.getByTestId('create-course-button'));
 
     await user.click(screen.getByTestId('create-course-button'));
@@ -212,7 +225,7 @@ describe('CoursesPanel', () => {
 
   it('calls createCourse API on submit', async () => {
     const user = userEvent.setup();
-    render(<CoursesPanel />);
+    renderCoursesPanel();
     await waitFor(() => screen.getByTestId('create-course-button'));
 
     await user.click(screen.getByTestId('create-course-button'));
@@ -235,8 +248,7 @@ describe('CourseDetailPanel', () => {
   const onBack = vi.fn();
   const onRefresh = vi.fn();
 
-  const renderDetail = () =>
-    render(<CourseDetailPanel course={mockCourse} onBack={onBack} onRefresh={onRefresh} />);
+  const renderDetail = () => renderCourseDetailPanel(mockCourse, onBack, onRefresh);
 
   it('renders course header with code and title', async () => {
     renderDetail();
@@ -317,7 +329,7 @@ describe('CourseDetailPanel', () => {
 
   it('archive button visible for closed courses', async () => {
     const closedCourse = { ...mockCourse, status: 'closed' };
-    render(<CourseDetailPanel course={closedCourse} onBack={onBack} onRefresh={onRefresh} />);
+    renderCourseDetailPanel(closedCourse, onBack, onRefresh);
     await clickTab('Audit');
     await waitFor(() => {
       expect(screen.getByTestId('archive-course-button')).toBeTruthy();
@@ -327,7 +339,7 @@ describe('CourseDetailPanel', () => {
   it('archive modal appears on archive button click', async () => {
     const user = userEvent.setup();
     const closedCourse = { ...mockCourse, status: 'closed' };
-    render(<CourseDetailPanel course={closedCourse} onBack={onBack} onRefresh={onRefresh} />);
+    renderCourseDetailPanel(closedCourse, onBack, onRefresh);
     await clickTab('Audit');
     await waitFor(() => screen.getByTestId('archive-course-button'));
 
