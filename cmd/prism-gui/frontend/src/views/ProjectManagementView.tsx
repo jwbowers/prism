@@ -191,7 +191,7 @@ export function ProjectManagementView({
               id: "budget",
               header: "Budget",
               cell: (item: Project) => {
-                const budget = item.budget_status?.total_budget || (item as Record<string, unknown>).budget_limit as number || 0;
+                const budget = item.budget_status?.total_budget || (item as unknown as Record<string, number>).budget_limit || 0;
                 return budget > 0 ? `$${budget.toFixed(2)}` : '-';
               },
               sortingField: "budget_status"
@@ -200,9 +200,9 @@ export function ProjectManagementView({
               id: "spend",
               header: "Current Spend",
               cell: (item: Project) => {
-                const itemRecord = item as Record<string, unknown>;
-                const spend = item.budget_status?.spent_amount || itemRecord.current_spend as number || 0;
-                const limit = item.budget_status?.total_budget || itemRecord.budget_limit as number || 0;
+                const itemRecord = item as unknown as Record<string, number>;
+                const spend = item.budget_status?.spent_amount || itemRecord.current_spend || 0;
+                const limit = item.budget_status?.total_budget || itemRecord.budget_limit || 0;
                 const percentage = limit > 0 ? (spend / limit) * 100 : 0;
                 const colorType = percentage > 80 ? 'error' : percentage > 60 ? 'warning' : 'success';
 
