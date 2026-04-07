@@ -52,21 +52,11 @@ export class LaunchDialog {
    * Uses Cloudscape Select component interaction pattern
    */
   async selectSize(size: string) {
-    // Click the select trigger to open dropdown
-    const sizeSelect = this.page.getByTestId('instance-size-select');
-    await sizeSelect.click();
-
-    // Wait for dropdown to appear and click the option by label text
-    // Map size codes to full labels as they appear in UI
-    const sizeLabels: { [key: string]: string } = {
-      'S': 'Small (S) - Light workloads',
-      'M': 'Medium (M) - Recommended',
-      'L': 'Large (L) - Heavy compute',
-      'XL': 'Extra Large (XL) - Maximum performance'
-    };
-
-    const label = sizeLabels[size] || size;
-    await this.page.getByRole('option', { name: label }).click();
+    // The cloudscape-shim Select renders as a native <select> wrapped in a div.
+    // The FormField label "Workspace size" is htmlFor-associated with the native select,
+    // so use getByLabel + selectOption (value-based, no dropdown click needed).
+    const sizeSelect = this.page.getByLabel(/workspace size/i);
+    await sizeSelect.selectOption(size);
   }
 
   /**

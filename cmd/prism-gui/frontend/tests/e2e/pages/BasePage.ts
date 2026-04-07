@@ -198,7 +198,10 @@ export class BasePage {
     const linkText = linkTextMap[tabName.toLowerCase()] || tabName;
     console.log(`[navigateToTab] Looking for link: "${linkText}"`);
 
-    const link = this.page.getByRole('button', { name: new RegExp(linkText, 'i') });
+    // Use data-sidebar="menu-button" to scope to sidebar nav buttons only.
+    // Without this, getByRole('button', /Templates/i) would also match content-area
+    // buttons like "Browse Templates" (Dashboard) causing strict-mode violations.
+    const link = this.page.locator('[data-sidebar="menu-button"]').filter({ hasText: new RegExp(linkText, 'i') });
 
     // Wait for the link to be both visible and enabled before clicking
     await link.waitFor({ state: 'visible', timeout: 10000 });

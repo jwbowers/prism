@@ -78,9 +78,11 @@ export class ConnectionDialog {
 
   /**
    * Close dialog
+   * Uses .last() because Cloudscape Modal renders both a header close icon button
+   * and a footer "Close" text button — both match /close/i.
    */
   async close() {
-    const closeButton = this.page.getByRole('button', { name: /close/i });
+    const closeButton = this.page.getByRole('button', { name: /close/i }).last();
     await closeButton.click();
   }
 

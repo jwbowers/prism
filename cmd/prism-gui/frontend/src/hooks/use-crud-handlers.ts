@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'sonner';
 import { SafePrismAPI } from '../lib/api';
 import { getTemplateName, getTemplateSlug } from '../lib/template-utils';
 import type { LaunchConfig } from '../modals/LaunchModal';
@@ -49,20 +50,10 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
     // Close modal IMMEDIATELY
     handleModalDismiss();
 
-    // Show progress notification
-    setState((prev: any) => ({
-      ...prev,
-      notifications: [
-        {
-          type: 'info',
-          header: 'Launching Workspace',
-          content: `Launching ${instanceName}... This may take a few minutes.`,
-          dismissible: true,
-          id: Date.now().toString()
-        },
-        ...prev.notifications
-      ]
-    }));
+    // Show progress notification via Sonner toast (Flashbar was removed in Phase 2)
+    const toastId = toast.loading(`Launching ${instanceName}... This may take a few minutes.`, {
+      description: 'Launching Workspace'
+    });
 
     // Fire-and-forget
     try {
@@ -70,54 +61,26 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
       // HTTP 202 approval pending (#495)
       if (result && (result as any).approval_pending) {
         const approvalId = (result as any).approval_request_id || 'unknown';
-        setState((prev: any) => ({
-          ...prev,
-          notifications: [
-            {
-              type: 'info',
-              header: 'Approval Required',
-              content: `Launch of ${instanceName} requires PI approval. Request created: ${approvalId}. Check the Approvals panel.`,
-              dismissible: true,
-              id: Date.now().toString()
-            },
-            ...prev.notifications
-          ]
-        }));
+        toast.info(`Launch of ${instanceName} requires PI approval. Request created: ${approvalId}. Check the Approvals panel.`, {
+          id: toastId
+        });
         // Refresh pending approvals count
         api.listAllApprovals('pending').then(approvals =>
           setState((prev: any) => ({ ...prev, pendingApprovalsCount: approvals.length }))
         ).catch(() => {});
         return;
       }
-      setState((prev: any) => ({
-        ...prev,
-        notifications: [
-          {
-            type: 'success',
-            header: 'Workspace Launched',
-            content: `Successfully launched ${instanceName} using ${templateName}`,
-            dismissible: true,
-            id: Date.now().toString()
-          },
-          ...prev.notifications
-        ]
-      }));
+      toast.success(`Workspace Launched`, {
+        id: toastId,
+        description: `Successfully launched ${instanceName} using ${templateName}`
+      });
       // Reload data in background (don't block the success notification)
       setTimeout(loadApplicationData, 1000);
     } catch (error) {
-      setState((prev: any) => ({
-        ...prev,
-        notifications: [
-          {
-            type: 'error',
-            header: 'Launch Failed',
-            content: `Failed to launch ${instanceName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            dismissible: true,
-            id: Date.now().toString()
-          },
-          ...prev.notifications
-        ]
-      }));
+      toast.error(`Launch Failed`, {
+        id: toastId,
+        description: `Failed to launch ${instanceName}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   };
 

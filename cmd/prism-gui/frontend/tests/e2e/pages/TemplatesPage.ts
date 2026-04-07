@@ -86,6 +86,9 @@ export class TemplatesPage extends BasePage {
 
   /**
    * Click "Launch" button on a template
+   * Uses dispatchEvent to directly trigger React's onClick without coordinate routing,
+   * which is needed because the shadcn fixed sidebar (z-10) can intercept the click
+   * when the template card scrolls to near the top of the viewport.
    */
   async clickLaunchOnTemplate(name: string) {
     const template = this.getTemplateByName(name);
@@ -93,7 +96,10 @@ export class TemplatesPage extends BasePage {
     const launchButton = template.getByRole('button', { name: /launch/i }).first();
     // Wait for button to be visible (handles loading states that may hide template cards)
     await launchButton.waitFor({ state: 'visible', timeout: 30000 });
-    await launchButton.click();
+    // dispatchEvent bypasses coordinate-based hit testing entirely — fires the click
+    // event directly on the element node so React's onClick handler fires regardless
+    // of z-index overlapping with the fixed sidebar.
+    await launchButton.dispatchEvent('click');
   }
 
   /**
