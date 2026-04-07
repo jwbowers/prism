@@ -139,7 +139,7 @@ export function Box({ variant, fontSize, color, textAlign, float, padding, child
     'code': 'font-mono text-sm',
   }
   const colorClasses: Record<string, string> = {
-    'text-status-info': 'text-blue-600 dark:text-blue-400',
+    'text-status-info': 'text-primary dark:text-primary',
     'text-status-success': 'text-green-600 dark:text-green-400',
     'text-status-error': 'text-red-600 dark:text-red-400',
     'text-status-warning': 'text-yellow-600 dark:text-yellow-400',
@@ -433,11 +433,11 @@ export function StatusIndicator({ type = 'info', children }: any) {
     success: 'bg-green-500',
     error: 'bg-red-500',
     warning: 'bg-yellow-500',
-    info: 'bg-blue-500',
-    stopped: 'bg-gray-400',
-    'in-progress': 'bg-blue-500 animate-pulse',
+    info: 'bg-primary',
+    stopped: 'bg-muted-foreground',
+    'in-progress': 'bg-primary animate-pulse',
     pending: 'bg-yellow-400 animate-pulse',
-    loading: 'bg-blue-500 animate-pulse',
+    loading: 'bg-primary animate-pulse',
   }
   return (
     <span className="inline-flex items-center gap-1.5">
