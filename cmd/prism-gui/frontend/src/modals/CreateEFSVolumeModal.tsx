@@ -9,15 +9,15 @@ import {
   Input,
 } from '../lib/cloudscape-shim'
 import { useApi } from '../hooks/use-api'
+import { toast } from 'sonner'
 
 interface CreateEFSVolumeModalProps {
   visible: boolean
   onDismiss: () => void
   onSuccess: () => Promise<void>
-  onNotify: (notification: { type: string; header: string; content: string; dismissible: boolean; id: string }) => void
 }
 
-export function CreateEFSVolumeModal({ visible, onDismiss, onSuccess, onNotify }: CreateEFSVolumeModalProps) {
+export function CreateEFSVolumeModal({ visible, onDismiss, onSuccess }: CreateEFSVolumeModalProps) {
   const api = useApi()
   const [volumeName, setVolumeName] = useState('')
   const [volumeNameError, setVolumeNameError] = useState('')
@@ -48,13 +48,7 @@ export function CreateEFSVolumeModal({ visible, onDismiss, onSuccess, onNotify }
     handleDismiss()
 
     // Show notification that creation is in progress
-    onNotify({
-      type: 'info',
-      header: 'Creating EFS Volume',
-      content: `Creating EFS volume "${name}"... This may take 1-3 minutes.`,
-      dismissible: true,
-      id: Date.now().toString()
-    })
+    const toastId = toast.loading(`Creating EFS volume "${name}"... This may take 1-3 minutes.`)
 
     // Start creation in background - backend will wait for AWS
     try {
@@ -62,20 +56,14 @@ export function CreateEFSVolumeModal({ visible, onDismiss, onSuccess, onNotify }
       // Sync volume state from AWS to ensure we have current state
       await api.syncEFSVolume(name)
       await onSuccess()
-      onNotify({
-        type: 'success',
-        header: 'EFS Volume Created',
-        content: `Successfully created EFS volume "${name}"`,
-        dismissible: true,
-        id: Date.now().toString()
+      toast.success('EFS Volume Created', {
+        id: toastId,
+        description: `Successfully created EFS volume "${name}"`
       })
     } catch (error) {
-      onNotify({
-        type: 'error',
-        header: 'Failed to Create EFS Volume',
-        content: error instanceof Error ? error.message : 'Unknown error occurred',
-        dismissible: true,
-        id: Date.now().toString()
+      toast.error('Failed to Create EFS Volume', {
+        id: toastId,
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
       })
     }
   }

@@ -15,7 +15,7 @@ export class CoursePage extends BasePage {
   /** Navigate to the Courses view via the sidebar. */
   async navigateToCourses() {
     await this.goto();
-    const coursesLink = this.page.getByRole('button', { name: /^Courses$/i });
+    const coursesLink = this.page.locator('[data-sidebar="menu-button"]').filter({ hasText: /Courses/i });
     await coursesLink.waitFor({ state: 'visible', timeout: 10000 });
     await coursesLink.click();
     await this.waitForCourseList();

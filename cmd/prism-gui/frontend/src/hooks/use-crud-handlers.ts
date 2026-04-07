@@ -117,15 +117,9 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
     setState((prev: any) => ({
       ...prev,
       projects: [projectForState, ...prev.projects],
-      notifications: [{
-        type: 'success',
-        header: 'Project Created',
-        content: `Project "${data.name}" created successfully`,
-        dismissible: true,
-        id: Date.now().toString()
-      }, ...prev.notifications]
     }));
 
+    toast.success('Project Created', { description: `Project "${data.name}" created successfully` });
     setProjectModalVisible(false);
     // Refresh data from backend to get accurate budget status (e.g. test-mode mock spend)
     setTimeout(loadApplicationData, 500);
@@ -160,15 +154,9 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
       setState((prev: any) => ({
         ...prev,
         users: [...prev.users, newUser], // Add new user to existing list
-        notifications: [{
-          type: 'success',
-          header: 'User Created',
-          content: `User "${data.username}" created successfully`,
-          dismissible: true,
-          id: Date.now().toString()
-        }, ...prev.notifications]
       }));
 
+      toast.success('User Created', { description: `User "${data.username}" created successfully` });
       setUserModalVisible(false);
     } catch (error: any) {
       // Check for duplicate error - backend returns HTTP 409
@@ -196,18 +184,11 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
       // This prevents stale data from overwriting our updated list
       usersVersionRef.current++;
 
-      // Update state with both users and notification in single atomic operation
-      setState((prev: any) => ({
-        ...prev,
-        users,
-        notifications: [{
-          type: 'success',
-          header: 'SSH Key Generated',
-          content: `SSH key pair generated successfully for user "${username}". Download the private key before closing the dialog.`,
-          dismissible: true,
-          id: Date.now().toString()
-        }, ...prev.notifications]
-      }));
+      // Update users state
+      setState((prev: any) => ({ ...prev, users }));
+      toast.success('SSH Key Generated', {
+        description: `SSH key pair generated for "${username}". Download the private key before closing.`
+      });
 
       return response;
     } catch (error: any) {
@@ -234,18 +215,7 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
     try {
       await api.sendInvitation(selectedProjectForInvitation, data.email.trim(), data.role, data.message.trim() || undefined);
 
-      // Show success notification
-      setState((prev: any) => ({
-        ...prev,
-        notifications: [{
-          type: 'success',
-          header: 'Invitation Sent',
-          content: `Invitation sent to ${data.email}`,
-          dismissible: true,
-          id: Date.now().toString()
-        }, ...prev.notifications]
-      }));
-
+      toast.success('Invitation Sent', { description: `Invitation sent to ${data.email}` });
       setSendInvitationModalVisible(false);
     } catch (error: any) {
       throw new Error(`Failed to send invitation: ${error.message || 'Unknown error'}`);
@@ -266,17 +236,7 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
       if (confirmed) {
         await api.acceptInvitation(token.trim());
 
-        setState((prev: any) => ({
-          ...prev,
-          notifications: [{
-            type: 'success',
-            header: 'Token Redeemed',
-            content: `Successfully joined project "${invitationData.project_name}"`,
-            dismissible: true,
-            id: Date.now().toString()
-          }, ...prev.notifications]
-        }));
-
+        toast.success('Token Redeemed', { description: `Successfully joined project "${invitationData.project_name}"` });
         setRedeemTokenModalVisible(false);
       }
     } catch (error: any) {

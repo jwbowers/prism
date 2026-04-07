@@ -9,15 +9,15 @@ import {
   Input,
 } from '../lib/cloudscape-shim'
 import { useApi } from '../hooks/use-api'
+import { toast } from 'sonner'
 
 interface CreateEBSVolumeModalProps {
   visible: boolean
   onDismiss: () => void
   onSuccess: () => Promise<void>
-  onNotify: (notification: { type: string; header: string; content: string; dismissible: boolean; id: string }) => void
 }
 
-export function CreateEBSVolumeModal({ visible, onDismiss, onSuccess, onNotify }: CreateEBSVolumeModalProps) {
+export function CreateEBSVolumeModal({ visible, onDismiss, onSuccess }: CreateEBSVolumeModalProps) {
   const api = useApi()
   const [volumeName, setVolumeName] = useState('')
   const [volumeSize, setVolumeSize] = useState('')
@@ -68,13 +68,7 @@ export function CreateEBSVolumeModal({ visible, onDismiss, onSuccess, onNotify }
     handleDismiss()
 
     // Show notification that creation is in progress
-    onNotify({
-      type: 'info',
-      header: 'Creating EBS Volume',
-      content: `Creating EBS volume "${name}" (${size} GB)... This may take 30-120 seconds.`,
-      dismissible: true,
-      id: Date.now().toString()
-    })
+    const toastId = toast.loading(`Creating EBS volume "${name}" (${size} GB)... This may take 30-120 seconds.`)
 
     // Start creation in background - backend will wait for AWS
     try {
@@ -82,20 +76,14 @@ export function CreateEBSVolumeModal({ visible, onDismiss, onSuccess, onNotify }
       // Sync volume state from AWS to ensure we have current state
       await api.syncEBSVolume(name)
       await onSuccess()
-      onNotify({
-        type: 'success',
-        header: 'EBS Volume Created',
-        content: `Successfully created EBS volume "${name}"`,
-        dismissible: true,
-        id: Date.now().toString()
+      toast.success('EBS Volume Created', {
+        id: toastId,
+        description: `Successfully created EBS volume "${name}"`
       })
     } catch (error) {
-      onNotify({
-        type: 'error',
-        header: 'Failed to Create EBS Volume',
-        content: error instanceof Error ? error.message : 'Unknown error occurred',
-        dismissible: true,
-        id: Date.now().toString()
+      toast.error('Failed to Create EBS Volume', {
+        id: toastId,
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
       })
     }
   }

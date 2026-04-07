@@ -498,26 +498,11 @@ export default function PrismApp() {
               setState(prev => ({
                 ...prev,
                 users: prev.users.filter(u => u.username !== user.username),
-                notifications: [{
-                  type: 'success',
-                  header: 'User Deleted',
-                  content: `User "${user.username}" deleted successfully`,
-                  dismissible: true,
-                  id: Date.now().toString()
-                }, ...prev.notifications]
               }));
+              toast.success('User Deleted', { description: `User "${user.username}" deleted successfully` });
               setDeleteModalVisible(false);
             } catch (error: any) {
-              setState(prev => ({
-                ...prev,
-                notifications: [{
-                  type: 'error',
-                  header: 'Delete Failed',
-                  content: error.message || 'Failed to delete user',
-                  dismissible: true,
-                  id: Date.now().toString()
-                }, ...prev.notifications]
-              }));
+              toast.error('Delete Failed', { description: error.message || 'Failed to delete user' });
             }
           }
         });
@@ -750,26 +735,11 @@ export default function PrismApp() {
                         setState(prev => ({
                           ...prev,
                           projects: prev.projects.filter(p => p.id !== project.id),
-                          notifications: [{
-                            type: 'success',
-                            header: 'Project Deleted',
-                            content: `Project "${project.name}" has been successfully deleted.`,
-                            dismissible: true,
-                            id: Date.now().toString()
-                          }, ...prev.notifications]
                         }));
+                        toast.success('Project Deleted', { description: `Project "${project.name}" deleted successfully.` });
                         setDeleteModalVisible(false);
                       } catch (error: any) {
-                        setState(prev => ({
-                          ...prev,
-                          notifications: [{
-                            type: 'error',
-                            header: 'Delete Failed',
-                            content: `Failed to delete project: ${error.message || 'Unknown error'}`,
-                            dismissible: true,
-                            id: Date.now().toString()
-                          }, ...prev.notifications]
-                        }));
+                        toast.error('Delete Failed', { description: `Failed to delete project: ${error.message || 'Unknown error'}` });
                       }
                     }
                   });
@@ -988,17 +958,10 @@ export default function PrismApp() {
                 ? { ...u, provisioned_instances: [...(u.provisioned_instances || []), workspaceName] }
                 : u
             ),
-            notifications: [
-              {
-                type: 'success',
-                header: 'User Provisioned',
-                content: `User "${username}" provisioned on workspace "${workspaceName}"`,
-                dismissible: true,
-                id: Date.now().toString()
-              },
-              ...prev.notifications
-            ]
           }));
+          toast.success('User Provisioned', {
+            description: `User "${username}" provisioned on workspace "${workspaceName}"`
+          });
           setProvisionModalVisible(false);
         }}
       />
@@ -1034,24 +997,12 @@ export default function PrismApp() {
         visible={createEFSModalVisible}
         onDismiss={() => setCreateEFSModalVisible(false)}
         onSuccess={loadApplicationData}
-        onNotify={(notification) => {
-          setState(prev => ({
-            ...prev,
-            notifications: [...prev.notifications, notification as any]
-          }));
-        }}
       />
 
       <CreateEBSVolumeModalExtracted
         visible={createEBSModalVisible}
         onDismiss={() => setCreateEBSModalVisible(false)}
         onSuccess={loadApplicationData}
-        onNotify={(notification) => {
-          setState(prev => ({
-            ...prev,
-            notifications: [...prev.notifications, notification as any]
-          }));
-        }}
       />
 
       {/* Connection Info Modal - at App level so it's always mounted regardless of active view */}
@@ -1076,20 +1027,10 @@ export default function PrismApp() {
             status: data.status
           });
           const updatedProjects = await api.getProjects();
-          setState(prev => ({
-            ...prev,
-            projects: updatedProjects,
-            notifications: [
-              {
-                type: 'success',
-                header: 'Project Updated',
-                content: `Project "${data.name}" updated successfully.`,
-                dismissible: true,
-                id: Date.now().toString()
-              },
-              ...prev.notifications
-            ]
-          }));
+          setState(prev => ({ ...prev, projects: updatedProjects }));
+          toast.success('Project Updated', {
+            description: `Project "${data.name}" updated successfully.`
+          });
           setShowEditProjectModal(false);
         }}
       />
@@ -1139,20 +1080,10 @@ export default function PrismApp() {
         onSubmit={async (username, updates) => {
           await api.updateUser(username, updates);
           const updatedUsers = await api.getUsers();
-          setState(prev => ({
-            ...prev,
-            users: updatedUsers,
-            notifications: [
-              {
-                type: 'success',
-                header: 'User Updated',
-                content: `User "${username}" updated successfully.`,
-                dismissible: true,
-                id: Date.now().toString()
-              },
-              ...prev.notifications
-            ]
-          }));
+          setState(prev => ({ ...prev, users: updatedUsers }));
+          toast.success('User Updated', {
+            description: `User "${username}" updated successfully.`
+          });
           setShowEditUserModal(false);
         }}
       />

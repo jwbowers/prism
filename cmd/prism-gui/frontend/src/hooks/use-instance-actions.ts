@@ -1,6 +1,7 @@
 import type { Instance } from '../lib/types';
 import { SafePrismAPI } from '../lib/api';
 import { logger } from '../utils/logger';
+import { toast } from 'sonner';
 import React from 'react';
 
 export interface DeleteModalConfig {
@@ -66,20 +67,8 @@ export function useInstanceActions(options: UseInstanceActionsOptions) {
     if (lifecycleActions[action]) {
       const [progressLabel, completeLabel] = lifecycleActions[action];
 
-      // Show progress notification immediately (no loading state)
-      setState((prev: any) => ({
-        ...prev,
-        notifications: [
-          ...prev.notifications,
-          {
-            type: 'info',
-            header: `${progressLabel} Workspace`,
-            content: `${progressLabel} ${instance.name}...`,
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
-      }));
+      // Show progress notification immediately via toast (loading → resolved in-place)
+      const toastId = toast.loading(`${progressLabel} ${instance.name}...`);
 
       // Fire-and-forget
       try {
@@ -90,34 +79,16 @@ export function useInstanceActions(options: UseInstanceActionsOptions) {
           case 'resume': await api.resumeInstance(instance.name); break;
         }
         await loadApplicationData();
-        setState((prev: any) => ({
-          ...prev,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'success',
-              header: `Workspace ${completeLabel}`,
-              content: `${instance.name} ${completeLabel.toLowerCase()} successfully`,
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
+        toast.success(`Workspace ${completeLabel}`, {
+          id: toastId,
+          description: `${instance.name} ${completeLabel.toLowerCase()} successfully`
+        });
       } catch (error) {
         logger.error(`Failed to ${action} workspace ${instance.name}:`, error);
-        setState((prev: any) => ({
-          ...prev,
-          notifications: [
-            ...prev.notifications,
-            {
-              type: 'error',
-              header: 'Action Failed',
-              content: `Failed to ${action} ${instance.name}: ${error instanceof Error ? error.message : String(error)}`,
-              dismissible: true,
-              id: Date.now().toString()
-            }
-          ]
-        }));
+        toast.error('Action Failed', {
+          id: toastId,
+          description: `Failed to ${action} ${instance.name}: ${error instanceof Error ? error.message : String(error)}`
+        });
       }
       return;
     }
@@ -174,35 +145,15 @@ export function useInstanceActions(options: UseInstanceActionsOptions) {
             onConfirm: async () => {
               try {
                 await api.deleteInstance(instance.name);
-                setState((prev: any) => ({
-                  ...prev,
-                  notifications: [
-                    ...prev.notifications,
-                    {
-                      type: 'success',
-                      header: 'Workspace Deleted',
-                      content: `Successfully deleted workspace ${instance.name}`,
-                      dismissible: true,
-                      id: Date.now().toString()
-                    }
-                  ]
-                }));
+                toast.success('Workspace Deleted', {
+                  description: `Successfully deleted workspace ${instance.name}`
+                });
                 setDeleteModalVisible(false);
                 setTimeout(loadApplicationData, 1000);
               } catch (error) {
-                setState((prev: any) => ({
-                  ...prev,
-                  notifications: [
-                    ...prev.notifications,
-                    {
-                      type: 'error',
-                      header: 'Delete Failed',
-                      content: `Failed to delete workspace: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                      dismissible: true,
-                      id: Date.now().toString()
-                    }
-                  ]
-                }));
+                toast.error('Delete Failed', {
+                  description: `Failed to delete workspace: ${error instanceof Error ? error.message : 'Unknown error'}`
+                });
               }
             }
           });
@@ -212,42 +163,17 @@ export function useInstanceActions(options: UseInstanceActionsOptions) {
           throw new Error(`Unknown action: ${action}`);
       }
 
-      // Add success notification
-      setState((prev: any) => ({
-        ...prev,
-        loading: false,
-        notifications: [
-          ...prev.notifications,
-          {
-            type: 'success',
-            header: 'Action Successful',
-            content: actionMessage,
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
-      }));
-
       // Refresh instances after action
+      setState((prev: any) => ({ ...prev, loading: false }));
+      if (actionMessage) toast.success('Action Successful', { description: actionMessage });
       setTimeout(loadApplicationData, 1000);
 
     } catch (error) {
       logger.error(`Failed to ${action} workspace ${instance.name}:`, error);
-
-      setState((prev: any) => ({
-        ...prev,
-        loading: false,
-        notifications: [
-          ...prev.notifications,
-          {
-            type: 'error',
-            header: 'Action Failed',
-            content: `Failed to ${action} workspace ${instance.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
-      }));
+      setState((prev: any) => ({ ...prev, loading: false }));
+      toast.error('Action Failed', {
+        description: `Failed to ${action} workspace ${instance.name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   };
 
@@ -278,21 +204,14 @@ export function useInstanceActions(options: UseInstanceActionsOptions) {
       const successes = results.filter(r => r.status === 'fulfilled').length;
       const failures = results.filter(r => r.status === 'rejected').length;
 
-      // Show notification with results
-      setState((prev: any) => ({
-        ...prev,
-        loading: false,
-        notifications: [
-          ...prev.notifications,
-          {
-            type: failures > 0 ? 'warning' : 'success',
-            header: `Bulk ${action.charAt(0).toUpperCase() + action.slice(1)} ${failures > 0 ? 'Partially Complete' : 'Complete'}`,
-            content: `Successfully ${action}ed ${successes} workspace${successes !== 1 ? 's' : ''}${failures > 0 ? `, failed to ${action} ${failures} workspace${failures !== 1 ? 's' : ''}` : ''}.`,
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
-      }));
+      const actionLabel = action.charAt(0).toUpperCase() + action.slice(1);
+      const desc = `Successfully ${action}ed ${successes} workspace${successes !== 1 ? 's' : ''}${failures > 0 ? `, failed: ${failures}` : ''}.`;
+      setState((prev: any) => ({ ...prev, loading: false }));
+      if (failures > 0) {
+        toast.warning(`Bulk ${actionLabel} Partially Complete`, { description: desc });
+      } else {
+        toast.success(`Bulk ${actionLabel} Complete`, { description: desc });
+      }
 
       // Clear selection and refresh data
       setSelectedInstances([]);
@@ -300,40 +219,19 @@ export function useInstanceActions(options: UseInstanceActionsOptions) {
 
     } catch (error) {
       logger.error(`Failed to execute bulk ${action}:`, error);
-
-      setState((prev: any) => ({
-        ...prev,
-        loading: false,
-        notifications: [
-          ...prev.notifications,
-          {
-            type: 'error',
-            header: 'Bulk Action Failed',
-            content: `Failed to ${action} workspaces: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
-      }));
+      setState((prev: any) => ({ ...prev, loading: false }));
+      toast.error('Bulk Action Failed', {
+        description: `Failed to ${action} workspaces: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   };
 
   // Bulk action handlers for multiple instances
   const handleBulkAction = async (action: 'start' | 'stop' | 'hibernate' | 'delete') => {
     if (selectedInstances.length === 0) {
-      setState((prev: any) => ({
-        ...prev,
-        notifications: [
-          ...prev.notifications,
-          {
-            type: 'warning',
-            header: 'No Workspaces Selected',
-            content: 'Please select one or more workspaces to perform bulk actions.',
-            dismissible: true,
-            id: Date.now().toString()
-          }
-        ]
-      }));
+      toast.warning('No Workspaces Selected', {
+        description: 'Please select one or more workspaces to perform bulk actions.'
+      });
       return;
     }
 
