@@ -13,7 +13,6 @@ interface UseCrudHandlersOptions {
   usersVersionRef: React.MutableRefObject<number>;
   setProjectModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   setUserModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
-  setCreateBudgetModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   setSendInvitationModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   setRedeemTokenModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   selectedProjectForInvitation: string;
@@ -29,7 +28,6 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
     usersVersionRef,
     setProjectModalVisible,
     setUserModalVisible,
-    setCreateBudgetModalVisible,
     setSendInvitationModalVisible,
     setRedeemTokenModalVisible,
     selectedProjectForInvitation,
@@ -223,42 +221,6 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
     }
   };
 
-  // Handle Create Budget Pool
-  const handleCreateBudget = async (data: { name: string; description: string; totalAmount: string; period: string; alertThreshold: string }) => {
-    // Validation
-    if (!data.name.trim()) {
-      throw new Error('Budget name is required');
-    }
-    if (!data.totalAmount || parseFloat(data.totalAmount) <= 0) {
-      throw new Error('Total amount must be greater than 0');
-    }
-
-    const createdBudget = await api.createBudgetPool({
-      name: data.name.trim(),
-      description: data.description.trim(),
-      total_amount: parseFloat(data.totalAmount),
-      period: data.period,
-      start_date: new Date().toISOString(),
-      alert_threshold: parseFloat(data.alertThreshold) / 100,
-      created_by: 'current-user'  // TODO: Get from auth context
-    });
-
-    // Optimistic UI update (don't re-fetch)
-    setState((prev: any) => ({
-      ...prev,
-      budgetPools: [...prev.budgetPools, createdBudget],
-      notifications: [{
-        type: 'success',
-        header: 'Budget Created',
-        content: `Budget pool "${data.name}" created successfully`,
-        dismissible: true,
-        id: Date.now().toString()
-      }, ...prev.notifications]
-    }));
-
-    setCreateBudgetModalVisible(false);
-  };
-
   // SSH Key generation handler
   const handleGenerateSSHKey = async (username: string): Promise<any> => {
     try {
@@ -363,7 +325,6 @@ export function useCrudHandlers(options: UseCrudHandlersOptions) {
     handleLaunchInstance,
     handleCreateProject,
     handleCreateUser,
-    handleCreateBudget,
     handleGenerateSSHKey,
     handleSendInvitation,
     handleRedeemToken,

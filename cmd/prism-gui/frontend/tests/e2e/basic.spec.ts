@@ -30,7 +30,7 @@ test.describe('Basic Smoke Tests', () => {
   test('application loads successfully', async ({ page }) => {
     // Check that main navigation links are present
     await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('button', { name: /templates/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Templates', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /my workspaces/i })).toBeVisible();
 
     // Check that a heading exists (content loaded)
@@ -44,7 +44,7 @@ test.describe('Basic Smoke Tests', () => {
 
   test('navigation between sections works', async ({ page }) => {
     // Test navigation to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
     // Just check that we navigated (content changed)
     const templateContent = page.locator('[data-testid="template-card"]').first();
@@ -60,7 +60,7 @@ test.describe('Basic Smoke Tests', () => {
     await expect(instancesContent).toBeVisible({ timeout: 5000 });
 
     // Test navigation to Storage
-    await page.getByRole('button', { name: /storage/i }).click();
+    await page.getByRole('button', { name: 'Storage', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
     // Check for storage tables
     const storageContent = page.locator('[data-testid="efs-table"], [data-testid="ebs-table"]').first();
@@ -77,9 +77,9 @@ test.describe('Basic Smoke Tests', () => {
   test('application structure is consistent', async ({ page }) => {
     // Verify main navigation links exist
     await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /templates/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Templates', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /my workspaces/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /storage/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Storage', exact: true })).toBeVisible();
 
     // Verify at least one heading is present (content loaded)
     const heading = page.getByRole('heading').first();

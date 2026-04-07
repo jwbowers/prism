@@ -32,7 +32,7 @@ test.describe('Navigation and User Interactions', () => {
     await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
 
     // Navigate to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Verify Templates view loaded (either cards or empty state)
@@ -49,7 +49,7 @@ test.describe('Navigation and User Interactions', () => {
     await expect(workspacesContent).toBeVisible({ timeout: 5000 });
 
     // Navigate to Storage
-    await page.getByRole('button', { name: /storage/i }).click();
+    await page.getByRole('button', { name: 'Storage', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Verify Storage view loaded (EFS or EBS tables)
@@ -68,9 +68,9 @@ test.describe('Navigation and User Interactions', () => {
   test('navigation links are all present', async ({ page }) => {
     // Verify main navigation links exist
     await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /templates/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Templates', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /my workspaces/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /storage/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Storage', exact: true })).toBeVisible();
 
     // Additional navigation links (may be in expandable sections)
     const backupsLink = page.getByRole('button', { name: /backups/i });
@@ -92,7 +92,7 @@ test.describe('Navigation and User Interactions', () => {
     await expect(workspacesContent).toBeVisible({ timeout: 5000 });
 
     // Navigate to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Navigate back to My Workspaces
@@ -112,7 +112,7 @@ test.describe('Navigation and User Interactions', () => {
     await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
 
     // Navigation should still work
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Content should load
@@ -125,7 +125,7 @@ test.describe('Navigation and User Interactions', () => {
     await page.keyboard.press('Tab');
 
     // Navigate using keyboard to Templates link
-    await page.getByRole('button', { name: /templates/i }).focus();
+    await page.getByRole('button', { name: 'Templates', exact: true }).focus();
     await page.keyboard.press('Enter');
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
@@ -139,7 +139,7 @@ test.describe('Navigation and User Interactions', () => {
     await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
 
     // Navigate to Templates and back to Dashboard
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     await page.getByRole('button', { name: /dashboard/i }).click();
@@ -152,9 +152,9 @@ test.describe('Navigation and User Interactions', () => {
 
   test('navigation handles rapid view switching', async ({ page }) => {
     // Rapidly switch between views
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.getByRole('button', { name: /my workspaces/i }).click();
-    await page.getByRole('button', { name: /storage/i }).click();
+    await page.getByRole('button', { name: 'Storage', exact: true }).click();
     await page.getByRole('button', { name: /dashboard/i }).click();
 
     // Wait for final view to load
@@ -170,7 +170,7 @@ test.describe('Navigation and User Interactions', () => {
     const dashboardLink = page.getByRole('button', { name: /dashboard/i });
     await expect(dashboardLink).toBeVisible();
 
-    const templatesLink = page.getByRole('button', { name: /templates/i });
+    const templatesLink = page.getByRole('button', { name: 'Templates', exact: true });
     await expect(templatesLink).toBeVisible();
 
     const workspacesLink = page.getByRole('button', { name: /my workspaces/i });
@@ -184,7 +184,7 @@ test.describe('Navigation and User Interactions', () => {
 
   test('navigation works after page refresh', async ({ page }) => {
     // Navigate to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Refresh page
@@ -205,9 +205,9 @@ test.describe('Navigation and User Interactions', () => {
     await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
 
     // Core features should be accessible
-    await expect(page.getByRole('button', { name: /templates/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Templates', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /my workspaces/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /storage/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Storage', exact: true })).toBeVisible();
 
     // Verify React app is rendered
     const root = page.locator('#root');
@@ -224,7 +224,7 @@ test.describe('Navigation and User Interactions', () => {
     await expect(workspacesContent).toBeVisible({ timeout: 5000 });
 
     // Navigate to Storage (may be empty)
-    await page.getByRole('button', { name: /storage/i }).click();
+    await page.getByRole('button', { name: 'Storage', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Should show storage tables (even if empty)

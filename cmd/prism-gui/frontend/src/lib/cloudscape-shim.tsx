@@ -365,11 +365,21 @@ export function Form({ children, actions, header, errorText }: any) {
 }
 
 export function FormField({ label, children, errorText, description, constraintText }: any) {
+  // Generate a stable id from label text for proper htmlFor/id association (enables getByLabel in tests)
+  const fieldId = typeof label === 'string'
+    ? `field-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+    : undefined
+  // Clone child element to inject id so the label's htmlFor links to the input
+  const childWithId = fieldId
+    ? React.Children.map(children, (child) =>
+        React.isValidElement(child) ? React.cloneElement(child as React.ReactElement<any>, { id: fieldId }) : child
+      )
+    : children
   return (
     <div className="space-y-1.5">
-      {label && <label className="text-sm font-medium leading-none">{label}</label>}
+      {label && <label htmlFor={fieldId} className="text-sm font-medium leading-none">{label}</label>}
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      {children}
+      {childWithId}
       {constraintText && <p className="text-xs text-muted-foreground">{constraintText}</p>}
       {errorText && <p className="text-xs text-destructive">{errorText}</p>}
     </div>
@@ -607,7 +617,7 @@ export function Modal({ visible, onDismiss, header, children, footer, size, ...r
   if (!visible) return null
   const sizeClass = size === 'large' ? 'max-w-4xl' : size === 'small' ? 'max-w-sm' : 'max-w-2xl'
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" {...rest}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={typeof header === 'string' ? header : undefined} {...rest}>
       <div className="absolute inset-0 bg-black/50" onClick={onDismiss} />
       <div className={cn('relative bg-card rounded-lg shadow-xl w-full mx-4 flex flex-col max-h-[90vh]', sizeClass)}>
         {header && (
@@ -642,12 +652,13 @@ export function ButtonDropdown({ items, onItemClick, disabled, children, variant
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-1 min-w-40 rounded-md border bg-popover shadow-md">
+          <div role="menu" className="absolute right-0 z-50 mt-1 min-w-40 rounded-md border bg-popover shadow-md">
             {items?.map((item, i) => {
               if (item.type === 'divider') return <hr key={i} className="my-1" />
               return (
                 <button
                   key={item.id ?? i}
+                  role="menuitem"
                   disabled={item.disabled}
                   onClick={() => { setOpen(false); onItemClick?.({ detail: { id: item.id ?? '' } }) }}
                   className="flex w-full items-center px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"

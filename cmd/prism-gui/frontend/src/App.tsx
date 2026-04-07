@@ -10,6 +10,7 @@ import { SideNav } from './components/side-nav';
 // ValidationError moved to extracted modal components
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { InvitationManagementView } from './components/InvitationManagementView';
+import { BudgetPoolManagementView } from './views/BudgetPoolManagementView';
 import { CoursesManagementView } from './views/CoursesManagementView';
 import { WorkshopsManagementView } from './views/WorkshopsManagementView';
 import { CapacityBlocksManagementView } from './views/CapacityBlocksManagementView';
@@ -42,7 +43,6 @@ import { HibernateConfirmationModal as HibernateConfirmationModalExtracted } fro
 import { IdlePolicyModal as IdlePolicyModalExtracted } from './modals/IdlePolicyModal';
 import { CreateProjectModal as CreateProjectModalExtracted } from './modals/CreateProjectModal';
 import { CreateUserModal as CreateUserModalExtracted } from './modals/CreateUserModal';
-import { CreateBudgetModal as CreateBudgetModalExtracted } from './modals/CreateBudgetModal';
 import { OnboardingWizard as OnboardingWizardExtracted } from './modals/OnboardingWizard';
 import { LaunchModal as LaunchModalExtracted } from './modals/LaunchModal';
 import { CreateBackupModal as CreateBackupModalExtracted } from './modals/CreateBackupModal';
@@ -225,9 +225,6 @@ export default function PrismApp() {
     sshCommand: string;
     webPort: string;
   } | null>(null);
-
-  // Create Budget Pool modal state
-  const [createBudgetModalVisible, setCreateBudgetModalVisible] = useState(false);
 
   // Track users data version to prevent stale data overwrites
   // This prevents initial page load getUsers() from overwriting optimistic updates
@@ -416,7 +413,6 @@ export default function PrismApp() {
     handleLaunchInstance,
     handleCreateProject,
     handleCreateUser,
-    handleCreateBudget,
     handleGenerateSSHKey,
     handleSendInvitation,
     handleRedeemToken,
@@ -429,7 +425,6 @@ export default function PrismApp() {
     usersVersionRef,
     setProjectModalVisible,
     setUserModalVisible,
-    setCreateBudgetModalVisible,
     setSendInvitationModalVisible,
     setRedeemTokenModalVisible,
     selectedProjectForInvitation,
@@ -784,7 +779,7 @@ export default function PrismApp() {
             )
           )}
           {state.activeView === 'invitations' && <InvitationManagementView />}
-          {state.activeView === 'budgets' && <PlaceholderView title="Budget Pool Management" description="Manage budget pools and allocations for your research projects." />}
+          {state.activeView === 'budgets' && <BudgetPoolManagementView budgetPools={state.budgetPools} loading={state.loading} onRefresh={loadApplicationData} />}
           {state.activeView === 'approvals' && <ApprovalsViewExtracted />}
           {state.activeView === 'courses' && <CoursesManagementView />}
           {state.activeView === 'workshops' && <WorkshopsManagementView />}
@@ -953,11 +948,6 @@ export default function PrismApp() {
         visible={userModalVisible}
         onDismiss={() => setUserModalVisible(false)}
         onSubmit={handleCreateUser}
-      />
-      <CreateBudgetModalExtracted
-        visible={createBudgetModalVisible}
-        onDismiss={() => setCreateBudgetModalVisible(false)}
-        onSubmit={handleCreateBudget}
       />
       <SSHKeyModal
         visible={sshKeyModalVisible}

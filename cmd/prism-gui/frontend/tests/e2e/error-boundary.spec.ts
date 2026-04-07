@@ -29,7 +29,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('template loading handles success or error gracefully', async ({ page }) => {
     // Navigate to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Either templates loaded OR error state shown
@@ -127,7 +127,7 @@ test.describe('Error Boundary and Error Handling', () => {
     await expect(page.locator('#root')).toBeAttached();
 
     // Navigate to another section
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // App should still be functional
@@ -137,7 +137,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('invalid navigation handled gracefully', async ({ page }) => {
     // Navigate to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForSelector('[data-testid="template-card"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Check if templates loaded
@@ -184,7 +184,7 @@ test.describe('Error Boundary and Error Handling', () => {
     await page.getByRole('button', { name: /my workspaces/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
-    await page.getByRole('button', { name: /storage/i }).click();
+    await page.getByRole('button', { name: 'Storage', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // App should still be functional regardless of console errors
@@ -198,7 +198,7 @@ test.describe('Error Boundary and Error Handling', () => {
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Navigate to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Navigate to My Workspaces

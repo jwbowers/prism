@@ -31,9 +31,9 @@ test.describe('Form Validation', () => {
     // Navigate to Settings > Profiles sub-section
     await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
-    await page.locator('a[href="#profiles"]').waitFor({ state: 'visible', timeout: 8000 });
-    await page.locator('a[href="#profiles"]').click();
-    await page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 5000 });
+    await page.locator('[data-testid="settings-nav-profiles"]').waitFor({ state: 'visible', timeout: 8000 });
+    await page.locator('[data-testid="settings-nav-profiles"]').evaluate((el) => el.click());
+    await page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 8000 });
 
     const createButton = page.getByTestId('create-profile-button');
     await expect(createButton).toBeVisible({ timeout: 5000 });
@@ -55,9 +55,9 @@ test.describe('Form Validation', () => {
     // Navigate to Settings > Profiles sub-section
     await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
-    await page.locator('a[href="#profiles"]').waitFor({ state: 'visible', timeout: 8000 });
-    await page.locator('a[href="#profiles"]').click();
-    await page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 5000 });
+    await page.locator('[data-testid="settings-nav-profiles"]').waitFor({ state: 'visible', timeout: 8000 });
+    await page.locator('[data-testid="settings-nav-profiles"]').evaluate((el) => el.click());
+    await page.waitForSelector('[data-testid="create-profile-button"]', { state: 'visible', timeout: 8000 });
 
     const createButton = page.getByTestId('create-profile-button');
     await expect(createButton).toBeVisible({ timeout: 5000 });

@@ -61,21 +61,12 @@ async function navigateToBackups(page: Page) {
 }
 
 /**
- * Helper: Select an option from Cloudscape Select component
- * Cloudscape Select uses a button trigger + dropdown pattern, not native <select>
+ * Helper: Select an option from a Select component (renders as native <select>)
  */
 async function selectCloudscapeOption(page: Page, labelText: string, optionText: string) {
-  // Find the FormField by label
-  const formField = page.locator('label', { hasText: new RegExp(labelText, 'i') }).locator('..').locator('..');
-
-  // Click the Select button trigger (opens dropdown)
-  await formField.locator('button[aria-haspopup="listbox"]').click();
-
-  // Wait for dropdown to appear
-  await page.waitForTimeout(300);
-
-  // Click the option in the dropdown
-  await page.getByRole('option', { name: new RegExp(optionText, 'i') }).click();
+  // Find the native <select> by its label (FormField generates htmlFor/id association)
+  const selectEl = page.getByLabel(new RegExp(labelText, 'i'));
+  await selectEl.selectOption({ label: optionText });
 }
 
 /**
@@ -208,31 +199,22 @@ test.describe('Backup Management Workflows', () => {
       await page.getByRole('button', { name: /create.*backup/i }).click();
       await page.waitForTimeout(1000);
 
-      // Check if instances are available in the dropdown
-      // Click the Instance select to open dropdown
-      const formField = page.locator('label', { hasText: /instance/i }).locator('..').locator('..');
-      await formField.locator('button[aria-haspopup="listbox"]').click();
-      await page.waitForTimeout(500);
-
-      // Check if any options exist
-      const instanceOptions = await page.getByRole('option').all();
-
-      // Close the dropdown
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
+      // Check if instances are available in the native select
+      const instanceSelect = page.getByLabel(/instance/i);
+      const instanceOptions = await instanceSelect.locator('option').all();
+      const nonEmptyOptions = instanceOptions.filter(async (o) => (await o.getAttribute('value')) !== '');
 
       // Skip test if no instances available
-      test.skip(instanceOptions.length === 0, 'No instances available for backup creation');
+      const optionCount = await instanceSelect.locator('option[value]:not([value=""])').count();
+      test.skip(optionCount === 0, 'No instances available for backup creation');
 
-      // Select first instance
-      await formField.locator('button[aria-haspopup="listbox"]').click();
-      await page.waitForTimeout(300);
-      await instanceOptions[0].click();
+      // Select first available instance
+      await instanceSelect.selectOption({ index: 1 });
       await page.waitForTimeout(500);
 
       // Fill backup name - target the input within the "Backup name" FormField
-      const backupNameFormField = page.locator('label', { hasText: /^Backup name$/i }).locator('..').locator('..');
-      const backupNameInput = backupNameFormField.locator('input');
+      
+      const backupNameInput = page.getByLabel(/^Backup name$/i);
       await backupNameInput.fill(`test-backup-${Date.now()}`);
 
       // Create backup
@@ -259,8 +241,8 @@ test.describe('Backup Management Workflows', () => {
 
       // Fill backup name but don't select instance
       // Target the input within the "Backup name" FormField
-      const backupNameFormField = page.locator('label', { hasText: /^Backup name$/i }).locator('..').locator('..');
-      const backupNameInput = backupNameFormField.locator('input');
+      
+      const backupNameInput = page.getByLabel(/^Backup name$/i);
       await backupNameInput.fill('test-validation');
 
       // Try to create without selecting instance
@@ -276,17 +258,15 @@ test.describe('Backup Management Workflows', () => {
       await page.getByRole('button', { name: /create.*backup/i }).click();
       await page.waitForTimeout(1000);
 
-      // Check if instances are available
-      const formField = page.locator('label', { hasText: /instance/i }).locator('..').locator('..');
-      await formField.locator('button[aria-haspopup="listbox"]').click();
-      await page.waitForTimeout(500);
-      const instanceOptions = await page.getByRole('option').all();
+      // Check if instances are available in the native select
+      const instanceSelect = page.getByLabel(/instance/i);
+      const optionCount = await instanceSelect.locator('option[value]:not([value=""])').count();
 
       // Skip test if no instances available
-      test.skip(instanceOptions.length === 0, 'No instances available for validation testing');
+      test.skip(optionCount === 0, 'No instances available for validation testing');
 
       // Select first instance
-      await instanceOptions[0].click();
+      await instanceSelect.selectOption({ index: 1 });
       await page.waitForTimeout(500);
 
       // Create button should be disabled without name
