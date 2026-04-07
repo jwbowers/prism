@@ -88,9 +88,9 @@ export function SideNavigation({ header, items, onFollow, activeHref }: {
   )
 }
 
-export function Container({ header, children, className }: any) {
+export function Container({ header, children, className, ...rest }: any) {
   return (
-    <div className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)}>
+    <div className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)} {...rest}>
       {header && <div className="flex items-center justify-between border-b px-4 py-3">{header}</div>}
       <div className="p-4">{children}</div>
     </div>
@@ -165,12 +165,12 @@ export function TextContent({ children }: any) {
   return <div className="prose prose-sm dark:prose-invert max-w-none">{children}</div>
 }
 
-export function Link({ href, onFollow, external, children, variant: _variant, fontSize }: any) {
+export function Link({ href, onFollow, external, children, variant: _variant, fontSize, ...rest }: any) {
   const cls = cn('text-primary hover:underline cursor-pointer', fontSize === 'body-s' && 'text-xs')
   if (href) {
-    return <a href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} className={cls}>{children}</a>
+    return <a href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} className={cls} {...rest}>{children}</a>
   }
-  return <span onClick={() => onFollow?.()} className={cls} role="link" tabIndex={0}>{children}</span>
+  return <span onClick={() => onFollow?.()} className={cls} role="link" tabIndex={0} {...rest}>{children}</span>
 }
 
 // ── Cloudscape event types (give contextual typing so callers can destructure { detail }) ──
