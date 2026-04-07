@@ -5,6 +5,21 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0] - 2026-04-07
+
+### Added
+- Framer Motion view transitions: each view slides in from the right (x: 14→0, 160ms ease) keyed on `activeView`. Modal spring animation (scale + y-translate, 150ms). Cards stagger entrance (45ms between items). Framer Motion mock in `src/__mocks__/framer-motion.ts` keeps all 286 unit tests passing in JSDOM.
+
+### Changed
+- Font replaced: Inter → Atkinson Hyperlegible Next (UI) + Atkinson Hyperlegible Mono (code blocks), loaded via Google Fonts.
+- Color palette replaced: Warm Slate — teal-600 (`hsl 174 77% 32%`) primary, warm white (`hsl 40 33% 98%`) background, stone-500 muted foreground, warm near-black dark mode. All 34 HSL CSS variables updated in `:root` and `.dark`. Hardcoded `bg-blue-*` / `text-blue-*` in `cloudscape-shim.tsx` replaced with semantic `bg-primary` / `text-primary`.
+- Sonner `<Toaster>` moved to bottom-right (`position="bottom-right"`, `expand={false}`, `closeButton`).
+
+### Fixed
+- Remaining `setState(notifications)` silent drops converted to `toast.*` calls: `onProvision` callback, `EditProjectModal` onSubmit, `EditUserModal` onSubmit, `CreateEFSVolumeModal` (removed `onNotify` prop), `CreateEBSVolumeModal` (same).
+- `WorkshopPage.ts` and `CoursePage.ts` E2E nav selectors scoped to `[data-sidebar="menu-button"]` to prevent strict-mode collision with same-named content-area buttons.
+- `settings.spec.ts` Templates nav selector scoped to sidebar to prevent collision with SettingsView "Template Marketplace" sub-nav button during parallel test runs.
+
 ## [0.31.0] - 2026-04-06
 
 ### Changed
