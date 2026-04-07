@@ -229,8 +229,8 @@ test.describe('Settings Interface', () => {
     await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
-    // Navigate to Templates
-    await page.getByRole('button', { name: /templates/i }).click();
+    // Navigate to Templates (scope to sidebar to avoid collision with SettingsView "Template Marketplace" button)
+    await page.locator('[data-sidebar="menu-button"]').filter({ hasText: /^Templates$/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Verify navigation worked
