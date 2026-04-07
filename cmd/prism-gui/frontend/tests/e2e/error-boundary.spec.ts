@@ -29,7 +29,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('template loading handles success or error gracefully', async ({ page }) => {
     // Navigate to Templates
-    await page.getByRole('link', { name: /templates/i }).click();
+    await page.getByRole('button', { name: /templates/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Either templates loaded OR error state shown
@@ -49,7 +49,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('instance loading handles success or error gracefully', async ({ page }) => {
     // Navigate to My Workspaces
-    await page.getByRole('link', { name: /my workspaces/i }).click();
+    await page.getByRole('button', { name: /my workspaces/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Either instances loaded OR empty/error state shown
@@ -68,7 +68,7 @@ test.describe('Error Boundary and Error Handling', () => {
     await expect(page.locator('#root')).toBeAttached();
 
     // Check that main navigation is visible (indicates successful connection)
-    const navigation = page.getByRole('link', { name: /dashboard/i });
+    const navigation = page.getByRole('button', { name: /dashboard/i });
     await expect(navigation).toBeVisible({ timeout: 10000 });
 
     // Content should load
@@ -78,7 +78,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('form submission errors are handled gracefully', async ({ page }) => {
     // Navigate to Projects
-    await page.getByRole('link', { name: /projects/i }).click();
+    await page.getByRole('button', { name: /projects/i }).click();
     await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Try to open create project dialog
@@ -106,7 +106,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('settings form handles errors gracefully', async ({ page }) => {
     // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Verify Settings page loads
@@ -120,24 +120,24 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('network errors handled without crashing', async ({ page }) => {
     // Navigate between sections to trigger network calls
-    await page.getByRole('link', { name: /my workspaces/i }).click();
+    await page.getByRole('button', { name: /my workspaces/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // App should still be visible
     await expect(page.locator('#root')).toBeAttached();
 
     // Navigate to another section
-    await page.getByRole('link', { name: /templates/i }).click();
+    await page.getByRole('button', { name: /templates/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // App should still be functional
     await expect(page.locator('#root')).toBeAttached();
-    await expect(page.getByRole('link', { name: /dashboard/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
   });
 
   test('invalid navigation handled gracefully', async ({ page }) => {
     // Navigate to Templates
-    await page.getByRole('link', { name: /templates/i }).click();
+    await page.getByRole('button', { name: /templates/i }).click();
     await page.waitForSelector('[data-testid="template-card"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Check if templates loaded
@@ -158,7 +158,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
   test('page reload recovers gracefully', async ({ page }) => {
     // Verify initial load
-    await expect(page.getByRole('link', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
 
     // Reload page
     await page.reload();
@@ -168,7 +168,7 @@ test.describe('Error Boundary and Error Handling', () => {
 
     // App should recover
     await expect(page.locator('#root')).toBeAttached();
-    await expect(page.getByRole('link', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('JavaScript errors do not crash the interface', async ({ page }) => {
@@ -181,36 +181,36 @@ test.describe('Error Boundary and Error Handling', () => {
     });
 
     // Navigate through various sections
-    await page.getByRole('link', { name: /my workspaces/i }).click();
+    await page.getByRole('button', { name: /my workspaces/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
-    await page.getByRole('link', { name: /storage/i }).click();
+    await page.getByRole('button', { name: /storage/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // App should still be functional regardless of console errors
     await expect(page.locator('#root')).toBeAttached();
-    await expect(page.getByRole('link', { name: /dashboard/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
   });
 
   test('UI remains responsive after errors', async ({ page }) => {
     // Navigate to Dashboard
-    await page.getByRole('link', { name: /dashboard/i }).click();
+    await page.getByRole('button', { name: /dashboard/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Navigate to Templates
-    await page.getByRole('link', { name: /templates/i }).click();
+    await page.getByRole('button', { name: /templates/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Navigate to My Workspaces
-    await page.getByRole('link', { name: /my workspaces/i }).click();
+    await page.getByRole('button', { name: /my workspaces/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // UI should still be responsive
     await expect(page.locator('#root')).toBeAttached();
-    await expect(page.getByRole('link', { name: /dashboard/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /dashboard/i })).toBeVisible();
 
     // Navigation should still work
-    await page.getByRole('link', { name: /dashboard/i }).click();
+    await page.getByRole('button', { name: /dashboard/i }).click();
     await expect(page.locator('#root')).toBeAttached();
   });
 });

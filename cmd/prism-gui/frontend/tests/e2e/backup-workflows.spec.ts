@@ -53,7 +53,7 @@ async function waitForBackupsToLoad(page: Page, timeoutMs: number = 30000) {
  */
 async function navigateToBackups(page: Page) {
   // Find the link by accessible name (text content) - this is how BasePage.navigateToTab() works
-  const link = page.getByRole('link', { name: /backups/i });
+  const link = page.getByRole('button', { name: /backups/i });
   await link.click();
 
   // Wait for navigation state to update

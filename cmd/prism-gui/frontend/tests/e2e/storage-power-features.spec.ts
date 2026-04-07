@@ -35,24 +35,24 @@ test.beforeEach(async ({ context }) => {
 test.describe('Capacity Blocks Management', () => {
   test('Capacity Blocks sidebar link is visible', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('link', { name: /capacity blocks/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /capacity blocks/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('Capacity Blocks panel renders', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /capacity blocks/i }).click();
+    await page.getByRole('button', { name: /capacity blocks/i }).click();
     await expect(page.getByTestId('capacity-blocks-table')).toBeVisible({ timeout: 10000 });
   });
 
   test('Reserve Capacity Block button is visible', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /capacity blocks/i }).click();
+    await page.getByRole('button', { name: /capacity blocks/i }).click();
     await expect(page.getByTestId('reserve-capacity-block-button')).toBeVisible({ timeout: 10000 });
   });
 
   test('clicking Reserve opens the modal with form fields', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /capacity blocks/i }).click();
+    await page.getByRole('button', { name: /capacity blocks/i }).click();
     await page.getByTestId('reserve-capacity-block-button').click();
 
     await expect(page.getByTestId('reserve-capacity-block-modal')).toBeVisible({ timeout: 5000 });
@@ -63,7 +63,7 @@ test.describe('Capacity Blocks Management', () => {
 
   test('Reserve submit button is disabled without instance type', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /capacity blocks/i }).click();
+    await page.getByRole('button', { name: /capacity blocks/i }).click();
     await page.getByTestId('reserve-capacity-block-button').click();
     await expect(page.getByTestId('reserve-submit-button')).toBeDisabled({ timeout: 5000 });
   });
@@ -110,7 +110,7 @@ test.describe('SSM File Operations API', () => {
 test.describe('S3 Mounts tab', () => {
   test('S3 Mounts tab is visible in storage view', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /storage/i }).first().click();
+    await page.getByRole('button', { name: /storage/i }).first().click();
     // Wait for storage page to render tabs
     await page.getByRole('tab', { name: /efs/i }).waitFor({ state: 'visible', timeout: 10000 });
     await expect(page.getByRole('tab', { name: /s3 mounts/i })).toBeVisible({ timeout: 5000 });
@@ -118,7 +118,7 @@ test.describe('S3 Mounts tab', () => {
 
   test('S3 Mounts tab contains instance selector and Load Mounts button', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /storage/i }).first().click();
+    await page.getByRole('button', { name: /storage/i }).first().click();
     await page.getByRole('tab', { name: /s3 mounts/i }).click();
 
     await expect(page.getByTestId('s3-instance-select')).toBeVisible({ timeout: 5000 });
@@ -127,7 +127,7 @@ test.describe('S3 Mounts tab', () => {
 
   test('Mount S3 Bucket modal contains required fields', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /storage/i }).first().click();
+    await page.getByRole('button', { name: /storage/i }).first().click();
     await page.getByRole('tab', { name: /s3 mounts/i }).click();
     // The Mount button is disabled until an instance is selected; click anyway to verify it exists
     await expect(page.getByTestId('mount-s3-button')).toBeVisible({ timeout: 5000 });
@@ -139,14 +139,14 @@ test.describe('S3 Mounts tab', () => {
 test.describe('Storage Analytics tab', () => {
   test('Analytics tab is visible in storage view', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /storage/i }).first().click();
+    await page.getByRole('button', { name: /storage/i }).first().click();
     await page.getByRole('tab', { name: /efs/i }).waitFor({ state: 'visible', timeout: 10000 });
     await expect(page.getByRole('tab', { name: /analytics/i })).toBeVisible({ timeout: 5000 });
   });
 
   test('Analytics tab contains period selector and Refresh button', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /storage/i }).first().click();
+    await page.getByRole('button', { name: /storage/i }).first().click();
     await page.getByRole('tab', { name: /analytics/i }).click();
 
     await expect(page.getByTestId('analytics-period-select')).toBeVisible({ timeout: 5000 });
@@ -169,7 +169,7 @@ test.describe('Storage Analytics tab', () => {
     });
 
     await page.goto('/');
-    await page.getByRole('link', { name: /storage/i }).first().click();
+    await page.getByRole('button', { name: /storage/i }).first().click();
     await page.getByRole('tab', { name: /analytics/i }).click();
     await page.getByTestId('refresh-analytics-button').click();
 

@@ -29,7 +29,7 @@ test.describe('Settings Interface', () => {
 
   // Helper to navigate to Settings > Profiles section
   async function navigateToSettings(page: any) {
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
     // Navigate to Profiles sub-section within Settings.
     // Must wait for the sub-nav to render before clicking (SettingsView renders async).
@@ -41,7 +41,7 @@ test.describe('Settings Interface', () => {
 
   test('settings page loads successfully', async ({ page }) => {
     // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Verify Settings page heading
@@ -155,17 +155,17 @@ test.describe('Settings Interface', () => {
 
   test('settings page remains responsive', async ({ page }) => {
     // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Page should be functional
     await expect(page.locator('#root')).toBeAttached();
 
     // Navigate away and back
-    await page.getByRole('link', { name: /dashboard/i }).click();
+    await page.getByRole('button', { name: /dashboard/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Settings should still be accessible
@@ -175,7 +175,7 @@ test.describe('Settings Interface', () => {
 
   test('settings content is accessible with proper headings', async ({ page }) => {
     // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Check for main heading
@@ -225,18 +225,18 @@ test.describe('Settings Interface', () => {
 
   test('navigation from settings to other pages works', async ({ page }) => {
     // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Navigate to Templates
-    await page.getByRole('link', { name: /templates/i }).click();
+    await page.getByRole('button', { name: /templates/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Verify navigation worked
     await expect(page.locator('#root')).toBeAttached();
 
     // Navigate back to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     const settingsHeading = page.getByRole('heading', { name: /settings/i }).first();
@@ -253,7 +253,7 @@ test.describe('Settings Interface', () => {
     });
 
     // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Page should load without critical errors
@@ -265,7 +265,7 @@ test.describe('Settings Interface', () => {
 
   test('settings page keyboard navigation works', async ({ page }) => {
     // Navigate to Settings
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Settings should be keyboard accessible
@@ -284,14 +284,14 @@ test.describe('Settings Interface', () => {
   test('settings page handles multiple navigation cycles', async ({ page }) => {
     // Navigate to Settings multiple times
     for (let i = 0; i < 3; i++) {
-      await page.getByRole('link', { name: /settings/i }).click();
+      await page.getByRole('button', { name: /settings/i }).click();
       await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
       const settingsHeading = page.getByRole('heading', { name: /settings/i }).first();
       await expect(settingsHeading).toBeVisible({ timeout: 5000 });
 
       // Navigate away
-      await page.getByRole('link', { name: /dashboard/i }).click();
+      await page.getByRole('button', { name: /dashboard/i }).click();
       await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
     }
 

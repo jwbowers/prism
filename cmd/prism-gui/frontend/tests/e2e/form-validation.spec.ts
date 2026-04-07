@@ -29,7 +29,7 @@ test.describe('Form Validation', () => {
 
   test('profile form validation - name required', async ({ page }) => {
     // Navigate to Settings > Profiles sub-section
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
     await page.locator('a[href="#profiles"]').waitFor({ state: 'visible', timeout: 8000 });
     await page.locator('a[href="#profiles"]').click();
@@ -53,7 +53,7 @@ test.describe('Form Validation', () => {
 
   test('profile form accepts valid input', async ({ page }) => {
     // Navigate to Settings > Profiles sub-section
-    await page.getByRole('link', { name: /settings/i }).click();
+    await page.getByRole('button', { name: /settings/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
     await page.locator('a[href="#profiles"]').waitFor({ state: 'visible', timeout: 8000 });
     await page.locator('a[href="#profiles"]').click();
@@ -83,7 +83,7 @@ test.describe('Form Validation', () => {
 
   test('project form validation - name required', async ({ page }) => {
     // Navigate to Projects
-    await page.getByRole('link', { name: /projects/i }).click();
+    await page.getByRole('button', { name: /projects/i }).click();
     await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Open create project dialog
@@ -109,7 +109,7 @@ test.describe('Form Validation', () => {
 
   test('project form accepts valid input', async ({ page }) => {
     // Navigate to Projects
-    await page.getByRole('link', { name: /projects/i }).click();
+    await page.getByRole('button', { name: /projects/i }).click();
     await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Open create project dialog
@@ -138,7 +138,7 @@ test.describe('Form Validation', () => {
 
   test('user form validation - username required', async ({ page }) => {
     // Navigate to Users
-    await page.getByRole('link', { name: /users/i }).click();
+    await page.getByRole('button', { name: /users/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Wait for create user button
@@ -167,7 +167,7 @@ test.describe('Form Validation', () => {
 
   test('user form accepts valid input', async ({ page }) => {
     // Navigate to Users
-    await page.getByRole('link', { name: /users/i }).click();
+    await page.getByRole('button', { name: /users/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Wait for create user button
@@ -198,7 +198,7 @@ test.describe('Form Validation', () => {
 
   test('form inputs are accessible with labels', async ({ page }) => {
     // Navigate to Users (has forms with proper labels)
-    await page.getByRole('link', { name: /users/i }).click();
+    await page.getByRole('button', { name: /users/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Wait for create user button
@@ -225,7 +225,7 @@ test.describe('Form Validation', () => {
 
   test('Cloudscape forms use proper ARIA attributes', async ({ page }) => {
     // Navigate to Projects
-    await page.getByRole('link', { name: /projects/i }).click();
+    await page.getByRole('button', { name: /projects/i }).click();
     await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Open create project dialog
@@ -250,7 +250,7 @@ test.describe('Form Validation', () => {
 
   test('forms handle empty state correctly', async ({ page }) => {
     // Navigate to Projects
-    await page.getByRole('link', { name: /projects/i }).click();
+    await page.getByRole('button', { name: /projects/i }).click();
     await page.waitForSelector('[data-testid="create-project-button"]', { state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Verify projects table exists (even if empty)
@@ -268,7 +268,7 @@ test.describe('Form Validation', () => {
 
   test('form dialogs can be cancelled', async ({ page }) => {
     // Navigate to Users
-    await page.getByRole('link', { name: /users/i }).click();
+    await page.getByRole('button', { name: /users/i }).click();
     await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
 
     // Wait for create user button

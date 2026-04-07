@@ -228,8 +228,8 @@ test.describe('User Management Workflows', () => {
       await projectsPage.clickButton('close');
 
       // Navigate away and back to Users to refresh the list
-      await projectsPage.page.getByRole('link', { name: /^dashboard$/i }).click();
-      await projectsPage.page.getByRole('link', { name: /^users$/i }).click();
+      await projectsPage.page.getByRole('button', { name: /^dashboard$/i }).click();
+      await projectsPage.page.getByRole('button', { name: /^users$/i }).click();
 
       // Wait for user table to be visible (scoped to avoid strict mode with "Current Members" table)
       await projectsPage.page.locator('[data-testid="users-table"] tbody').waitFor({ state: 'visible' });
