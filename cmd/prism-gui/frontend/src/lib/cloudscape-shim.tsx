@@ -7,6 +7,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Button as ShadButton } from '../components/ui/button'
 import { Badge as ShadBadge } from '../components/ui/badge'
 import { Input as ShadInput } from '../components/ui/input'
@@ -614,22 +615,36 @@ export function Pagination({ currentPageIndex, pagesCount, onChange, disabled, a
 // ── Overlays ───────────────────────────────────────────────────────────────
 
 export function Modal({ visible, onDismiss, header, children, footer, size, ...rest }: any) {
-  if (!visible) return null
   const sizeClass = size === 'large' ? 'max-w-4xl' : size === 'small' ? 'max-w-sm' : 'max-w-2xl'
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={typeof header === 'string' ? header : undefined} {...rest}>
-      <div className="absolute inset-0 bg-black/50" onClick={onDismiss} />
-      <div className={cn('relative bg-card rounded-lg shadow-xl w-full mx-4 flex flex-col max-h-[90vh]', sizeClass)}>
-        {header && (
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="font-semibold text-lg">{header}</div>
-            <ShadButton variant="ghost" size="sm" onClick={onDismiss} aria-label="Close">✕</ShadButton>
-          </div>
-        )}
-        <div className="overflow-y-auto p-4 flex-1">{children}</div>
-        {footer && <div className="p-4 border-t flex justify-end gap-2">{footer}</div>}
-      </div>
-    </div>
+    <AnimatePresence>
+      {visible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={typeof header === 'string' ? header : undefined} {...rest}>
+          <motion.div
+            className="absolute inset-0 bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { duration: 0.15 } }}
+            exit={{ opacity: 0, transition: { duration: 0.1 } }}
+            onClick={onDismiss}
+          />
+          <motion.div
+            className={cn('relative bg-card rounded-lg shadow-xl w-full mx-4 flex flex-col max-h-[90vh]', sizeClass)}
+            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
+            exit={{ opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.1 } }}
+          >
+            {header && (
+              <div className="flex items-center justify-between p-4 border-b">
+                <div className="font-semibold text-lg">{header}</div>
+                <ShadButton variant="ghost" size="sm" onClick={onDismiss} aria-label="Close">✕</ShadButton>
+              </div>
+            )}
+            <div className="overflow-y-auto p-4 flex-1">{children}</div>
+            {footer && <div className="p-4 border-t flex justify-end gap-2">{footer}</div>}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -802,12 +817,23 @@ export function Cards({ cardDefinition, items, loading, loadingText, empty, head
       ) : rows.length === 0 ? (
         <div className="text-center p-8 text-muted-foreground">{empty ?? 'No items'}</div>
       ) : (
-        <div className={`grid grid-cols-${Math.min(cols, 4)} gap-4`}>
+        <motion.div
+          className={`grid grid-cols-${Math.min(cols, 4)} gap-4`}
+          initial="hidden"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.045 } } }}
+        >
           {rows.map((item: any, i: number) => {
             const key = trackBy ? item[trackBy] : i
             const isSelected = selectedItems?.some((s: any) => trackBy ? s[trackBy] === item[trackBy] : s === item)
             return (
-              <div key={key} className={cn('rounded-lg border bg-card p-4 cursor-pointer', isSelected && 'ring-2 ring-primary')}
+              <motion.div
+                key={key}
+                variants={{
+                  hidden: { opacity: 0, y: 10 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } }
+                }}
+                className={cn('rounded-lg border bg-card p-4 cursor-pointer', isSelected && 'ring-2 ring-primary')}
                 onClick={() => {
                   if (!selectionType) return
                   const next = isSelected
@@ -822,10 +848,10 @@ export function Cards({ cardDefinition, items, loading, loadingText, empty, head
                     {sec.content?.(item)}
                   </div>
                 ))}
-              </div>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
       {pagination && <div className="flex justify-end">{pagination}</div>}
     </div>

@@ -3,6 +3,7 @@ import { logger } from './utils/logger';
 // Complete error handling, real API integration, professional UX
 
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import './index.css';
 import { toast } from 'sonner';
 import { AppLayout as AppLayoutShell } from './components/app-layout';
@@ -560,6 +561,11 @@ export default function PrismApp() {
               </SpaceBetween>
             </Alert>
           )}
+          <motion.div
+              key={state.activeView}
+              initial={{ x: 14 }}
+              animate={{ x: 0, transition: { duration: 0.16, ease: [0.4, 0, 0.2, 1] } }}
+            >
           {state.activeView === 'dashboard' && (
             <DashboardViewExtracted
               instances={state.instances}
@@ -848,6 +854,7 @@ export default function PrismApp() {
               }}
             />
           )}
+            </motion.div>
         </div>
       </AppLayoutShell>
       <LaunchModalExtracted

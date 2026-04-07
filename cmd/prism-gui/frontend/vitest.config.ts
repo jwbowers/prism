@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      'framer-motion': new URL('./src/__mocks__/framer-motion.ts', import.meta.url).pathname,
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

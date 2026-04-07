@@ -15,7 +15,7 @@ export function AppLayout({ sidebar, children }: AppLayoutProps) {
           {children}
         </main>
       </SidebarInset>
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="bottom-right" expand={false} closeButton />
     </SidebarProvider>
   )
 }
