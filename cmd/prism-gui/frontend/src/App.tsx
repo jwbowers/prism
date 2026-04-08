@@ -540,7 +540,7 @@ export default function PrismApp() {
           />
         }
       >
-        <div id="main-content" role="main" tabIndex={-1}>
+        <div id="main-content" tabIndex={-1}>
           {/* Update Notification Banner */}
           {state.updateInfo && state.updateInfo.is_update_available && (
             <Alert

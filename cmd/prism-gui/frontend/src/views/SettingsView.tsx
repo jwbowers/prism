@@ -461,38 +461,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       key={section}
       data-testid={`settings-nav-${section}`}
       onClick={() => onSectionChange(section)}
-      style={{
-        display: 'block',
-        width: '100%',
-        textAlign: 'left',
-        padding: '6px 12px',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        background: settingsSection === section ? 'var(--sidebar-accent, #f1f5f9)' : 'transparent',
-        fontWeight: settingsSection === section ? '600' : '400',
-        color: settingsSection === section ? 'var(--sidebar-primary, #0f172a)' : 'var(--sidebar-foreground, #475569)',
-      }}
+      className={[
+        'block w-full text-left px-3 py-1.5 rounded text-sm cursor-pointer border-0',
+        settingsSection === section
+          ? 'bg-sidebar-accent text-sidebar-primary font-semibold'
+          : 'bg-transparent text-sidebar-foreground font-normal hover:bg-sidebar-accent/50',
+      ].join(' ')}
     >
       {label}
     </button>
   );
 
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <div style={{ width: '220px', borderRight: '1px solid #e9ebed', padding: '16px 8px' }}>
-        <div style={{ padding: '4px 12px 8px', fontSize: '13px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+    <div className="flex h-full">
+      <div className="w-[220px] shrink-0 border-r border-border px-2 py-4">
+        <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Settings
         </div>
         {navItems.map(item => navButton(item.section, item.label))}
-        <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e9ebed' }} />
-        <div style={{ padding: '4px 12px 4px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <hr className="my-2 border-border" />
+        <div className="px-3 pb-1 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wide">
           Advanced
         </div>
         {advancedItems.map(item => navButton(item.section, item.label))}
       </div>
-      <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
+      <div className="flex-1 p-5 overflow-auto">
         {renderSettingsContent()}
       </div>
     </div>

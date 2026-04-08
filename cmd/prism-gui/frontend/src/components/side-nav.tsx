@@ -125,7 +125,7 @@ export function SideNav({
   ]
 
   return (
-    <Sidebar>
+    <Sidebar aria-label="Main navigation">
       <SidebarHeader className="border-b px-4 py-3">
         <a href="/" className="text-lg font-semibold tracking-tight no-underline text-foreground">Prism</a>
       </SidebarHeader>

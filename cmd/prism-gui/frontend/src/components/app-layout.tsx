@@ -11,9 +11,9 @@ export function AppLayout({ sidebar, children }: AppLayoutProps) {
     <SidebarProvider>
       {sidebar}
       <SidebarInset>
-        <main id="main-content" role="main" tabIndex={-1} className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-4">
           {children}
-        </main>
+        </div>
       </SidebarInset>
       <Toaster richColors position="bottom-right" expand={false} closeButton />
     </SidebarProvider>
