@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+// MetricsCollector is a stub type — CloudWatch-based idle detection has been replaced by
+// spored's on-instance monitoring. Kept for API compatibility with NewScheduler().
+type MetricsCollector struct{}
+
+// NewMetricsCollector creates a no-op metrics collector (spored handles metrics on-instance).
+func NewMetricsCollector(_ interface{}) *MetricsCollector { return &MetricsCollector{} }
+
 // AWSInstanceManager defines the interface for AWS instance operations needed by the scheduler
 type AWSInstanceManager interface {
 	HibernateInstance(name string) error
@@ -232,57 +239,10 @@ func (s *Scheduler) shouldExecuteWorkHours(schedule *Schedule, now time.Time) bo
 
 // shouldExecuteIdle checks idle-based schedule
 // This checks if instances have been idle for the specified duration
-func (s *Scheduler) shouldExecuteIdle(schedule *Schedule) bool {
-	// If IdleMinutes is not set, can't evaluate
-	if schedule.IdleMinutes <= 0 {
-		return false
-	}
-
-	// If no metrics collector available, can't check idle status
-	if s.metricsCollector == nil {
-		log.Printf("Warning: No metrics collector available for idle detection on schedule %s", schedule.Name)
-		return false
-	}
-
-	// Get target instances
-	instances := schedule.TargetInstances
-	if len(instances) == 0 {
-		// If no specific targets, get all instances
-		allInstances, err := s.awsManager.GetInstanceNames()
-		if err != nil {
-			log.Printf("Failed to get instance names for idle detection: %v", err)
-			return false
-		}
-		instances = allInstances
-	}
-
-	// Check if any instance should be hibernated due to idle
-	// We return true if ANY instance is idle (schedule will execute on all targets)
-	ctx, cancel := context.WithTimeout(s.ctx, 5*time.Minute)
-	defer cancel()
-
-	for _, instanceName := range instances {
-		// Get AWS instance ID for CloudWatch metrics
-		instanceID, err := s.awsManager.GetInstanceID(instanceName)
-		if err != nil {
-			log.Printf("Failed to get instance ID for %s: %v", instanceName, err)
-			continue
-		}
-
-		// Check if instance is idle using CloudWatch metrics
-		isIdle, err := s.metricsCollector.IsInstanceIdle(ctx, instanceID, schedule)
-		if err != nil {
-			log.Printf("Failed to check idle status for instance %s (ID: %s): %v", instanceName, instanceID, err)
-			continue
-		}
-
-		if isIdle {
-			log.Printf("Instance %s (ID: %s) detected as idle (CPU/network below thresholds for %d minutes)",
-				instanceName, instanceID, schedule.IdleMinutes)
-			return true
-		}
-	}
-
+func (s *Scheduler) shouldExecuteIdle(_ *Schedule) bool {
+	// Idle detection is now handled on-instance by spored (#588).
+	// spored monitors 7 signals (CPU, network, disk I/O, GPU, terminals, users, activity)
+	// and enforces idle policies directly. This daemon-side check is a no-op.
 	return false
 }
 

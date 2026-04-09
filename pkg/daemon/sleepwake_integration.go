@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/scttfrdmn/prism/pkg/idle"
 	"github.com/scttfrdmn/prism/pkg/sleepwake"
 )
 
@@ -49,44 +48,13 @@ func (m *daemonInstanceManager) IsInstanceIdle(ctx context.Context, instanceName
 		return false, fmt.Errorf("failed to list instances: %w", err)
 	}
 
-	var instanceID string
-	for _, instance := range instances {
-		if instance.Name == instanceName {
-			instanceID = instance.ID
-			break
-		}
-	}
-
-	if instanceID == "" {
-		return false, fmt.Errorf("instance not found: %s", instanceName)
-	}
-
-	// Create metrics collector
-	awsConfig := m.server.awsManager.GetAWSConfig()
-	metricsCollector := idle.NewMetricsCollector(awsConfig)
-
-	// Use a default idle detection schedule (configurable via sleep/wake config)
-	schedule := &idle.Schedule{
-		IdleMinutes:      10, // Check last 10 minutes
-		CPUThreshold:     5.0,
-		MemoryThreshold:  10.0,
-		NetworkThreshold: 1000.0, // 1KB/s
-	}
-
-	// Check if instance is idle
-	isIdle, err := metricsCollector.IsInstanceIdle(ctx, instanceID, schedule)
-	if err != nil {
-		return false, fmt.Errorf("failed to check idle status for %s: %w", instanceName, err)
-	}
-
-	if isIdle {
-		log.Printf("Instance %s is idle (CPU < %.1f%%, network < %.0f B/s over %d minutes)",
-			instanceName, schedule.CPUThreshold, schedule.NetworkThreshold, schedule.IdleMinutes)
-	} else {
-		log.Printf("Instance %s is active", instanceName)
-	}
-
-	return isIdle, nil
+	// Idle detection is now handled on-instance by spored (#588).
+	// The daemon cannot accurately determine idle status from the control plane.
+	// spored monitors CPU, network, disk I/O, GPU, terminals, users, and recent
+	// activity directly on the instance. Return false (active) as safe default.
+	_ = instances
+	log.Printf("IsInstanceIdle for %s: delegated to spored on-instance agent", instanceName)
+	return false, nil
 }
 
 // HibernateInstance hibernates a single instance

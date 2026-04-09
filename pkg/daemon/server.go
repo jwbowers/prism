@@ -181,6 +181,10 @@ func resolvePort(param, configPort string) string {
 }
 
 // initIdleComponents creates the idle scheduler and policy manager when awsMgr is available.
+// NOTE: The scheduler monitoring loop is no longer started — spored handles idle detection
+// on each instance directly (7-signal detection: CPU, network, disk I/O, GPU, terminals,
+// users, recent activity). The scheduler remains as a data store for fleet-level policy
+// management and schedule CRUD operations.
 func initIdleComponents(awsMgr *aws.Manager) (*idle.Scheduler, *idle.PolicyManager) {
 	if awsMgr == nil {
 		return nil, nil
@@ -189,8 +193,8 @@ func initIdleComponents(awsMgr *aws.Manager) (*idle.Scheduler, *idle.PolicyManag
 	scheduler := idle.NewScheduler(awsMgr, metricsCollector)
 	policyMgr := idle.NewPolicyManager()
 	policyMgr.SetScheduler(scheduler)
-	scheduler.Start()
-	logger.Info("Idle detection system initialized")
+	// scheduler.Start() removed — spored handles idle detection on-instance (#588)
+	logger.Info("Idle policy manager initialized (spored handles on-instance detection)")
 	return scheduler, policyMgr
 }
 
