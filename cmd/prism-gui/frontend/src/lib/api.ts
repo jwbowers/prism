@@ -69,6 +69,9 @@ import type {
   StorageAnalyticsSummary,
 } from './types';
 
+// Encode a path segment for safe URL interpolation (#604)
+const enc = (s: string) => encodeURIComponent(s);
+
 export class SafePrismAPI {
   private baseURL = 'http://localhost:8947';
   private apiKey = '';
@@ -127,7 +130,7 @@ export class SafePrismAPI {
 
   async getInstanceLogs(instanceName: string, logType: string = 'console', tail: number = 200): Promise<string[]> {
     try {
-      const data = await this.safeRequest<{ lines?: string[]; output?: string }>(`/api/v1/logs/${encodeURIComponent(instanceName)}?type=${encodeURIComponent(logType)}&tail=${tail}`);
+      const data = await this.safeRequest<{ lines?: string[]; output?: string }>(`/api/v1/logs/${enc(instanceName)}?type=${enc(logType)}&tail=${tail}`);
       if (data?.lines) return data.lines;
       if (data?.output) return data.output.split('\n');
       return [];
@@ -177,36 +180,36 @@ export class SafePrismAPI {
 
   // Comprehensive Instance Management APIs - Using Fixed Backend Endpoints
   async startInstance(identifier: string): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${identifier}/start`, 'POST');
+    await this.safeRequest(`/api/v1/instances/${enc(identifier)}/start`, 'POST');
   }
 
   async stopInstance(identifier: string): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${identifier}/stop`, 'POST');
+    await this.safeRequest(`/api/v1/instances/${enc(identifier)}/stop`, 'POST');
   }
 
   async extendInstanceTTL(identifier: string, hours: number = 4): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${encodeURIComponent(identifier)}/extend`, 'POST', { hours });
+    await this.safeRequest(`/api/v1/instances/${enc(encodeURIComponent(identifier))}/extend`, 'POST', { hours });
   }
 
   async hibernateInstance(identifier: string): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${identifier}/hibernate`, 'POST');
+    await this.safeRequest(`/api/v1/instances/${enc(identifier)}/hibernate`, 'POST');
   }
 
   async resumeInstance(identifier: string): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${identifier}/resume`, 'POST');
+    await this.safeRequest(`/api/v1/instances/${enc(identifier)}/resume`, 'POST');
   }
 
   async getConnectionInfo(identifier: string): Promise<string> {
-    const data = await this.safeRequest<{connection_info?: string}>(`/api/v1/instances/${identifier}/connect`);
+    const data = await this.safeRequest<{connection_info?: string}>(`/api/v1/instances/${enc(identifier)}/connect`);
     return data.connection_info || '';
   }
 
   async getHibernationStatus(identifier: string): Promise<HibernationStatus> {
-    return this.safeRequest(`/api/v1/instances/${identifier}/hibernation-status`);
+    return this.safeRequest(`/api/v1/instances/${enc(identifier)}/hibernation-status`);
   }
 
   async deleteInstance(identifier: string): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${identifier}`, 'DELETE');
+    await this.safeRequest(`/api/v1/instances/${enc(identifier)}`, 'DELETE');
   }
 
   // Comprehensive Storage Management APIs
@@ -265,21 +268,21 @@ export class SafePrismAPI {
   }
 
   async deleteEFSVolume(name: string): Promise<void> {
-    await this.safeRequest(`/api/v1/volumes/${name}`, 'DELETE');
+    await this.safeRequest(`/api/v1/volumes/${enc(name)}`, 'DELETE');
   }
 
   async mountEFSVolume(volumeName: string, instance: string, mountPoint?: string): Promise<void> {
     const body: Record<string, string> = { instance };
     if (mountPoint) body.mount_point = mountPoint;
-    await this.safeRequest(`/api/v1/volumes/${volumeName}/mount`, 'POST', body);
+    await this.safeRequest(`/api/v1/volumes/${enc(volumeName)}/mount`, 'POST', body);
   }
 
   async unmountEFSVolume(volumeName: string, instance: string): Promise<void> {
-    await this.safeRequest(`/api/v1/volumes/${volumeName}/unmount`, 'POST', { instance });
+    await this.safeRequest(`/api/v1/volumes/${enc(volumeName)}/unmount`, 'POST', { instance });
   }
 
   async syncEFSVolume(volumeName: string): Promise<EFSVolume> {
-    return this.safeRequest(`/api/v1/volumes/${volumeName}/sync`, 'POST');
+    return this.safeRequest(`/api/v1/volumes/${enc(volumeName)}/sync`, 'POST');
   }
 
   async syncAllEFSVolumes(): Promise<EFSVolume[]> {
@@ -312,19 +315,19 @@ export class SafePrismAPI {
   }
 
   async deleteEBSVolume(name: string): Promise<void> {
-    await this.safeRequest(`/api/v1/storage/${name}`, 'DELETE');
+    await this.safeRequest(`/api/v1/storage/${enc(name)}`, 'DELETE');
   }
 
   async attachEBSVolume(storageName: string, instance: string): Promise<void> {
-    await this.safeRequest(`/api/v1/storage/${storageName}/attach`, 'POST', { instance });
+    await this.safeRequest(`/api/v1/storage/${enc(storageName)}/attach`, 'POST', { instance });
   }
 
   async detachEBSVolume(storageName: string): Promise<void> {
-    await this.safeRequest(`/api/v1/storage/${storageName}/detach`, 'POST');
+    await this.safeRequest(`/api/v1/storage/${enc(storageName)}/detach`, 'POST');
   }
 
   async syncEBSVolume(storageName: string): Promise<EBSVolume> {
-    return this.safeRequest(`/api/v1/storage/${storageName}/sync`, 'POST');
+    return this.safeRequest(`/api/v1/storage/${enc(storageName)}/sync`, 'POST');
   }
 
   async syncAllEBSVolumes(): Promise<EBSVolume[]> {
@@ -352,11 +355,11 @@ export class SafePrismAPI {
   }
 
   async deleteSnapshot(snapshotName: string): Promise<void> {
-    await this.safeRequest(`/api/v1/snapshots/${snapshotName}`, 'DELETE');
+    await this.safeRequest(`/api/v1/snapshots/${enc(snapshotName)}`, 'DELETE');
   }
 
   async restoreSnapshot(snapshotName: string, instanceName: string): Promise<void> {
-    await this.safeRequest(`/api/v1/snapshots/${snapshotName}/restore`, 'POST', {
+    await this.safeRequest(`/api/v1/snapshots/${enc(snapshotName)}/restore`, 'POST', {
       instance_name: instanceName
     });
   }
@@ -379,21 +382,21 @@ export class SafePrismAPI {
   }
 
   async getProject(projectId: string): Promise<Project> {
-    return this.safeRequest<Project>(`/api/v1/projects/${projectId}`);
+    return this.safeRequest<Project>(`/api/v1/projects/${enc(projectId)}`);
   }
 
   async updateProject(projectId: string, projectData: Partial<ProjectData>): Promise<Project> {
-    return this.safeRequest<Project>(`/api/v1/projects/${projectId}`, 'PUT', projectData);
+    return this.safeRequest<Project>(`/api/v1/projects/${enc(projectId)}`, 'PUT', projectData);
   }
 
   async deleteProject(projectId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}`, 'DELETE');
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}`, 'DELETE');
   }
 
   // Project Members
   async getProjectMembers(projectId: string): Promise<MemberData[]> {
     try {
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/members`);
+      const data = await this.safeRequest(`/api/v1/projects/${enc(projectId)}/members`);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       logger.error('Failed to fetch project members:', error);
@@ -402,20 +405,20 @@ export class SafePrismAPI {
   }
 
   async addProjectMember(projectId: string, memberData: MemberData): Promise<MemberData> {
-    return this.safeRequest<MemberData>(`/api/v1/projects/${projectId}/members`, 'POST', memberData);
+    return this.safeRequest<MemberData>(`/api/v1/projects/${enc(projectId)}/members`, 'POST', memberData);
   }
 
   async updateProjectMember(projectId: string, userId: string, memberData: Partial<MemberData>): Promise<MemberData> {
-    return this.safeRequest<MemberData>(`/api/v1/projects/${projectId}/members/${userId}`, 'PUT', memberData);
+    return this.safeRequest<MemberData>(`/api/v1/projects/${enc(projectId)}/members/${enc(userId)}`, 'PUT', memberData);
   }
 
   async removeProjectMember(projectId: string, userId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/members/${userId}`, 'DELETE');
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/members/${enc(userId)}`, 'DELETE');
   }
 
   // Budget Management
   async getProjectBudget(projectId: string): Promise<BudgetData> {
-    return this.safeRequest<BudgetData>(`/api/v1/projects/${projectId}/budget`);
+    return this.safeRequest<BudgetData>(`/api/v1/projects/${enc(projectId)}/budget`);
   }
 
   // Cost Analysis
@@ -424,13 +427,13 @@ export class SafePrismAPI {
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     const query = params.toString();
-    return this.safeRequest<CostBreakdown>(`/api/v1/projects/${projectId}/costs${query ? '?' + query : ''}`);
+    return this.safeRequest<CostBreakdown>(`/api/v1/projects/${enc(projectId)}/costs${enc(query ? '?' + query : '')}`);
   }
 
   // Resource Usage
   async getProjectUsage(projectId: string, period?: string): Promise<ProjectUsageResponse> {
     const query = period ? `?period=${period}` : '';
-    return this.safeRequest<ProjectUsageResponse>(`/api/v1/projects/${projectId}/usage${query}`);
+    return this.safeRequest<ProjectUsageResponse>(`/api/v1/projects/${enc(projectId)}/usage${enc(query)}`);
   }
 
   // User Operations
@@ -460,42 +463,42 @@ export class SafePrismAPI {
   }
 
   async deleteUser(username: string): Promise<void> {
-    await this.safeRequest(`/api/v1/users/${username}`, 'DELETE');
+    await this.safeRequest(`/api/v1/users/${enc(username)}`, 'DELETE');
   }
 
   async getUserStatus(username: string): Promise<UserStatus> {
-    return this.safeRequest(`/api/v1/users/${username}/status`);
+    return this.safeRequest(`/api/v1/users/${enc(username)}/status`);
   }
 
   async provisionUser(username: string, instanceName: string): Promise<UserProvisionResponse> {
-    return this.safeRequest(`/api/v1/users/${username}/provision`, 'POST', { instance: instanceName });
+    return this.safeRequest(`/api/v1/users/${enc(username)}/provision`, 'POST', { instance: instanceName });
   }
 
   async enableUser(username: string): Promise<void> {
-    await this.safeRequest(`/api/v1/users/${username}/enable`, 'POST');
+    await this.safeRequest(`/api/v1/users/${enc(username)}/enable`, 'POST');
   }
 
   async disableUser(username: string): Promise<void> {
-    await this.safeRequest(`/api/v1/users/${username}/disable`, 'POST');
+    await this.safeRequest(`/api/v1/users/${enc(username)}/disable`, 'POST');
   }
 
   async generateSSHKey(username: string): Promise<SSHKeyResponse> {
-    return this.safeRequest(`/api/v1/users/${username}/ssh-key`, 'POST', {
+    return this.safeRequest(`/api/v1/users/${enc(username)}/ssh-key`, 'POST', {
       username: username,
       key_type: 'ed25519'
     });
   }
 
   async getUserSSHKeys(username: string): Promise<UserSSHKeysResponse> {
-    return this.safeRequest(`/api/v1/users/${username}/ssh-key`);
+    return this.safeRequest(`/api/v1/users/${enc(username)}/ssh-key`);
   }
 
   async getUser(username: string): Promise<User> {
-    return this.safeRequest(`/api/v1/users/${username}`);
+    return this.safeRequest(`/api/v1/users/${enc(username)}`);
   }
 
   async updateUser(username: string, updates: Partial<UserUpdateRequest>): Promise<User> {
-    return this.safeRequest(`/api/v1/users/${username}`, 'PUT', updates);
+    return this.safeRequest(`/api/v1/users/${enc(username)}`, 'PUT', updates);
   }
 
   // Helper function to calculate budget status
@@ -514,7 +517,7 @@ export class SafePrismAPI {
       // Fetch budget status for each project
       for (const project of projects) {
         try {
-          const budgetStatus = await this.safeRequest<BudgetData>(`/api/v1/projects/${project.id}/budget`);
+          const budgetStatus = await this.safeRequest<BudgetData>(`/api/v1/projects/${enc(project.id)}/budget`);
 
           if (budgetStatus && budgetStatus.total_budget > 0) {
             const remaining = budgetStatus.total_budget - budgetStatus.spent_amount;
@@ -553,7 +556,7 @@ export class SafePrismAPI {
       if (endDate) params.append('end_date', endDate);
       const query = params.toString();
 
-      const data = await this.safeRequest<CostBreakdown>(`/api/v1/projects/${projectId}/costs${query ? '?' + query : ''}`);
+      const data = await this.safeRequest<CostBreakdown>(`/api/v1/projects/${enc(projectId)}/costs${enc(query ? '?' + query : '')}`);
 
       return {
         ec2_compute: data.ec2_compute || 0,
@@ -583,7 +586,7 @@ export class SafePrismAPI {
       enabled: true
     })) || [];
 
-    await this.safeRequest(`/api/v1/projects/${projectId}/budget`, 'PUT', {
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/budget`, 'PUT', {
       total_budget: totalBudget,
       alert_thresholds: alerts,
       budget_period: 'monthly'
@@ -602,11 +605,11 @@ export class SafePrismAPI {
   }
 
   async getBudgetPool(budgetId: string): Promise<Budget> {
-    return this.safeRequest<Budget>(`/api/v1/budgets/${budgetId}`);
+    return this.safeRequest<Budget>(`/api/v1/budgets/${enc(budgetId)}`);
   }
 
   async getBudgetSummary(budgetId: string): Promise<BudgetSummary> {
-    return this.safeRequest<BudgetSummary>(`/api/v1/budgets/${budgetId}/summary`);
+    return this.safeRequest<BudgetSummary>(`/api/v1/budgets/${enc(budgetId)}/summary`);
   }
 
   async createBudgetPool(budgetData: CreateBudgetRequest): Promise<Budget> {
@@ -614,16 +617,16 @@ export class SafePrismAPI {
   }
 
   async updateBudgetPool(budgetId: string, updates: Partial<CreateBudgetRequest>): Promise<Budget> {
-    return this.safeRequest<Budget>(`/api/v1/budgets/${budgetId}`, 'PUT', updates);
+    return this.safeRequest<Budget>(`/api/v1/budgets/${enc(budgetId)}`, 'PUT', updates);
   }
 
   async deleteBudgetPool(budgetId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/budgets/${budgetId}`, 'DELETE');
+    await this.safeRequest(`/api/v1/budgets/${enc(budgetId)}`, 'DELETE');
   }
 
   async getBudgetAllocations(budgetId: string): Promise<BudgetAllocation[]> {
     try {
-      const data = await this.safeRequest<{allocations?: BudgetAllocation[]}>(`/api/v1/budgets/${budgetId}/allocations`);
+      const data = await this.safeRequest<{allocations?: BudgetAllocation[]}>(`/api/v1/budgets/${enc(budgetId)}/allocations`);
       return Array.isArray(data?.allocations) ? data.allocations : [];
     } catch (error) {
       logger.error('Failed to fetch budget allocations:', error);
@@ -634,7 +637,7 @@ export class SafePrismAPI {
   // Invitation Management APIs (v0.5.11+)
   async getInvitationByToken(token: string): Promise<CachedInvitation> {
     try {
-      const data = await this.safeRequest<{invitation: Invitation; project: {name: string}}>(`/api/v1/invitations/${token}`);
+      const data = await this.safeRequest<{invitation: Invitation; project: {name: string}}>(`/api/v1/invitations/${enc(token)}`);
       const inv = data.invitation;
 
       // Map backend Invitation type to frontend CachedInvitation type
@@ -660,7 +663,7 @@ export class SafePrismAPI {
 
   async acceptInvitation(token: string): Promise<void> {
     try {
-      await this.safeRequest(`/api/v1/invitations/${token}/accept`, 'POST');
+      await this.safeRequest(`/api/v1/invitations/${enc(token)}/accept`, 'POST');
     } catch (error) {
       logger.error('Failed to accept invitation:', error);
       throw error;
@@ -670,7 +673,7 @@ export class SafePrismAPI {
   async declineInvitation(token: string, reason?: string): Promise<void> {
     try {
       const body = reason ? { reason } : undefined;
-      await this.safeRequest(`/api/v1/invitations/${token}/decline`, 'POST', body);
+      await this.safeRequest(`/api/v1/invitations/${enc(token)}/decline`, 'POST', body);
     } catch (error) {
       logger.error('Failed to decline invitation:', error);
       throw error;
@@ -688,7 +691,7 @@ export class SafePrismAPI {
       if (expiresAt) body.expires_at = expiresAt;
 
       // Backend returns nested response: {invitation, project, message}
-      const data = await this.safeRequest<{invitation: Invitation, project: unknown, message: string}>(`/api/v1/projects/${projectId}/invitations`, 'POST', body);
+      const data = await this.safeRequest<{invitation: Invitation, project: unknown, message: string}>(`/api/v1/projects/${enc(projectId)}/invitations`, 'POST', body);
 
       // Emit event to notify UI components that a new invitation was created
       window.dispatchEvent(new CustomEvent('invitation-created'));
@@ -711,7 +714,7 @@ export class SafePrismAPI {
       if (message) body.default_message = message;
 
       // Backend returns BulkInvitationResponse with summary and results
-      const data = await this.safeRequest<{summary: {total: number; sent: number; failed: number}; results: Array<{email: string; status: string; error?: string}>}>(`/api/v1/projects/${projectId}/invitations/bulk`, 'POST', body);
+      const data = await this.safeRequest<{summary: {total: number; sent: number; failed: number}; results: Array<{email: string; status: string; error?: string}>}>(`/api/v1/projects/${enc(projectId)}/invitations/bulk`, 'POST', body);
 
       // Transform backend response to match frontend BulkInviteResponse interface
       return {
@@ -732,7 +735,7 @@ export class SafePrismAPI {
   // Shared Token APIs (Issue #241)
   async getSharedTokens(projectId: string): Promise<SharedToken[]> {
     try {
-      const data = await this.safeRequest<{tokens?: SharedToken[]}>(`/api/v1/projects/${projectId}/invitations/shared`);
+      const data = await this.safeRequest<{tokens?: SharedToken[]}>(`/api/v1/projects/${enc(projectId)}/invitations/shared`);
       return Array.isArray(data?.tokens) ? data.tokens : [];
     } catch (error) {
       logger.error('Failed to fetch shared tokens:', error);
@@ -742,7 +745,7 @@ export class SafePrismAPI {
 
   async createSharedToken(projectId: string, config: SharedTokenConfig): Promise<SharedInvitationToken> {
     try {
-      const data = await this.safeRequest<SharedInvitationToken>(`/api/v1/projects/${projectId}/invitations/shared`, 'POST', config);
+      const data = await this.safeRequest<SharedInvitationToken>(`/api/v1/projects/${enc(projectId)}/invitations/shared`, 'POST', config);
       // Emit event to notify UI that shared token was created
       window.dispatchEvent(new CustomEvent('shared-token-created'));
       return data;
@@ -754,7 +757,7 @@ export class SafePrismAPI {
 
   async extendSharedToken(token: string, expiresIn: string): Promise<void> {
     try {
-      await this.safeRequest(`/api/v1/invitations/shared/${token}/extend`, 'PATCH', {
+      await this.safeRequest(`/api/v1/invitations/shared/${enc(token)}/extend`, 'PATCH', {
         add_days: parseInt(expiresIn)
       });
     } catch (error) {
@@ -765,7 +768,7 @@ export class SafePrismAPI {
 
   async revokeSharedToken(token: string): Promise<void> {
     try {
-      await this.safeRequest(`/api/v1/invitations/shared/${token}`, 'DELETE');
+      await this.safeRequest(`/api/v1/invitations/shared/${enc(token)}`, 'DELETE');
     } catch (error) {
       logger.error('Failed to revoke shared token:', error);
       throw error;
@@ -784,7 +787,7 @@ export class SafePrismAPI {
 
   async getSharedTokenQRCode(token: string, format: 'json' | 'png' = 'json'): Promise<QRCodeData> {
     try {
-      const data = await this.safeRequest<QRCodeData>(`/api/v1/invitations/shared/${token}/qr?format=${format}`);
+      const data = await this.safeRequest<QRCodeData>(`/api/v1/invitations/shared/${enc(token)}/qr?format=${enc(format)}`);
       return data;
     } catch (error) {
       logger.error('Failed to get QR code:', error);
@@ -797,7 +800,7 @@ export class SafePrismAPI {
     try {
       // Use provided email or default for testing
       const userEmail = email || 'test-user@example.com';
-      const response = await this.safeRequest(`/api/v1/invitations/my?email=${encodeURIComponent(userEmail)}`);
+      const response = await this.safeRequest(`/api/v1/invitations/my?email=${enc(encodeURIComponent(userEmail))}`);
       // Backend returns {invitations: [...], email: "...", filter: {...}}
       const data = (response as any)?.invitations || response;
       return Array.isArray(data) ? data : [];
@@ -809,7 +812,7 @@ export class SafePrismAPI {
 
   async getProjectInvitations(projectId: string): Promise<Invitation[]> {
     try {
-      const data = await this.safeRequest(`/api/v1/projects/${projectId}/invitations`);
+      const data = await this.safeRequest(`/api/v1/projects/${enc(projectId)}/invitations`);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       logger.error('Failed to fetch project invitations:', error);
@@ -819,7 +822,7 @@ export class SafePrismAPI {
 
   async revokeInvitation(invitationId: string): Promise<void> {
     try {
-      await this.safeRequest(`/api/v1/invitations/${invitationId}`, 'DELETE');
+      await this.safeRequest(`/api/v1/invitations/${enc(invitationId)}`, 'DELETE');
     } catch (error) {
       logger.error('Failed to revoke invitation:', error);
       throw error;
@@ -828,7 +831,7 @@ export class SafePrismAPI {
 
   // Project Details API
   async getProjectDetails(projectId: string): Promise<ProjectDetails> {
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}`);
     // Map backend types.Project format (budget.total_budget) to ProjectDetails format (budget_limit)
     return {
       ...data,
@@ -841,7 +844,7 @@ export class SafePrismAPI {
 
   // User Provisioning API
   async provisionUserOnWorkspace(username: string, instanceId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/users/${username}/provision`, 'POST', { instance_id: instanceId });
+    await this.safeRequest(`/api/v1/users/${enc(username)}/provision`, 'POST', { instance_id: instanceId });
   }
 
   // AMI Management APIs
@@ -975,7 +978,7 @@ export class SafePrismAPI {
   }
 
   async applyRightsizingRecommendation(instanceName: string): Promise<void> {
-    await this.safeRequest(`/api/v1/rightsizing/instance/${instanceName}/apply`, 'POST');
+    await this.safeRequest(`/api/v1/rightsizing/instance/${enc(instanceName)}/apply`, 'POST');
   }
 
   // Policy APIs
@@ -1139,7 +1142,7 @@ export class SafePrismAPI {
   // Per-instance Idle Policy APIs (Issue #288)
   async getInstanceIdlePolicies(instanceName: string): Promise<IdlePolicy[]> {
     try {
-      const data = await this.safeRequest(`/api/v1/instances/${instanceName}/idle/policies`);
+      const data = await this.safeRequest(`/api/v1/instances/${enc(instanceName)}/idle/policies`);
       if (!data || !Array.isArray(data)) return [];
       return (data as Record<string, unknown>[]).map((p) => ({
         id: (p.id as string) || '',
@@ -1159,11 +1162,11 @@ export class SafePrismAPI {
   }
 
   async applyIdlePolicy(instanceName: string, policyId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${instanceName}/idle/policies/${policyId}`, 'PUT');
+    await this.safeRequest(`/api/v1/instances/${enc(instanceName)}/idle/policies/${enc(policyId)}`, 'PUT');
   }
 
   async removeIdlePolicy(instanceName: string, policyId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/instances/${instanceName}/idle/policies/${policyId}`, 'DELETE');
+    await this.safeRequest(`/api/v1/instances/${enc(instanceName)}/idle/policies/${enc(policyId)}`, 'DELETE');
   }
 
   // Profile Management APIs
@@ -1182,15 +1185,15 @@ export class SafePrismAPI {
   }
 
   async updateProfile(profileId: string, updates: { name?: string; aws_profile?: string; region?: string }): Promise<any> {
-    return this.safeRequest(`/api/v1/profiles/${profileId}`, 'PUT', updates);
+    return this.safeRequest(`/api/v1/profiles/${enc(profileId)}`, 'PUT', updates);
   }
 
   async deleteProfile(profileId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/profiles/${profileId}`, 'DELETE');
+    await this.safeRequest(`/api/v1/profiles/${enc(profileId)}`, 'DELETE');
   }
 
   async switchProfile(profileId: string): Promise<any> {
-    return this.safeRequest(`/api/v1/profiles/${profileId}/activate`, 'POST');
+    return this.safeRequest(`/api/v1/profiles/${enc(profileId)}/activate`, 'POST');
   }
 
   async checkForUpdates(): Promise<any> {
@@ -1232,59 +1235,59 @@ export class SafePrismAPI {
 
   // v0.13.0 Governance APIs
   async getProjectQuotas(projectId: string): Promise<RoleQuota[]> {
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/quotas`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}/quotas`);
     return data?.role_quotas || [];
   }
 
   async setProjectQuota(projectId: string, quota: RoleQuota): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/quotas`, 'PUT', quota);
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/quotas`, 'PUT', quota);
   }
 
   async deleteProjectQuota(projectId: string, role: string): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/quotas/${role}`, 'DELETE');
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/quotas/${enc(role)}`, 'DELETE');
   }
 
   async getGrantPeriod(projectId: string): Promise<GrantPeriod | null> {
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/grant-period`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}/grant-period`);
     return data?.grant_period || null;
   }
 
   async setGrantPeriod(projectId: string, gp: GrantPeriod): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/grant-period`, 'PUT', gp);
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/grant-period`, 'PUT', gp);
   }
 
   async deleteGrantPeriod(projectId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/grant-period`, 'DELETE');
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/grant-period`, 'DELETE');
   }
 
   async listApprovals(projectId: string, status?: string): Promise<ApprovalRequest[]> {
     const qs = status ? `?status=${status}` : '';
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/approvals${qs}`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}/approvals${enc(qs)}`);
     return data?.approvals || [];
   }
 
   async approveRequest(projectId: string, approvalId: string, note: string): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/approvals/${approvalId}/approve`, 'POST', { note });
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/approvals/${enc(approvalId)}/approve`, 'POST', { note });
   }
 
   async denyRequest(projectId: string, approvalId: string, note: string): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/approvals/${approvalId}/deny`, 'POST', { note });
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/approvals/${enc(approvalId)}/deny`, 'POST', { note });
   }
 
   async listAllApprovals(status?: string): Promise<ApprovalRequest[]> {
     const qs = status ? `?status=${status}` : '';
-    const data = await this.safeRequest<any>(`/api/v1/admin/approvals${qs}`);
+    const data = await this.safeRequest<any>(`/api/v1/admin/approvals${enc(qs)}`);
     return data?.approvals || [];
   }
 
   // v0.21.0: Get a single approval request by ID (#495)
   async getApproval(projectId: string, approvalId: string): Promise<ApprovalRequest> {
-    return this.safeRequest<ApprovalRequest>(`/api/v1/projects/${projectId}/approvals/${approvalId}`);
+    return this.safeRequest<ApprovalRequest>(`/api/v1/projects/${enc(projectId)}/approvals/${enc(approvalId)}`);
   }
 
   // v0.21.0: Submit approval request for a launch (#495)
   async submitApprovalForLaunch(projectId: string, templateName: string, size: string, reason: string): Promise<ApprovalRequest> {
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/approvals`, 'POST', {
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}/approvals`, 'POST', {
       type: 'expensive_instance',
       details: { template: templateName, size },
       reason,
@@ -1293,30 +1296,30 @@ export class SafePrismAPI {
   }
 
   async shareProjectBudget(projectId: string, req: BudgetShareRequest): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/budget/share`, 'POST', req);
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/budget/share`, 'POST', req);
   }
 
   async listProjectBudgetShares(projectId: string): Promise<BudgetShareRecord[]> {
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/budget/shares`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}/budget/shares`);
     return data?.shares || [];
   }
 
   async listOnboardingTemplates(projectId: string): Promise<OnboardingTemplate[]> {
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/onboarding-templates`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}/onboarding-templates`);
     return data?.onboarding_templates || [];
   }
 
   async addOnboardingTemplate(projectId: string, tmpl: OnboardingTemplate): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/onboarding-templates`, 'POST', tmpl);
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/onboarding-templates`, 'POST', tmpl);
   }
 
   async deleteOnboardingTemplate(projectId: string, nameOrId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/projects/${projectId}/onboarding-templates/${encodeURIComponent(nameOrId)}`, 'DELETE');
+    await this.safeRequest(`/api/v1/projects/${enc(projectId)}/onboarding-templates/${enc(encodeURIComponent(nameOrId))}`, 'DELETE');
   }
 
   async getMonthlyReport(projectId: string, month: string, format: string): Promise<string> {
     const qs = `?month=${month}&format=${format}`;
-    const data = await this.safeRequest<any>(`/api/v1/projects/${projectId}/reports/monthly${qs}`);
+    const data = await this.safeRequest<any>(`/api/v1/projects/${enc(projectId)}/reports/monthly${enc(qs)}`);
     return typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   }
 
@@ -1333,82 +1336,82 @@ export class SafePrismAPI {
   }
 
   async getCourse(id: string): Promise<Course> {
-    const data = await this.safeRequest<Course>(`/api/v1/courses/${encodeURIComponent(id)}`);
+    const data = await this.safeRequest<Course>(`/api/v1/courses/${enc(encodeURIComponent(id))}`);
     return data as Course;
   }
 
   async closeCourse(id: string): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/close`, 'POST');
+    await this.safeRequest(`/api/v1/courses/${enc(encodeURIComponent(id))}/close`, 'POST');
   }
 
   async deleteCourse(id: string): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}`, 'DELETE');
+    await this.safeRequest(`/api/v1/courses/${enc(encodeURIComponent(id))}`, 'DELETE');
   }
 
   async archiveCourse(id: string): Promise<{ instances_stopped: string[] }> {
-    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/archive`, 'POST');
+    const data = await this.safeRequest<any>(`/api/v1/courses/${enc(encodeURIComponent(id))}/archive`, 'POST');
     return data || { instances_stopped: [] };
   }
 
   async getCourseMembers(id: string, role?: string): Promise<ClassMember[]> {
     const qs = role ? `?role=${encodeURIComponent(role)}` : '';
-    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/members${qs}`);
+    const data = await this.safeRequest<any>(`/api/v1/courses/${enc(encodeURIComponent(id))}/members${enc(qs)}`);
     return (data?.members || []) as ClassMember[];
   }
 
   async enrollCourseMember(id: string, memberData: Partial<ClassMember>): Promise<ClassMember> {
-    const data = await this.safeRequest<ClassMember>(`/api/v1/courses/${encodeURIComponent(id)}/members`, 'POST', memberData);
+    const data = await this.safeRequest<ClassMember>(`/api/v1/courses/${enc(encodeURIComponent(id))}/members`, 'POST', memberData);
     return data as ClassMember;
   }
 
   async unenrollCourseMember(id: string, userId: string): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`, 'DELETE');
+    await this.safeRequest(`/api/v1/courses/${enc(encodeURIComponent(id))}/members/${enc(encodeURIComponent(userId))}`, 'DELETE');
   }
 
   async getCourseTemplates(id: string): Promise<{ templates: string[] }> {
-    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/templates`);
+    const data = await this.safeRequest<any>(`/api/v1/courses/${enc(encodeURIComponent(id))}/templates`);
     return { templates: data?.approved_templates || [] };
   }
 
   async addCourseTemplate(id: string, slug: string): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/templates`, 'POST', { template: slug });
+    await this.safeRequest(`/api/v1/courses/${enc(encodeURIComponent(id))}/templates`, 'POST', { template: slug });
   }
 
   async removeCourseTemplate(id: string, slug: string): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/templates/${encodeURIComponent(slug)}`, 'DELETE');
+    await this.safeRequest(`/api/v1/courses/${enc(encodeURIComponent(id))}/templates/${enc(encodeURIComponent(slug))}`, 'DELETE');
   }
 
   async getCourseBudget(id: string): Promise<CourseBudgetSummary> {
-    const data = await this.safeRequest<CourseBudgetSummary>(`/api/v1/courses/${encodeURIComponent(id)}/budget`);
+    const data = await this.safeRequest<CourseBudgetSummary>(`/api/v1/courses/${enc(encodeURIComponent(id))}/budget`);
     return data as CourseBudgetSummary;
   }
 
   async distributeCourseBudget(id: string, amount: number): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(id)}/budget/distribute`, 'POST', { amount_per_student: amount });
+    await this.safeRequest(`/api/v1/courses/${enc(encodeURIComponent(id))}/budget/distribute`, 'POST', { amount_per_student: amount });
   }
 
   async debugStudent(courseId: string, studentId: string): Promise<Record<string, unknown>> {
-    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(courseId)}/members/${encodeURIComponent(studentId)}/debug`);
+    const data = await this.safeRequest<any>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/members/${enc(encodeURIComponent(studentId))}/debug`);
     return data || {};
   }
 
   async resetStudent(courseId: string, studentId: string, reason: string): Promise<void> {
-    await this.safeRequest(`/api/v1/courses/${encodeURIComponent(courseId)}/members/${encodeURIComponent(studentId)}/reset`, 'POST', { reason });
+    await this.safeRequest(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/members/${enc(encodeURIComponent(studentId))}/reset`, 'POST', { reason });
   }
 
   async provisionStudent(courseId: string, studentId: string, data?: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const result = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(courseId)}/members/${encodeURIComponent(studentId)}/provision`, 'POST', data || {});
+    const result = await this.safeRequest<any>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/members/${enc(encodeURIComponent(studentId))}/provision`, 'POST', data || {});
     return result || {};
   }
 
   async getCourseOverview(id: string): Promise<CourseOverview> {
-    const data = await this.safeRequest<CourseOverview>(`/api/v1/courses/${encodeURIComponent(id)}/overview`);
+    const data = await this.safeRequest<CourseOverview>(`/api/v1/courses/${enc(encodeURIComponent(id))}/overview`);
     return data as CourseOverview;
   }
 
   async getCourseReport(id: string, format?: string): Promise<UsageReport> {
     const qs = format ? `?format=${encodeURIComponent(format)}` : '';
-    const data = await this.safeRequest<UsageReport>(`/api/v1/courses/${encodeURIComponent(id)}/report${qs}`);
+    const data = await this.safeRequest<UsageReport>(`/api/v1/courses/${enc(encodeURIComponent(id))}/report${enc(qs)}`);
     return data as UsageReport;
   }
 
@@ -1418,13 +1421,13 @@ export class SafePrismAPI {
     if (params?.since) qs.set('since', params.since);
     if (params?.limit) qs.set('limit', String(params.limit));
     const qstr = qs.toString() ? `?${qs.toString()}` : '';
-    const data = await this.safeRequest<any>(`/api/v1/courses/${encodeURIComponent(id)}/audit${qstr}`);
+    const data = await this.safeRequest<any>(`/api/v1/courses/${enc(encodeURIComponent(id))}/audit${enc(qstr)}`);
     return { entries: (data?.entries || []) as CourseAuditEntry[] };
   }
 
   async importCourseRoster(id: string, file: File, format?: string): Promise<{ enrolled: number; errors: string[] }> {
     const qs = format ? `?format=${encodeURIComponent(format)}` : '';
-    const url = `/api/v1/courses/${encodeURIComponent(id)}/members/import${qs}`;
+    const url = `/api/v1/courses/${enc(encodeURIComponent(id))}/members/import${enc(qs)}`;
     const baseURL = (window as any).__daemonURL || 'http://localhost:8947';
     const resp = await fetch(`${baseURL}${url}`, {
       method: 'POST',
@@ -1440,7 +1443,7 @@ export class SafePrismAPI {
 
   async getWorkshops(params?: { owner?: string; status?: string }): Promise<WorkshopEvent[]> {
     const qs = params ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString() : '';
-    const data = await this.safeRequest<any>(`/api/v1/workshops${qs}`);
+    const data = await this.safeRequest<any>(`/api/v1/workshops${enc(qs)}`);
     return (data?.workshops || []) as WorkshopEvent[];
   }
 
@@ -1450,36 +1453,36 @@ export class SafePrismAPI {
   }
 
   async getWorkshop(id: string): Promise<WorkshopEvent> {
-    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/${encodeURIComponent(id)}`);
+    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/${enc(encodeURIComponent(id))}`);
     return data as WorkshopEvent;
   }
 
   async updateWorkshop(id: string, updates: Partial<WorkshopEvent>): Promise<WorkshopEvent> {
-    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/${encodeURIComponent(id)}`, 'PUT', updates);
+    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/${enc(encodeURIComponent(id))}`, 'PUT', updates);
     return data as WorkshopEvent;
   }
 
   async deleteWorkshop(id: string): Promise<void> {
-    await this.safeRequest(`/api/v1/workshops/${encodeURIComponent(id)}`, 'DELETE');
+    await this.safeRequest(`/api/v1/workshops/${enc(encodeURIComponent(id))}`, 'DELETE');
   }
 
   async provisionWorkshop(id: string): Promise<{ provisioned: number; skipped: number; errors: string[] }> {
-    const data = await this.safeRequest<any>(`/api/v1/workshops/${encodeURIComponent(id)}/provision`, 'POST');
+    const data = await this.safeRequest<any>(`/api/v1/workshops/${enc(encodeURIComponent(id))}/provision`, 'POST');
     return { provisioned: data?.provisioned || 0, skipped: data?.skipped || 0, errors: data?.errors || [] };
   }
 
   async getWorkshopDashboard(id: string): Promise<WorkshopDashboard> {
-    const data = await this.safeRequest<WorkshopDashboard>(`/api/v1/workshops/${encodeURIComponent(id)}/dashboard`);
+    const data = await this.safeRequest<WorkshopDashboard>(`/api/v1/workshops/${enc(encodeURIComponent(id))}/dashboard`);
     return data as WorkshopDashboard;
   }
 
   async endWorkshop(id: string): Promise<{ stopped: number; errors: string[] }> {
-    const data = await this.safeRequest<any>(`/api/v1/workshops/${encodeURIComponent(id)}/end`, 'POST');
+    const data = await this.safeRequest<any>(`/api/v1/workshops/${enc(encodeURIComponent(id))}/end`, 'POST');
     return { stopped: data?.stopped || 0, errors: data?.errors || [] };
   }
 
   async getWorkshopDownload(id: string): Promise<{ workshop_id: string; participants: any[] }> {
-    const data = await this.safeRequest<any>(`/api/v1/workshops/${encodeURIComponent(id)}/download`);
+    const data = await this.safeRequest<any>(`/api/v1/workshops/${enc(encodeURIComponent(id))}/download`);
     return { workshop_id: data?.workshop_id || id, participants: data?.participants || [] };
   }
 
@@ -1489,72 +1492,72 @@ export class SafePrismAPI {
   }
 
   async saveWorkshopConfig(workshopId: string, configName: string): Promise<WorkshopConfig> {
-    const data = await this.safeRequest<WorkshopConfig>(`/api/v1/workshops/${encodeURIComponent(workshopId)}/config`, 'POST', { name: configName });
+    const data = await this.safeRequest<WorkshopConfig>(`/api/v1/workshops/${enc(encodeURIComponent(workshopId))}/config`, 'POST', { name: configName });
     return data as WorkshopConfig;
   }
 
   async createWorkshopFromConfig(configName: string, workshopData: Partial<WorkshopEvent>): Promise<WorkshopEvent> {
-    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/from-config/${encodeURIComponent(configName)}`, 'POST', workshopData);
+    const data = await this.safeRequest<WorkshopEvent>(`/api/v1/workshops/from-config/${enc(encodeURIComponent(configName))}`, 'POST', workshopData);
     return data as WorkshopEvent;
   }
 
   // ── v0.19.0 TA Access, Shared Materials, Workspace Reset ──
   async listCourseTAAccess(courseId: string): Promise<ClassMember[]> {
-    const data = await this.safeRequest<{ ta_members: ClassMember[] }>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access`, 'GET');
+    const data = await this.safeRequest<{ ta_members: ClassMember[] }>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/ta-access`, 'GET');
     return (data?.ta_members || []) as ClassMember[];
   }
 
   async grantCourseTAAccess(courseId: string, email: string, displayName?: string): Promise<ClassMember> {
-    const data = await this.safeRequest<ClassMember>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access`, 'POST', { email, display_name: displayName || '' });
+    const data = await this.safeRequest<ClassMember>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/ta-access`, 'POST', { email, display_name: displayName || '' });
     return data as ClassMember;
   }
 
   async revokeCourseTAAccess(courseId: string, email: string): Promise<void> {
-    await this.safeRequest<void>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access/${encodeURIComponent(email)}`, 'DELETE');
+    await this.safeRequest<void>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/ta-access/${enc(encodeURIComponent(email))}`, 'DELETE');
   }
 
   async connectCourseTAAccess(courseId: string, studentId: string, reason: string): Promise<{ ssh_command: string }> {
-    const data = await this.safeRequest<{ ssh_command: string }>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta-access/connect`, 'POST', { student_id: studentId, reason });
+    const data = await this.safeRequest<{ ssh_command: string }>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/ta-access/connect`, 'POST', { student_id: studentId, reason });
     return data as { ssh_command: string };
   }
 
   async resetCourseStudentWorkspace(courseId: string, studentId: string, reason: string, backup: boolean): Promise<WorkspaceResetResult> {
-    const data = await this.safeRequest<WorkspaceResetResult>(`/api/v1/courses/${encodeURIComponent(courseId)}/ta/reset/${encodeURIComponent(studentId)}`, 'POST', { reason, backup });
+    const data = await this.safeRequest<WorkspaceResetResult>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/ta/reset/${enc(encodeURIComponent(studentId))}`, 'POST', { reason, backup });
     return data as WorkspaceResetResult;
   }
 
   async getCourseMaterials(courseId: string): Promise<SharedMaterialsVolume | null> {
-    const data = await this.safeRequest<{ materials: SharedMaterialsVolume | null }>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'GET');
+    const data = await this.safeRequest<{ materials: SharedMaterialsVolume | null }>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/materials`, 'GET');
     return data?.materials || null;
   }
 
   async createCourseMaterials(courseId: string, sizeGB: number, mountPath: string): Promise<SharedMaterialsVolume> {
-    const data = await this.safeRequest<{ materials: SharedMaterialsVolume }>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials`, 'POST', { size_gb: sizeGB, mount_path: mountPath });
+    const data = await this.safeRequest<{ materials: SharedMaterialsVolume }>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/materials`, 'POST', { size_gb: sizeGB, mount_path: mountPath });
     return data?.materials as SharedMaterialsVolume;
   }
 
   async mountCourseMaterials(courseId: string): Promise<{ status: string; note: string }> {
-    const data = await this.safeRequest<{ status: string; note: string }>(`/api/v1/courses/${encodeURIComponent(courseId)}/materials/mount`, 'POST', {});
+    const data = await this.safeRequest<{ status: string; note: string }>(`/api/v1/courses/${enc(encodeURIComponent(courseId))}/materials/mount`, 'POST', {});
     return data as { status: string; note: string };
   }
 
   // ── v0.20.0 SSM File Operations (#30) ──────────────────────────────────────
   async listInstanceFiles(instanceName: string, path?: string): Promise<FileEntry[]> {
-    const url = `/api/v1/instances/${encodeURIComponent(instanceName)}/files${path ? `?path=${encodeURIComponent(path)}` : ''}`;
+    const url = `/api/v1/instances/${enc(instanceName)}/files${path ? `?path=${encodeURIComponent(path)}` : ''}`;
     const data = await this.safeRequest<FileEntry[]>(url, 'GET');
     return (data || []) as FileEntry[];
   }
 
   async pushFileToInstance(instanceName: string, localPath: string, remotePath: string): Promise<{ status: string; message: string }> {
     const data = await this.safeRequest<{ status: string; message: string }>(
-      `/api/v1/instances/${encodeURIComponent(instanceName)}/files/push`, 'POST',
+      `/api/v1/instances/${enc(encodeURIComponent(instanceName))}/files/push`, 'POST',
       { local_path: localPath, remote_path: remotePath });
     return data as { status: string; message: string };
   }
 
   async pullFileFromInstance(instanceName: string, remotePath: string, localPath: string): Promise<{ status: string; message: string }> {
     const data = await this.safeRequest<{ status: string; message: string }>(
-      `/api/v1/instances/${encodeURIComponent(instanceName)}/files/pull`, 'POST',
+      `/api/v1/instances/${enc(encodeURIComponent(instanceName))}/files/pull`, 'POST',
       { remote_path: remotePath, local_path: localPath });
     return data as { status: string; message: string };
   }
@@ -1571,23 +1574,23 @@ export class SafePrismAPI {
   }
 
   async describeCapacityBlock(id: string): Promise<CapacityBlock> {
-    const data = await this.safeRequest<CapacityBlock>(`/api/v1/capacity-blocks/${encodeURIComponent(id)}`, 'GET');
+    const data = await this.safeRequest<CapacityBlock>(`/api/v1/capacity-blocks/${enc(encodeURIComponent(id))}`, 'GET');
     return data as CapacityBlock;
   }
 
   async cancelCapacityBlock(id: string): Promise<void> {
-    await this.safeRequest<void>(`/api/v1/capacity-blocks/${encodeURIComponent(id)}`, 'DELETE');
+    await this.safeRequest<void>(`/api/v1/capacity-blocks/${enc(encodeURIComponent(id))}`, 'DELETE');
   }
 
   // S3 mount methods (#22c)
 
   async listInstanceS3Mounts(instanceName: string): Promise<S3Mount[]> {
-    const data = await this.safeRequest<S3Mount[]>(`/api/v1/instances/${encodeURIComponent(instanceName)}/s3-mounts`, 'GET');
+    const data = await this.safeRequest<S3Mount[]>(`/api/v1/instances/${enc(encodeURIComponent(instanceName))}/s3-mounts`, 'GET');
     return (data as S3Mount[]) || [];
   }
 
   async mountS3Bucket(instanceName: string, bucket: string, mountPath: string, method = 'mountpoint', readOnly = false): Promise<S3Mount> {
-    const data = await this.safeRequest<S3Mount>(`/api/v1/instances/${encodeURIComponent(instanceName)}/s3-mounts`, 'POST', {
+    const data = await this.safeRequest<S3Mount>(`/api/v1/instances/${enc(encodeURIComponent(instanceName))}/s3-mounts`, 'POST', {
       bucket_name: bucket,
       mount_path: mountPath,
       method,
@@ -1598,19 +1601,19 @@ export class SafePrismAPI {
 
   async unmountS3Bucket(instanceName: string, mountPath: string): Promise<void> {
     const encoded = encodeURIComponent(mountPath.replace(/^\//, ''));
-    await this.safeRequest<void>(`/api/v1/instances/${encodeURIComponent(instanceName)}/s3-mounts/${encoded}`, 'DELETE');
+    await this.safeRequest<void>(`/api/v1/instances/${enc(encodeURIComponent(instanceName))}/s3-mounts/${enc(encoded)}`, 'DELETE');
   }
 
   // Storage analytics methods (#23c)
 
   async getAllStorageAnalytics(period = 'daily'): Promise<StorageAnalyticsSummary[]> {
-    const data = await this.safeRequest<{ resources?: StorageAnalyticsSummary[] }>(`/api/v1/storage/analytics?period=${encodeURIComponent(period)}`, 'GET');
+    const data = await this.safeRequest<{ resources?: StorageAnalyticsSummary[] }>(`/api/v1/storage/analytics?period=${enc(encodeURIComponent(period))}`, 'GET');
     const result = data as { resources?: StorageAnalyticsSummary[] };
     return result?.resources || [];
   }
 
   async getStorageAnalytics(name: string, period = 'daily'): Promise<StorageAnalyticsSummary> {
-    const data = await this.safeRequest<StorageAnalyticsSummary>(`/api/v1/storage/analytics/${encodeURIComponent(name)}?period=${encodeURIComponent(period)}`, 'GET');
+    const data = await this.safeRequest<StorageAnalyticsSummary>(`/api/v1/storage/analytics/${enc(encodeURIComponent(name))}?period=${enc(encodeURIComponent(period))}`, 'GET');
     return data as StorageAnalyticsSummary;
   }
 }

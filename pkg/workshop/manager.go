@@ -86,7 +86,7 @@ func (m *Manager) save() error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal workshops: %w", err)
 	}
-	return os.WriteFile(m.statePath, data, 0644)
+	return os.WriteFile(m.statePath, data, 0600)
 }
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────

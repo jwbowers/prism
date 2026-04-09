@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -341,6 +343,10 @@ func (s *Server) handleDCVProxy(w http.ResponseWriter, r *http.Request) {
 	if dcvPort == "" {
 		dcvPort = "8443"
 	}
+	if portNum, err := strconv.Atoi(dcvPort); err != nil || portNum < 1 || portNum > 65535 {
+		s.writeError(w, http.StatusBadRequest, "Invalid port number")
+		return
+	}
 
 	// Build DCV connection URL
 	dcvURL := fmt.Sprintf("https://%s:%s", instance.PublicIP, dcvPort)
@@ -404,6 +410,12 @@ func (s *Server) handleAWSServiceProxy(w http.ResponseWriter, r *http.Request) {
 
 	// If federation token provided, generate AWS console federation URL
 	var finalURL string
+	// Validate federation token format — must be alphanumeric + safe base64 chars (#603)
+	validToken := regexp.MustCompile(`^[A-Za-z0-9+/=_-]+$`)
+	if federationToken != "" && !validToken.MatchString(federationToken) {
+		s.writeError(w, http.StatusBadRequest, "Invalid federation token format")
+		return
+	}
 	if federationToken != "" {
 		// AWS Console Federation URL format:
 		// https://signin.aws.amazon.com/federation?Action=login&Issuer=<issuer>&Destination=<destination>&SigninToken=<token>
@@ -429,12 +441,11 @@ func (s *Server) handleAWSServiceProxy(w http.ResponseWriter, r *http.Request) {
 	// Create reverse proxy with federation support
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
-	// Modify headers for embedding
+	// Replace upstream security headers for Prism iframe embedding (#603)
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		// Remove X-Frame-Options to allow embedding
-		resp.Header.Del("X-Frame-Options")
-		// Add CORS headers
-		resp.Header.Set("Access-Control-Allow-Origin", "*")
+		resp.Header.Set("X-Frame-Options", "SAMEORIGIN")
+		resp.Header.Set("Content-Security-Policy", "frame-ancestors 'self'")
+		resp.Header.Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		resp.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		return nil
@@ -478,6 +489,10 @@ func (s *Server) handleWebProxy(w http.ResponseWriter, r *http.Request) {
 	if targetPort == "" {
 		targetPort = "8888" // Default to Jupyter port
 	}
+	if portNum, err := strconv.Atoi(targetPort); err != nil || portNum < 1 || portNum > 65535 {
+		s.writeError(w, http.StatusBadRequest, "Invalid port number")
+		return
+	}
 
 	// Build target URL for the instance
 	targetURL, err := url.Parse(fmt.Sprintf("http://%s:%s%s", instance.PublicIP, targetPort, targetPath))
@@ -489,18 +504,13 @@ func (s *Server) handleWebProxy(w http.ResponseWriter, r *http.Request) {
 	// Create reverse proxy with enhanced CORS headers for iframe embedding
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
-	// Modify response headers to enable embedding
+	// Replace upstream security headers with Prism-safe values for iframe embedding (#603)
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		// Remove headers that prevent iframe embedding
-		resp.Header.Del("X-Frame-Options")
-		resp.Header.Del("Content-Security-Policy")
-
-		// Add CORS headers for cross-origin access
-		resp.Header.Set("Access-Control-Allow-Origin", "*")
-		resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		resp.Header.Set("X-Frame-Options", "SAMEORIGIN")
+		resp.Header.Set("Content-Security-Policy", "frame-ancestors 'self'")
+		resp.Header.Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		resp.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		resp.Header.Set("Access-Control-Allow-Credentials", "true")
-
 		return nil
 	}
 

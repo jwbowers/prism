@@ -75,7 +75,7 @@ func (l *AuditLog) Append(entry AuditEntry) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	f, err := os.OpenFile(l.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(l.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("audit open: %w", err)
 	}

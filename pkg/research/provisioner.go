@@ -14,6 +14,12 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+// shellQuote wraps a string in single quotes with proper escaping for shell safety.
+// This prevents command injection even if the input contains shell metacharacters.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
+}
+
 // ResearchUserProvisioner handles provisioning research users on instances
 type ResearchUserProvisioner struct {
 	userManager *ResearchUserManager
@@ -127,7 +133,7 @@ func (rp *ResearchUserProvisioner) GetResearchUserStatus(ctx context.Context, in
 
 // checkUserExistence verifies if a research user exists on the instance
 func (rp *ResearchUserProvisioner) checkUserExistence(client *ssh.Client, username string) (*ResearchUserStatus, error) {
-	checkUserCmd := fmt.Sprintf("id %s", username)
+	checkUserCmd := fmt.Sprintf("id %s", shellQuote(username))
 	output, err := rp.executeCommand(client, checkUserCmd)
 	if err != nil {
 		return &ResearchUserStatus{
@@ -165,7 +171,7 @@ func (rp *ResearchUserProvisioner) populateUserDetails(client *ssh.Client, usern
 
 // populateHomeDirectory gets the user's home directory path
 func (rp *ResearchUserProvisioner) populateHomeDirectory(client *ssh.Client, username string, status *ResearchUserStatus) {
-	homeCmd := fmt.Sprintf("getent passwd %s | cut -d: -f6", username)
+	homeCmd := fmt.Sprintf("getent passwd %s | cut -d: -f6", shellQuote(username))
 	if homeOutput, err := rp.executeCommand(client, homeCmd); err == nil {
 		status.HomeDirectoryPath = strings.TrimSpace(homeOutput)
 	}
@@ -183,7 +189,7 @@ func (rp *ResearchUserProvisioner) populateEFSMountStatus(client *ssh.Client, st
 
 // populateLastLoginInfo gets the user's last login information
 func (rp *ResearchUserProvisioner) populateLastLoginInfo(client *ssh.Client, username string, status *ResearchUserStatus) {
-	lastLoginCmd := fmt.Sprintf("last -n 1 %s | head -1", username)
+	lastLoginCmd := fmt.Sprintf("last -n 1 %s | head -1", shellQuote(username))
 	if lastOutput, err := rp.executeCommand(client, lastLoginCmd); err == nil {
 		// Parse last login (basic parsing)
 		if rp.isValidLastLoginOutput(lastOutput) {
@@ -201,7 +207,7 @@ func (rp *ResearchUserProvisioner) isValidLastLoginOutput(output string) bool {
 
 // populateActiveProcesses gets the count of active processes for the user
 func (rp *ResearchUserProvisioner) populateActiveProcesses(client *ssh.Client, username string, status *ResearchUserStatus) {
-	processCmd := fmt.Sprintf("ps -u %s --no-headers | wc -l", username)
+	processCmd := fmt.Sprintf("ps -u %s --no-headers | wc -l", shellQuote(username))
 	if processOutput, err := rp.executeCommand(client, processCmd); err == nil {
 		if count := strings.TrimSpace(processOutput); count != "" {
 			if parsed := parseIntSafe(count); parsed > 0 {
