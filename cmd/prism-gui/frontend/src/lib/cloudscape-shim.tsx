@@ -17,7 +17,13 @@ import { Switch as ShadSwitch } from '../components/ui/switch'
 import { Progress as ShadProgress } from '../components/ui/progress'
 import { Alert as ShadAlert, AlertDescription } from '../components/ui/alert'
 import { Spinner as SpinnerBase } from '../components/ui/spinner'
+import { FocusScope } from '@radix-ui/react-focus-scope'
 import { cn } from './utils'
+
+// ── Static Tailwind class lookups (JIT compiler needs static strings) ─────
+const gapClass: Record<string, string> = { '1': 'gap-1', '2': 'gap-2', '4': 'gap-4', '6': 'gap-6', '8': 'gap-8', '12': 'gap-12' }
+const gridColsClass: Record<number, string> = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4', 5: 'grid-cols-5', 6: 'grid-cols-6' }
+const colSpanClass: Record<number, string> = { 1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4' }
 
 // ── Layout ─────────────────────────────────────────────────────────────────
 
@@ -115,15 +121,15 @@ export function Header({ children, variant, actions, counter, description }: any
 
 export function SpaceBetween({ direction = 'vertical', size = 'm', children, ...rest }: any) {
   const gapMap: Record<string, string> = { xs: '1', s: '2', m: '4', l: '6', xl: '8', xxl: '12' }
-  const gap = gapMap[size] || '4'
+  const gap = gapClass[gapMap[size] || '4'] || 'gap-4'
   if (direction === 'horizontal') {
-    return <div className={`flex flex-wrap items-center gap-${gap}`} {...rest}>{children}</div>
+    return <div className={`flex flex-wrap items-center ${gap}`} {...rest}>{children}</div>
   }
-  return <div className={`flex flex-col gap-${gap}`} {...rest}>{children}</div>
+  return <div className={`flex flex-col ${gap}`} {...rest}>{children}</div>
 }
 
 export function ColumnLayout({ columns = 2, children, variant: _v, ...rest }: any) {
-  return <div className={`grid grid-cols-${columns} gap-4`} {...rest}>{children}</div>
+  return <div className={`grid ${gridColsClass[columns] || 'grid-cols-2'} gap-4`} {...rest}>{children}</div>
 }
 
 export function Box({ variant, fontSize, color, textAlign, float, padding, children, as: As = 'div', ...rest }: any) {
@@ -533,7 +539,7 @@ export function Table({ columnDefinitions, items, loading, loadingText, empty, h
                   const key = trackBy ? item[trackBy] : ri
                   const isSelected = selectedItems?.some((s: any) => trackBy ? s[trackBy] === item[trackBy] : s === item)
                   return (
-                    <tr key={key} className={cn('border-b hover:bg-muted/30 transition-colors', isSelected && 'bg-muted/50')}>
+                    <tr key={key} aria-selected={isSelected || undefined} className={cn('border-b hover:bg-muted/30 transition-colors', isSelected && 'bg-primary/10')}>
                       {selectionType === 'multi' && (
                         <td className="w-10 p-2">
                           <ShadCheckbox
@@ -627,30 +633,39 @@ export function Modal({ visible, onDismiss, header, children, footer, size, ...r
   return (
     <AnimatePresence>
       {visible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label={typeof header === 'string' ? header : undefined} {...rest}>
-          <motion.div
-            className="absolute inset-0 bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { duration: 0.15 } }}
-            exit={{ opacity: 0, transition: { duration: 0.1 } }}
-            onClick={onDismiss}
-          />
-          <motion.div
-            className={cn('relative bg-card rounded-lg shadow-xl w-full mx-4 flex flex-col max-h-[90vh]', sizeClass)}
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
-            exit={{ opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.1 } }}
+        <FocusScope trapped>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            role="dialog"
+            aria-modal="true"
+            aria-label={typeof header === 'string' ? header : undefined}
+            onKeyDown={(e) => { if (e.key === 'Escape') onDismiss?.() }}
+            {...rest}
           >
-            {header && (
-              <div className="flex items-center justify-between p-4 border-b">
-                <div className="font-semibold text-lg">{header}</div>
-                <ShadButton variant="ghost" size="sm" onClick={onDismiss} aria-label="Close">✕</ShadButton>
-              </div>
-            )}
-            <div className="overflow-y-auto p-4 flex-1">{children}</div>
-            {footer && <div className="p-4 border-t flex justify-end gap-2">{footer}</div>}
-          </motion.div>
-        </div>
+            <motion.div
+              className="absolute inset-0 bg-black/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.15 } }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              onClick={onDismiss}
+            />
+            <motion.div
+              className={cn('relative bg-card rounded-lg shadow-xl w-full mx-4 flex flex-col max-h-[90vh]', sizeClass)}
+              initial={{ opacity: 0, scale: 0.97, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
+              exit={{ opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.1 } }}
+            >
+              {header && (
+                <div className="flex items-center justify-between p-4 border-b">
+                  <div className="font-semibold text-lg">{header}</div>
+                  <ShadButton variant="ghost" size="sm" onClick={onDismiss} aria-label="Close" autoFocus>✕</ShadButton>
+                </div>
+              )}
+              <div className="overflow-y-auto p-4 flex-1">{children}</div>
+              {footer && <div className="p-4 border-t flex justify-end gap-2">{footer}</div>}
+            </motion.div>
+          </div>
+        </FocusScope>
       )}
     </AnimatePresence>
   )
@@ -826,7 +841,7 @@ export function Cards({ cardDefinition, items, loading, loadingText, empty, head
         <div className="text-center p-8 text-muted-foreground">{empty ?? 'No items'}</div>
       ) : (
         <motion.div
-          className={`grid grid-cols-${Math.min(cols, 4)} gap-4`}
+          className={`grid ${gridColsClass[Math.min(cols, 4)] || 'grid-cols-1'} gap-4`}
           initial="hidden"
           animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.045 } } }}
@@ -872,9 +887,9 @@ export function Grid({ gridDefinition, children }: any) {
   const cols = gridDefinition?.length ?? 2
   const childArray = React.Children.toArray(children)
   return (
-    <div className={`grid grid-cols-${Math.min(cols, 4)} gap-4`}>
+    <div className={`grid ${gridColsClass[Math.min(cols, 4)] || 'grid-cols-2'} gap-4`}>
       {childArray.map((child, i) => (
-        <div key={i} className={gridDefinition?.[i]?.colspan ? `col-span-${gridDefinition[i].colspan}` : undefined}>
+        <div key={i} className={gridDefinition?.[i]?.colspan ? colSpanClass[gridDefinition[i].colspan] : undefined}>
           {child}
         </div>
       ))}
