@@ -208,7 +208,7 @@ export function BackupManagementView({
         />
       </Container>
 
-      <Container header={<Header variant="h3">📊 Backup Storage Summary</Header>}>
+      <Container header={<Header variant="h3">Backup Storage Summary</Header>}>
         <ColumnLayout columns={4} variant="text-grid">
           <SpaceBetween size="s">
             <Box variant="awsui-key-label">Total Backups</Box>

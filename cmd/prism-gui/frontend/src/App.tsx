@@ -526,6 +526,7 @@ export default function PrismApp() {
         Skip to main content
       </a>
       <AppLayoutShell
+        viewKey={state.activeView}
         sidebar={
           <SideNav
             activeView={state.activeView}

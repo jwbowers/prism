@@ -93,7 +93,7 @@ export function SideNav({
         {
           view: 'workshops',
           label: 'Workshops',
-          badge: activeWorkshops > 0 ? <Badge variant="default">{activeWorkshops}</Badge> : undefined,
+          badge: activeWorkshops > 0 ? <Badge variant="secondary">{activeWorkshops}</Badge> : undefined,
         },
         { view: 'capacity-blocks', label: 'Capacity Blocks' },
         {
