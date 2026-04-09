@@ -5,6 +5,17 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] - 2026-04-09
+
+### Added
+- **spored daemon on every instance**: all new Prism workspaces automatically install the spored daemon from `s3://spawn-binaries-{region}/prism/`. Runs as systemd service with `SPORED_TAG_PREFIX=prism` and `SPORED_DNS_DOMAIN=prismcloud.host`. Provides on-instance idle detection (7 signals), DNS registration, TTL enforcement, cost limits, and spot interruption handling. (#588)
+- **Dynamic DNS via prismcloud.host**: workspaces automatically register `{name}.{account-base36}.prismcloud.host` A records via the shared spore-host DNS Lambda. Hostnames shown in instance table, used in SSH connect dialog.
+- **`--dns` CLI flag**: specify a custom DNS name when launching (`prism workspace launch python-ml my-project --dns my-workspace`). Defaults to sanitized workspace name.
+- **`--ttl` CLI flag**: set a time-to-live for the workspace (`--ttl 8h`). spored enforces the limit on-instance and warns users 5 minutes before expiration.
+- **Lifecycle tags**: new EC2 tags set at launch: `prism:dns-name`, `prism:ttl`, `prism:idle-timeout`, `prism:hibernate-on-idle`. Read by spored for on-instance lifecycle management.
+- **GUI launch form**: DNS Name and Time Limit fields added to the workspace launch modal. DNS name auto-generated from workspace name if not specified.
+- **Hostname column**: instance table shows DNS hostname with monospace font. SSH connect prefers hostname over raw IP.
+
 ## [0.33.3] - 2026-04-09
 
 ### Fixed
