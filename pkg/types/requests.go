@@ -49,6 +49,11 @@ type LaunchRequest struct {
 
 	// Approval workflow (#495): launch using a pre-approved request ID
 	ApprovalID string `json:"approval_id,omitempty"`
+
+	// spored daemon integration (#588)
+	DNSName     string `json:"dns_name,omitempty"`     // DNS record name (defaults to sanitized workspace name)
+	TTL         string `json:"ttl,omitempty"`          // Time-to-live (e.g., "8h", "24h"); empty = no limit
+	IdleTimeout string `json:"idle_timeout,omitempty"` // Idle timeout override (e.g., "30m", "2h")
 }
 
 // LaunchResponse represents a successful launch response

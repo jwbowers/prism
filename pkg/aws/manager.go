@@ -14,6 +14,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -89,6 +90,9 @@ type Manager struct {
 	quotaManager        *QuotaManager
 	availabilityManager *AvailabilityManager
 	healthMonitor       *HealthMonitor
+
+	// Cached AWS account ID for DNS hostname construction (#588)
+	cachedAccountID string
 }
 
 // ManagerOptions contains optional parameters for creating a new Manager
@@ -330,6 +334,9 @@ func (p *UserDataProcessor) ProcessUserData(template *ctypes.RuntimeTemplate, re
 		}
 	}
 
+	// Install spored instance daemon (#588)
+	userData = addSporedInstallToUserData(userData)
+
 	// Gzip-compress the script. cloud-init detects the gzip magic bytes
 	// and decompresses automatically, so this is transparent to templates.
 	// Compression typically achieves 3-5x reduction on shell scripts,
@@ -462,6 +469,20 @@ func (b *InstanceConfigBuilder) BuildRunInstancesInput(req ctypes.LaunchRequest,
 		tags = append(tags,
 			ec2types.Tag{Key: aws.String("prism:research-user"), Value: &req.ResearchUser},
 		)
+	}
+
+	// spored lifecycle tags (#588) — only set non-empty values
+	if req.DNSName != "" {
+		tags = append(tags, ec2types.Tag{Key: aws.String("prism:dns-name"), Value: aws.String(req.DNSName)})
+	}
+	if req.TTL != "" {
+		tags = append(tags, ec2types.Tag{Key: aws.String("prism:ttl"), Value: aws.String(req.TTL)})
+	}
+	if req.IdleTimeout != "" {
+		tags = append(tags, ec2types.Tag{Key: aws.String("prism:idle-timeout"), Value: aws.String(req.IdleTimeout)})
+	}
+	if req.IdlePolicy {
+		tags = append(tags, ec2types.Tag{Key: aws.String("prism:hibernate-on-idle"), Value: aws.String("true")})
 	}
 
 	// Add test mode tags for E2E tests (helps identify and cleanup test resources)
@@ -897,6 +918,11 @@ func NewLaunchOrchestrator(manager *Manager, region string) *LaunchOrchestrator 
 
 // ExecuteLaunch performs complete instance launch using SOLID strategy pattern
 func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *ctypes.RuntimeTemplate, arch, primaryUsername string) (*ctypes.Instance, error) {
+	// Default DNS name to sanitized workspace name (#588)
+	if req.DNSName == "" {
+		req.DNSName = sanitizeDNSName(req.Name)
+	}
+
 	// Extract template configuration
 	ami, instanceType, dailyCost, err := o.configExtractor.ExtractConfig(template, arch)
 	if err != nil {
@@ -943,6 +969,15 @@ func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *c
 	// Store DCV password on instance for user display (password is also embedded in cloud-init)
 	if dcvPassword != "" {
 		instance.DCVPassword = dcvPassword
+	}
+
+	// Populate DNS fields (#588) — spored registers the A record on boot
+	instance.DNSName = req.DNSName
+	if req.DNSName != "" {
+		accountID := o.instanceLauncher.manager.getAccountID()
+		if accountID != "" {
+			instance.DNSHostname = fmt.Sprintf("%s.%s.prismcloud.host", req.DNSName, encodeAccountBase36(accountID))
+		}
 	}
 
 	return instance, nil
@@ -2513,6 +2548,85 @@ chown -R ubuntu:ubuntu /mnt/%s
 `, volumeName, volumeName, volumeName, region, volumeName, volumeName, region, volumeName, volumeName)
 
 	return originalUserData + efsMount
+}
+
+// getAccountID returns the AWS account ID, caching it after the first STS call.
+func (m *Manager) getAccountID() string {
+	if m.cachedAccountID != "" {
+		return m.cachedAccountID
+	}
+	result, err := m.sts.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+	if err != nil || result.Account == nil {
+		return ""
+	}
+	m.cachedAccountID = *result.Account
+	return m.cachedAccountID
+}
+
+// addSporedInstallToUserData appends spored daemon installation to UserData script.
+// spored runs on each instance as a systemd service, handling DNS registration,
+// idle detection, TTL enforcement, and lifecycle management.
+func addSporedInstallToUserData(userData string) string {
+	sporedInstall := `
+
+# Install spored instance daemon (prismcloud.host)
+SPORED_ARCH=$(uname -m)
+if [ "$SPORED_ARCH" = "x86_64" ]; then SPORED_ARCH="amd64"; elif [ "$SPORED_ARCH" = "aarch64" ]; then SPORED_ARCH="arm64"; fi
+SPORED_REGION=$(curl -sf http://169.254.169.254/latest/meta-data/placement/region || echo "us-east-1")
+aws s3 cp "s3://spawn-binaries-${SPORED_REGION}/prism/spored-linux-${SPORED_ARCH}" /usr/local/bin/spored 2>/dev/null && chmod +x /usr/local/bin/spored || echo "Warning: spored install failed"
+
+cat > /etc/systemd/system/spored.service << 'SPOREDEOF'
+[Unit]
+Description=Prism Instance Daemon (spored)
+After=network-online.target cloud-final.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=SPORED_TAG_PREFIX=prism
+Environment=SPORED_DNS_DOMAIN=prismcloud.host
+ExecStart=/usr/local/bin/spored
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+NoNewPrivileges=true
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target
+SPOREDEOF
+
+systemctl daemon-reload
+systemctl enable spored
+systemctl start spored || true
+`
+	return userData + sporedInstall
+}
+
+// sanitizeDNSName converts a workspace name to a valid DNS label.
+func sanitizeDNSName(name string) string {
+	result := strings.ToLower(name)
+	result = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			return r
+		}
+		return '-'
+	}, result)
+	result = strings.Trim(result, "-")
+	if result == "" {
+		result = "workspace"
+	}
+	return result
+}
+
+// encodeAccountBase36 encodes an AWS account ID to base36.
+// Matches spore-host's encoding for DNS subdomain namespacing.
+func encodeAccountBase36(accountID string) string {
+	id, err := strconv.ParseInt(accountID, 10, 64)
+	if err != nil {
+		return accountID // fallback to raw ID
+	}
+	return strconv.FormatInt(id, 36)
 }
 
 // getRegionalEC2Client creates an EC2 client for the specified region

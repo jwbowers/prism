@@ -193,6 +193,8 @@ type Instance struct {
 	AvailabilityZone      string                  `json:"availability_zone"` // AWS availability zone within region
 	PublicIP              string                  `json:"public_ip"`
 	PrivateIP             string                  `json:"private_ip"`
+	DNSName               string                  `json:"dns_name,omitempty"`     // Short DNS record name (e.g., "my-workspace")
+	DNSHostname           string                  `json:"dns_hostname,omitempty"` // Full FQDN (e.g., "my-workspace.abc123.prismcloud.host")
 	State                 string                  `json:"state"`
 	LaunchTime            time.Time               `json:"launch_time"`
 	RunningStateStartTime *time.Time              `json:"running_state_start_time,omitempty"` // When instance entered running state (billing starts)
