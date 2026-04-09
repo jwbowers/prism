@@ -5,6 +5,12 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.3] - 2026-04-09
+
+### Fixed
+- **GovernancePanel quota validation**: `parseInt(input) || -1` silently coerced invalid input to unlimited. Now validates numeric fields before submit — empty defaults to unlimited, non-numeric shows error message, negative spend rejected.
+- **Dead route removed**: `project-detail` activeView rendered PlaceholderView but was unreachable from navigation. Removed route, type union entry, and updated `use-app-data.ts` to load budget data on `projects` view instead.
+
 ## [0.33.2] - 2026-04-09
 
 ### Fixed
