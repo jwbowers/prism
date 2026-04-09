@@ -3,7 +3,7 @@ import { logger } from './utils/logger';
 // Complete error handling, real API integration, professional UX
 
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import './index.css';
 import { toast } from 'sonner';
 import { AppLayout as AppLayoutShell } from './components/app-layout';
@@ -89,6 +89,7 @@ import type {
 
 export default function PrismApp() {
   const api = new SafePrismAPI();
+  const prefersReducedMotion = useReducedMotion();
 
   const [state, setState] = useState<AppState>({
     activeView: 'dashboard',
@@ -563,8 +564,8 @@ export default function PrismApp() {
           )}
           <motion.div
               key={state.activeView}
-              initial={{ x: 14 }}
-              animate={{ x: 0, transition: { duration: 0.16, ease: [0.4, 0, 0.2, 1] } }}
+              initial={prefersReducedMotion ? false : { x: 14 }}
+              animate={prefersReducedMotion ? {} : { x: 0, transition: { duration: 0.16, ease: [0.4, 0, 0.2, 1] } }}
             >
           {state.activeView === 'dashboard' && (
             <DashboardViewExtracted

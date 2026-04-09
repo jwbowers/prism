@@ -9,13 +9,13 @@ interface StatusIndicatorProps {
 }
 
 const dotClasses: Record<StatusType, string> = {
-  success: "bg-green-500",
-  error: "bg-red-500",
-  warning: "bg-yellow-500",
-  info: "bg-blue-500",
-  stopped: "bg-gray-400",
-  "in-progress": "bg-blue-500 animate-pulse",
-  pending: "bg-yellow-400 animate-pulse",
+  success: "bg-success",
+  error: "bg-destructive",
+  warning: "bg-warning",
+  info: "bg-primary",
+  stopped: "bg-muted-foreground",
+  "in-progress": "bg-primary animate-pulse",
+  pending: "bg-warning animate-pulse",
 }
 
 export function StatusIndicator({ type = "info", children, className }: StatusIndicatorProps) {

@@ -32,7 +32,7 @@
             position: absolute;
             top: -40px;
             left: 0;
-            background: #0d9488;
+            background: var(--ring);
             color: white;
             padding: 8px 16px;
             text-decoration: none;
@@ -47,15 +47,15 @@
         /* Enhanced Focus Indicators (WCAG 2.4.7 Level AA) */
         /* Ensure all interactive elements have visible focus states */
         *:focus-visible {
-            outline: 2px solid #0d9488 !important;
+            outline: 2px solid var(--ring) !important;
             outline-offset: 2px !important;
-            box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15) !important;
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring) 15%, transparent) !important;
         }
 
         /* Cloudscape button focus enhancement */
         button:focus-visible,
         [role="button"]:focus-visible {
-            outline: 2px solid #0d9488 !important;
+            outline: 2px solid var(--ring) !important;
             outline-offset: 2px !important;
         }
 
@@ -63,31 +63,31 @@
         input:focus-visible,
         select:focus-visible,
         textarea:focus-visible {
-            outline: 2px solid #0d9488 !important;
+            outline: 2px solid var(--ring) !important;
             outline-offset: 1px !important;
-            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15) !important;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 15%, transparent) !important;
         }
 
         /* Link focus enhancement */
         a:focus-visible {
-            outline: 2px dashed #0d9488 !important;
+            outline: 2px dashed var(--ring) !important;
             outline-offset: 2px !important;
             text-decoration: underline !important;
         }
 
         /* Table row focus (for keyboard navigation) */
         [role="row"]:focus-visible {
-            outline: 2px solid #0d9488 !important;
+            outline: 2px solid var(--ring) !important;
             outline-offset: -2px !important;
-            background-color: rgba(13, 148, 136, 0.05) !important;
+            background-color: color-mix(in srgb, var(--ring) 5%, transparent) !important;
         }
 
         /* Card focus (for template cards, etc) */
         [role="article"]:focus-visible,
         .card:focus-visible {
-            outline: 2px solid #0d9488 !important;
+            outline: 2px solid var(--ring) !important;
             outline-offset: 2px !important;
-            box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1) !important;
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring) 10%, transparent) !important;
         }
     </style>
 </head>

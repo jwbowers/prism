@@ -406,8 +406,8 @@ export function FormField({ label, children, errorText, description, constraintT
 export function Alert({ type = 'info', header, children, dismissible, onDismiss, action, ...rest }: any) {
   const variantMap: Record<string, string> = {
     error: 'border-destructive/50 text-destructive',
-    warning: 'border-yellow-500/50 text-yellow-700 dark:text-yellow-400',
-    success: 'border-green-500/50 text-green-700 dark:text-green-400',
+    warning: 'border-warning/50 text-warning-foreground',
+    success: 'border-success/50 text-success-foreground',
     info: '',
   }
   return (
@@ -445,13 +445,13 @@ export function Spinner({ size: cs, className }: { size?: string; className?: st
 
 export function StatusIndicator({ type = 'info', children }: any) {
   const dotClasses: Record<string, string> = {
-    success: 'bg-green-500',
-    error: 'bg-red-500',
-    warning: 'bg-yellow-500',
+    success: 'bg-success',
+    error: 'bg-destructive',
+    warning: 'bg-warning',
     info: 'bg-primary',
     stopped: 'bg-muted-foreground',
     'in-progress': 'bg-primary animate-pulse',
-    pending: 'bg-yellow-400 animate-pulse',
+    pending: 'bg-warning animate-pulse',
     loading: 'bg-primary animate-pulse',
   }
   return (
