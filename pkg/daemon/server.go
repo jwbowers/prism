@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -692,6 +693,16 @@ func (s *Server) Start() error {
 	// Handle graceful shutdown with recovery manager
 	s.startShutdownHandler(cancel)
 
+	// Use TLS if cert/key exist in ~/.prism/tls/ (#594)
+	certPath := filepath.Join(os.Getenv("HOME"), ".prism", "tls", "cert.pem")
+	keyPath := filepath.Join(os.Getenv("HOME"), ".prism", "tls", "key.pem")
+	if _, err := os.Stat(certPath); err == nil {
+		if _, err := os.Stat(keyPath); err == nil {
+			logger.Info("TLS enabled", "cert", certPath)
+			return s.httpServer.ListenAndServeTLS(certPath, keyPath)
+		}
+	}
+	logger.Info("TLS not configured (no cert at ~/.prism/tls/cert.pem) — using HTTP")
 	return s.httpServer.ListenAndServe()
 }
 
