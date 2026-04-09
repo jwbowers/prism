@@ -5,6 +5,18 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0] - 2026-04-09
+
+### Fixed
+- **WCAG 1.4.3 contrast**: darkened `--primary` from `hsl(174 77% 32%)` to `hsl(174 77% 26%)` — white-on-teal contrast 3.48:1 → ~5.2:1. Updated `--ring`, `--sidebar-primary`, `--sidebar-ring`, `--accent-foreground` to match. Focus ring now 7.3–8.1:1 against backgrounds (WCAG 2.4.11). (#570)
+- **Cold-load error flash**: added `!loading &&` guard on 12 error `Alert` renders across `ApprovalsView`, `CapacityBlocksPanel`, `WorkshopsPanel` (×2), and `CoursesPanel` (×7). Prevents red error flash when daemon is slow to respond on first mount.
+- **FormField `aria-describedby`**: description, constraint, and error `<p>` elements now have `id` attributes linked to the child input via `aria-describedby`. Error state adds `aria-invalid` and `role="alert"` for live-region screen reader announcement. Applies to all `FormField` usage globally. (#570)
+
+### Changed
+- **Dashboard density**: removed misplaced `<Header variant="h1">Dashboard` (rendered below hero), 3-column stats grid showing "0" counters, and Quick Actions bar (duplicated sidebar nav). Replaced with compact inline status row: connection indicator + template count + workspace count + New Workspace CTA.
+- **Backups prose**: replaced always-visible info container (heading + 2 paragraphs + 3-column grid) with a `<details>` disclosure defaulting to closed. Data table is immediately visible on load.
+- **Settings responsive nav**: at ≤1024px viewport width, the 220px settings sub-nav sidebar is replaced by a horizontal scrollable tab bar. Uses Tailwind `lg:` breakpoint — no JS state needed.
+
 ## [0.32.0] - 2026-04-07
 
 ### Added
