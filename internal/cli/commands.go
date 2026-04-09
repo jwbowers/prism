@@ -58,6 +58,10 @@ func NewLaunchCommandDispatcher() *LaunchCommandDispatcher {
 	dispatcher.RegisterCommand(&PreferScriptCommand{})
 	dispatcher.RegisterCommand(&ShowAMIResolutionCommand{})
 
+	// spored daemon integration (#588)
+	dispatcher.RegisterCommand(&DNSCommand{})
+	dispatcher.RegisterCommand(&TTLCommand{})
+
 	return dispatcher
 }
 
@@ -1719,4 +1723,39 @@ func (c *ShowAMIResolutionCommand) CanHandle(arg string) bool {
 func (c *ShowAMIResolutionCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
 	req.ShowAMIResolution = true
 	return index, nil
+}
+
+// DNSCommand handles --dns flag for spored DNS registration (#588)
+type DNSCommand struct{}
+
+func (c *DNSCommand) CanHandle(arg string) bool {
+	return arg == "--dns"
+}
+
+func (c *DNSCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	if index+1 >= len(args) {
+		return index, fmt.Errorf("--dns requires a DNS name value")
+	}
+	req.DNSName = args[index+1]
+	return index + 1, nil
+}
+
+// TTLCommand handles --ttl flag for spored time-to-live enforcement (#588)
+type TTLCommand struct{}
+
+func (c *TTLCommand) CanHandle(arg string) bool {
+	return arg == "--ttl"
+}
+
+func (c *TTLCommand) Execute(req *types.LaunchRequest, args []string, index int) (int, error) {
+	if index+1 >= len(args) {
+		return index, fmt.Errorf("--ttl requires a duration value (e.g., 8h, 24h)")
+	}
+	// Validate duration format
+	_, err := time.ParseDuration(args[index+1])
+	if err != nil {
+		return index, fmt.Errorf("--ttl: invalid duration %q (examples: 8h, 24h, 30m)", args[index+1])
+	}
+	req.TTL = args[index+1]
+	return index + 1, nil
 }
