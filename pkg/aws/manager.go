@@ -54,9 +54,9 @@ func generateDCVPassword() string {
 	for i := range b {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(dcvPasswordChars))))
 		if err != nil {
-			// Fallback: use index as a deterministic but non-cryptographic value
-			b[i] = dcvPasswordChars[i%len(dcvPasswordChars)]
-			continue
+			// crypto/rand should never fail; if it does, panic rather than
+			// generating a predictable password (#598)
+			panic(fmt.Sprintf("crypto/rand failed: %v", err))
 		}
 		b[i] = dcvPasswordChars[n.Int64()]
 	}
@@ -2591,7 +2591,13 @@ func addSporedInstallToUserData(userData string) string {
 SPORED_ARCH=$(uname -m)
 if [ "$SPORED_ARCH" = "x86_64" ]; then SPORED_ARCH="amd64"; elif [ "$SPORED_ARCH" = "aarch64" ]; then SPORED_ARCH="arm64"; fi
 SPORED_REGION=$(curl -sf http://169.254.169.254/latest/meta-data/placement/region || echo "us-east-1")
-aws s3 cp "s3://spawn-binaries-${SPORED_REGION}/prism/spored-linux-${SPORED_ARCH}" /usr/local/bin/spored 2>/dev/null && chmod +x /usr/local/bin/spored || echo "Warning: spored install failed"
+aws s3 cp "s3://spawn-binaries-${SPORED_REGION}/prism/spored-linux-${SPORED_ARCH}" /usr/local/bin/spored 2>/dev/null || { echo "Warning: spored download failed"; }
+# Verify integrity if checksum available (#591)
+if aws s3 cp "s3://spawn-binaries-${SPORED_REGION}/prism/spored-linux-${SPORED_ARCH}.sha256" /tmp/spored.sha256 2>/dev/null; then
+  cd /usr/local/bin && sha256sum -c /tmp/spored.sha256 || { echo "ERROR: spored checksum verification FAILED"; rm -f /usr/local/bin/spored; }
+  rm -f /tmp/spored.sha256
+fi
+[ -f /usr/local/bin/spored ] && chmod +x /usr/local/bin/spored || echo "Warning: spored install failed"
 
 cat > /etc/systemd/system/spored.service << 'SPOREDEOF'
 [Unit]

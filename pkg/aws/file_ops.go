@@ -26,6 +26,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/google/uuid"
 )
@@ -115,9 +116,10 @@ func (m *Manager) PushFile(ctx context.Context, instanceName, localPath, remoteP
 
 	s3Client := m.newS3Client()
 	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(tempBucket),
-		Key:    aws.String(transferKey),
-		Body:   f,
+		Bucket:               aws.String(tempBucket),
+		Key:                  aws.String(transferKey),
+		Body:                 f,
+		ServerSideEncryption: s3types.ServerSideEncryptionAes256,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload to S3 temp bucket: %w", err)
