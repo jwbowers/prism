@@ -53,11 +53,31 @@ type RemoteFileEntry struct {
 	Permissions string    `json:"permissions"`
 }
 
+// validateRemotePath rejects paths containing shell metacharacters or traversal sequences.
+// This prevents command injection when paths are interpolated into SSM bash scripts.
+func validateRemotePath(path string) error {
+	if strings.Contains(path, "..") {
+		return fmt.Errorf("path traversal not allowed: %s", path)
+	}
+	for _, c := range []string{";", "|", "&", "`", "$(", "'", "\n", "\r"} {
+		if strings.Contains(path, c) {
+			return fmt.Errorf("path contains disallowed character %q: %s", c, path)
+		}
+	}
+	if path == "" {
+		return fmt.Errorf("path cannot be empty")
+	}
+	return nil
+}
+
 // PushFile uploads a local file to a running instance via the S3 temp bucket.
 //
 // The instance must be running and have the SSM agent installed.  The instance
 // IAM role must allow s3:GetObject on the temp bucket (prism-temp-{acct}-{region}).
 func (m *Manager) PushFile(ctx context.Context, instanceName, localPath, remotePath string) (*FileOpResult, error) {
+	if err := validateRemotePath(remotePath); err != nil {
+		return nil, fmt.Errorf("invalid remote path: %w", err)
+	}
 	st, err := m.stateManager.LoadState()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load state: %w", err)
@@ -120,7 +140,7 @@ func (m *Manager) PushFile(ctx context.Context, instanceName, localPath, remoteP
 	// Run SSM command on instance to download from S3
 	script := fmt.Sprintf(`#!/bin/bash
 set -e
-mkdir -p "$(dirname '%s')"
+mkdir -p "$(dirname "%s")"
 aws s3 cp "s3://%s/%s" "%s"
 echo "OK: $(stat -c %%s '%s') bytes"
 `, remotePath, tempBucket, transferKey, remotePath, remotePath)
@@ -153,6 +173,9 @@ echo "OK: $(stat -c %%s '%s') bytes"
 //
 // The instance SSM role must allow s3:PutObject on the temp bucket.
 func (m *Manager) PullFile(ctx context.Context, instanceName, remotePath, localPath string) (*FileOpResult, error) {
+	if err := validateRemotePath(remotePath); err != nil {
+		return nil, fmt.Errorf("invalid remote path: %w", err)
+	}
 	st, err := m.stateManager.LoadState()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load state: %w", err)
@@ -250,6 +273,9 @@ echo "OK"
 func (m *Manager) ListRemoteFiles(ctx context.Context, instanceName, remotePath string) ([]RemoteFileEntry, error) {
 	if remotePath == "" {
 		remotePath = "/home"
+	}
+	if err := validateRemotePath(remotePath); err != nil {
+		return nil, fmt.Errorf("invalid remote path: %w", err)
 	}
 
 	st, err := m.stateManager.LoadState()

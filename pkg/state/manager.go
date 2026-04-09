@@ -36,7 +36,7 @@ func NewManager() (*Manager, error) {
 		stateDir = filepath.Join(homeDir, ".prism")
 	}
 
-	if err := os.MkdirAll(stateDir, 0755); err != nil {
+	if err := os.MkdirAll(stateDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create state directory: %w", err)
 	}
 
@@ -156,7 +156,7 @@ func (m *Manager) restoreBackup(backupPath string) error {
 	}
 
 	tempPath := m.statePath + ".tmp"
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0600); err != nil {
 		return err
 	}
 
@@ -184,7 +184,7 @@ func (m *Manager) SaveState(state *types.State) error {
 
 	// Write to temporary file first, then rename for atomicity
 	tempPath := m.statePath + ".tmp"
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write temporary state file: %w", err)
 	}
 
@@ -232,7 +232,7 @@ func (m *Manager) rotateBackups() error {
 			if err != nil {
 				return fmt.Errorf("failed to read state for backup: %w", err)
 			}
-			if err := os.WriteFile(backup.to, data, 0644); err != nil {
+			if err := os.WriteFile(backup.to, data, 0600); err != nil {
 				return fmt.Errorf("failed to write backup: %w", err)
 			}
 		} else {
