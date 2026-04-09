@@ -77,6 +77,7 @@ func createTestServerWithAWS(t *testing.T) *Server {
 	originalAWSProfile := os.Getenv("AWS_PROFILE")
 	originalAWSRegion := os.Getenv("AWS_REGION")
 	originalHome := os.Getenv("HOME")
+	originalTestMode := os.Getenv("PRISM_TEST_MODE")
 
 	// Create temporary directory for testing
 	tempDir := t.TempDir()
@@ -94,12 +95,14 @@ func createTestServerWithAWS(t *testing.T) *Server {
 			_ = os.Unsetenv("AWS_REGION")
 		}
 		_ = os.Setenv("HOME", originalHome)
+		_ = os.Setenv("PRISM_TEST_MODE", originalTestMode)
 	})
 
-	// Set AWS testing credentials
+	// Set AWS testing credentials and test mode for auth bypass
 	_ = os.Setenv("AWS_PROFILE", "aws")
 	_ = os.Setenv("AWS_REGION", "us-west-2")
 	_ = os.Setenv("HOME", tempDir)
+	_ = os.Setenv("PRISM_TEST_MODE", "true")
 
 	// Create test templates directory
 	templatesDir := tempDir + "/.prism/templates"

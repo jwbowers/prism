@@ -353,7 +353,11 @@ func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request, pro
 	}
 
 	if err := s.projectManager.DeleteProject(ctx, projectID); err != nil {
-		s.writeError(w, http.StatusBadRequest, fmt.Sprintf("Failed to delete project: %v", err))
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "active instance") {
+			status = http.StatusConflict
+		}
+		s.writeError(w, status, fmt.Sprintf("Failed to delete project: %v", err))
 		return
 	}
 
