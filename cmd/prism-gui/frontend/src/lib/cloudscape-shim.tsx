@@ -727,11 +727,32 @@ export function Tabs({ tabs, activeTabId, onChange, variant, ...rest }: {
   const current = active ?? tabs?.[0]?.id
   return (
     <div {...rest}>
-      <div role="tablist" className={cn('flex border-b', variant === 'container' && 'bg-muted/50 rounded-t-md px-2')}>
+      <div
+        role="tablist"
+        className={cn('flex border-b', variant === 'container' && 'bg-muted/50 rounded-t-md px-2')}
+        onKeyDown={(e) => {
+          if (!tabs?.length) return
+          const enabledTabs = tabs.filter(t => !t.disabled)
+          const idx = enabledTabs.findIndex(t => t.id === current)
+          let next = -1
+          if (e.key === 'ArrowRight') next = (idx + 1) % enabledTabs.length
+          else if (e.key === 'ArrowLeft') next = (idx - 1 + enabledTabs.length) % enabledTabs.length
+          else if (e.key === 'Home') next = 0
+          else if (e.key === 'End') next = enabledTabs.length - 1
+          if (next >= 0) {
+            e.preventDefault()
+            const tab = enabledTabs[next]
+            setActive(tab.id)
+            onChange?.({ detail: { activeTabId: tab.id } });
+            (e.currentTarget.querySelectorAll('[role="tab"]')[tabs.indexOf(tab)] as HTMLElement)?.focus()
+          }
+        }}
+      >
         {tabs?.map((tab) => (
           <button
             key={tab.id}
             role="tab"
+            tabIndex={current === tab.id ? 0 : -1}
             aria-selected={current === tab.id}
             disabled={tab.disabled}
             onClick={() => { setActive(tab.id); onChange?.({ detail: { activeTabId: tab.id } }) }}

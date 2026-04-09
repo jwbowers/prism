@@ -1,4 +1,5 @@
 import React from 'react';
+import packageJson from '../../package.json';
 import {
   Container,
   Header,
@@ -147,7 +148,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </SpaceBetween>
           <SpaceBetween size="m">
             <Box variant="awsui-key-label">API Version</Box>
-            <Box fontSize="heading-m">v0.5.1</Box>
+            <Box fontSize="heading-m">v{packageJson.version}</Box>
             <Box color="text-body-secondary">
               Current Prism version
             </Box>
