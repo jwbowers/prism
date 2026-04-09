@@ -62,29 +62,25 @@ test.describe('Budget Workflows', () => {
     const filterSelect = page.locator('[data-testid="budget-filter-select"]');
     await expect(filterSelect).toBeVisible();
 
-    // Wait for initial API loads to settle — prevents component re-mount mid-interaction
-    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await page.waitForTimeout(300);
-
-    // Test filtering to Warning — use data-value selectors (more stable than text selectors)
+    // Test filtering to Warning — wait for option visibility before clicking (stabilizes under parallel load)
     await filterSelect.click();
-    await page.locator('[data-value="warning"]').first().click().catch(async () => {
-      await page.getByRole('option', { name: /Warning/i }).click().catch(() => {});
-    });
+    const warningOption = page.locator('[data-value="warning"]');
+    await warningOption.waitFor({ state: 'visible', timeout: 10000 });
+    await warningOption.click({ force: true, timeout: 15000 });
     await expect(page.locator('[data-testid="budgets-table"]')).toBeVisible();
 
     // Test filtering to Critical
     await filterSelect.click();
-    await page.locator('[data-value="critical"]').first().click().catch(async () => {
-      await page.getByRole('option', { name: /Critical/i }).click().catch(() => {});
-    });
+    const criticalOption = page.locator('[data-value="critical"]');
+    await criticalOption.waitFor({ state: 'visible', timeout: 10000 });
+    await criticalOption.click({ force: true, timeout: 15000 });
     await expect(page.locator('[data-testid="budgets-table"]')).toBeVisible();
 
     // Test filtering back to All
     await filterSelect.click();
-    await page.locator('[data-value="all"]').first().click().catch(async () => {
-      await page.getByRole('option', { name: /All Budgets/i }).click().catch(() => {});
-    });
+    const allOption = page.locator('[data-value="all"]');
+    await allOption.waitFor({ state: 'visible', timeout: 10000 });
+    await allOption.click({ force: true, timeout: 15000 });
     await expect(page.locator('[data-testid="budgets-table"]')).toBeVisible();
   });
 

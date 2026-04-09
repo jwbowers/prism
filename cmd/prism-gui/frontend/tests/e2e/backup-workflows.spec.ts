@@ -370,10 +370,10 @@ test.describe('Backup Management Workflows', () => {
 
       // Open restore dialog
       await clickDropdownAction(page, 0, 'Restore');
-      await page.waitForTimeout(500);
 
-      // Should show warning about restore time - use visible dialog only
-      const dialog = page.locator('[role="dialog"]:visible').first();
+      // Wait for dialog to be visible before reading text (stabilizes webkit under load)
+      const dialog = page.locator('[role="dialog"]').first();
+      await dialog.waitFor({ state: 'visible', timeout: 10000 });
       const dialogText = await dialog.textContent();
       expect(dialogText).toMatch(/10-15.*minutes|restore.*time/i);
     });
@@ -388,10 +388,10 @@ test.describe('Backup Management Workflows', () => {
 
       // Open restore dialog
       await clickDropdownAction(page, 0, 'Restore');
-      await page.waitForTimeout(1000);
 
-      // Get the visible dialog and find the restore button within it
-      const dialog = page.locator('[role="dialog"]:visible').first();
+      // Wait for dialog to be visible before interacting (stabilizes webkit under load)
+      const dialog = page.locator('[role="dialog"]').first();
+      await dialog.waitFor({ state: 'visible', timeout: 10000 });
       const restoreButton = dialog.getByRole('button', { name: /restore/i }).first();
       expect(await restoreButton.isDisabled()).toBe(true);
     });
