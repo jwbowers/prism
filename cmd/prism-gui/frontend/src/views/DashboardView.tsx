@@ -61,7 +61,7 @@ function RecentWorkspaces({ instances, onNavigate, onShowQuickStart, onConnect, 
             {recentWorkspaces.map((instance) => (
               <Container key={instance.name}>
                 <SpaceBetween size="s">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="flex justify-between items-center">
                     <div>
                       <Box variant="h3">{instance.name}</Box>
                       <Box variant="small" color="text-body-secondary">
@@ -154,14 +154,9 @@ export function DashboardView({
                 </>
               )}
               {!isFirstTimeUser && (
-                <SpaceBetween direction="horizontal" size="s">
-                  <Button variant="primary" iconName="add-plus" onClick={onShowQuickStart}>
-                    New Workspace
-                  </Button>
-                  <Button variant="normal" iconName="view-full" onClick={() => onNavigate('workspaces')}>
-                    View All Workspaces
-                  </Button>
-                </SpaceBetween>
+                <Button variant="normal" iconName="view-full" onClick={() => onNavigate('workspaces')}>
+                  View All Workspaces
+                </Button>
               )}
             </SpaceBetween>
           </Box>
@@ -169,7 +164,7 @@ export function DashboardView({
       </Container>
 
       <Container>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="flex items-center gap-4 flex-wrap">
           <StatusIndicator type={connected ? 'success' : 'error'}>
             {connected ? 'Connected' : 'Disconnected'}
           </StatusIndicator>
@@ -179,7 +174,7 @@ export function DashboardView({
           <Box color="text-body-secondary">
             {instances.filter(i => i.state === 'running').length} running · {instances.length} total workspace{instances.length !== 1 ? 's' : ''}
           </Box>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+          <div className="ml-auto flex gap-2">
             <Button variant="primary" iconName="add-plus" onClick={onShowQuickStart}>
               New Workspace
             </Button>

@@ -6,6 +6,7 @@ import {
   Container,
   Select,
   Button,
+  Spinner,
   Table,
   Badge,
   Box,
@@ -84,7 +85,17 @@ export function ApprovalsView() {
 
   return (
     <SpaceBetween size="l" data-testid="approvals-view">
-      <Header variant="h1">Approval Requests</Header>
+      <Header
+        variant="h1"
+        description="Review and manage approval requests across all projects"
+        actions={
+          <Button onClick={loadApprovals} disabled={approvalsLoading}>
+            {approvalsLoading ? <Spinner /> : 'Refresh'}
+          </Button>
+        }
+      >
+        Approval Requests
+      </Header>
       {!approvalsLoading && approvalsError && (
         <Alert type="error" dismissible onDismiss={() => setApprovalsError(null)}>{approvalsError}</Alert>
       )}
@@ -183,9 +194,13 @@ export function ApprovalsView() {
           ]}
           items={approvals}
           empty={
-            <Box textAlign="center" color="inherit">
-              <b>No approval requests</b>
-              <Box variant="p" color="inherit">No {statusFilter || ''} approval requests found.</Box>
+            <Box textAlign="center" padding={{ vertical: 'l' }}>
+              <Box variant="strong">No approval requests</Box>
+              <Box variant="p" color="text-body-secondary">
+                {statusFilter
+                  ? `No ${statusFilter} requests found. Try changing the filter.`
+                  : 'Approval requests will appear here when users request resources that require review.'}
+              </Box>
             </Box>
           }
         />

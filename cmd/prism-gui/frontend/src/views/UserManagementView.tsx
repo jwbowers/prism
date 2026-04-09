@@ -134,10 +134,7 @@ export function UserManagementView({
             description="Research users with persistent identity and SSH key management"
             counter={`(${getFilteredUsers().length})`}
             actions={
-              <SpaceBetween direction="horizontal" size="xs">
-                <Button>Export Users</Button>
-                <Button variant="primary">Create User</Button>
-              </SpaceBetween>
+              <Button>Export Users</Button>
             }
           >
             Research Users
