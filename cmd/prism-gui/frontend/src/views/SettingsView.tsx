@@ -473,8 +473,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   );
 
   return (
-    <div className="flex h-full">
-      <div className="w-[220px] shrink-0 border-r border-border px-2 py-4">
+    <div className="flex h-full lg:flex-row flex-col">
+      {/* Vertical sidebar — visible at lg+ */}
+      <div className="hidden lg:flex lg:w-[220px] shrink-0 border-r border-border px-2 py-4 flex-col">
         <div className="px-3 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Settings
         </div>
@@ -484,6 +485,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           Advanced
         </div>
         {advancedItems.map(item => navButton(item.section, item.label))}
+      </div>
+      {/* Horizontal tab bar — visible below lg */}
+      <div className="flex lg:hidden overflow-x-auto border-b border-border px-2 gap-1 shrink-0 py-1">
+        {[...navItems, ...advancedItems].map(({ section, label }) => (
+          <button
+            key={section}
+            onClick={() => onSectionChange(section)}
+            className={[
+              'shrink-0 px-3 py-2 text-sm whitespace-nowrap border-b-2 -mb-[1px] border-0 bg-transparent cursor-pointer',
+              settingsSection === section
+                ? 'border-primary text-primary font-semibold'
+                : 'border-transparent text-muted-foreground hover:text-foreground',
+            ].join(' ')}
+          >
+            {label}
+          </button>
+        ))}
       </div>
       <div className="flex-1 p-5 overflow-auto">
         {renderSettingsContent()}
