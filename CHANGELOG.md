@@ -5,6 +5,25 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.1] - 2026-04-09
+
+### Fixed
+- **Tailwind JIT**: replaced 7 dynamic template-literal class names (`grid-cols-${n}`, `gap-${n}`, `col-span-${n}`) with static lookup objects — fixes grid/column layouts that silently rendered as 0-width (#582)
+- **Table selection**: selected row background changed from `bg-muted/50` (same as header) to `bg-primary/10`; added `aria-selected` attribute (#582)
+- **Modal focus trap**: wrapped custom Modal in Radix `FocusScope` with `trapped` prop; added Escape key handler and `autoFocus` on close button (WCAG 2.4.3) (#582)
+- **prefers-reduced-motion**: added global CSS `@media (prefers-reduced-motion: reduce)` rule killing all animation/transition durations; gated Framer Motion view transition on `useReducedMotion()` hook (#583)
+- **Theme token colors**: added `--warning`/`--success` CSS custom properties (light + dark); replaced hardcoded Tailwind colors in Alert, StatusIndicator (both shim and standalone), and 7 focus ring `#0d9488` → `var(--ring)` in index.html (#584)
+- **E2E flakes**: budget filter test uses `waitFor` + `force:true` (matches project-workflows pattern); backup restore dialog uses `waitFor visible` instead of hard timeout (#580, #581)
+- **Optimistic state cache**: daemon sets expected transitional state (`pending`/`stopping`) before AWS refresh in all 4 lifecycle handlers, ensuring state monitor picks up the instance for polling (#579)
+
+### Changed
+- **ApprovalsView**: page header now includes description + Refresh action; empty state shows contextual guidance instead of minimal text (#585)
+- **DashboardView**: removed duplicate "New Workspace" button from hero section; converted 3 inline `style={{}}` to Tailwind classes (#585)
+- **UserManagementView**: removed duplicate "Create User" from container header (#585)
+- **Scroll-to-top**: `AppLayout` resets content scroll position on view navigation (#585)
+- **Sidebar badge**: workshops badge changed from `variant="default"` to `variant="secondary"` for consistency (#586)
+- **Backups heading**: removed emoji from "Backup Storage Summary" (#586)
+
 ## [0.33.0] - 2026-04-09
 
 ### Fixed
