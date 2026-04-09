@@ -117,6 +117,26 @@ export class SafePrismAPI {
     }
   }
 
+  async getDaemonStatus(): Promise<{ version?: string; status?: string } | null> {
+    try {
+      return await this.safeRequest<{ version?: string; status?: string }>('/api/v1/admin/status');
+    } catch {
+      return null;
+    }
+  }
+
+  async getInstanceLogs(instanceName: string, logType: string = 'console', tail: number = 200): Promise<string[]> {
+    try {
+      const data = await this.safeRequest<{ lines?: string[]; output?: string }>(`/api/v1/logs/${encodeURIComponent(instanceName)}?type=${encodeURIComponent(logType)}&tail=${tail}`);
+      if (data?.lines) return data.lines;
+      if (data?.output) return data.output.split('\n');
+      return [];
+    } catch (error) {
+      logger.error('Failed to fetch logs:', error);
+      return [];
+    }
+  }
+
   async getTemplates(): Promise<Record<string, Template>> {
     try {
       const data = await this.safeRequest<Record<string, Template>>('/api/v1/templates');

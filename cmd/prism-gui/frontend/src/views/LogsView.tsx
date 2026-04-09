@@ -12,6 +12,7 @@ import {
   ColumnLayout,
   Spinner,
 } from '../lib/cloudscape-shim'
+import { useApi } from '../hooks/use-api'
 import type { Instance } from '../lib/types'
 
 interface LogsViewProps {
@@ -21,6 +22,7 @@ interface LogsViewProps {
 }
 
 export function LogsView({ instances, loading, onRefresh }: LogsViewProps) {
+  const api = useApi()
   const [selectedInstance, setSelectedInstance] = useState<string>('')
   const [logType, setLogType] = useState<string>('console')
   const [logLines, setLogLines] = useState<string[]>([])
@@ -40,30 +42,15 @@ export function LogsView({ instances, loading, onRefresh }: LogsViewProps) {
 
     setLoadingLogs(true)
     try {
-      // Mock log fetching - in real implementation would call API
-      const mockLogs = [
-        `[${new Date().toISOString()}] Workspace ${selectedInstance} logs (${logType})`,
-        `[INFO] Workspace started successfully`,
-        `[INFO] Loading configuration...`,
-        `[INFO] Mounting EFS volumes...`,
-        `[INFO] Starting services...`,
-        `[INFO] Prism template: ${instances.find(i => i.name === selectedInstance)?.template || 'unknown'}`,
-        `[INFO] All services running`,
-        `[DEBUG] Memory usage: 1.2GB / 8GB`,
-        `[DEBUG] CPU usage: 5%`,
-        `[INFO] Workspace ready for use`,
-        `[INFO] SSH access: ssh ${instances.find(i => i.name === selectedInstance)?.public_ip || 'N/A'}`,
-        `--- End of ${logType} log ---`
-      ]
-
-      setLogLines(mockLogs)
+      const lines = await api.getInstanceLogs(selectedInstance, logType)
+      setLogLines(lines.length > 0 ? lines : [`No ${logType} logs available for ${selectedInstance}`])
     } catch (error) {
       toast.error(`Failed to fetch logs: ${error}`)
       setLogLines([`Error fetching logs: ${error}`])
     } finally {
       setLoadingLogs(false)
     }
-  }, [selectedInstance, logType, instances])
+  }, [api, selectedInstance, logType])
 
   useEffect(() => {
     if (selectedInstance) {
@@ -157,24 +144,9 @@ export function LogsView({ instances, loading, onRefresh }: LogsViewProps) {
               <Box variant="p">Loading logs...</Box>
             </Box>
           ) : logLines.length > 0 ? (
-            <Box padding="s" variant="code">
-              <pre style={{
-                fontFamily: 'monospace',
-                fontSize: '12px',
-                lineHeight: '1.5',
-                margin: 0,
-                padding: '8px',
-                backgroundColor: '#232f3e',
-                color: '#d4d4d4',
-                borderRadius: '4px',
-                maxHeight: '600px',
-                overflow: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordWrap: 'break-word'
-              }}>
-                {logLines.join('\n')}
-              </pre>
-            </Box>
+            <pre className="font-mono text-xs leading-relaxed m-0 p-3 bg-card text-card-foreground border border-border rounded max-h-[60vh] overflow-auto whitespace-pre-wrap break-words">
+              {logLines.join('\n')}
+            </pre>
           ) : (
             <Box textAlign="center" padding="xl">
               <Box variant="strong">No logs available</Box>
@@ -222,13 +194,11 @@ export function LogsView({ instances, loading, onRefresh }: LogsViewProps) {
         </Container>
       )}
 
-      <Container header={<Header variant="h2">About Log Viewing</Header>}>
-        <SpaceBetween size="m">
-          <Box variant="p">
-            View real-time console output and system logs from your Prism workspaces.
-            Logs are useful for troubleshooting startup issues, monitoring application output,
-            and understanding workspace behavior.
-          </Box>
+      <details className="text-sm border border-border rounded px-3 py-1">
+        <summary className="cursor-pointer select-none font-medium text-foreground py-1">
+          About log types
+        </summary>
+        <div className="mt-2 pb-3">
           <ColumnLayout columns={4}>
             <div>
               <Box variant="strong">Console Output</Box>
@@ -256,13 +226,10 @@ export function LogsView({ instances, loading, onRefresh }: LogsViewProps) {
             </div>
           </ColumnLayout>
           <Alert type="info">
-            <Box variant="strong">Note:</Box> Log viewing is read-only. To interact with your workspace,
-            use SSH: <Box variant="code">
-              ssh {selectedInstance && instances.find(i => i.name === selectedInstance)?.public_ip || 'instance-ip'}
-            </Box>
+            Log viewing is read-only. To interact with your workspace, use SSH.
           </Alert>
-        </SpaceBetween>
-      </Container>
+        </div>
+      </details>
     </SpaceBetween>
   )
 }
