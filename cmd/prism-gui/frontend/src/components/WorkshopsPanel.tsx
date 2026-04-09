@@ -238,7 +238,7 @@ function WorkshopsListTab({ onSelectWorkshop }: { onSelectWorkshop: (ws: Worksho
           {notification}
         </Alert>
       )}
-      {error && (
+      {!loading && error && (
         <Alert type="error" onDismiss={() => setError(null)}>
           {error}
         </Alert>
@@ -647,7 +647,7 @@ function ConfigsTab() {
           {notification}
         </Alert>
       )}
-      {error && (
+      {!loading && error && (
         <Alert type="error" onDismiss={() => setError(null)}>
           {error}
         </Alert>

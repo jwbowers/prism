@@ -544,7 +544,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
             label: 'Overview',
             content: (
               <Container header={<Header variant="h3">Course Overview</Header>}>
-                {overviewError && <Alert type="error" dismissible onDismiss={() => setOverviewError(null)}>{overviewError}</Alert>}
+                {!overviewLoading && overviewError && <Alert type="error" dismissible onDismiss={() => setOverviewError(null)}>{overviewError}</Alert>}
                 {overviewLoading ? <Spinner /> : overview ? (
                   <SpaceBetween size="m">
                     <ColumnLayout columns={3} variant="text-grid">
@@ -597,7 +597,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
                   </Header>
                 }
               >
-                {memberError && <Alert type="error" dismissible onDismiss={() => setMemberError(null)}>{memberError}</Alert>}
+                {!membersLoading && memberError && <Alert type="error" dismissible onDismiss={() => setMemberError(null)}>{memberError}</Alert>}
                 <Table
                   data-testid="members-table"
                   loading={membersLoading}
@@ -680,7 +680,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
                   Approved Templates Whitelist
                 </Header>
               }>
-                {templateError && <Alert type="error" dismissible onDismiss={() => setTemplateError(null)}>{templateError}</Alert>}
+                {!templatesLoading && templateError && <Alert type="error" dismissible onDismiss={() => setTemplateError(null)}>{templateError}</Alert>}
                 {templatesLoading ? <Spinner /> : (
                   <SpaceBetween size="m">
                     {templates.length === 0 ? (
@@ -731,7 +731,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
                   </Header>
                 }
               >
-                {budgetError && <Alert type="error" dismissible onDismiss={() => setBudgetError(null)}>{budgetError}</Alert>}
+                {!budgetLoading && budgetError && <Alert type="error" dismissible onDismiss={() => setBudgetError(null)}>{budgetError}</Alert>}
                 {budgetLoading ? <Spinner /> : budget ? (
                   <SpaceBetween size="m">
                     <ColumnLayout columns={3} variant="text-grid">
@@ -793,7 +793,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
             label: 'Audit & Reports',
             content: (
               <Container header={<Header variant="h3">Audit Log & Reports</Header>}>
-                {auditError && <Alert type="error" dismissible onDismiss={() => setAuditError(null)}>{auditError}</Alert>}
+                {!auditLoading && auditError && <Alert type="error" dismissible onDismiss={() => setAuditError(null)}>{auditError}</Alert>}
                 <SpaceBetween size="m">
                   <SpaceBetween direction="horizontal" size="xs">
                     <Input
@@ -853,7 +853,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
             label: 'TA Access',
             content: (
               <Container header={<Header variant="h3">TA Access Management</Header>}>
-                {taError && <Alert type="error" dismissible onDismiss={() => setTAError(null)}>{taError}</Alert>}
+                {!taLoading && taError && <Alert type="error" dismissible onDismiss={() => setTAError(null)}>{taError}</Alert>}
                 <SpaceBetween size="m">
                   <SpaceBetween direction="horizontal" size="xs">
                     <Input
@@ -931,7 +931,7 @@ export const CourseDetailPanel: React.FC<CourseDetailPanelProps> = ({ course, on
             label: 'Materials',
             content: (
               <Container header={<Header variant="h3">Shared Course Materials (EFS)</Header>}>
-                {materialsError && <Alert type="error" dismissible onDismiss={() => setMaterialsError(null)}>{materialsError}</Alert>}
+                {!materialsLoading && materialsError && <Alert type="error" dismissible onDismiss={() => setMaterialsError(null)}>{materialsError}</Alert>}
                 {mountResult && <Alert type="success" dismissible onDismiss={() => setMountResult(null)}>Mount scheduled: {mountResult}</Alert>}
                 {materialsLoading ? <Spinner /> : materials ? (
                   <SpaceBetween size="m">

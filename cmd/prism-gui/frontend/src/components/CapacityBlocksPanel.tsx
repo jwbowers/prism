@@ -165,7 +165,7 @@ export default function CapacityBlocksPanel() {
       }
     >
       <SpaceBetween size="m">
-        {error && <Alert type="error" onDismiss={() => setError('')}>{error}</Alert>}
+        {!loading && error && <Alert type="error" onDismiss={() => setError('')}>{error}</Alert>}
 
         <TextContent>
           <p>

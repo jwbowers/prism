@@ -85,7 +85,7 @@ export function ApprovalsView() {
   return (
     <SpaceBetween size="l" data-testid="approvals-view">
       <Header variant="h1">Approval Requests</Header>
-      {approvalsError && (
+      {!approvalsLoading && approvalsError && (
         <Alert type="error" dismissible onDismiss={() => setApprovalsError(null)}>{approvalsError}</Alert>
       )}
       <Container
