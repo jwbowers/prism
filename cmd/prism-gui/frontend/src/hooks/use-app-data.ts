@@ -206,7 +206,7 @@ export function useAppData({ api, setState, activeView, usersVersionRef }: UseAp
   // NOTE: Removed 'projects' to avoid N+1 query problem (Issue #457)
   // Projects table doesn't need budget data - only Budgets page and Project Detail need it
   useEffect(() => {
-    if (activeView === 'budgets' || activeView === 'project-detail') {
+    if (activeView === 'budgets' || activeView === 'projects') {
       loadBudgetData();
     }
   }, [activeView, loadBudgetData]);

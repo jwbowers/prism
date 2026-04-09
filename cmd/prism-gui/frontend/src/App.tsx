@@ -762,7 +762,7 @@ export default function PrismApp() {
           {state.activeView === 'courses' && <CoursesManagementView />}
           {state.activeView === 'workshops' && <WorkshopsManagementView />}
           {state.activeView === 'capacity-blocks' && <CapacityBlocksManagementView />}
-          {state.activeView === 'project-detail' && <PlaceholderView title="Project Detail" description="Select a project from the Projects view to see its details." />}
+
           {state.activeView === 'users' && userMgmtView}
           {state.activeView === 'ami' && (
             <AMIManagementViewExtracted
