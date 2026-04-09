@@ -157,7 +157,7 @@ export class SafePrismAPI {
     }
   }
 
-  async launchInstance(templateSlug: string, name: string, size: string = 'M', dryRun: boolean = false): Promise<Instance & { approval_pending?: boolean; approval_request_id?: string; message?: string }> {
+  async launchInstance(templateSlug: string, name: string, size: string = 'M', dryRun: boolean = false, options?: { dnsName?: string; ttl?: string }): Promise<Instance & { approval_pending?: boolean; approval_request_id?: string; message?: string }> {
     const body: Record<string, unknown> = {
       template: templateSlug,
       name,
@@ -165,6 +165,12 @@ export class SafePrismAPI {
     };
     if (dryRun) {
       body.dry_run = true;
+    }
+    if (options?.dnsName) {
+      body.dns_name = options.dnsName;
+    }
+    if (options?.ttl) {
+      body.ttl = options.ttl;
     }
     return this.safeRequest('/api/v1/instances', 'POST', body);
   }

@@ -57,6 +57,8 @@ export interface Instance {
   template: string;
   state: string;
   public_ip?: string;
+  dns_name?: string;
+  dns_hostname?: string;
   instance_type?: string;
   launch_time?: string;
   region?: string;

@@ -175,6 +175,13 @@ export function InstanceManagementView({
               cell: (item: Instance) => item.public_ip || 'Not assigned'
             },
             {
+              id: 'dns_hostname',
+              header: 'Hostname',
+              cell: (item: Instance) => item.dns_hostname ? (
+                <span className="font-mono text-xs">{item.dns_hostname}</span>
+              ) : <span className="text-muted-foreground">—</span>
+            },
+            {
               id: 'actions',
               header: 'Actions',
               cell: (item: Instance) => (
@@ -185,12 +192,12 @@ export function InstanceManagementView({
                       iconName="external"
                       variant="inline-link"
                       onClick={() => {
-                        const ip = item.public_ip || ''
+                        const host = item.dns_hostname || item.public_ip || ''
                         const user = item.username || 'ubuntu'
                         onConnect({
                           instanceName: item.name,
-                          publicIP: ip,
-                          sshCommand: ip ? `ssh ${user}@${ip}` : `ssh ${user}@<instance-ip>`,
+                          publicIP: item.public_ip || '',
+                          sshCommand: host ? `ssh ${user}@${host}` : `ssh ${user}@<instance-ip>`,
                           webPort: ''
                         })
                       }}

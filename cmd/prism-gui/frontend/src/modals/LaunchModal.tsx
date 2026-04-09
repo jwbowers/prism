@@ -20,6 +20,8 @@ export interface LaunchConfig {
   spot: boolean
   hibernation: boolean
   dryRun: boolean
+  dnsName?: string
+  ttl?: string
 }
 
 export interface LaunchModalProps {
@@ -99,6 +101,22 @@ export function LaunchModal({ visible, selectedTemplate, onDismiss, onLaunch }: 
                 { label: "Extra Large (XL) - Maximum performance", value: "XL" }
               ]}
               data-testid="instance-size-select"
+            />
+          </FormField>
+
+          <FormField label="DNS Name" description="Hostname for this workspace (auto-generated from name if empty)">
+            <Input
+              value={launchConfig.dnsName ?? ''}
+              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, dnsName: detail.value }))}
+              placeholder={launchConfig.name ? launchConfig.name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '') : 'my-workspace'}
+            />
+          </FormField>
+
+          <FormField label="Time Limit" description="Auto-stop after this duration (e.g., 8h, 24h). Leave empty for no limit.">
+            <Input
+              value={launchConfig.ttl ?? ''}
+              onChange={({ detail }) => setLaunchConfig(prev => ({ ...prev, ttl: detail.value }))}
+              placeholder="No limit"
             />
           </FormField>
 
