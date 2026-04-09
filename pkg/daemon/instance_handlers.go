@@ -955,6 +955,33 @@ func (s *Server) handleDeleteInstance(w http.ResponseWriter, r *http.Request, id
 	}
 }
 
+// applyExpectedTransitionalState sets the expected transitional state for an instance
+// after a lifecycle operation, before AWS has had time to propagate the change.
+// This ensures the state monitor will pick up the instance for continued polling.
+func (s *Server) applyExpectedTransitionalState(instanceName, expectedState string) {
+	state, err := s.stateManager.LoadState()
+	if err != nil {
+		return
+	}
+	inst, exists := state.Instances[instanceName]
+	if !exists {
+		return
+	}
+	if inst.State == expectedState {
+		return // Already in expected state
+	}
+	transition := types.StateTransition{
+		FromState: inst.State,
+		ToState:   expectedState,
+		Timestamp: time.Now(),
+		Reason:    "lifecycle_optimistic",
+		Initiator: "system",
+	}
+	inst.State = expectedState
+	inst.StateHistory = append(inst.StateHistory, transition)
+	_ = s.stateManager.SaveInstance(inst)
+}
+
 // refreshInstanceStateFromAWS queries AWS and updates local state with current instance info
 // This should be called after state-changing operations to keep cache fresh
 // Records state transitions for accurate cost tracking
@@ -1031,6 +1058,8 @@ func (s *Server) handleStartInstance(w http.ResponseWriter, r *http.Request, ide
 			return operationErr
 		}
 
+		// Set optimistic transitional state before AWS refresh (AWS may lag)
+		s.applyExpectedTransitionalState(instanceName, "pending")
 		// Refresh state from AWS to get actual current state (pending, running, etc.)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
 		return nil
@@ -1073,6 +1102,8 @@ func (s *Server) handleStopInstance(w http.ResponseWriter, r *http.Request, iden
 			return operationErr
 		}
 
+		// Set optimistic transitional state before AWS refresh (AWS may lag)
+		s.applyExpectedTransitionalState(instanceName, "stopping")
 		// Refresh state from AWS to get actual current state (stopping, stopped, etc.)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
 		return nil
@@ -1115,6 +1146,8 @@ func (s *Server) handleHibernateInstance(w http.ResponseWriter, r *http.Request,
 			return operationErr
 		}
 
+		// Set optimistic transitional state before AWS refresh (AWS may lag)
+		s.applyExpectedTransitionalState(instanceName, "stopping")
 		// Refresh state from AWS to get actual current state (stopping for hibernation)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
 		return nil
@@ -1157,6 +1190,8 @@ func (s *Server) handleResumeInstance(w http.ResponseWriter, r *http.Request, id
 			return operationErr
 		}
 
+		// Set optimistic transitional state before AWS refresh (AWS may lag)
+		s.applyExpectedTransitionalState(instanceName, "pending")
 		// Refresh state from AWS to get actual current state (pending, running)
 		updatedInstance = s.refreshInstanceStateFromAWS(awsManager, instanceName)
 		return nil
