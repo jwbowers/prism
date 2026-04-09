@@ -2,6 +2,8 @@ package daemon
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -244,6 +246,18 @@ func NewServer(port string) (*Server, error) {
 	stateManager, err := state.NewManager()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize state manager: %w", err)
+	}
+
+	// Auto-generate API key if none exists (#597)
+	if initState, loadErr := stateManager.LoadState(); loadErr == nil && initState.Config.APIKey == "" {
+		logger.Warn("No API key configured — generating one automatically")
+		keyBytes := make([]byte, 32)
+		if _, randErr := cryptorand.Read(keyBytes); randErr == nil {
+			initState.Config.APIKey = hex.EncodeToString(keyBytes)
+			initState.Config.APIKeyCreated = time.Now()
+			_ = stateManager.SaveState(initState)
+			logger.Info("API key generated successfully")
+		}
 	}
 
 	// Initialize user manager
@@ -514,8 +528,8 @@ func NewServer(port string) (*Server, error) {
 	server.setupRoutes(mux)
 
 	server.httpServer = &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
+		Addr:    "127.0.0.1:" + port,                // Bind to localhost only (#593)
+		Handler: http.MaxBytesHandler(mux, 100<<20), // 100MB request body limit (#592)
 		// ReadTimeout: Keep short for receiving requests (30s is reasonable)
 		ReadTimeout: 30 * time.Second,
 		// WriteTimeout: Allow for long-running AWS operations (instance launch = 2-5min)
@@ -614,6 +628,12 @@ func (s *Server) startShutdownHandler(cancel context.CancelFunc) {
 
 func (s *Server) Start() error {
 	logger.Info("Starting Prism daemon", "port", s.port)
+
+	// Security warnings (#595, #597)
+	if os.Getenv("PRISM_TEST_MODE") == "true" {
+		logger.Warn("PRISM_TEST_MODE is enabled — ALL AUTHENTICATION IS BYPASSED")
+		logger.Warn("Do not use this setting in production environments")
+	}
 
 	if err := s.acquireSingletonLock(); err != nil {
 		return err
