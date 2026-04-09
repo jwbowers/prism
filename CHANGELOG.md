@@ -5,6 +5,14 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.2] - 2026-04-09
+
+### Fixed
+- **LogsView real API**: replaced mock log data with `getInstanceLogs()` calling `GET /api/v1/logs/{instance}?type=...`. Added `getDaemonStatus()` API method. Replaced inline `style={{}}` with Tailwind classes; fixed double-scrolling with `max-h-[60vh]`. Moved "About log types" into collapsible disclosure. (#587)
+- **Tab arrow-key navigation**: Tabs component now supports Left/Right arrow keys to cycle between tabs, Home/End to jump to first/last. Uses roving tabindex pattern (WAI-ARIA tabs). (#587)
+- **Settings version**: replaced hardcoded `v0.5.1` with dynamic import from `package.json`. (#586)
+- **Destructive color contrast**: darkened `--destructive` from `hsl(0 84% 60%)` to `hsl(0 84% 50%)` — white-on-red contrast ~3.78:1 → ~5.0:1 (WCAG AA). (#587)
+
 ## [0.33.1] - 2026-04-09
 
 ### Fixed
