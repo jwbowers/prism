@@ -5,6 +5,17 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-04-09
+
+### Changed
+- **Idle detection delegated to spored**: removed daemon-side CloudWatch polling (564 lines deleted — `metrics_collector.go`, `savings.go`, scheduler monitoring loop). Idle detection now runs on-instance via spored with 7 signals (CPU, network, disk I/O, GPU, terminals, users, recent activity). Policy management UI and fleet-level policy templates remain intact as directives to spored. (#588)
+
+### Added
+- **TTL countdown column**: instance table shows time remaining with color-coded status (green >2h, yellow <2h, red <1h, "Expired"). (#588)
+- **TTL safety valve**: daemon state monitor (10s polling) stops any running instance past its ExpiresAt as a fallback when spored fails to enforce. (#588)
+- **Extend Time action**: "Extend Time (+4h)" appears in the instance dropdown for TTL-enabled workspaces. Updates both local state and the `prism:ttl` EC2 tag so spored picks up the change. (#588)
+- **ExpiresAt computed at launch**: TTL duration string (e.g., "8h") is converted to an absolute ExpiresAt timestamp and persisted in state. (#588)
+
 ## [0.34.0] - 2026-04-09
 
 ### Added
