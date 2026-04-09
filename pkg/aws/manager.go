@@ -2559,6 +2559,15 @@ chown -R ubuntu:ubuntu /mnt/%s
 	return originalUserData + efsMount
 }
 
+// TagInstance adds or updates a single EC2 tag on an instance.
+func (m *Manager) TagInstance(instanceID, key, value string) error {
+	_, err := m.ec2.CreateTags(context.Background(), &ec2.CreateTagsInput{
+		Resources: []string{instanceID},
+		Tags:      []ec2types.Tag{{Key: aws.String(key), Value: aws.String(value)}},
+	})
+	return err
+}
+
 // getAccountID returns the AWS account ID, caching it after the first STS call.
 func (m *Manager) getAccountID() string {
 	if m.cachedAccountID != "" {

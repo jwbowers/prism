@@ -135,6 +135,16 @@ export function useInstanceActions(options: UseInstanceActionsOptions) {
           setState((prev: any) => ({ ...prev, loading: false }));
           setIdlePolicyModalInstance(instance.name);
           return;
+        case 'extend-ttl':
+          setState((prev: any) => ({ ...prev, loading: false }));
+          try {
+            await api.extendInstanceTTL(instance.name, 4);
+            toast.success('Time Extended', { description: `${instance.name} extended by 4 hours` });
+            await loadApplicationData();
+          } catch (e: unknown) {
+            toast.error('Failed to extend time', { description: e instanceof Error ? e.message : String(e) });
+          }
+          return;
         case 'delete':
           // Show confirmation modal instead of deleting immediately
           setState((prev: any) => ({ ...prev, loading: false }));

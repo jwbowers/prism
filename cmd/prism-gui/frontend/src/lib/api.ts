@@ -184,6 +184,10 @@ export class SafePrismAPI {
     await this.safeRequest(`/api/v1/instances/${identifier}/stop`, 'POST');
   }
 
+  async extendInstanceTTL(identifier: string, hours: number = 4): Promise<void> {
+    await this.safeRequest(`/api/v1/instances/${encodeURIComponent(identifier)}/extend`, 'POST', { hours });
+  }
+
   async hibernateInstance(identifier: string): Promise<void> {
     await this.safeRequest(`/api/v1/instances/${identifier}/hibernate`, 'POST');
   }

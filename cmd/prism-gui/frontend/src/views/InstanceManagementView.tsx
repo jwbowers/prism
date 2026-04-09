@@ -233,6 +233,7 @@ export function InstanceManagementView({
                       { text: 'Hibernate', id: 'hibernate', disabled: item.state !== 'running' },
                       { text: 'Resume', id: 'resume', disabled: item.state !== 'stopped' && item.state !== 'hibernated' },
                       { text: 'Manage Idle Policy', id: 'manage-idle-policy' },
+                      ...(item.expires_at ? [{ text: 'Extend Time (+4h)', id: 'extend-ttl' }] : []),
                       { text: 'Delete', id: 'delete', disabled: item.state === 'running' || item.state === 'pending' }
                     ]}
                     onItemClick={({ detail }) => onInstanceAction(detail.id, item)}

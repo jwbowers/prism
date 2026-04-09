@@ -729,6 +729,7 @@ func (s *Server) handleInstanceSubOperation(w http.ResponseWriter, r *http.Reque
 		"hibernate":             s.handleHibernateInstance,
 		"resume":                s.handleResumeInstance,
 		"hibernation-status":    s.handleInstanceHibernationStatus,
+		"extend":                s.handleExtendTTL,
 		"connect":               s.handleConnectInstance,
 		"exec":                  s.handleExecInstance,
 		"resize":                s.handleResizeInstance,
@@ -1808,4 +1809,62 @@ func estimateHourlyCostFromSize(size string) float64 {
 	default:
 		return 0.10
 	}
+}
+
+// handleExtendTTL extends the time-to-live for an instance (#588).
+func (s *Server) handleExtendTTL(w http.ResponseWriter, r *http.Request, identifier string) {
+	if r.Method != http.MethodPost {
+		s.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	instanceName, found := s.resolveInstanceIdentifier(identifier)
+	if !found {
+		s.writeError(w, http.StatusNotFound, "Instance not found")
+		return
+	}
+
+	// Parse extension hours from body (default 4)
+	var body struct {
+		Hours int `json:"hours"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Hours <= 0 {
+		body.Hours = 4
+	}
+
+	state, err := s.stateManager.LoadState()
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "Failed to load state")
+		return
+	}
+
+	inst, exists := state.Instances[instanceName]
+	if !exists {
+		s.writeError(w, http.StatusNotFound, "Instance not found in state")
+		return
+	}
+
+	// Extend ExpiresAt
+	extension := time.Duration(body.Hours) * time.Hour
+	if inst.ExpiresAt != nil {
+		newExpiry := inst.ExpiresAt.Add(extension)
+		inst.ExpiresAt = &newExpiry
+	} else {
+		newExpiry := time.Now().Add(extension)
+		inst.ExpiresAt = &newExpiry
+	}
+
+	if err := s.stateManager.SaveInstance(inst); err != nil {
+		s.writeError(w, http.StatusInternalServerError, "Failed to save state")
+		return
+	}
+
+	// Update EC2 tag so spored picks up the new TTL on its next config reload
+	if !s.testMode {
+		s.withAWSManager(w, r, func(awsManager *aws.Manager) error {
+			return awsManager.TagInstance(inst.ID, "prism:ttl", inst.ExpiresAt.Sub(inst.LaunchTime).String())
+		})
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
