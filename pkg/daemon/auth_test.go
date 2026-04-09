@@ -45,7 +45,7 @@ func TestDaemonAuthenticationWorkflow(t *testing.T) {
 		assert.Contains(t, response.Message, "API key generated successfully")
 	})
 
-	// Test 2: Get authentication status
+	// Test 2: Get authentication status (unauthenticated — returns minimal info)
 	t.Run("get_auth_status", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/auth", nil)
 		require.NoError(t, err)
@@ -59,8 +59,8 @@ func TestDaemonAuthenticationWorkflow(t *testing.T) {
 		err = json.Unmarshal(rr.Body.Bytes(), &response)
 		require.NoError(t, err)
 
-		assert.NotNil(t, response["auth_enabled"])
-		assert.NotNil(t, response["created_at"])
+		// Unauthenticated requests get minimal response (#598)
+		assert.NotNil(t, response["status"])
 	})
 
 	// Test 3: Revoke API key (requires authentication)

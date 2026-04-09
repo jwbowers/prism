@@ -249,15 +249,17 @@ func NewServer(port string) (*Server, error) {
 		return nil, fmt.Errorf("failed to initialize state manager: %w", err)
 	}
 
-	// Auto-generate API key if none exists (#597)
-	if initState, loadErr := stateManager.LoadState(); loadErr == nil && initState.Config.APIKey == "" {
-		logger.Warn("No API key configured — generating one automatically")
-		keyBytes := make([]byte, 32)
-		if _, randErr := cryptorand.Read(keyBytes); randErr == nil {
-			initState.Config.APIKey = hex.EncodeToString(keyBytes)
-			initState.Config.APIKeyCreated = time.Now()
-			_ = stateManager.SaveState(initState)
-			logger.Info("API key generated successfully")
+	// Auto-generate API key if none exists (#597) — skip in test mode
+	if os.Getenv("PRISM_TEST_MODE") != "true" {
+		if initState, loadErr := stateManager.LoadState(); loadErr == nil && initState.Config.APIKey == "" {
+			logger.Warn("No API key configured — generating one automatically")
+			keyBytes := make([]byte, 32)
+			if _, randErr := cryptorand.Read(keyBytes); randErr == nil {
+				initState.Config.APIKey = hex.EncodeToString(keyBytes)
+				initState.Config.APIKeyCreated = time.Now()
+				_ = stateManager.SaveState(initState)
+				logger.Info("API key generated successfully")
+			}
 		}
 	}
 

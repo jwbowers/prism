@@ -20,12 +20,15 @@ func createTestServer(t *testing.T) *Server {
 	// Create temporary directory for testing
 	tempDir := t.TempDir()
 
-	// Override home directory for testing
+	// Override home directory and enable test mode for testing
 	originalHome := os.Getenv("HOME")
+	originalTestMode := os.Getenv("PRISM_TEST_MODE")
 	t.Cleanup(func() {
 		_ = os.Setenv("HOME", originalHome)
+		_ = os.Setenv("PRISM_TEST_MODE", originalTestMode)
 	})
 	_ = os.Setenv("HOME", tempDir)
+	_ = os.Setenv("PRISM_TEST_MODE", "true")
 
 	// Create test templates directory
 	templatesDir := tempDir + "/.prism/templates"
