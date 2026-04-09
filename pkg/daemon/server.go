@@ -906,21 +906,23 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 		}
 	}
 
-	// CORS middleware for web development
+	// CORS middleware — restricted to known local origins (#598)
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000": true,
+		"wails://localhost":     true,
+	}
 	corsMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			// Allow requests from both web dev server and Wails GUI
 			origin := r.Header.Get("Origin")
-			if origin == "http://localhost:3000" || origin == "wails://localhost" {
+			if allowedOrigins[origin] {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+				w.Header().Set("Access-Control-Max-Age", "3600")
 			}
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-			// Handle preflight OPTIONS requests
 			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
+				w.WriteHeader(http.StatusNoContent)
 				return
 			}
 

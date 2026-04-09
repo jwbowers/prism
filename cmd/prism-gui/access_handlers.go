@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 // AccessType represents the type of instance access
@@ -150,10 +151,13 @@ func (s *PrismService) createTerminalCommand(sshCommand string) (*exec.Cmd, erro
 
 // createMacOSTerminalCommand creates a macOS Terminal.app command
 func (s *PrismService) createMacOSTerminalCommand(sshCommand string) *exec.Cmd {
+	// Escape backslashes and double quotes for AppleScript string (#598)
+	escaped := strings.ReplaceAll(sshCommand, `\`, `\\`)
+	escaped = strings.ReplaceAll(escaped, `"`, `\"`)
 	script := fmt.Sprintf(`tell application "Terminal"
 		do script "%s"
 		activate
-	end tell`, sshCommand)
+	end tell`, escaped)
 	return exec.Command("osascript", "-e", script) //nolint:gosec // Generated AppleScript for terminal access
 }
 

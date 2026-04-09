@@ -88,7 +88,8 @@ func (pm *ProxyManager) RegisterInstance(instance *types.Instance) error {
 		},
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // Allow self-signed certificates
+				InsecureSkipVerify: true, // Allow self-signed certificates on EC2 instances (#596)
+				// TODO: Add instance CA to custom cert pool instead of disabling verification
 			},
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,

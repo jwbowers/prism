@@ -354,11 +354,11 @@ func (s *Server) handleDCVProxy(w http.ResponseWriter, r *http.Request) {
 
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
-	// Modify headers for iframe embedding
+	// Replace upstream security headers with Prism-safe values for iframe embedding (#596)
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		resp.Header.Del("X-Frame-Options")
-		resp.Header.Del("Content-Security-Policy")
-		resp.Header.Set("Access-Control-Allow-Origin", "*")
+		resp.Header.Set("X-Frame-Options", "SAMEORIGIN")
+		resp.Header.Set("Content-Security-Policy", "frame-ancestors 'self'")
+		resp.Header.Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		return nil
 	}
 

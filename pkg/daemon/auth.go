@@ -66,18 +66,21 @@ func (s *Server) handleGetAuthStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Don't return the actual API key, just whether it exists
-	response := map[string]interface{}{
-		"auth_enabled": apiKey != "",
-		"created_at":   createdAt,
-	}
-
-	// If the request is authenticated, include more information
+	// Only return detailed auth status to authenticated requests (#598)
 	if isAuthenticated(r.Context()) {
-		response["authenticated"] = true
+		response := map[string]interface{}{
+			"auth_enabled":  apiKey != "",
+			"created_at":    createdAt,
+			"authenticated": true,
+		}
+		_ = json.NewEncoder(w).Encode(response)
+		return
 	}
 
-	_ = json.NewEncoder(w).Encode(response)
+	// Unauthenticated: return minimal info (don't leak whether auth is configured)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "ok",
+	})
 }
 
 // handleRevokeAPIKey revokes the current API key
