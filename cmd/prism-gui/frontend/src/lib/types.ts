@@ -59,6 +59,8 @@ export interface Instance {
   public_ip?: string;
   dns_name?: string;
   dns_hostname?: string;
+  ttl?: string;
+  expires_at?: string;
   instance_type?: string;
   launch_time?: string;
   region?: string;

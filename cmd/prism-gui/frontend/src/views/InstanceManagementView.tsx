@@ -182,6 +182,23 @@ export function InstanceManagementView({
               ) : <span className="text-muted-foreground">—</span>
             },
             {
+              id: 'time_remaining',
+              header: 'Time Remaining',
+              cell: (item: Instance) => {
+                if (!item.ttl && !item.expires_at) return <span className="text-muted-foreground">—</span>
+                if (item.expires_at) {
+                  const ms = new Date(item.expires_at).getTime() - Date.now()
+                  if (ms <= 0) return <StatusIndicator type="error">Expired</StatusIndicator>
+                  const hours = Math.floor(ms / 3600000)
+                  const mins = Math.floor((ms % 3600000) / 60000)
+                  if (hours < 1) return <StatusIndicator type="error">{mins}m</StatusIndicator>
+                  if (hours < 2) return <StatusIndicator type="warning">{hours}h {mins}m</StatusIndicator>
+                  return <StatusIndicator type="info">{hours}h</StatusIndicator>
+                }
+                return <span className="text-muted-foreground">{item.ttl}</span>
+              },
+            },
+            {
               id: 'actions',
               header: 'Actions',
               cell: (item: Instance) => (
