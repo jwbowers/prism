@@ -370,19 +370,27 @@ export function FormField({ label, children, errorText, description, constraintT
   const fieldId = typeof label === 'string'
     ? `field-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
     : undefined
-  // Clone child element to inject id so the label's htmlFor links to the input
+  const descId = fieldId && description ? `${fieldId}-desc` : undefined
+  const errorId = fieldId && errorText ? `${fieldId}-error` : undefined
+  const constraintId = fieldId && constraintText ? `${fieldId}-constraint` : undefined
+  const describedBy = [descId, constraintId, errorId].filter(Boolean).join(' ') || undefined
+  // Clone child element to inject id, aria-describedby, and aria-invalid
   const childWithId = fieldId
     ? React.Children.map(children, (child) =>
-        React.isValidElement(child) ? React.cloneElement(child as React.ReactElement<any>, { id: fieldId }) : child
+        React.isValidElement(child) ? React.cloneElement(child as React.ReactElement<any>, {
+          id: fieldId,
+          ...(describedBy ? { 'aria-describedby': describedBy } : {}),
+          ...(errorText ? { 'aria-invalid': true } : {}),
+        }) : child
       )
     : children
   return (
     <div className="space-y-1.5">
       {label && <label htmlFor={fieldId} className="text-sm font-medium leading-none">{label}</label>}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      {description && <p id={descId} className="text-xs text-muted-foreground">{description}</p>}
       {childWithId}
-      {constraintText && <p className="text-xs text-muted-foreground">{constraintText}</p>}
-      {errorText && <p className="text-xs text-destructive">{errorText}</p>}
+      {constraintText && <p id={constraintId} className="text-xs text-muted-foreground">{constraintText}</p>}
+      {errorText && <p id={errorId} className="text-xs text-destructive" role="alert">{errorText}</p>}
     </div>
   )
 }
