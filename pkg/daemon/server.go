@@ -895,10 +895,12 @@ func (s *Server) checkExpiredInstances(ctx context.Context) {
 
 // setupRoutes configures all HTTP routes
 func (s *Server) setupRoutes(mux *http.ServeMux) {
-	// Define middleware for JSON responses and logging
+	// Define middleware for JSON responses, security headers, and logging (#599)
 	jsonMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("X-Frame-Options", "DENY")
 			logger.Debug("API request", "method", r.Method, "path", r.URL.Path)
 			// Record the request in status tracker
 			s.statusTracker.RecordRequest()

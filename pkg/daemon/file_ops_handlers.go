@@ -12,6 +12,7 @@ package daemon
 import (
 	"encoding/json"
 	"net/http"
+	"path/filepath"
 
 	"github.com/scttfrdmn/prism/pkg/aws"
 )
@@ -66,6 +67,12 @@ func (s *Server) handleListInstanceFiles(w http.ResponseWriter, r *http.Request,
 	remotePath := r.URL.Query().Get("path")
 	if remotePath == "" {
 		remotePath = "/home"
+	}
+	// Normalize and validate path (#598)
+	remotePath = filepath.Clean(remotePath)
+	if !filepath.IsAbs(remotePath) {
+		s.writeError(w, http.StatusBadRequest, "Path must be absolute")
+		return
 	}
 
 	s.withAWSManager(w, r, func(m *aws.Manager) error {
