@@ -92,6 +92,18 @@ func (sm *StateMonitor) checkTransitionalInstances() {
 		return
 	}
 
+	// TTL safety valve (#588): if spored failed to enforce TTL, stop expired instances
+	for name, inst := range state.Instances {
+		if inst.ExpiresAt != nil && time.Now().After(*inst.ExpiresAt) && inst.State == "running" {
+			log.Printf("⏰ TTL safety valve: instance %s expired at %s, stopping", name, inst.ExpiresAt.Format(time.RFC3339))
+			go func(n string) {
+				if err := sm.awsManager.StopInstance(n); err != nil {
+					log.Printf("TTL safety valve: failed to stop %s: %v", n, err)
+				}
+			}(name)
+		}
+	}
+
 	// Find instances in transitional states
 	var transitionalInstances []types.Instance
 	for _, inst := range state.Instances {

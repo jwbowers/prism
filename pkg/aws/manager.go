@@ -980,6 +980,15 @@ func (o *LaunchOrchestrator) ExecuteLaunch(req ctypes.LaunchRequest, template *c
 		}
 	}
 
+	// Compute ExpiresAt from TTL (#588) — persisted in state for safety valve
+	if req.TTL != "" {
+		duration, err := time.ParseDuration(req.TTL)
+		if err == nil {
+			expiry := time.Now().Add(duration)
+			instance.ExpiresAt = &expiry
+		}
+	}
+
 	return instance, nil
 }
 
