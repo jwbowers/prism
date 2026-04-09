@@ -5,6 +5,17 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.3] - 2026-04-09
+
+### Security
+- **Port validation in proxy handlers**: DCV and web proxy endpoints now validate `?port=` parameter with `strconv.Atoi` + 1-65535 range check. (#601)
+- **Shell quoting in research provisioner**: all username interpolations in SSH commands (`id`, `getent passwd`, `last`, `ps -u`) wrapped in `shellQuote()` as defense-in-depth against command injection. (#602)
+- **Web proxy CSP/CORS fixed**: replaced stripped CSP with `frame-ancestors 'self'`. CORS restricted to localhost. Removed `Allow-Credentials`. AWS proxy and web proxy both fixed. (#603)
+- **Federation token validation**: regex validates AWS federation token format before use in redirect URL. (#603)
+- **API path encoding**: added `enc()` (encodeURIComponent) wrapper applied to all 133 path parameters in frontend API client. Prevents path traversal via special characters in resource names. (#604)
+- **File permissions hardened**: workshop, course, pricing state files changed from 0644 to 0600. (#605)
+- **CSP meta tag**: added `Content-Security-Policy` meta tag to `index.html` restricting default-src to 'self' with allowlisted fonts, API connections, and inline styles. (#605)
+
 ## [0.35.2] - 2026-04-09
 
 ### Security
