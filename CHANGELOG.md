@@ -5,6 +5,20 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.2] - 2026-04-09
+
+### Security
+- **spored checksum verification**: UserData downloads SHA256 checksum alongside binary and verifies before execution. Binary deleted if checksum fails. Gracefully degrades if checksum not yet published. (#591)
+- **S3 temp encryption**: PutObject calls for file transfers now specify `ServerSideEncryption: AES256`. (#598)
+- **DCV password hardening**: crypto/rand failure now panics instead of generating predictable sequential passwords. (#598)
+- **Proxy CSP**: replaced stripped X-Frame-Options/CSP with `SAMEORIGIN` + `frame-ancestors 'self'`. CORS restricted to localhost. (#596)
+- **AppleScript injection defense**: escape backslashes and double quotes in SSH commands before AppleScript interpolation. (#598)
+- **CORS tightened**: use allowedOrigins map, removed Allow-Credentials and Authorization from allowed headers. (#598)
+- **Auth status endpoint hardened**: unauthenticated GET /api/v1/auth returns minimal `{"status":"ok"}` instead of leaking auth configuration. (#598)
+- **Security response headers**: all API responses include `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY`. (#599)
+- **Path traversal defense**: file operations handler validates paths with filepath.Clean() and rejects non-absolute paths. (#598)
+- **TLS support**: daemon uses ListenAndServeTLS when cert/key exist at `~/.prism/tls/`. (#594)
+
 ## [0.35.1] - 2026-04-09
 
 ### Security
