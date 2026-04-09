@@ -110,13 +110,24 @@ export const GovernancePanel: React.FC<GovernancePanelProps> = ({ projectId }) =
   };
 
   const saveQuota = async () => {
+    // Validate numeric fields before submitting
+    const maxInst = quotaMaxInstances.trim() === '' ? -1 : parseInt(quotaMaxInstances, 10);
+    if (quotaMaxInstances.trim() !== '' && (isNaN(maxInst) || !Number.isInteger(maxInst))) {
+      setQuotaError('Max Instances must be a whole number (or empty for unlimited)');
+      return;
+    }
+    const maxSpend = quotaMaxSpendDaily.trim() === '' ? 0 : parseFloat(quotaMaxSpendDaily);
+    if (quotaMaxSpendDaily.trim() !== '' && (isNaN(maxSpend) || maxSpend < 0)) {
+      setQuotaError('Max Daily Spend must be a non-negative number (or empty for unlimited)');
+      return;
+    }
     setQuotaModalVisible(false);
     try {
       await apiClient.setProjectQuota(projectId, {
         role: quotaRole,
-        max_instances: parseInt(quotaMaxInstances) || -1,
+        max_instances: maxInst,
         max_instance_type: quotaMaxInstanceType,
-        max_spend_daily: parseFloat(quotaMaxSpendDaily) || 0
+        max_spend_daily: maxSpend
       });
       loadQuotas();
     } catch (e: any) {
