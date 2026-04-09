@@ -5,7 +5,6 @@ import {
   Button,
   Box,
   TextContent,
-  ColumnLayout,
   Link,
   Spinner,
 } from '../lib/cloudscape-shim'
@@ -169,6 +168,28 @@ export function DashboardView({
         </SpaceBetween>
       </Container>
 
+      <Container>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <StatusIndicator type={connected ? 'success' : 'error'}>
+            {connected ? 'Connected' : 'Disconnected'}
+          </StatusIndicator>
+          <Box color="text-body-secondary">
+            {Object.keys(templates).length} template{Object.keys(templates).length !== 1 ? 's' : ''}
+          </Box>
+          <Box color="text-body-secondary">
+            {instances.filter(i => i.state === 'running').length} running · {instances.length} total workspace{instances.length !== 1 ? 's' : ''}
+          </Box>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+            <Button variant="primary" iconName="add-plus" onClick={onShowQuickStart}>
+              New Workspace
+            </Button>
+            <Button onClick={onRefresh} disabled={loading}>
+              {loading ? <Spinner size="normal" /> : 'Refresh'}
+            </Button>
+          </div>
+        </div>
+      </Container>
+
       {!isFirstTimeUser && (
         <RecentWorkspaces
           instances={instances}
@@ -178,83 +199,6 @@ export function DashboardView({
           onStartInstance={onStartInstance}
         />
       )}
-
-      <Header
-        variant="h1"
-        description="Prism research computing platform - manage your cloud environments"
-        actions={
-          <Button onClick={onRefresh} disabled={loading}>
-            {loading ? <Spinner size="normal" /> : 'Refresh'}
-          </Button>
-        }
-      >
-        Dashboard
-      </Header>
-
-      <ColumnLayout columns={3} variant="text-grid">
-        <Container header={<Header variant="h2">Research Templates</Header>}>
-          <SpaceBetween size="s">
-            <Box>
-              <Box variant="awsui-key-label">Available Templates</Box>
-              <Box fontSize="display-l" fontWeight="bold" color={connected ? 'text-status-success' : 'text-status-error'}>
-                {Object.keys(templates).length}
-              </Box>
-            </Box>
-            <Button variant="primary" onClick={() => onNavigate('templates')}>
-              Browse Templates
-            </Button>
-          </SpaceBetween>
-        </Container>
-
-        <Container header={<Header variant="h2">Active Workspaces</Header>}>
-          <SpaceBetween size="s">
-            <Box>
-              <Box variant="awsui-key-label">Running Workspaces</Box>
-              <Box fontSize="display-l" fontWeight="bold" color="text-status-success">
-                {instances.filter(i => i.state === 'running').length}
-              </Box>
-            </Box>
-            <Button onClick={() => onNavigate('workspaces')}>
-              Manage Workspaces
-            </Button>
-          </SpaceBetween>
-        </Container>
-
-        <Container header={<Header variant="h2">System Status</Header>}>
-          <SpaceBetween size="s">
-            <Box>
-              <Box variant="awsui-key-label">Connection</Box>
-              <StatusIndicator type={connected ? 'success' : 'error'}>
-                {connected ? 'Connected' : 'Disconnected'}
-              </StatusIndicator>
-            </Box>
-            <Button onClick={onRefresh} disabled={loading}>
-              {loading ? 'Checking...' : 'Test Connection'}
-            </Button>
-          </SpaceBetween>
-        </Container>
-      </ColumnLayout>
-
-      <Container header={<Header variant="h2">Quick Actions</Header>}>
-        <SpaceBetween direction="horizontal" size="s">
-          <Button
-            variant="primary"
-            onClick={() => onNavigate('templates')}
-            disabled={Object.keys(templates).length === 0}
-          >
-            Launch New Workspace
-          </Button>
-          <Button
-            onClick={() => onNavigate('workspaces')}
-            disabled={instances.length === 0}
-          >
-            View Workspaces ({instances.length})
-          </Button>
-          <Button onClick={() => onNavigate('storage')}>
-            Storage Management
-          </Button>
-        </SpaceBetween>
-      </Container>
     </SpaceBetween>
   )
 }

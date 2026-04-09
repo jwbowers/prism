@@ -299,7 +299,7 @@ describe('BackupManager', () => {
       await navigateToBackups();
 
       await waitFor(() => {
-        expect(screen.getByText(/Instance Snapshots & Backups/)).toBeInTheDocument();
+        expect(screen.getByText(/About instance snapshots/i)).toBeInTheDocument();
       });
     });
 

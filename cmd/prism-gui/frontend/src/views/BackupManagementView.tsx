@@ -56,29 +56,32 @@ export function BackupManagementView({
         Backups
       </Header>
 
-      <Container>
-        <SpaceBetween size="m">
-          <Box variant="h3">💾 Instance Snapshots & Backups</Box>
-          <Box color="text-body-secondary">
-            Instance snapshots (AMI backups) capture the complete state of your workspace, including installed software, configurations, and data.
-            Use snapshots for disaster recovery, creating reproducible research environments, or cloning workspaces.
-          </Box>
+      <details className="text-sm border border-border rounded px-3 py-1">
+        <summary className="cursor-pointer select-none font-medium text-foreground py-1">
+          About instance snapshots
+        </summary>
+        <div className="mt-2 pb-3 space-y-3">
+          <p className="text-muted-foreground">
+            Instance snapshots (AMI backups) capture the complete state of your workspace, including
+            installed software, configurations, and data. Use snapshots for disaster recovery,
+            creating reproducible research environments, or cloning workspaces.
+          </p>
           <ColumnLayout columns={3} variant="text-grid">
             <SpaceBetween size="s">
-              <Box variant="awsui-key-label">💰 Cost</Box>
+              <Box variant="awsui-key-label">Cost</Box>
               <Box color="text-body-secondary">~$0.05/GB/month for EBS snapshot storage</Box>
             </SpaceBetween>
             <SpaceBetween size="s">
-              <Box variant="awsui-key-label">⏱️ Creation Time</Box>
+              <Box variant="awsui-key-label">Creation Time</Box>
               <Box color="text-body-secondary">5-10 minutes (depending on instance size)</Box>
             </SpaceBetween>
             <SpaceBetween size="s">
-              <Box variant="awsui-key-label">🔄 Restore Time</Box>
+              <Box variant="awsui-key-label">Restore Time</Box>
               <Box color="text-body-secondary">10-15 minutes to launch from snapshot</Box>
             </SpaceBetween>
           </ColumnLayout>
-        </SpaceBetween>
-      </Container>
+        </div>
+      </details>
 
       <Container
         header={
