@@ -5,6 +5,19 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.1] - 2026-04-09
+
+### Security
+- **Shell injection defense**: `validateRemotePath()` rejects shell metacharacters (`;|&` `` ` `` `$( ' \n \r`) and path traversal (`..`) before paths are interpolated into SSM bash scripts. Applied to PushFile, PullFile, ListRemoteFiles. Fixed dirname quoting in PushFile script. (#589)
+- **File permissions tightened**: state directory `0755`→`0700`, all state/config/backup file writes `0644`→`0600`. Prevents local users from reading API keys in `~/.prism/state.json`. (#590)
+- **Localhost-only binding**: daemon now binds to `127.0.0.1:{port}` instead of `0.0.0.0:{port}`. Prevents external network access to the API. (#593)
+- **Request body size limit**: `http.MaxBytesHandler(100MB)` wraps all handlers, preventing memory exhaustion from oversized POST bodies. (#592)
+- **Test mode startup warning**: prominent log warnings when `PRISM_TEST_MODE=true` is active. (#595)
+- **Auto-generate API key**: daemon generates a 256-bit API key on first start if none configured, preventing the "no key = open access" default. (#597)
+
+### Fixed
+- **WCAG 2.1 AA compliance** (ADA Title II): `<main>` landmark with skip link target (1.3.1/2.4.1), muted foreground contrast 43%→33% for 5.5:1 ratio (1.4.3), Link keyboard activation via Enter/Space (2.1.1), Input autocomplete pass-through (1.3.5), table row aria-selected fix + checkbox aria-label (4.1.2). (#600)
+
 ## [0.35.0] - 2026-04-09
 
 ### Changed
