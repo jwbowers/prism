@@ -177,7 +177,7 @@ export function Link({ href, onFollow, external, children, variant: _variant, fo
   if (href) {
     return <a href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} className={cls} {...rest}>{children}</a>
   }
-  return <span onClick={() => onFollow?.()} className={cls} role="link" tabIndex={0} {...rest}>{children}</span>
+  return <span onClick={() => onFollow?.()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onFollow?.() } }} className={cls} role="link" tabIndex={0} {...rest}>{children}</span>
 }
 
 // ── Cloudscape event types (give contextual typing so callers can destructure { detail }) ──
@@ -224,13 +224,14 @@ export function Button({ children, variant: cv, size: cs, iconName: _icon, loadi
   )
 }
 
-export function Input({ value, onChange, placeholder, disabled, type = 'text', invalid, ...rest }: {
+export function Input({ value, onChange, placeholder, disabled, type = 'text', invalid, autoComplete, ...rest }: {
   value?: string
   onChange?: (e: CE<{ value: string }>) => void
   placeholder?: string
   disabled?: boolean
   type?: string
   invalid?: boolean
+  autoComplete?: string
   [k: string]: any
 }) {
   // Wrap in a div so data-testid consumers can do wrapper.querySelector('input')
@@ -243,6 +244,7 @@ export function Input({ value, onChange, placeholder, disabled, type = 'text', i
       placeholder={placeholder}
       disabled={disabled}
       type={type}
+      autoComplete={autoComplete}
       className={cn(invalid && 'border-destructive')}
       data-invalid={invalid || undefined}
       {...inputRest}
@@ -539,10 +541,11 @@ export function Table({ columnDefinitions, items, loading, loadingText, empty, h
                   const key = trackBy ? item[trackBy] : ri
                   const isSelected = selectedItems?.some((s: any) => trackBy ? s[trackBy] === item[trackBy] : s === item)
                   return (
-                    <tr key={key} aria-selected={isSelected || undefined} className={cn('border-b hover:bg-muted/30 transition-colors', isSelected && 'bg-primary/10')}>
+                    <tr key={key} aria-selected={isSelected ? true : undefined} className={cn('border-b hover:bg-muted/30 transition-colors', isSelected && 'bg-primary/10')}>
                       {selectionType === 'multi' && (
                         <td className="w-10 p-2">
                           <ShadCheckbox
+                            aria-label={`Select row ${ri + 1}`}
                             checked={isSelected ?? false}
                             onCheckedChange={(v) => {
                               const next = v
