@@ -444,27 +444,48 @@ vet:
 	@echo "🔎 Running go vet..."
 	@go vet ./...
 
-# Security scan (comprehensive - Go + npm)
-.PHONY: security security-go security-npm
-security: security-go security-npm
+# Security scan (comprehensive - Go + npm + SAST + filesystem)
+.PHONY: security security-go security-npm scan-fs sast
+security: security-go security-npm scan-fs sast
 	@echo "✅ All security scans passed!"
 
-# Go vulnerability scan
+# Go vulnerability scan (call-graph analysis — only reports reachable vulns)
 security-go:
-	@echo "🔒 Running Go security scan..."
+	@echo "🔒 Running Go vulnerability scan..."
 	@command -v govulncheck >/dev/null 2>&1 || { echo "Installing govulncheck..."; go install golang.org/x/vuln/cmd/govulncheck@latest; }
 	@govulncheck ./...
-	@echo "✅ Go security scan passed!"
+	@echo "✅ Go vulnerability scan passed!"
 
-# npm vulnerability scan
+# npm dependency audit
 security-npm:
-	@echo "🔒 Running npm security scan..."
+	@echo "🔒 Running npm security audit..."
 	@if [ -d "cmd/prism-gui/frontend" ]; then \
 		cd cmd/prism-gui/frontend && npm audit; \
-		echo "✅ npm security scan passed!"; \
+		echo "✅ npm security audit passed!"; \
 	else \
 		echo "⚠️  Frontend directory not found, skipping npm audit"; \
 	fi
+
+# Trivy filesystem + IaC scan
+scan-fs:
+	@echo "🔒 Running Trivy filesystem scan..."
+	@command -v trivy >/dev/null 2>&1 || { echo "⚠️  trivy not installed — skipping (brew install trivy)"; exit 0; }
+	@trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+	@echo "✅ Trivy filesystem scan passed!"
+
+# Trivy container image scan (requires IMAGE_NAME)
+.PHONY: scan-image
+scan-image:
+	@echo "🔒 Running Trivy container image scan..."
+	@command -v trivy >/dev/null 2>&1 || { echo "⚠️  trivy not installed — skipping"; exit 0; }
+	@trivy image --severity HIGH,CRITICAL --exit-code 1 $(IMAGE_NAME):$(IMAGE_TAG)
+
+# Semgrep SAST (static application security testing)
+sast:
+	@echo "🔒 Running Semgrep SAST scan..."
+	@command -v semgrep >/dev/null 2>&1 || { echo "⚠️  semgrep not installed — skipping (pip install semgrep)"; exit 0; }
+	@semgrep scan --config=auto --error --quiet .
+	@echo "✅ Semgrep SAST scan passed!"
 
 # Format code (auto-fix)
 .PHONY: fmt
