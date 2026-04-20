@@ -1,13 +1,13 @@
 # Batch Invitation Interface Guide
 
-Prism v0.4.3 provides multiple interfaces for managing batch invitations, each designed for different usage scenarios. This guide explains how to use the batch invitation system through the GUI, TUI, and CLI interfaces.
+Prism provides multiple interfaces for managing batch invitations. This guide covers the GUI and CLI interfaces.
 
 ## Overview
 
 The batch invitation system is accessible through three interfaces:
 
 1. **Graphical User Interface (GUI)** - For desktop users who prefer point-and-click operations
-2. **Terminal User Interface (TUI)** - For terminal users who want visual feedback
+
 3. **Command Line Interface (CLI)** - For scripting, automation, and remote administration
 
 All interfaces use the same core functionality, ensuring consistent behavior regardless of which interface you choose.
@@ -63,13 +63,9 @@ After each operation, the results panel shows:
 
 You can click "Open CSV" to view the results file or "Open Folder" to browse the output directory.
 
-## TUI Interface
+## Accessing the Invitation Dashboard
 
-The terminal user interface provides visual management of invitations in terminal environments.
 
-### Accessing the Invitation Dashboard
-
-1. Launch the Prism TUI: `prism tui`
 2. Navigate to "Profiles" using Tab key or keyboard shortcuts
 3. Select "Invitation Management" from the menu
 4. Press Enter to access the invitation dashboard
@@ -211,14 +207,14 @@ Test User 3,read_write,,,,,,,Failed,,Invalid type
 
 ## Interface Comparison
 
-| Feature | GUI | TUI | CLI |
+| Feature | GUI | CLI |
 |---------|-----|-----|-----|
 | Create batch invitations | ✅ | ❌ | ✅ |
-| Export all invitations | ✅ | ✅ | ✅ |
+| Export all invitations | ✅ | ✅ |
 | Accept batch invitations | ✅ | ❌ | ✅ |
-| Device management | ✅ | ✅ | ✅ |
-| Invitation dashboard | ✅ | ✅ | ❌ |
-| File dialogs | ✅ | ✅ | ❌ |
+| Device management | ✅ | ✅ |
+| Invitation dashboard | ✅ | ❌ |
+| File dialogs | ✅ | ❌ |
 | Preview CSV content | ✅ | ❌ | ❌ |
 | Script automation | ❌ | ❌ | ✅ |
 | Remote operation | ❌ | ✅ | ✅ |
@@ -233,12 +229,6 @@ Test User 3,read_write,,,,,,,Failed,,Invalid type
 3. **Naming Convention**: Establish a consistent naming convention for invitations
 4. **Output Management**: Create a dedicated folder for invitation CSV exports
 
-### For TUI Users
-
-1. **Regular Audits**: Use the dashboard to review invitations regularly
-2. **Device Verification**: Check device binding status for security-critical invitations
-3. **Export Backups**: Regularly export all invitations as backup
-4. **Screen Size**: Ensure terminal size is at least 100x30 for optimal display
 
 ### For CLI Users
 
@@ -253,7 +243,7 @@ Test User 3,read_write,,,,,,,Failed,,Invalid type
 
 You can use multiple interfaces together for different tasks:
 - GUI for initial setup and template generation
-- TUI for day-to-day management and monitoring
+- GUI for day-to-day management and monitoring
 - CLI for scheduled backups and batch operations
 
 ### Integration with Other Systems
@@ -272,11 +262,6 @@ The batch invitation system can be integrated with:
 - **Preview fails**: Check CSV format and encoding (UTF-8 recommended)
 - **Operation hangs**: Try reducing concurrency for large batches
 
-### Common TUI Issues
-
-- **Display issues**: Resize terminal to at least 100x30
-- **Slow refresh**: Try disabling detail view for large invitation lists
-- **Navigation problems**: Check keyboard layout compatibility
 
 ### Common CLI Issues
 

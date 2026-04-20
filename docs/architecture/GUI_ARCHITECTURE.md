@@ -1,6 +1,6 @@
 # Prism GUI Architecture
 
-> **Updated in v0.31.0**: The GUI was rebuilt from Cloudscape Design System to shadcn/ui with Tailwind CSS. This document reflects the current architecture as of v0.35.3.
+> **Updated in v0.31.0**: The GUI was rebuilt from shadcn/ui to shadcn/ui with Tailwind CSS. This document reflects the current architecture as of v0.35.3.
 
 ## Overview
 

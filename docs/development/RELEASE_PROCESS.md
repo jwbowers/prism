@@ -261,7 +261,7 @@ Prism v0.4.6: Complete EFS Multi-Modal Integration
 🔧 Technical Improvements:
 • 573+ lines of professional React/TypeScript volume management
 • Enhanced TUI architecture with interactive mount/unmount capabilities
-• Advanced Cloudscape components integration
+• Advanced shadcn/ui components integration
 • Complete API coverage for GetVolumes, MountVolume, UnmountVolume
 
 📊 Phase 4 Enterprise Features Complete:

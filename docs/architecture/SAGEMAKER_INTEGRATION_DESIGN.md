@@ -227,7 +227,7 @@ prism workspace launch sagemaker-canvas business-analysis
 
 ```bash
 # Unified listing shows all service types
-prism list
+prism workspace list
 # INSTANCE          TYPE           STATUS    ACCESS     COST/HOUR
 # ml-learning       sagemaker_lab  running   web        $0.00
 # ml-training       sagemaker      running   web        $0.736  
@@ -251,11 +251,11 @@ prism info ml-training
 
 ```bash
 # New connect command for web services
-prism connect ml-training
+prism workspace connect ml-training
 # → Opens web browser to SageMaker Studio URL
 # → Shows connection info and shortcuts
 
-prism connect ml-training --print-url
+prism workspace connect ml-training --print-url
 # → Prints URL without opening browser (for remote/headless usage)
 # https://studio-ml-training.studio.us-west-2.sagemaker.aws
 ```

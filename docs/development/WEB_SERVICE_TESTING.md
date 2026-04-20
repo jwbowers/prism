@@ -8,14 +8,14 @@ This document provides testing procedures for the automatic web service tunnelin
 
 ### 1. Automatic Tunnel Creation on Connect
 
-**Test**: `prism connect` should automatically create tunnels for all web services
+**Test**: `prism workspace connect` should automatically create tunnels for all web services
 
 ```bash
 # Launch instance with web services
 prism workspace launch python-ml test-jupyter --size S
 
 # Connect - should show tunnel creation
-prism connect test-jupyter
+prism workspace connect test-jupyter
 
 # Expected output:
 # 🌐 Setting up tunnels for web services...
@@ -33,10 +33,10 @@ prism connect test-jupyter
 
 ### 2. Web Service List Command
 
-**Test**: `prism web list` shows all available services with tunnel status
+**Test**: `prism workspace web list` shows all available services with tunnel status
 
 ```bash
-prism web list test-jupyter
+prism workspace web list test-jupyter
 
 # Expected output:
 # Web services for test-jupyter:
@@ -56,10 +56,10 @@ prism web list test-jupyter
 
 ### 3. Web Service Open Command
 
-**Test**: `prism web open` creates tunnel and opens browser
+**Test**: `prism workspace web open` creates tunnel and opens browser
 
 ```bash
-prism web open test-jupyter jupyter
+prism workspace web open test-jupyter jupyter
 
 # Expected output:
 # 🌐 Creating tunnel for jupyter...
@@ -76,14 +76,14 @@ prism web open test-jupyter jupyter
 
 ### 4. Web Service Close Command
 
-**Test**: `prism web close` closes tunnels
+**Test**: `prism workspace web close` closes tunnels
 
 ```bash
 # Close specific service
-prism web close test-jupyter jupyter
+prism workspace web close test-jupyter jupyter
 
 # Close all services
-prism web close test-jupyter
+prism workspace web close test-jupyter
 
 # Expected output:
 # 🔒 Closing tunnel for test-jupyter/jupyter...
@@ -104,9 +104,9 @@ prism web close test-jupyter
 prism workspace launch python-ml test-jupyter --size S
 
 # Connect or open web service
-prism connect test-jupyter
+prism workspace connect test-jupyter
 # or
-prism web open test-jupyter jupyter
+prism workspace web open test-jupyter jupyter
 ```
 
 **Validation**:
@@ -124,10 +124,10 @@ prism web open test-jupyter jupyter
 prism workspace launch r-research test-r --size M
 
 # Create tunnels for all services
-prism connect test-r
+prism workspace connect test-r
 
 # List all tunnels
-prism web list test-r
+prism workspace web list test-r
 ```
 
 **Validation**:
@@ -224,8 +224,8 @@ prism workspace launch r-research test-web-full --size M
 After testing, remove test instances:
 
 ```bash
-prism delete test-web-services --yes
-prism delete test-jupyter --yes
-prism delete test-r --yes
+prism workspace delete test-web-services --yes
+prism workspace delete test-jupyter --yes
+prism workspace delete test-r --yes
 # etc.
 ```

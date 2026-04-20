@@ -472,8 +472,8 @@ export AWS_REGION=us-west-2
 # If it does, check that tests use FixtureRegistry correctly
 
 # Manual cleanup (last resort)
-./bin/prism list
-./bin/prism delete instance-name
+./bin/prism workspace list
+./bin/prism workspace delete instance-name
 ```
 
 **Problem: Tests timeout waiting for resources**
@@ -843,10 +843,10 @@ Tests expect daemon on `http://localhost:8947`:
 **Manual Cleanup** (emergency):
 ```bash
 # List all resources
-./bin/prism list
+./bin/prism workspace list
 
 # Delete specific resources
-./bin/prism delete instance-name
+./bin/prism workspace delete instance-name
 ./bin/prism storage delete storage-name
 ./bin/prism volume delete volume-name
 ```

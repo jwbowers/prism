@@ -583,7 +583,7 @@ export const EmbeddedTerminal: React.FC<EmbeddedTerminalProps> = ({
 ```tsx
 // cmd/prism-gui/frontend/src/components/EmbeddedAWSService.tsx
 import React, { useState, useRef } from 'react';
-import { Container, Header, Button, Spinner } from '@cloudscape-design/components';
+import { Container, Header, Button, Spinner } from 'shadcn/ui';
 
 interface EmbeddedAWSServiceProps {
   config: ConnectionConfig;

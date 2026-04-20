@@ -37,7 +37,7 @@ prism workspace launch r-research-full-stack my-r-project
 
 ```bash
 # Get connection info
-prism connect my-r-project
+prism workspace connect my-r-project
 
 # Output shows:
 # RStudio Server: http://54.123.45.67:8787
@@ -113,7 +113,7 @@ prism connect my-r-project
 
 ```bash
 # SSH into your instance
-prism connect my-r-project
+prism workspace connect my-r-project
 
 # Create new Quarto project
 cd ~/documents
@@ -303,7 +303,7 @@ quarto render paper.qmd
 
 ```bash
 # SSH into your instance
-prism connect my-r-project
+prism workspace connect my-r-project
 
 # Create user account
 sudo adduser colleague
@@ -387,10 +387,10 @@ prism workspace launch r-research-full-stack my-project --instance-type r7i.xlar
 
 ```bash
 # Hibernate when not in use (preserves all state)
-prism hibernate my-r-project
+prism workspace hibernate my-r-project
 
 # Resume when needed (< 2 minutes)
-prism resume my-r-project
+prism workspace resume my-r-project
 
 # Savings: ~90% reduction in compute costs
 ```
@@ -401,7 +401,7 @@ prism resume my-r-project
 
 **Check if service is running:**
 ```bash
-prism connect my-r-project
+prism workspace connect my-r-project
 sudo systemctl status rstudio-server
 
 # If not running, start it
@@ -411,7 +411,7 @@ sudo systemctl start rstudio-server
 **Check firewall (security group):**
 ```bash
 # Verify port 8787 is open
-prism list my-r-project
+prism workspace list my-r-project
 # Look for "Ports: [22, 8787, 8888]"
 ```
 

@@ -158,9 +158,9 @@ Test Areas:
 
 Commands to Test:
 - prism workspace launch <template> <name> [options]
-- prism list [--format json|table]
-- prism connect <instance>
-- prism stop/start/hibernate <instance>
+- prism workspace list [--format json|table]
+- prism workspace connect <instance>
+- prism workspace stop/start/hibernate <instance>
 - prism templates [list|validate|info]
 - prism storage [create|attach|detach]
 - prism profiles [list|create|switch]

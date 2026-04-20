@@ -63,20 +63,20 @@ $ prism init
 **Script to Follow**:
 ```bash
 # List workspaces
-$ prism list
+$ prism workspace list
 
 # Connect to workspace
-$ prism connect sarahs-rnaseq
+$ prism workspace connect sarahs-rnaseq
 # (shows SSH command, then Ctrl+C to cancel actual connection)
 
 # Stop workspace to save costs
-$ prism stop sarahs-rnaseq
+$ prism workspace stop sarahs-rnaseq
 
 # List again to show stopped state
-$ prism list
+$ prism workspace list
 
 # Restart workspace
-$ prism start sarahs-rnaseq
+$ prism workspace start sarahs-rnaseq
 ```
 
 **Key Points to Show**:
@@ -99,7 +99,7 @@ $ prism start sarahs-rnaseq
 $ prism project costs
 
 # Show workspace details with cost breakdown
-$ prism list --verbose
+$ prism workspace list --verbose
 
 # Show storage costs
 $ prism storage list
@@ -281,7 +281,7 @@ prism init
 
 **Note**: The helper script (`record-solo-researcher.sh`) automatically adds `bin/` to your PATH, so you can use `prism` directly instead of `./bin/prism` in your recordings for a cleaner demonstration.
 
-**Questions?**: See [VISUAL_DOCUMENTATION_ENHANCEMENT_PLAN.md](../VISUAL_DOCUMENTATION_ENHANCEMENT_PLAN.md) for detailed strategy and best practices.
+**Questions?**: See Visual Documentation Enhancement Plan (planned) for detailed strategy and best practices.
 
 ---
 

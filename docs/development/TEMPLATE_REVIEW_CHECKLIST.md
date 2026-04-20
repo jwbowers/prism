@@ -105,7 +105,7 @@ Verify these fields exist and are valid:
 
 **Quick Start**:
 - [ ] **Launch command** (`prism workspace launch ...`)
-- [ ] **Connect command** (`prism connect ...`)
+- [ ] **Connect command** (`prism workspace connect ...`)
 - [ ] **First steps** (what to do after connecting)
 - [ ] **Estimated time** (5 minutes? 30 minutes?)
 
@@ -175,7 +175,7 @@ AWS_REGION=us-east-1 prism workspace launch [template-name] test-x86
 - [ ] Can connect via SSH
 
 # Clean up
-prism delete test-x86
+prism workspace delete test-x86
 ```
 
 **Test 2: ARM64 Launch** (If template claims support)
@@ -184,7 +184,7 @@ AWS_REGION=us-east-1 prism workspace launch --architecture arm64 [template-name]
 
 # Verify same as x86_64
 
-prism delete test-arm
+prism workspace delete test-arm
 ```
 
 **Test 3: Multi-Region** (Recommended)
@@ -194,7 +194,7 @@ AWS_REGION=us-west-2 prism workspace launch [template-name] test-west
 
 # Verify same as first region
 
-prism delete test-west
+prism workspace delete test-west
 ```
 
 ### Service Testing

@@ -24,9 +24,9 @@ Prism now provides automatic SSH tunneling for web services (Jupyter Lab, RStudi
    - Integrated into `PrismAPI` interface
 
 4. **CLI Commands** (`internal/cli/web_commands.go` - 204 lines)
-   - `prism web list <instance>` - List services with tunnel status
-   - `prism web open <instance> <service>` - Open service in browser
-   - `prism web close <instance> [service]` - Close tunnels
+   - `prism workspace web list <instance>` - List services with tunnel status
+   - `prism workspace web open <instance> <service>` - Open service in browser
+   - `prism workspace web close <instance> [service]` - Close tunnels
 
 5. **GUI Integration** (`cmd/prism-gui/service.go`)
    - `OpenInstanceWebService()` - Create tunnel and return connection config
@@ -38,7 +38,7 @@ Prism now provides automatic SSH tunneling for web services (Jupyter Lab, RStudi
 ### Automatic Tunneling on Connect
 
 ```bash
-$ prism connect my-jupyter
+$ prism workspace connect my-jupyter
 🌐 Setting up tunnels for web services...
 ✅ Tunnels created:
    • Jupyter Lab: http://localhost:8888?token=f3a8b9c7d2e1
@@ -50,7 +50,7 @@ $ prism connect my-jupyter
 
 ```bash
 # List available services
-$ prism web list my-jupyter
+$ prism workspace web list my-jupyter
 Web services for my-jupyter:
 
 ✅ Jupyter Lab (port 8888)
@@ -60,15 +60,15 @@ Web services for my-jupyter:
    Not tunneled - use 'cws web open my-jupyter rstudio-server' to access
 
 # Open service in browser
-$ prism web open my-jupyter jupyter
+$ prism workspace web open my-jupyter jupyter
 🌐 Creating tunnel for jupyter...
 ✅ Tunnel created: http://localhost:8888?token=abc123
 🌐 Opening in browser...
 ✅ Browser opened
 
 # Close tunnels
-$ prism web close my-jupyter jupyter  # Specific service
-$ prism web close my-jupyter          # All tunnels
+$ prism workspace web close my-jupyter jupyter  # Specific service
+$ prism workspace web close my-jupyter          # All tunnels
 ```
 
 ## Technical Details
@@ -233,7 +233,7 @@ Tunnels "just work" - no SSH commands, no port configuration needed.
 
 ### 3. Multi-Modal Consistency
 Same functionality across CLI, TUI, and GUI:
-- CLI: `prism web` commands + auto-tunneling
+- CLI: `prism workspace web` commands + auto-tunneling
 - TUI: Planned integration
 - GUI: Infrastructure complete, iframe embedding ready
 
@@ -278,12 +278,12 @@ Quick test:
 prism workspace launch python-ml test-jupyter --size S
 
 # Test auto-tunneling
-prism connect test-jupyter
+prism workspace connect test-jupyter
 
 # Test manual commands
-prism web list test-jupyter
-prism web open test-jupyter jupyter
-prism web close test-jupyter
+prism workspace web list test-jupyter
+prism workspace web open test-jupyter jupyter
+prism workspace web close test-jupyter
 ```
 
 ## Known Limitations

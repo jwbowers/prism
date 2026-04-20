@@ -176,7 +176,7 @@ Brief description of what this template provides.
 ## Quick Start
 \`\`\`bash
 prism workspace launch my-awesome-template my-analysis
-prism connect my-analysis
+prism workspace connect my-analysis
 \`\`\`
 
 ## What's Included
@@ -219,7 +219,7 @@ prism workspace launch --dry-run my-awesome-template test-instance
 prism workspace launch my-awesome-template test-instance
 
 # Connect and verify
-prism connect test-instance
+prism workspace connect test-instance
 
 # Test all features:
 # - Check packages are installed
@@ -227,7 +227,7 @@ prism connect test-instance
 # - Verify ports are accessible
 
 # Clean up when done
-prism delete test-instance
+prism workspace delete test-instance
 ```
 
 ### Multi-Region Testing (Recommended)
@@ -242,7 +242,7 @@ AWS_REGION=us-east-1 prism workspace launch my-awesome-template test-us-east
 AWS_REGION=us-west-2 prism workspace launch my-awesome-template test-us-west
 
 # Clean up both
-prism delete test-us-east test-us-west
+prism workspace delete test-us-east test-us-west
 ```
 
 ### Architecture Testing
@@ -257,7 +257,7 @@ prism workspace launch my-awesome-template test-x86
 prism workspace launch --architecture arm64 my-awesome-template test-arm
 
 # Clean up
-prism delete test-x86 test-arm
+prism workspace delete test-x86 test-arm
 ```
 
 ---

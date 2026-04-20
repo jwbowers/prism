@@ -20,7 +20,7 @@ Use of Prism does not, by itself, ensure compliance with NIST 800-171, NIH data 
 
 **Always obtain institutional approval before using Prism for NIH dbGaP data or other CUI.**
 
-See [COMPLIANCE_DISCLAIMER.md](../docs/admin-guides/COMPLIANCE_DISCLAIMER.md) for complete legal notice.
+See [COMPLIANCE_DISCLAIMER.md](../admin-guides/COMPLIANCE_DISCLAIMER.md) for complete legal notice.
 
 ---
 
@@ -157,7 +157,7 @@ rsync -avz results/ collaborator@anl.gov:/shared/battery-research/
 
 1. **Research IT Recommends Prism**:
    - University Research Security Office recently validated Prism against NIST 800-171
-   - Provides compliance documentation: [NIST_800_171_COMPLIANCE.md](../docs/admin-guides/NIST_800_171_COMPLIANCE.md)
+   - Provides compliance documentation: [NIST_800_171_COMPLIANCE.md](../admin-guides/NIST_800_171_COMPLIANCE.md)
    - Meets all 110 required controls in Rev. 3
    - Researchers can self-service with pre-approved configuration
 
@@ -203,7 +203,7 @@ rsync -avz results/ collaborator@anl.gov:/shared/battery-research/
 
 ```bash
 # Connect to CUI-compliant workstation
-prism connect lung-cancer-genomics
+prism workspace connect lung-cancer-genomics
 # ↑ Prompts for MFA token (IA.2.078 - Multifactor Authentication)
 # ↑ Logs connection attempt (AU.2.041 - Audit Records)
 
@@ -331,7 +331,7 @@ prism project member add chen-lab-nih-r01 \
 # 4. Dr. Martinez sets up access
 brew install scttfrdmn/tap/prism
 prism profile import university-cui-profile.json
-prism connect lung-cancer-genomics  # Prompts for MFA setup on first use
+prism workspace connect lung-cancer-genomics  # Prompts for MFA setup on first use
 
 # 5. Access logged for compliance
 # AU.2.042 - Account creation logged
@@ -639,9 +639,9 @@ prism admin compliance summary --institution
 
 ## Related Documentation
 
-- **[NIST 800-171 Compliance Guide](../docs/admin-guides/NIST_800_171_COMPLIANCE.md)** - Detailed control-by-control compliance mapping
-- **[Security & Compliance Roadmap](../docs/admin-guides/SECURITY_COMPLIANCE_ROADMAP.md)** - Comprehensive compliance framework
-- **[Compliance Matrix](../docs/admin-guides/COMPLIANCE_MATRIX.md)** - Quick reference for all frameworks
+- **[NIST 800-171 Compliance Guide](../admin-guides/NIST_800_171_COMPLIANCE.md)** - Detailed control-by-control compliance mapping
+- **[Security & Compliance Roadmap](../admin-guides/SECURITY_COMPLIANCE_ROADMAP.md)** - Comprehensive compliance framework
+- **[Compliance Matrix](../admin-guides/COMPLIANCE_MATRIX.md)** - Quick reference for all frameworks
 
 ---
 

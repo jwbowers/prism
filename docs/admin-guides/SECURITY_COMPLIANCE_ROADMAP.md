@@ -441,7 +441,7 @@ prism profile create research-secure \
   --mfa-device arn:aws:iam::123456789012:mfa/jane.smith
 
 # Instance access with MFA
-prism connect my-research
+prism workspace connect my-research
 # ↑ Prompts for MFA token before establishing SSH connection
 ```
 

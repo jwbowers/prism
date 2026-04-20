@@ -105,13 +105,13 @@ func (c *CLIContext) RunCommand(args ...string) (string, error) {
 #### 1.2 Core CLI Commands to Test
 **Launch & Lifecycle**:
 - [ ] `prism workspace launch <template> <name> --size M` - All templates
-- [ ] `prism list` - Verify output formatting
-- [ ] `prism stop <name>` - Stop instance
-- [ ] `prism start <name>` - Start instance
-- [ ] `prism hibernate <name>` - Hibernate (if supported)
-- [ ] `prism resume <name>` - Resume from hibernation
-- [ ] `prism delete <name>` - Delete instance
-- [ ] `prism connect <name>` - Get SSH command
+- [ ] `prism workspace list` - Verify output formatting
+- [ ] `prism workspace stop <name>` - Stop instance
+- [ ] `prism workspace start <name>` - Start instance
+- [ ] `prism workspace hibernate <name>` - Hibernate (if supported)
+- [ ] `prism workspace resume <name>` - Resume from hibernation
+- [ ] `prism workspace delete <name>` - Delete instance
+- [ ] `prism workspace connect <name>` - Get SSH command
 
 **Storage**:
 - [ ] `prism storage create <name>` - Create EFS
@@ -857,10 +857,10 @@ open test-reports/latest.html
 4. **Cleanup** (if test fails):
 ```bash
 # List test resources
-./bin/prism list --profile aws
+./bin/prism workspace list --profile aws
 
 # Delete test instances
-./bin/prism delete test-* --profile aws
+./bin/prism workspace delete test-* --profile aws
 ```
 
 ---
@@ -897,13 +897,13 @@ PROFILE="${PRISM_TEST_PROFILE:-aws}"
 CUTOFF=$(date -v-24H +%s)
 
 # List all test instances
-./bin/prism list --profile "$PROFILE" | grep "^test-" | while read name; do
+./bin/prism workspace list --profile "$PROFILE" | grep "^test-" | while read name; do
     # Extract timestamp from name
     timestamp=$(echo "$name" | grep -oE '[0-9]{10}$')
 
     if [ "$timestamp" -lt "$CUTOFF" ]; then
         echo "Deleting old test instance: $name"
-        ./bin/prism delete "$name" --profile "$PROFILE"
+        ./bin/prism workspace delete "$name" --profile "$PROFILE"
     fi
 done
 

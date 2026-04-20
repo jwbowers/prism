@@ -28,7 +28,7 @@ By 2028, Prism aims to be the standard research computing platform used by:
 
 **UPDATED TIMELINE FOR SCHOOL PARTNERSHIPS (October 2025)**:
 - **Phase 4.6 (November 2025)**: Cloudscape GUI migration for professional interface
-- **Phase 5A (Q4 2025-Q1 2026)**: Multi-user foundation built on Cloudscape components
+- **Phase 5A (Q4 2025-Q1 2026)**: Multi-user foundation built on shadcn/ui components
 - **Phase 5B (Q2 2026)**: AWS research services integration with professional UI
 - **Phase 5C (Q3 2026)**: Template marketplace with enterprise-grade interface
 - **Q4 2025 Target**: Professional interface ready for school pilot programs
@@ -269,8 +269,8 @@ prism workspace launch --from-paper "10.1038/s41586-021-03819-2" genomics-analys
 
 ```bash
 # Manual hibernation with session preservation
-prism hibernate ml-workstation     # Preserves RAM state, running processes
-prism resume ml-workstation        # Exact environment restoration
+prism workspace hibernate ml-workstation     # Preserves RAM state, running processes
+prism workspace resume ml-workstation        # Exact environment restoration
 
 # Automated hibernation policies
 prism idle profile list
@@ -293,7 +293,7 @@ prism idle history                  # Complete audit trail
 **Advanced Hibernation Intelligence**:
 ```bash
 # Predictive hibernation based on researcher patterns
-prism hibernate --predict ml-workstation
+prism workspace hibernate --predict ml-workstation
 # → "Analysis suggests you typically return to this environment in 4 hours"
 # → "Hibernating now will save $12.50 with minimal productivity impact"
 

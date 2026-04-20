@@ -59,7 +59,7 @@ Consultant shares analysis with client:
 
 1. **Connect to your instance**:
    ```bash
-   prism connect my-r-env
+   prism workspace connect my-r-env
    ```
 
 2. **Add a collaborator**:
@@ -89,13 +89,13 @@ Consultant shares analysis with client:
 First, connect to the running instance where you'll add users:
 
 ```bash
-prism connect my-r-env
+prism workspace connect my-r-env
 ```
 
 Or using the instance ID:
 
 ```bash
-prism connect i-0123456789abcdef0
+prism workspace connect i-0123456789abcdef0
 ```
 
 #### Step 2: Create User Account
@@ -180,7 +180,7 @@ Find the instance's public IP to share with collaborators:
 
 ```bash
 # From your local machine (before connecting)
-prism list
+prism workspace list
 
 # Or from within the instance
 curl -s http://169.254.169.254/latest/meta-data/public-ipv4
@@ -281,7 +281,7 @@ For technical collaborators who want command-line access:
 
 1. **Connect to instance**:
    ```bash
-   prism connect my-r-env
+   prism workspace connect my-r-env
    ```
 
 2. **Switch to collaborator's account**:
@@ -656,7 +656,7 @@ c.NotebookApp.iopub_data_rate_limit = 10000000
 2. **Check security group**:
    ```bash
    # From local machine
-   prism list
+   prism workspace list
    # Look for security group rules allowing port 22
    ```
 
@@ -746,7 +746,7 @@ c.NotebookApp.iopub_data_rate_limit = 10000000
 prism workspace launch "R Research Environment (Simplified)" bio-lab
 
 # Connect and add team members
-prism connect bio-lab
+prism workspace connect bio-lab
 
 # Add users
 sudo adduser alice
@@ -786,7 +786,7 @@ sudo usermod -aG rstudio-users charlie
 prism workspace launch python-ml course-ml-101
 
 # Connect
-prism connect course-ml-101
+prism workspace connect course-ml-101
 
 # Create student accounts (script)
 for i in {1..20}; do
@@ -850,7 +850,7 @@ sudo chown -R workshop:workshop /home/workshop/workshop-materials
 prism workspace launch "R Research Environment (Simplified)" intl-collab
 
 # Connect and add Chilean collaborator
-prism connect intl-collab
+prism workspace connect intl-collab
 sudo adduser maria
 
 # Create shared workspace

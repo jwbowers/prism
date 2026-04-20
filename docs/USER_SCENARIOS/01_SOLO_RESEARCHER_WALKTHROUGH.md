@@ -679,7 +679,7 @@ prism budget report --month september --pdf --output ~/Desktop/sept-prism-report
 **Target**: Power users and special scenarios
 
 6. **Time-boxed Launches** (3 days)
-   - `prism workspace launch template name --hours 8`
+   - `prism workspace launch template name --ttl 8h`
    - Auto-terminate after time limit
    - Prevents runaway costs
 

@@ -263,7 +263,7 @@ prism invitation accept <token>
 
 # 3. Automatically provisioned (SSH keys, UID/GID, EFS home)
 # 4. Connect to workspace immediately
-prism connect cs101-workspace
+prism workspace connect cs101-workspace
 ```
 
 ---

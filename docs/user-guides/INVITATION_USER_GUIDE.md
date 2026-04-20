@@ -44,8 +44,8 @@ The Prism invitation system enables research teams, university classes, and lab 
 prism invitation accept eyJhbGciOiJIUzI1NiIs...
 
 # 3. Access granted automatically! Connect to workspaces:
-prism list  # See available workspaces
-prism connect my-workspace  # Connect via SSH
+prism workspace list  # See available workspaces
+prism workspace connect my-workspace  # Connect via SSH
 ```
 
 ### For Project Owners
@@ -94,7 +94,7 @@ Home Dir:  /efs/home/alice
 
 You now have access to all project workspaces!
 
-Try: prism list
+Try: prism workspace list
 ```
 
 **What Happens Automatically**:
@@ -441,7 +441,7 @@ prism invitation revoke INVITATION_ID
 **Problem**: "Invitation already accepted"
 **Solution**:
 - You've already accepted this invitation
-- Check `prism list` to see your project workspaces
+- Check `prism workspace list` to see your project workspaces
 
 **Problem**: "Permission denied after accepting"
 **Solution**:
@@ -511,7 +511,7 @@ prism invitation quota-check --instance-type t3.medium --count 50
 
 1. **Accept Promptly**: Invitations expire (typically 7 days)
 2. **Save SSH Keys**: Backup `~/.prism/ssh_keys/` directory
-3. **Check Permissions**: Run `prism list` to verify access after accepting
+3. **Check Permissions**: Run `prism workspace list` to verify access after accepting
 4. **Communicate**: Contact sender if you encounter issues
 
 ### For Senders

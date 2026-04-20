@@ -233,7 +233,7 @@ prism info research-hub
 # Health: ✓ Healthy (last checked: 30s ago)
 
 # Open web service in browser
-prism connect research-hub
+prism workspace connect research-hub
 # → Opens https://research-hub.cws.university.edu:8000/hub
 
 # Get web service logs

@@ -125,8 +125,8 @@ Prism includes pre-configured environments designed for educational use:
 ### Cost Optimization Tips:
 ```bash
 # Enable hibernation for classes (preserves student work)
-prism hibernate my-project  # Pause when not in use
-prism resume my-project     # Resume with all work intact
+prism workspace hibernate my-project  # Pause when not in use
+prism workspace resume my-project     # Resume with all work intact
 
 # Use spot instances for assignments
 prism workspace launch python-ml assignment --spot
@@ -223,7 +223,7 @@ Templates include built-in idle detection that automatically hibernates instance
 
 To hibernate all student environments manually:
 ```bash
-prism hibernate student-name-project
+prism workspace hibernate student-name-project
 ```
 
 ### **Integration with LMS**
@@ -271,7 +271,7 @@ prism hibernate student-name-project
 prism workspace list
 
 # Resume if stopped
-prism resume my-project
+prism workspace resume my-project
 ```
 
 **"High costs"**
@@ -280,7 +280,7 @@ prism resume my-project
 prism workspace list
 
 # Hibernate unused environments
-prism hibernate unused-project
+prism workspace hibernate unused-project
 ```
 
 **"Student cannot access Jupyter/RStudio"**

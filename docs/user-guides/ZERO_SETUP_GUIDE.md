@@ -105,7 +105,7 @@ prism workspace launch "Python Machine Learning (Simplified)" my-ml
 SSH keys are generated and managed automatically:
 
 ```bash
-prism connect my-instance
+prism workspace connect my-instance
 # ✅ SSH key generated on first use
 # ✅ Stored securely in ~/.ssh/
 # ✅ Uploaded to AWS automatically

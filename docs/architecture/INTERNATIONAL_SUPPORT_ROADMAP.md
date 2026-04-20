@@ -326,8 +326,8 @@ export default i18n;
 
 **Cloudscape Components**:
 ```typescript
-// All Cloudscape components support RTL and i18n
-import { Button, Header } from '@cloudscape-design/components';
+// All shadcn/ui components support RTL and i18n
+import { Button, Header } from 'shadcn/ui';
 import { useTranslation } from 'react-i18next';
 
 function LaunchButton() {
@@ -434,7 +434,7 @@ func (cf *CurrencyFormatter) FormatCost(usd float64) string {
 **Usage**:
 ```bash
 # Japanese researcher sees costs in JPY
-prism cost estimate python-ml --region ap-northeast-1
+prism workspace cost estimate python-ml --region ap-northeast-1
 
 インスタンスコストの見積もり:
 ├── コンピューティング: ¥6,825/時間
@@ -443,7 +443,7 @@ prism cost estimate python-ml --region ap-northeast-1
 └── 合計見積もり: ¥205,000/月
 
 # European researcher sees EUR
-prism cost estimate python-ml --region eu-west-1
+prism workspace cost estimate python-ml --region eu-west-1
 
 Instance Cost Estimate:
 ├── Compute: €4.14/hour
@@ -472,7 +472,7 @@ Last updated: 2025-10-19 14:32 UTC
 
 ### Current State (v0.5.5)
 
-- ✅ GUI uses Cloudscape Design System (WCAG AA compliant)
+- ✅ GUI uses shadcn/ui (WCAG AA compliant)
 - ⚠️  CLI lacks screen reader support
 - ⚠️  TUI has limited keyboard navigation hints
 
@@ -496,10 +496,10 @@ Status: In progress
 **Alternative Output Formats**:
 ```bash
 # JSON output for assistive tools
-prism list --format json | jq
+prism workspace list --format json | jq
 
 # Plain text without unicode symbols
-prism list --no-emoji --no-colors
+prism workspace list --no-emoji --no-colors
 
 Instances:
   my-project

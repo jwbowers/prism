@@ -27,10 +27,10 @@ This is the simplified guide for quickly adding collaborators to your Prism inst
 From your terminal, connect to the running instance:
 
 ```bash
-prism connect my-research-env
+prism workspace connect my-research-env
 ```
 
-Replace `my-research-env` with your instance name (see `prism list` for all instances).
+Replace `my-research-env` with your instance name (see `prism workspace list` for all instances).
 
 ### Step 2: Create User Account
 
@@ -76,7 +76,7 @@ sudo usermod -aG rstudio-users collaborator
 ```bash
 # Exit from the instance (Ctrl+D or type 'exit')
 # Then run:
-prism list
+prism workspace list
 ```
 
 Look for your instance and note the **Public IP** (e.g., `54.123.45.67`).
@@ -211,7 +211,7 @@ You can now:
 
 **Solutions**:
 1. Verify the URL is correct (check for typos)
-2. Confirm the instance is running (ask owner to check `prism list`)
+2. Confirm the instance is running (ask owner to check `prism workspace list`)
 3. Try a different browser (Chrome, Firefox, Safari)
 4. Check your internet connection
 5. Ask owner to verify web service is running:
@@ -340,7 +340,7 @@ If you're comfortable with command-line tools, you can also access via SSH for m
 ### Instance Owner Adds Your Key
 
 ```bash
-prism connect my-research-env
+prism workspace connect my-research-env
 sudo su - collaborator
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
 echo "your-public-key-here" >> ~/.ssh/authorized_keys

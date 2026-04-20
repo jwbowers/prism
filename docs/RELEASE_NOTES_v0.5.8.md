@@ -83,7 +83,7 @@ Version 0.5.8 transforms the first-time user experience with intuitive onboardin
 - ✅ Users not blocked on slow operations
 - ✅ Stop 10 workspaces → daemon monitors all in parallel
 - ✅ CLI can disconnect, daemon keeps monitoring
-- ✅ Check progress anytime with `prism list`
+- ✅ Check progress anytime with `prism workspace list`
 
 ### 3. Accurate Billing (Issue #95) ✅
 

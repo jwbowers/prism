@@ -136,11 +136,11 @@ jupyter --version
 **User**: Needs to manage costs, stop when not using
 
 **Test Steps**:
-1. Stop instance: `prism stop test-instance`
+1. Stop instance: `prism workspace stop test-instance`
 2. List instances (verify stopped)
-3. Start instance: `prism start test-instance`
+3. Start instance: `prism workspace start test-instance`
 4. Wait for ready
-5. Delete instance: `prism delete test-instance`
+5. Delete instance: `prism workspace delete test-instance`
 6. Verify cleanup
 
 **Success Criteria**:
@@ -260,9 +260,9 @@ rstudio-server status  # or check service
 
 **Test Steps**:
 1. Launch instance
-2. Hibernate: `prism hibernate test-instance`
+2. Hibernate: `prism workspace hibernate test-instance`
 3. Verify hibernation status
-4. Resume: `prism resume test-instance`
+4. Resume: `prism workspace resume test-instance`
 5. Verify work resumed (check for running processes)
 
 **Success Criteria**:

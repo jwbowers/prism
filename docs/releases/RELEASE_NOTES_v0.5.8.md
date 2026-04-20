@@ -140,8 +140,8 @@ Renamed "Instances" → "Workspaces" across all interfaces for better mental mod
 **None** - This release is fully backward compatible.
 
 **Terminology changes** are additive only:
-- Old commands still work (e.g., `prism list instances`)
-- New terminology preferred (e.g., `prism list`)
+- Old commands still work (e.g., `prism workspace list instances`)
+- New terminology preferred (e.g., `prism workspace list`)
 - Help text updated to reflect "workspace" terminology
 
 ---
@@ -155,9 +155,9 @@ prism init                    # Interactive wizard for first-time users
 
 # Existing commands (unchanged)
 prism workspace launch python-ml my-research
-prism list
-prism connect my-research
-prism stop my-research
+prism workspace list
+prism workspace connect my-research
+prism workspace stop my-research
 ```
 
 ### GUI Features

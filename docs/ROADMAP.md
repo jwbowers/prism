@@ -19,7 +19,7 @@ This roadmap outlines planned features and enhancements for Prism. All items are
 - ✅ **Parallel test tiers**: Fast (~10 min) + Serial (~40 min) via `npm run test:e2e:all`
 - ✅ **Zero zombie resources**: Pre-run cleanup + post-run EC2 zombie check + post-suite storage cleanup
 - ✅ **All features tested**: Instances, storage, hibernation, profiles, projects, users, invitations, budgets
-- ✅ **Dependencies current**: Cloudscape 3.0.1208, Wails v3 alpha.72, React 19
+- ✅ **Dependencies current**: shadcn/ui.1208, Wails v3 alpha.72, React 19
 
 ### v0.7.x Completed (Jan–Feb 2026)
 - ✅ Complete user management system (detail view, SSH keys, provisioning, status)
@@ -1228,7 +1228,7 @@ desktop:
 prism workspace launch generic-desktop my-desktop
 
 # Connect (auto-opens browser)
-prism connect my-desktop
+prism workspace connect my-desktop
 
 # DCV web client appears in browser
 # Full desktop environment with applications
@@ -1584,7 +1584,7 @@ Reliable auto-launch requires daemon to be running OR AWS Lambda function:
 ✅ Project-based budget management  
 
 ### Phase 4.6: Professional GUI (v0.4.6 - September 2025)
-✅ Cloudscape Design System migration (AWS-native components)  
+✅ shadcn/ui migration (AWS-native components)  
 ✅ Professional tabbed interface  
 ✅ Enterprise-grade accessibility (WCAG AA)  
 

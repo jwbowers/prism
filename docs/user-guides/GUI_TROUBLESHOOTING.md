@@ -374,7 +374,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 4. **Verify ARIA support**:
    - shadcn/ui components include ARIA via Radix UI by default
    - Check Radix UI components are properly installed
-   - Update if needed: `npm update @cloudscape-design/components`
+   - Update if needed: `npm update  # update all frontend deps`
 
 ---
 

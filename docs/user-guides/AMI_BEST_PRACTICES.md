@@ -133,7 +133,7 @@ compliance=phi_approved"          # Regulatory compliance
 prism workspace launch --ami ami-0abc123def456 security-audit
 
 # 2. Connect and audit
-prism connect security-audit
+prism workspace connect security-audit
 
 # Inside instance, check for sensitive data:
 # - SSH keys: ~/.ssh/*
@@ -149,7 +149,7 @@ sudo find /home -name ".env" -type f
 
 # 4. Delete test instance
 exit
-prism delete security-audit --force
+prism workspace delete security-audit --force
 ```
 
 ### Remove Credentials
@@ -158,7 +158,7 @@ prism delete security-audit --force
 
 ```bash
 # Before creating AMI, connect to instance and clean:
-prism connect my-instance
+prism workspace connect my-instance
 
 # Remove AWS credentials
 rm -rf ~/.aws/credentials
@@ -241,7 +241,7 @@ prism ami share ami-0abc123def456 --public
 
 ```bash
 # Before creating AMI, clean unnecessary files:
-prism connect my-instance
+prism workspace connect my-instance
 
 # Clean package manager caches
 sudo apt-get clean                # Ubuntu/Debian
@@ -303,9 +303,9 @@ prism ami create my-instance --name "My AMI" --no-reboot
 
 ```bash
 # ✅ Recommended workflow:
-prism stop my-instance
+prism workspace stop my-instance
 # Wait for instance to fully stop
-prism status my-instance  # Should show 'stopped'
+prism workspace status my-instance  # Should show 'stopped'
 prism ami create my-instance --name "My AMI"
 # Fastest and most reliable
 
@@ -481,7 +481,7 @@ Or include README in the AMI:
 
 ```bash
 # Before creating AMI:
-prism connect my-instance
+prism workspace connect my-instance
 
 cat > /home/researcher/README.md <<'EOF'
 # R Environment v1.1.0
@@ -550,23 +550,23 @@ prism workspace launch --ami $AMI_ID $TEST_INSTANCE --size S
 sleep 60  # Wait for boot
 
 # 2. Check instance is running
-if ! prism status $TEST_INSTANCE | grep -q "running"; then
+if ! prism workspace status $TEST_INSTANCE | grep -q "running"; then
   echo "❌ FAIL: Instance not running"
-  prism delete $TEST_INSTANCE --force
+  prism workspace delete $TEST_INSTANCE --force
   exit 1
 fi
 
 # 3. Run validation tests
-prism exec $TEST_INSTANCE "R --version"
-prism exec $TEST_INSTANCE "Rscript -e 'library(tidyverse)'"
-prism exec $TEST_INSTANCE "rstudio-server status"
+prism workspace exec $TEST_INSTANCE "R --version"
+prism workspace exec $TEST_INSTANCE "Rscript -e 'library(tidyverse)'"
+prism workspace exec $TEST_INSTANCE "rstudio-server status"
 
 # 4. Check for sensitive data
-prism exec $TEST_INSTANCE "[ ! -f ~/.aws/credentials ]"
-prism exec $TEST_INSTANCE "[ ! -f ~/.ssh/id_rsa ]"
+prism workspace exec $TEST_INSTANCE "[ ! -f ~/.aws/credentials ]"
+prism workspace exec $TEST_INSTANCE "[ ! -f ~/.ssh/id_rsa ]"
 
 # 5. Cleanup
-prism delete $TEST_INSTANCE --force
+prism workspace delete $TEST_INSTANCE --force
 
 echo "✅ PASS: AMI validation complete"
 ```
@@ -602,12 +602,12 @@ jobs:
 
       - name: Run tests
         run: |
-          prism exec test-instance "Rscript tests/validate-environment.R"
+          prism workspace exec test-instance "Rscript tests/validate-environment.R"
 
       - name: Cleanup
         if: always()
         run: |
-          prism delete test-instance --force
+          prism workspace delete test-instance --force
 ```
 
 ### Performance Testing
@@ -720,7 +720,7 @@ prism ami share ami-abc123 --accounts 111,222
 
 ```bash
 # Always run security audit
-prism connect my-instance
+prism workspace connect my-instance
 sudo find /home -name "*.pem" -type f
 sudo find /home -name "credentials" -type f
 rm -rf ~/.aws/credentials
@@ -768,7 +768,7 @@ prism ami delete ami-old1 ami-old2 ami-old3
 **Solution**: Include README in AMI:
 
 ```bash
-prism connect my-instance
+prism workspace connect my-instance
 cat > /home/researcher/README.md <<'EOF'
 # Team R Environment v1.0.0
 
@@ -778,7 +778,7 @@ cat > /home/researcher/README.md <<'EOF'
 - Packages: tidyverse, tidymodels, arrow
 
 ## Quick Start
-1. Connect: prism connect <instance>
+1. Connect: prism workspace connect <instance>
 2. Open RStudio: http://<instance-ip>:8787
 3. Username/password: researcher/researcher
 
@@ -809,7 +809,7 @@ prism ami copy ami-0abc123def456 \
 **Solution**: Clean before creating:
 
 ```bash
-prism connect my-instance
+prism workspace connect my-instance
 sudo apt-get clean
 sudo rm -rf /tmp/* /var/tmp/*
 rm -rf ~/.cache/*
@@ -897,21 +897,21 @@ wait
 ```bash
 # Base AMI: Core tools
 prism workspace launch --ami ami-base-tools core-env
-prism connect core-env
+prism workspace connect core-env
 # ... install common tools ...
 exit
 prism ami create core-env --name "Base Tools v1.0"
 
 # Specialized AMI 1: ML Tools (built from base)
 prism workspace launch --ami ami-base-tools ml-env
-prism connect ml-env
+prism workspace connect ml-env
 # ... install ML packages ...
 exit
 prism ami create ml-env --name "ML Tools v1.0"
 
 # Specialized AMI 2: Spatial Tools (built from base)
 prism workspace launch --ami ami-base-tools spatial-env
-prism connect spatial-env
+prism workspace connect spatial-env
 # ... install spatial packages ...
 exit
 prism ami create spatial-env --name "Spatial Tools v1.0"

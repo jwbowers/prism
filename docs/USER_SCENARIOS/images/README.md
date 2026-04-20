@@ -75,6 +75,6 @@ screencapture -w -o gui-template-gallery.png
 Same as CLI screenshots above.
 
 ## See Also
-- [Screenshot Plan](../SCREENSHOT_PLAN.md) - Detailed plan for screenshot capture
+- Screenshot Plan (in progress) - Detailed plan for screenshot capture
 - [GUI User Guide](../../user-guides/GUI_USER_GUIDE.md) - GUI documentation
-- [TUI User Guide](../../user-guides/TUI_USER_GUIDE.md) - TUI documentation
+-  - TUI documentation

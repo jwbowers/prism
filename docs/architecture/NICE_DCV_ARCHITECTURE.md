@@ -245,7 +245,7 @@ fmt.Printf("Password: %s\n", password)
 **Prism Adaptation**:
 - Reuse existing SSM port forwarding infrastructure
 - Add DCV-specific port (8443) handling
-- Integrate with `prism connect` command
+- Integrate with `prism workspace connect` command
 - Store credentials in state for reconnection
 
 ### 3. Desktop Environment Setup
@@ -530,7 +530,7 @@ func GenerateUserData(cfg *ProvisionConfig) (string, error) {
 #### Connection Flow
 
 ```
-prism connect my-desktop
+prism workspace connect my-desktop
     ↓
 Check instance state (running?)
     ↓
@@ -703,7 +703,7 @@ documentation: |
   ## Access
   ```bash
   prism workspace launch generic-desktop my-desktop
-  prism connect my-desktop
+  prism workspace connect my-desktop
   ```
 
   Your browser will open to the DCV web client. Accept the self-signed

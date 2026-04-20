@@ -68,13 +68,13 @@ prism templates info "Python Machine Learning (Simplified)"
 prism workspace launch "Python Machine Learning (Simplified)" ml-research
 
 # Show running instances
-prism list
+prism workspace list
 
 # Get connection details
 prism info ml-research
 
 # Connect to your workstation (KEY STEP)
-prism connect ml-research
+prism workspace connect ml-research
 
 # Inside workstation: show environment
 whoami
@@ -106,7 +106,7 @@ prism workspace launch "Rocky Linux 9 + Conda Stack" data-analysis
 prism templates info "Rocky Linux 9 Base"
 
 # Connect to new workstation
-prism connect data-analysis
+prism workspace connect data-analysis
 
 # Inside workstation: show inherited environment
 whoami  # shows rocky user (from base)
@@ -127,7 +127,7 @@ exit
 ### 4.1 Different Interfaces
 ```bash
 # CLI interface (already shown)
-prism list
+prism workspace list
 
 # Launch TUI for interactive management
 prism tui
@@ -157,16 +157,16 @@ curl -s http://localhost:8947/api/v1/instances | jq '.[] | .name'
 prism hibernation-status ml-research
 
 # Hibernate instance to save costs (preserves state)
-prism hibernate ml-research
+prism workspace hibernate ml-research
 
 # Show state preservation
-prism list
+prism workspace list
 
 # Resume when needed
-prism resume ml-research
+prism workspace resume ml-research
 
 # Reconnect after resume
-prism connect ml-research
+prism workspace connect ml-research
 # Environment is preserved exactly as left
 exit
 ```
@@ -247,7 +247,7 @@ prism storage create shared-data --size 100GB --type efs
 prism storage attach shared-data ml-research /mnt/shared
 
 # Connect and verify storage
-prism connect ml-research
+prism workspace connect ml-research
 df -h | grep /mnt/shared  # Show mounted storage
 echo "test data" > /mnt/shared/test.txt
 exit
@@ -286,11 +286,11 @@ prism profiles switch aws  # Switch back to main profile
 prism project cost machine-learning-research --savings
 
 # Hibernate instances (preserves state for next session)
-prism hibernate ml-research
-prism hibernate data-analysis
+prism workspace hibernate ml-research
+prism workspace hibernate data-analysis
 
 # Final status check
-prism list
+prism workspace list
 
 # Clean shutdown
 prism daemon stop
@@ -315,7 +315,7 @@ prism daemon stop
 
 ### Key Technical Demonstrations:
 - **Template Inheritance**: Rocky Linux 9 Base → Rocky Linux 9 + Conda Stack
-- **Connection Workflow**: `prism workspace launch` → `prism connect` → research environment ready
+- **Connection Workflow**: `prism workspace launch` → `prism workspace connect` → research environment ready
 - **State Preservation**: Hibernation maintains exact work environment for resume
 - **Multi-Modal Access**: Same functionality across CLI, TUI, GUI, and API
 - **Enterprise Features**: Project budgets, team collaboration, cost tracking
@@ -372,8 +372,8 @@ prism project delete machine-learning-research --force
 rm ~/.prism/state.json && prism daemon restart
 
 # Emergency cleanup
-prism list  # identify running instances
-prism hibernate <instance-name>  # hibernate all instances
+prism workspace list  # identify running instances
+prism workspace hibernate <instance-name>  # hibernate all instances
 ```
 
 ## Quick Demo Checklist:

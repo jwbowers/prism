@@ -80,11 +80,11 @@ prism workspace launch python-ml my-project --instance-type t3.xlarge
 **Use `--verbose` to see AWS instance type**:
 ```bash
 # Default output
-prism list
+prism workspace list
 # → my-project   running   Size: L   $2.40/day
 
 # AWS details
-prism list --verbose
+prism workspace list --verbose
 # → my-project   running   t3.xlarge (4vCPU, 16GB)   $2.40/day
 ```
 
@@ -202,11 +202,11 @@ Add `--verbose` to any command to see AWS technical details:
 
 ```bash
 # Simple output
-prism list
+prism workspace list
 # → my-ml-project   running   Size: L
 
 # Technical details
-prism list --verbose
+prism workspace list --verbose
 # → my-ml-project   running   t3.xlarge (i-abc123, us-west-2a)
 ```
 
@@ -297,13 +297,13 @@ prism workspace launch python-ml my-research \
 
 **Beginner**:
 ```bash
-prism list
+prism workspace list
 # → my-research   running   $2.40/day
 ```
 
 **Advanced**:
 ```bash
-prism list --verbose
+prism workspace list --verbose
 # → my-research   running   c5.4xlarge (i-abc123456789, us-west-2b)   $2.40/day
 ```
 

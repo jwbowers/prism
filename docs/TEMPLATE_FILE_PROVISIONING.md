@@ -361,7 +361,7 @@ estimated_launch_time: 15  # 10 min baseline + 5 min files
 
 **Check cloud-init logs**:
 ```bash
-prism connect my-instance
+prism workspace connect my-instance
 sudo tail -f /var/log/cloud-init-output.log
 ```
 

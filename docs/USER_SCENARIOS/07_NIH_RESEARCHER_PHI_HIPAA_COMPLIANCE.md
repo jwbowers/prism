@@ -23,7 +23,7 @@ Use of Prism does not, by itself, ensure compliance with HIPAA, NIST 800-53, or 
 
 **⚠️ PLANNED FEATURES — NOT AVAILABLE IN v0.35.3**: HIPAA-specific compliance features (PHI audit trails, BAA-compliant configurations, HIPAA Security Rule reporting) are planned for a future release. This scenario describes the **target architecture and workflows** for when those features ship. Commands shown that reference HIPAA-specific features will not work in the current release. Prism's general workspace management capabilities (listed in the [User Guide](../user-guides/QUICK_START.md)) are available today.
 
-See [COMPLIANCE_DISCLAIMER.md](../docs/admin-guides/COMPLIANCE_DISCLAIMER.md) for complete legal notice.
+See [COMPLIANCE_DISCLAIMER.md](../admin-guides/COMPLIANCE_DISCLAIMER.md) for complete legal notice.
 
 ---
 
@@ -172,7 +172,7 @@ If discovered during routine audit:
 
 1. **Medical Center IT Security Recommends Prism**:
    - University Medical Center IT Security validated Prism for HIPAA research
-   - Provides compliance documentation: [HIPAA_COMPLIANCE_GUIDE.md](../docs/admin-guides/HIPAA_COMPLIANCE_GUIDE.md) (v0.8.0)
+   - Provides compliance documentation: [HIPAA_COMPLIANCE_GUIDE.md](../admin-guides/HIPAA_COMPLIANCE_GUIDE.md) (v0.8.0)
    - Meets HIPAA Technical Safeguards via NIST 800-53 control mapping
    - Includes Business Associate Agreement (BAA) framework for AWS
 
@@ -239,7 +239,7 @@ If discovered during routine audit:
 
 ```bash
 # Connect to HIPAA-compliant workstation
-prism connect lung-cancer-genomics
+prism workspace connect lung-cancer-genomics
 # ↑ Prompts for MFA token (HIPAA Technical Safeguard: Access Control)
 # ↑ Session timeout enforced (15 minutes idle)
 # ↑ All access logged with PHI audit flag
@@ -427,7 +427,7 @@ $ prism project member add chen-lab-nih-r01 \
 # 4. Jane sets up her access
 $ brew install scttfrdmn/tap/prism
 $ prism profile import medical-center-hipaa-profile.json
-$ prism connect lung-cancer-genomics
+$ prism workspace connect lung-cancer-genomics
 # MFA prompt: "Enter MFA code from authenticator app:"
 # ↑ First access triggers MFA enrollment workflow
 
@@ -791,10 +791,10 @@ $ prism admin compliance summary --institution --framework HIPAA
 
 ## Related Documentation
 
-- **[HIPAA Compliance Guide](../docs/admin-guides/HIPAA_COMPLIANCE_GUIDE.md)** - Detailed HIPAA Security Rule implementation (v0.8.0 - Q4 2026)
-- **[NIST 800-171 Compliance Guide](../docs/admin-guides/NIST_800_171_COMPLIANCE.md)** - CUI compliance (Persona 6 comparison)
-- **[Security & Compliance Roadmap](../docs/admin-guides/SECURITY_COMPLIANCE_ROADMAP.md)** - Comprehensive compliance framework
-- **[Compliance Matrix](../docs/admin-guides/COMPLIANCE_MATRIX.md)** - Quick reference for all frameworks
+- **[HIPAA Compliance Guide](../admin-guides/HIPAA_COMPLIANCE_GUIDE.md)** - Detailed HIPAA Security Rule implementation (v0.8.0 - Q4 2026)
+- **[NIST 800-171 Compliance Guide](../admin-guides/NIST_800_171_COMPLIANCE.md)** - CUI compliance (Persona 6 comparison)
+- **[Security & Compliance Roadmap](../admin-guides/SECURITY_COMPLIANCE_ROADMAP.md)** - Comprehensive compliance framework
+- **[Compliance Matrix](../admin-guides/COMPLIANCE_MATRIX.md)** - Quick reference for all frameworks
 
 ---
 

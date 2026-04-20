@@ -227,10 +227,10 @@ Prism
 ```bash
 # PRIMARY COMMANDS (everyday use)
 prism workspace launch <template> <name>     # Create new workspace
-prism connect <name>               # SSH into workspace
-prism list                         # Show my workspaces
-prism stop <name>                  # Stop workspace
-prism delete <name>                # Delete workspace
+prism workspace connect <name>               # SSH into workspace
+prism workspace list                         # Show my workspaces
+prism workspace stop <name>                  # Stop workspace
+prism workspace delete <name>                # Delete workspace
 
 # WORKSPACE MANAGEMENT (secondary operations)
 prism workspace
@@ -283,7 +283,7 @@ prism config
 
 **Key Improvements**:
 1. **6 primary commands** - 90% of use cases
-2. **Logical grouping** - `prism workspace` > `prism hibernate`, `prism start`, `prism stop`
+2. **Logical grouping** - `prism workspace` > `prism workspace hibernate`, `prism workspace start`, `prism workspace stop`
 3. **Consistent verbs** - `create`, `list`, `delete` everywhere
 4. **Admin separation** - `prism admin` hides complexity
 5. **Onboarding** - `prism init` for first-time users
@@ -668,7 +668,7 @@ Need help? Check out: https://docs.prism.io/quickstart
 **Current Problems**:
 ```bash
 # Inconsistent verb placement
-prism hibernate my-instance          # Good: verb-noun-object
+prism workspace hibernate my-instance          # Good: verb-noun-object
 prism scaling predict ubuntu L       # Bad: noun-verb-object-modifier
 
 # Mixed concepts
@@ -688,9 +688,9 @@ prism idle profile list              # Three-word commands get unwieldy
 ```bash
 # PATTERN 1: Primary commands (verb workspace-name)
 prism workspace launch <template> <name>       # Always template first
-prism connect <name>                 # Simple, predictable
-prism stop <name>
-prism delete <name>
+prism workspace connect <name>                 # Simple, predictable
+prism workspace stop <name>
+prism workspace delete <name>
 
 # PATTERN 2: Grouped commands (noun verb [object])
 prism workspace start <name>         # Consistent: workspace operations

@@ -105,9 +105,9 @@ prism profiles invitations revoke-device inv-abc123def456 device-xyz789
 prism profiles invitations revoke-all inv-abc123def456
 ```
 
-### 2. TUI Components
+### 2. GUI Components
 
-The TUI provides a terminal-based interface for secure profile management:
+The GUI provides a graphical interface for secure profile management:
 
 - Profile list with security indicators
 - Detailed profile view showing security attributes

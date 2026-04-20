@@ -338,7 +338,7 @@ prism workshop dashboard neurips-dl-workshop
 
 > **💡 GUI Note**: Live workshop dashboard available in GUI with real-time participant status - *available in v0.35.3**
 
-**Current workaround**: Manual `prism list` + `prism project instances` polling
+**Current workaround**: Manual `prism workspace list` + `prism project instances` polling
 **Impact**: Can't proactively help struggling participants
 
 **Live Workshop Monitoring** (50 concurrent workspaces):
@@ -477,7 +477,7 @@ participant$ prism invitation accept WORKSHOP-NEURIPS-2026
 # 🎓 Role: member
 # ⏰ Access expires: Dec 9, 2026 (7 days)
 
-participant$ prism workspace launch "PyTorch Machine Learning" test-env --hours 2
+participant$ prism workspace launch "PyTorch Machine Learning" test-env --ttl 2h
 # (Automatically terminates after 2 hours)
 
 # Alex monitors shared token redemptions
@@ -668,7 +668,7 @@ prism workshop report neurips-dl-workshop --export-pdf
 **Target**: Workshops can run without budget disasters
 
 1. **Auto-Terminate Timer** (1 week)
-   - `prism workspace launch template name --hours 6`
+   - `prism workspace launch template name --ttl 6h`
    - Countdown warnings at 30min, 5min
    - Graceful termination with EBS preservation
 

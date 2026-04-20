@@ -323,7 +323,7 @@ prism budget report --month september --pdf
 **Promised Features**:
 ```bash
 # Launch with auto-termination
-prism workspace launch gpu-ml-workstation protein-folding --hours 8
+prism workspace launch gpu-ml-workstation protein-folding --ttl 8h
 
 # Output:
 # ✅ Instance will auto-terminate at 11:30 PM tonight
@@ -336,7 +336,7 @@ prism workspace launch gpu-ml-workstation protein-folding --hours 8
 - ❌ **MISSING**: Time limit enforcement
 
 **What's Missing**:
-1. `--hours` flag for launch command
+1. `--ttl` flag for launch command
 2. Instance termination scheduler
 3. Pre-termination warnings
 4. Time remaining display
