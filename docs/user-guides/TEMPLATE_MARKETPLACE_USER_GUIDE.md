@@ -1,6 +1,6 @@
 # Template Marketplace User Guide
 
-**Version**: v0.5.2
+**Version**: v0.35.3
 **Last Updated**: October 4, 2025
 **Status**: Production Ready
 
@@ -567,7 +567,7 @@ prism workspace launch institutional-python student-project
 The Template Marketplace Foundation provides the groundwork for future enhancements:
 
 ### Planned Features (Phase 5C+)
-- **GUI Marketplace Interface**: Professional Cloudscape-based browsing
+- **GUI Marketplace Interface**: Professional shadcn/ui-based browsing
 - **Template Publishing**: Contribute templates to community registries
 - **Advanced Analytics**: Usage patterns and performance metrics
 - **Template Collections**: Curated template bundles for specific workflows

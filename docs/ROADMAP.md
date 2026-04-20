@@ -1225,7 +1225,7 @@ desktop:
 **CLI Example**:
 ```bash
 # Launch desktop workspace
-prism launch generic-desktop my-desktop
+prism workspace launch generic-desktop my-desktop
 
 # Connect (auto-opens browser)
 prism connect my-desktop

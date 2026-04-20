@@ -65,7 +65,7 @@ prism templates info "Python Machine Learning (Simplified)"
 ### 2.2 Launch and Connect
 ```bash
 # Launch a Python ML workstation
-prism launch "Python Machine Learning (Simplified)" ml-research
+prism workspace launch "Python Machine Learning (Simplified)" ml-research
 
 # Show running instances
 prism list
@@ -100,7 +100,7 @@ exit
 prism templates info "Rocky Linux 9 + Conda Stack"
 
 # Launch inherited template workstation
-prism launch "Rocky Linux 9 + Conda Stack" data-analysis
+prism workspace launch "Rocky Linux 9 + Conda Stack" data-analysis
 
 # Compare with base template
 prism templates info "Rocky Linux 9 Base"
@@ -315,7 +315,7 @@ prism daemon stop
 
 ### Key Technical Demonstrations:
 - **Template Inheritance**: Rocky Linux 9 Base → Rocky Linux 9 + Conda Stack
-- **Connection Workflow**: `prism launch` → `prism connect` → research environment ready
+- **Connection Workflow**: `prism workspace launch` → `prism connect` → research environment ready
 - **State Preservation**: Hibernation maintains exact work environment for resume
 - **Multi-Modal Access**: Same functionality across CLI, TUI, GUI, and API
 - **Enterprise Features**: Project budgets, team collaboration, cost tracking

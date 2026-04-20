@@ -23,7 +23,7 @@ v0.5.2 introduces the **Universal AMI System**, transforming Prism from script-o
 **Multi-Tier Intelligent Resolution**:
 ```bash
 # Automatic AMI resolution with transparent fallbacks
-prism launch python-ml my-research
+prism workspace launch python-ml my-research
 🔍 Resolving AMI for template: python-ml
 ✅ Found optimized AMI: ami-0123456789abcdef0
 📈 Performance: 4.2x faster launch (30s vs 6min)
@@ -123,7 +123,7 @@ ap-south-1 → ap-southeast-1, ap-northeast-1, us-east-1
 ### **🔍 AMI Resolution Preview**
 ```bash
 # Show resolution strategy before launch
-prism launch python-ml my-research --dry-run --show-ami-resolution
+prism workspace launch python-ml my-research --dry-run --show-ami-resolution
 🔍 AMI Resolution Preview:
 
 Strategy: ami_preferred
@@ -143,7 +143,7 @@ Cost Comparison:
 ### **⚠️ Intelligent Warnings & Guidance**
 ```bash
 # Smart fallback with user choice
-prism launch python-ml my-research --prefer-script
+prism workspace launch python-ml my-research --prefer-script
 ⚠️  Script provisioning requested (6 minutes estimated)
 🔍 AMI available: ami-0123456789abcdef0 (30 seconds)
 Continue with script provisioning? [y/N]: n
@@ -153,7 +153,7 @@ Continue with script provisioning? [y/N]: n
 ### **🌍 Regional Deployment Intelligence**
 ```bash
 # Automatic cross-region resolution
-prism launch python-ml my-research --region ap-south-1
+prism workspace launch python-ml my-research --region ap-south-1
 🔍 Resolving AMI in ap-south-1...
 ❌ No AMI in ap-south-1
 🔄 Searching fallback regions...

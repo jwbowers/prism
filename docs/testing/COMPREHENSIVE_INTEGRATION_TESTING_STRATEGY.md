@@ -104,7 +104,7 @@ func (c *CLIContext) RunCommand(args ...string) (string, error) {
 
 #### 1.2 Core CLI Commands to Test
 **Launch & Lifecycle**:
-- [ ] `prism launch <template> <name> --size M` - All templates
+- [ ] `prism workspace launch <template> <name> --size M` - All templates
 - [ ] `prism list` - Verify output formatting
 - [ ] `prism stop <name>` - Stop instance
 - [ ] `prism start <name>` - Start instance

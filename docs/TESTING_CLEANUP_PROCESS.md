@@ -32,7 +32,7 @@ INSTANCE_NAME="test-feature-description-$(date +%Y%m%d)"
 echo "Testing: Feature X fix for Issue #123" > /tmp/test-$INSTANCE_NAME.md
 
 # 3. Launch the instance
-prism launch template-name $INSTANCE_NAME --size M
+prism workspace launch template-name $INSTANCE_NAME --size M
 ```
 
 ### During Testing

@@ -89,7 +89,7 @@ Recommendations:
 Prism will check quotas **before** attempting launch:
 
 ```bash
-$ prism launch gpu-ml-workstation protein-folding --size XL
+$ prism workspace launch gpu-ml-workstation protein-folding --size XL
 
 ⚠️  Quota Check Failed
 
@@ -199,7 +199,7 @@ Automatic retry in different Availability Zones when capacity is unavailable.
 #### User Experience
 
 ```bash
-$ prism launch bioinformatics-suite genome-analysis
+$ prism workspace launch bioinformatics-suite genome-analysis
 
 ✅ Launching r5.4xlarge in us-west-2a...
 ⚠️  InsufficientInstanceCapacity in us-west-2a
@@ -266,7 +266,7 @@ prism admin aws-health subscribe --email devops@university.edu
 #### Pre-Launch Health Check
 
 ```bash
-$ prism launch python-ml earthquake-prediction --region us-east-1
+$ prism workspace launch python-ml earthquake-prediction --region us-east-1
 
 ⚠️  AWS Health Alert: Degraded EC2 Performance in us-east-1
 

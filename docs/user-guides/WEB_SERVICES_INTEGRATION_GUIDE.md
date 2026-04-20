@@ -222,7 +222,7 @@ instance_defaults:
 
 ```bash
 # Launch web service template
-prism launch custom-jupyter-hub research-hub
+prism workspace launch custom-jupyter-hub research-hub
 
 # Check web service status
 prism info research-hub
@@ -248,7 +248,7 @@ prism domains add university.edu --verify-ownership
 prism domains configure research-hub --domain research-tools.university.edu
 
 # Launch with custom domain
-prism launch rstudio-server-custom stats-analysis --domain stats.university.edu
+prism workspace launch rstudio-server-custom stats-analysis --domain stats.university.edu
 # → Accessible at https://stats.university.edu
 ```
 

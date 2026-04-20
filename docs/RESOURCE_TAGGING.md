@@ -389,7 +389,7 @@ See [Issue #237](https://github.com/scttfrdmn/prism/issues/237) for native zombi
 
 **DO**: Always launch instances via Prism CLI/API
 ```bash
-prism launch python-ml my-instance --project-id proj-abc
+prism workspace launch python-ml my-instance --project-id proj-abc
 ```
 ✓ Automatically gets all required tags
 
@@ -403,7 +403,7 @@ AWS Console → Launch Instance → ...
 
 **Always specify `--project-id` when available**:
 ```bash
-prism launch r-research analysis-01 --project-id nsf-grant-2024
+prism workspace launch r-research analysis-01 --project-id nsf-grant-2024
 ```
 
 Benefits:

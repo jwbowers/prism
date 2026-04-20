@@ -5,7 +5,7 @@
 ## 🎯 **Default to Success**
 Every template must work out of the box in every supported region.
 ```bash
-prism launch python-ml my-project  # This should always work
+prism workspace launch python-ml my-project  # This should always work
 ```
 
 ## ⚡ **Optimize by Default**
@@ -39,13 +39,13 @@ Clear communication about what's happening.
 Simple by default, detailed when needed.
 ```bash
 # Simple (90% of users)
-prism launch template-name project-name
+prism workspace launch template-name project-name
 
 # Intermediate (power users)
-prism launch template-name project-name --size L
+prism workspace launch template-name project-name --size L
 
 # Advanced (infrastructure experts)  
-prism launch template-name project-name --instance-type c5.2xlarge --spot
+prism workspace launch template-name project-name --instance-type c5.2xlarge --spot
 ```
 
 ---

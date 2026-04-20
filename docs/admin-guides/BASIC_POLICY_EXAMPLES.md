@@ -47,7 +47,7 @@ prism profiles accept-invitation \
 Accepted invitation and created profile 'CS101'
 
 # Student tries to launch an allowed template - SUCCESS
-prism launch python-basic my-homework
+prism workspace launch python-basic my-homework
 # Output:
 ✓ Policy check: Template 'python-basic' is allowed
 ✓ Instance type 't2.micro' is within limits
@@ -55,13 +55,13 @@ prism launch python-basic my-homework
 Launching instance...
 
 # Student tries to launch a restricted template - BLOCKED
-prism launch python-ml advanced-project
+prism workspace launch python-ml advanced-project
 # Output:
 ✗ Policy violation: Template 'python-ml' not in allowed list: [python-basic ubuntu-basic]
 Available templates for this profile: python-basic, ubuntu-basic
 
 # Student tries expensive instance - BLOCKED  
-prism launch python-basic my-project --size XL
+prism workspace launch python-basic my-project --size XL
 # Output:
 ✗ Policy violation: Instance type 'c5.4xlarge' not allowed. Maximum allowed: [t2.micro t2.small]
 ✗ Policy violation: Hourly cost $0.544 exceeds maximum allowed $0.10
@@ -106,16 +106,16 @@ prism profiles invitations create "Bioinformatics Lab Access" \
 
 ```bash
 # Student can launch appropriate research templates
-prism launch python-ml genomics-analysis  # ✓ Allowed
-prism launch r-research statistical-modeling  # ✓ Allowed 
-prism launch jupyter-gpu deep-learning  # ✓ Allowed
+prism workspace launch python-ml genomics-analysis  # ✓ Allowed
+prism workspace launch r-research statistical-modeling  # ✓ Allowed 
+prism workspace launch jupyter-gpu deep-learning  # ✓ Allowed
 
 # But blocked from inappropriate templates
-prism launch windows-desktop my-project
+prism workspace launch windows-desktop my-project
 # ✗ Policy violation: Template 'windows-desktop' is blacklisted
 
 # And prevented from expensive regions
-prism launch python-ml project --region eu-central-1  
+prism workspace launch python-ml project --region eu-central-1  
 # ✗ Policy violation: Region 'eu-central-1' is forbidden
 ```
 
@@ -247,7 +247,7 @@ Restricted templates (policy violations):
 
 ```bash
 # Profile owner can temporarily override restrictions (admin profiles only)
-prism launch python-ml emergency-analysis --override-policy --confirm
+prism workspace launch python-ml emergency-analysis --override-policy --confirm
 
 # Requires confirmation and logs policy override for audit
 ```

@@ -275,7 +275,7 @@ See [WEB_SERVICE_TESTING.md](../WEB_SERVICE_TESTING.md) for comprehensive testin
 Quick test:
 ```bash
 # Launch instance
-prism launch python-ml test-jupyter --size S
+prism workspace launch python-ml test-jupyter --size S
 
 # Test auto-tunneling
 prism connect test-jupyter

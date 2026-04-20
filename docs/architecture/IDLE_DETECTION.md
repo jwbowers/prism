@@ -93,7 +93,7 @@ idle_detection:
 When launching an instance, idle detection can be configured:
 
 ```bash
-prism launch machine-learning my-instance --idle-profile gpu --idle-minutes 15
+prism workspace launch machine-learning my-instance --idle-profile gpu --idle-minutes 15
 ```
 
 ## Idle Detection Profiles

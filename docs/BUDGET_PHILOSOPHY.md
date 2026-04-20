@@ -189,11 +189,11 @@ prism allocation create \
   --default
 
 # Student just launches workspace (funding automatic)
-prism launch python-ml my-analysis --project "Climate Model"
+prism workspace launch python-ml my-analysis --project "Climate Model"
 # → Automatically uses NSF Grant allocation
 
 # Advanced: Explicitly use different funding
-prism launch python-ml gpu-training \
+prism workspace launch python-ml gpu-training \
   --project "Climate Model" \
   --funding "AWS Research Credits"
 ```
@@ -359,11 +359,11 @@ prism allocation create --budget "University Matching" \
   --project "Climate Modeling" --amount 10000
 
 # 3. Launch resources with explicit funding selection
-prism launch python-ml climate-sim-01 \
+prism workspace launch python-ml climate-sim-01 \
   --project "Climate Modeling" \
   --funding "NSF Climate Grant"  # Use NSF funds
 
-prism launch python-ml climate-sim-02 \
+prism workspace launch python-ml climate-sim-02 \
   --project "Climate Modeling" \
   --funding "DOE Energy Research"  # Use DOE funds
 ```
@@ -403,7 +403,7 @@ done
 
 # 3. Students launch workspaces (funding automatic)
 # Student 5 launches workspace
-prism launch python-ml analysis --project "student-ml-project-5"
+prism workspace launch python-ml analysis --project "student-ml-project-5"
 # → Automatically charged to their $500 allocation
 
 # 4. Department administrator monitors total spending
@@ -523,7 +523,7 @@ prism allocation switch \
 **What You See**:
 ```bash
 # Launch workspace - funding automatic
-prism launch python-ml my-analysis --project "Climate Model"
+prism workspace launch python-ml my-analysis --project "Climate Model"
 
 # Don't need to think about:
 # - Which grant is paying

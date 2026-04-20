@@ -96,12 +96,12 @@ prism ami discover --region eu-west-1 --distro ubuntu-22.04
 🔐 Verified: AWS-managed, security-patched
 
 # Launch in any supported region
-prism launch python-ml european-analysis \
+prism workspace launch python-ml european-analysis \
   --region eu-west-1 \
   --data-residency eu
 
 # Automatic region selection based on data location
-prism launch bioinformatics genomics-eu \
+prism workspace launch bioinformatics genomics-eu \
   --data-location s3://eu-genomics-data/ \
   --auto-select-region
 
@@ -271,7 +271,7 @@ prism config set region ap-northeast-1
 prism config set currency JPY
 
 # Launch with localized output
-prism launch python-ml 分析プロジェクト
+prism workspace launch python-ml 分析プロジェクト
 
 🔍 AMI を解決中: ubuntu-22.04 (ap-northeast-1)
 ✅ 検出: ami-0d7892b35e6d2e2e9
@@ -481,7 +481,7 @@ Last updated: 2025-10-19 14:32 UTC
 **Screen Reader Support**:
 ```bash
 # Verbose mode for screen readers
-prism launch python-ml my-project --accessible
+prism workspace launch python-ml my-project --accessible
 
 Launching instance my-project
 Step 1 of 5: Resolving AMI for ubuntu-22.04
@@ -572,7 +572,7 @@ function App() {
 ```bash
 # Arabic interface
 export LANG=ar_SA.UTF-8
-prism launch python-ml مشروع-التحليل
+prism workspace launch python-ml مشروع-التحليل
 
 🔍 جارٍ حل AMI: ubuntu-22.04 (me-south-1)
 ✅ تم العثور على: ami-0d7892b35e6d2e2e9
@@ -610,7 +610,7 @@ prism launch python-ml مشروع-التحليل
 **Technical Data Controls**:
 ```bash
 # Automatic export control checks
-prism launch high-performance-computing quantum-research \
+prism workspace launch high-performance-computing quantum-research \
   --region us-west-2
 
 ⚠️  Export Control Warning:

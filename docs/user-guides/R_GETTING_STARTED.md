@@ -406,7 +406,7 @@ This takes ~5 minutes. The instance keeps running while the snapshot is taken.
 prism workspace launch --ami "R 4.4 Genomics - March 2026" my-new-instance
 ```
 
-Or in the GUI/TUI, select your saved AMI from the launch dialog.
+Or in the GUI, select your saved AMI from the launch dialog.
 
 ### AMI naming tips
 

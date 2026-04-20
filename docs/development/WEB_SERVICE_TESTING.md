@@ -12,7 +12,7 @@ This document provides testing procedures for the automatic web service tunnelin
 
 ```bash
 # Launch instance with web services
-prism launch python-ml test-jupyter --size S
+prism workspace launch python-ml test-jupyter --size S
 
 # Connect - should show tunnel creation
 prism connect test-jupyter
@@ -101,7 +101,7 @@ prism web close test-jupyter
 
 ```bash
 # Launch Jupyter instance
-prism launch python-ml test-jupyter --size S
+prism workspace launch python-ml test-jupyter --size S
 
 # Connect or open web service
 prism connect test-jupyter
@@ -121,7 +121,7 @@ prism web open test-jupyter jupyter
 
 ```bash
 # Launch R instance (has RStudio + Shiny)
-prism launch r-research test-r --size M
+prism workspace launch r-research test-r --size M
 
 # Create tunnels for all services
 prism connect test-r
@@ -142,7 +142,7 @@ prism web list test-r
 
 ```bash
 # Launch instance
-prism launch python-ml test-services --size S
+prism workspace launch python-ml test-services --size S
 
 # Check instance has services
 prism show test-services | grep -i service
@@ -178,14 +178,14 @@ prism-gui
 
 ### Minimal Test Instance
 ```bash
-prism launch python-ml test-web-minimal --size S --spot
+prism workspace launch python-ml test-web-minimal --size S --spot
 # Fast launch, low cost
 # Services: Jupyter Lab (port 8888)
 ```
 
 ### Full-Featured Test Instance
 ```bash
-prism launch r-research test-web-full --size M
+prism workspace launch r-research test-web-full --size M
 # Complete testing
 # Services: RStudio Server (8787), Shiny Server (3838)
 ```

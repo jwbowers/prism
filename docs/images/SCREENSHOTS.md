@@ -18,11 +18,7 @@ make build
 # Linux: scrot / gnome-screenshot
 ```
 
-### TUI Screenshots
 ```bash
-./bin/prism tui
-# Navigate to the desired screen, then capture
-```
 
 ### GUI Screenshots
 ```bash
@@ -103,16 +99,6 @@ make build
 | `storage-list.png` | `prism storage list` | EFS volumes |
 | `budget-status.png` | `prism budget list` | Budget overview |
 | `init-wizard.png` | `prism init` | First-run wizard |
-
-## Generic TUI Screens (`tui/`)
-
-| File | Screen | How to Capture |
-|------|--------|----------------|
-| `dashboard.png` | TUI Dashboard tab (key: 1) | `prism tui` → Dashboard |
-| `workspaces.png` | TUI Workspaces tab (key: 2) | `prism tui` → Workspaces |
-| `templates.png` | TUI Templates tab (key: 3) | `prism tui` → Templates |
-| `storage.png` | TUI Storage tab (key: 4) | `prism tui` → Storage |
-| `settings.png` | TUI Settings tab | `prism tui` → Settings |
 
 ## Generic GUI Screens (`gui/`)
 

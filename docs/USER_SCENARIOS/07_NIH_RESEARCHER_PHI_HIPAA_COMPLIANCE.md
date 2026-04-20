@@ -197,7 +197,7 @@ If discovered during routine audit:
 3. **HIPAA-Specific Launch Requirements**:
    ```bash
    # Launch HIPAA-compliant research environment
-   prism launch python-ml lung-cancer-genomics \
+   prism workspace launch python-ml lung-cancer-genomics \
      --profile medical-center-hipaa \
      --project chen-lab-nih-r01 \
      --data-classification PHI \
@@ -716,7 +716,7 @@ Prism makes this kind of sophisticated cost control accessible to individual res
 **For Clinical Researchers**:
 ```bash
 # Every NIH clinical research study now uses:
-prism launch <research-template> <project-name> \
+prism workspace launch <research-template> <project-name> \
   --profile medical-center-hipaa \
   --data-classification PHI \
   --require-baa \

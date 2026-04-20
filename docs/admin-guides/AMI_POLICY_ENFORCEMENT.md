@@ -243,14 +243,14 @@ prism profiles invitations create "CS101 Class" \
   --max-hourly-cost 0.15
 
 # Student launch - AMI inherits template restrictions
-prism launch python-ml-compiled my-homework
+prism workspace launch python-ml-compiled my-homework
 # → Policy check: Source template 'python-ml' is in whitelist ✓
 # → Policy check: AMI embedded cost $0.0464 < limit $0.15 ✓  
 # → Policy check: Using pre-compiled AMI for faster launch ✓
 # → Launch approved (ami-0abc123def456789a)
 
 # Student tries expensive instance - blocked by AMI embedded limits
-prism launch python-ml-compiled my-project --instance-type c5.4xlarge
+prism workspace launch python-ml-compiled my-project --instance-type c5.4xlarge
 # → Policy check: Instance type not in AMI resource limits ✗
 # → Error: AMI 'python-ml-compiled' restricts instance types to: [t3.medium, t3.large, c5.large, m5.large]
 ```
@@ -259,7 +259,7 @@ prism launch python-ml-compiled my-project --instance-type c5.4xlarge
 
 ```bash
 # Enterprise deployment with AMI signature verification
-prism launch institutional-python-ml research-project
+prism workspace launch institutional-python-ml research-project
 # → Policy check: AMI signature verified ✓ (institutional key)
 # → Policy check: Compliance frameworks match ✓ (HIPAA approved)
 # → Policy check: User security clearance sufficient ✓ (internal data)
@@ -267,7 +267,7 @@ prism launch institutional-python-ml research-project
 # → Launch approved with audit log entry
 
 # Unauthorized AMI - blocked by signature verification
-prism launch external-ami-12345 test-project
+prism workspace launch external-ami-12345 test-project
 # → Policy check: AMI signature missing or invalid ✗
 # → Error: AMI not approved by institutional policy
 # → Contact IT for AMI approval process

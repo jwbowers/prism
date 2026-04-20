@@ -78,7 +78,7 @@ files:
 ### 3. Launch Instance
 
 ```bash
-prism launch python-ml-imagenet my-ml-work
+prism workspace launch python-ml-imagenet my-ml-work
 ```
 
 The files will be automatically downloaded during instance launch!

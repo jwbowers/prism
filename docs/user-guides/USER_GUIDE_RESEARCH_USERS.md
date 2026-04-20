@@ -1,8 +1,8 @@
 # Research Users: Your Persistent Identity Across Cloud Environments
 
-**Prism v0.5.1** introduces **Research Users** - your persistent identity that follows you across all your cloud research environments. No more worrying about different usernames, file permissions, or SSH keys when switching between Python, R, and other research templates.
+Research Users provide **Research Users** - your persistent identity that follows you across all your cloud research environments. No more worrying about different usernames, file permissions, or SSH keys when switching between Python, R, and other research templates.
 
-> **🆕 v0.5.1 Command Update**: Research user commands are now available as `prism user` (simplified from `prism research-user`). All functionality remains the same with cleaner, more intuitive commands.
+> Research user commands are available as `prism user`.
 
 ## Quick Start
 
@@ -70,7 +70,7 @@ Instance Setup:
 ### 1. Create Your Research User
 
 ```bash
-# Create your research user (coming in v0.5.0)
+# Create your research user
 prism user create alice
 
 # Generate SSH keys automatically
@@ -81,10 +81,10 @@ prism user ssh-key generate alice ed25519
 
 ```bash
 # Launch with your research user
-prism launch "Python Machine Learning" my-analysis --research-user alice
+prism workspace launch "Python Machine Learning" my-analysis --research-user alice
 
 # Later, launch R instance with same user
-prism launch "R Research Environment" my-analysis-r --research-user alice
+prism workspace launch "R Research Environment" my-analysis-r --research-user alice
 ```
 
 ### 3. Access Your Persistent Home Directory
@@ -109,13 +109,13 @@ Work seamlessly across different research environments:
 
 ```bash
 # Day 1: Python analysis
-prism launch python-ml analysis --research-user alice
+prism workspace launch python-ml analysis --research-user alice
 ssh alice@analysis
 cd /efs/home/alice/projects
 python create_dataset.py  # Creates dataset.csv
 
 # Day 2: R visualization
-prism launch r-research visualization --research-user alice
+prism workspace launch r-research visualization --research-user alice
 ssh alice@visualization
 cd /efs/home/alice/projects
 R -e "data <- read.csv('dataset.csv')"  # Same file, no copying!
@@ -242,7 +242,7 @@ Templates can now automatically create and provision research users during launc
 
 ```bash
 # Automatic research user creation with new templates
-prism launch python-ml-research my-project --research-user alice
+prism workspace launch python-ml-research my-project --research-user alice
 # ✅ Launches instance + creates 'alice' research user + provisions SSH keys + sets up EFS home
 
 # Check template capabilities
@@ -436,9 +436,9 @@ prism instances describe my-instance --show-users
 
 ## What's Coming Next
 
-**Prism v0.5.0** will include:
+These features are available in v0.35.3:
 - **CLI Integration**: `prism user` command suite
-- **TUI Interface**: Visual research user management in terminal
+
 - **GUI Support**: Point-and-click research user management
 - **Template Enhancement**: Templates with built-in research user support
 - **Advanced EFS**: Automatic EFS volume creation and management

@@ -416,13 +416,13 @@ tags:
 4. **Test inheritance chain**: Validate each layer independently
    ```bash
    # Test Layer 1
-   prism launch "Ubuntu 24.04 (x86_64)" test-tier1
+   prism workspace launch "Ubuntu 24.04 (x86_64)" test-tier1
 
    # Test Layer 2
-   prism launch "Ubuntu 24.04 + Conda (x86_64)" test-tier2
+   prism workspace launch "Ubuntu 24.04 + Conda (x86_64)" test-tier2
 
    # Test Layer 3
-   prism launch "Python + Jupyter" test-tier3
+   prism workspace launch "Python + Jupyter" test-tier3
    ```
 
 ### Don'ts ❌
@@ -517,7 +517,7 @@ prism templates validate
 prism templates info "Template Name"
 
 # 3. Dry-run launch
-prism launch "Template Name" test-instance --dry-run
+prism workspace launch "Template Name" test-instance --dry-run
 ```
 
 ### Integration Tests (Recommended)

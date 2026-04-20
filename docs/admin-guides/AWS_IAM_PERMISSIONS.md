@@ -467,14 +467,14 @@ Test your IAM permissions with Prism:
 ```bash
 # Test EC2 permissions
 prism templates  # Should list available templates
-prism launch ubuntu test-instance --dry-run  # Should show what would be created
+prism workspace launch ubuntu test-instance --dry-run  # Should show what would be created
 
 # Test EFS permissions (if you have them)
 prism volume create test-volume  # Should create EFS filesystem
 
 # Test IAM permissions (if you have them)
 # Prism will automatically create instance profile on first launch
-prism launch ubuntu test-instance
+prism workspace launch ubuntu test-instance
 # Check logs for: "✅ Successfully created IAM instance profile 'Prism-Instance-Profile'"
 ```
 

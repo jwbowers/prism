@@ -397,7 +397,7 @@ def caveats
     🚀 Quick Start:
       prism profiles add personal research --aws-profile aws --region us-west-2
       prism profiles switch personal
-      prism launch "Python Machine Learning (Simplified)" my-project
+      prism workspace launch "Python Machine Learning (Simplified)" my-project
 
     📚 Documentation:
       prism help                    # Full command reference (Cobra CLI)

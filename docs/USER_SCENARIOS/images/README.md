@@ -48,7 +48,7 @@ Use descriptive names that indicate what's shown:
 <p align="center">
   <img src="images/01-solo-researcher/gui-template-gallery.png" alt="GUI Template Gallery" width="800">
   <br>
-  <em>Professional template selection with Cloudscape Cards and Badges</em>
+  <em>Professional template selection with shadcn/ui cards</em>
 </p>
 ```
 

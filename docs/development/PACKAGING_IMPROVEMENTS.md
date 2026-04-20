@@ -61,7 +61,7 @@ def caveats
     
     Quick Start:
       prism daemon status                    # Check daemon status
-      prism launch python-ml my-project     # Launch your first workstation
+      prism workspace launch python-ml my-project     # Launch your first workstation
       prism profiles add personal research --help  # Set up AWS profiles
     
     Service Management:
@@ -158,7 +158,7 @@ fi
 1. **Install**: `brew install scttfrdmn/prism/prism`
 2. **Auto-Start**: Daemon automatically starts as service
 3. **Quick Setup**: `prism profiles add personal research --interactive`  
-4. **First Launch**: `prism launch python-ml my-project`
+4. **First Launch**: `prism workspace launch python-ml my-project`
 5. **Status Check**: `prism daemon status` shows health
 
 #### **Zero-Configuration Goals**

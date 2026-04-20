@@ -186,10 +186,10 @@ Template inheritance makes dependencies and relationships explicit.
 ### Data Science Stack
 ```bash
 # Launch with inherited configuration
-prism launch "Rocky Linux 9 + Conda Stack" my-analysis
+prism workspace launch "Rocky Linux 9 + Conda Stack" my-analysis
 
 # Override package manager at launch time
-prism launch "Rocky Linux 9 + Conda Stack" my-analysis --with spack
+prism workspace launch "Rocky Linux 9 + Conda Stack" my-analysis --with spack
 ```
 
 ### Building Complex Environments

@@ -175,7 +175,7 @@ Brief description of what this template provides.
 
 ## Quick Start
 \`\`\`bash
-prism launch my-awesome-template my-analysis
+prism workspace launch my-awesome-template my-analysis
 prism connect my-analysis
 \`\`\`
 
@@ -213,10 +213,10 @@ Test the template by launching an instance:
 
 ```bash
 # Dry-run to see what would be created
-prism launch --dry-run my-awesome-template test-instance
+prism workspace launch --dry-run my-awesome-template test-instance
 
 # Full test launch (costs apply!)
-prism launch my-awesome-template test-instance
+prism workspace launch my-awesome-template test-instance
 
 # Connect and verify
 prism connect test-instance
@@ -236,10 +236,10 @@ Test in at least 2 regions to ensure compatibility:
 
 ```bash
 # Test in us-east-1
-AWS_REGION=us-east-1 prism launch my-awesome-template test-us-east
+AWS_REGION=us-east-1 prism workspace launch my-awesome-template test-us-east
 
 # Test in us-west-2
-AWS_REGION=us-west-2 prism launch my-awesome-template test-us-west
+AWS_REGION=us-west-2 prism workspace launch my-awesome-template test-us-west
 
 # Clean up both
 prism delete test-us-east test-us-west
@@ -251,10 +251,10 @@ If your template supports both x86_64 and ARM:
 
 ```bash
 # Test x86_64 (default)
-prism launch my-awesome-template test-x86
+prism workspace launch my-awesome-template test-x86
 
 # Test ARM64
-prism launch --architecture arm64 my-awesome-template test-arm
+prism workspace launch --architecture arm64 my-awesome-template test-arm
 
 # Clean up
 prism delete test-x86 test-arm

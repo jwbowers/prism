@@ -145,7 +145,7 @@ conda create -n research python=3.10 jupyter prism
 conda activate research
 
 # Launch a Python research environment
-prism launch python-research my-analysis
+prism workspace launch python-research my-analysis
 
 # Use with Jupyter for data analysis
 jupyter notebook

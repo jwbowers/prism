@@ -37,7 +37,7 @@ prism research-user ssh-key list <username>             # List user's keys
 prism research-user ssh-key delete <username> <key-id>  # Remove SSH key
 
 # Instance Integration
-prism launch <template> <instance> --research-user <username>  # Launch with research user
+prism workspace launch <template> <instance> --research-user <username>  # Launch with research user
 prism research-user provision <username> --instance <name>     # Provision user on instance
 prism research-user status <username> --instance <name>        # Check user on instance
 
@@ -386,13 +386,13 @@ prism research-user provision alice --instance my-instance --ssh-user ubuntu --s
 
 ```bash
 # Launch instance with research user
-prism launch "Python Machine Learning" ml-work --research-user alice
+prism workspace launch "Python Machine Learning" ml-work --research-user alice
 
 # Launch with multiple research users
-prism launch "R Research Environment" shared-analysis --research-users alice,bob
+prism workspace launch "R Research Environment" shared-analysis --research-users alice,bob
 
 # Launch with EFS volume
-prism launch "Python ML" gpu-training --research-user alice --efs-volume shared-datasets
+prism workspace launch "Python ML" gpu-training --research-user alice --efs-volume shared-datasets
 ```
 
 ### Provisioning Status and Monitoring

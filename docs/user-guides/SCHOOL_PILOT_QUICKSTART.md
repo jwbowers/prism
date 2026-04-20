@@ -72,13 +72,13 @@ prism gui
 prism templates
 
 # Launch a Python environment for data science
-prism launch python-ml my-first-project
+prism workspace launch python-ml my-first-project
 
 # Launch an R environment for statistics
-prism launch r-rstudio-server statistics-project
+prism workspace launch r-rstudio-server statistics-project
 
 # Launch basic Ubuntu for general computing
-prism launch basic-ubuntu cs-assignment
+prism workspace launch basic-ubuntu cs-assignment
 ```
 
 ## 🎓 Educational Templates
@@ -129,7 +129,7 @@ prism hibernate my-project  # Pause when not in use
 prism resume my-project     # Resume with all work intact
 
 # Use spot instances for assignments
-prism launch python-ml assignment --spot
+prism workspace launch python-ml assignment --spot
 
 # Set up automatic hibernation policies
 prism idle profile create classroom --idle-minutes 30 --action hibernate
@@ -140,9 +140,9 @@ prism idle profile create classroom --idle-minutes 30 --action hibernate
 ### Multi-Student Support
 ```bash
 # Launch environments for entire class
-prism launch python-ml alice-ml-project
-prism launch python-ml bob-ml-project
-prism launch python-ml carol-ml-project
+prism workspace launch python-ml alice-ml-project
+prism workspace launch python-ml bob-ml-project
+prism workspace launch python-ml carol-ml-project
 
 # Share files between students using EFS volumes
 prism volume create class-shared-data
@@ -160,7 +160,7 @@ prism volume attach class-shared-data bob-ml-project
 ### **Computer Science Course**
 ```bash
 # Launch basic Ubuntu environment for each student
-prism launch basic-ubuntu student-cs101
+prism workspace launch basic-ubuntu student-cs101
 
 # Students get full Linux environment with:
 # - GCC compiler, Python, Node.js, Git
@@ -172,7 +172,7 @@ prism launch basic-ubuntu student-cs101
 ### **Data Science Class**
 ```bash
 # Launch Python ML environment with Jupyter
-prism launch python-ml student-datascience
+prism workspace launch python-ml student-datascience
 
 # Students access via web browser:
 # - Jupyter notebooks at http://[instance-ip]:8888
@@ -185,8 +185,8 @@ prism launch python-ml student-datascience
 ```bash
 # Create shared research environment
 prism volume create research-project-data
-prism launch r-rstudio-server professor-research
-prism launch python-ml student-researcher
+prism workspace launch r-rstudio-server professor-research
+prism workspace launch python-ml student-researcher
 
 # Attach shared storage for collaboration
 prism volume attach research-project-data professor-research

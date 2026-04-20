@@ -17,7 +17,7 @@ The **R Research Full Stack** template provides a complete, production-ready R r
 
 ```bash
 # Launch R research environment
-prism launch r-research-full-stack my-r-project
+prism workspace launch r-research-full-stack my-r-project
 
 # Wait for installation (this takes 45-90 minutes first time)
 # The template installs R, RStudio Server, Quarto, LaTeX, and 40+ R packages
@@ -344,7 +344,7 @@ After first launch and full installation (15-20 minutes):
 prism ami create my-r-project --name "R Research Full Stack AMI"
 
 # Future launches from AMI: < 2 minutes!
-prism launch --ami ami-abc123def456 quick-r-instance
+prism workspace launch --ami ami-abc123def456 quick-r-instance
 ```
 
 **Benefits:**
@@ -363,7 +363,7 @@ See [Custom AMI Workflow Guide](CUSTOM_AMI_WORKFLOW.md) for details.
 
 **Standard Research Work (recommended default)**:
 ```bash
-prism launch r-research-full-stack my-project
+prism workspace launch r-research-full-stack my-project
 # Instance: m7i.xlarge (4 vCPU, 16 GB RAM) — template default, Intel Sapphire Rapids
 # Cost: ~$0.21/hour
 # Install time: ~60-90 min (first launch, R packages compiled from source)
@@ -371,14 +371,14 @@ prism launch r-research-full-stack my-project
 
 **Large Datasets / Complex Models**:
 ```bash
-prism launch r-research-full-stack my-project --size XL
+prism workspace launch r-research-full-stack my-project --size XL
 # Instance: m7i.2xlarge (8 vCPU, 32 GB RAM)
 # Cost: ~$0.42/hour
 ```
 
 **Memory-Intensive R Work (large in-memory datasets)**:
 ```bash
-prism launch r-research-full-stack my-project --instance-type r7i.xlarge
+prism workspace launch r-research-full-stack my-project --instance-type r7i.xlarge
 # Instance: r7i.xlarge (4 vCPU, 32 GB RAM) — memory optimized
 # Cost: ~$0.30/hour
 ```
@@ -425,7 +425,7 @@ prism list my-r-project
 **Insufficient memory:**
 ```bash
 # Launch larger instance
-prism launch r-research-full-stack my-project --size L
+prism workspace launch r-research-full-stack my-project --size L
 ```
 
 **Missing system dependencies:**
@@ -656,4 +656,4 @@ A: Yes! Copy the template to `~/.prism/templates/my-r-env.yml` and modify as nee
 
 **Template**: `r-research-full-stack`
 **Last Updated**: February 28, 2026
-**Version**: 1.1.0 (v0.7.8 — R 4.5.2, RStudio Server 2026.01.1, Ubuntu 24.04 Noble)
+**Version**: 1.1.0 (R 4.5.2, RStudio Server 2026.01.1, Ubuntu 24.04 Noble)

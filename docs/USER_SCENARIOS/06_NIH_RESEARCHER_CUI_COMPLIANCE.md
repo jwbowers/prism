@@ -184,7 +184,7 @@ rsync -avz results/ collaborator@anl.gov:/shared/battery-research/
    # Output shows: [university-cui] ✅ NIST 800-171 Rev. 3 Compliant
 
    # Launch CUI-compliant research environment
-   prism launch python-ml lung-cancer-genomics \
+   prism workspace launch python-ml lung-cancer-genomics \
      --profile university-cui \
      --project chen-lab-nih-r01 \
      --data-classification CUI \
@@ -590,7 +590,7 @@ prism compliance report \
 **For Researchers**:
 ```bash
 # Every NIH grant with CUI requirements now uses:
-prism launch <research-template> <project-name> \
+prism workspace launch <research-template> <project-name> \
   --profile university-cui \
   --data-classification CUI
 

@@ -157,7 +157,7 @@ Test Areas:
 - Interactive prompt handling
 
 Commands to Test:
-- prism launch <template> <name> [options]
+- prism workspace launch <template> <name> [options]
 - prism list [--format json|table]
 - prism connect <instance>
 - prism stop/start/hibernate <instance>

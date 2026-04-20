@@ -228,7 +228,7 @@ prism budget alert add --threshold 80 --email user@example.com
 
 **Promised Features**:
 ```bash
-prism launch bioinformatics-suite rnaseq-analysis
+prism workspace launch bioinformatics-suite rnaseq-analysis
 
 # Expected output:
 # 📊 Budget Impact Preview
@@ -323,7 +323,7 @@ prism budget report --month september --pdf
 **Promised Features**:
 ```bash
 # Launch with auto-termination
-prism launch gpu-ml-workstation protein-folding --hours 8
+prism workspace launch gpu-ml-workstation protein-folding --hours 8
 
 # Output:
 # ✅ Instance will auto-terminate at 11:30 PM tonight
@@ -392,7 +392,7 @@ prism course create "CS229-Fall2024" \
   --approved-templates "ml-cpu-student,ml-final-project"
 
 # Student tries unapproved template:
-prism launch gpu-ml-workstation homework1
+prism workspace launch gpu-ml-workstation homework1
 # ❌ Launch BLOCKED: Template not approved for CS229-Fall2024
 ```
 
@@ -765,7 +765,7 @@ prism profiles create lab-profile \
   --template-blacklist "gpu-ml"
 
 # Launch with policy enforcement
-prism launch gpu-ml-workstation test
+prism workspace launch gpu-ml-workstation test
 # ❌ Error: Template 'gpu-ml-workstation' not allowed by profile policy
 ```
 
@@ -795,7 +795,7 @@ prism profile create restricted \
   --max-instance-types "t3.medium,t3.large"
 
 # Policy check at launch
-prism launch python-ml my-project --instance-type c5.4xlarge
+prism workspace launch python-ml my-project --instance-type c5.4xlarge
 # ❌ Error: Instance type 'c5.4xlarge' exceeds profile limits
 ```
 
@@ -824,7 +824,7 @@ prism launch python-ml my-project --instance-type c5.4xlarge
 prism profile create regional \
   --allowed-regions "us-west-2,us-east-1"
 
-prism launch python-ml my-project --region eu-west-1
+prism workspace launch python-ml my-project --region eu-west-1
 # ❌ Error: Region 'eu-west-1' not allowed by profile policy
 ```
 
@@ -853,7 +853,7 @@ prism profile create cost-limited \
   --max-daily-budget 5.00
 
 # Launch blocked by cost limit
-prism launch gpu-ml-workstation expensive
+prism workspace launch gpu-ml-workstation expensive
 # ❌ Error: Estimated cost $24.80/day exceeds limit $5.00/day
 ```
 
@@ -1073,7 +1073,7 @@ precompiled_amis:
 **Promised Features**:
 ```bash
 # AMI inherits source template policies
-prism launch python-ml-compiled my-homework
+prism workspace launch python-ml-compiled my-homework
 
 # Policy check:
 # → Source template 'python-ml' is in whitelist ✓
@@ -1236,7 +1236,7 @@ func (s *Server) handleDCVProxy(w http.ResponseWriter, r *http.Request) {
 **Promised Features**:
 ```bash
 # Launch desktop workstation
-prism launch ubuntu-desktop my-desktop
+prism workspace launch ubuntu-desktop my-desktop
 
 # Access via DCV
 prism dcv connect my-desktop

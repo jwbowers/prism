@@ -123,9 +123,9 @@ Additional Commands: (20+ commands) ← PROBLEM
 **Mental Model**: "I need a Python environment to analyze my data"
 **Current Experience**:
 1. Runs `prism --help` → sees 40 commands → overwhelmed
-2. Finds `launch` → tries `prism launch python` → error (needs template name)
+2. Finds `launch` → tries `prism workspace launch python` → error (needs template name)
 3. Runs `prism templates` → sees 22 templates → confused about differences
-4. Finally: `prism launch "Python Machine Learning" my-analysis` → works!
+4. Finally: `prism workspace launch "Python Machine Learning" my-analysis` → works!
 5. Result: **15 minutes to launch first instance** (should be 30 seconds)
 
 **Missing**:
@@ -226,7 +226,7 @@ Prism
 
 ```bash
 # PRIMARY COMMANDS (everyday use)
-prism launch <template> <name>     # Create new workspace
+prism workspace launch <template> <name>     # Create new workspace
 prism connect <name>               # SSH into workspace
 prism list                         # Show my workspaces
 prism stop <name>                  # Stop workspace
@@ -590,7 +590,7 @@ Let's get you set up! This will take about 2 minutes.
 Run: prism init
 
 Or if you want to dive right in:
-  prism launch "Python Machine Learning" my-first-workspace
+  prism workspace launch "Python Machine Learning" my-first-workspace
 
 Need help? prism help quickstart
 
@@ -652,7 +652,7 @@ Setup complete! 🎉
 
 Ready to launch your first workspace?
 
-  prism launch "Python Machine Learning" my-analysis
+  prism workspace launch "Python Machine Learning" my-analysis
 
 Need help? Check out: https://docs.prism.io/quickstart
 ```
@@ -687,7 +687,7 @@ prism idle profile list              # Three-word commands get unwieldy
 **Fixed (Consistent Patterns)**:
 ```bash
 # PATTERN 1: Primary commands (verb workspace-name)
-prism launch <template> <name>       # Always template first
+prism workspace launch <template> <name>       # Always template first
 prism connect <name>                 # Simple, predictable
 prism stop <name>
 prism delete <name>

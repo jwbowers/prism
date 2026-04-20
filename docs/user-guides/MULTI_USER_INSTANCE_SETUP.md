@@ -743,7 +743,7 @@ c.NotebookApp.iopub_data_rate_limit = 10000000
 **Setup**:
 ```bash
 # Instance owner launches R environment
-prism launch "R Research Environment (Simplified)" bio-lab
+prism workspace launch "R Research Environment (Simplified)" bio-lab
 
 # Connect and add team members
 prism connect bio-lab
@@ -783,7 +783,7 @@ sudo usermod -aG rstudio-users charlie
 **Setup**:
 ```bash
 # Professor launches Jupyter environment
-prism launch python-ml course-ml-101
+prism workspace launch python-ml course-ml-101
 
 # Connect
 prism connect course-ml-101
@@ -817,7 +817,7 @@ sudo chmod 1777 /shared/course/student-work  # Sticky bit
 **Setup**:
 ```bash
 # Workshop organizer launches instance
-prism launch python-ml workshop-pandas-2024
+prism workspace launch python-ml workshop-pandas-2024
 
 # Create single shared account for attendees
 sudo adduser workshop
@@ -847,7 +847,7 @@ sudo chown -R workshop:workshop /home/workshop/workshop-materials
 **Setup**:
 ```bash
 # US researcher launches R environment
-prism launch "R Research Environment (Simplified)" intl-collab
+prism workspace launch "R Research Environment (Simplified)" intl-collab
 
 # Connect and add Chilean collaborator
 prism connect intl-collab

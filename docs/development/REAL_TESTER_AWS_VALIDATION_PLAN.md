@@ -100,7 +100,7 @@ rm -rf ~/.prism
 **Test Steps**:
 1. Browse templates
 2. Pick a template (e.g., Python ML)
-3. Launch instance: `prism launch python-ml my-project`
+3. Launch instance: `prism workspace launch python-ml my-project`
 4. Wait for instance to be ready
 5. Connect via SSH
 6. Verify software works (Python, Jupyter, etc.)

@@ -284,7 +284,7 @@ Prism is designed with security and compliance as foundational principles, not a
 
 2. **Launch-Time Injection**: Instance launch can include institutional user-data scripts
    ```bash
-   prism launch python-ml my-research --user-data-file /path/to/security-setup.sh
+   prism workspace launch python-ml my-research --user-data-file /path/to/security-setup.sh
    ```
 
 3. **AMI Baking**: Institutions can create custom AMIs with agents pre-installed
@@ -322,7 +322,7 @@ prism project create cancer-research \
 
 **Instance Tagging** (v0.7.0):
 ```bash
-prism launch python-ml research-workstation \
+prism workspace launch python-ml research-workstation \
   --project cancer-research \
   --data-classification PHI \
   --tag "IRB-Protocol=2024-123" \
@@ -373,7 +373,7 @@ requirements:
 **Current** (v0.5.x):
 ```bash
 # Private subnet deployment
-prism launch python-ml research \
+prism workspace launch python-ml research \
   --subnet subnet-private123 \
   --no-public-ip \
   --security-group sg-institutional
@@ -390,7 +390,7 @@ prism profile create university-secure \
   --bastion bastion.university.edu \
   --require-vpn
 
-prism launch python-ml research --profile university-secure
+prism workspace launch python-ml research --profile university-secure
 # ↑ Automatically enforces: private subnet, bastion host, VPN check
 ```
 

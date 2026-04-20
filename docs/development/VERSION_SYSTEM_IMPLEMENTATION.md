@@ -47,30 +47,30 @@ Static Fallback AMI
 
 ```bash
 # Use default version (Ubuntu 24.04)
-prism launch python-ml my-project
+prism workspace launch python-ml my-project
 
 # Specify explicit version
-prism launch python-ml my-project --version 22.04
+prism workspace launch python-ml my-project --version 22.04
 
 # Use version alias
-prism launch python-ml my-project --version lts
-prism launch python-ml my-project --version latest
+prism workspace launch python-ml my-project --version lts
+prism workspace launch python-ml my-project --version latest
 ```
 
 ### Multi-Distro Support
 
 ```bash
 # Rocky Linux 10 (latest)
-prism launch rocky-base my-server --version 10
+prism workspace launch rocky-base my-server --version 10
 
 # Rocky Linux 9 (LTS)
-prism launch rocky-base my-server --version 9
+prism workspace launch rocky-base my-server --version 9
 
 # Amazon Linux 2023
-prism launch web-server aws-host --version 2023
+prism workspace launch web-server aws-host --version 2023
 
 # Debian 12
-prism launch database-server db-host --version 12
+prism workspace launch database-server db-host --version 12
 ```
 
 ### Version Aliases

@@ -428,7 +428,7 @@ set-password '{{.password}}'
 
 3. **Test on real instance**:
    ```bash
-   ./bin/prism launch "Plugin Test" plugin-test
+   ./bin/prism workspace launch "Plugin Test" plugin-test
    ./bin/prism workspace exec plugin-test 'your-command --version'
    ```
 

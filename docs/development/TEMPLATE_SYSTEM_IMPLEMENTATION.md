@@ -116,7 +116,7 @@ prism templates validate "Template Name"    # Specific template
 prism templates validate file.yml          # Template file
 
 # Enhanced launch with inheritance
-prism launch "Rocky Linux 9 + Conda Stack" my-analysis
+prism workspace launch "Rocky Linux 9 + Conda Stack" my-analysis
 ```
 
 ## 📊 Working Examples
@@ -234,7 +234,7 @@ Simple commands for template discovery, validation, and launch operations.
 ### Basic Usage
 ```bash
 # Launch pre-configured stacked environment
-prism launch "Rocky Linux 9 + Conda Stack" my-research
+prism workspace launch "Rocky Linux 9 + Conda Stack" my-research
 
 # Result: Rocky Linux base + conda ML packages + both users
 # (rocky + datascientist) + system + conda packages + jupyter service
@@ -243,11 +243,11 @@ prism launch "Rocky Linux 9 + Conda Stack" my-research
 ### Advanced Usage  
 ```bash
 # Override package manager at launch time
-prism launch "Rocky Linux 9 + Conda Stack" my-project --with spack
+prism workspace launch "Rocky Linux 9 + Conda Stack" my-project --with spack
 
 # Validate before launch
 prism templates validate "Rocky Linux 9 + Conda Stack"
-prism launch "Rocky Linux 9 + Conda Stack" validated-instance
+prism workspace launch "Rocky Linux 9 + Conda Stack" validated-instance
 ```
 
 ## 📈 Scalability Design

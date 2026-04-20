@@ -702,7 +702,7 @@ documentation: |
 
   ## Access
   ```bash
-  prism launch generic-desktop my-desktop
+  prism workspace launch generic-desktop my-desktop
   prism connect my-desktop
   ```
 

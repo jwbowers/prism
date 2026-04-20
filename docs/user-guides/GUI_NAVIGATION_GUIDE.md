@@ -1,6 +1,6 @@
 # Prism GUI Navigation Guide
 
-**Version**: v0.5.9+
+**Version**: v0.35.3
 **Last Updated**: October 27, 2025
 
 ## Overview
@@ -57,7 +57,7 @@ The Settings section uses an internal side navigation to organize configuration 
 - **Idle Detection** - Automated hibernation policies and cost optimization
 - **Logs Viewer** - System logs and diagnostics
 
-## Navigation Changes in v0.5.9
+## Navigation Overview
 
 ### What Changed
 
@@ -188,9 +188,9 @@ Planned improvements for Settings navigation:
 ## Related Documentation
 
 - [GUI Architecture](../architecture/GUI_ARCHITECTURE.md)
-- [User Guide v0.5.x](USER_GUIDE_v0.5.x.md)
+- 
 - [GUI UX Design Review](../architecture/GUI_UX_DESIGN_REVIEW.md)
-- [Release Plan v0.5.9](../releases/RELEASE_PLAN_v0.5.9.md)
+- 
 
 ---
 

@@ -195,13 +195,13 @@ prism keys migrate
 
 ```bash
 # Test key creation
-prism launch python-ml test-key-creation
+prism workspace launch python-ml test-key-creation
 # Verify: ~/.prism/keys/<profile> exists
 # Verify: metadata.json updated
 # Verify: SSH connection works
 
 # Test key reuse
-prism launch r-research test-key-reuse
+prism workspace launch r-research test-key-reuse
 # Verify: Same key used if same profile
 # Verify: metadata.json instances array updated
 
@@ -230,4 +230,4 @@ prism keys migrate
 2. **Multiple keys per profile**: `prism keys create research-gpu` for specialized workloads
 3. **Team key sharing**: `prism keys share research --with team@company.com`
 4. **Hardware keys**: Support for YubiKey/hardware security modules
-5. **Per-instance keys**: `prism launch python-ml test --dedicated-key` for security isolation
+5. **Per-instance keys**: `prism workspace launch python-ml test --dedicated-key` for security isolation

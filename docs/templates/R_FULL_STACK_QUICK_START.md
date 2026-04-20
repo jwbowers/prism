@@ -16,10 +16,10 @@ A complete R research environment accessible through your web browser - no softw
 
 ```bash
 # Basic launch (recommended)
-prism launch r-research-full-stack chile-collab --size M --wait
+prism workspace launch r-research-full-stack chile-collab --size M --wait
 
 # With cost-saving hibernation
-prism launch r-research-full-stack chile-collab \
+prism workspace launch r-research-full-stack chile-collab \
   --size M \
   --hibernation \
   --wait
@@ -30,7 +30,7 @@ prism project create "Chile Collaboration" \
   --budget-limit 500 \
   --budget-period monthly
 
-prism launch r-research-full-stack chile-collab \
+prism workspace launch r-research-full-stack chile-collab \
   --size M \
   --project "Chile Collaboration" \
   --hibernation \

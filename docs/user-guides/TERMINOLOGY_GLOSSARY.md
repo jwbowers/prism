@@ -62,7 +62,7 @@ prism storage list --verbose
 
 **Prism Sizes** (Simple):
 ```bash
-prism launch python-ml my-project --size L
+prism workspace launch python-ml my-project --size L
 ```
 
 Sizes: `XS`, `S`, `M`, `L`, `XL`
@@ -74,7 +74,7 @@ Sizes: `XS`, `S`, `M`, `L`, `XL`
 
 **AWS Instance Types** (Precise):
 ```bash
-prism launch python-ml my-project --instance-type t3.xlarge
+prism workspace launch python-ml my-project --instance-type t3.xlarge
 ```
 
 **Use `--verbose` to see AWS instance type**:
@@ -220,9 +220,9 @@ Enables:
 - AWS service names (EBS, EFS, S3)
 - VPC/subnet information
 
-### TUI Technical View
+### CLI Technical Details
 
-Press `t` in any TUI view to toggle technical details.
+Add `--verbose` to CLI commands to see AWS technical details (instance IDs, ARNs, etc.).
 
 ---
 
@@ -267,17 +267,17 @@ Prism follows **progressive disclosure** - simple by default, detailed when need
 
 **Beginner (Simple)**:
 ```bash
-prism launch python-ml my-research
+prism workspace launch python-ml my-research
 ```
 
 **Intermediate (Sized)**:
 ```bash
-prism launch python-ml my-research --size L
+prism workspace launch python-ml my-research --size L
 ```
 
 **Advanced (Spot + Storage)**:
 ```bash
-prism launch python-ml my-research \
+prism workspace launch python-ml my-research \
   --size L \
   --spot \
   --attach-storage my-data
@@ -285,7 +285,7 @@ prism launch python-ml my-research \
 
 **Expert (Full Control)**:
 ```bash
-prism launch python-ml my-research \
+prism workspace launch python-ml my-research \
   --instance-type c5.4xlarge \
   --spot \
   --subnet subnet-abc123 \

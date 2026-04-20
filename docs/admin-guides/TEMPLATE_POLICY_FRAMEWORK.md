@@ -193,12 +193,12 @@ prism profiles invitations create "CS101 Class" --type read_only --template-whit
 
 # Student accepting class invitation
 prism profiles accept-invitation --encoded [token] --name "CS101"
-prism launch python-advanced my-project  
+prism workspace launch python-advanced my-project  
 # → Policy check: Template not in whitelist ✗
 # → Error: Template 'python-advanced' not allowed for this profile
 # → Available templates: python-basic, r-basic
 
-prism launch python-basic my-project
+prism workspace launch python-basic my-project
 # → Policy check: Template in whitelist ✓
 # → Launch approved
 ```
@@ -206,14 +206,14 @@ prism launch python-basic my-project
 ### Enterprise Deployment (Advanced Policy Framework)
 ```bash
 # Enterprise Prism with full policy engine
-prism launch python-ml my-project
+prism workspace launch python-ml my-project
 # → Policy check: Approved institutional template ✓
 # → Security check: User clearance sufficient ✓  
 # → Resource check: Instance type within budget ✓
 # → Compliance check: Audit logged ✓
 # → Launch approved
 
-prism launch external-gpu-template my-project  
+prism workspace launch external-gpu-template my-project  
 # → Policy check: External template not approved ✗
 # → Access denied: Contact IT for template approval
 ```

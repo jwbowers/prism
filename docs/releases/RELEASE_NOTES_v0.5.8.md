@@ -154,7 +154,7 @@ Renamed "Instances" → "Workspaces" across all interfaces for better mental mod
 prism init                    # Interactive wizard for first-time users
 
 # Existing commands (unchanged)
-prism launch python-ml my-research
+prism workspace launch python-ml my-research
 prism list
 prism connect my-research
 prism stop my-research
@@ -216,7 +216,7 @@ prism init
 ### For Experienced Users
 ```bash
 # Direct commands still work
-prism launch python-ml my-research --size L
+prism workspace launch python-ml my-research --size L
 ```
 
 **Result**: Same fast experience, no wizard required

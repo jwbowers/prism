@@ -104,7 +104,7 @@ Verify these fields exist and are valid:
 - [ ] **Prerequisites listed** (if any)
 
 **Quick Start**:
-- [ ] **Launch command** (`prism launch ...`)
+- [ ] **Launch command** (`prism workspace launch ...`)
 - [ ] **Connect command** (`prism connect ...`)
 - [ ] **First steps** (what to do after connecting)
 - [ ] **Estimated time** (5 minutes? 30 minutes?)
@@ -165,7 +165,7 @@ Verify these fields exist and are valid:
 **Test 1: x86_64 Launch** (Required)
 ```bash
 # Launch in test region
-AWS_REGION=us-east-1 prism launch [template-name] test-x86
+AWS_REGION=us-east-1 prism workspace launch [template-name] test-x86
 
 # Verify:
 - [ ] Instance launches successfully
@@ -180,7 +180,7 @@ prism delete test-x86
 
 **Test 2: ARM64 Launch** (If template claims support)
 ```bash
-AWS_REGION=us-east-1 prism launch --architecture arm64 [template-name] test-arm
+AWS_REGION=us-east-1 prism workspace launch --architecture arm64 [template-name] test-arm
 
 # Verify same as x86_64
 
@@ -190,7 +190,7 @@ prism delete test-arm
 **Test 3: Multi-Region** (Recommended)
 ```bash
 # Test in second region
-AWS_REGION=us-west-2 prism launch [template-name] test-west
+AWS_REGION=us-west-2 prism workspace launch [template-name] test-west
 
 # Verify same as first region
 

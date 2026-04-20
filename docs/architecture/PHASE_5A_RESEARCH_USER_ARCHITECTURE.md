@@ -425,7 +425,7 @@ prism research-user ssh-key import alice ~/.ssh/id_rsa.pub
 prism research-user ssh-key list alice
 
 # Instance provisioning
-prism launch python-ml my-instance --research-user alice
+prism workspace launch python-ml my-instance --research-user alice
 prism research-user provision alice --instance my-instance
 
 # Status and monitoring

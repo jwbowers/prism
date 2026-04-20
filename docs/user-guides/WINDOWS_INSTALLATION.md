@@ -33,13 +33,13 @@ For automated or enterprise deployments:
 
 ```powershell
 # Silent install with default options
-msiexec /i Prism-v0.7.8-x64.msi /quiet
+msiexec /i Prism-v0.35.3-x64.msi /quiet
 
 # Silent install to a custom directory
-msiexec /i Prism-v0.7.8-x64.msi /quiet INSTALLDIR="C:\Tools\Prism"
+msiexec /i Prism-v0.35.3-x64.msi /quiet INSTALLDIR="C:\Tools\Prism"
 
 # Silent install with a log file
-msiexec /i Prism-v0.7.8-x64.msi /quiet /log install.log
+msiexec /i Prism-v0.35.3-x64.msi /quiet /log install.log
 ```
 
 #### Uninstall
@@ -49,7 +49,7 @@ msiexec /i Prism-v0.7.8-x64.msi /quiet /log install.log
 # Settings → Apps → Search "Prism" → Uninstall
 
 # Silent uninstall
-msiexec /x Prism-v0.7.8-x64.msi /quiet
+msiexec /x Prism-v0.35.3-x64.msi /quiet
 ```
 
 ### Method 2: Direct Binary Download
@@ -104,7 +104,7 @@ prism admin daemon status
 
 ```powershell
 # Launch your first environment
-prism launch python-ml my-first-project
+prism workspace launch python-ml my-first-project
 
 # Or open the desktop GUI
 prism-gui
@@ -189,7 +189,7 @@ Download and run the new MSI installer — it will upgrade in place. The Windows
 For silent upgrades:
 
 ```powershell
-msiexec /i Prism-v0.8.0-x64.msi /quiet
+msiexec /i Prism-v0.35.3-x64.msi /quiet
 ```
 
 ## Uninstalling
@@ -199,7 +199,7 @@ msiexec /i Prism-v0.8.0-x64.msi /quiet
 # Settings → Apps → Apps & Features → Search "Prism" → Uninstall
 
 # Silent uninstall
-msiexec /x Prism-v0.7.8-x64.msi /quiet
+msiexec /x Prism-v0.35.3-x64.msi /quiet
 
 # Remove configuration data (optional)
 Remove-Item -Recurse -Force "$env:USERPROFILE\.prism"

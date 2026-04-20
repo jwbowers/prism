@@ -202,22 +202,22 @@ policy_metadata:
 
 ```bash
 # Traditional EC2 launch (unchanged)
-prism launch python-ml my-research-project
+prism workspace launch python-ml my-research-project
 
 # SageMaker Studio Lab launch (free)
-prism launch sagemaker-studio-lab ml-learning
+prism workspace launch sagemaker-studio-lab ml-learning
 # → Creates Studio Lab environment
 # → Returns web URL for direct access
 # → Shows "Free tier - no cost" message
 
 # SageMaker Studio launch (managed)  
-prism launch sagemaker-studio-gpu ml-training --instance-type ml.g4dn.xlarge
+prism workspace launch sagemaker-studio-gpu ml-training --instance-type ml.g4dn.xlarge
 # → Creates SageMaker domain if needed
 # → Provisions user profile with research user identity
 # → Returns studio URL + cost estimate
 
 # Canvas no-code ML launch
-prism launch sagemaker-canvas business-analysis
+prism workspace launch sagemaker-canvas business-analysis
 # → Creates Canvas workspace
 # → Configures data sources
 # → Returns Canvas URL

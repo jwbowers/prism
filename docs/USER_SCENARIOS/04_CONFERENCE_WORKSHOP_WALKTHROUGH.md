@@ -376,7 +376,7 @@ prism workshop dashboard neurips-dl-workshop
 #    (This will create a personal AMI - $2.50/month storage)
 #
 # After termination, you can recreate your environment:
-#    prism launch-from-snapshot my-workshop-work restored-env
+#    prism workspace launch --restore-from my-workshop-work restored-env
 
 # Bulk download (instructor):
 prism workshop export-all neurips-dl-workshop \
@@ -576,7 +576,7 @@ participant$ prism snapshot create workshop-instance my-workshop
 # 💰 Storage cost: $2.50/month (personal account)
 #
 # To recreate:
-#   prism launch-from-snapshot my-workshop continued-work
+#   prism workspace launch --restore-from my-workshop continued-work
 ```
 
 **3:00 PM - Workshop ends, auto-terminate begins**:

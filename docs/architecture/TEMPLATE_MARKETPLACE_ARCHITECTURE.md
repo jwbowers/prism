@@ -314,10 +314,10 @@ func init() {
 **Launch Compatibility:**
 ```bash
 # Marketplace templates work like built-in templates
-prism launch marketplace-template instance-name
+prism workspace launch marketplace-template instance-name
 
 # Full feature compatibility
-prism launch marketplace-template instance-name \
+prism workspace launch marketplace-template instance-name \
     --research-user johndoe \
     --size L \
     --spot

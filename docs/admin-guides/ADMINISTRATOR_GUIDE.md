@@ -4,7 +4,7 @@ This guide provides information for administrators on managing Prism profiles an
 
 ## Profile Security System
 
-Prism v0.4.3 introduces a comprehensive security model for invitation-based profiles, allowing administrators to control access to their AWS resources with fine-grained permissions.
+Prism provides a comprehensive security model for invitation-based profiles, allowing administrators to control access to their AWS resources with fine-grained permissions.
 
 ### Invitation Security Features
 

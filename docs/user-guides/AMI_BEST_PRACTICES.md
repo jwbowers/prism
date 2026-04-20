@@ -130,7 +130,7 @@ compliance=phi_approved"          # Regulatory compliance
 
 ```bash
 # 1. Launch test instance from AMI
-prism launch --ami ami-0abc123def456 security-audit
+prism workspace launch --ami ami-0abc123def456 security-audit
 
 # 2. Connect and audit
 prism connect security-audit
@@ -188,7 +188,7 @@ prism ami create my-instance --name "Clean AMI v1.0"
 
 ```bash
 # ✅ Good: Launch with IAM role
-prism launch --ami ami-0abc123def456 my-instance \
+prism workspace launch --ami ami-0abc123def456 my-instance \
   --iam-role researcher-role
 
 # Inside instance, AWS SDK uses instance role automatically
@@ -546,7 +546,7 @@ TEST_INSTANCE="ami-test-$(date +%s)"
 echo "Testing AMI: $AMI_ID"
 
 # 1. Launch test instance
-prism launch --ami $AMI_ID $TEST_INSTANCE --size S
+prism workspace launch --ami $AMI_ID $TEST_INSTANCE --size S
 sleep 60  # Wait for boot
 
 # 2. Check instance is running
@@ -598,7 +598,7 @@ jobs:
 
       - name: Launch test instance
         run: |
-          prism launch --ami ${{ env.AMI_ID }} test-instance
+          prism workspace launch --ami ${{ env.AMI_ID }} test-instance
 
       - name: Run tests
         run: |
@@ -616,7 +616,7 @@ jobs:
 
 ```bash
 # Test launch speed
-time prism launch --ami ami-0abc123def456 speed-test
+time prism workspace launch --ami ami-0abc123def456 speed-test
 
 # Should complete in 30-60 seconds for AMI
 # vs 3-5 minutes for template
@@ -896,21 +896,21 @@ wait
 
 ```bash
 # Base AMI: Core tools
-prism launch --ami ami-base-tools core-env
+prism workspace launch --ami ami-base-tools core-env
 prism connect core-env
 # ... install common tools ...
 exit
 prism ami create core-env --name "Base Tools v1.0"
 
 # Specialized AMI 1: ML Tools (built from base)
-prism launch --ami ami-base-tools ml-env
+prism workspace launch --ami ami-base-tools ml-env
 prism connect ml-env
 # ... install ML packages ...
 exit
 prism ami create ml-env --name "ML Tools v1.0"
 
 # Specialized AMI 2: Spatial Tools (built from base)
-prism launch --ami ami-base-tools spatial-env
+prism workspace launch --ami ami-base-tools spatial-env
 prism connect spatial-env
 # ... install spatial packages ...
 exit

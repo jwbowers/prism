@@ -72,7 +72,7 @@ Layer 3: r-publishing-stack.yml
 **Winner: Monolithic** 🏆
 
 **Monolithic**:
-- ✅ Single command: `prism launch r-research-full-stack my-project`
+- ✅ Single command: `prism workspace launch r-research-full-stack my-project`
 - ✅ One template name to remember
 - ✅ Clear documentation in single location
 - ✅ Obvious what you get
@@ -81,9 +81,9 @@ Layer 3: r-publishing-stack.yml
 - ⚠️ Must understand layer hierarchy
 - ⚠️ Three templates to document
 - ✅ Can launch any layer independently:
-  - `prism launch "R Base (Ubuntu 24.04)" minimal-env` (Layer 1 only)
-  - `prism launch "R + RStudio Server" web-ide` (Layers 1+2)
-  - `prism launch "R Research Publishing Stack" full-stack` (All layers)
+  - `prism workspace launch "R Base (Ubuntu 24.04)" minimal-env` (Layer 1 only)
+  - `prism workspace launch "R + RStudio Server" web-ide` (Layers 1+2)
+  - `prism workspace launch "R Research Publishing Stack" full-stack` (All layers)
 - ✅ Flexibility to choose complexity level
 
 **Analysis**: For users who want "everything", monolithic is simpler. For users who want choice, stacked provides options.

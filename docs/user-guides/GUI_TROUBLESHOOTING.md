@@ -17,9 +17,9 @@
 **Root Cause**:
 The Prism daemon (`prismd`) was not running when the GUI attempted to load data.
 
-**Solution (v0.5.2+)**: ✅ **Auto-Fixed!**
+**Solution**:: ✅ **Auto-Fixed!**
 
-Starting in v0.5.2, the GUI **automatically starts the daemon** if it's not running. You should see:
+The GUI **automatically starts the daemon** if it's not running. You should see:
 ```
 🔍 Checking if daemon is running...
 ⚠️  Daemon is not running, attempting to start...
@@ -226,13 +226,13 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 - Filtering properties dropdown empty
 
 **Root Cause**:
-- Cloudscape PropertyFilter not loaded
+- Filter component not loaded
 - JavaScript bundle loading error
 - Filter state not initialized
 
 **Solution**:
 
-1. **Verify Cloudscape bundle loaded**:
+1. **Verify frontend bundle loaded**:
    - Open Network tab in Developer Tools
    - Look for `cloudscape-*.js` file
    - Should be ~665KB and load successfully
@@ -371,9 +371,9 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
    - Should announce: "Status: running" or similar
    - If not, check element in Inspector
 
-4. **Verify Cloudscape ARIA support**:
-   - Cloudscape components include ARIA by default
-   - Check Cloudscape version is 3.0+
+4. **Verify ARIA support**:
+   - shadcn/ui components include ARIA via Radix UI by default
+   - Check Radix UI components are properly installed
    - Update if needed: `npm update @cloudscape-design/components`
 
 ---
@@ -401,7 +401,7 @@ The GUI cannot connect to the daemon API on `http://localhost:8947`.
 
    Check bundle sizes:
    - Main: ~270KB (gzipped: ~77KB)
-   - Cloudscape: ~665KB (gzipped: ~183KB)
+   - shadcn/ui + Radix UI: ~320KB (gzipped)
 
    If much larger, may have development build.
 

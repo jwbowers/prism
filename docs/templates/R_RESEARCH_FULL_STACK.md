@@ -58,7 +58,7 @@ Perfect for research projects requiring web-based collaboration with non-technic
 ### Basic Launch
 ```bash
 # Launch with default settings (M size recommended)
-prism launch r-research-full-stack my-research --size M --wait
+prism workspace launch r-research-full-stack my-research --size M --wait
 
 # Check launch progress
 prism workspace list
@@ -70,19 +70,19 @@ prism workspace describe my-research
 ### Advanced Launch Options
 ```bash
 # Launch with hibernation for cost savings
-prism launch r-research-full-stack my-research \
+prism workspace launch r-research-full-stack my-research \
   --size M \
   --hibernation \
   --wait
 
 # Launch with project association
-prism launch r-research-full-stack my-research \
+prism workspace launch r-research-full-stack my-research \
   --size M \
   --project "Chile Collaboration" \
   --wait
 
 # Launch with spot instances (70% cost savings)
-prism launch r-research-full-stack my-research \
+prism workspace launch r-research-full-stack my-research \
   --size L \
   --spot \
   --wait
@@ -109,7 +109,7 @@ The initial launch takes **10-15 minutes** due to extensive package installation
 **Check status:**
 ```bash
 # Watch launch progress
-prism launch r-research-full-stack my-research --size M --wait
+prism workspace launch r-research-full-stack my-research --size M --wait
 
 # Or check status separately
 prism workspace list
@@ -345,7 +345,7 @@ prism project create "Chile Collaboration" \
   --budget-period monthly
 
 # 2. Launch workspace in project
-prism launch r-research-full-stack chile-workspace \
+prism workspace launch r-research-full-stack chile-workspace \
   --size M \
   --project "Chile Collaboration" \
   --hibernation
@@ -379,7 +379,7 @@ prism workspace schedule my-research \
 ### Spot Instances
 ```bash
 # Launch with spot for 70% savings (may be interrupted)
-prism launch r-research-full-stack my-research \
+prism workspace launch r-research-full-stack my-research \
   --size M \
   --spot \
   --hibernation
@@ -388,7 +388,7 @@ prism launch r-research-full-stack my-research \
 ### Rightsizing
 ```bash
 # Start small, upgrade if needed
-prism launch r-research-full-stack my-research --size M
+prism workspace launch r-research-full-stack my-research --size M
 
 # Upgrade later if you need more power
 prism workspace resize my-research --size L

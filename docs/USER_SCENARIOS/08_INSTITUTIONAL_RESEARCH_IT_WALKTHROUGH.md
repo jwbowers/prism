@@ -201,7 +201,7 @@ prism project member add genomics-pilot researcher2@university.edu --role member
 
 # Pilot users can now self-serve
 # (as pilot user)
-prism launch bioinformatics-approved my-genomics-analysis \
+prism workspace launch bioinformatics-approved my-genomics-analysis \
   --project genomics-pilot
 
 # Maria's team monitors usage
@@ -405,7 +405,7 @@ prism admin policy apply johnson-nih-r01-genomics \
 **Researcher Experience**:
 ```bash
 # Postdoc launches environment (compliant by default)
-prism launch bioinformatics-hipaa my-patient-genomics \
+prism workspace launch bioinformatics-hipaa my-patient-genomics \
   --project johnson-nih-r01-genomics
 
 # Workspace automatically has:
@@ -445,7 +445,7 @@ prism templates create cs401-assignment1 \
 
 # Students launch identical environments
 # (as student)
-prism launch cs401-assignment1 homework1 --project cs401-fall2025
+prism workspace launch cs401-assignment1 homework1 --project cs401-fall2025
 ```
 
 **Instructor Monitoring**:
@@ -792,7 +792,7 @@ prism admin cloud-providers enable azure \
   --cost-tracking-integration banner-finance
 
 # Researchers can now choose cloud provider
-prism launch python-ml my-project \
+prism workspace launch python-ml my-project \
   --cloud azure \
   --reason "Microsoft-specific ML services required"
 ```

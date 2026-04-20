@@ -4,7 +4,7 @@
   <img src="images/prism.png" alt="Prism Logo" width="200">
 </p>
 
-> **Current v0.5.5**: Enhanced profile management with context support, secure credential storage, and full API integration.
+Profile management provides context support, secure credential storage, and full API integration.
 
 ## What are Profiles?
 
@@ -111,7 +111,7 @@ Remember: The profile name shown in the sidebar tells you which account you're c
 
 ## Technical Reference for Developers
 
-Prism v0.4.3 includes a comprehensive API for multi-profile management that can be used by developers building extensions or integrating with the platform.
+Prism includes a comprehensive API for multi-profile management that can be used by developers building extensions or integrating with the platform.
 
 ### Core Components
 

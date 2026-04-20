@@ -72,7 +72,7 @@ Research computing today suffers from fragmentation and complexity that impedes 
 
 **Core Principle**: Every interaction should work reliably regardless of researcher expertise, geographic location, institutional context, **or accessibility needs**.
 
-When a researcher runs `prism launch python-ml my-project`, the system delivers a production-ready research environment within 60 seconds, complete with:
+When a researcher runs `prism workspace launch python-ml my-project`, the system delivers a production-ready research environment within 60 seconds, complete with:
 - Pre-configured tools (Jupyter, conda, GPU drivers)
 - Optimal instance sizing for the workload
 - Cost-effective regional fallbacks when needed
@@ -101,9 +101,9 @@ When a researcher runs `prism launch python-ml my-project`, the system delivers 
 ### 📈 Progressive Complexity
 
 **Accessibility Gradient** (all levels universally accessible):
-- **Novice**: `prism launch template-name project-name` 
-- **Intermediate**: `prism launch template-name project-name --size L`
-- **Advanced**: `prism launch template-name project-name --instance-type c5.2xlarge --spot`
+- **Novice**: `prism workspace launch template-name project-name` 
+- **Intermediate**: `prism workspace launch template-name project-name --size L`
+- **Advanced**: `prism workspace launch template-name project-name --instance-type c5.2xlarge --spot`
 - **Expert**: Full template customization and multi-region optimization
 - **All Interaction Modes**: Voice commands, keyboard shortcuts, screen reader optimization, gesture support available at every complexity level
 
@@ -246,11 +246,11 @@ The foundation is already built with sophisticated template stacking:
 **Intelligent Template Suggestions**:
 ```bash
 # AI analyzes research pattern and suggests optimal template
-prism launch --suggest "I need to analyze RNA-seq data with R and Python"
+prism workspace launch --suggest "I need to analyze RNA-seq data with R and Python"
 # → Suggests: "Bioinformatics Multi-Stack" (R + Python + Bioconductor + conda)
 
 # Dynamic template generation based on paper citations
-prism launch --from-paper "10.1038/s41586-021-03819-2" genomics-analysis
+prism workspace launch --from-paper "10.1038/s41586-021-03819-2" genomics-analysis
 # → Analyzes paper's methods, creates custom environment
 ```
 
@@ -490,7 +490,7 @@ prism cluster connect genomics-hpc
 # → Traditional HPC interface with Prism management
 
 # Hybrid workflows: interactive analysis + batch processing
-prism launch jupyter-gpu interactive-analysis
+prism workspace launch jupyter-gpu interactive-analysis
 prism cluster submit genomics-hpc batch-processing.slurm
 ```
 
@@ -658,7 +658,7 @@ prism gui theme set accessibility-enhanced
 
 ```bash
 # Launch custom JupyterHub for research team
-prism launch custom-jupyter-hub research-team
+prism workspace launch custom-jupyter-hub research-team
 # Features:
 # ├── Multi-user Jupyter environment with research libraries
 # ├── EFS integration for shared notebooks and data
@@ -666,7 +666,7 @@ prism launch custom-jupyter-hub research-team
 # └── Cost tracking per user with budget enforcement
 
 # Bioinformatics workflow server
-prism launch galaxy-bioinformatics genomics-analysis
+prism workspace launch galaxy-bioinformatics genomics-analysis
 # Includes:
 # ├── Galaxy workflow engine with pre-configured tools
 # ├── Integration with research databases and pipelines
@@ -883,7 +883,7 @@ prism analytics accessibility --dashboard
 **ML Workflow Integration**:
 ```bash
 # Launch SageMaker Studio with Prism management
-prism launch sagemaker-studio ml-research-environment
+prism workspace launch sagemaker-studio ml-research-environment
 # Integration includes:
 # ├── Unified cost tracking across EC2 and SageMaker
 # ├── Shared EFS storage between instances and Studio
@@ -891,7 +891,7 @@ prism launch sagemaker-studio ml-research-environment
 # └── Project-based budget management and alerts
 
 # No-code ML with SageMaker Canvas
-prism launch sagemaker-canvas business-analytics
+prism workspace launch sagemaker-canvas business-analytics
 # Features:
 # ├── Point-and-click ML model building
 # ├── Integration with institutional data sources
@@ -904,7 +904,7 @@ prism launch sagemaker-canvas business-analytics
 **AWS ParallelCluster Integration**:
 ```bash
 # On-demand HPC cluster with Prism simplicity
-prism launch parallelcluster-hpc climate-modeling --nodes 100
+prism workspace launch parallelcluster-hpc climate-modeling --nodes 100
 # Capabilities:
 # ├── Traditional SLURM interface with cloud elasticity
 # ├── Automatic data staging from Prism storage
@@ -912,7 +912,7 @@ prism launch parallelcluster-hpc climate-modeling --nodes 100
 # └── Integration with research user identity and budgets
 
 # EMR Studio for big data analytics
-prism launch emr-studio genomics-big-data
+prism workspace launch emr-studio genomics-big-data
 # Includes:
 # ├── Spark and Hadoop clusters with automatic scaling
 # ├── Jupyter and Zeppelin notebook integration
@@ -988,7 +988,7 @@ prism desktop connect ml-workstation
 # → Automatic authentication, networking, and session management
 
 # Desktop-optimized templates
-prism launch "Ubuntu Desktop + ML Tools" visual-analysis
+prism workspace launch "Ubuntu Desktop + ML Tools" visual-analysis
 # → RStudio, Jupyter Lab, Paraview, matplotlib with GPU acceleration
 # → Multi-monitor support with dynamic resolution adaptation
 ```
@@ -1022,15 +1022,15 @@ prism launch "Ubuntu Desktop + ML Tools" visual-analysis
 **Specialized Research Interfaces**:
 ```bash
 # Domain-specific desktop environments
-prism launch "Bioinformatics Visualization Suite" structure-analysis
+prism workspace launch "Bioinformatics Visualization Suite" structure-analysis
 # → PyMOL, ChimeraX, VMD with high-memory instances
 # → Integrated with protein databases and analysis pipelines
 
-prism launch "Geospatial Analysis Workstation" climate-modeling  
+prism workspace launch "Geospatial Analysis Workstation" climate-modeling  
 # → QGIS, GRASS, R spatial packages with optimized storage
 # → Direct satellite data access and processing capabilities
 
-prism launch "Digital Humanities Studio" text-analysis
+prism workspace launch "Digital Humanities Studio" text-analysis
 # → Gephi, Voyant Tools, R text mining with document databases
 # → Integrated OCR and natural language processing pipelines
 ```

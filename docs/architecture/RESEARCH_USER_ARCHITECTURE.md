@@ -148,7 +148,7 @@ sequenceDiagram
     participant AWSManager
     participant Instance
     
-    User->>CLI: prism launch python-ml my-project
+    User->>CLI: prism workspace launch python-ml my-project
     CLI->>TemplateResolver: ResolveTemplate() with profile
     TemplateResolver->>TemplateResolver: GenerateUserData() for research user
     CLI->>AWSManager: LaunchInstance() with enhanced user data

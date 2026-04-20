@@ -21,29 +21,29 @@
 ### Basic Usage (Automatic)
 ```bash
 # Conda automatically selected for Python/R templates
-prism launch python-research my-analysis
-prism launch r-research stats-project
+prism workspace launch python-research my-analysis
+prism workspace launch r-research stats-project
 
 # Templates detect scientific packages and choose conda
-prism launch neuroimaging brain-study
+prism workspace launch neuroimaging brain-study
 ```
 
 ### Explicit Conda Selection
 ```bash
 # Force conda package manager
-prism launch python-research my-project --with conda
+prism workspace launch python-research my-project --with conda
 
 # Combine with other options
-prism launch python-research gpu-training --with conda --size GPU-L --volume shared-data
+prism workspace launch python-research gpu-training --with conda --size GPU-L --volume shared-data
 ```
 
 ### Advanced Usage
 ```bash
 # Dry run to see conda installation script
-prism launch python-research test --with conda --dry-run
+prism workspace launch python-research test --with conda --dry-run
 
 # Launch with specific conda environment
-prism launch r-research stats-work --with conda --storage L
+prism workspace launch r-research stats-work --with conda --storage L
 ```
 
 ## 📦 Supported Package Types

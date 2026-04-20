@@ -80,7 +80,7 @@ The CLI should automatically detect when the daemon is not running and start it 
 ⏳ Waiting for daemon to initialize...
 ✅ Daemon is ready and version verified
 ✅ Daemon ready
-No workstations found. Launch one with: prism launch <template> <name>
+No workstations found. Launch one with: prism workspace launch <template> <name>
 ```
 
 **Test 2: Multiple CLI Commands in Sequence**
@@ -134,7 +134,7 @@ export PATH="/tmp/prism-test-bin:$PATH"
 ⏳ Waiting for daemon to initialize...
 ✅ Daemon is ready and version verified
 ✅ Daemon ready
-No workstations found. Launch one with: prism launch <template> <name>
+No workstations found. Launch one with: prism workspace launch <template> <name>
 ```
 
 **Verification**
