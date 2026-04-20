@@ -19,14 +19,14 @@
 ---
 
 ## Version Legend
-- ✅ **v0.7.8 (Current)**: Features available today
+- ✅ **v0.35.3 (Current)**: Features available today
 - 🔄 **Future**: Features planned for future versions
 
-## Current State (v0.7.8): What Works Today
+## Current State (v0.35.3): What Works Today
 
 ### ✅ Initial Setup (Day 0) - 30-Second Quick Start
 
-**Available in v0.7.8**: Interactive wizard for first-time users!
+**Available in v0.35.3**: Interactive wizard for first-time users!
 
 ```bash
 # Install Prism
@@ -271,7 +271,7 @@ This addresses all the pain points Sarah currently experiences with cost managem
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Budget Enforcement (Available since v0.7.x)
+### ❌ Problem 1: No Budget Enforcement (Available since v0.35.x)
 **Tracking:** See issue [#138](https://github.com/scttfrdmn/prism/issues/138)
 
 **Scenario**: Week 3, Sarah accidentally launches GPU workspace
@@ -299,7 +299,7 @@ prism workspace launch gpu-ml-workstation protein-folding --size L
 **Current workaround**: Sarah has to remember to check costs manually
 **Risk**: One forgotten GPU workspace = entire month's budget gone in 4 days
 
-### ❌ Problem 2: No Budget Alerts (Available since v0.7.x)
+### ❌ Problem 2: No Budget Alerts (Available since v0.35.x)
 **Tracking:** See issue [#139](https://github.com/scttfrdmn/prism/issues/139)
 
 **Scenario**: Week 4, Sarah hits 80% of budget
@@ -322,7 +322,7 @@ prism workspace launch gpu-ml-workstation protein-folding --size L
 **Current workaround**: Sarah checks `prism budget list` daily
 **Impact**: Constant cognitive load, anxiety about overspending
 
-### ❌ Problem 3: No Spending Forecasts (Available since v0.7.x)
+### ❌ Problem 3: No Spending Forecasts (Available since v0.35.x)
 **Tracking:** See issue [#140](https://github.com/scttfrdmn/prism/issues/140)
 
 **Scenario**: Mid-month, Sarah wants to know if she can launch another instance
@@ -351,7 +351,7 @@ prism budget forecast
 **Current workaround**: Sarah does mental math and Excel calculations
 **Impact**: Decision paralysis - hesitant to launch workspaces even when budget allows
 
-### ❌ Problem 4: No Month-End Reporting (Available since v0.7.x)
+### ❌ Problem 4: No Month-End Reporting (Available since v0.35.x)
 **Tracking:** See issue [#141](https://github.com/scttfrdmn/prism/issues/141)
 
 **Scenario**: End of month, PI asks "How much did you spend and on what?"
@@ -675,7 +675,7 @@ prism budget report --month september --pdf --output ~/Desktop/sept-prism-report
    - Automated email on 1st of month
    - Export to CSV/PDF for expense reports
 
-### Phase 3: Advanced Budget Features (v0.7.0+)
+### Phase 3: Advanced Budget Features (v0.35.0+)
 **Target**: Power users and special scenarios
 
 6. **Time-boxed Launches** (3 days)

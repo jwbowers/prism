@@ -1,6 +1,6 @@
 # Prism Invitation System User Guide
 
-**Version**: v0.5.11+
+**Version**: v0.35.3+
 **Target Audience**: Researchers, Students, Lab Administrators, Course Instructors
 
 ---
@@ -29,7 +29,7 @@ The Prism invitation system enables research teams, university classes, and lab 
 - 🔗 **Shared Tokens**: Reusable tokens for workshops and large groups
 - 👤 **Automatic Provisioning**: SSH keys, UID/GID, and home directories configured automatically
 - 🔐 **Role-Based Access**: Assign roles (owner, admin, member, viewer) with appropriate permissions
-- 🎨 **Multi-Interface**: Use CLI, TUI, or GUI - whichever you prefer
+- 🎨 **Multi-Interface**: Use CLI or GUI - whichever you prefer
 
 ---
 
@@ -143,25 +143,6 @@ prism-gui
 │ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ │
 └─────────────────────────────────────────────┘
 ```
-
----
-
-### Method 3: TUI (Terminal Interface)
-
-**Step 1**: Open Prism TUI
-```bash
-prism tui
-```
-
-**Step 2**: Navigate to Invitations
-- Press `7` for Invitations page
-- View pending invitations
-
-**Step 3**: Accept Invitation
-- Navigate to invitation with arrow keys
-- Press `Enter` to view details
-- Press `a` to accept
-- Confirm with `y`
 
 ---
 

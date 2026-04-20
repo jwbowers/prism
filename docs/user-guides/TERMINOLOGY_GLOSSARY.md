@@ -26,28 +26,20 @@ Prism uses researcher-friendly terminology while leveraging AWS infrastructure. 
 - AWS: "List my EC2 instances"
 
 **When to Use Which**:
-- ✅ **Workspace** - All user-facing Prism interfaces (CLI, TUI, GUI)
+- ✅ **Workspace** - All user-facing Prism interfaces (CLI, GUI)
 - ✅ **Instance** - When discussing AWS infrastructure directly (e.g., "EC2 instance types", "spot instances")
 
 ---
 
 ## Storage Terminology
 
-### Current Terms (v0.5.6)
+### Storage Terms
 
 | Prism Term | AWS Equivalent | Description |
 |----------------------|----------------|-------------|
 | **EBS Volume** | EBS Volume | Block storage attached to workspaces |
 | **EFS Filesystem** | EFS Filesystem | Shared network filesystem |
 | **S3 Bucket** | S3 Bucket | Object storage for datasets |
-
-### Planned Simplification (v0.5.7 - Issue #66)
-
-| New Prism Term | AWS Equivalent | Description |
-|--------------------------|----------------|-------------|
-| **Local Storage** | EBS Volume | Workspace-local persistent storage |
-| **Shared Storage** | EFS Filesystem | Network filesystem for collaboration |
-| **Cloud Storage** | S3 Bucket | Scalable object storage |
 
 **Use `--verbose` to see AWS details**:
 ```bash
