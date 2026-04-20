@@ -35,8 +35,15 @@ jobs:
 
       - name: Install MkDocs Material
         run: |
-          pip install mkdocs-material
-          pip install mkdocs-minify-plugin
+          pip install mkdocs-material mkdocs-minify-plugin mike
 
-      - name: Build and deploy documentation
-        run: mkdocs gh-deploy --force
+      - name: Configure git for mike
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Deploy documentation with version
+        run: |
+          VERSION=$(grep '^	Version' pkg/version/version.go | grep -o '".*"' | tr -d '"' || echo "latest")
+          mike deploy --push --update-aliases "$VERSION" latest
+          mike set-default --push latest
