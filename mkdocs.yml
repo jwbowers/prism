@@ -130,11 +130,29 @@ nav:
   - User Guide:
     - CLI Reference: user-guides/CLI_REFERENCE.md
     - GUI Guide: user-guides/GUI_USER_GUIDE.md
+    - Workspace Lifecycle: user-guides/WORKSPACE_LIFECYCLE.md
     - Templates: user-guides/TEMPLATE_FORMAT.md
+    - Templates (Advanced): user-guides/TEMPLATE_FORMAT_ADVANCED.md
+    - Profiles & Credentials: user-guides/MULTI_PROFILE_GUIDE.md
+    - Courses: user-guides/COURSES_GUIDE.md
+    - Workshops: user-guides/WORKSHOPS_GUIDE.md
+    - Approvals: user-guides/APPROVALS_GUIDE.md
+    - Invitations: user-guides/INVITATION_USER_GUIDE.md
     - Troubleshooting: user-guides/TROUBLESHOOTING.md
 
-  - Administrator Guide: admin-guides/ADMINISTRATOR_GUIDE.md
+  - Administrator Guide:
+    - Overview: admin-guides/ADMINISTRATOR_GUIDE.md
+    - IAM & AWS Permissions: admin-guides/AWS_IAM_PERMISSIONS.md
+    - Security Hardening: admin-guides/SECURITY_HARDENING_GUIDE.md
+    - Template Policy: admin-guides/TEMPLATE_POLICY_FRAMEWORK.md
+    - Research User Management: admin-guides/RESEARCH_USER_MANAGEMENT_GUIDE.md
 
-  - Architecture: architecture/DAEMON_API_REFERENCE.md
+  - Architecture:
+    - API Reference: architecture/DAEMON_API_REFERENCE.md
+    - spored Daemon: architecture/SPORED_DAEMON.md
+    - Idle Detection: architecture/AUTONOMOUS_IDLE_DETECTION.md
+    - GUI Architecture: architecture/GUI_ARCHITECTURE.md
+    - SSH Keys: architecture/ARCHITECTURE_SSH_KEYS.md
+    - Research Users: architecture/RESEARCH_USER_ARCHITECTURE.md
 
   - Release Notes: releases/RELEASE_NOTES.md
