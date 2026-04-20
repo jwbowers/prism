@@ -18,6 +18,18 @@ prism workspace launch python-ml my-project --region us-east-1
 prism workspace launch python-ml my-project --project brain-study
 prism workspace launch python-ml my-project --instance-type m7i.2xlarge
 
+# Time-to-live: auto-stop after a duration (e.g., 8h, 24h, 30m)
+prism workspace launch python-ml my-project --ttl 8h
+prism workspace launch r-research paper-analysis --ttl 24h
+
+# DNS name: custom hostname (defaults to sanitized workspace name)
+# Workspace registers as {name}.{account}.prismcloud.host
+prism workspace launch python-ml my-project --dns ml-workspace
+# → Accessible at ml-workspace.abc123.prismcloud.host
+
+# Idle timeout override: override default idle detection threshold
+prism workspace launch python-ml my-project --idle-timeout 2h
+
 # List workspaces
 prism workspace list                         # Running and stopped workspaces
 prism workspace cost                         # Show cost breakdown and savings
@@ -60,6 +72,9 @@ prism workspace status <name>                # Detailed status including cloud-i
 | `--profile <name>` | Use a specific Prism profile |
 | `--region <region>` | Override the AWS region |
 | `--dry-run` | Preview what would happen without making changes |
+| `--ttl <duration>` | Auto-stop after duration (e.g., `8h`, `24h`, `30m`). spored enforces on-instance. |
+| `--dns <name>` | Custom DNS record name. Registers as `{name}.{account}.prismcloud.host`. |
+| `--idle-timeout <duration>` | Override idle detection threshold (default: profile policy) |
 
 ---
 
