@@ -1,63 +1,89 @@
 # Prism Autonomous Idle Detection System
 
+> **Updated in v0.35.0**: Idle detection has moved fully on-instance via the [spored daemon](SPORED_DAEMON.md). The previous daemon-side CloudWatch polling approach has been retired. This document reflects the current architecture.
+
 ## Overview
 
-Prism now includes a comprehensive autonomous idle detection system that automatically monitors instance activity and performs cost-saving actions (hibernation or stopping) when instances are idle. This system combines daemon-side monitoring with instance-side autonomous agents for maximum effectiveness.
+Prism automatically detects when a workspace is idle and hibernates or stops it to save costs. As of v0.35.0, all idle detection runs on the instance itself via the **spored daemon** — a lightweight Go service installed automatically on every workspace at launch.
 
 ## Architecture
 
-### Dual-Mode Detection System
-
 ```
-┌─────────────────┐    ┌─────────────────────────────────┐
-│   Daemon-Side   │    │        Instance-Side            │
-│   Monitoring    │    │    Autonomous Agent             │
-├─────────────────┤    ├─────────────────────────────────┤
-│ • SSH-based     │◄──►│ • Local system monitoring       │
-│ • Multi-stage   │    │ • AWS tag-based state tracking  │
-│ • 3-tier logic  │    │ • Self-hibernation/stop         │
-│ • External view │    │ • Cron-based execution          │
-└─────────────────┘    └─────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│                   EC2 Instance                   │
+│                                                  │
+│  ┌────────────────────────────────────────────┐  │
+│  │              spored daemon                 │  │
+│  │                                            │  │
+│  │  Reads prism:* EC2 tags for config         │  │
+│  │  Monitors 7 local signals every 60s        │  │
+│  │  Executes stop/hibernate when idle         │  │
+│  └────────────────────────────────────────────┘  │
+│                                                  │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│               Prism Daemon (local)               │
+│                                                  │
+│  Fleet policy management (EC2 tag writes)        │
+│  TTL safety valve (stops expired instances)      │
+│  Idle policy CRUD API                            │
+└─────────────────────────────────────────────────┘
 ```
 
-### Components
+## Detection Signals
 
-1. **Daemon Integration** (`pkg/daemon/server.go`)
-   - Integrated autonomous monitoring every 60 seconds
-   - Multi-stage intelligent idle detection
-   - SSH-based metrics collection
-   - External validation of instance activity
+spored monitors 7 independent signals on the instance. All must be below threshold simultaneously for the idle timeout to trigger:
 
-2. **Instance Agent** (`templates/idle-detection-test.yml`)
-   - Self-contained bash script deployed via UserData
-   - IMDSv2-compatible metadata access
-   - Progressive hibernation/stop logic
-   - AWS CLI v2 integration
+| Signal | Source | Default threshold |
+|--------|--------|-----------------|
+| CPU utilization | `/proc/stat` | < 5% |
+| Network throughput | `/proc/net/dev` | < 10 KB/min |
+| Disk I/O | `/proc/diskstats` | < 100 KB/min |
+| GPU utilization | `nvidia-smi` (if present) | < 5% |
+| Active terminal sessions | `/dev/pts/` directory | None |
+| Logged-in users | `who` command | None |
+| Recent user activity | `last` / `wtmp` | No activity in window |
 
-3. **IAM Infrastructure** 
-   - Prism-Instance-Profile role
-   - EC2 self-management permissions
-   - Automatic role attachment on launch
+This 7-signal approach is more accurate and cheaper than CloudWatch polling — it reads local `/proc` files instead of making AWS API calls.
+
+## Configuration via EC2 Tags
+
+spored reads configuration from `prism:*` EC2 instance tags at startup (and on `reload`):
+
+| Tag | Example | Description |
+|-----|---------|-------------|
+| `prism:idle-timeout` | `1h` | Duration of sustained idleness before action |
+| `prism:hibernate-on-idle` | `true` | Hibernate instead of stop |
+| `prism:on-complete` | `stop` | Action when completion signal received |
+| `prism:pre-stop` | `/home/ubuntu/cleanup.sh` | Shell command run before shutdown |
+
+### Applying idle policies
+
+Idle policies in the Prism GUI/CLI set these tags on the target instance. Policies are directives, not executors — spored reads the tags and acts on them.
+
+```bash
+prism admin idle-policy apply my-project --policy balanced
+# → Sets prism:idle-timeout=1h, prism:hibernate-on-idle=true on instance tags
+```
 
 ## Features
 
-### ✅ **Complete Automation**
-- **Zero Configuration**: Works out-of-the-box on launch
-- **Self-Installing**: AWS CLI v2 + agent deployed automatically
-- **Autonomous Operation**: No manual intervention required
-- **Progressive Actions**: Warning → Hibernation → Stop based on duration
+### ✅ On-Instance Detection
+- **Accurate**: reads local system state, not AWS metrics (no CloudWatch delay)
+- **Cheap**: no AWS API calls for idle checking
+- **Responsive**: checks every 60 seconds; acts within 1 minute of threshold breach
 
-### ✅ **Intelligent Detection**
-- **Multi-Metric Monitoring**: CPU load, user sessions, network activity
-- **IMDSv2 Support**: Modern EC2 metadata service compatibility  
-- **Hibernation Detection**: Automatic fallback to stop if hibernation unsupported
-- **Configurable Thresholds**: Template-based idle and hibernation timeouts
+### ✅ Intelligent Actions
+- **Warnings**: broadcasts via `wall` to all logged-in users 5 minutes before action
+- **Hibernation first**: preserves RAM state when instance type supports it
+- **Auto-fallback**: stops instance if hibernation is unavailable
+- **Pre-stop hooks**: run cleanup scripts before shutdown
 
-### ✅ **Cost Optimization**
-- **Hibernation First**: Preserves RAM state when possible
-- **Smart Fallback**: Stops instance if hibernation unavailable
-- **Tag-Based Tracking**: AWS tags maintain state across reboots
-- **Audit Trail**: Complete logging of all actions and decisions
+### ✅ Fleet Policy Management
+- Named policies (aggressive, balanced, conservative, research, development)
+- Policies configured in GUI under Settings → Idle Detection
+- Applied via EC2 tag writes — no agent restart required
 
 ## Implementation Details
 

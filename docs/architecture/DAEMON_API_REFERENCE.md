@@ -1,7 +1,7 @@
 # Prism Daemon API Reference
 
-## Version: v0.30.0
-**Last Updated**: 2026-04-02
+## Version: v0.35.3
+**Last Updated**: 2026-04-20
 **Port**: 8947
 **Base URL**: `http://localhost:8947`
 **Protocol**: REST API with JSON
@@ -1229,6 +1229,50 @@ async function launchInstance(templateName, instanceName, size) {
 
 ---
 
-**Total API Endpoints**: 35+ endpoints across templates, workspaces, hibernation, projects, storage, costs, profiles, and system management.
+---
 
-This comprehensive API reference provides complete documentation for integrating with the Prism daemon across all client interfaces (CLI, TUI, GUI) and supports the full enterprise research platform feature set.
+## New endpoints (v0.34.0+)
+
+### `POST /api/v1/instances/{id}/extend`
+
+Extend the TTL of a workspace by adding hours to its current `ExpiresAt`.
+
+**Request body**:
+```json
+{ "hours": 4 }
+```
+
+If `hours` is omitted or ≤ 0, defaults to 4 hours. If the workspace has no existing TTL, sets `ExpiresAt = now + hours`. Also updates the `prism:ttl` EC2 tag so spored picks up the change.
+
+**Response**: `204 No Content`
+
+---
+
+### Connection proxy endpoints (v0.35.0+)
+
+These endpoints proxy connections from the GUI to web services running on instances.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /dcv-proxy/{instance}/?port=<port>` | Proxy to DCV desktop (default port 8443) |
+| `GET /web-proxy/{instance}/?port=<port>` | Proxy to web service (default port 8888) |
+| `GET /aws-proxy/{service}?token=<token>` | Proxy to AWS console with federation token |
+| `GET /ssh-proxy/` | WebSocket SSH proxy |
+
+Port parameter is validated: must be an integer in range 1–65535. Invalid ports return `400 Bad Request`.
+
+---
+
+### Logs endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/logs` | List instances with log availability |
+| `GET /api/v1/logs/{instance}?type=<type>&tail=<n>` | Fetch instance logs |
+| `GET /api/v1/logs/{instance}/types` | List available log types for instance |
+
+Log types: `console`, `cloud-init`, `system`, `application`.
+
+---
+
+**Total API Endpoints**: 50+ endpoints across templates, workspaces, hibernation, projects, storage, costs, profiles, logs, connection proxies, and system management.

@@ -1,23 +1,47 @@
 # Prism GUI Architecture
 
+> **Updated in v0.31.0**: The GUI was rebuilt from Cloudscape Design System to shadcn/ui with Tailwind CSS. This document reflects the current architecture as of v0.35.3.
+
 ## Overview
 
-The Prism GUI is a modern, single-page application built with Go and Wails v3 that provides a clean, organized interface for managing cloud research environments. It follows contemporary design principles with no popup windows and a dashboard-centric approach.
+The Prism GUI is a desktop application built with Go + [Wails v3](https://v3.wails.io/) that provides a clean interface for managing cloud research environments. The frontend is a React single-page application; Wails embeds it in a native window with a Go backend bridge.
+
+## Technology Stack
+
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Desktop shell | Wails v3 | v3.0.0-alpha.74 |
+| Frontend framework | React | 19.1 |
+| Language | TypeScript | 5.9 |
+| Component library | shadcn/ui (Radix UI primitives) | code-owned |
+| Styling | Tailwind CSS v4 | 4.2 |
+| Animations | Framer Motion | 12.x |
+| Toast notifications | Sonner | latest |
+| Icons | Lucide React | latest |
+| Terminal emulator | xterm.js | 5.5 |
+| Font | Atkinson Hyperlegible Next | variable |
+
+### Component pattern: shadcn/ui
+
+Prism uses the [shadcn/ui](https://ui.shadcn.com/) approach: components are copied into the codebase under `src/components/ui/` and owned by the project. They use [Radix UI](https://radix-ui.com/) primitives for accessibility (focus management, keyboard navigation, ARIA) and Tailwind for styling.
+
+This means components are fully customizable — no version lock-in to an external component library's design decisions.
+
+### Cloudscape compatibility shim
+
+`src/lib/cloudscape-shim.tsx` provides a compatibility layer that maps Cloudscape component APIs to shadcn/ui implementations. This was used during the v0.31.0 migration and remains as a bridge while views are incrementally migrated. New views use shadcn/ui directly.
+
+### SafePrismAPI pattern
+
+`src/lib/api.ts` exposes a `SafePrismAPI` class with named methods (never generic `get()`/`post()`). Each method calls the private `safeRequest()` helper which handles auth headers, error wrapping, and base URL. This keeps the API surface explicit and type-safe.
 
 ## Design Philosophy
 
 ### Single-Page Application (SPA)
-- **No popup windows** - All interactions happen within the main window
-- **Inline notifications** - Feedback appears as dismissible cards at the top
-- **Content switching** - Navigation changes the main content area
-- **Consistent layout** - Sidebar navigation with main content area
-
-### Progressive Disclosure (v0.5.9+)
-- **Simple by default** - Core features prominent in main navigation
-- **Advanced when needed** - Power features accessible via Settings
-- **Reduced cognitive load** - 40% fewer navigation items (15→9)
-- **Clear learning path** - New users see essential features first
-- **Feature discoverability** - Advanced features organized and searchable
+- **No popup windows** — all interactions happen within the main window
+- **Toast notifications** — feedback via Sonner (bottom-right)
+- **Content switching** — navigation changes the main content area
+- **Consistent layout** — shadcn/ui `Sidebar` + `SidebarInset` pattern
 
 ### Modern Visual Design
 - **Card-based layouts** for organized information presentation
