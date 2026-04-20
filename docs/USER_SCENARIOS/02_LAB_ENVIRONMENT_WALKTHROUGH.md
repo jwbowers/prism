@@ -1,6 +1,6 @@
 # Scenario 2: Research Lab with Hierarchical Budget Management
 
-> **Implementation Status (v0.7.8)**
+> **Implementation Status (v0.35.3)**
 > - ✅ Core workspace operations (`prism workspace launch/list/stop/connect`)
 > - ✅ Project management (`prism project create/members/budget`)
 > - ✅ Budget tracking and alerts (`prism budget create/list/alerts`)
@@ -72,10 +72,10 @@ Smith Lab Organization
 ---
 
 ## Version Legend
-- ✅ **v0.5.7 (Current)**: Features available today
-- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+- ✅ **v0.35.3 (Current)**: Features available today
+- 🔄 **Partially Planned**: Some features in this section are available in v0.35.3; others are planned for future releases
 
-## Current State (v0.5.7): What Works Today
+## Current State (v0.35.3): What Works Today
 
 **Note**: Throughout this document, "workspace" refers to the Prism research environment (what users interact with), while "EC2 instance" refers to the underlying AWS infrastructure.
 
@@ -239,7 +239,7 @@ prism project cost show "NIH-R01-2023"
 #    Every hibernation/stop IMMEDIATELY increases available budget!
 ```
 
-> **💡 GUI Note**: Project cost tracking available in GUI Projects tab with visual breakdown - *coming soon in v0.6.0*
+> **💡 GUI Note**: Project cost tracking available in GUI Projects tab with visual breakdown - *available in v0.35.3**
 
 #### Scenario: Lab Manager Monitors Usage
 
@@ -278,7 +278,7 @@ prism project list --tree
 #    Lab is paying for 1,083 compute hours, not 8,760 hours/month!
 ```
 
-> **💡 GUI Note**: Project tree view available in GUI Projects tab - *coming soon in v0.6.0*
+> **💡 GUI Note**: Project tree view available in GUI Projects tab - *available in v0.35.3**
 
 **Grant Budget Management** (Multi-Project Tracking):
 
@@ -292,7 +292,7 @@ prism project list --tree
 - **Automated Alerts**: Email notifications when students reach 75% budget consumption (prevent overruns)
 - **Grant Compliance**: Monthly cost reports by grant code for NIH/NSF financial reporting requirements
 
-#### Scenario: Dr. Smith Sets Up Project Funding (v0.5.10+)
+#### Scenario: Dr. Smith Sets Up Project Funding (v0.35.3)
 
 **Design Principle**: PIs control funding, students just launch workspaces.
 
@@ -329,7 +329,7 @@ prism workspace launch gpu-cluster shared-gpu \
 # ↳ Override: Use department fund instead of NIH grant
 ```
 
-**Multi-Source Funding Example** (v0.5.10+):
+**Multi-Source Funding Example** (v0.35.3):
 ```bash
 # Dr. Smith's large collaboration project funded by multiple sources
 prism project create "Climate-Sim-Infrastructure" \
@@ -365,7 +365,7 @@ prism volume create shared-data 500GB \
 
 ---
 
-### ✅ Inviting Visiting Collaborators (v0.5.11)
+### ✅ Inviting Visiting Collaborators (available in v0.35.3)
 
 **Scenario**: Dr. Smith invites Dr. Kim (external collaborator) for 3-month project
 
@@ -387,7 +387,7 @@ prism project invitation send "NIH-R01-2023" \
 # Dr. Kim accepts invitation
 prism invitation accept INV-8A7F2E...
 
-# Prism automatically (v0.5.11):
+# Prism automatically (available in v0.35.3):
 # ✅ Adds Dr. Kim to project members (Issue #102)
 # ✅ Creates research user "drkim" with SSH keys (Issue #106)
 # ✅ Allocates UID/GID for consistent file permissions
@@ -402,7 +402,7 @@ prism workspace connect rnaseq-collab
 # (Uses auto-provisioned SSH key from ~/.prism/ssh_keys/)
 ```
 
-**v0.5.11 Auto-Provisioning Benefits**:
+**Auto-Provisioning Benefits**:
 - ✅ **Zero manual setup** - Dr. Kim ready to work in 2 minutes
 - ✅ **Automatic SSH keys** - No manual key exchange needed
 - ✅ **Consistent permissions** - Same UID/GID across all lab instances
@@ -413,7 +413,7 @@ prism workspace connect rnaseq-collab
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Sub-Budget Hierarchy (Coming in v0.5.8+)
+### ❌ Problem 1: No Sub-Budget Hierarchy (Planned — not yet available)
 **Tracking:** See issue [#148](https://github.com/scttfrdmn/prism/issues/148)
 
 **Scenario**: Dr. Park wants to allocate her $800 between her own work and grad student Maria
@@ -437,17 +437,18 @@ prism project budget allocate "NSF-2024-ML" \
 **Workaround**: Manual tracking in spreadsheet, trust system
 **Impact**: Dr. Park can't manage her sub-team independently
 
-### ❌ Problem 2: No Approval Workflows (Coming in v0.5.8+)
+### ✅ Approval Workflows (Available in v0.35.3)
 **Tracking:** See issue [#150](https://github.com/scttfrdmn/prism/issues/150)
 
 **Scenario**: Maria (beginner grad student) tries to launch expensive GPU workspace
 
-**What should happen** (MISSING):
+**How to use it** (v0.35.3):
 ```bash
-# Maria attempts GPU launch
-prism workspace launch gpu-ml-workstation protein-experiment --project "NSF-2024-ML"
+# Maria requests approval for a GPU launch
+prism workspace launch gpu-ml-workstation protein-experiment \
+  --project "NSF-2024-ML" --request-approval
 
-# Prism should prompt:
+# Prism output:
 # ⚠️  APPROVAL REQUIRED: GPU Workspace Launch
 #
 #    Requested by: maria.garcia@university.edu
@@ -480,11 +481,15 @@ prism workspace launch gpu-ml-workstation protein-experiment --project "NSF-2024
 # Approve or deny: prism approval review req-xyz789
 ```
 
-**Current state**: No approval system - relies on role-based restrictions only
-**Workaround**: Maria asks in Slack, someone with admin role launches for her
-**Impact**: Bypasses audit trails, confusion about who launched what
+**Review the request** (Dr. Park):
+```bash
+prism approvals list --status pending
+prism approvals approve <request-id> --note "Approved for homework deadline"
+```
 
-### ❌ Problem 3: No Time-Boxed Collaborator Access (Coming in v0.5.8+)
+Or via the GUI: navigate to **Approvals** in the sidebar to see all pending requests with cost estimates.
+
+### ❌ Problem 3: No Time-Boxed Collaborator Access (Planned — not yet available)
 **Tracking:** See issue [#151](https://github.com/scttfrdmn/prism/issues/151)
 
 **Scenario**: Visiting scholar Dr. Kim joins for 3-month collaboration
@@ -533,7 +538,7 @@ prism project member add "NIH-R01-2023" \
 **Workaround**: Calendar reminders, manual revocation
 **Impact**: Forgotten temp users accumulate, security risk, budget waste
 
-### ❌ Problem 4: No Resource Quotas by Role (Coming in v0.5.8+)
+### ✅ Resource Quotas by Role (Available in v0.35.3)
 **Tracking:** See issue [#152](https://github.com/scttfrdmn/prism/issues/152)
 
 **Scenario**: Grad students should have workspace limits to prevent mistakes
@@ -584,7 +589,7 @@ prism workspace launch gpu-ml-workstation experiment-gpu --project "NIH-R01-2023
 **Workaround**: Trust-based system, post-incident corrections
 **Impact**: Accidental expensive launches, budget surprises
 
-### ❌ Problem 5: No Grant Period Management (Coming in v0.5.8+)
+### ✅ Grant Period Management (Available in v0.35.3)
 **Tracking:** See issue [#159](https://github.com/scttfrdmn/prism/issues/159)
 
 **Scenario**: NIH grant ends June 30 - need to freeze project and generate final report
@@ -986,7 +991,7 @@ prism project report "NIH-R01-2023" --final
 
 ## 🎯 Priority Recommendations: Lab Environment
 
-### Phase 1: Approval & Hierarchy (v0.7.0)
+### Phase 1: Approval & Hierarchy (Implemented in v0.35.3)
 **Target**: Labs can delegate and approve resource requests
 
 1. **Approval Workflow System** (3 weeks)
@@ -1005,7 +1010,7 @@ prism project report "NIH-R01-2023" --final
    - Workspace type restrictions
    - Cost-per-day caps
 
-### Phase 2: Lab Management (v0.7.1)
+### Phase 2: Lab Management (Planned)
 **Target**: PIs can oversee labs with minimal effort
 
 4. **Lab Dashboard** (2 weeks)

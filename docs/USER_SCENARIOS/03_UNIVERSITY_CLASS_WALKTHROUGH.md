@@ -1,6 +1,6 @@
 # Scenario 3: University Class Management
 
-> **Implementation Status (v0.7.8)**
+> **Implementation Status (v0.35.3)**
 > - ✅ Core workspace and project operations
 > - ✅ Invitation-based access (`prism project invitations`)
 > - ✅ Budget management (`prism budget create/list/alerts`)
@@ -69,10 +69,10 @@
 ---
 
 ## Version Legend
-- ✅ **v0.5.7 (Current)**: Features available today
-- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+- ✅ **v0.35.3 (Current)**: Features available today
+- 🔄 **Partially Planned**: Some features in this section are available in v0.35.3; others are planned for future releases
 
-## Current State (v0.5.7): What Works Today
+## Current State (v0.35.3): What Works Today
 
 ### ✅ Pre-Semester Setup (What Works)
 
@@ -154,7 +154,7 @@ prism workspace delete temp-setup
 
 #### Week 3: Add Students Before Semester
 
-**✅ NEW (v0.5.11): Bulk Invitations with Auto-Provisioning**
+**✅ Available: Bulk Invitations with Auto-Provisioning**
 
 ```bash
 # Export student roster from Canvas/university system to CSV
@@ -165,7 +165,7 @@ prism workspace delete temp-setup
 # sophie.martinez@university.edu,member,Welcome to CS 229!
 # ... (47 more students)
 
-# Step 1: Check AWS quota before sending bulk invitations (v0.5.11 - Issue #105)
+# Step 1: Check AWS quota before sending bulk invitations (available)
 curl -X POST http://localhost:8947/api/v1/invitations/quota-check \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,7 +183,7 @@ curl -X POST http://localhost:8947/api/v1/invitations/quota-check \
 # }
 # ✅ Quota check passed - safe to send 50 invitations
 
-# Step 2: Send bulk invitations (v0.5.11)
+# Step 2: Send bulk invitations (available in v0.35.3)
 prism project invitations bulk "CS229-Fall2024" \
   --file students.csv \
   --message "Welcome to CS 229! Please accept this invitation to access your course workspace." \
@@ -203,7 +203,7 @@ prism project invitations bulk "CS229-Fall2024" \
 # - Budget: $24.00 per student
 # - Expires: 14 days (deadline to accept)
 #
-# 💡 When students accept invitations (v0.5.11):
+# 💡 When students accept invitations (available in v0.35.3):
 #    ✅ Automatic project member addition with validated role (Issue #102)
 #    ✅ Research user auto-provisioning with SSH keys (Issue #106)
 #    ✅ UID/GID allocation for consistent file permissions
@@ -227,7 +227,7 @@ prism project invitations bulk "CS229-Fall2024" \
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No TA "God Mode" (Debug Access) (Coming in v0.5.8+)
+### ❌ Problem 1: No TA "God Mode" (Debug Access) (Planned — not yet available)
 **Tracking:** See issue [#160](https://github.com/scttfrdmn/prism/issues/160)
 
 **Scenario**: Sophie (struggling student) can't get assignment working, asks for help in office hours
@@ -304,7 +304,7 @@ prism ta annotate ml-hw3 --student sophie.martinez@university.edu \
 **Current workaround**: Sophie shares screen in Zoom, slow and frustrating
 **Impact**: Office hours inefficient, students feel unsupported
 
-### ❌ Problem 2: No Budget Distribution Enforcement (Coming in v0.5.8+)
+### ✅ Budget Distribution Enforcement (Available in v0.35.3)
 **Tracking:** See issue [#161](https://github.com/scttfrdmn/prism/issues/161)
 
 **Scenario**: Student accidentally launches expensive instance
@@ -321,32 +321,19 @@ prism ta annotate ml-hw3 --student sophie.martinez@university.edu \
 - **Section Breakdown**: Section A ($512), Section B ($489), Section C ($486) - balanced distribution
 - **Automated Alerts**: Email to Prof. Johnson at 75%, 85%, 95% thresholds with "Stop all workspaces" recommendation
 
-**What should happen** (MISSING):
+**How to use it** (v0.35.3 Courses feature):
 ```bash
-# Emily (eager student) tries GPU workspace for fun
-emily@laptop:~$ prism workspace launch gpu-ml-workstation homework1
+# Dr. Martinez sets up course with template whitelist and per-student budget
+prism course create --name "CS 473 Machine Learning" --code CS473-F26
+prism course templates add <course-id> ml-cpu-student
+prism course templates add <course-id> ml-final-project
+# GPU template NOT added — students cannot launch it
 
-# Prism should block:
-# ❌ Launch BLOCKED: Template not approved for CS229-Fall2024
-#
-#    Template: gpu-ml-workstation (p3.2xlarge, $24.80/day)
-#    Project: CS229-Fall2024
-#    Your budget: $12 / $24 (50%)
-#
-#    Reason: This template is not in the course-approved list.
-#
-#    Approved templates for CS229-Fall2024:
-#    - ml-cpu-student (t3.medium, $0.83/day) ✅
-#    - ml-final-project (t3.large, $1.67/day) ✅
-#
-#    If you need GPU access, contact your instructor or TA.
+# Distribute $24 per-student budget to all 120 enrolled students
+prism course budget distribute <course-id> --per-student 24.00
 
-# Instead, current behavior:
-# ✅ Workspace launching: homework1 (p3.2xlarge, $24.80/day)
-# 📊 Your budget: $12 / $24 (50%)
-#
-# (24 hours later, Emily forgets to stop it)
-# Cost: $24.80 (entire per-student budget gone!)
+# Students are enrolled and can only launch whitelisted templates
+# Emily's attempt to launch gpu-ml-workstation is blocked at the course policy level
 
 # Dr. Martinez discovers at end of week
 prism project cost show "CS229-Fall2024"
@@ -368,12 +355,12 @@ prism project cost show "CS229-Fall2024"
 #    3. OR: Emily can't do assignments for rest of semester
 ```
 
-> **💡 GUI Note**: Class budget monitoring available in GUI Projects tab with per-student breakdown - *coming soon in v0.6.0*
+> **💡 GUI Note**: Class budget monitoring available in GUI Projects tab with per-student breakdown - *available in v0.35.3**
 
 **Current workaround**: Trust students, hope for the best
 **Impact**: Budget surprises, student anxiety, administrative burden
 
-### ❌ Problem 3: No Automatic Semester End Cleanup (Coming in v0.5.8+)
+### ❌ Problem 3: No Automatic Semester End Cleanup (Planned — not yet available)
 **Tracking:** See issue [#162](https://github.com/scttfrdmn/prism/issues/162)
 
 **Scenario**: Semester ends, students leave workspaces running into winter break
@@ -428,7 +415,7 @@ prism project cost show "CS229-Fall2024"
 **Current workaround**: Email reminder to students, manual cleanup
 **Impact**: Continued spending over break, administrative burden
 
-### ❌ Problem 4: No Academic Integrity Monitoring (Coming in v0.5.8+)
+### ❌ Problem 4: No Academic Integrity Monitoring (Planned — not yet available)
 **Tracking:** See issue [#167](https://github.com/scttfrdmn/prism/issues/167)
 
 **Scenario**: Two students' code suspiciously similar
@@ -492,7 +479,7 @@ prism ta audit --students emily.chen@university.edu,david.kim@university.edu \
 **Current workaround**: Manual code comparison, no access logs
 **Impact**: Difficult to prove plagiarism, academic integrity concerns
 
-### ❌ Problem 5: No Student Workspace Reset (Coming in v0.5.8+)
+### ❌ Problem 5: No Student Workspace Reset (Planned — not yet available)
 **Tracking:** See issue [#175](https://github.com/scttfrdmn/prism/issues/175)
 
 **Scenario**: Student breaks their environment, needs fresh start
@@ -1036,7 +1023,7 @@ david@laptop:~$ prism workspace launch ml-final-project final-project
    - Bulk SSH key generation
    - Welcome email automation
 
-### Phase 2: TA Support Tools (v0.8.1)
+### Phase 2: TA Support Tools (Planned)
 **Target**: TAs can efficiently help students
 
 4. **TA Debug Access** (2 weeks)
@@ -1051,7 +1038,7 @@ david@laptop:~$ prism workspace launch ml-final-project final-project
    - Budget warnings
    - Pending help requests
 
-### Phase 3: Academic Features (v0.9.0)
+### Phase 3: Academic Features (Planned)
 **Target**: Academic integrity and compliance
 
 6. **Audit Logging** (1 week)
@@ -1066,7 +1053,7 @@ david@laptop:~$ prism workspace launch ml-final-project final-project
    - At-risk student detection
    - Grade correlation reports
 
-### Phase 4: LMS Integration (v0.9.1)
+### Phase 4: LMS Integration (Planned)
 **Target**: Seamless Canvas/Blackboard integration
 
 8. **Canvas LMS Integration** (2 weeks)
@@ -1178,9 +1165,9 @@ participant@laptop:~$ prism workshop join --code MLOPS2024
 
 4. **Iterative Development**:
    - Phase 1 (v0.8.0): Class basics → Spring 2025 pilot
-   - Phase 2 (v0.8.1): TA tools → Fall 2025 broader rollout
-   - Phase 3 (v0.9.0): Academic features → Spring 2026 enterprise
-   - Phase 4 (v0.9.1): LMS integration → Fall 2026 mainstream
+   - Phase 2 (Future — not yet available): TA tools → Fall 2025 broader rollout
+   - Phase 3 (Future — not yet available): Academic features → Spring 2026 enterprise
+   - Phase 4 (Future — not yet available): LMS integration → Fall 2026 mainstream
 
 **Estimated Timeline**: Class Management Basics (Phase 1) → 3 weeks of development
 

@@ -1,6 +1,6 @@
 # Scenario 5: Cross-Institutional Research Collaboration
 
-> **Implementation Status (v0.7.8)**
+> **Implementation Status (v0.35.3)**
 > - ✅ Shared storage (EFS volumes accessible across workspaces)
 > - ✅ Project invitations for collaborators (`prism project invitations`)
 > - ✅ Per-project budget tracking
@@ -47,10 +47,10 @@
 ---
 
 ## Version Legend
-- ✅ **v0.5.7 (Current)**: Features available today
-- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+- ✅ **v0.35.3 (Current)**: Features available today
+- 🔄 **Partially Planned**: Some features in this section are available in v0.35.3; others are planned for future releases
 
-## Current State (v0.5.7): What Works Today with Invitations
+## Current State (v0.35.3): What Works Today with Invitations
 
 ### ✅ Stanford Creates Collaboration Invitations (Month 1)
 
@@ -154,7 +154,7 @@ berkeley$ prism workspace launch "R Research Environment" berkeley-analysis
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Cross-Account EFS Access (Coming in v0.5.8+)
+### ❌ Problem 1: No Cross-Account EFS Access (Planned — not yet available)
 **Tracking:** See issue [#185](https://github.com/scttfrdmn/prism/issues/185)
 
 **Scenario**: Stanford's 50TB neuroimaging dataset needs to be accessible to MIT and Berkeley workspaces
@@ -197,7 +197,7 @@ berkeley$ prism volume mount neuro-dataset berkeley-analysis
 **Current workaround**: All workspaces must be in Stanford's account to access EFS
 **Risk**: Cannot use collaborators' institutional AWS credits/accounts
 
-### ❌ Problem 2: No Cost Attribution for Collaborators (Coming in v0.5.8+)
+### ❌ Problem 2: No Cost Attribution for Collaborators (Planned — not yet available)
 **Tracking:** See issue [#186](https://github.com/scttfrdmn/prism/issues/186)
 
 **Scenario**: Who launched what? Stanford needs to track collaborator usage
@@ -239,7 +239,7 @@ stanford$ prism project cost nih-neuro-consortium --by-user
 # Chargeback Report: Available in project_chargeback_june2026.csv
 ```
 
-> **💡 GUI Note**: Cross-institutional cost tracking with chargeback available in GUI Projects tab - *coming soon in v0.6.0*
+> **💡 GUI Note**: Cross-institutional cost tracking with chargeback available in GUI Projects tab - *available in v0.35.3**
 
 ```bash
 # Optional: Enable chargeback to collaborator accounts
@@ -257,7 +257,7 @@ stanford$ prism project chargeback nih-neuro-consortium \
 **Current workaround**: Manual tagging and AWS Cost Explorer queries
 **Impact**: Cannot accurately report grant expenditures by institution
 
-### ❌ Problem 3: No Invitation-Based Policy Enforcement (Coming in v0.5.8+)
+### ❌ Problem 3: No Invitation-Based Policy Enforcement (Planned — not yet available)
 **Tracking:** See issue [#187](https://github.com/scttfrdmn/prism/issues/187)
 
 **Scenario**: Berkeley should only launch small workspaces for analysis (not expensive GPUs)
@@ -297,7 +297,7 @@ berkeley$ prism workspace launch "GPU ML Workstation" expensive-gpu --size XL
 **Current workaround**: Trust-based + budget alerts
 **Risk**: Single expensive launch depletes monthly budget
 
-### ❌ Problem 4: No Audit Trail for Collaborative Access (Coming in v0.5.8+)
+### ❌ Problem 4: No Audit Trail for Collaborative Access (Planned — not yet available)
 **Tracking:** See issue [#188](https://github.com/scttfrdmn/prism/issues/188)
 
 **Scenario**: Stanford needs compliance audit of who accessed what data when
@@ -341,7 +341,7 @@ stanford$ prism audit collaboration nih-neuro-consortium \
 **Current workaround**: Manual AWS CloudTrail queries
 **Impact**: 40+ hours/year of manual compliance reporting
 
-### ❌ Problem 5: No Graceful Collaboration End (Coming in v0.5.8+)
+### ❌ Problem 5: No Graceful Collaboration End (Planned — not yet available)
 **Tracking:** See issue [#189](https://github.com/scttfrdmn/prism/issues/189)
 
 **Scenario**: Project ends June 2027, need to revoke access and preserve work
@@ -694,7 +694,7 @@ stanford$ prism collaboration report nih-neuro-consortium --final
 #   - Shared data: Retained by Stanford
 ```
 
-> **💡 GUI Note**: Cross-institutional final reports with 18-month analytics available in GUI Reports tab - *coming soon in v0.6.0*
+> **💡 GUI Note**: Cross-institutional final reports with 18-month analytics available in GUI Reports tab - *available in v0.35.3**
 
 ```bash
 #
@@ -731,7 +731,7 @@ stanford$ prism collaboration report nih-neuro-consortium --final
 
 ## 🎯 Priority Recommendations
 
-### Phase 1: Cross-Account Collaboration Foundation (v0.8.0)
+### Phase 1: Cross-Account Collaboration Foundation (Planned)
 **Target**: Enable basic cross-institutional collaboration
 
 1. **Cross-Account EFS Access** (2 weeks)
@@ -752,7 +752,7 @@ stanford$ prism collaboration report nih-neuro-consortium --final
    - Hourly cost limits
    - Pre-launch policy validation
 
-### Phase 2: Collaboration Management Tools (v0.8.1)
+### Phase 2: Collaboration Management Tools (Planned)
 **Target**: Professional collaboration lifecycle management
 
 4. **Collaboration Audit Trail** (1 week)
@@ -767,7 +767,7 @@ stanford$ prism collaboration report nih-neuro-consortium --final
    - Graceful access revocation
    - 90-day archive period
 
-### Phase 3: Advanced Collaboration Features (v0.9.0+)
+### Phase 3: Advanced Collaboration Features (Planned)
 **Target**: Enterprise-grade multi-institution support
 
 6. **Chargeback System** (2 weeks)
@@ -836,17 +836,17 @@ stanford$ prism collaboration report nih-neuro-consortium --final
 
 ## Implementation Phases
 
-**v0.8.0: Cross-Account Foundation** (4 weeks)
+***Cross-Account Foundation** (Planned)** (4 weeks)
 - EFS cross-account access
 - Cost attribution tagging
 - Invitation policy restrictions
 
-**v0.8.1: Collaboration Management** (2 weeks)
+***Collaboration Management** (Planned)** (2 weeks)
 - Audit trail logging
 - Expiration notifications
 - Work preservation tools
 
-**v0.9.0: Advanced Features** (3 weeks)
+***Advanced Features** (Planned)** (3 weeks)
 - Chargeback system
 - Resource transfer automation
 - Collaboration health monitoring

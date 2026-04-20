@@ -21,7 +21,7 @@ Use of Prism does not, by itself, ensure compliance with HIPAA, NIST 800-53, or 
 
 **Always obtain institutional approval before using Prism for Protected Health Information (PHI).**
 
-**Note**: HIPAA compliance features in Prism are planned for v0.8.0 (Q4 2026). This scenario represents target architecture.
+**⚠️ PLANNED FEATURES — NOT AVAILABLE IN v0.35.3**: HIPAA-specific compliance features (PHI audit trails, BAA-compliant configurations, HIPAA Security Rule reporting) are planned for a future release. This scenario describes the **target architecture and workflows** for when those features ship. Commands shown that reference HIPAA-specific features will not work in the current release. Prism's general workspace management capabilities (listed in the [User Guide](../user-guides/QUICK_START.md)) are available today.
 
 See [COMPLIANCE_DISCLAIMER.md](../docs/admin-guides/COMPLIANCE_DISCLAIMER.md) for complete legal notice.
 
@@ -548,7 +548,7 @@ $ prism compliance report \
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-> **💡 GUI Note**: HIPAA Security Rule compliance reports with PHI audit trails available in GUI Compliance tab - *coming soon in v0.6.0*
+> **💡 GUI Note**: HIPAA Security Rule compliance reports with PHI audit trails available in GUI Compliance tab - *available in v0.35.3**
 
 **Medical Center HIPAA Privacy Officer's Reaction**:
 "This is the most comprehensive HIPAA compliance documentation I've reviewed. Prism's automated audit trail and evidence collection transformed what typically takes weeks into a 2-hour review. Your research group is now our institutional model for HIPAA-compliant cloud research computing."

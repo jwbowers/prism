@@ -423,7 +423,7 @@ prism compliance report \
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-> **💡 GUI Note**: NIST 800-171 compliance reports with automated evidence generation available in GUI Compliance tab - *coming soon in v0.6.0*
+> **💡 GUI Note**: NIST 800-171 compliance reports with automated evidence generation available in GUI Compliance tab - *available in v0.35.3**
 
 **Dr. Chen's Reaction**:
 "Wait, that's it? I thought this would take weeks of meetings and documentation. Prism just... did all of that automatically?"

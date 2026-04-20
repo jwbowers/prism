@@ -1,6 +1,6 @@
 # Scenario 4: Conference Workshop
 
-> **Implementation Status (v0.7.8)**
+> **Implementation Status (v0.35.3)**
 > - ✅ Shared invitation links (`prism project invitations shared create/show`)
 > - ✅ Bulk invitations (`prism project invitations bulk`)
 > - ✅ Budget management and alerts
@@ -36,10 +36,10 @@
 ---
 
 ## Version Legend
-- ✅ **v0.5.7 (Current)**: Features available today
-- 🔄 **v0.5.8+ (Planned)**: Features in development (see linked GitHub issues)
+- ✅ **v0.35.3 (Current)**: Features available today
+- 🔄 **Partially Planned**: Some features in this section are available in v0.35.3; others are planned for future releases
 
-## Current State (v0.5.7): What Works Today
+## Current State (v0.35.3): What Works Today
 
 ### ✅ Pre-Workshop Setup (1 Week Before)
 
@@ -47,7 +47,7 @@
 
 ![AWS Profile Settings Interface](images/04-conference-workshop/gui-settings-profiles.png)
 
-*Screenshot shows Cloudscape Settings interface for AWS profile management. Dr. Kim validates conference-provided AWS credits and verifies region configuration 1 week before the 3-hour ISMB workshop.*
+*Screenshot shows Settings interface for AWS profile management. Dr. Kim validates conference-provided AWS credits and verifies region configuration 1 week before the 3-hour ISMB workshop.*
 
 **What Dr. Kim validates**:
 - **AWS Credentials**: Conference AWS credits (part of $200 fixed budget for 50 participants)
@@ -66,10 +66,10 @@ prism project create neurips-dl-workshop \
   --alert-threshold 80
 ```
 
-**✅ NEW (v0.5.11): Shared Token Access with Auto-Provisioning** (Issue #103 - Ideal for workshops)
+**✅ Available: Shared Token Access with Auto-Provisioning** (Issue #103 - Ideal for workshops)
 
 ```bash
-# Step 1: Check AWS quota for 60 workshop participants (v0.5.11 - Issue #105)
+# Step 1: Check AWS quota for 60 workshop participants (available)
 curl -X POST http://localhost:8947/api/v1/invitations/quota-check \
   -H "Content-Type: application/json" \
   -d '{
@@ -107,7 +107,7 @@ prism project invitations shared create neurips-dl-workshop \
 #    🔗 URL: https://prism.dev/join/WORKSHOP-NEURIPS-2026-A4F2
 #    💡 This single token works for all 60 participants (first-come-first-served)
 #
-#    When participants accept (v0.5.11):
+#    When participants accept (available in v0.35.3):
 #    ✅ Automatic project member addition (Issue #102)
 #    ✅ Research user auto-provisioning with SSH keys (Issue #106)
 #    ✅ UID/GID allocation for file consistency
@@ -123,7 +123,7 @@ prism project invitations shared create neurips-dl-workshop \
 - ✅ **No pre-registration**: Participants don't need to provide emails ahead of time
 - ✅ **First-come-first-served**: 60 redemptions then token becomes invalid
 - ✅ **Atomic redemption**: Thread-safe counter prevents over-redemption
-- ✅ **Auto-provisioning**: Research users with SSH keys created on redemption (v0.5.11)
+- ✅ **Auto-provisioning**: Research users with SSH keys created on redemption (available in v0.35.3)
 - 🔄 **QR code support**: Print token as QR code for easy mobile access (coming soon)
 
 💡 **Monitor Token Usage**:
@@ -173,7 +173,7 @@ prism project invitations bulk neurips-dl-workshop \
 
 ![Quick Start Wizard Interface](images/04-conference-workshop/gui-quick-start-wizard.png)
 
-*Screenshot shows Cloudscape Quick Start wizard for template selection. Dr. Kim uses this interface to guide 50 workshop participants to launch identical bioinformatics workspaces in under 5 minutes during the workshop opening.*
+*Screenshot shows the GUI template selection for template selection. Dr. Kim uses this interface to guide 50 workshop participants to launch identical bioinformatics workspaces in under 5 minutes during the workshop opening.*
 
 **What Dr. Kim demonstrates**:
 - **Template Selection**: "Bioinformatics Pipeline" template (pre-configured for workshop)
@@ -203,7 +203,7 @@ prism project workspaces neurips-dl-workshop
 
 ![Storage Management Interface](images/04-conference-workshop/gui-storage-management.png)
 
-*Screenshot shows Cloudscape Storage interface for EFS management. Dr. Kim pre-loads 50GB of read-only tutorial datasets on shared EFS that all 50 workshop participants access during the 3-hour session.*
+*Screenshot shows the GUI Storage management interface for EFS management. Dr. Kim pre-loads 50GB of read-only tutorial datasets on shared EFS that all 50 workshop participants access during the 3-hour session.*
 
 **What Dr. Kim pre-provisions**:
 - **Shared EFS**: Read-only tutorial datasets (50GB genomics data pre-loaded)
@@ -215,27 +215,26 @@ prism project workspaces neurips-dl-workshop
 
 ## ⚠️ Current Pain Points: What Doesn't Work
 
-### ❌ Problem 1: No Automatic Workspace Termination (Coming in v0.5.8+)
-**Tracking:** See issue [#176](https://github.com/scttfrdmn/prism/issues/176)
+### ✅ Automatic Workspace Termination via TTL (Available in v0.35.3)
 
-**Scenario**: Workshop ends at 3:00 PM, workspaces should terminate at 6:00 PM
+**Scenario**: Workshop ends at 3:00 PM, workspaces should stop at 6:00 PM
 
-**What should happen** (MISSING):
+**How to use it** (v0.35.3):
 ```bash
-# Alex launches workspaces with auto-terminate timer
-prism workspace launch pytorch-ml workshop-instance --hours 6
+# Launch workspaces with TTL — they stop automatically after 6 hours
+prism workspace launch pytorch-ml workshop-instance --ttl 6h
 
-# Prism output:
-# ✅ Workspace launching: workshop-instance
-# ⏰ Auto-terminate scheduled: 6 hours from now (6:00 PM)
-# 📊 Cost for 6 hours: $3.20
-# 🔔 Warning will be sent 30 minutes before termination
+# The spored daemon on each instance:
+# - Warns users 5 minutes before expiration via wall broadcast
+# - Stops the instance when the TTL expires
+# - The Prism daemon has a safety valve that catches any stragglers
 ```
 
-**Current workaround**: Alex must manually stop 60 workspaces or rely on participants
-**Risk**: If forgotten, $200 budget exhausted in 3 days
+**GUI**: The launch modal has a "Time Limit" field (e.g., `6h`). The instance table shows a **Time Remaining** column with color-coded countdown. Use **Extend Time (+4h)** from the Actions dropdown if needed.
 
-### ❌ Problem 2: No Template Whitelisting at Invitation Level (Coming in v0.5.8+)
+**Cost protection**: With a 6h TTL, a workshop with 60 × $0.19/hr instances costs at most 60 × 6 × $0.19 = $68.40, with automatic shutdown guaranteeing no overspend.
+
+### ❌ Problem 2: No Template Whitelisting at Invitation Level (Planned — not yet available)
 **Tracking:** See issue [#179](https://github.com/scttfrdmn/prism/issues/179)
 
 **Scenario**: Participants should ONLY be able to launch PyTorch ML template
@@ -261,7 +260,7 @@ participant$ prism workspace launch gpu-ml-workstation expensive-instance
 **Current workaround**: Trust participants + budget alerts
 **Risk**: Single participant launches GPU workspace → $600/day → budget blown in 8 hours
 
-### ❌ Problem 3: No Bulk Launch for Pre-Provisioning (Coming in v0.5.8+)
+### ❌ Problem 3: No Bulk Launch for Pre-Provisioning (Planned — not yet available)
 **Tracking:** See issue [#180](https://github.com/scttfrdmn/prism/issues/180)
 
 **Scenario**: Workshop starts at 9:00 AM, Alex wants all environments ready at 8:45 AM
@@ -296,12 +295,12 @@ prism project bulk-launch neurips-dl-workshop \
 # 9:00 AM - participants arrive, workspaces are ready
 ```
 
-> **💡 GUI Note**: Workshop scheduling available in GUI Projects tab with calendar view - *coming soon in v0.6.0*
+> **💡 GUI Note**: Workshop scheduling available in GUI Projects tab with calendar view - *available in v0.35.3**
 
 **Current workaround**: Participants launch on-demand (slow, error-prone)
 **Impact**: First 30 minutes wasted on environment setup
 
-### ❌ Problem 4: No Real-Time Workshop Dashboard (Coming in v0.5.8+)
+### ❌ Problem 4: No Real-Time Workshop Dashboard (Planned — not yet available)
 **Tracking:** See issue [#182](https://github.com/scttfrdmn/prism/issues/182)
 
 **Scenario**: During workshop, Alex needs to see participant progress at a glance
@@ -337,7 +336,7 @@ prism workshop dashboard neurips-dl-workshop
 # └─────────────────────────────────────────────────────────┘
 ```
 
-> **💡 GUI Note**: Live workshop dashboard available in GUI with real-time participant status - *coming soon in v0.6.0*
+> **💡 GUI Note**: Live workshop dashboard available in GUI with real-time participant status - *available in v0.35.3**
 
 **Current workaround**: Manual `prism list` + `prism project instances` polling
 **Impact**: Can't proactively help struggling participants
@@ -346,7 +345,7 @@ prism workshop dashboard neurips-dl-workshop
 
 ![Workspaces List Interface](images/04-conference-workshop/gui-workspaces-list.png)
 
-*Screenshot shows Cloudscape Workspaces table with management actions. Dr. Kim monitors all 50 workshop participant workspaces in real-time during the 3-hour tutorial session, identifying issues before participants need to ask for help.*
+*Screenshot shows the GUI Workspaces table with management actions. Dr. Kim monitors all 50 workshop participant workspaces in real-time during the 3-hour tutorial session, identifying issues before participants need to ask for help.*
 
 **What Dr. Kim monitors during workshop**:
 - **Status Tracking**: 50 workspaces running, real-time status for all participants
@@ -354,7 +353,7 @@ prism workshop dashboard neurips-dl-workshop
 - **Time Remaining**: Countdown to auto-termination (3 hours after workshop start)
 - **Quick Actions**: Restart, connect, or troubleshoot participant workspaces during tutorial
 
-### ❌ Problem 5: No Post-Workshop Data Preservation (Coming in v0.5.8+)
+### ❌ Problem 5: No Post-Workshop Data Preservation (Planned — not yet available)
 **Tracking:** See issue [#177](https://github.com/scttfrdmn/prism/issues/177)
 
 **Scenario**: Participants want to keep their workshop code after workspaces terminate
@@ -398,7 +397,7 @@ prism workshop export-all neurips-dl-workshop \
 
 ![Projects Dashboard Interface](images/04-conference-workshop/gui-projects-dashboard.png)
 
-*Screenshot shows Cloudscape Projects dashboard with budget tracking. Dr. Kim monitors the fixed $200 conference budget throughout the 3-hour workshop, ensuring no overruns while tracking real-time spend across all 50 participants.*
+*Screenshot shows the GUI Projects dashboard with budget tracking. Dr. Kim monitors the fixed $200 conference budget throughout the 3-hour workshop, ensuring no overruns while tracking real-time spend across all 50 participants.*
 
 **What Dr. Kim tracks**:
 - **Fixed Budget**: $200 conference allocation with hard stop (no overruns allowed)
@@ -420,7 +419,7 @@ prism project create neurips-dl-workshop \
   --alert-threshold 50,75,90 \
   --description "NeurIPS 2026 Workshop: Deep Learning with PyTorch"
 
-# Generate shared token with policy restrictions (v0.5.13+)
+# Generate shared token with policy restrictions (available)
 prism project invitations shared neurips-dl-workshop \
   --name "NeurIPS Workshop Access" \
   --role member \
@@ -635,7 +634,7 @@ prism workshop report neurips-dl-workshop --export-pdf
 # 📧 Post-workshop survey sent to all participants
 ```
 
-> **💡 GUI Note**: Workshop reports with charts and PDF export available in GUI Reports tab - *coming soon in v0.6.0*
+> **💡 GUI Note**: Workshop reports with charts and PDF export available in GUI Reports tab - *available in v0.35.3**
 
 ---
 
@@ -665,7 +664,7 @@ prism workshop report neurips-dl-workshop --export-pdf
 
 ## 🎯 Priority Recommendations
 
-### Phase 1: Workshop Safety Net (v0.7.0)
+### Phase 1: Workshop Safety Net (Implemented in v0.35.3)
 **Target**: Workshops can run without budget disasters
 
 1. **Auto-Terminate Timer** (1 week)
@@ -685,7 +684,7 @@ prism workshop report neurips-dl-workshop --export-pdf
    - Aggressive budget alerts
    - One-time budget (no rollover)
 
-### Phase 2: Workshop Management Tools (v0.7.1)
+### Phase 2: Workshop Management Tools (Planned)
 **Target**: Instructors can manage workshops effectively
 
 4. **Workshop Dashboard** (1 week)

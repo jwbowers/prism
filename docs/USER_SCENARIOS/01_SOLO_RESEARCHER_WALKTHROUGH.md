@@ -126,7 +126,7 @@ Launch this workspace? [y/N]: y
 
 ![GUI Quick Start Wizard - Template Selection](images/01-solo-researcher/gui-quick-start-wizard.png)
 
-*Screenshot shows the GUI Quick Start wizard with professional Cloudscape design. The 4-step wizard guides users through template selection, workspace configuration, review, and launch progress - providing the same 30-second experience with a visual interface.*
+*Screenshot shows the GUI Quick Start wizard with professional React 19 + shadcn/ui design. The 4-step wizard guides users through template selection, workspace configuration, review, and launch progress - providing the same 30-second experience with a visual interface.*
 
 **What Sarah experiences in GUI**:
 1. Click "Dashboard" → Opens Quick Start wizard automatically for first-time users
@@ -238,7 +238,7 @@ prism budget list
 
 ![My Workspaces Interface](images/01-solo-researcher/gui-workspaces-list.png)
 
-*Screenshot shows the "My Workspaces" interface with professional Cloudscape design. The workspace list displays running environments with real-time status indicators, and the welcome wizard (Step 1 of 3) shows AWS configuration for first-time users. This interface provides quick access to launch, monitor, and manage all research workspaces.*
+*Screenshot shows the "My Workspaces" interface with professional React 19 + shadcn/ui design. The workspace list displays running environments with real-time status indicators, and the welcome wizard (Step 1 of 3) shows AWS configuration for first-time users. This interface provides quick access to launch, monitor, and manage all research workspaces.*
 
 **What Sarah sees in GUI**:
 - **Workspace List**: All workspaces with name, template, status, and running time
@@ -247,7 +247,7 @@ prism budget list
 - **Status Indicators**: Visual badges showing running, stopped, or hibernated state
 - **Launch Button**: One-click access to Quick Start wizard for new workspaces
 
-> **💡 GUI Note**: Cost summary is available in the GUI Dashboard (Costs tab) with visual charts - *coming soon in v0.6.0*
+> **💡 GUI Note**: Cost summary is available in the GUI Dashboard (Costs tab) with visual charts - *available in v0.35.3**
 
 **What Sarah thinks**: *"The hibernation is working! Every time it hibernates, I'm banking money for future compute. I'm only paying $0.31/hour instead of $2.40/hour! No anxiety!"*
 
@@ -438,7 +438,7 @@ prism budget info
 #    This aligns with grant year budgets and encourages efficient usage.
 ```
 
-> **💡 GUI Note**: Budget configuration available in GUI Settings (Budget tab) - *coming soon in v0.6.0*
+> **💡 GUI Note**: Budget configuration available in GUI Settings (Budget tab) - *available in v0.35.3**
 
 ### Day 1: Launch with Budget Awareness
 
@@ -473,7 +473,7 @@ prism workspace launch bioinformatics-suite rnaseq-analysis --size M
 # 🔗 SSH ready in ~90 seconds...
 ```
 
-> **💡 GUI Note**: Workspace launch with budget preview available in GUI Templates tab - *coming soon in v0.6.0*
+> **💡 GUI Note**: Workspace launch with budget preview available in GUI Templates tab - *available in v0.35.3**
 
 ### Week 3: Budget Alert (80% threshold)
 
@@ -534,7 +534,7 @@ prism budget status
 #   💡 Consider stopping workspaces over weekend if not needed ($4.80 savings)
 ```
 
-> **💡 GUI Note**: Budget status available in GUI Dashboard (Budget tab) with real-time charts - *coming soon in v0.6.0*
+> **💡 GUI Note**: Budget status available in GUI Dashboard (Budget tab) with real-time charts - *available in v0.35.3**
 
 ### Week 4: Attempting Over-Budget Launch
 
@@ -615,7 +615,7 @@ prism budget report --month september --pdf --output ~/Desktop/sept-prism-report
 #    - Ready to attach to expense report
 ```
 
-> **💡 GUI Note**: Monthly reports available in GUI Dashboard (Reports tab) with export to PDF - *coming soon in v0.6.0*
+> **💡 GUI Note**: Monthly reports available in GUI Dashboard (Reports tab) with export to PDF - *available in v0.35.3**
 
 ---
 
@@ -644,7 +644,7 @@ prism budget report --month september --pdf --output ~/Desktop/sept-prism-report
 
 ## 🎯 Priority Recommendations
 
-### Phase 1: Budget Safety Net (v0.6.0)
+### Phase 1: Budget Safety Net (Implemented in v0.35.3)
 **Target**: Solo researchers can confidently stay within budget
 
 1. **Budget Configuration** (1 week)
@@ -662,7 +662,7 @@ prism budget report --month september --pdf --output ~/Desktop/sept-prism-report
    - Show cost impact before proceeding
    - Optional `--yes` flag to skip prompt
 
-### Phase 2: Budget Intelligence (v0.6.1)
+### Phase 2: Budget Intelligence (Planned)
 **Target**: Solo researchers can plan and optimize spending
 
 4. **Budget Forecasting** (1 week)
