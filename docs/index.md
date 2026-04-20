@@ -10,7 +10,7 @@ hide:
 
 <div class="hero">
   <div class="hero-inner">
-    <img src="images/prism-icon.png" alt="Prism" class="hero-icon">
+    <img src="images/prism-icon-transparent.png" alt="Prism" class="hero-icon">
     <h1>Cloud research workstations<br><span class="hero-gradient">in seconds, not hours</span></h1>
     <p class="hero-sub">Pre-configured AWS environments for researchers, labs, and classrooms — launch with one command, stop paying when you're done.</p>
     <div class="hero-buttons">

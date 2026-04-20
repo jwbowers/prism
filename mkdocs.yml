@@ -62,7 +62,7 @@ theme:
     view: material/eye
 
   custom_dir: docs/overrides
-  logo: images/prism-icon.png
+  logo: images/prism-icon-transparent.png
   favicon: images/prism-icon.png
 
 plugins:
