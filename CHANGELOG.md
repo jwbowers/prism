@@ -5,6 +5,23 @@ All notable changes to Prism will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.4] - 2026-04-20
+
+### Documentation
+- **Comprehensive docs overhaul**: 3-pass audit fixing stale content across 120+ files
+- **New user guides**: Workspace Lifecycle (TTL/DNS/idle), Courses, Workshops, Approvals
+- **New architecture docs**: spored daemon, updated GUI tech stack, idle detection rewrite
+- **Release notes**: added v0.31.0–v0.35.3 (11 missing versions)
+- **CLI reference**: documented `--ttl`, `--dns`, `--idle-timeout` flags
+- **Command fixes**: `prism launch` → `prism workspace launch` across all docs; `--hours` → `--ttl`
+- **TUI removal**: purged all remaining TUI references from user and admin guides
+- **Version numbers**: updated all stale v0.5.x/v0.7.x references to v0.35.3
+- **Cloudscape cleanup**: replaced all Cloudscape UI references with shadcn/ui
+- **Navigation**: expanded mkdocs.yml from 6 to 22+ navigation entries
+- **USER_SCENARIOS**: all 8 scenarios updated to v0.35.3; shipped features marked ✅
+- **Broken links**: fixed 4 broken internal links including TUI_USER_GUIDE reference
+- **Docs version badge**: fixed CI to use `mike deploy` so prismcloud.io version always tracks current release
+
 ## [0.35.3] - 2026-04-09
 
 ### Security
