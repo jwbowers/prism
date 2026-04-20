@@ -625,7 +625,7 @@ prism invitation shared create "ICML 2026 ML Workshop" \
 
 ## Additional Resources
 
-- [Getting Started Guide](GETTING_STARTED.md)
+- [Getting Started Guide](QUICK_START.md)
 - [Research Users Guide](USER_GUIDE_RESEARCH_USERS.md)
 - [Project Management Guide](../admin-guides/PROJECT_MANAGEMENT_GUIDE.md)
 - [API Documentation](../development/API_INVITATION_REFERENCE.md)

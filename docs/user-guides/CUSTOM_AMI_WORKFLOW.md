@@ -492,6 +492,6 @@ prism ami delete ami-old123def456
 
 ## Related Documentation
 
-- [Getting Started](GETTING_STARTED.md) - Core workflow overview
+- [Getting Started](QUICK_START.md) - Core workflow overview
 - [R Getting Started](R_GETTING_STARTED.md) - R-specific guidance including AMI creation
 - [Cost Management](COST_MANAGEMENT.md) - Optimizing AMI storage costs

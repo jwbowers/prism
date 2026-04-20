@@ -597,4 +597,4 @@ curl http://localhost:8947/api/v1/health
 
 ---
 
-**For More Help**: See [Troubleshooting](TROUBLESHOOTING.md) and [Getting Started](GETTING_STARTED.md)
+**For More Help**: See [Troubleshooting](TROUBLESHOOTING.md) and [Getting Started](QUICK_START.md)

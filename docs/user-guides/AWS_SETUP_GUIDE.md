@@ -44,9 +44,9 @@ Prism needs these AWS permissions to function properly:
 4. **Permissions**: Attach the policy above or use `PowerUserAccess` for simplicity
 5. **Download credentials**: Save the Access Key ID and Secret Access Key
 
-## 2. AWS CLI Configuration
+## 2. AWS CLI Authentication
 
-### Install AWS CLI (if not already installed)
+### Install AWS CLI v2
 
 ```bash
 # macOS
@@ -56,63 +56,63 @@ brew install awscli
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip && sudo ./aws/install
 
-# Verify installation
+# Verify (must be v2.32.0+ for aws login)
 aws --version
 ```
 
-### Configure AWS Profile
+### Option A: Browser-based login (recommended)
 
-**For your specific use case (using profile 'aws' instead of 'default'):**
+`aws login` authenticates via your browser using IAM user or federated identity credentials — no key management required. Requires AWS CLI v2.32.0+.
 
 ```bash
-# Configure your custom AWS profile named 'aws'
-aws configure --profile aws
+# Authenticate (opens browser)
+aws login
 
-# You'll be prompted for:
-# AWS Access Key ID: [Your Access Key]
-# AWS Secret Access Key: [Your Secret Key] 
-# Default region name: us-west-2  # Choose your preferred region
+# For a named profile
+aws login --profile prism-research
+
+# On headless/remote machines
+aws login --remote
+```
+
+Credentials are cached in `~/.aws/cli/cache/` for up to 12 hours and auto-refresh. Re-run `aws login` when they expire.
+
+Verify:
+```bash
+aws sts get-caller-identity
+```
+
+### Option B: Long-term access keys
+
+For CI/CD pipelines, headless servers, or users who prefer static credentials:
+
+```bash
+aws configure --profile prism-research
+# AWS Access Key ID:     [Your Access Key]
+# AWS Secret Access Key: [Your Secret Key]
+# Default region name:   us-west-2
 # Default output format: json
 ```
 
-### Verify Profile Configuration
-
-```bash
-# Test your profile configuration
-aws sts get-caller-identity --profile aws
-
-# Should return something like:
-# {
-#     "UserId": "AIDAXXXXXXXXXXXXX",
-#     "Account": "123456789012", 
-#     "Arn": "arn:aws:iam::123456789012:user/prism-user"
-# }
-```
-
-### Set Up AWS Credentials File
-
-Your AWS credentials are stored in `~/.aws/credentials`:
+This writes to `~/.aws/credentials`:
 
 ```ini
-[aws]
-aws_access_key_id = YOUR_ACCESS_KEY_ID
-aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
-
-[default]
-aws_access_key_id = DIFFERENT_ACCESS_KEY_ID
-aws_secret_access_key = DIFFERENT_SECRET_ACCESS_KEY
+[prism-research]
+aws_access_key_id = AKIAIOSFODNN7EXAMPLE
+aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
 And `~/.aws/config`:
 
 ```ini
-[profile aws]
+[profile prism-research]
 region = us-west-2
 output = json
+```
 
-[profile default]
-region = us-east-1
-output = json
+Verify:
+```bash
+aws sts get-caller-identity --profile prism-research
 ```
 
 ## 3. Prism Configuration
@@ -175,7 +175,7 @@ prism templates
 
 # Check your current configuration
 prism profiles current
-aws configure list --profile aws
+aws configure list --profile prism-research
 ```
 
 ### Test Instance Launch (Optional)
@@ -222,7 +222,7 @@ export AWS_REGION=ap-southeast-2
 
 ```bash
 # Update your AWS profile's default region
-aws configure set region us-west-2 --profile aws
+aws configure set region us-west-2 --profile prism-research
 
 # Or set via environment variable
 export AWS_REGION=us-west-2
@@ -235,7 +235,7 @@ export AWS_REGION=us-west-2
 **"No credentials found" error:**
 ```bash
 # Check your profile exists
-aws configure list --profile aws
+aws configure list --profile prism-research
 
 # Verify environment variable
 echo $AWS_PROFILE
@@ -312,7 +312,7 @@ Here's a complete example for your specific case using Prism profiles:
 
 ```bash
 # 1. Configure AWS CLI with 'aws' profile
-aws configure --profile aws
+aws login --profile prism-research  # or: aws configure --profile prism-research
 # Enter your credentials when prompted
 
 # 2. Create Prism profile (RECOMMENDED METHOD)
@@ -335,7 +335,7 @@ If you prefer environment variables:
 
 ```bash
 # 1. Configure AWS CLI with 'aws' profile  
-aws configure --profile aws
+aws login --profile prism-research  # or: aws configure --profile prism-research
 
 # 2. Set environment variables
 export AWS_PROFILE=aws

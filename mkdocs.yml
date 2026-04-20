@@ -123,9 +123,7 @@ extra:
 nav:
   - Home: index.md
 
-  - Getting Started:
-    - Installation & Setup: user-guides/GETTING_STARTED.md
-    - Quick Start: user-guides/QUICK_START.md
+  - Getting Started: user-guides/QUICK_START.md
 
   - User Guide:
     - CLI Reference: user-guides/CLI_REFERENCE.md

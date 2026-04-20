@@ -85,7 +85,7 @@ Prism requires AWS credentials to function. If you haven't already configured yo
 
 ```bash
 # Option 1: AWS CLI
-aws configure
+aws login
 
 # Option 2: Environment variables
 export AWS_ACCESS_KEY_ID=your_access_key

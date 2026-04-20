@@ -100,7 +100,7 @@ Prism requires AWS credentials to manage cloud resources:
 brew install awscli
 
 # Configure your AWS credentials
-aws configure
+aws login
 # Enter your AWS Access Key ID
 # Enter your AWS Secret Access Key
 # Enter your default region (e.g., us-west-2)
@@ -200,6 +200,6 @@ rm -rf ~/.prism
 
 ## Next Steps
 
-- See [Getting Started Guide](GETTING_STARTED.md) for first-time usage
+- See [Getting Started Guide](QUICK_START.md) for first-time usage
 - Explore [Template Format](TEMPLATE_FORMAT.md) to create custom environments
 - Check [Troubleshooting](TROUBLESHOOTING.md) for common issues

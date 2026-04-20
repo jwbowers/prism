@@ -48,7 +48,7 @@ Error: UnauthorizedOperation
 aws sts get-caller-identity
 
 # Configure if needed
-aws configure
+aws login
 ```
 
 **If you have AWS credentials but Prism can't find them:**

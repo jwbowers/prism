@@ -51,7 +51,7 @@ Prism uses AWS for cloud resources. Most schools can use AWS Educate for credits
 brew install awscli  # or: pip install awscli
 
 # Configure institutional credentials
-aws configure
+aws login
 # AWS Access Key ID: [Your school's access key]
 # AWS Secret Access Key: [Your school's secret key]
 # Default region: us-west-2 (or closest to your location)

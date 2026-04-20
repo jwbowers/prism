@@ -33,7 +33,7 @@
 brew install scttfrdmn/tap/prism
 
 # Configure AWS credentials (one-time)
-aws configure
+aws login
 
 # Launch the Quick Start wizard
 prism init

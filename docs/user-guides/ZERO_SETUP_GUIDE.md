@@ -197,7 +197,7 @@ prism workspace launch template my-instance \
 
 **Solution:** Configure AWS CLI once:
 ```bash
-aws configure
+aws login
 # Enter your Access Key ID
 # Enter your Secret Access Key
 # Enter default region (us-west-2)
@@ -337,4 +337,4 @@ You should be doing research, not configuring infrastructure. Prism makes that p
 - [Quick Start Guide](../README.md#-quick-start---zero-setup-experience)
 - [Administrator Guide](../admin-guides/ADMINISTRATOR_GUIDE.md) (for manual AWS configuration)
 - [Template Format](TEMPLATE_FORMAT.md) (creating custom templates)
-- [Getting Started Guide](GETTING_STARTED.md) (complete CLI reference)
+- [Getting Started Guide](QUICK_START.md) (complete CLI reference)

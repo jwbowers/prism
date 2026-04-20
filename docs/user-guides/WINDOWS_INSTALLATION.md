@@ -80,7 +80,7 @@ winget install Amazon.AWSCLI
 # or download from https://aws.amazon.com/cli/
 
 # Configure credentials
-aws configure
+aws login
 # Enter your AWS Access Key ID
 # Enter your AWS Secret Access Key
 # Enter your default region (e.g., us-west-2)
@@ -208,6 +208,6 @@ Remove-Item -Recurse -Force "$env:PROGRAMDATA\Prism"
 
 ## Next Steps
 
-- See [Getting Started Guide](GETTING_STARTED.md) for first-time usage
+- See [Getting Started Guide](QUICK_START.md) for first-time usage
 - Read the [CLI User Guide](USER_GUIDE_RESEARCH_USERS.md) for command reference
 - Check [Troubleshooting](TROUBLESHOOTING.md) for common issues

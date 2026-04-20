@@ -14,7 +14,7 @@ hide:
     <h1>Cloud research workstations<br><span class="hero-gradient">in seconds, not hours</span></h1>
     <p class="hero-sub">Pre-configured AWS environments for researchers, labs, and classrooms — launch with one command, stop paying when you're done.</p>
     <div class="hero-buttons">
-      <a href="user-guides/GETTING_STARTED/" class="btn-hero-primary">Get Started</a>
+      <a href="user-guides/QUICK_START/" class="btn-hero-primary">Get Started</a>
       <a href="https://github.com/scttfrdmn/prism" class="btn-hero-secondary" target="_blank">View on GitHub</a>
     </div>
     <div class="install-block">
@@ -65,18 +65,21 @@ hide:
 # Install
 brew install scttfrdmn/tap/prism
 
-# Connect your AWS credentials
+# Authenticate with AWS (browser-based, no keys needed)
+aws login
+
+# Add a Prism profile
 prism profile add
 
 # Launch a research environment
 prism workspace launch python-ml my-project
 
 # Connect via SSH — ready in under 2 minutes
-prism workspace ssh my-project
+prism workspace connect my-project
 ```
 
   <div class="quick-start-links">
-    <a href="user-guides/GETTING_STARTED/">Full installation guide →</a>
+    <a href="user-guides/QUICK_START/">Full installation guide →</a>
     <a href="admin-guides/AWS_IAM_PERMISSIONS/">IAM permissions →</a>
   </div>
 </section>
